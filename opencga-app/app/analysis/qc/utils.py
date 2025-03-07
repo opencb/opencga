@@ -7,6 +7,13 @@ import json
 
 LOGGER = logging.getLogger('variant_qc_logger')
 
+# Resources filenames
+RESOURCES_FILENAMES = {
+    "INFERRED_SEX_THRESHOLDS": "karyotypic_sex_thresholds.json",
+    "RELATEDNESS_THRESHOLDS": "relatedness_thresholds.tsv",
+    "RELATEDNESS_PRUNE_IN_FREQS": "relatedness_prune_in_freqs.txt",
+    "RELATEDNESS_PRUNE_OUT_MARKERS": "relatedness_prune_out_markers.txt"
+}
 
 def create_output_dir(path_elements):
     """Create output dir

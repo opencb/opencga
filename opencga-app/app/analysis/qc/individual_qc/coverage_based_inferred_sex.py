@@ -6,7 +6,10 @@ import gzip
 import json
 import pyBigWig
 
-from utils import create_output_dir, execute_bash_command, generate_results_json
+# import utils
+# from utils import create_output_dir, execute_bash_command, generate_results_json
+from individual_qc.inferred_sex_results import InferredSexResults, Software, Images
+from utils import create_output_dir, RESOURCES_FILENAMES
 
 
 LOGGER = logging.getLogger('variant_qc_logger')
@@ -18,8 +21,12 @@ class CoverageBasedInferredSexAnalysis:
 		:param executor:
 		"""
 
+		output_dir = create_output_dir(path_elements=[executor["output_parent_dir"], 'coverage_based_inferred_sex'])
+		self.output_dir = output_dir
+
 		self.output_coverage_based_inferred_sex_dir = None
 		self.executor = executor
+		self.inferred_sex_results = InferredSexResults()
 		LOGGER.info("executor = %s", executor)
 
 	def setup(self):
@@ -45,6 +52,7 @@ class CoverageBasedInferredSexAnalysis:
 		coverage = bw.stats(chromosome, 0, chrom_length, type="mean")
 		return coverage[0] if coverage else 0.0
 
+	# Function to get the chromosome prefix in the BIGWIG file
 	def detect_chromosome_prefix(self, bw):
 		# Get the chromosome names
 		chromosome_names = list(bw.chroms().keys())
@@ -63,6 +71,24 @@ class CoverageBasedInferredSexAnalysis:
 			LOGGER.error(msg)
 			raise TypeError(msg)
 
+	# Function to get the karyotypic sex for a given ratio_chrX and ratio_chrY
+	def get_karyotypic_sex(self, ratio_chrX, ratio_chrY, thresholds):
+		for key in thresholds:
+			# Extract the label and the type of threshold (xmin, xmax, ymin, ymax)
+			if key.endswith(".xmin"):
+				# Remove ".xmin" to get the karyotypic sex
+				karyotypic_sex = key[:-5]
+				# Check if ratio_chrX and ratio_chrY falls within the range for this sex
+				if (
+					thresholds[f"{karyotypic_sex}.xmin"] <= ratio_chrX <= thresholds[f"{karyotypic_sex}.xmax"] and
+					thresholds[f"{karyotypic_sex}.ymin"] <= ratio_chrY <= thresholds[f"{karyotypic_sex}.ymax"]
+				):
+					return karyotypic_sex.upper()
+
+		# If no karyotypic sex matches, return UNKNOWN
+		return "UNKNOWN"
+
+    # Function to infer sex from the coverage (i.e., using a BIGWIG file)
 	def calculate_inferred_sex(self):
 		"""
 		Calculates inferred sex based on coverage if BAM information is available and checks if matches against the expected
@@ -86,21 +112,49 @@ class CoverageBasedInferredSexAnalysis:
 		y_cov = self.calculate_coverage(y_chr, bw)
 		somatic_cov = sum(self.calculate_coverage(chr, bw) for chr in somatic_chr) / len(somatic_chr)
 
+		# Close the BigWig file
+		bw.close()
+
 		# Print the results
-		print(f"Coverage for X chromosome: {x_cov}")
-		print(f"Coverage for Y chromosome: {y_cov}")
-		print(f"Average coverage for somatic chromosomes: {somatic_cov}")
+		LOGGER.info(f"Coverage for X chromosome: {x_cov}")
+		LOGGER.info(f"Coverage for Y chromosome: {y_cov}")
+		LOGGER.info(f"Average coverage for somatic chromosomes: {somatic_cov}")
 
 		# Calculate ratio X-chrom / autosomes
 		ratio_chrX = float(x_cov / somatic_cov)
 		# Calculate ratio Y-chrom / autosomes
 		ratio_chrY = float(y_cov / somatic_cov)
 
-		print(f"Ratio for X chromosome: {ratio_chrX}")
-		print(f"Ratio for Y chromosome: {ratio_chrY}")
+		LOGGER.info(f"Ratio for X chromosome: {ratio_chrX}")
+		LOGGER.info(f"Ratio for Y chromosome: {ratio_chrY}")
 
-		# Close the BigWig file
-		bw.close()
+		# Load the karyotypic sex thresholds from the JSON file
+		thresholds_path = os.path.join(self.executor["resource_dir"], RESOURCES_FILENAMES["INFERRED_SEX_THRESHOLDS"])
+		with open(thresholds_path, "r") as file:
+			thresholds = json.load(file)
+
+		karyotypic_sex = self.get_karyotypic_sex(ratio_chrX, ratio_chrY, thresholds)
+		LOGGER.info(f"Karyotypic sex inferred: {karyotypic_sex}")
+
+		self.inferred_sex_results.method = "Coverage based"
+		self.inferred_sex_results.sampleId = self.executor["sample_ids"][0]
+# 		self.inferred_sex_results.software =
+		self.inferred_sex_results.inferredKaryotypicSex = karyotypic_sex
+		self.inferred_sex_results.values["ratio_chrX"] = ratio_chrX
+		self.inferred_sex_results.values["ratio_chrY"] = ratio_chrY
+		self.inferred_sex_results.values["coverage_chrX"] = x_cov
+		self.inferred_sex_results.values["coverage_chrY"] = y_cov
+		self.inferred_sex_results.values["coverage_somatic"] = somatic_cov
+# 		self.inferred_sex_results.images =
+# 		self.inferred_sex_results.attributes =
+
+		results_fpath = os.path.join(self.output_dir, "inferred_sex.json")
+		LOGGER.debug('Generating JSON file with results. File path: "{}"'.format(results_fpath))
+		with open(results_fpath, 'w') as file:
+			json.dump(self.inferred_sex_results.model_dump(), file, indent=2)
+			LOGGER.info('Finished writing JSON file with results: "{}"'.format(results_fpath))
+
+		LOGGER.info(f"Inferred sex result: {self.inferred_sex_results}")
 
 	def run(self):
 		"""
