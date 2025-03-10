@@ -13,7 +13,6 @@ public class SwaggerJsonSerializer {
         ObjectMapper mapper = new ObjectMapper();
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         String swaggerJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(swagger);
-
         System.out.println(swaggerJson);
     }
 }
