@@ -1,12 +1,6 @@
 package com.zettagenomics.opencga.enterprise.server.generator;
 
-import com.zettagenomics.opencga.enterprise.server.rest.EnterpriseClinicalWebService;
-import com.zettagenomics.opencga.enterprise.server.rest.EnterpriseCvdbWebService;
-
-import com.zettagenomics.opencga.enterprise.server.rest.EnterpriseMetaWSServer;
-import com.zettagenomics.opencga.enterprise.server.rest.EnterpriseUserWSServer;
-import com.zettagenomics.opencga.enterprise.server.rest.FederationWSServer;
-
+import com.zettagenomics.opencga.enterprise.server.rest.*;
 import org.opencb.opencga.server.generator.commons.ApiCommons;
 import org.opencb.opencga.server.rest.*;
 import org.opencb.opencga.server.rest.admin.AdminWSServer;
@@ -26,7 +20,7 @@ public class EnterpriseApiCommonsImpl implements ApiCommons {
 
     public List<Class<?>> getApiClasses() {
         List<Class<?>> classes = new ArrayList();
-        classes.add(FederationWSServer.class);
+        classes.add(EnterpriseFederationWSServer.class);
         classes.add(OrganizationWSServer.class);
         classes.add(UserWSServer.class);
         classes.add(EnterpriseUserWSServer.class);
@@ -49,7 +43,6 @@ public class EnterpriseApiCommonsImpl implements ApiCommons {
         classes.add(Ga4ghWSServer.class);
         classes.add(AdminWSServer.class);
         classes.add(EnterpriseCvdbWebService.class);
-        classes.add(FederationWSServer.class);
 
         return classes;
     }
