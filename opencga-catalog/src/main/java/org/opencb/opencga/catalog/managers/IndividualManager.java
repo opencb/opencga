@@ -34,13 +34,14 @@ import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
-import org.opencb.opencga.catalog.utils.*;
+import org.opencb.opencga.catalog.utils.AnnotationUtils;
+import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclEntryList;
-import org.opencb.opencga.core.models.JwtPayload;
-import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.EntryParam;
 import org.opencb.opencga.core.models.common.Enums;
@@ -441,56 +442,36 @@ public class IndividualManager extends AnnotationSetManager<Individual, Individu
 
     public OpenCGAResult<Individual> relatives(String studyId, String individualId, int degree, QueryOptions options, String token)
             throws CatalogException {
-        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, tokenPayload);
-        String organizationId = studyFqn.getOrganizationId();
-        String userId = tokenPayload.getUserId(organizationId);
-        Study study = studyManager.resolveId(studyId, userId, organizationId);
-
-        ObjectMap auditParams = new ObjectMap()
-                .append("studyId", studyId)
-                .append("individualId", individualId)
+        ObjectMap params = new ObjectMap()
+                .append("study", studyId)
+                .append("id", individualId)
                 .append("degree", degree)
                 .append("options", options)
                 .append("token", token);
-
-        String individualUuid = individualId;
-        try {
+        return runForSingleEntry(params, Enums.Action.RELATIVES, studyId, token, (organizationId, study, userId, entryParam) -> {
             long startTime = System.currentTimeMillis();
-
+            entryParam.setId(individualId);
             QueryOptions queryOptions = getIndividualDBAdaptor(organizationId).fixOptionsForRelatives(options);
-
             if (degree < 0 || degree > 2) {
                 throw new CatalogException("Unsupported degree value. Degree must be 0, 1 or 2");
             }
 
             List<Individual> individualList = new LinkedList<>();
             Individual proband = internalGet(organizationId, study.getUid(), individualId, queryOptions, userId).first();
+            entryParam.setId(proband.getId());
+            entryParam.setUuid(proband.getUuid());
+
             getIndividualDBAdaptor(organizationId).addRelativeToList(proband, Family.FamiliarRelationship.PROBAND, 0, individualList);
 
-            individualId = proband.getId();
-            individualUuid = proband.getUuid();
-
             if (degree == 0) {
-                auditManager.audit(organizationId, userId, Enums.Action.RELATIVES, Enums.Resource.INDIVIDUAL, individualId, individualUuid,
-                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
                 return new OpenCGAResult<>((int) (System.currentTimeMillis() - startTime), Collections.emptyList(), individualList.size(),
                         individualList, individualList.size());
             }
 
             individualList.addAll(getIndividualDBAdaptor(organizationId).calculateRelationship(study.getUid(), proband, degree, userId));
-
-            auditManager.audit(organizationId, userId, Enums.Action.RELATIVES, Enums.Resource.INDIVIDUAL, individualId, individualUuid,
-                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return new OpenCGAResult<>((int) (System.currentTimeMillis() - startTime), Collections.emptyList(), individualList.size(),
                     individualList, individualList.size());
-
-        } catch (CatalogException e) {
-            auditManager.audit(organizationId, userId, Enums.Action.RELATIVES, Enums.Resource.INDIVIDUAL, individualId, individualUuid,
-                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
-        }
-
+        });
     }
 
     @Override
@@ -696,9 +677,9 @@ public class IndividualManager extends AnnotationSetManager<Individual, Individu
 
     public OpenCGAResult<Individual> update(String studyStr, List<String> individualIds, IndividualUpdateParams updateParams,
                                             boolean ignoreException, QueryOptions options, String token) throws CatalogException {
-        OpenCGAResult<Individual> result = updateMany(studyStr, individualIds, updateParams, ignoreException, options, token,
+        return updateMany(studyStr, individualIds, updateParams, ignoreException, options, token,
                 StudyManager.INCLUDE_VARIABLE_SET, (organizationId, study, userId, entryParam) -> {
-            String individualId = entryParam.getId();
+                    String individualId = entryParam.getId();
                     OpenCGAResult<Individual> internalResult = internalGet(organizationId, study.getUid(), individualId,
                             QueryOptions.empty(), userId);
                     if (internalResult.getNumResults() == 0) {
@@ -710,7 +691,6 @@ public class IndividualManager extends AnnotationSetManager<Individual, Individu
 
                     return update(organizationId, study, individual, updateParams, options, userId);
                 });
-        return endResult(result, ignoreException);
     }
 
     private OpenCGAResult<Individual> update(String organizationId, Study study, Individual individual, IndividualUpdateParams updateParams,

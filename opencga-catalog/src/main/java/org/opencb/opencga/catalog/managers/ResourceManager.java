@@ -405,12 +405,12 @@ public abstract class ResourceManager<R extends IPrivateStudyUid, S extends Enum
         OpenCGAResult<R> execute(String organizationId, Study study, String userId, R entry) throws CatalogException;
     }
 
-    protected OpenCGAResult<R> create(String studyStr, R object, QueryOptions options, String token, QueryOptions studyIncludeList,
+    protected OpenCGAResult<R> create(String studyStr, Object object, QueryOptions options, String token, QueryOptions studyIncludeList,
                                       ExecuteOperationForSingleEntry<R> execution) throws CatalogException {
         return create(new ObjectMap(), studyStr, object, options, token, studyIncludeList, execution);
     }
 
-    protected OpenCGAResult<R> create(ObjectMap params, String studyStr, R object, QueryOptions options, String token,
+    protected OpenCGAResult<R> create(ObjectMap params, String studyStr, Object object, QueryOptions options, String token,
                                       QueryOptions studyIncludeList, ExecuteOperationForSingleEntry<R> execution)
             throws CatalogException {
         params = params != null ? params : new ObjectMap();
@@ -425,12 +425,18 @@ public abstract class ResourceManager<R extends IPrivateStudyUid, S extends Enum
     protected OpenCGAResult<R> update(String studyStr, String id, Object updateParams, QueryOptions options, String token,
                                       QueryOptions studyIncludeList, ExecuteOperationForSingleEntry<R> execution)
             throws CatalogException {
-        ObjectMap params = new ObjectMap()
-                .append("study", studyStr)
-                .append("id", id)
-                .append("updateParams", updateParams)
-                .append("options", options)
-                .append("token", token);
+        return update(new ObjectMap(), studyStr, id, updateParams, options, token, studyIncludeList, execution);
+    }
+
+    protected OpenCGAResult<R> update(ObjectMap params, String studyStr, String id, Object updateParams, QueryOptions options, String token,
+                                      QueryOptions studyIncludeList, ExecuteOperationForSingleEntry<R> execution)
+            throws CatalogException {
+        params = params != null ? params : new ObjectMap();
+        params.putIfAbsent("study", studyStr);
+        params.putIfAbsent("id", id);
+        params.putIfAbsent("updateParams", updateParams);
+        params.putIfAbsent("options", options);
+        params.putIfAbsent("token", token);
         return runForSingleEntry(params, Enums.Action.UPDATE, studyStr, token, studyIncludeList, execution, null);
     }
 
@@ -444,7 +450,8 @@ public abstract class ResourceManager<R extends IPrivateStudyUid, S extends Enum
                 .append("ignoreException", ignoreException)
                 .append("options", options)
                 .append("token", token);
-        return runList(params, Enums.Action.UPDATE, studyStr, idList, token, studyIncludeList, execution);
+        OpenCGAResult<R> result = runList(params, Enums.Action.UPDATE, studyStr, idList, token, studyIncludeList, execution);
+        return endResult(result, ignoreException);
     }
 
     protected OpenCGAResult<R> updateMany(String studyStr, Query query, Object updateParams, boolean ignoreException,

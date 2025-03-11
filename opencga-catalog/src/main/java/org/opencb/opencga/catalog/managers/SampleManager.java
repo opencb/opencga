@@ -693,7 +693,7 @@ public class SampleManager extends AnnotationSetManager<Sample, SamplePermission
 
     public OpenCGAResult<Sample> update(String studyStr, List<String> sampleIds, SampleUpdateParams updateParams,
                                         boolean ignoreException, QueryOptions options, String token) throws CatalogException {
-        OpenCGAResult<Sample> result = updateMany(studyStr, sampleIds, updateParams, ignoreException, options, token,
+        return updateMany(studyStr, sampleIds, updateParams, ignoreException, options, token,
                 StudyManager.INCLUDE_VARIABLE_SET, (organizationId, study, userId, entryParam) -> {
                     String sampleId = entryParam.getId();
                     OpenCGAResult<Sample> internalResult = internalGet(organizationId, study.getUid(), sampleId, INCLUDE_SAMPLE_IDS,
@@ -707,7 +707,6 @@ public class SampleManager extends AnnotationSetManager<Sample, SamplePermission
 
                     return update(organizationId, study, sample, updateParams, options, userId);
                 });
-        return endResult(result, ignoreException);
     }
 
     private OpenCGAResult<Sample> update(String organizationId, Study study, Sample sample, SampleUpdateParams updateParams,
