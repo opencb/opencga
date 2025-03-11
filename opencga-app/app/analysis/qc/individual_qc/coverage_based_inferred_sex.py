@@ -5,15 +5,18 @@ import logging
 import gzip
 import json
 import pyBigWig
+import subprocess
 
 # import utils
 # from utils import create_output_dir, execute_bash_command, generate_results_json
-from individual_qc.inferred_sex_results import InferredSexResults, Software, Images
-from utils import create_output_dir, RESOURCES_FILENAMES
-
+from individual_qc.inferred_sex_result import InferredSexResult, Software, Image
+from utils import RESOURCES_FILENAMES, create_output_dir
 
 LOGGER = logging.getLogger('variant_qc_logger')
 ANALYSIS_NAME = "coverage based inferred sex analysis"
+
+# Get the directory of the script
+script_directory = os.path.dirname(os.path.abspath(__file__))
 
 class CoverageBasedInferredSexAnalysis:
 	def __init__(self, executor):
@@ -26,7 +29,7 @@ class CoverageBasedInferredSexAnalysis:
 
 		self.output_coverage_based_inferred_sex_dir = None
 		self.executor = executor
-		self.inferred_sex_results = InferredSexResults()
+		self.inferred_sex_result = InferredSexResult()
 		LOGGER.info("executor = %s", executor)
 
 	def setup(self):
@@ -88,6 +91,18 @@ class CoverageBasedInferredSexAnalysis:
 		# If no karyotypic sex matches, return UNKNOWN
 		return "UNKNOWN"
 
+	# Plot the karyotypic sex
+	def plot_karyotypic_sex(self, ratio_chrX, ratio_chrY, thresholds_path, image_path):
+		script_path = os.path.join(script_directory, "plot_karyotypic_sex.R")
+		cmd = "Rscript " + script_path + " " + str(ratio_chrX) + " " + str(ratio_chrY) + " " + thresholds_path + " " + image_path
+		LOGGER.info(f"Command: {cmd}")
+		result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+		# Get the output
+		if result.returncode == 0:
+			LOGGER.info(f"Karyotypic sex image at {image_path}")
+		else:
+			LOGGER.info(f"Error: {result.stderr}")
+
     # Function to infer sex from the coverage (i.e., using a BIGWIG file)
 	def calculate_inferred_sex(self):
 		"""
@@ -133,28 +148,31 @@ class CoverageBasedInferredSexAnalysis:
 		with open(thresholds_path, "r") as file:
 			thresholds = json.load(file)
 
+		# Compute karyotypic sex
 		karyotypic_sex = self.get_karyotypic_sex(ratio_chrX, ratio_chrY, thresholds)
 		LOGGER.info(f"Karyotypic sex inferred: {karyotypic_sex}")
 
-		self.inferred_sex_results.method = "Coverage based"
-		self.inferred_sex_results.sampleId = self.executor["sample_ids"][0]
-# 		self.inferred_sex_results.software =
-		self.inferred_sex_results.inferredKaryotypicSex = karyotypic_sex
-		self.inferred_sex_results.values["ratio_chrX"] = ratio_chrX
-		self.inferred_sex_results.values["ratio_chrY"] = ratio_chrY
-		self.inferred_sex_results.values["coverage_chrX"] = x_cov
-		self.inferred_sex_results.values["coverage_chrY"] = y_cov
-		self.inferred_sex_results.values["coverage_somatic"] = somatic_cov
-# 		self.inferred_sex_results.images =
-# 		self.inferred_sex_results.attributes =
+		# Plot karyotypic sex
+		image_path = os.path.join(self.output_dir, "inferred_sex.png")
+		self.plot_karyotypic_sex(ratio_chrX, ratio_chrY, thresholds_path, image_path)
+
+		self.inferred_sex_result.method = "Coverage based"
+		self.inferred_sex_result.sampleId = self.executor["sample_ids"][0]
+# 		self.inferred_sex_result.software =
+		self.inferred_sex_result.inferredKaryotypicSex = karyotypic_sex
+		self.inferred_sex_result.values["ratio_chrX"] = ratio_chrX
+		self.inferred_sex_result.values["ratio_chrY"] = ratio_chrY
+		self.inferred_sex_result.values["coverage_chrX"] = x_cov
+		self.inferred_sex_result.values["coverage_chrY"] = y_cov
+		self.inferred_sex_result.values["coverage_somatic"] = somatic_cov
+# 		self.inferred_sex_result.images =
+# 		self.inferred_sex_result.attributes =
 
 		results_fpath = os.path.join(self.output_dir, "inferred_sex.json")
 		LOGGER.debug('Generating JSON file with results. File path: "{}"'.format(results_fpath))
 		with open(results_fpath, 'w') as file:
-			json.dump(self.inferred_sex_results.model_dump(), file, indent=2)
+			json.dump(self.inferred_sex_result.model_dump(), file, indent=2)
 			LOGGER.info('Finished writing JSON file with results: "{}"'.format(results_fpath))
-
-		LOGGER.info(f"Inferred sex result: {self.inferred_sex_results}")
 
 	def run(self):
 		"""
@@ -169,15 +187,7 @@ class CoverageBasedInferredSexAnalysis:
 			# Performing IBD analysis from PLINK
 			self.calculate_inferred_sex()
 
-#             plink_genome_fpath = self.relatedness_plink(filtered_vcf_fpath)
-#
-#             # Getting and calculating relatedness scores: reported relationship, inferred relationship, validation
-#             self.relatedness_scores(plink_genome_fpath)
-#
-#             # Generating file with results
-#             generate_results_json(self.relatedness_results.model_dump(),self.output_relatedness_dir)
 			LOGGER.info('Complete successfully %s', ANALYSIS_NAME)
-
 		except Exception as e:
 			LOGGER.error("Error during %s: '%s'", ANALYSIS_NAME, format(e))
 			raise

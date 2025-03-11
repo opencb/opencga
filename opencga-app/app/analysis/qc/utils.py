@@ -10,6 +10,9 @@ LOGGER = logging.getLogger('variant_qc_logger')
 # Resources filenames
 RESOURCES_FILENAMES = {
     "INFERRED_SEX_THRESHOLDS": "karyotypic_sex_thresholds.json",
+    "INFERRED_SEX_CHR_X_FRQ": "inferred_sex_variants_filtered_annotated_chrX.frq",
+    "INFERRED_SEX_CHR_X_PRUNE_IN": "inferred_sex_variants_filtered_annotated_chrX.prune.in",
+    "INFERRED_SEX_REFERENCE_VALUES": "inferred_sex_reference_values.txt",
     "RELATEDNESS_THRESHOLDS": "relatedness_thresholds.tsv",
     "RELATEDNESS_PRUNE_IN_FREQS": "relatedness_prune_in_freqs.txt",
     "RELATEDNESS_PRUNE_OUT_MARKERS": "relatedness_prune_out_markers.txt"
@@ -33,7 +36,7 @@ def execute_bash_command(cmd):
     :param str cmd: Command line
     :returns: Return code, stdout, stderr
     """
-    LOGGER.debug('Executing in bash: "{}"'.format(cmd))
+    LOGGER.info(f"{' '.join(cmd)}")
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
     stdout, stderr = p.communicate()
@@ -41,9 +44,7 @@ def execute_bash_command(cmd):
     return_code = p.returncode
 
     if return_code != 0:
-        msg = 'Command line "{}" returned non-zero exit status "{}"\nSTDOUT: "{}"\nSTDERR: "{}"'.format(
-            cmd, return_code, stdout, stderr
-        )
+        msg = f"Command line '{cmd}' returned non-zero exit status '{return_code}'\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}"
         LOGGER.error(msg)
         raise Exception(msg)
 

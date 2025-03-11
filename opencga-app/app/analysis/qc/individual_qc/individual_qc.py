@@ -3,8 +3,8 @@ import os
 import logging
 import json
 
-from common.relatedness import RelatednessAnalysis
 from individual_qc.coverage_based_inferred_sex import CoverageBasedInferredSexAnalysis
+from individual_qc.variant_based_inferred_sex import VariantBasedInferredSexAnalysis
 
 LOGGER = logging.getLogger('variant_qc_logger')
 
@@ -63,7 +63,11 @@ class IndividualQCExecutor:
 				LOGGER.error(msg)
 				raise FileNotFoundError(msg)
 		else:
-			LOGGER.info("BAM file is not provided. Skipping %s", CoverageBasedInferredSexAnalysis.ANALYSIS_NAME)
+			LOGGER.warning("BAM file is not provided. Skipping coverage based inferred sex analysis")
+# 			LOGGER.info("BAM file is not provided. Skipping %s", CoverageBasedInferredSexAnalysis.ANALYSIS_NAME)
+
+		variant_inferred_sex_analysis = VariantBasedInferredSexAnalysis(individual_qc_executor_info)
+		variant_inferred_sex_analysis.run()
 
 
 

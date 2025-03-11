@@ -4,13 +4,13 @@ from typing import Dict, List, Optional, Any
 class Software(BaseModel):
 	name: str
 	version: str
-	commit: str
+	commit: Optional[str] = None
 	params: Dict[str, str] = Field(default_factory=dict)
 
 class Image(BaseModel):
 	name: str
 	base64: str
-	description: str
+	description: Optional[str] = None
 
 class InferredSexResult(BaseModel):
 	method: Optional[str] = None
