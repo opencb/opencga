@@ -7,13 +7,14 @@ import json
 import pyBigWig
 import subprocess
 
-# import utils
-# from utils import create_output_dir, execute_bash_command, generate_results_json
-from individual_qc.inferred_sex_result import InferredSexResult, Software, Image
-from utils import RESOURCES_FILENAMES, create_output_dir
+import individual_qc
+from utils import *
+from quality_control import *
 
 LOGGER = logging.getLogger('variant_qc_logger')
+
 ANALYSIS_NAME = "coverage based inferred sex analysis"
+ANALYSIS_PATH = "coverage_based_inferred_sex"
 
 # Get the directory of the script
 script_directory = os.path.dirname(os.path.abspath(__file__))
@@ -24,20 +25,14 @@ class CoverageBasedInferredSexAnalysis:
 		:param executor:
 		"""
 
-		output_dir = create_output_dir(path_elements=[executor["output_parent_dir"], 'coverage_based_inferred_sex'])
-		self.output_dir = output_dir
-
-		self.output_coverage_based_inferred_sex_dir = None
+		self.name = ANALYSIS_NAME
+		self.output_dir = create_output_dir(path_elements=[executor["output_parent_dir"], ANALYSIS_PATH])
 		self.executor = executor
-		self.inferred_sex_result = InferredSexResult()
-		LOGGER.info("executor = %s", executor)
+		self.inferred_sex = individual_qc.InferredSex()
+		LOGGER.info("Individual QC executor = %s", executor)
 
 	def setup(self):
-		if self.executor != None:
-			LOGGER.info("bam file = %s", self.executor["bam_file"])
-#             self.set_variant_based_inferred_sex_files()
-#             self.set_variant_based_inferred_sex_dir()
-		else:
+		if self.executor == None:
 			msg = "No instance of IndividualQCExecutor was found. Therefore coverage based inferred sex analysis cannot be executed."
 			LOGGER.error(msg)
 			raise TypeError(msg)
@@ -131,20 +126,20 @@ class CoverageBasedInferredSexAnalysis:
 		bw.close()
 
 		# Print the results
-		LOGGER.info(f"Coverage for X chromosome: {x_cov}")
-		LOGGER.info(f"Coverage for Y chromosome: {y_cov}")
-		LOGGER.info(f"Average coverage for somatic chromosomes: {somatic_cov}")
+		LOGGER.info(f"Chromosome X coverage: {x_cov}")
+		LOGGER.info(f"Chromosome Y coverage: {y_cov}")
+		LOGGER.info(f"Average coverage of somatic chromosomes: {somatic_cov}")
 
 		# Calculate ratio X-chrom / autosomes
 		ratio_chrX = float(x_cov / somatic_cov)
 		# Calculate ratio Y-chrom / autosomes
 		ratio_chrY = float(y_cov / somatic_cov)
 
-		LOGGER.info(f"Ratio for X chromosome: {ratio_chrX}")
-		LOGGER.info(f"Ratio for Y chromosome: {ratio_chrY}")
+		LOGGER.info(f"Chromosome X ratio: {ratio_chrX}")
+		LOGGER.info(f"Chromosome Y ratio: {ratio_chrY}")
 
 		# Load the karyotypic sex thresholds from the JSON file
-		thresholds_path = os.path.join(self.executor["resource_dir"], RESOURCES_FILENAMES["INFERRED_SEX_THRESHOLDS"])
+		thresholds_path = os.path.join(self.executor["resource_dir"], INFERRED_SEX_THRESHOLDS_FILE)
 		with open(thresholds_path, "r") as file:
 			thresholds = json.load(file)
 
@@ -152,27 +147,31 @@ class CoverageBasedInferredSexAnalysis:
 		karyotypic_sex = self.get_karyotypic_sex(ratio_chrX, ratio_chrY, thresholds)
 		LOGGER.info(f"Karyotypic sex inferred: {karyotypic_sex}")
 
-		# Plot karyotypic sex
-		image_path = os.path.join(self.output_dir, "inferred_sex.png")
-		self.plot_karyotypic_sex(ratio_chrX, ratio_chrY, thresholds_path, image_path)
+		# Method, sample ID
+		self.inferred_sex.method = "Coverage based"
+		self.inferred_sex.sampleId = self.executor["sample_ids"][0]
 
-		self.inferred_sex_result.method = "Coverage based"
-		self.inferred_sex_result.sampleId = self.executor["sample_ids"][0]
-# 		self.inferred_sex_result.software =
-		self.inferred_sex_result.inferredKaryotypicSex = karyotypic_sex
-		self.inferred_sex_result.values["ratio_chrX"] = ratio_chrX
-		self.inferred_sex_result.values["ratio_chrY"] = ratio_chrY
-		self.inferred_sex_result.values["coverage_chrX"] = x_cov
-		self.inferred_sex_result.values["coverage_chrY"] = y_cov
-		self.inferred_sex_result.values["coverage_somatic"] = somatic_cov
-# 		self.inferred_sex_result.images =
-# 		self.inferred_sex_result.attributes =
+		# Software
+		# self.inferred_sex.software =
 
-		results_fpath = os.path.join(self.output_dir, "inferred_sex.json")
-		LOGGER.debug('Generating JSON file with results. File path: "{}"'.format(results_fpath))
-		with open(results_fpath, 'w') as file:
-			json.dump(self.inferred_sex_result.model_dump(), file, indent=2)
-			LOGGER.info('Finished writing JSON file with results: "{}"'.format(results_fpath))
+		# Karyotypic sex
+		self.inferred_sex.inferredKaryotypicSex = karyotypic_sex
+
+		# Values
+		self.inferred_sex.values["chrX_ratio"] = ratio_chrX
+		self.inferred_sex.values["chrY_ratio"] = ratio_chrY
+		self.inferred_sex.values["chrX_coverage"] = x_cov
+		self.inferred_sex.values["chrY_coverage"] = y_cov
+		self.inferred_sex.values["somatic_coverage"] = somatic_cov
+
+		# Images
+		image_fpath = os.path.join(self.output_dir, "coverage_based_inferred_sex.png")
+		self.plot_karyotypic_sex(ratio_chrX, ratio_chrY, thresholds_path, image_fpath)
+		base64_string = get_base64_image(image_fpath)
+		self.inferred_sex.images = [Image(name=f"Inferred Sex (coverage based)", base64=base64_string)]
+
+		# Attributes
+		# self.inferred_sex.attributes =
 
 	def run(self):
 		"""
