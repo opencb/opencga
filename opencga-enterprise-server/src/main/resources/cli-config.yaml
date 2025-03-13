@@ -219,7 +219,7 @@ apiConfig:
       commandName: meta
       ignore: False
       key: Meta
-    - name: cvdb
+    - name: analysisCvdb
       commandName: cvdb
       ignore: False
       key: CVDB
