@@ -113,7 +113,7 @@ def check_input(vcf_fpath, info_fpath, qc_type):
     # Checking whether input file and info file have the same samples
     LOGGER.debug('Sample IDs found in VCF file: "{}"'.format(vcf_sample_ids))
     LOGGER.debug('Sample IDs found in JSON file: "{}"'.format(info_sample_ids))
-    if not vcf_sample_ids == info_sample_ids:
+    if not vcf_sample_ids == info_sample_ids and qc_type != 'individual':
         msg = 'Different samples in VCF file ("{}") and info JSON file ("{}")'.format(vcf_sample_ids, info_sample_ids)
         LOGGER.error(msg)
         raise ValueError(msg)

@@ -43,7 +43,8 @@ def execute_bash_command(cmd):
     return_code = p.returncode
 
     if return_code != 0:
-        msg = f"Command line '{cmd}' returned non-zero exit status '{return_code}'\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}"
+        msg = f"Command line '{' '.join(cmd)}' returned non-zero exit status '{return_code}'"
+        # \nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}"
         LOGGER.error(msg)
         raise Exception(msg)
 

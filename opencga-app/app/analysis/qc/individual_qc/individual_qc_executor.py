@@ -5,9 +5,6 @@ import json
 
 import individual_qc
 
-# from individual_qc.coverage_based_inferred_sex import CoverageBasedInferredSexAnalysis, COVERAGE_BASED_INFERRED_SEX_ANALYSIS_NAME
-# from individual_qc.variant_based_inferred_sex import VariantBasedInferredSexAnalysis, VARIANT_BASED_INFERRED_SEX_ANALYSIS_NAME
-
 LOGGER = logging.getLogger('variant_qc_logger')
 
 class IndividualQCExecutor:
@@ -41,6 +38,42 @@ class IndividualQCExecutor:
 		# Checking data
 		# self.checking_data()  # TODO check input data (config parameters)
 
+		# Reading info JSON file
+		LOGGER.info(f"Getting individual info from JSON file '{self.info_file}'")
+		info_fhand = open(self.info_file, 'r')
+		info_json = json.load(info_fhand)
+		info_fhand.close()
+
+		# Get sample ID
+		sample_id = None
+		if info_json.get("samples") and "id" in info_json["samples"][0]:
+			sample_id = info_json["samples"][0]["id"]
+			if not sample_id in self.sample_ids:
+				sample_id = None
+		LOGGER.info(f"Got sample ID '{sample_id}' for individual ID '{self.id_}'")
+
+		# Get father and mother IDs
+		father_id = None
+		if info_json.get("father") and "id" in info_json["father"]:
+			father_id = info_json["father"]["id"]
+			if not father_id in self.sample_ids:
+				father_id = None
+		mother_id = None
+		if info_json.get("mother") and "id" in info_json["mother"]:
+			mother_id = info_json["mother"]["id"]
+			if not mother_id in self.sample_ids:
+				mother_id = None
+		LOGGER.info(f"Got father ID '{father_id}' and mother ID '{mother_id}' for individual ID '{self.id_}'")
+
+		# Get sex
+		sex = 0
+		if info_json.get("sex") and "id" in info_json["sex"]:
+			if info_json["sex"]["id"] == "MALE":
+				sex = 1
+			elif info_json["sex"]["id"] == "FEMALE":
+				sex = 2
+		LOGGER.info(f"Got sex '{sex}' for individual ID '{self.id_}'")
+
 		# Running individual QC steps
 		# Get individual QC executor information
 		executor_info = {
@@ -51,8 +84,14 @@ class IndividualQCExecutor:
 			"resource_dir": self.resource_dir,
 			"output_parent_dir": self.output_parent_dir,
 			"sample_ids": self.sample_ids,
+			"sample_id": sample_id,
+			"sex": sex,
+			"father_id": father_id,
+			"mother_id": mother_id,
 			"id_": self.id_
 		}
+
+		LOGGER.info(f"Individual QC executor info: {executor_info}")
 
 		qc = individual_qc.IndividualQualityControl()
 
@@ -69,8 +108,6 @@ class IndividualQCExecutor:
 		else:
 			LOGGER.warning(f"BAM file is not provided. Skipping {coverage_inferred_sex_analysis.name}")
 
-		#LOGGER.warning(f"output_dir = {coverage_inferred_sex_analysis.output_dir}");
-
 		# Run variant based inferred sex analysis
 		variant_inferred_sex_analysis = individual_qc.VariantBasedInferredSexAnalysis(executor_info)
 		variant_inferred_sex_analysis.run()
@@ -78,7 +115,14 @@ class IndividualQCExecutor:
 
 		# Run relatedness analysis if parents are provided
 
-		# Run mendelian error analysis if parents are provided
+		# Run mendelian errors analysis if parents are provided
+		mendelian_errors_analysis = individual_qc.MendelianErrorsAnalysis(executor_info)
+		if sample_id != None and father_id != None and mother_id != None:
+			mendelian_errors_analysis = individual_qc.MendelianErrorsAnalysis(executor_info)
+			mendelian_errors_analysis.run()
+			qc.mendelianErrors.append(mendelian_errors_analysis.mendelian_errors)
+		else:
+			LOGGER.warning(f"Sample, father and/or mother are not provided. Skipping {mendelian_errors_analysis.name}")
 
 		# Write individual quality control
 		results_fpath = os.path.join(self.output_parent_dir, "individual_quality_control.json")

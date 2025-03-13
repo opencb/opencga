@@ -31,7 +31,6 @@ class VariantBasedInferredSexAnalysis:
 		self.chrx_vars_fpath = None
 		self.chrx_var_frq_fpath = None
 		self.sexcheck_ref_values_fpath = None
-		LOGGER.info("Individual QC executor = %s", executor)
 
 	def setup(self):
 		if self.executor != None:
@@ -134,44 +133,9 @@ class VariantBasedInferredSexAnalysis:
 
 		return filtered_vars
 
-	def get_individual_sex(self):
-		"""
-		Retrieve individual sex for sample if it is available, and recode for PLINK input.
-		:return:
-		"""
-		individual_info = open(self.executor["info_file"])
-		individual_info_json = json.load(individual_info)
-		indsex = individual_info_json['sex']['id']
-		karsex = individual_info_json['karyotypicSex']
-		ind_metadata = {}
-		for sample in self.executor["sample_ids"]:
-			ind_metadata[sample] = {'individualId': individual_info_json['id'], 'individualSex': 0, 'sampleId': 'NA'}
-
-			LOGGER.debug("Retrieve sex information and recode")
-			for sam in individual_info_json['samples']:
-				if sam['id'] in self.executor["sample_ids"]:
-					ind_metadata[sam['id']]['sampleId'] = sample
-					if indsex.upper() == 'MALE' or karsex == 'XY':
-						ind_metadata[sam['id']]['individualSex'] = 1
-					elif indsex.upper() == 'FEMALE' or karsex == 'XX':
-						ind_metadata[sam['id']]['individualSex'] = 2
-					else:
-						LOGGER.info("Sex information for Individual '{}' (sample '{}') is not available, sex will be inferred".format(sam['id'],sample['id']))
-
-		# Check individual information for each sample is present:
-		for sample, individual_info in ind_metadata.items():
-			if individual_info['individualSex'] == 0:
-				LOGGER.warning("No individual information available for sample '{}'".format(individual_info['sampleId']))
-			else:
-				LOGGER.info("Individual information for sample '{}' found".format(individual_info['sampleId']))
-
-		# Return sex information:
-		return ind_metadata
-
 	def generate_plink_fam_file_input(self):
 		# Retrieve sex information:
 		individual_id = self.executor["id_"]
-		ind_metadata = self.get_individual_sex()
 
 		# Create a directory for Plink if it does not already exist:
 		plink_dir = create_output_dir(path_elements=[self.output_dir, 'plink_check-sex'])
@@ -183,10 +147,8 @@ class VariantBasedInferredSexAnalysis:
 		LOGGER.debug("Generating text file to update the PLINK input sex information: '{}'".format(sex_info_path))
 
 		for sample in self.executor["sample_ids"]:
-			# Individual sample information:
-			individual_info = ind_metadata[sample]
 			# PLINK sex update file format: familyId individualId sex
-			sex_info_input.write(('\t'.join([sample,sample,str(individual_info['individualSex'])])) + '\n')
+			sex_info_input.write(('\t'.join([sample,sample,str(self.executor['sex'])])) + '\n')
 			# Note, for the purpose of this function, individualId replaces familyId to prevent issues where an individual belongs to more than one family
 			LOGGER.info("Test file generated to update the PLINK fam file with sex information: '{}'".format(sex_info_path))
 
@@ -212,6 +174,8 @@ class VariantBasedInferredSexAnalysis:
 									"--keep-allele-order",
 									"--update-sex", sex_info_path,
 									"--split-x", "hg38", "no-fail",
+								  	"--double-id",
+									"--allow-extra-chr",
 									"--out", plink_output_prefix]
 			cmd = [plink_path] + plink_convert_args
 			LOGGER.info(f"Generating PLINK check-sex input files")
@@ -231,6 +195,7 @@ class VariantBasedInferredSexAnalysis:
 				plink_checksex_args = ["--bfile", plink_output_prefix,
 										"--read-freq", str(self.chrx_var_frq_fpath),
 										"--check-sex",
+										"--allow-extra-chr",
 										"--out", plink_output_prefix]
 				cmd = [plink_path] + plink_checksex_args
 				LOGGER.debug("Performing PLINK check-sex")
@@ -338,12 +303,6 @@ class VariantBasedInferredSexAnalysis:
 			# Input files set up
 			self.setup()
 
-			# Retrieve sex information:
-# 			individual_id = self.id_
-			ind_metadata = self.get_individual_sex()
-
-			LOGGER.info('ind_metadata = %s', ind_metadata)
-
 			# Filter input VCF
 			[filtered_vcf_path, filtered_vcf_name] = self.filter_variants()
 
@@ -364,8 +323,7 @@ class VariantBasedInferredSexAnalysis:
 			sexcheck_path = None
 			if filtered_vars > 0:
 				# Run inferred sex analysis:
-				LOGGER.info('ind_metadata = %s', ind_metadata)
-				if ind_metadata[self.executor["id_"]]['individualSex'] == 0:
+				if self.executor["sex"] == 0:
 					LOGGER.info("Running PLINK impute-sex")
 					[method, sexcheck_fpath] = self.impute_sex_plink(filtered_vcf_path)
 				else:
@@ -374,7 +332,7 @@ class VariantBasedInferredSexAnalysis:
 
 				if os.path.isfile(sexcheck_fpath):
 					self.inferred_sex.method = method
-					self.inferred_sex.sampleId = self.executor["sample_ids"][0]
+					self.inferred_sex.sampleId = self.executor["sample_id"]
 					self.inferred_sex.software = Software(name="PLINK",version="1.9")
 					# self.inferred_sex.inferredKaryotypicSex =
 

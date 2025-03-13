@@ -29,7 +29,6 @@ class CoverageBasedInferredSexAnalysis:
 		self.output_dir = create_output_dir(path_elements=[executor["output_parent_dir"], ANALYSIS_PATH])
 		self.executor = executor
 		self.inferred_sex = individual_qc.InferredSex()
-		LOGGER.info("Individual QC executor = %s", executor)
 
 	def setup(self):
 		if self.executor == None:
