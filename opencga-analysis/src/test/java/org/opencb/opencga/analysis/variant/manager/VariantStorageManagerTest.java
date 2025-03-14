@@ -27,6 +27,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.manager.operations.AbstractVariantOperationManagerTest;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.Job;
@@ -144,7 +145,7 @@ public class VariantStorageManagerTest extends AbstractVariantOperationManagerTe
         assertEquals(new HashSet<>(file.getSampleIds()), variantManager.getIndexedSamples(studyId, sessionId));
 
         Study studyNew = catalogManager.getStudyManager().create(projectId, "sNew", "sNew", "sNew",
-                "Study New", null, null, null, null, null, sessionId)
+                "Study New", null, null, null, null, new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId)
                 .first();
         assertEquals(Collections.emptySet(), variantManager.getIndexedSamples(studyNew.getId(), sessionId));
     }

@@ -42,7 +42,6 @@ public class AlignmentIndexOperation extends OpenCgaToolScopeStudy {
     public static final String DESCRIPTION = "Index a given alignment file BAM/CRAM, e.g., create a " + AlignmentConstants.BAI_EXTENSION
             + " file from a " + AlignmentConstants.BAM_EXTENSION + " file";
 
-    private String study;
     private String inputFile;
     private boolean overwrite = false;
 
@@ -148,12 +147,9 @@ public class AlignmentIndexOperation extends OpenCgaToolScopeStudy {
         });
     }
 
-    public String getStudy() {
-        return study;
-    }
-
+    @Override
     public AlignmentIndexOperation setStudy(String study) {
-        this.study = study;
+        super.setStudy(study);
         return this;
     }
 

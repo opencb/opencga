@@ -328,6 +328,7 @@ public class VariantAnalysisTest {
             toolRunner.execute(VariantIndexOperationTool.class,
                     new VariantIndexParams().setFile(file.getId()).setAnnotate(true),
                     Paths.get(opencga.createTmpOutdir()), null, false, token);
+            Assert.fail();
         } catch (ToolException e) {
             System.out.println(ExceptionUtils.prettyExceptionMessage(e, true, true));
         }
@@ -1258,6 +1259,12 @@ public class VariantAnalysisTest {
     }
 
     private boolean areLiftoverResourcesReady() throws IOException {
+        // We can't download this for each test! It takes too long, and it might fill up the disk in small runners
+        return false;
+    }
+
+    // TODO: Decide what to do with this
+    private boolean areLiftoverResourcesReady_invalid() throws IOException {
         Configuration configuration = opencga.getConfiguration();
         configuration.getAnalysis().getResource().setBasePath(opencga.getOpencgaHome().resolve(ResourceManager.ANALYSIS_DIRNAME).resolve(ResourceManager.RESOURCES_DIRNAME));
         configuration.getAnalysis().getResource().setBaseUrl("http://resources.opencb.org/opencb/opencga/analysis/resources/");
