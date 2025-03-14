@@ -219,7 +219,7 @@ apiConfig:
       commandName: meta
       ignore: False
       key: Meta
-    - name: analysisCvdb
+    - name: analysisCvdb  # This is The path of api in camel case @Path("/{apiVersion}/analysis/cvdb")
       commandName: cvdb
       ignore: False
       key: CVDB
