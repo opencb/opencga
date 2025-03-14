@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Dict, List, Optional, Any
 
+from common import Relatedness
 from quality_control import Software, Image
 
 class InferredSex(BaseModel):
@@ -32,3 +33,4 @@ class MendelianErrors(BaseModel):
 class IndividualQualityControl(BaseModel):
 	inferredSex: List[InferredSex] = Field(default_factory=list)
 	mendelianErrors: List[MendelianErrors] = Field(default_factory=list)
+	relatedness: List[Relatedness] = Field(default_factory=list)

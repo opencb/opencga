@@ -1,13 +1,13 @@
-#!/usr/bin/env python3
-import os
-import logging
-import json
-
-from common.relatedness import RelatednessAnalysis
-
-LOGGER = logging.getLogger('variant_qc_logger')
-
-
+# #!/usr/bin/env python3
+# import os
+# import logging
+# import json
+#
+# from common.relatedness import RelatednessAnalysis
+#
+# LOGGER = logging.getLogger('variant_qc_logger')
+#
+#
 class FamilyQCExecutor:
     def __init__(self, vcf_file, info_file, bam_file, config, resource_dir, output_parent_dir, sample_ids, id_):
         """Create output dir
@@ -35,27 +35,27 @@ class FamilyQCExecutor:
         self.config_json = json.load(config_fhand)
         config_fhand.close()
 
-    def run(self):
-        # Checking data
-        # self.checking_data()  # TODO check input data (config parameters)
-
-        # Running family QC steps
-        # Get family QC executor information
-        family_qc_executor_info = {
-            "vcf_file": self.vcf_file,
-            "info_file": self.info_file,
-            "bam_file": None,
-            "config": self.config,
-            "resource_dir": self.resource_dir,
-            "output_parent_dir": self.output_parent_dir,
-            "sample_ids": self.sample_ids,
-            "id_": self.id_
-            }
-        # Run relatedness analysis
-        relatedness_analysis = RelatednessAnalysis(family_qc_executor_info)
-        relatedness_analysis.run()
-
-
-
-
-
+#     def run(self):
+#         # Checking data
+#         # self.checking_data()  # TODO check input data (config parameters)
+#
+#         # Running family QC steps
+#         # Get family QC executor information
+#         family_qc_executor_info = {
+#             "vcf_file": self.vcf_file,
+#             "info_file": self.info_file,
+#             "bam_file": None,
+#             "config": self.config,
+#             "resource_dir": self.resource_dir,
+#             "output_parent_dir": self.output_parent_dir,
+#             "sample_ids": self.sample_ids,
+#             "id_": self.id_
+#             }
+#         # Run relatedness analysis
+#         relatedness_analysis = RelatednessAnalysis(family_qc_executor_info)
+#         relatedness_analysis.run()
+#
+#
+#
+#
+#

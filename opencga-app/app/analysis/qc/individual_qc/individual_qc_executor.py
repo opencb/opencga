@@ -4,6 +4,7 @@ import logging
 import json
 
 import individual_qc
+import common
 
 LOGGER = logging.getLogger('variant_qc_logger')
 
@@ -113,16 +114,19 @@ class IndividualQCExecutor:
 		variant_inferred_sex_analysis.run()
 		qc.inferredSex.append(variant_inferred_sex_analysis.inferred_sex)
 
-		# Run relatedness analysis if parents are provided
-
-		# Run mendelian errors analysis if parents are provided
+		relatedness_analysis = common.RelatednessAnalysis(executor_info)
 		mendelian_errors_analysis = individual_qc.MendelianErrorsAnalysis(executor_info)
 		if sample_id != None and father_id != None and mother_id != None:
-			mendelian_errors_analysis = individual_qc.MendelianErrorsAnalysis(executor_info)
+			# Run relatedness analysis if parents are provided
+			relatedness_analysis.run()
+			qc.relatedness.append(relatedness_analysis.relatedness)
+
+			# Run mendelian errors analysis if parents are provided
 			mendelian_errors_analysis.run()
 			qc.mendelianErrors.append(mendelian_errors_analysis.mendelian_errors)
 		else:
-			LOGGER.warning(f"Sample, father and/or mother are not provided. Skipping {mendelian_errors_analysis.name}")
+			LOGGER.warning(f"Sample, father and/or mother are not provided. Skipping {relatedness_analysis.name}"
+						   f" and {mendelian_errors_analysis.name}")
 
 		# Write individual quality control
 		results_fpath = os.path.join(self.output_parent_dir, "individual_quality_control.json")
