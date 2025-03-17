@@ -72,7 +72,7 @@ public class VariantStorageManagerTest extends AbstractVariantOperationManagerTe
 
         try {
             Study study = catalogManager.getStudyManager().create(projectId, "s_no_setup", "s_no_setup", "s_no_setup",
-                            "Study 1", null, null, null, Collections.singletonMap(VariantStatsAnalysis.STATS_AGGREGATION_CATALOG, getAggregation()), null, sessionId)
+                            "Study 1", null, null, null, Collections.singletonMap(VariantStatsAnalysis.STATS_AGGREGATION_CATALOG, getAggregation()), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId)
                     .first();
             // Variant setup mandatory for configuring study
             variantManager.configureStudy(study.getFqn(), expectedStudyConfiguration1, sessionId);

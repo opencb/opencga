@@ -1542,6 +1542,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     protected void createStudyIfNeeded() throws StorageEngineException {
         String studyName = getOptions().getString(VariantStorageOptions.STUDY.key(), VariantStorageOptions.STUDY.defaultValue());
+        if (studyName == null || studyName.isEmpty()) {
+            throw new StorageEngineException("Missing study");
+        }
         StudyMetadata studyMetadata = getMetadataManager().getStudyMetadata(studyName);
         if (studyMetadata == null) {
             logger.info("Creating a new StudyMetadata '{}'", studyName);
