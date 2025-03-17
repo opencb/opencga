@@ -16,26 +16,35 @@
 
 package org.opencb.opencga.core.models.variant;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
 public class LiftoverWrapperParams extends ToolParams {
 
-    public static final String DESCRIPTION = "BCFtools +liftover plugin params";
+    public static final String DESCRIPTION = "BCFtools +liftover plugin parameters";
 
+    @DataField(id = "files", description = FieldConstants.LIFTOVER_FILES_DESCRIPTION, required = true)
     private List<String> files;
+
+    @DataField(id = "targetAssembly", description = FieldConstants.LIFTOVER_TARGET_ASSEMBLY_DESCRIPTION, required = true)
     private String targetAssembly;
-    private String vcfOutdir;
+
+    @DataField(id = "vcfDestination", description = FieldConstants.LIFTOVER_VCF_DESTINATION_DESCRIPTION)
+    private String vcfDestination;
+
+    @DataField(id = "outdir", description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
     private String outdir;
 
     public LiftoverWrapperParams() {
     }
 
-    public LiftoverWrapperParams(List<String> files, String targetAssembly, String vcfOutdir, String outdir) {
+    public LiftoverWrapperParams(List<String> files, String targetAssembly, String vcfDestination, String outdir) {
         this.files = files;
         this.targetAssembly = targetAssembly;
-        this.vcfOutdir = vcfOutdir;
+        this.vcfDestination = vcfDestination;
         this.outdir = outdir;
     }
 
@@ -44,7 +53,7 @@ public class LiftoverWrapperParams extends ToolParams {
         final StringBuilder sb = new StringBuilder("LiftoverWrapperParams{");
         sb.append("files=").append(files);
         sb.append(", targetAssembly='").append(targetAssembly).append('\'');
-        sb.append(", vcfOutdir='").append(vcfOutdir).append('\'');
+        sb.append(", vcfDestination='").append(vcfDestination).append('\'');
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
         return sb.toString();
@@ -68,12 +77,12 @@ public class LiftoverWrapperParams extends ToolParams {
         return this;
     }
 
-    public String getVcfOutdir() {
-        return vcfOutdir;
+    public String getVcfDestination() {
+        return vcfDestination;
     }
 
-    public LiftoverWrapperParams setVcfOutdir(String vcfOutdir) {
-        this.vcfOutdir = vcfOutdir;
+    public LiftoverWrapperParams setVcfDestination(String vcfDestination) {
+        this.vcfDestination = vcfDestination;
         return this;
     }
 

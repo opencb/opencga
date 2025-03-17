@@ -13,6 +13,7 @@ import org.opencb.opencga.analysis.tools.OpenCgaDockerToolScopeStudy;
 import org.opencb.opencga.catalog.db.api.WorkflowDBAdaptor;
 import org.opencb.opencga.catalog.utils.InputFileUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -120,7 +121,7 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
             tags.addAll(workflow.getTags());
         }
         List<ToolDependency> dependencyList = new ArrayList<>(4);
-        dependencyList.add(new ToolDependency("opencb/opencga-workflow", "TASK-6445"));
+        dependencyList.add(new ToolDependency("opencb/opencga-workflow", GitRepositoryState.getInstance().getBuildVersion() + "-hdp3.1"));
         dependencyList.add(new ToolDependency("nextflow", workflow.getManager().getVersion()));
         dependencyList.add(new ToolDependency(workflow.getId(), String.valueOf(workflow.getVersion())));
         if (workflow.getRepository() != null && StringUtils.isNotEmpty(workflow.getRepository().getId())) {
@@ -212,7 +213,7 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
         outputBindings.add(new AbstractMap.SimpleEntry<>(outDirPath, outDirPath));
         outputBindings.add(new AbstractMap.SimpleEntry<>(ephimeralDirPath, ephimeralDirPath));
 
-        String dockerImage = "opencb/opencga-workflow:TASK-6445";
+        String dockerImage = "opencb/opencga-workflow:" + GitRepositoryState.getInstance().getBuildVersion() + "-hdp3.1";
         StringBuilder stringBuilder = new StringBuilder()
                 .append("bash -c \"NXF_VER=")
                 .append(workflow.getManager().getVersion())

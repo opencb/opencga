@@ -7,6 +7,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.exec.Command;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.ConfigurationUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.config.AnalysisTool;
@@ -15,25 +16,40 @@ import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
+import java.io.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
+
+import static org.opencb.opencga.core.tools.ResourceManager.RESOURCES_DIRNAME;
 
 public abstract class DockerWrapperAnalysisExecutor extends OpenCgaToolExecutor {
 
-    public final static String DOCKER_INPUT_PATH = "/data/input";
-    public final static String DOCKER_OUTPUT_PATH = "/data/output";
+    protected Logger logger;
+
+    public static final String DOCKER_INPUT_PATH = "/data/input";
+    public static final String DOCKER_OUTPUT_PATH = "/data/output";
+
+    protected static final String SCRIPT_VIRTUAL_PATH = "/script";
+    protected static final String INPUT_VIRTUAL_PATH = "/input";
+    protected static final String OUTPUT_VIRTUAL_PATH = "/output";
+    protected static final String RESOURCES_VIRTUAL_PATH = "/" + RESOURCES_DIRNAME;
+
+    protected static final String RESOURCES_ATTR_KEY = "resources";
 
     public static final String STDOUT_FILENAME = "stdout.txt";
     public static final String STDERR_FILENAME = "stderr.txt";
 
+    public static final String DOCKER_CLI_MSG = "Docker CLI: ";
+
+    public DockerWrapperAnalysisExecutor() {
+        logger = LoggerFactory.getLogger(this.getClass());
+    }
+
     public String getDockerImageName() throws ToolException {
         return getConfiguration().getAnalysis().getOpencgaExtTools().split(":")[0];
     }
-
-    public static final String DOCKER_CLI_MSG = "Docker CLI: ";
 
     public String getDockerImageVersion() {
         if (getConfiguration().getAnalysis().getOpencgaExtTools().contains(":")) {
@@ -178,6 +194,62 @@ public abstract class DockerWrapperAnalysisExecutor extends OpenCgaToolExecutor 
         }
     }
 
+    protected String buildCommandLine(String image, List<AbstractMap.SimpleEntry<String, String>> inputBindings,
+                                      AbstractMap.SimpleEntry<String, String> outputBinding, String cmdParams,
+                                      Map<String, String> dockerParams) throws IOException {
+        return buildCommandLine(image, inputBindings, null, outputBinding, cmdParams, dockerParams);
+    }
+
+    protected String buildCommandLine(String image, List<AbstractMap.SimpleEntry<String, String>> inputBindings,
+                                      Set<String> readOnlyInputBindings, AbstractMap.SimpleEntry<String, String> outputBinding,
+                                      String cmdParams, Map<String, String> dockerParams) throws IOException {
+        // Sanity check
+        if (outputBinding == null) {
+            throw new IllegalArgumentException("Missing output binding");
+        }
+
+        // Docker run
+        StringBuilder commandLine = new StringBuilder("docker run --rm ");
+
+        // Docker params
+        boolean setUser = true;
+        if (dockerParams != null) {
+            if (dockerParams.containsKey("user")) {
+                setUser = false;
+            }
+            for (String key : dockerParams.keySet()) {
+                commandLine.append("--").append(key).append(" ").append(dockerParams.get(key)).append(" ");
+            }
+        }
+
+        if (setUser) {
+            // User: array of two strings, the first string, the user; the second, the group
+            String[] user = FileUtils.getUserAndGroup(Paths.get(outputBinding.getKey()), true);
+            commandLine.append("--user ").append(user[0]).append(":").append(user[1]).append(" ");
+        }
+
+        if (inputBindings != null) {
+            // Mount management (bindings)
+            for (AbstractMap.SimpleEntry<String, String> binding : inputBindings) {
+                commandLine.append("--mount type=bind,source=\"").append(binding.getKey()).append("\",target=\"")
+                        .append(binding.getValue()).append("\"");
+                if (CollectionUtils.isNotEmpty(readOnlyInputBindings) && readOnlyInputBindings.contains(binding.getValue())) {
+                    commandLine.append(",readonly");
+                }
+                commandLine.append(" ");
+            }
+        }
+        commandLine.append("--mount type=bind,source=\"").append(outputBinding.getKey()).append("\",target=\"")
+                .append(outputBinding.getValue()).append("\" ");
+
+        // Docker image and version
+        commandLine.append(image).append(" ");
+
+        // Image command params
+        commandLine.append(cmdParams);
+        return commandLine.toString();
+    }
+
     protected void runCommandLine(String cmdline) throws ToolException {
         checkDockerDaemonAlive();
         try {
@@ -248,6 +320,17 @@ public abstract class DockerWrapperAnalysisExecutor extends OpenCgaToolExecutor 
         return false;
     }
 
+    protected void addParameters(ObjectMap params) throws ToolException {
+        for (Map.Entry<String, Object> entry : params.entrySet()) {
+            addParam(entry.getKey(), entry.getValue());
+        }
+    }
+
+    protected void addResources(Path resourcePath) throws ToolException {
+        List<String> resourceNames = Arrays.stream(resourcePath.toFile().listFiles()).map(File::getName).collect(Collectors.toList());
+        addAttribute(RESOURCES_ATTR_KEY, resourceNames);
+    }
+
     private void appendDockerAndCommand(String command, String dockerImage, String dockerImageVersion, StringBuilder sb) {
         // Docker image and version
         sb.append(dockerImage);
@@ -257,6 +340,5 @@ public abstract class DockerWrapperAnalysisExecutor extends OpenCgaToolExecutor 
 
         // Append command
         sb.append(" ").append(command);
-
     }
 }

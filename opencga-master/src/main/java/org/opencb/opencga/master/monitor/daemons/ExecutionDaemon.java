@@ -879,7 +879,8 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
 
     private File getValidDefaultOutDir(String organizationId, Job job) throws CatalogException {
         File folder = fileManager.createFolder(job.getStudy().getId(), "JOBS/" + organizationId + "/" + job.getUserId() + "/"
-                + TimeUtils.getDay() + "/" + job.getId(), true, "Job " + job.getTool().getId(), job.getId(), QueryOptions.empty(), token)
+                        + TimeUtils.getDay() + "/" + job.getId(), true, "Job " + job.getTool().getId(), job.getId(), QueryOptions.empty(),
+                        token)
                 .first();
 
         // By default, OpenCGA will not create the physical folders until there is a file, so we need to create it manually
