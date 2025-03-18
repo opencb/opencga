@@ -53,6 +53,9 @@ class MendelianErrorsAnalysis:
             LOGGER.info(f"Error: {result.stderr}")
 
     def parse_mendel_output(self, mendel_fpath):
+        individual_id = self.executor["id_"]
+        sample_id = get_sample_id_from_individual_id(individual_id, self.executor["samples_info"])
+
         # Nested dictionary: {chromosome: {error_type: count}}
         chromosome_error_counts = defaultdict(lambda: defaultdict(int))
         total_chromosome_counts = defaultdict(int)  # Total errors per chromosome
@@ -87,8 +90,7 @@ class MendelianErrorsAnalysis:
         # Sort chromosomes by total errors (descending)
         sorted_chromosomes = sorted(total_chromosome_counts.keys(), key=lambda c: total_chromosome_counts[c], reverse=True)
 
-        sample_mendelian_errors = individual_qc.SampleMendelianErrors(sample=self.executor["sample_id"], numErrors=total_errors,
-                                                                        errorCodeAggregation=[])
+        sample_mendelian_errors = individual_qc.SampleMendelianErrors(sample=sample_id, numErrors=total_errors, errorCodeAggregation=[])
         # Set SampleMendelianErrors
         for chrom in sorted_chromosomes:
             chromosome_aggregation = individual_qc.ChromomeSampleMendelianErrors(
@@ -120,58 +122,42 @@ class MendelianErrorsAnalysis:
         """
 
         plink_path="plink1.9"
+        vcf_file = self.executor["vcf_file"]
+        family_id = get_family_id(self.executor["samples_info"])
 
         # Create a directory for PLINK if it does not already exist:
         plink_dir = create_output_dir(path_elements=[self.output_dir, 'plink_mendelian_errors'])
 
         # Prepare PLINK files
-        file_prefix = self.executor["id_"] + "_" + self.executor["sample_id"] + "_plink_mendel_results"
-        plink_output_prefix = os.path.join(plink_dir, file_prefix)
-        plink_args = ["--vcf", self.executor["vcf_file"],
-                        "--make-bed",
-                        "--allow-extra-chr",
-                        "--double-id",
-                        "--out", plink_output_prefix]
+        individual_id = self.executor["id_"]
+        file_prefix =  individual_id + "_plink_mendel_results"
+        plink_prefix = os.path.join(plink_dir, file_prefix)
 
-        cmd = [plink_path] + plink_args
+        sex_fpath = create_sex_file(plink_dir, self.executor["samples_info"])
+        parents_fpath = create_parents_file(plink_dir, self.executor["samples_info"])
+        phenotype_fpath = create_phenotype_file(plink_dir, self.executor["samples_info"])
+
+        cmd = f"{plink_path} --vcf {vcf_file} --make-bed --const-fid {family_id} --allow-extra-chr --update-sex {sex_fpath} --update-parents {parents_fpath} --pheno {phenotype_fpath} --out {plink_prefix}"
         LOGGER.debug("Performing PLINK make-bed")
-        [returncode, stdout, stderr] = execute_bash_command(cmd)
+        execute_bash_command(cmd)
         # Get the output
-        if returncode == 0:
-            files_generated = os.listdir(plink_dir)
-            LOGGER.info(f"Files available at '{plink_dir}': {files_generated}")
-        else:
-            LOGGER.error(f"Error {stderr} executing PLINK command: {cmd}")
-            raise Exception("PLINK error")
-
-        # Write PLINK .fam file
-        fam_fpath = plink_output_prefix + ".fam"
-        LOGGER.info('Generating PLINK .fam file: "{}"'.format(fam_fpath))
-        with open(fam_fpath, 'w') as f:
-            f.write(f'FAM\t{self.executor["father_id"]}\t0\t0\t1\t-9\n')
-            f.write(f'FAM\t{self.executor["mother_id"]}\t0\t0\t2\t-9\n')
-            f.write(f'FAM\t{self.executor["sample_id"]}\t{self.executor["father_id"]}\t{self.executor["mother_id"]}\t{self.executor["sex"]}\t2\n')
+        files_generated = os.listdir(plink_dir)
+        LOGGER.info(f"Files available at '{plink_dir}': {files_generated}")
 
         # Excute PLINK mendel
-        plink_args = ["--bfile", plink_output_prefix,
-                        "--mendel",
-                        "--allow-extra-chr",
-                        "--out", plink_output_prefix]
-        cmd = [plink_path] + plink_args
+        cmd = f"{plink_path} --bfile {plink_prefix} --mendel --allow-extra-chr --out {plink_prefix}"
         LOGGER.debug("Performing PLINK mendel")
-        [returncode, stdout, stderr] = execute_bash_command(cmd)
+        execute_bash_command(cmd)
         # Get the output
-        if returncode == 0:
-            files_generated = os.listdir(plink_dir)
-            LOGGER.info(f"Files available at '{plink_dir}': {files_generated}")
-        else:
-            LOGGER.error(f"Error {stderr} executing PLINK command: {cmd}")
-            raise Exception("PLINK error")
+        files_generated = os.listdir(plink_dir)
+        LOGGER.info(f"Files available at '{plink_dir}': {files_generated}")
 
         # Parse mendel output
-        mendel_fpath = plink_output_prefix + '.mendel'
+        mendel_fpath = plink_prefix + '.mendel'
         if os.path.isfile(mendel_fpath) == False:
-            raise Exception(f"File '{mendel_fpath}' does not exist")
+            msg = f"File '{mendel_fpath}' does not exist"
+            LOGGER.error(msg)
+            raise Exception(msg)
         else:
             # Parse PLINK mendel file
             self.parse_mendel_output(mendel_fpath)

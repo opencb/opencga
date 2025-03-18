@@ -72,48 +72,33 @@ class VariantBasedInferredSexAnalysis:
 		Annotates input VCF with chromosome coordinate IDs and filters for pruned PASS chr X variants using BCFTools.
 		:return:
 		"""
-		# Read in VCF:
-		vcf_file = self.executor["vcf_file"] #gzip.open(self.executor["vcf_file"], "r")
-		# Read in list of variants to filter for:
-		good_vars = open(self.chrx_vars_fpath, "r")
+		# Input VCF file
+		vcf_file = self.executor["vcf_file"]
 
-		# Create output file:
-		for sample_id in self.executor["sample_ids"]:
-			individual_id = self.executor["id_"]
-			filtered_vcf_name = individual_id + "_" + sample_id + "_filtered_variants.vcf.gz"
-			filtered_vcf_path = os.path.join(self.output_dir, filtered_vcf_name)
-			LOGGER.debug("Generating VCF filtered for good quality pruned chr X variants: '{}'".format(filtered_vcf_path))
+		individual_id = self.executor["id_"]
+		filtered_vcf_name = individual_id + "_filtered_variants.vcf.gz"
+		filtered_vcf_path = os.path.join(self.output_dir, filtered_vcf_name)
+		LOGGER.debug("Generating VCF filtered for good quality pruned chr X variants: '{}'".format(filtered_vcf_path))
 
-			# Check if input VCF FILTER field contains PASS variants:
-			LOGGER.info(f"Checking for PASS variants in the FILTER field of {vcf_file}")
-			cmd = f"bcftools view -i 'FILTER=\"PASS\"' {vcf_file} | grep -v '^#\|CHROM' | wc -l"
-			LOGGER.info(f"Command: {cmd}")
-			result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-			# Get the output
-			if result.returncode == 0:
-				pass_vars = int(result.stdout.strip())
-				LOGGER.info(f"Number of PASS variants: {pass_vars}")
-			else:
-				LOGGER.info(f"Error: {result.stderr}")
+		# Check if input VCF FILTER field contains PASS variants:
+		LOGGER.info(f"Checking for PASS variants in the FILTER field of {vcf_file}")
+		cmd = f"bcftools view -i 'FILTER=\"PASS\"' {vcf_file} | grep -v '^#\|CHROM' | wc -l"
+		cmd_result = execute_bash_command(cmd)
+		pass_vars = int(cmd_result[1].strip())
+		LOGGER.info(f"Number of PASS variants: {pass_vars}")
 
-			# Annotate input VCF with chr coordinate IDs, filter for chr X pruned variants and, if annotated, for PASS variants:
-			if pass_vars == 0:
-# 				execute_bash_command(cmd=annotate_and_filter_no_pass_cmd)
-				LOGGER.debug("Annotating and filtering '{}' for all pruned chr X variants".format(vcf_file))
-				LOGGER.info("WARNING: no FILTER information available, input data will not be filtered for PASS variants, results may be unreliable")
-				cmd = "bcftools annotate --set-id '%CHROM\:%POS\:%REF\:%FIRST_ALT' " + vcf_file + " -Oz | bcftools view --include ID==@" + self.chrx_vars_fpath + " -Oz -o " + filtered_vcf_path
-				LOGGER.info(f"Command: {cmd}")
-				result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-				if result.returncode != 0:
-					LOGGER.info(f"Error annotating and filtering: {result.stderr}")
-			else:
-				LOGGER.debug("Annotating and filtering '{}' for chr X pruned PASS variants".format(vcf_file))
-# 				execute_bash_command(cmd=annotate_and_filter_pass_cmd)
-				cmd = "bcftools annotate --set-id '%CHROM\:%POS\:%REF\:%FIRST_ALT' " + vcf_file + " -Oz | bcftools view --include ID==@" + self.chrx_vars_fpath + " -Oz | bcftools view -i 'FILTER=\"PASS\"' -Oz -o " + filtered_vcf_path
-				LOGGER.info(f"Command: {cmd}")
-				result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-				if result.returncode != 0:
-					LOGGER.info(f"Error annotating and filtering: {result.stderr}")
+		# Annotate input VCF with chr coordinate IDs, filter for chr X pruned variants and, if annotated, for PASS variants:
+		if pass_vars == 0:
+			LOGGER.debug("Annotating and filtering '{}' for all pruned chr X variants".format(vcf_file))
+			LOGGER.info("WARNING: no FILTER information available, input data will not be filtered for PASS variants, results may be unreliable")
+			cmd = "bcftools annotate --set-id '%CHROM\:%POS\:%REF\:%FIRST_ALT' " + vcf_file + " -Oz | bcftools view --include ID==@" + self.chrx_vars_fpath + " -Oz -o " + filtered_vcf_path
+			LOGGER.info(cmd)
+			execute_bash_command(cmd)
+		else:
+			LOGGER.debug("Annotating and filtering '{}' for chr X pruned PASS variants".format(vcf_file))
+			cmd = "bcftools annotate --set-id '%CHROM\:%POS\:%REF\:%FIRST_ALT' " + vcf_file + " -Oz | bcftools view --include ID==@" + self.chrx_vars_fpath + " -Oz | bcftools view -i 'FILTER=\"PASS\"' -Oz -o " + filtered_vcf_path
+			LOGGER.info(cmd)
+			execute_bash_command(cmd)
 
 		# Return filtered VCF path:
 		return [filtered_vcf_path, filtered_vcf_name]
@@ -121,15 +106,10 @@ class VariantBasedInferredSexAnalysis:
 	def variant_check(self, filtered_vcf_path, filtered_vcf_name):
 		# Calculate number of variants remaining for PLINK check-sex/impute-sex after all filtering
 		cmd = "zgrep -v '^#\|CHROM' " + filtered_vcf_path + " | wc -l"
-		LOGGER.info(f"Command: {cmd}")
-		result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-		# Get the output
-		if result.returncode == 0:
-			filtered_vars = int(result.stdout.strip())
-			LOGGER.info(f"Checking final number of variants in {filtered_vcf_name}")
-			LOGGER.info(f"Number of variants: {filtered_vars}")
-		else:
-			LOGGER.info(f"Error: {result.stderr}")
+		cmd_result = execute_bash_command(cmd)
+		filtered_vars = int(cmd_result[1].strip())
+		LOGGER.info(f"Checking final number of variants in {filtered_vcf_name}")
+		LOGGER.info(f"Number of variants: {filtered_vars}")
 
 		return filtered_vars
 
@@ -141,19 +121,18 @@ class VariantBasedInferredSexAnalysis:
 		plink_dir = create_output_dir(path_elements=[self.output_dir, 'plink_check-sex'])
 
 		# Generate a text file to update the PLINK fam file with sex information:
-		sex_info_file_name = individual_id + '_sex_information.txt'
-		sex_info_path = os.path.join(plink_dir, sex_info_file_name)
-		sex_info_input = open(sex_info_path, 'w')
-		LOGGER.debug("Generating text file to update the PLINK input sex information: '{}'".format(sex_info_path))
-
-		for sample in self.executor["sample_ids"]:
-			# PLINK sex update file format: familyId individualId sex
-			sex_info_input.write(('\t'.join([sample,sample,str(self.executor['sex'])])) + '\n')
-			# Note, for the purpose of this function, individualId replaces familyId to prevent issues where an individual belongs to more than one family
-			LOGGER.info("Test file generated to update the PLINK fam file with sex information: '{}'".format(sex_info_path))
+		sex_file_name = individual_id + '_sex.txt'
+		sex_fpath = os.path.join(plink_dir, sex_file_name)
+		with open(sex_fpath, "w") as file:
+			LOGGER.debug("Generating text file to update the PLINK input sex information: '{}'".format(sex_fpath))
+			for sample_info in self.executor["samples_info"].values():
+				# PLINK sex update file format: familyId individualId sex
+				file.write(('\t'.join([sample_info.familyIds[0], sample_info.sampleId, str(sample_info.sex)])) + '\n')
+				# Note, for the purpose of this function, individualId replaces familyId to prevent issues where an individual belongs to more than one family
+				LOGGER.info("Test file generated to update the PLINK fam file with sex information: '{}'".format(sex_fpath))
 
 		# Return paths of text files generated:
-		return sex_info_path
+		return sex_fpath
 
 	def check_sex_plink(self, filtered_vcf_path, plink_path="plink1.9"):
 		method = "PLINK/check-sex"
@@ -162,69 +141,35 @@ class VariantBasedInferredSexAnalysis:
 
 		# Create a directory for PLINK if it does not already exist:
 		plink_dir = create_output_dir(path_elements=[self.output_dir, 'plink_check-sex'])
-		sex_info_path = self.generate_plink_fam_file_input()
+		sex_fpath = self.generate_plink_fam_file_input()
 
 		# Convert input to PLINK format:
 		plink_path = str(plink_path)
-		for sample_id in self.executor["sample_ids"]:
-			file_prefix = self.executor["id_"] + "_" + sample_id + "_plink_check-sex_results"
-			plink_output_prefix = os.path.join(plink_dir, file_prefix)
-			plink_convert_args = ["--vcf", str(filtered_vcf_path),
-									"--make-bed",
-									"--keep-allele-order",
-									"--update-sex", sex_info_path,
-									"--split-x", "hg38", "no-fail",
-								  	"--double-id",
-									"--allow-extra-chr",
-									"--out", plink_output_prefix]
-			cmd = [plink_path] + plink_convert_args
-			LOGGER.info(f"Generating PLINK check-sex input files")
-# 			plink_input_files = execute_bash_command(plink_convert_cmd)
-# 			LOGGER.info(f"Command: {' '.join(cmd)}")
-# 			result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-			[returncode, stdout, stderr] = execute_bash_command(cmd)
-# 			LOGGER.info(f"returncode = {returncode}")
-# 			LOGGER.info(f"stdout = {stdout}")
-# 			LOGGER.info(f"stderr = {stderr}")
-			# Get the output
-			if returncode == 0:
-				plink_files_generated = os.listdir(plink_dir)
-				LOGGER.info("Files available: '{}':\n{}".format(plink_dir, plink_files_generated))
+		individual_id = self.executor["id_"]
+		file_prefix = individual_id + "_plink_check-sex_results"
+		plink_output_prefix = os.path.join(plink_dir, file_prefix)
+		cmd = f"{plink_path} --vcf {str(filtered_vcf_path)} --make-bed --keep-allele-order --update-sex {sex_fpath} --split-x hg38 no-fail --double-id --allow-extra-chr --out {plink_output_prefix}"
+		LOGGER.info(f"Generating PLINK check-sex input files")
+		execute_bash_command(cmd)
+		plink_files_generated = os.listdir(plink_dir)
+		LOGGER.info("Files available: '{}':\n{}".format(plink_dir, plink_files_generated))
 
-				# Run PLINK check-sex analysis:
-				plink_checksex_args = ["--bfile", plink_output_prefix,
-										"--read-freq", str(self.chrx_var_frq_fpath),
-										"--check-sex",
-										"--allow-extra-chr",
-										"--out", plink_output_prefix]
-				cmd = [plink_path] + plink_checksex_args
-				LOGGER.debug("Performing PLINK check-sex")
-# 				plink_checksex = execute_bash_command(plink_checksex_cmd)
-# 				LOGGER.info(f"Command: {' '.join(cmd)}")
-# 				result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-				[returncode, stdout, stderr] = execute_bash_command(cmd)
-# 				LOGGER.info(f"returncode = {returncode}")
-# 				LOGGER.info(f"stdout = {stdout}")
-# 				LOGGER.info(f"stderr = {stderr}")
-				# Get the output
-				if returncode == 0:
-					checksex_files_generated = os.listdir(plink_dir)
-					LOGGER.info(f"Files available at '{plink_dir}': {checksex_files_generated}")
-				else:
-					LOGGER.error(f"Error {stderr} executing PLINK command: {cmd}")
-					raise Exception("PLINK error")
+		# Run PLINK check-sex analysis:
+		cmd = f"{plink_path} --bfile {plink_output_prefix} --read-freq {self.chrx_var_frq_fpath} --check-sex --allow-extra-chr --out {plink_output_prefix}"
+		LOGGER.debug("Performing PLINK check-sex")
+		execute_bash_command(cmd)
+		# Get the output
+		checksex_files_generated = os.listdir(plink_dir)
+		LOGGER.info(f"Files available at '{plink_dir}': {checksex_files_generated}")
 
-				sexcheck_path = plink_output_prefix + '.sexcheck'
-				if os.path.isfile(sexcheck_path) == False:
- 					LOGGER.error(f"File '{sexcheck_path}' does not exist")
-# 					LOGGER.error("File '{}' does not exist. Check:\nSTDOUT: '{}'\nSTDERR: '{}'".format(plink_checksex_path, plink_checksex[1], plink_checksex[2]))
-# 					raise Exception("File '{}' does not exist. Check:\nSTDOUT: '{}'\nSTDERR: '{}'".format(plink_checksex_path, plink_checksex[1], plink_checksex[2]))
-				else:
-					# Return method used and path to the .sexcheck output file generated by PLINK
-					return [method, sexcheck_path]
-			else:
-				LOGGER.error(f"Error {stderr} executing PLINK command: {cmd}")
-				raise Exception("PLINK error")
+		sexcheck_path = plink_output_prefix + '.sexcheck'
+		if os.path.isfile(sexcheck_path) == False:
+			msg = f"File '{sexcheck_path}' does not exist"
+			LOGGER.error(msg)
+			raise Exception(msg)
+		else:
+			# Return method used and path to the .sexcheck output file generated by PLINK
+			return [method, sexcheck_path]
 
 	def impute_sex_plink(self, filtered_vcf_path, plink_path="plink1.9"):
 		method = "PLINK/impute-sex"
@@ -236,50 +181,31 @@ class VariantBasedInferredSexAnalysis:
 
 		# Convert input to PLINK format:
 		plink_path = str(plink_path)
-		for sample_id in self.executor["sample_ids"]:
-			file_prefix = self.executor["id_"] + "_" + sample_id + "_plink_impute_sex_results"
-			plink_output_prefix = os.path.join(plink_dir, file_prefix)
-			plink_convert_args = ["--vcf", str(filtered_vcf_path),
-									"--make-bed",
-									"--keep-allele-order",
-									"--split-x", "hg38", "no-fail",
-									"--out", plink_output_prefix]
-			cmd = [plink_path] + plink_convert_args
-			LOGGER.debug("Generating PLINK impute-sex input files")
-			[returncode, stdout, stderr] = execute_bash_command(cmd)
-			if returncode == 0:
-				plink_files_generated = os.listdir(plink_dir)
-				LOGGER.info("Files available: '{}':\n{}".format(plink_dir, plink_files_generated))
+		individual_id = self.executor["id_"]
+		file_prefix = individual_id + "_plink_impute_sex_results"
+		plink_prefix = os.path.join(plink_dir, file_prefix)
+		cmd = f"{plink_path} --vcf {str(filtered_vcf_path)} --make-bed --keep-allele-order --split-x hg38 --double-id --allow-extra-chr --out {plink_prefix}"
+		LOGGER.debug("Generating PLINK impute-sex input files")
+		execute_bash_command(cmd)
+		plink_files_generated = os.listdir(plink_dir)
+		LOGGER.info("Files available: '{}':\n{}".format(plink_dir, plink_files_generated))
 
-				# Run PLINK impute-sex analysis:
-				plink_imputesex_args = ["--bfile", plink_output_prefix,
-										"--read-freq", str(self.chrx_var_frq_fpath),
-										"--impute-sex",
-										"--make-bed",
-										"--out", plink_output_prefix]
-				cmd = [plink_path] + plink_imputesex_args
-				LOGGER.debug("Performing PLINK impute-sex")
-				# plink_imputesex = execute_bash_command(plink_imputesex_cmd)
-				[returncode, stdout, stderr] = execute_bash_command(cmd)
-				# Get the output
-				if returncode == 0:
-					checksex_files_generated = os.listdir(plink_dir)
-					LOGGER.info(f"Files available at '{plink_dir}': {checksex_files_generated}")
-				else:
-					LOGGER.error(f"Error {stderr} executing PLINK command: {cmd}")
-					raise Exception("PLINK error")
+		# Run PLINK impute-sex analysis:
+		cmd = f"{plink_path} --bfile {plink_prefix} --read-freq {str(self.chrx_var_frq_fpath)} --impute-sex --make-bed --out {plink_prefix}"
+		LOGGER.debug("Performing PLINK impute-sex")
+		execute_bash_command(cmd)
+		# Get the output
+		checksex_files_generated = os.listdir(plink_dir)
+		LOGGER.info(f"Files available at '{plink_dir}': {checksex_files_generated}")
 
-				sexcheck_path = plink_output_prefix + '.sexcheck'
-				if os.path.isfile(sexcheck_path) == False:
-					LOGGER.error(f"File '{sexcheck_path}' does not exist")
-				# 					LOGGER.error("File '{}' does not exist. Check:\nSTDOUT: '{}'\nSTDERR: '{}'".format(plink_checksex_path, plink_checksex[1], plink_checksex[2]))
-				# 					raise Exception("File '{}' does not exist. Check:\nSTDOUT: '{}'\nSTDERR: '{}'".format(plink_checksex_path, plink_checksex[1], plink_checksex[2]))
-				else:
-					# Return method used and path to the .sexcheck output file generated by PLINK
-					return [method, sexcheck_path]
-			else:
-				LOGGER.error(f"Error {stderr} executing PLINK command: {cmd}")
-				raise Exception("PLINK error")
+		sexcheck_path = plink_prefix + '.sexcheck'
+		if os.path.isfile(sexcheck_path) == False:
+			msg = f"File '{sexcheck_path}' does not exist"
+			LOGGER.error(msg)
+			raise Exception(msg)
+		else:
+			# Return method used and path to the .sexcheck output file generated by PLINK
+			return [method, sexcheck_path]
 
 	# Plot the inferred sex
 	def plot_inferred_sex(self, title, sexcheck_fpath, ref_values_fpath, image_fpath):
@@ -319,11 +245,11 @@ class VariantBasedInferredSexAnalysis:
 			else:
 				LOGGER.info("Warning: Poor quality data, there are only '{}' good quality chromosome X LD pruned variants after filtering, results will be unreliable".format(filtered_vars))
 
-			method = None
-			sexcheck_path = None
 			if filtered_vars > 0:
+				sex = get_sex_from_individual_id(self.executor["id_"], self.executor["samples_info"])
+				sample_id = get_sample_id_from_individual_id(self.executor["id_"], self.executor["samples_info"])
 				# Run inferred sex analysis:
-				if self.executor["sex"] == 0:
+				if sex == 0:
 					LOGGER.info("Running PLINK impute-sex")
 					[method, sexcheck_fpath] = self.impute_sex_plink(filtered_vcf_path)
 				else:
@@ -332,7 +258,7 @@ class VariantBasedInferredSexAnalysis:
 
 				if os.path.isfile(sexcheck_fpath):
 					self.inferred_sex.method = method
-					self.inferred_sex.sampleId = self.executor["sample_id"]
+					self.inferred_sex.sampleId = sample_id
 					self.inferred_sex.software = Software(name="PLINK",version="1.9")
 					# self.inferred_sex.inferredKaryotypicSex =
 

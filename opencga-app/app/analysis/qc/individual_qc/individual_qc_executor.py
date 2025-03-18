@@ -2,7 +2,9 @@
 import os
 import logging
 import json
+import sys
 
+from utils import *
 import individual_qc
 import common
 
@@ -35,6 +37,72 @@ class IndividualQCExecutor:
 		self.config_json = json.load(config_fhand)
 		config_fhand.close()
 
+	def is_individual_sample(self, individual, sample_id):
+		if individual.get("samples"):
+			for sample in individual.get("samples"):
+				if sample["id"] == sample_id:
+					return True
+		return False
+
+	def get_samples_info_from_individual(self, individual):
+		samples_info = {}
+
+		if individual.get("samples"):
+			for sample in individual.get("samples"):
+				sample_id = sample["id"]
+				if  sample_id in self.sample_ids:
+					info = SampleInfo(sampleId=sample_id,
+										fatherSampleId="0",
+										motherSampleId="0",
+									  	individualId=individual.get("id"),
+									  	familyIds=individual["familyIds"],
+										sex=get_individual_sex(individual),
+										phenotype=get_individual_phenotype(individual))
+
+					samples_info[sample_id] = info
+
+		return samples_info
+
+	def get_sample_id_by_individual_id(self, samples_info, individual_id):
+		for sample_id, sample_info in samples_info.items():
+			if sample_info.individualId == individual_id:
+				return sample_id
+		return None
+
+	def get_samples_info(self, individual):
+		samples_info = {}
+
+		# Get sample info from the parents and child
+		samples_info.update(self.get_samples_info_from_individual(individual))
+		father_id = None
+		if individual["father"] and individual["father"]["id"]:
+			father_id = individual["father"]["id"]
+			samples_info.update(self.get_samples_info_from_individual(individual["father"]))
+		mother_id = None
+		if individual["mother"] and individual["mother"]["id"]:
+			mother_id = individual["mother"]["id"]
+			samples_info.update(self.get_samples_info_from_individual(individual["mother"]))
+
+		# Set parents info
+		if father_id != None and mother_id != None:
+			father_sample_id = self.get_sample_id_by_individual_id(samples_info, father_id)
+			mother_sample_id = self.get_sample_id_by_individual_id(samples_info, mother_id)
+			if father_sample_id != None and mother_sample_id != None:
+				for sample_info in samples_info.values():
+					if sample_info.individualId == individual["id"]:
+						sample_info.fatherSampleId = father_sample_id
+						sample_info.motherSampleId = mother_sample_id
+
+		# Extract familyIds lists as sets, and find the intersection
+		family_sets = [set(value.familyIds) for value in samples_info.values()]
+		common_family_ids = list(set.intersection(*family_sets))
+		if len(common_family_ids) == 0:
+			raise Exception("Family ID is missing or does not match between samples")
+		for sample_info in samples_info.values():
+			sample_info.familyIds = [common_family_ids[0]]
+
+		return samples_info
+
 	def run(self):
 		# Checking data
 		# self.checking_data()  # TODO check input data (config parameters)
@@ -45,35 +113,8 @@ class IndividualQCExecutor:
 		info_json = json.load(info_fhand)
 		info_fhand.close()
 
-		# Get sample ID
-		sample_id = None
-		if info_json.get("samples") and "id" in info_json["samples"][0]:
-			sample_id = info_json["samples"][0]["id"]
-			if not sample_id in self.sample_ids:
-				sample_id = None
-		LOGGER.info(f"Got sample ID '{sample_id}' for individual ID '{self.id_}'")
-
-		# Get father and mother IDs
-		father_id = None
-		if info_json.get("father") and "id" in info_json["father"]:
-			father_id = info_json["father"]["id"]
-			if not father_id in self.sample_ids:
-				father_id = None
-		mother_id = None
-		if info_json.get("mother") and "id" in info_json["mother"]:
-			mother_id = info_json["mother"]["id"]
-			if not mother_id in self.sample_ids:
-				mother_id = None
-		LOGGER.info(f"Got father ID '{father_id}' and mother ID '{mother_id}' for individual ID '{self.id_}'")
-
-		# Get sex
-		sex = 0
-		if info_json.get("sex") and "id" in info_json["sex"]:
-			if info_json["sex"]["id"] == "MALE":
-				sex = 1
-			elif info_json["sex"]["id"] == "FEMALE":
-				sex = 2
-		LOGGER.info(f"Got sex '{sex}' for individual ID '{self.id_}'")
+		samples_info = self.get_samples_info(info_json)
+		LOGGER.info(f"samples_info = {samples_info}")
 
 		# Running individual QC steps
 		# Get individual QC executor information
@@ -84,11 +125,12 @@ class IndividualQCExecutor:
 			"config": self.config,
 			"resource_dir": self.resource_dir,
 			"output_parent_dir": self.output_parent_dir,
-			"sample_ids": self.sample_ids,
-			"sample_id": sample_id,
-			"sex": sex,
-			"father_id": father_id,
-			"mother_id": mother_id,
+			"samples_info": samples_info,
+			# "samples_ids": self.sample_ids,
+			# "sample_id": sample_id,
+			# "sex": sex,
+			# "father_id": father_id,
+			# "mother_id": mother_id,
 			"id_": self.id_
 		}
 
@@ -116,7 +158,7 @@ class IndividualQCExecutor:
 
 		relatedness_analysis = common.RelatednessAnalysis(executor_info)
 		mendelian_errors_analysis = individual_qc.MendelianErrorsAnalysis(executor_info)
-		if sample_id != None and father_id != None and mother_id != None:
+		if contains_trio(samples_info):
 			# Run relatedness analysis if parents are provided
 			relatedness_analysis.run()
 			qc.relatedness.append(relatedness_analysis.relatedness)
