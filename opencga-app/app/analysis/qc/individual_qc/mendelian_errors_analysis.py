@@ -124,12 +124,12 @@ class MendelianErrorsAnalysis:
         plink_path="plink1.9"
         vcf_file = self.executor["vcf_file"]
         family_id = get_family_id(self.executor["samples_info"])
+        individual_id = self.executor["id_"]
 
         # Create a directory for PLINK if it does not already exist:
         plink_dir = create_output_dir(path_elements=[self.output_dir, 'plink_mendelian_errors'])
 
         # Prepare PLINK files
-        individual_id = self.executor["id_"]
         file_prefix =  individual_id + "_plink_mendel_results"
         plink_prefix = os.path.join(plink_dir, file_prefix)
 
@@ -153,14 +153,14 @@ class MendelianErrorsAnalysis:
         LOGGER.info(f"Files available at '{plink_dir}': {files_generated}")
 
         # Parse mendel output
-        mendel_fpath = plink_prefix + '.mendel'
-        if os.path.isfile(mendel_fpath) == False:
-            msg = f"File '{mendel_fpath}' does not exist"
+        plink_mendel_fpath = plink_prefix + '.mendel'
+        if os.path.isfile(plink_mendel_fpath) == False:
+            msg = f"File '{plink_mendel_fpath}' does not exist"
             LOGGER.error(msg)
             raise Exception(msg)
-        else:
-            # Parse PLINK mendel file
-            self.parse_mendel_output(mendel_fpath)
+
+        # Parse PLINK mendel file
+        self.parse_mendel_output(plink_mendel_fpath)
 
     def run(self):
         """

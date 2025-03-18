@@ -15,6 +15,7 @@ INFERRED_SEX_CHR_X_FRQ_FILE = "inferred_sex_variants_filtered_annotated_chrX.frq
 INFERRED_SEX_CHR_X_PRUNE_IN_FILE = "inferred_sex_variants_filtered_annotated_chrX.prune.in"
 INFERRED_SEX_REFERENCE_VALUES_FILE = "inferred_sex_reference_values.txt"
 RELATEDNESS_THRESHOLDS_FILE = "relatedness_thresholds.tsv"
+RELATEDNESS_PRUNE_IN_FILE = "relatedness.prune.in"
 RELATEDNESS_PRUNE_IN_FREQS_FILE = "relatedness_prune_in_freqs.txt"
 RELATEDNESS_PRUNE_OUT_MARKERS_FILE = "relatedness_prune_out_markers.txt"
 
@@ -24,6 +25,7 @@ class SampleInfo(BaseModel):
     motherSampleId: str
     individualId: str
     familyIds: List[str] = Field(default_factory=list)
+    roles: Dict[str, str] = Field(default_factory=dict)
     sex: int
     phenotype: int
 

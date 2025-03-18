@@ -56,6 +56,7 @@ class IndividualQCExecutor:
 										motherSampleId="0",
 									  	individualId=individual.get("id"),
 									  	familyIds=individual["familyIds"],
+									  	roles={},
 										sex=get_individual_sex(individual),
 										phenotype=get_individual_phenotype(individual))
 
@@ -90,8 +91,21 @@ class IndividualQCExecutor:
 			if father_sample_id != None and mother_sample_id != None:
 				for sample_info in samples_info.values():
 					if sample_info.individualId == individual["id"]:
+						if sample_info.sex == 2:
+							role = "DAUGHTER"
+						else:
+							role = "SON"
+						# Father and child
 						sample_info.fatherSampleId = father_sample_id
+						samples_info[father_sample_id].roles[sample_info.sampleId] = role
+						samples_info[sample_info.sampleId].roles[father_sample_id] = "FATHER"
+						# Mother and child
 						sample_info.motherSampleId = mother_sample_id
+						samples_info[mother_sample_id].roles[sample_info.sampleId] = role
+						samples_info[sample_info.sampleId].roles[mother_sample_id] = "MOTHER"
+				# Father and mother
+				samples_info[father_sample_id].roles[mother_sample_id] = "SPOUSE"
+				samples_info[mother_sample_id].roles[father_sample_id] = "SPOUSE"
 
 		# Extract familyIds lists as sets, and find the intersection
 		family_sets = [set(value.familyIds) for value in samples_info.values()]
@@ -126,11 +140,6 @@ class IndividualQCExecutor:
 			"resource_dir": self.resource_dir,
 			"output_parent_dir": self.output_parent_dir,
 			"samples_info": samples_info,
-			# "samples_ids": self.sample_ids,
-			# "sample_id": sample_id,
-			# "sex": sex,
-			# "father_id": father_id,
-			# "mother_id": mother_id,
 			"id_": self.id_
 		}
 
