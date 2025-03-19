@@ -664,9 +664,16 @@ public class MigrationManager {
         }
         migrationTool.setup(configuration, catalogManager, dbAdaptorFactory, migrationRun, organizationId, appHome, params, token);
 
+        String userId;
+        try {
+            userId = catalogManager.getUserManager().validateToken(token).getUserId();
+        } catch (CatalogException e) {
+            throw new MigrationException(e);
+        }
         StopWatch stopWatch = StopWatch.createStarted();
         String path = Paths.get("JOBS")
-                .resolve("opencga")
+                .resolve(organizationId)
+                .resolve(userId)
                 .resolve(TimeUtils.getDay())
                 .resolve(annotation.id()).toString();
         String jobId = "migration"
