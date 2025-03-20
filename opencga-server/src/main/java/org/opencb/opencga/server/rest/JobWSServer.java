@@ -21,6 +21,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.customTool.CustomToolBuilder;
+import org.opencb.opencga.analysis.customTool.CustomToolExecutor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.managers.JobManager;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -30,6 +32,7 @@ import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.file.FileContent;
 import org.opencb.opencga.core.models.job.*;
+import org.opencb.opencga.core.models.workflow.NextFlowRunParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.*;
 
@@ -117,6 +120,43 @@ public class JobWSServer extends OpenCGAWSServer {
         return run(() -> catalogManager.getJobManager().kill(study, jobId, token));
     }
 
+    @POST
+    @Path("/tool/run")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = CustomToolExecutor.DESCRIPTION, response = Job.class)
+    public Response runByPost(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
+            @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
+            @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
+            @ApiParam(value = NextFlowRunParams.DESCRIPTION, required = true) JobRunParams params) {
+        ToolInfo toolInfo = new ToolInfo()
+                .setId(params.getDocker().getId());
+        return submitJob(study, JobType.CUSTOM, toolInfo, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime,
+                jobPriority, dryRun);
+    }
+
+    @POST
+    @Path("/tool/build")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = CustomToolExecutor.DESCRIPTION, response = Job.class)
+    public Response dockerBuildByPost(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
+            @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
+            @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
+            @ApiParam(value = "body", required = true) JobToolBuildParams params) {
+        return submitJob(study, JobType.NATIVE, CustomToolBuilder.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+    }
+
     @GET
     @Path("/{jobs}/info")
     @ApiOperation(value = "Get job information", response = Job.class)
@@ -193,8 +233,13 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.OTHER_STUDIES_FLAG_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.OTHER_STUDIES_FLAG) boolean others,
             @ApiParam(value = ParamConstants.JOB_IDS_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID_PARAM) String id,
             @ApiParam(value = ParamConstants.JOB_UUIDS_DESCRIPTION) @QueryParam(ParamConstants.JOB_UUID_PARAM) String uuid,
+            @ApiParam(value = ParamConstants.JOB_TYPE_DESCRIPTION) @QueryParam(ParamConstants.JOB_TYPE_PARAM) String type,
             @ApiParam(value = ParamConstants.JOB_TOOL_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_TOOL_ID_PARAM) String toolId,
             @ApiParam(value = ParamConstants.JOB_TOOL_TYPE_DESCRIPTION) @QueryParam(ParamConstants.JOB_TOOL_TYPE_PARAM) String toolType,
+            @ApiParam(value = ParamConstants.JOB_TOOL_EXTERNAL_EXECUTOR_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_TOOL_EXTERNAL_EXECUTOR_ID_PARAM) String externalExecutorId,
+            @ApiParam(value = ParamConstants.JOB_PARENT_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_PARENT_ID_PARAM) String parentId,
+            @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN_PARAM) Boolean dryRun,
+            @ApiParam(value = ParamConstants.JOB_INTERNAL_KILL_JOB_REQUESTED_DESCRIPTION) @QueryParam(ParamConstants.JOB_INTERNAL_KILL_JOB_REQUESTED_PARAM) Boolean killRequested,
             @ApiParam(value = ParamConstants.JOB_USER_DESCRIPTION) @QueryParam(ParamConstants.JOB_USER_PARAM) String user,
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.JOB_PRIORITY_PARAM) String priority,
             @ApiParam(value = ParamConstants.JOB_STATUS_DESCRIPTION) @QueryParam(ParamConstants.JOB_STATUS_PARAM) String status,
@@ -224,8 +269,13 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.OTHER_STUDIES_FLAG_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.OTHER_STUDIES_FLAG) boolean others,
             @ApiParam(value = ParamConstants.JOB_IDS_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID_PARAM) String id,
             @ApiParam(value = ParamConstants.JOB_UUIDS_DESCRIPTION) @QueryParam(ParamConstants.JOB_UUID_PARAM) String uuid,
+            @ApiParam(value = ParamConstants.JOB_TYPE_DESCRIPTION) @QueryParam(ParamConstants.JOB_TYPE_PARAM) String type,
             @ApiParam(value = ParamConstants.JOB_TOOL_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_TOOL_ID_PARAM) String toolId,
             @ApiParam(value = ParamConstants.JOB_TOOL_TYPE_DESCRIPTION) @QueryParam(ParamConstants.JOB_TOOL_TYPE_PARAM) String toolType,
+            @ApiParam(value = ParamConstants.JOB_TOOL_EXTERNAL_EXECUTOR_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_TOOL_EXTERNAL_EXECUTOR_ID_PARAM) String externalExecutorId,
+            @ApiParam(value = ParamConstants.JOB_PARENT_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_PARENT_ID_PARAM) String parentId,
+            @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN_PARAM) Boolean dryRun,
+            @ApiParam(value = ParamConstants.JOB_INTERNAL_KILL_JOB_REQUESTED_DESCRIPTION) @QueryParam(ParamConstants.JOB_INTERNAL_KILL_JOB_REQUESTED_PARAM) Boolean killRequested,
             @ApiParam(value = ParamConstants.JOB_USER_DESCRIPTION) @QueryParam(ParamConstants.JOB_USER_PARAM) String user,
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.JOB_PRIORITY_PARAM) String priority,
             @ApiParam(value = ParamConstants.JOB_STATUS_DESCRIPTION) @QueryParam(ParamConstants.JOB_STATUS_PARAM) String status,
@@ -288,7 +338,7 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
                     dataType = "string", paramType = "query")
     })
-    public Response updateByPost(
+    public Response runByPost(
             @ApiParam(value = ParamConstants.JOBS_DESCRIPTION, required = true) @PathParam("jobs") String jobStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,

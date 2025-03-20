@@ -53,7 +53,6 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.FamilyPermissions;
 import org.opencb.opencga.core.models.federation.FederationClientParamsRef;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileInternal;
 import org.opencb.opencga.core.models.file.FilePermissions;
 import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.individual.IndividualPermissions;
@@ -328,6 +327,9 @@ public class StudyManager extends AbstractManager {
         if (!organizationId.equals(organizationFqn) && !ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)) {
             // User may be trying to fetch a federated study
             organizationFqn = organizationId;
+        } else if (ParamConstants.ADMIN_ORGANIZATION.equals(organizationId) && organizationFqn == null) {
+            // If the user is an admin and the study is not provided, set the organizationFqn to ADMIN_ORGANIZATION
+            organizationFqn = ParamConstants.ADMIN_ORGANIZATION;
         }
 
         query.putIfNotEmpty(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), project);
@@ -458,15 +460,9 @@ public class StudyManager extends AbstractManager {
             study.setAdditionalInfo(ParamUtils.defaultObject(study.getAdditionalInfo(), Collections::emptyList));
             study.setAttributes(ParamUtils.defaultObject(study.getAttributes(), HashMap::new));
 
-            study.setVariableSets(ParamUtils.defaultObject(study.getVariableSets(), ArrayList::new));
-
-            LinkedList<File> files = new LinkedList<>();
-            File rootFile = new File(".", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.UNKNOWN, "", null, "study root folder",
-                    FileInternal.init(), 0, project.getCurrentRelease());
-            File jobsFile = new File("JOBS", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.UNKNOWN, "JOBS/",
-                    catalogIOManager.getJobsUri(), "Default jobs folder", FileInternal.init(), 0, project.getCurrentRelease());
-            files.add(rootFile);
-            files.add(jobsFile);
+            // Scan and add default VariableSets
+            List<VariableSet> variableSetList = scanDefaultVariableSets(study.getRelease());
+            study.setVariableSets(variableSetList);
 
             // Get organization owner and admins
             Organization organization = catalogManager.getOrganizationManager().get(organizationId,
@@ -482,37 +478,14 @@ public class StudyManager extends AbstractManager {
             study.setGroups(groups);
 
             /* CreateStudy */
-            getStudyDBAdaptor(organizationId).insert(project, study, files, options);
-            OpenCGAResult<Study> result = getStudy(organizationId, projectUid, study.getUuid(), options);
-            study = result.getResults().get(0);
-
-            URI uri;
-            try {
-                uri = catalogIOManager.createStudy(organizationId, Long.toString(project.getUid()), Long.toString(study.getUid()));
-            } catch (CatalogIOException e) {
-                try {
-                    getStudyDBAdaptor(organizationId).delete(study);
-                } catch (Exception e1) {
-                    logger.error("Can't delete study after failure creating study", e1);
-                }
-                throw e;
-            }
-
-            // Update uri of study
-            getStudyDBAdaptor(organizationId).update(study.getUid(), new ObjectMap("uri", uri), QueryOptions.empty());
-            study.setUri(uri);
-
-            long rootFileId = getFileDBAdaptor(organizationId).getId(study.getUid(), "");    //Set studyUri to the root folder too
-            getFileDBAdaptor(organizationId).update(rootFileId, new ObjectMap("uri", uri), QueryOptions.empty());
-
-            // Read and process installation variable sets
-            createDefaultVariableSets(organizationId, study, token);
+            OpenCGAResult<Study> result = getStudyDBAdaptor(organizationId).insert(project, study, options);
 
             auditManager.auditCreate(organizationId, userId, Enums.Resource.STUDY, study.getId(), study.getUuid(), study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
-                result.setResults(Arrays.asList(study));
+                OpenCGAResult<Study> tmpResult = getStudy(organizationId, projectUid, study.getUuid(), options);
+                result.setResults(tmpResult.getResults());
             }
             return result;
         } catch (Exception e) {
@@ -526,6 +499,31 @@ public class StudyManager extends AbstractManager {
         }
     }
 
+    public List<VariableSet> scanDefaultVariableSets(int release) throws CatalogException {
+        Set<String> variablesets = new Reflections(new ResourcesScanner(), "variablesets/").getResources(Pattern.compile(".*\\.json"));
+        List<VariableSet> variableSetList = new ArrayList<>(variablesets.size());
+        for (String variableSetFile : variablesets) {
+            VariableSet vs;
+            try {
+                vs = JacksonUtils.getDefaultNonNullObjectMapper().readValue(
+                        getClass().getClassLoader().getResourceAsStream(variableSetFile), VariableSet.class);
+            } catch (IOException e) {
+                throw new CatalogException("Could not parse default variable set '" + variableSetFile + "'.", e);
+            }
+            if (vs != null) {
+                if (vs.getAttributes() == null) {
+                    vs.setAttributes(new HashMap<>());
+                }
+                vs.getAttributes().put("resource", variableSetFile);
+                validateNewVariableSet(vs, release);
+                variableSetList.add(vs);
+            } else {
+                throw new CatalogException("Default VariableSet object is null after parsing file '" + variableSetFile + "'");
+            }
+        }
+        return variableSetList;
+    }
+
     public void createDefaultVariableSets(String studyStr, String token) throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         CatalogFqn catalogFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
@@ -535,27 +533,13 @@ public class StudyManager extends AbstractManager {
     }
 
     private void createDefaultVariableSets(String organizationId, Study study, String token) throws CatalogException {
-        Set<String> variablesets = new Reflections(new ResourcesScanner(), "variablesets/").getResources(Pattern.compile(".*\\.json"));
-        for (String variableSetFile : variablesets) {
-            VariableSet vs;
-            try {
-                vs = JacksonUtils.getDefaultNonNullObjectMapper().readValue(
-                        getClass().getClassLoader().getResourceAsStream(variableSetFile), VariableSet.class);
-            } catch (IOException e) {
-                logger.error("Could not parse variable set '{}'", variableSetFile, e);
-                continue;
-            }
-            if (vs != null) {
-                if (vs.getAttributes() == null) {
-                    vs.setAttributes(new HashMap<>());
-                }
-                vs.getAttributes().put("resource", variableSetFile);
+        List<VariableSet> variableSetList = scanDefaultVariableSets(study.getRelease());
 
-                if (study.getVariableSets().stream().anyMatch(tvs -> tvs.getId().equals(vs.getId()))) {
-                    logger.debug("Skip already existing variable set " + vs.getId());
-                } else {
-                    createVariableSet(organizationId, study, vs, token);
-                }
+        for (VariableSet vs : variableSetList) {
+            if (study.getVariableSets().stream().anyMatch(tvs -> tvs.getId().equals(vs.getId()))) {
+                logger.debug("Skip already existing variable set " + vs.getId());
+            } else {
+                createVariableSet(organizationId, study, vs, token);
             }
         }
     }
@@ -1452,6 +1436,28 @@ public class StudyManager extends AbstractManager {
         return new OpenCGAResult<>(dbTime, Collections.emptyList(), 1, Collections.singletonList(variableSetSummary), 1);
     }
 
+    private void validateNewVariableSet(VariableSet variableSet, int release) throws CatalogException {
+        ParamUtils.checkParameter(variableSet.getId(), "id");
+        ParamUtils.checkObj(variableSet.getVariables(), "Variables from VariableSet");
+
+        variableSet.setDescription(ParamUtils.defaultString(variableSet.getDescription(), ""));
+        variableSet.setAttributes(ParamUtils.defaultObject(variableSet.getAttributes(), new HashMap<>()));
+        variableSet.setEntities(ParamUtils.defaultObject(variableSet.getEntities(), Collections.emptyList()));
+        variableSet.setName(ParamUtils.defaultString(variableSet.getName(), variableSet.getId()));
+        variableSet.setRelease(release);
+
+        for (Variable variable : variableSet.getVariables()) {
+            ParamUtils.checkParameter(variable.getId(), "variable ID");
+            ParamUtils.checkObj(variable.getType(), "variable Type");
+            variable.setAllowedValues(ParamUtils.defaultObject(variable.getAllowedValues(), Collections.emptyList()));
+            variable.setAttributes(ParamUtils.defaultObject(variable.getAttributes(), Collections.emptyMap()));
+            variable.setCategory(ParamUtils.defaultString(variable.getCategory(), ""));
+            variable.setDependsOn(ParamUtils.defaultString(variable.getDependsOn(), ""));
+            variable.setDescription(ParamUtils.defaultString(variable.getDescription(), ""));
+            variable.setName(ParamUtils.defaultString(variable.getName(), variable.getId()));
+//            variable.setRank(defaultString(variable.getDescription(), ""));
+        }
+    }
 
     /*
      * Variables Methods

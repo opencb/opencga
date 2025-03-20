@@ -29,17 +29,14 @@ import java.util.List;
 
 public class JobInternal extends Internal implements Cloneable {
 
-    @DataField(id = "status", indexed = true,
-            description = FieldConstants.JOB_INTERNAL_STATUS_DESCRIPTION)
+    @DataField(id = "status", indexed = true, description = FieldConstants.JOB_INTERNAL_STATUS_DESCRIPTION)
     private Enums.ExecutionStatus status;
 
-    @DataField(id = "webhook", indexed = true,
-            description = FieldConstants.JOB_INTERNAL_WEBHOOK_DESCRIPTION)
+    @DataField(id = "webhook", indexed = true, description = FieldConstants.JOB_INTERNAL_WEBHOOK_DESCRIPTION)
     private JobInternalWebhook webhook;
 
     //TODO add tags to commons-datastore-core
-    @DataField(id = "events", indexed = true, uncommentedClasses = {"Event"},
-            description = FieldConstants.JOB_INTERNAL_EVENTS_DESCRIPTION)
+    @DataField(id = "events", indexed = true, uncommentedClasses = {"Event"}, description = FieldConstants.JOB_INTERNAL_EVENTS_DESCRIPTION)
     private List<Event> events;
 
     @DataField(id = "killJobRequested", indexed = false, since = "3.2.0",

@@ -113,7 +113,7 @@ public class ProjectManagerTest extends AbstractManagerTest {
         catalogManager.getUserManager().create(new User().setId("userFromOrg2").setName("name").setOrganization(org2),
                 TestParamConstants.PASSWORD, opencgaToken);
         catalogManager.getOrganizationManager().update(org2, new OrganizationUpdateParams().setOwner("userFromOrg2"), null, opencgaToken);
-        String owner2Token = catalogManager.getUserManager().login(org2, "userFromOrg2", TestParamConstants.PASSWORD).getToken();
+        String owner2Token = catalogManager.getUserManager().login(org2, "userFromOrg2", TestParamConstants.PASSWORD).first().getToken();
         Project p = catalogManager.getProjectManager().create(new ProjectCreateParams()
                         .setId("project")
                         .setOrganism(new ProjectOrganism("Homo sapiens", "GRCh38")),
@@ -121,14 +121,14 @@ public class ProjectManagerTest extends AbstractManagerTest {
         Study study = catalogManager.getStudyManager().create(p.getFqn(), new Study().setId("study"), INCLUDE_RESULT, owner2Token).first();
 
         catalogManager.getUserManager().create("userid", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, org2, null, owner2Token);
-        String token = catalogManager.getUserManager().login(org2, "userid", TestParamConstants.PASSWORD).getToken();
+        String token = catalogManager.getUserManager().login(org2, "userid", TestParamConstants.PASSWORD).first().getToken();
         OpenCGAResult<Project> projectOpenCGAResult = catalogManager.getProjectManager().search(org2, new Query(), QueryOptions.empty(), token);
         assertTrue(projectOpenCGAResult.getResults().isEmpty());
         assertEquals(0, projectOpenCGAResult.getEvents().size());
 
         String otherUser = "user_tmp";
         catalogManager.getUserManager().create(otherUser, "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, org2, null, owner2Token);
-        String otherUsertoken = catalogManager.getUserManager().login(org2, otherUser, TestParamConstants.PASSWORD).getToken();
+        String otherUsertoken = catalogManager.getUserManager().login(org2, otherUser, TestParamConstants.PASSWORD).first().getToken();
         OpenCGAResult<Project> result = catalogManager.getProjectManager()
                 .search(org2, new Query(), QueryOptions.empty(), otherUsertoken);
         assertTrue(result.getResults().isEmpty());

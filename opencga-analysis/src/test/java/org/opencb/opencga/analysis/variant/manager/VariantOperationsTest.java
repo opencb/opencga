@@ -154,7 +154,7 @@ public class VariantOperationsTest {
 //        catalogManager = opencga.getCatalogManager();
 //        variantStorageManager = new VariantStorageManager(catalogManager, opencga.getStorageEngineFactory());
 //        toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantStorageManager.getStorageConfiguration()));
-        token = catalogManager.getUserManager().login(ORGANIZATION, "user", PASSWORD).getToken();
+        token = catalogManager.getUserManager().login(ORGANIZATION, "user", PASSWORD).first().getToken();
     }
 
     @After
@@ -328,7 +328,7 @@ public class VariantOperationsTest {
         catalogManager.getOrganizationManager().update(ORGANIZATION, new OrganizationUpdateParams().setAdmins(Collections.singletonList("user")),
                 null,
                 opencga.getAdminToken());
-        token = catalogManager.getUserManager().login(ORGANIZATION, "user", PASSWORD).getToken();
+        token = catalogManager.getUserManager().login(ORGANIZATION, "user", PASSWORD).first().getToken();
 
         String projectId = catalogManager.getProjectManager().create(PROJECT, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first().getId();
@@ -531,7 +531,7 @@ public class VariantOperationsTest {
         // Initially nothing should change, even after running a manual synchronization
         toolRunner.execute(VariantStorageMetadataSynchronizeOperationTool.class,
                 new VariantStorageMetadataSynchronizeParams().setStudy(STUDY_FQN),
-                Paths.get(opencga.createTmpOutdir()), "", false, catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken());
+                Paths.get(opencga.createTmpOutdir()), "", false, catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).first().getToken());
 
         study = catalogManager.getStudyManager().get(STUDY, new QueryOptions(), token).first();
         assertEquals(OperationIndexStatus.PENDING, study.getInternal().getVariant().getSecondarySampleIndex().getStatus().getId());

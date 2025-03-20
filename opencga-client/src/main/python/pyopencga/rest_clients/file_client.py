@@ -184,6 +184,8 @@ class File(_ParentRestClient):
             see files/formats.
         :param bool external: Boolean field indicating whether to filter by
             external or non external files.
+        :param bool resource: Boolean field indicating whether the file is a
+            resource or not.
         :param str status: Filter by status.
         :param str internal_status: Filter by internal status.
         :param str internal_variant_index_status: Filter by internal variant
@@ -358,6 +360,8 @@ class File(_ParentRestClient):
             see files/formats.
         :param bool external: Boolean field indicating whether to filter by
             external or non external files.
+        :param bool resource: Boolean field indicating whether the file is a
+            resource or not.
         :param str status: Filter by status.
         :param str internal_status: Filter by internal status.
         :param str internal_variant_index_status: Filter by internal variant
@@ -397,9 +401,15 @@ class File(_ParentRestClient):
         PATH: /{apiVersion}/files/upload
 
         :param inputstream file: File to upload.
-        :param str file_name: File name to overwrite the input fileName.
-        :param str file_format: File format. Allowed values: ['VCF BCF GVCF
-            TBI BIGWIG SAM BAM BAI CRAM CRAI FASTQ FASTA PED
+        :param str name: File name to overwrite the input fileName.
+        :param str file_name: [DEPRECATED] File name to overwrite the input
+            fileName.
+        :param str format: File format. Allowed values: ['VCF BCF GVCF TBI
+            BIGWIG SAM BAM BAI CRAM CRAI FASTQ FASTA PED TAB_SEPARATED_VALUES
+            COMMA_SEPARATED_VALUES XML PROTOCOL_BUFFER JSON AVRO PARQUET PDF
+            IMAGE PLAIN BINARY NONE UNKNOWN']
+        :param str file_format: [DEPRECATED] File format. Allowed values:
+            ['VCF BCF GVCF TBI BIGWIG SAM BAM BAI CRAM CRAI FASTQ FASTA PED
             TAB_SEPARATED_VALUES COMMA_SEPARATED_VALUES XML PROTOCOL_BUFFER
             JSON AVRO PARQUET PDF IMAGE PLAIN BINARY NONE UNKNOWN']
         :param str bioformat: File bioformat. Allowed values:
@@ -413,10 +423,12 @@ class File(_ParentRestClient):
             OTHER_PED VCF4 VARIANT ALIGNMENT COVERAGE SEQUENCE PEDIGREE
             REFERENCE_GENOME NONE UNKNOWN']
         :param str checksum: Expected MD5 file checksum.
+        :param bool resource: Boolean field indicating whether the file is a
+            resource or not.
         :param str study: Study [[organization@]project:]study where study and
             project can be either the ID or UUID.
-        :param str relative_file_path: Path within catalog where the file will
-            be located (default: root folder).
+        :param str relative_file_path: Path within catalog (directory) where
+            the file will be located (default: root folder).
         :param str description: description.
         :param bool parents: Create the parent directories if they do not
             exist.

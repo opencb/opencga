@@ -18,8 +18,12 @@ package org.opencb.opencga.analysis.tools;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.opencga.analysis.customTool.CustomToolExecutor;
+import org.opencb.opencga.analysis.workflow.NextFlowExecutor;
 import org.opencb.opencga.core.config.Analysis;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.job.JobType;
+import org.opencb.opencga.core.models.job.ToolInfo;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
@@ -152,16 +156,42 @@ public class ToolFactory {
         return aClass;
     }
 
+
     @Deprecated
     /*
      * Should use the version with "packages" list
      */
     public Tool getTool(String toolId) throws ToolException {
-        return getTool(toolId, Collections.singletonList(DEFAULT_PACKAGE));
+        return getToolClass(toolId, Collections.singletonList(DEFAULT_PACKAGE)).getAnnotation(Tool.class);
     }
 
-    public Tool getTool(String toolId, List<String> packages) throws ToolException {
+    @Deprecated
+    /*
+     * Should use the version with "packages" list
+     */
+    public Tool getTool(JobType type, ToolInfo toolInfo) throws ToolException {
+        return getTool(type, toolInfo, Collections.singletonList(DEFAULT_PACKAGE));
+    }
+
+    public Tool getTool(JobType type, ToolInfo toolInfo, List<String> packages) throws ToolException {
+        String toolId = getToolId(type, toolInfo);
         return getToolClass(toolId, packages).getAnnotation(Tool.class);
+    }
+
+    public static String getToolId(JobType type, ToolInfo toolInfo) {
+        switch (type) {
+            case NATIVE:
+                return toolInfo.getId();
+            case WORKFLOW:
+                return NextFlowExecutor.ID;
+            case CUSTOM:
+                return CustomToolExecutor.ID;
+            case WALKER:
+                // TODO: Call to WalkerExecutor
+                return toolInfo.getId();
+            default:
+                throw new IllegalStateException("Unexpected job type value: " + type);
+        }
     }
 
     public final OpenCgaTool createTool(String toolId) throws ToolException {

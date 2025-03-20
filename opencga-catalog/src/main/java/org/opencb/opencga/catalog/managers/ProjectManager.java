@@ -82,6 +82,8 @@ public class ProjectManager extends AbstractManager {
     public static final QueryOptions INCLUDE_PROJECT_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             ProjectDBAdaptor.QueryParams.UID.key(), ProjectDBAdaptor.QueryParams.ID.key(), ProjectDBAdaptor.QueryParams.UUID.key(),
             ProjectDBAdaptor.QueryParams.FQN.key()));
+    public static final QueryOptions INCLUDE_CELLBASE = keepFieldInQueryOptions(INCLUDE_PROJECT_IDS,
+            ProjectDBAdaptor.QueryParams.CELLBASE.key());
 
     ProjectManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                    DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManager catalogIOManager, Configuration configuration) {
