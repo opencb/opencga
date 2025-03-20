@@ -344,35 +344,33 @@ public class CellBaseValidator {
     }
 
     private <T> T retry(String name, Callable<T> function, int retries) throws IOException {
-        if (retries <= 0) {
-            return null;
-        }
-        T result = null;
-        Exception e = null;
+        Exception e;
+
+        // This attempt
         try {
-            result = function.call();
+            return function.call();
         } catch (Exception e1) {
             e = e1;
         }
-        if (result == null) {
+
+        // Retry
+        if (retries > 0) {
             try {
-                // Retry
+                // Wait a bit
+                Thread.sleep(100);
                 logger.warn("Unable to get '{}' from cellbase " + toString() + ". Retrying...", name);
-                result = retry(name, function, retries - 1);
+                return retry(name, function, retries - 1);
             } catch (Exception e1) {
-                if (e == null) {
-                    e = e1;
-                } else {
-                    e.addSuppressed(e1);
-                }
-                if (e instanceof IOException) {
-                    throw (IOException) e;
-                } else {
-                    throw new IOException("Error reading from cellbase " + toString(), e);
-                }
+                e.addSuppressed(e1);
             }
         }
-        return result;
+
+        // Throw exception
+        if (e instanceof IOException) {
+            throw (IOException) e;
+        } else {
+            throw new IOException("Error reading from cellbase " + toString(), e);
+        }
     }
 
     public boolean isMinVersion(String minVersion) throws IOException {
