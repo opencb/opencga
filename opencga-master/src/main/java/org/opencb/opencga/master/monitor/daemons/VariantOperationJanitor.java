@@ -20,6 +20,8 @@ import org.opencb.opencga.core.config.OperationExecutionConfig;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.JobType;
+import org.opencb.opencga.core.models.job.ToolInfo;
 import org.opencb.opencga.core.models.operations.variant.VariantSecondarySampleIndexParams;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.project.Project;
@@ -187,7 +189,8 @@ public class VariantOperationJanitor extends MonitorParentDaemon {
             }
             paramsMap.put(ParamConstants.PROJECT_PARAM, project.getFqn());
             operationChore.addSpecificParams(paramsMap);
-            catalogManager.getJobManager().submit(studyFqns.get(0), toolId, Enums.Priority.HIGH, paramsMap, null,
+            catalogManager.getJobManager().submit(studyFqns.get(0), JobType.NATIVE, new ToolInfo().setId(toolId),
+                    Enums.Priority.HIGH, paramsMap, null,
                     generateJobDescription(config, operationChore, attributes), null,
                     Collections.singletonList(TAG), null, null, null, attributes, ownerToken);
         }
@@ -226,7 +229,8 @@ public class VariantOperationJanitor extends MonitorParentDaemon {
             }
             paramsMap.put(ParamConstants.STUDY_PARAM, study.getFqn());
             operationChore.addSpecificParams(paramsMap);
-            catalogManager.getJobManager().submit(study.getFqn(), toolId, Enums.Priority.HIGH, paramsMap, null,
+            catalogManager.getJobManager().submit(study.getFqn(), JobType.NATIVE, new ToolInfo().setId(toolId),
+                    Enums.Priority.HIGH, paramsMap, null,
                     generateJobDescription(config, operationChore, attributes), null,
                     Collections.singletonList(TAG), null, null, null, attributes, ownerToken);
         }
