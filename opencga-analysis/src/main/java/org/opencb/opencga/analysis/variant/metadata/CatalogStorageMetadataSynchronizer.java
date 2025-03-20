@@ -170,60 +170,43 @@ public class CatalogStorageMetadataSynchronizer {
                 .first();
         projectFqn = project.getFqn();
 
-        String annotationIndexStatus = secureGet(() -> project.getInternal().getVariant().getAnnotationIndex().getStatus().getId(), null);
-        TaskMetadata.Status storageAnnotationIndexStatus = projectMetadata.getAnnotationIndexStatus();
-        if (!storageAnnotationIndexStatus.name().equals(annotationIndexStatus)) {
-            OperationIndexStatus operationIndexStatus;
-            switch (storageAnnotationIndexStatus) {
-                case NONE:
-                    operationIndexStatus = new OperationIndexStatus(OperationIndexStatus.PENDING,
-                            "Variant annotation index operation pending. "
-                                    + " variantIndexTs = " + projectMetadata.getVariantIndexLastTimestamp()
-                                    + ", variantAnnotationIndexTs = " + projectMetadata.getAnnotationIndexLastTimestamp()
-                    );
-                    break;
-                case READY:
-                    operationIndexStatus = new OperationIndexStatus(storageAnnotationIndexStatus.name(), "");
-                    break;
-                default:
-                    throw new IllegalStateException("Unexpected value: " + storageAnnotationIndexStatus);
-            }
-            logger.info("Update project '{}' annotation index status to {}",
-                    projectFqn, operationIndexStatus.getId());
-            catalogManager.getProjectManager().setProjectInternalVariantAnnotationIndex(projectFqn,
-                    new InternalVariantOperationIndex(operationIndexStatus),
-                    new QueryOptions(), token);
-        }
+        synchronizeProjectAnnotationIndexStatus(projectFqn, token, project, projectMetadata);
+        synchronizeProjectSecondaryAnnotationIndexStatus(projectFqn, token, project, projectMetadata);
 
+        for (String studyName : studies) {
+            synchronizeStudyFromStorage(token, studyName);
+        }
+    }
+
+    private void synchronizeProjectSecondaryAnnotationIndexStatus(String projectFqn, String token, Project project, ProjectMetadata projectMetadata)
+            throws CatalogException {
         String secondaryAnnotationIndexStatus = secureGet(() -> project.getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId(), null);
         TaskMetadata.Status storageSecondaryAnnotationIndexStatus = projectMetadata.getSecondaryAnnotationIndexStatus();
-        if (!storageSecondaryAnnotationIndexStatus.name().equals(secondaryAnnotationIndexStatus)) {
-            OperationIndexStatus operationIndexStatus;
-            switch (storageSecondaryAnnotationIndexStatus) {
-                case NONE:
-                    operationIndexStatus = new OperationIndexStatus(OperationIndexStatus.PENDING,
-                            "Variant secondary annotation index operation pending. "
-                                    + " variantIndexTs = " + projectMetadata.getVariantIndexLastTimestamp()
-                                    + ", variantSecondaryAnnotationIndexTs = " + projectMetadata.getSecondaryAnnotationIndexLastTimestamp()
-                                    + ", variantAnnotationIndexTs = " + projectMetadata.getAnnotationIndexLastTimestamp()
-                                    + ", variantIndexStatsTs = " + projectMetadata.getStatsLastTimestamp()
-                    );
-                    break;
-                case READY:
-                    operationIndexStatus = new OperationIndexStatus(storageAnnotationIndexStatus.name(), "");
-                    break;
-                default:
-                    throw new IllegalStateException("Unexpected value: " + storageSecondaryAnnotationIndexStatus);
-            }
+
+        OperationIndexStatus operationIndexStatus;
+        switch (storageSecondaryAnnotationIndexStatus) {
+            case NONE:
+                operationIndexStatus = new OperationIndexStatus(OperationIndexStatus.PENDING,
+                        "Variant secondary annotation index operation pending. "
+                                + " variantIndexTs = " + projectMetadata.getVariantIndexLastTimestamp()
+                                + ", variantSecondaryAnnotationIndexTs = " + projectMetadata.getSecondaryAnnotationIndexLastTimestamp()
+                                + ", variantAnnotationIndexTs = " + projectMetadata.getAnnotationIndexLastTimestamp()
+                                + ", variantIndexStatsTs = " + projectMetadata.getStatsLastTimestamp()
+                );
+                break;
+            case READY:
+                operationIndexStatus = new OperationIndexStatus(storageSecondaryAnnotationIndexStatus.name(), "");
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + storageSecondaryAnnotationIndexStatus);
+        }
+
+        if (!operationIndexStatus.getName().equals(secondaryAnnotationIndexStatus)) {
             logger.info("Update project '{}' secondary annotation index status to {}",
                     projectFqn, operationIndexStatus.getId());
             catalogManager.getProjectManager().setProjectInternalVariantSecondaryAnnotationIndex(projectFqn,
                     new InternalVariantOperationIndex(operationIndexStatus),
                     new QueryOptions(), token);
-        }
-
-        for (String studyName : studies) {
-            synchronizeStudyFromStorage(token, studyName);
         }
     }
 
@@ -262,6 +245,33 @@ public class CatalogStorageMetadataSynchronizer {
                     studyMetadata.getName(), operationIndex.getStatus().getId());
             catalogManager.getStudyManager().setStudyInternalVariantSecondarySampleIndex(
                     studyMetadata.getName(), operationIndex, new QueryOptions(), token);
+        }
+    }
+
+    private void synchronizeProjectAnnotationIndexStatus(String projectFqn, String token, Project project, ProjectMetadata projectMetadata) throws CatalogException {
+        String annotationIndexStatus = secureGet(() -> project.getInternal().getVariant().getAnnotationIndex().getStatus().getId(), null);
+        TaskMetadata.Status storageAnnotationIndexStatus = projectMetadata.getAnnotationIndexStatus();
+        OperationIndexStatus operationIndexStatus;
+        switch (storageAnnotationIndexStatus) {
+            case NONE:
+                operationIndexStatus = new OperationIndexStatus(OperationIndexStatus.PENDING,
+                        "Variant annotation index operation pending. "
+                                + " variantIndexTs = " + projectMetadata.getVariantIndexLastTimestamp()
+                                + ", variantAnnotationIndexTs = " + projectMetadata.getAnnotationIndexLastTimestamp()
+                );
+                break;
+            case READY:
+                operationIndexStatus = new OperationIndexStatus(storageAnnotationIndexStatus.name(), "");
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + storageAnnotationIndexStatus);
+        }
+        if (!operationIndexStatus.getName().equals(annotationIndexStatus)) {
+            logger.info("Update project '{}' annotation index status to {}",
+                    projectFqn, operationIndexStatus.getId());
+            catalogManager.getProjectManager().setProjectInternalVariantAnnotationIndex(projectFqn,
+                    new InternalVariantOperationIndex(operationIndexStatus),
+                    new QueryOptions(), token);
         }
     }
 

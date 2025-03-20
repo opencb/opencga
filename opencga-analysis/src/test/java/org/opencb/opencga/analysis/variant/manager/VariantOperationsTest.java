@@ -132,7 +132,7 @@ public class VariantOperationsTest {
     public static OpenCGATestExternalResource opencga = new OpenCGATestExternalResource();
     public static HadoopVariantStorageTest.HadoopExternalResource hadoopExternalResource;
 
-    public static VariantSolrExternalResource solrExternalResource = new VariantSolrExternalResource();
+    public static VariantSolrExternalResource solrExternalResource;
 
     private static String storageEngine;
 //    private static boolean indexed = false;
@@ -178,6 +178,7 @@ public class VariantOperationsTest {
     @BeforeClass
     public static void beforeClass() throws Exception {
         if (HadoopVariantStorageTest.HadoopSolrSupport.isSolrTestingAvailable()) {
+            solrExternalResource = new VariantSolrExternalResource();
             solrExternalResource.before();
         }
     }
@@ -236,6 +237,11 @@ public class VariantOperationsTest {
 
         dummyVariantSetup(variantStorageManager, STUDY, token);
 
+        assertEquals(OperationIndexStatus.NONE,
+                catalogManager.getProjectManager().get(PROJECT_FQN, new QueryOptions(), token).first().getInternal().getVariant().getAnnotationIndex().getStatus().getId());
+        assertEquals(OperationIndexStatus.NONE,
+                catalogManager.getProjectManager().get(PROJECT_FQN, new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId());
+
         file = opencga.createFile(STUDY, "variant-test-file.vcf.gz", token);
 //            variantStorageManager.index(STUDY, file.getId(), opencga.createTmpOutdir("_index"), new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true), token);
         toolRunner.execute(VariantIndexOperationTool.class, STUDY,
@@ -244,9 +250,18 @@ public class VariantOperationsTest {
                         .setAnnotate(false)
                         .setLoadHomRef(YesNoAuto.YES.name()),
                 Paths.get(opencga.createTmpOutdir("_index")), "index", false, token);
+        assertEquals(OperationIndexStatus.PENDING,
+                catalogManager.getProjectManager().get(PROJECT_FQN, new QueryOptions(), token).first().getInternal().getVariant().getAnnotationIndex().getStatus().getId());
+        assertEquals(OperationIndexStatus.PENDING,
+                catalogManager.getProjectManager().get(PROJECT_FQN, new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId());
+
         toolRunner.execute(VariantAnnotationIndexOperationTool.class, STUDY,
                 new VariantAnnotationIndexParams(),
                 Paths.get(opencga.createTmpOutdir("_annotation-index")), "index", false, token);
+        assertEquals(OperationIndexStatus.READY,
+                catalogManager.getProjectManager().get(PROJECT_FQN, new QueryOptions(), token).first().getInternal().getVariant().getAnnotationIndex().getStatus().getId());
+        assertEquals(OperationIndexStatus.PENDING,
+                catalogManager.getProjectManager().get(PROJECT_FQN, new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId());
 
         for (int i = 0; i < file.getSampleIds().size(); i++) {
             if (i % 2 == 0) {
@@ -439,6 +454,10 @@ public class VariantOperationsTest {
             assertEquals(IndexStatus.READY, sample.getInternal().getVariant().getAnnotationIndex().getStatus().getId());
         }
         assertEquals(IndexStatus.NONE, catalogManager.getFileManager().get(STUDY, file.getId(), new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId());
+        assertEquals(OperationIndexStatus.READY,
+                catalogManager.getProjectManager().get(PROJECT, new QueryOptions(), token).first().getInternal().getVariant().getAnnotationIndex().getStatus().getId());
+        assertEquals(OperationIndexStatus.PENDING,
+                catalogManager.getProjectManager().get(PROJECT, new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId());
 
         toolRunner.execute(VariantSecondaryAnnotationIndexOperationTool.class, STUDY,
                 new VariantSecondaryAnnotationIndexParams(),
