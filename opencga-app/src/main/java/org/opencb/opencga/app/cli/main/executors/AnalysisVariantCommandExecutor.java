@@ -953,10 +953,10 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "individual", commandOptions.individual, true);
             putNestedIfNotEmpty(beanParams, "sample", commandOptions.sample, true);
             putNestedIfNotEmpty(beanParams, "inferredSexMethod", commandOptions.inferredSexMethod, true);
-            putNestedIfNotEmpty(beanParams, "resourcesDir", commandOptions.resourcesDir, true);
             putNestedIfNotNull(beanParams, "skipAnalysis", commandOptions.skipAnalysis, true);
             putNestedIfNotNull(beanParams, "skipIndex", commandOptions.skipIndex, true);
             putNestedIfNotNull(beanParams, "overwrite", commandOptions.overwrite, true);
+            putNestedIfNotEmpty(beanParams, "resourcesDir", commandOptions.resourcesDir, true);
             putNestedIfNotEmpty(beanParams, "outdir", commandOptions.outdir, true);
 
             individualQcAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()

@@ -209,8 +209,6 @@ public class FieldConstants {
     public static final String RELATEDNESS_ID = "relatedness";
     public static final String QC_SKIP_INDEX_DESCRIPTION = "Do not save the computed quality control in catalog";
     public static final String QC_OVERWRITE_DESCRIPTION = "Overwrite quality control in catalog";
-    @Deprecated
-    public static final String QC_RESOURCES_DIR_DESCRIPTION = "[DEPRECATED] Directory where the QC resource files are located";
 
     // Relatedness params used by family and individual QC
     @Deprecated
@@ -230,16 +228,16 @@ public class FieldConstants {
     // Individual QC parameters
     public static final String INDIVIDUAL_QC_INDIVIDUAL_ID_LIST_DESCRIPTION = "List of individual IDs";
     @Deprecated
-    public static final String INDIVIDUAL_QC_INDIVIDUAL_ID_DESCRIPTION = "Individual ID";
+    public static final String INDIVIDUAL_QC_INDIVIDUAL_ID_DESCRIPTION = "[DEPRECATED] Individual ID";
     @Deprecated
-    public static final String INDIVIDUAL_QC_SAMPLE_ID_DESCRIPTION = "Sample ID (required when the individual has multiple samples)";
+    public static final String INDIVIDUAL_QC_SAMPLE_ID_DESCRIPTION = "[DEPRECATED] Sample ID (required when the individual has multiple samples)";
     @Deprecated
-    public static final String INFERRED_SEX_METHOD_DESCRIPTION = "Inferred sex method.";
-    public static final String INDIVIDUAL_QC_SKIP_ANALYSIS_DESCRIPTION = "List of individual QC analysis to skip. Valid values are: "
+    public static final String INFERRED_SEX_METHOD_DESCRIPTION = "[DEPRECATED] Inferred sex method.";
+    public static final String INDIVIDUAL_QC_SKIP_ANALYSIS_DESCRIPTION = "[DEPRECATED] List of individual QC analysis to skip. Valid values are: "
             + INFERRED_SEX_ID + ", " + MENDELIAN_ERRORS_ID + " and " + RELATEDNESS_ID + " (if parents are present)";
-    public static final String INDIVIDUAL_QC_INFERRED_SEX_DESCRIPTION = "Inferred sex results for the individual";
-    public static final String INDIVIDUAL_QC_RELATEDNESS_DESCRIPTION = "Relatedness results for the individual";
-    public static final String INDIVIDUAL_QC_MENDELIAN_ERROR_DESCRIPTION = "Mendelian error results for the individual";
+    public static final String INDIVIDUAL_QC_INFERRED_SEX_DESCRIPTION = "[DEPRECATED] Inferred sex results for the individual";
+    public static final String INDIVIDUAL_QC_RELATEDNESS_DESCRIPTION = "[DEPRECATED] Relatedness results for the individual";
+    public static final String INDIVIDUAL_QC_MENDELIAN_ERROR_DESCRIPTION = "[DEPRECATED] Mendelian error results for the individual";
 
     // Sample QC parameters
     public static final String SAMPLE_QC_SAMPLE_ID_LIST_DESCRIPTION = "List of sample IDs";

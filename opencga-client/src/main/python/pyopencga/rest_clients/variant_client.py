@@ -469,8 +469,8 @@ class Variant(_ParentRestClient):
     def run_individual_qc(self, data=None, **options):
         """
         Run quality control (QC) for a given individual. This includes
-            inferred sex, Mendelian errors (UDP), and, if parents are present,
-            a relatedness analysis is also performed.
+            inferred sex, and if parents  are present, Mendelian errors (UDP)
+            and relatedness analyses are also performed.
         PATH: /{apiVersion}/analysis/variant/individual/qc/run
 
         :param dict data: Individual QC analysis params. (REQUIRED)

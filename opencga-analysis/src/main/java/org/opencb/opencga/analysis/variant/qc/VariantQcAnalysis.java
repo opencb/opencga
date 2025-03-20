@@ -24,12 +24,15 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.ResourceException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
+import org.opencb.opencga.catalog.utils.ResourceManager;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.common.InternalStatus;
@@ -52,6 +55,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.utils.ResourceManager.*;
 import static org.opencb.opencga.core.models.study.StudyPermissions.Permissions.WRITE_SAMPLES;
 
 public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
@@ -172,19 +176,29 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
     }
 
     protected static Path checkUserResourcesDir(String userResourcesDir, String studyId, CatalogManager catalogManager, String token) throws ToolException {
-        Path userResourcesPath = null;
-        if (!StringUtils.isEmpty(userResourcesDir)) {
+        Path path = null;
+        if (StringUtils.isNotEmpty(userResourcesDir)) {
             try {
-                File file = catalogManager.getFileManager().get(studyId, userResourcesDir, QueryOptions.empty(), token).first();
-                userResourcesPath = Paths.get(file.getUri().getPath());
-                if (!Files.exists(userResourcesPath)) {
-                    throw new ToolException("User resources path does not exist: " + userResourcesPath);
+                Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), userResourcesDir);
+                OpenCGAResult<File> fileResult = catalogManager.getFileManager().search(studyId, query, QueryOptions.empty(), token);
+                if (fileResult.getNumResults() == 0) {
+                    throw new ToolException("Could not find the resources path '" + userResourcesDir + "' in OpenCGA catalog");
                 }
+                if (fileResult.getNumResults() > 1) {
+                    throw new ToolException("Multiple results found (" + fileResult.getNumResults() + ") for resources path '"
+                            + userResourcesDir + "' in OpenCGA catalog");
+                }
+                path = Paths.get(fileResult.first().getUri());
+                if (!Files.exists(path)) {
+                    throw new ToolException("Resources path '" + path + "' does not exist (OpenCGA path: " + userResourcesDir + ")");
+                }
+
+                // TODO: Check permissions to read
             } catch (CatalogException e) {
-                throw new ToolException("Error accessing user resources dir '" + userResourcesDir + "'", e);
+                throw new ToolException("Error searching the OpenCGA catalog path '" + userResourcesDir + "'", e);
             }
         }
-        return userResourcesPath;
+        return path;
     }
 
     protected static void checkPermissions(StudyPermissions.Permissions permissions, Boolean skipIndex, String studyId,
@@ -210,33 +224,6 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
         }
     }
 
-    protected static Path checkResourcesDir(String resourcesDir, String studyId, CatalogManager catalogManager, String token)
-            throws ToolException {
-        Path path = null;
-        if (StringUtils.isNotEmpty(resourcesDir)) {
-            try {
-                Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), resourcesDir);
-                OpenCGAResult<File> fileResult = catalogManager.getFileManager().search(studyId, query, QueryOptions.empty(), token);
-                if (fileResult.getNumResults() == 0) {
-                    throw new ToolException("Could not find the resources path '" + resourcesDir + "' in OpenCGA catalog");
-                }
-                if (fileResult.getNumResults() > 1) {
-                    throw new ToolException("Multiple results found (" + fileResult.getNumResults() + ") for resources path '"
-                            + resourcesDir + "' in OpenCGA catalog");
-                }
-                path = Paths.get(fileResult.first().getUri());
-                if (!Files.exists(path)) {
-                    throw new ToolException("Resources path '" + path + "' does not exist (OpenCGA path: " + resourcesDir + ")");
-                }
-
-                // TODO: Check permissions to read
-            } catch (CatalogException e) {
-                throw new ToolException("Error searching the OpenCGA catalog path '" + resourcesDir + "'", e);
-            }
-        }
-        return path;
-    }
-
     protected void checkFailedQcCounter(int size, String individualQcType) throws ToolException {
         if (CollectionUtils.isNotEmpty(failedQcSet) && failedQcSet.size() == size) {
             // If all QC fail, then the job fails
@@ -245,13 +232,55 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
         }
     }
 
-    protected Path getCustomResourcePath(String fileEntry, String token, String resourceDesc) throws CatalogException, ToolException {
-        File file = getCatalogManager().getFileManager().get(study, fileEntry, QueryOptions.empty(), token).first();
-        Path path = Paths.get(file.getUri());
-        if (!Files.exists(path)) {
-            throw new ToolException(resourceDesc + " does not exist: " + path.toAbsolutePath());
+    //-------------------------------------------------------------------------
+    // QC resources management
+    //-------------------------------------------------------------------------
+
+    protected void prepareRelatednessResources(ResourceManager resourceManager) throws ResourceException, IOException {
+        // Get resources source files
+        Path pruneInFreqsPath = getResourceFilePath(RELATEDNESS_PRUNE_IN_FREQS, resourceManager);
+        Path pruneOutMarkersPath = getResourceFilePath(RELATEDNESS_PRUNE_OUT_MARKERS, resourceManager);
+        Path thresholdsPath = getResourceFilePath(RELATEDNESS_THRESHOLDS, resourceManager);
+
+        // Create folder where the QC resources will be saved (within the job dir, aka outdir), and copy the source files there
+        Path destPath = getResourcesPath();
+        FileUtils.copyFile(pruneInFreqsPath.toFile(), destPath.resolve(pruneInFreqsPath.getFileName()).toFile());
+        FileUtils.copyFile(pruneOutMarkersPath.toFile(), destPath.resolve(pruneOutMarkersPath.getFileName()).toFile());
+        FileUtils.copyFile(thresholdsPath.toFile(), destPath.resolve(thresholdsPath.getFileName()).toFile());
+    }
+
+    protected void prepareInferredSexResources(ResourceManager resourceManager) throws ResourceException, IOException {
+        // Get resources source files
+        Path karyotypicThresholdsPath = getResourceFilePath(INFERRED_SEX_KARYOTYPIC_THRESHOLDS, resourceManager);
+        Path chrxPruneInPath = getResourceFilePath(INFERRED_SEX_CHRX_PRUNE_IN, resourceManager);
+        Path chrxFreqsPath = getResourceFilePath(INFERRED_SEX_CHRX_FREQS, resourceManager);
+        Path refValuesPath = getResourceFilePath(INFERRED_SEX_REF_VALUES, resourceManager);
+
+        // Create folder where the QC resources will be saved (within the job dir, aka outdir), and copy the source files there
+        Path destPath = getResourcesPath();
+        FileUtils.copyFile(karyotypicThresholdsPath.toFile(), destPath.resolve(karyotypicThresholdsPath.getFileName()).toFile());
+        FileUtils.copyFile(chrxPruneInPath.toFile(), destPath.resolve(chrxPruneInPath.getFileName()).toFile());
+        FileUtils.copyFile(chrxFreqsPath.toFile(), destPath.resolve(chrxFreqsPath.getFileName()).toFile());
+        FileUtils.copyFile(refValuesPath.toFile(), destPath.resolve(refValuesPath.getFileName()).toFile());
+    }
+
+    private Path getResourcesPath() throws ResourceException, IOException {
+        Path resourcesPath = getOutDir().resolve(RESOURCES_DIRNAME);
+        if (!Files.exists(resourcesPath)) {
+            resourcesPath = Files.createDirectories(getOutDir().resolve(RESOURCES_DIRNAME));
         }
-        return path;
+        return resourcesPath;
+    }
+
+    private Path getResourceFilePath(String resourceId, ResourceManager resourceManager) throws ResourceException, IOException {
+        Path resourcePath;
+        String filename = resourceManager.getResourceFilename(resourceId);
+        if (userResourcesPath == null || !Files.exists(userResourcesPath.resolve(filename))) {
+            resourcePath = resourceManager.checkResourcePath(resourceId);
+        } else {
+            resourcePath = userResourcesPath.resolve(filename);
+        }
+        return resourcePath;
     }
 
     //-------------------------------------------------------------------------

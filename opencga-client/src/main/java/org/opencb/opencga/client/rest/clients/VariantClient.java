@@ -454,8 +454,8 @@ public class VariantClient extends ParentClient {
     }
 
     /**
-     * Run quality control (QC) for a given individual. This includes inferred sex, Mendelian errors (UDP), and, if parents are present, a
-     *     relatedness analysis is also performed.
+     * Run quality control (QC) for a given individual. This includes inferred sex, and if parents  are present, Mendelian errors (UDP) and
+     *     relatedness analyses are also performed.
      * @param data Individual QC analysis params.
      * @param params Map containing any of the following optional parameters.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.

@@ -30,9 +30,12 @@ import org.opencb.biodata.models.clinical.qc.Relatedness;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.variant.qc.VariantQcAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.ResourceException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.utils.ResourceManager;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
@@ -55,6 +58,8 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.utils.ResourceManager.*;
+import static org.opencb.opencga.catalog.utils.ResourceManager.RELATEDNESS_THRESHOLDS;
 import static org.opencb.opencga.core.models.common.InternalStatus.READY;
 import static org.opencb.opencga.core.models.common.QualityControlStatus.ERROR;
 import static org.opencb.opencga.core.models.study.StudyPermissions.Permissions.WRITE_INDIVIDUALS;
@@ -65,8 +70,8 @@ import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.Va
 public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
 
     public static final String ID = "individual-variant-qc";
-    public static final String DESCRIPTION = "Run quality control (QC) for a given individual. This includes inferred sex, Mendelian"
-            + " errors (UDP), and, if parents are present, a relatedness analysis is also performed";
+    public static final String DESCRIPTION = "Run quality control (QC) for a given individual. This includes inferred sex, and if parents"
+        + "  are present, Mendelian errors (UDP) and relatedness analyses are also performed";
 
     @ToolParams
     protected final IndividualQcAnalysisParams analysisParams = new IndividualQcAnalysisParams();
@@ -80,9 +85,13 @@ public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
 
     @Override
     protected void check() throws Exception {
+        // IMPORTANT: the first thing to do since it initializes "study" from params.get(STUDY_PARAM)
+        super.check();
+
         setUpStorageEngineExecutor(study);
 
-        super.check();
+        logger.info("Checking {}", analysisParams);
+
         checkParameters(analysisParams, getStudy(), catalogManager, token);
 
         // Check for the presence of trios to compute relatedness, and then prepare relatedness resource files
@@ -94,13 +103,13 @@ public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
             }
         }
 
-        // Check custom resources path
-        userResourcesPath = checkResourcesDir(analysisParams.getResourcesDir(), getStudy(), catalogManager, token);
+        // Check custom relatedness resources: prune-in, frq and thresholds files
+        userResourcesPath = checkUserResourcesDir(analysisParams.getResourcesDir(), study, catalogManager, token);
     }
 
     @Override
     protected List<String> getSteps() {
-        List<String> steps = Arrays.asList(PREPARE_QC_STEP, ID);
+        List<String> steps = Arrays.asList(PREPARE_RESOURCES_STEP, PREPARE_QC_STEP, ID);
         if (!Boolean.TRUE.equals(analysisParams.getSkipIndex())) {
             steps.add(INDEX_QC_STEP);
         }
@@ -110,6 +119,7 @@ public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
     @Override
     protected void run() throws ToolException {
         // Main steps
+        step(PREPARE_RESOURCES_STEP, this::prepareResources);
         step(PREPARE_QC_STEP, this::prepareQualityControl);
         step(ID, this::runIndividualQc);
         if (getSteps().contains(INDEX_QC_STEP)) {
@@ -118,6 +128,16 @@ public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
 
         // Clean execution
         clean();
+    }
+
+    protected void prepareResources() throws IOException, ResourceException {
+        ResourceManager resourceManager = new ResourceManager(getOpencgaHome());
+
+        // Prepare relatedness resources
+        prepareRelatednessResources(resourceManager);
+
+        // Prepare inferred-sex resources
+        prepareInferredSexResources(resourceManager);
     }
 
     protected void prepareQualityControl() throws ToolException {
@@ -392,8 +412,5 @@ public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
             throw new ToolException("Found the following error for individual IDs: " + StringUtils.join(errors.entrySet().stream().map(
                     e -> "Individual ID " + e.getKey() + ": " + e.getValue()).collect(Collectors.toList()), ","));
         }
-
-        // Check resources dir
-        checkResourcesDir(params.getResourcesDir(), studyId, catalogManager, token);
     }
 }

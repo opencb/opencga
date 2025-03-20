@@ -100,8 +100,8 @@ public class SampleVariantQcAnalysis extends VariantQcAnalysis {
             }
         }
 
-        // Check custom resources path
-        userResourcesPath = checkResourcesDir(analysisParams.getResourcesDir(), getStudy(), catalogManager, token);
+        // Check custom relatedness resources: prune-in, frq and thresholds files
+        userResourcesPath = checkUserResourcesDir(analysisParams.getResourcesDir(), study, catalogManager, token);
     }
 
     @Override
@@ -442,8 +442,5 @@ public class SampleVariantQcAnalysis extends VariantQcAnalysis {
         if (indexCount == 0) {
             throw new ToolException("None of the input samples are indexed");
         }
-
-        // Check resources dir
-        checkResourcesDir(params.getResourcesDir(), studyId, catalogManager, token);
     }
 }

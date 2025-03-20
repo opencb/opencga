@@ -151,7 +151,7 @@ public class SampleQcAnalysisParams extends ToolParams {
     @DataField(id = "overwrite", description = FieldConstants.QC_OVERWRITE_DESCRIPTION)
     private Boolean overwrite;
 
-    @DataField(id = "resourcesDir", description = FieldConstants.QC_RESOURCES_DIR_DESCRIPTION)
+    @DataField(id = "resourcesDir", description = FieldConstants.RESOURCES_DIR_DESCRIPTION)
     private String resourcesDir;
 
     @DataField(id = "outdir", description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)

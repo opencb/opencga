@@ -70,8 +70,6 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
     public static final String DESCRIPTION = "Run quality control (QC) for a given family. It computes the relatedness scores among the"
             + " family members";
 
-    private Path userResourcesPath;
-
     @ToolParams
     protected final FamilyQcAnalysisParams analysisParams = new FamilyQcAnalysisParams();
 
@@ -119,42 +117,9 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
     protected void prepareResources() throws IOException, ResourceException {
         ResourceManager resourceManager = new ResourceManager(getOpencgaHome());
 
-        // Create folder where the family QC resources will be saved (within the job dir, aka outdir)
-        Path resourcesPath = Files.createDirectories(getOutDir().resolve(RESOURCES_DIRNAME));
-
-        Path relatednessPruneInFreqsPath;
-        Path relatednessPruneOutMarkersPath;
-        Path relatednessThresholdsPath;
-
-        String filename = resourceManager.getResourceFilename(RELATEDNESS_PRUNE_IN_FREQS);
-        if (userResourcesPath == null || !Files.exists(userResourcesPath.resolve(filename))) {
-            relatednessPruneInFreqsPath = resourceManager.checkResourcePath(RELATEDNESS_PRUNE_IN_FREQS);
-        } else {
-            relatednessPruneInFreqsPath = userResourcesPath.resolve(filename);
-        }
-
-        filename = resourceManager.getResourceFilename(RELATEDNESS_PRUNE_OUT_MARKERS);
-        if (userResourcesPath == null || !Files.exists(userResourcesPath.resolve(filename))) {
-            relatednessPruneOutMarkersPath = resourceManager.checkResourcePath(RELATEDNESS_PRUNE_OUT_MARKERS);
-        } else {
-            relatednessPruneOutMarkersPath = userResourcesPath.resolve(filename);
-        }
-
-        filename = resourceManager.getResourceFilename(RELATEDNESS_THRESHOLDS);
-        if (userResourcesPath == null || !Files.exists(userResourcesPath.resolve(filename))) {
-            relatednessThresholdsPath = resourceManager.checkResourcePath(RELATEDNESS_THRESHOLDS);
-        } else {
-            relatednessThresholdsPath = userResourcesPath.resolve(filename);
-        }
-
-        // Copy resource files
-        FileUtils.copyFile(relatednessPruneInFreqsPath.toFile(), resourcesPath.resolve(relatednessPruneInFreqsPath.getFileName())
-                .toFile());
-        FileUtils.copyFile(relatednessPruneOutMarkersPath.toFile(), resourcesPath.resolve(relatednessPruneOutMarkersPath.getFileName())
-                .toFile());
-        FileUtils.copyFile(relatednessThresholdsPath.toFile(), resourcesPath.resolve(relatednessThresholdsPath.getFileName()).toFile());
+        // Prepare relatedness resources
+        prepareRelatednessResources(resourceManager);
     }
-
 
     protected void prepareQualityControl() throws ToolException {
         try {

@@ -199,6 +199,9 @@ analysis:
     - id: "relatedness"
       resourceIds: ["RELATEDNESS_PRUNE_IN_FREQS", "RELATEDNESS_PRUNE_OUT_MARKERS", "RELATEDNESS_THRESHOLDS"]
 
+    - id: "inferred-sex"
+      resourceIds: ["INFERRED_SEX_KARYOTYPIC_THRESHOLDS", "INFERRED_SEX_CHRX_PRUNE_IN", "INFERRED_SEX_CHRX_FREQS", "INFERRED_SEX_REF_VALUES"]
+
     - id: "liftover"
       resourceIds:
         - "REFERENCE_GENOME_GRCH38_FA"

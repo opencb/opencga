@@ -1257,7 +1257,7 @@ public class AnalysisVariantCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"individual-qc-run"}, commandDescription ="Run quality control (QC) for a given individual. This includes inferred sex, Mendelian errors (UDP), and, if parents are present, a relatedness analysis is also performed")
+    @Parameters(commandNames = {"individual-qc-run"}, commandDescription ="Run quality control (QC) for a given individual. This includes inferred sex, and if parents  are present, Mendelian errors (UDP) and relatedness analyses are also performed")
     public class RunIndividualQcCommandOptions {
     
         @ParametersDelegate
@@ -1296,19 +1296,16 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--individuals"}, description = "List of individual IDs", required = false, arity = 1)
         public String individuals;
     
-        @Parameter(names = {"--individual"}, description = "Individual ID", required = false, arity = 1)
+        @Parameter(names = {"--individual"}, description = "[DEPRECATED] Individual ID", required = false, arity = 1)
         public String individual;
     
-        @Parameter(names = {"--sample"}, description = "Sample ID (required when the individual has multiple samples)", required = false, arity = 1)
+        @Parameter(names = {"--sample"}, description = "[DEPRECATED] Sample ID (required when the individual has multiple samples)", required = false, arity = 1)
         public String sample;
     
-        @Parameter(names = {"--inferred-sex-method"}, description = "Inferred sex method.", required = false, arity = 1)
+        @Parameter(names = {"--inferred-sex-method"}, description = "[DEPRECATED] Inferred sex method.", required = false, arity = 1)
         public String inferredSexMethod;
     
-        @Parameter(names = {"--resources-dir"}, description = "[DEPRECATED] Directory where the QC resource files are located", required = false, arity = 1)
-        public String resourcesDir;
-    
-        @Parameter(names = {"--skip-analysis"}, description = "List of individual QC analysis to skip. Valid values are: inferred-sex, mendelian-errors and relatedness (if parents are present)", required = false, arity = 1)
+        @Parameter(names = {"--skip-analysis"}, description = "[DEPRECATED] List of individual QC analysis to skip. Valid values are: inferred-sex, mendelian-errors and relatedness (if parents are present)", required = false, arity = 1)
         public String skipAnalysis;
     
         @Parameter(names = {"--skip-index"}, description = "Do not save the computed quality control in catalog", required = false, arity = 1)
@@ -1316,6 +1313,9 @@ public class AnalysisVariantCommandOptions {
     
         @Parameter(names = {"--overwrite"}, description = "Overwrite quality control in catalog", required = false, arity = 1)
         public Boolean overwrite;
+    
+        @Parameter(names = {"--resources-dir"}, description = "OpenCGA catalog directory where the analysis resources are located", required = false, arity = 1)
+        public String resourcesDir;
     
         @Parameter(names = {"--outdir"}, description = "Output dir for the job.", required = false, arity = 1)
         public String outdir;
@@ -2400,7 +2400,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--overwrite"}, description = "Overwrite quality control in catalog", required = false, arity = 1)
         public Boolean overwrite;
     
-        @Parameter(names = {"--resources-dir"}, description = "[DEPRECATED] Directory where the QC resource files are located", required = false, arity = 1)
+        @Parameter(names = {"--resources-dir"}, description = "OpenCGA catalog directory where the analysis resources are located", required = false, arity = 1)
         public String resourcesDir;
     
         @Parameter(names = {"--outdir"}, description = "Output dir for the job.", required = false, arity = 1)

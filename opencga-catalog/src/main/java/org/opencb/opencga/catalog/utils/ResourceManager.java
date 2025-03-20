@@ -28,10 +28,16 @@ import java.util.stream.Collectors;
 
 public class ResourceManager  {
 
-    // Resources IDs
+    // Relatedness resources IDs
     public static final String RELATEDNESS_PRUNE_IN_FREQS = "RELATEDNESS_PRUNE_IN_FREQS";
     public static final String RELATEDNESS_PRUNE_OUT_MARKERS = "RELATEDNESS_PRUNE_OUT_MARKERS";
     public static final String RELATEDNESS_THRESHOLDS = "RELATEDNESS_THRESHOLDS";
+
+    // Inferred-sex resources IDs
+    public static final String INFERRED_SEX_KARYOTYPIC_THRESHOLDS = "INFERRED_SEX_KARYOTYPIC_THRESHOLDS";
+    public static final String INFERRED_SEX_CHRX_PRUNE_IN = "INFERRED_SEX_CHRX_PRUNE_IN";
+    public static final String INFERRED_SEX_CHRX_FREQS = "INFERRED_SEX_CHRX_FREQS";
+    public static final String INFERRED_SEX_REF_VALUES = "INFERRED_SEX_REF_VALUES";
 
     public static final String REFERENCE_GENOMES = "reference-genomes";
 
