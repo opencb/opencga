@@ -29,7 +29,7 @@ public class VariantOperationJanitorTest extends AbstractManagerTest {
     public void setUp() throws Exception {
         super.setUp();
 
-        String expiringToken = this.catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+        String expiringToken = this.catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).first().getToken();
 
         // Change to immediate
         catalogManager.getConfiguration().getAnalysis().getOperations().getVariantAnnotationIndex().setPolicy(OperationExecutionConfig.Policy.IMMEDIATELY).setMaxAttempts(2);
