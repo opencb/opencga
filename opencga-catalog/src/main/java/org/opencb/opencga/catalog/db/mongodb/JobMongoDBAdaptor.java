@@ -414,9 +414,6 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
         String[] acceptedBooleanParams = {QueryParams.VISITED.key(), QueryParams.INTERNAL_KILL_JOB_REQUESTED.key()};
         filterBooleanParams(parameters, document.getSet(), acceptedBooleanParams);
 
-        String[] acceptedStringListParams = {QueryParams.TAGS.key()};
-        filterStringListParams(parameters, document.getSet(), acceptedStringListParams);
-
         if (parameters.containsKey(QueryParams.TOOL.key())) {
             if (parameters.get(QueryParams.TOOL.key()) instanceof ToolInfo) {
                 document.getSet().put(QueryParams.TOOL.key(), getMongoDBDocument(parameters.get(QueryParams.TOOL.key()),
@@ -432,6 +429,28 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
                 document.getSet().put(QueryParams.INTERNAL_WEBHOOK.key(), getMongoDBDocument(value, "JobInternalWebhook"));
             } else {
                 document.getSet().put(QueryParams.INTERNAL_WEBHOOK.key(), value);
+            }
+        }
+
+        if (parameters.containsKey(QueryParams.TAGS.key())) {
+            List<String> tagList = parameters.getAsStringList(QueryParams.TAGS.key());
+            Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
+            ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.TAGS.key(),
+                    ParamUtils.BasicUpdateAction.ADD);
+            if (ParamUtils.BasicUpdateAction.SET.equals(operation) || !tagList.isEmpty()) {
+                switch (operation) {
+                    case SET:
+                        document.getSet().put(QueryParams.TAGS.key(), tagList);
+                        break;
+                    case REMOVE:
+                        document.getPullAll().put(QueryParams.TAGS.key(), tagList);
+                        break;
+                    case ADD:
+                        document.getAddToSet().put(QueryParams.TAGS.key(), tagList);
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Unknown operation " + operation);
+                }
             }
         }
 
@@ -479,7 +498,8 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
                     Enums.Priority.getPriority(parameters.getString(QueryParams.PRIORITY.key())).getValue());
         }
 
-        String[] acceptedObjectParams = {QueryParams.EXECUTION.key(), QueryParams.STUDY.key(), QueryParams.INTERNAL_STATUS.key()};
+        String[] acceptedObjectParams = {QueryParams.EXECUTION.key(), QueryParams.STUDY.key(), QueryParams.INTERNAL_STATUS.key(),
+                QueryParams.TOOL_EXTERNAL_EXECUTOR.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
 
         if (document.getSet().containsKey(QueryParams.STUDY.key())) {
@@ -927,10 +947,15 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
                                 QueryParams.INTERNAL_STATUS_ID.type(), andBsonList);
                         break;
                     case ID:
-                    case UUID:
                     case USER_ID:
+                    case TYPE:
+                    case UUID:
                     case TOOL_TYPE:
-                    case PRIORITY: // TODO: This filter is not indexed. We should change it and query _priority instead.
+                    case PRIORITY:
+                    case TOOL_EXTERNAL_EXECUTOR_ID:
+                    case PARENT_ID:
+                    case DRY_RUN:
+                    case INTERNAL_KILL_JOB_REQUESTED:
 //                    case START_TIME:
 //                    case END_TIME:
 //                    case OUTPUT_ERROR:

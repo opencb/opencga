@@ -88,6 +88,7 @@ public class CatalogManager implements AutoCloseable {
     private ClinicalAnalysisManager clinicalAnalysisManager;
     private InterpretationManager interpretationManager;
     private PanelManager panelManager;
+    private WorkflowManager workflowManager;
 
     private AuditManager auditManager;
     private AuthorizationManager authorizationManager;
@@ -163,6 +164,8 @@ public class CatalogManager implements AutoCloseable {
         clinicalAnalysisManager = new ClinicalAnalysisManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 configuration);
         interpretationManager = new InterpretationManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
+        workflowManager = new WorkflowManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, ioManagerFactory,
+                catalogIOManager, configuration);
     }
 
     private void initializeAdmin(Configuration configuration) throws CatalogDBException {
@@ -241,7 +244,7 @@ public class CatalogManager implements AutoCloseable {
         try {
             logger.info("Installing database {} in {}", getCatalogAdminDatabase(), configuration.getCatalog().getDatabase().getHosts());
             privateInstall(algorithm, secretKey, password, email);
-            String token = userManager.loginAsAdmin(password).getToken();
+            String token = userManager.loginAsAdmin(password).first().getToken();
             installIndexes(ADMIN_ORGANIZATION, token);
         } catch (Exception e) {
             try {
@@ -281,7 +284,7 @@ public class CatalogManager implements AutoCloseable {
                 .setEmail(StringUtils.isEmpty(email) ? "opencga@admin.com" : email)
                 .setOrganization(ADMIN_ORGANIZATION);
         userManager.create(user, password, null);
-        String token = userManager.login(ADMIN_ORGANIZATION, OPENCGA, password).getToken();
+        String token = userManager.login(ADMIN_ORGANIZATION, OPENCGA, password).first().getToken();
 
         // Add OPENCGA as owner of ADMIN_ORGANIZATION
         organizationManager.update(ADMIN_ORGANIZATION, new OrganizationUpdateParams().setOwner(OPENCGA), QueryOptions.empty(), token);
@@ -453,5 +456,9 @@ public class CatalogManager implements AutoCloseable {
 
     public MigrationManager getMigrationManager() {
         return migrationManager;
+    }
+
+    public WorkflowManager getWorkflowManager() {
+        return workflowManager;
     }
 }

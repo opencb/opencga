@@ -87,7 +87,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         validateConfiguration(commandOptions);
 
         CatalogManager catalogManager = new CatalogManager(configuration);
-        String token = catalogManager.getUserManager().loginAsAdmin(adminPassword).getToken();
+        String token = catalogManager.getUserManager().loginAsAdmin(adminPassword).first().getToken();
 
         if (StringUtils.isNotEmpty(commandOptions.project)) {
             catalogManager.getProjectManager().exportReleases(commandOptions.project, commandOptions.release, commandOptions.outputDir,
@@ -103,7 +103,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         validateConfiguration(commandOptions);
 
         CatalogManager catalogManager = new CatalogManager(configuration);
-        String token = catalogManager.getUserManager().loginAsAdmin(adminPassword).getToken();
+        String token = catalogManager.getUserManager().loginAsAdmin(adminPassword).first().getToken();
 
         catalogManager.getProjectManager().importReleases(commandOptions.organizationId, commandOptions.owner, commandOptions.directory, token);
     }
@@ -197,7 +197,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
 
         CatalogManager catalogManager = new CatalogManager(configuration);
         String token = catalogManager.getUserManager()
-                .loginAsAdmin(catalogCommandOptions.indexCatalogCommandOptions.commonOptions.adminPassword).getToken();
+                .loginAsAdmin(catalogCommandOptions.indexCatalogCommandOptions.commonOptions.adminPassword).first().getToken();
 
         String organizationId = catalogCommandOptions.indexCatalogCommandOptions.organizationId;
         if (StringUtils.isEmpty(organizationId)) {
@@ -218,7 +218,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
 
         CatalogManager catalogManager = new CatalogManager(configuration);
         String token = catalogManager.getUserManager()
-                .loginAsAdmin(catalogCommandOptions.daemonCatalogCommandOptions.commonOptions.adminPassword).getToken();
+                .loginAsAdmin(catalogCommandOptions.daemonCatalogCommandOptions.commonOptions.adminPassword).first().getToken();
 
         if (catalogCommandOptions.daemonCatalogCommandOptions.start) {
             // Server crated and started

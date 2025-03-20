@@ -145,12 +145,13 @@ public class SnapshotVersionedMongoDBAdaptor {
     protected void insert(ClientSession session, Document document) {
         // Versioning private parameters
         document.put(VERSION, 1);
-        document.put(RELEASE_FROM_VERSION, Arrays.asList(document.getInteger(RELEASE)));
+        document.put(RELEASE_FROM_VERSION, Collections.singletonList(document.getInteger(RELEASE)));
         document.put(LAST_OF_VERSION, true);
         document.put(LAST_OF_RELEASE, true);
 
         String uuid = getClientSessionUuid(session);
         document.put(PRIVATE_TRANSACTION_ID, uuid);
+
         collection.insert(session, document, QueryOptions.empty());
         archiveCollection.insert(session, document, QueryOptions.empty());
     }
@@ -223,6 +224,10 @@ public class SnapshotVersionedMongoDBAdaptor {
                     collection.update(session, bsonQuery, new Document("$set", collectionUpdate), QueryOptions.empty());
                 }
             }
+        }
+
+        if (entryList.isEmpty()) {
+            return OpenCGAResult.empty();
         }
 
         // 2. Execute main update

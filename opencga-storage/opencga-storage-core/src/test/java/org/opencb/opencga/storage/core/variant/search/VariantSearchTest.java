@@ -4,6 +4,7 @@ import htsjdk.variant.vcf.VCFHeader;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -221,6 +222,48 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
             System.out.println(results.getResults().get(0).toJson());
         } else {
             System.out.println("Not found!!!!");
+        }
+    }
+
+    @Test
+    public void testTypeFacet() throws Exception {
+        int limit = 500;
+
+        VariantStorageMetadataManager scm = variantStorageEngine.getMetadataManager();
+
+        solr.configure(variantStorageEngine);
+        VariantSearchManager variantSearchManager = variantStorageEngine.getVariantSearchManager();
+
+        System.out.println(smallInputUri.getPath());
+
+        List<Variant> variants = getVariants(limit);
+        List<Variant> annotatedVariants = annotatedVariants(variants);
+
+        metadataManager.createStudy("s1");
+
+        String collection = solr.coreName;
+        variantSearchManager.create(collection);
+
+        variantSearchManager.insert(collection, annotatedVariants);
+
+        QueryOptions queryOptions = new QueryOptions();
+        String facet = "type[INDEL,SNV]";
+        queryOptions.put(QueryOptions.FACET, facet);
+        DataResult<FacetField> facetQueryResult = variantSearchManager.facetedQuery(collection, new Query(), queryOptions);
+        String s = JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(facetQueryResult);
+        System.out.println(s);
+
+        FacetField facetField = facetQueryResult.first();
+        Assert.assertEquals(499, facetField.getCount());
+        Assert.assertEquals(2, facetField.getBuckets().size());
+        Assert.assertTrue(facetField.getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList()).contains("SNV"));
+        Assert.assertTrue(facetField.getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList()).contains("INDEL"));
+        for (FacetField.Bucket bucket : facetField.getBuckets()) {
+            if (bucket.getValue().equals("SNV")) {
+                Assert.assertEquals(490, bucket.getCount());
+            } else if (bucket.getValue().equals("INDEL")) {
+                Assert.assertEquals(9, bucket.getCount());
+            }
         }
     }
 

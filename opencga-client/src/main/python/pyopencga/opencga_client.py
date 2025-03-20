@@ -29,7 +29,7 @@ from pyopencga.rest_clients.organization_client import Organization
 
 
 class OpencgaClient(object):
-    def __init__(self, configuration, token=None, on_retry=None, auto_refresh=True):
+    def __init__(self, configuration, token=None, refresh_token=None, on_retry=None, auto_refresh=True):
         """
         :param on_retry: callback to be called with client retries an operation.
             It must accept parameters: client, exc_type, exc_val, exc_tb, call
@@ -44,9 +44,11 @@ class OpencgaClient(object):
         self.clients = []
         self._login_handler = None
         self.token = token
-        self.refreshToken = None
+        self.refresh_token = refresh_token
         self._create_clients()
         self._check_versions()
+        if self.configuration.sso_login:
+            self._sso_login()
 
     def __enter__(self):
         return self
@@ -102,7 +104,7 @@ class OpencgaClient(object):
         for client in self.clients:
             client.on_retry = self.on_retry
 
-    def _make_login_handler(self, user, password, organization):
+    def _make_login_handler(self, user=None, password=None, organization=None):
         """
         Returns a closure that performs the log-in. This will be called on retries
         if the current session ever expires.
@@ -113,9 +115,7 @@ class OpencgaClient(object):
         """
         def login_handler(refresh=False):
             if refresh:
-                # TODO Change to refreshToken whenever it is properly implemented in OpenCGA
-                # data = {'refreshToken': self.refresh_token}
-                data = {'user': user, 'password': password}
+                data = {'refreshToken': self.refresh_token}
             else:
                 data = {'user': user, 'password': password}
             if organization:
@@ -123,29 +123,39 @@ class OpencgaClient(object):
             tokens = User(self.configuration).login(data=data).get_result(0)
             self.token = tokens['token']
             self.refresh_token = tokens['refreshToken']
-            return self.token
+            return self.token, self.refresh_token
         return login_handler
 
     def login(self, user=None, password=None, organization=None):
-        if user is not None:
-            if password is None:
-                password = getpass.getpass()
+        if user is not None and password is None:
+            password = getpass.getpass()
+        if not (user and password):
+            raise ValueError('User and password required')
 
-        try:
-            assert user and password
-        except AssertionError:
-            raise ValueError("User and password required")
-
-        self._login_handler = self._make_login_handler(user, password, organization)
+        self._login_handler = self._make_login_handler(user=user, password=password, organization=organization)
         self._login_handler()
         for client in self.clients:
             client.token = self.token
+            client.refresh_token = self.refresh_token
+            client.login_handler = self._login_handler
+
+    def _sso_login(self):
+        # Getting token and refresh token from configuration
+        self.token = self.configuration.token
+        self.refresh_token = self.configuration.token
+
+        self._login_handler = self._make_login_handler()
+        for client in self.clients:
+            client.token = self.token
+            client.refresh_token = self.refresh_token
             client.login_handler = self._login_handler
 
     def logout(self):
         self.token = None
+        self.refresh_token = None
         for client in self.clients:
             client.token = self.token
+            client.refresh_token = self.refresh_token
 
     def wait_for_job(self, response=None, study_id=None, job_id=None, retry_seconds=10):
         if response is not None:

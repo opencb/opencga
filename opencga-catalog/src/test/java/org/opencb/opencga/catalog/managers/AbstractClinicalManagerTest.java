@@ -105,7 +105,7 @@ public class AbstractClinicalManagerTest extends GenericTest {
                 new OrganizationUpdateParams().setOwner("user"),
                 null, catalogManagerResource.getAdminToken());
 
-        token = catalogManager.getUserManager().login(organizationId, "user", PASSWORD).getToken();
+        token = catalogManager.getUserManager().login(organizationId, "user", PASSWORD).first().getToken();
 
         ProjectCreateParams projectCreateParams = new ProjectCreateParams()
                 .setId("1000G")

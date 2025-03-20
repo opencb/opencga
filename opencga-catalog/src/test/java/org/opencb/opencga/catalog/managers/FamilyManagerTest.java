@@ -595,7 +595,7 @@ public class FamilyManagerTest extends AbstractManagerTest {
 
         catalogManager.getUserManager().create("user2", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, organizationId, null,
                 opencgaToken);
-        String token = catalogManager.getUserManager().login(organizationId, "user2", TestParamConstants.PASSWORD).getToken();
+        String token = catalogManager.getUserManager().login(organizationId, "user2", TestParamConstants.PASSWORD).first().getToken();
 
         try {
             familyManager.get(studyFqn, "Martinez-Martinez", QueryOptions.empty(), token);
@@ -657,7 +657,7 @@ public class FamilyManagerTest extends AbstractManagerTest {
 
         catalogManager.getUserManager().create("user2", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, organizationId, null,
                 opencgaToken);
-        String token = catalogManager.getUserManager().login(organizationId, "user2", TestParamConstants.PASSWORD).getToken();
+        String token = catalogManager.getUserManager().login(organizationId, "user2", TestParamConstants.PASSWORD).first().getToken();
 
         try {
             familyManager.get(studyFqn, "Martinez-Martinez", QueryOptions.empty(), token);

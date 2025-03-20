@@ -142,7 +142,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
         catalogManager.getOrganizationManager().update(ORGANIZATION, new OrganizationUpdateParams().setAdmins(Collections.singletonList(USER)),
                 null,
                 opencga.getAdminToken());
-        sessionId = catalogManager.getUserManager().login(ORGANIZATION, USER, TestParamConstants.PASSWORD).getToken();
+        sessionId = catalogManager.getUserManager().login(ORGANIZATION, USER, TestParamConstants.PASSWORD).first().getToken();
 
         DummyVariantStorageEngine.configure(opencga.getStorageEngineFactory(), true);
 

@@ -18,6 +18,7 @@ class RClientGenerator(RestClientGenerator):
             'Studies': 'Study',
             'Files': 'File',
             'Jobs': 'Job',
+            'Workflows': 'Workflow',
             'Samples': 'Sample',
             'Individuals': 'Individual',
             'Families': 'Family',
@@ -28,7 +29,7 @@ class RClientGenerator(RestClientGenerator):
             'Analysis - Clinical': 'Clinical',
             'Operations - Variant Storage': 'Operation',
             'Meta': 'Meta',
-            'Cvdb': 'Cvdb',
+            'CVDB': 'CVDB',
             'GA4GH': 'GA4GH',
             'Admin': 'Admin'
         }

@@ -24,6 +24,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
     private final AnalysisClinicalCommandOptions analysisClinicalCommandOptions;
     private final JobsCommandOptions jobsCommandOptions;
     private final AdminCommandOptions adminCommandOptions;
+    private final WorkflowsCommandOptions workflowsCommandOptions;
     private final IndividualsCommandOptions individualsCommandOptions;
     private final FamiliesCommandOptions familiesCommandOptions;
     private final UsersCommandOptions usersCommandOptions;
@@ -67,6 +68,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         analysisVariantSubCommands.addCommand("knockout-gene-query", analysisVariantCommandOptions.queryKnockoutGeneCommandOptions);
         analysisVariantSubCommands.addCommand("knockout-individual-query", analysisVariantCommandOptions.queryKnockoutIndividualCommandOptions);
         analysisVariantSubCommands.addCommand("knockout-run", analysisVariantCommandOptions.runKnockoutCommandOptions);
+        analysisVariantSubCommands.addCommand("liftover-run", analysisVariantCommandOptions.runLiftoverCommandOptions);
         analysisVariantSubCommands.addCommand("mendelian-error-run", analysisVariantCommandOptions.runMendelianErrorCommandOptions);
         analysisVariantSubCommands.addCommand("metadata", analysisVariantCommandOptions.metadataCommandOptions);
         analysisVariantSubCommands.addCommand("mutational-signature-query", analysisVariantCommandOptions.queryMutationalSignatureCommandOptions);
@@ -159,6 +161,8 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         jobsSubCommands.addCommand("distinct", jobsCommandOptions.distinctCommandOptions);
         jobsSubCommands.addCommand("retry", jobsCommandOptions.retryCommandOptions);
         jobsSubCommands.addCommand("search", jobsCommandOptions.searchCommandOptions);
+        jobsSubCommands.addCommand("tool-build", jobsCommandOptions.buildToolCommandOptions);
+        jobsSubCommands.addCommand("tool-run", jobsCommandOptions.runToolCommandOptions);
         jobsSubCommands.addCommand("top", jobsCommandOptions.topCommandOptions);
         jobsSubCommands.addCommand("acl", jobsCommandOptions.aclCommandOptions);
         jobsSubCommands.addCommand("delete", jobsCommandOptions.deleteCommandOptions);
@@ -182,6 +186,20 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         adminSubCommands.addCommand("users-search", adminCommandOptions.searchUsersCommandOptions);
         adminSubCommands.addCommand("users-sync", adminCommandOptions.syncUsersCommandOptions);
         adminSubCommands.addCommand("update-groups-users", adminCommandOptions.usersUpdateGroupsCommandOptions);
+
+        workflowsCommandOptions = new WorkflowsCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("workflows", workflowsCommandOptions);
+        JCommander workflowsSubCommands = jCommander.getCommands().get("workflows");
+        workflowsSubCommands.addCommand("acl-update", workflowsCommandOptions.updateAclCommandOptions);
+        workflowsSubCommands.addCommand("create", workflowsCommandOptions.createCommandOptions);
+        workflowsSubCommands.addCommand("distinct", workflowsCommandOptions.distinctCommandOptions);
+        workflowsSubCommands.addCommand("import", workflowsCommandOptions.importCommandOptions);
+        workflowsSubCommands.addCommand("run", workflowsCommandOptions.runCommandOptions);
+        workflowsSubCommands.addCommand("search", workflowsCommandOptions.searchCommandOptions);
+        workflowsSubCommands.addCommand("update", workflowsCommandOptions.updateCommandOptions);
+        workflowsSubCommands.addCommand("acl", workflowsCommandOptions.aclCommandOptions);
+        workflowsSubCommands.addCommand("delete", workflowsCommandOptions.deleteCommandOptions);
+        workflowsSubCommands.addCommand("info", workflowsCommandOptions.infoCommandOptions);
 
         individualsCommandOptions = new IndividualsCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("individuals", individualsCommandOptions);
@@ -422,6 +440,11 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
     
     public AdminCommandOptions getAdminCommandOptions() {
         return adminCommandOptions;
+    }
+    
+    
+    public WorkflowsCommandOptions getWorkflowsCommandOptions() {
+        return workflowsCommandOptions;
     }
     
     

@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.server.rest;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
@@ -132,6 +133,7 @@ public class MetaWSServer extends OpenCGAWSServer {
         classMap.put("studies", StudyWSServer.class);
         classMap.put("files", FileWSServer.class);
         classMap.put("jobs", JobWSServer.class);
+        classMap.put("workflows", WorkflowWSServer.class);
         classMap.put("samples", SampleWSServer.class);
         classMap.put("individuals", IndividualWSServer.class);
         classMap.put("families", FamilyWSServer.class);
@@ -176,6 +178,7 @@ public class MetaWSServer extends OpenCGAWSServer {
         Swagger swagger = generator.generateJsonOpenApi(new ApiCommonsImpl(), token, environment);
         String swaggerJson ="ERROR: Swagger could not be generated";
         ObjectMapper mapper = new ObjectMapper();
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         try {
             swaggerJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(swagger).replace("{apiVersion}", "v2");
         } catch (JsonProcessingException e) {

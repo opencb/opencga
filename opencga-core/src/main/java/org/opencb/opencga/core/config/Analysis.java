@@ -24,6 +24,7 @@ import static org.opencb.opencga.core.config.Configuration.reportUnusedField;
 public class Analysis {
 
     private List<String> packages;
+    private WorkflowConfiguration workflow;
 
     private String scratchDir;
 
@@ -40,6 +41,7 @@ public class Analysis {
     private List<FrameworkConfiguration> frameworks;
 
     public Analysis() {
+        workflow = new WorkflowConfiguration();
         packages = new ArrayList<>();
         tools = new ArrayList<>();
         execution = new Execution();
@@ -66,6 +68,15 @@ public class Analysis {
 
     public Analysis setPackages(List<String> packages) {
         this.packages = packages;
+        return this;
+    }
+
+    public WorkflowConfiguration getWorkflow() {
+        return workflow;
+    }
+
+    public Analysis setWorkflow(WorkflowConfiguration workflow) {
+        this.workflow = workflow;
         return this;
     }
 

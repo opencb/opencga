@@ -47,29 +47,45 @@ analysis:
 
       # Reference genomes
       - id: "REFERENCE_GENOME_GRCH38_FA"
-        url: "reference-genome/20240812_091434/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz"
-        md5: ""
-        path: "reference-genome/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz"
+        url: "reference-genomes/grch38/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz"
+        md5: "9732aa3c64469b25b73930db9c96a89f"
+        path: "reference-genomes/grch38/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz"
       - id: "REFERENCE_GENOME_GRCH38_FAI"
-        url: "reference-genome/20240812_091434/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz.fai"
-        md5: ""
-        path: "reference-genome/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz.fai"
+        url: "reference-genomes/grch38/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz.fai"
+        md5: "d527f3eb6b664020cf4d882b5820056f"
+        path: "reference-genomes/grch38/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz.fai"
       - id: "REFERENCE_GENOME_GRCH38_GZI"
-        url: "reference-genome/20240812_091434/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz.gzi"
-        md5: ""
-        path: "reference-genome/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz.gzi"
+        url: "reference-genomes/grch38/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz.gzi"
+        md5: "e904772fc5dfa2d69690aafda36332a4"
+        path: "reference-genomes/grch38/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz.gzi"
+      - id: "REFERENCE_GENOME_GRCH38_CHAIN"
+        url: "reference-genomes/grch38/GRCh37_to_GRCh38.chain.gz"
+        md5: "2a862e70fa1afc08f1f3e7a8cc5cda14"
+        path: "reference-genomes/grch38/GRCh37_to_GRCh38.chain.gz"
       - id: "REFERENCE_GENOME_GRCH37_FA"
-        url: "reference-genome/20240812_091434/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz"
-        md5: ""
-        path: "reference-genome/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz"
+        url: "reference-genomes/grch37/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz"
+        md5: "39a3fff4234a1268c937ec012b3cabb4"
+        path: "reference-genomes/grch37/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz"
       - id: "REFERENCE_GENOME_GRCH37_FAI"
-        url: "reference-genome/20240812_091434/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz.fai"
-        md5: ""
-        path: "reference-genome/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz.fai"
+        url: "reference-genomes/grch37/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz.fai"
+        md5: "15d081d2bdfe37d0fff6b753a4dcfef0"
+        path: "reference-genomes/grch37/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz.fai"
       - id: "REFERENCE_GENOME_GRCH37_GZI"
-        url: "reference-genome/20240812_091434/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz.gzi"
-        md5: ""
-        path: "reference-genome/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz.gzi"
+        url: "reference-genomes/grch37/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz.gzi"
+        md5: "bed234b55a30d624159e8577def7005c"
+        path: "reference-genomes/grch37/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz.gzi"
+      - id: "REFERENCE_GENOME_HG38_FA"
+        url: "reference-genomes/hg38/hg38.fa.gz"
+        md5: "56d2da608721db4d805279301ddc902d"
+        path: "reference-genomes/hg38/hg38.fa.gz"
+      - id: "REFERENCE_GENOME_HG38_CHAIN"
+        url: "reference-genomes/hg38/hg19ToHg38.over.chain.gz"
+        md5: "35887f73fe5e2231656504d1f6430900"
+        path: "reference-genomes/hg38/hg19ToHg38.over.chain.gz"
+      - id: "REFERENCE_GENOME_HG19_FA"
+        url: "reference-genomes/hg19/hg19.fa.gz"
+        md5: "b6631a1b3c6e1a5db6ee94c21a460ae7"
+        path: "reference-genomes/hg19/hg19.fa.gz"
 
       # Relatedness resources
       - id: "RELATEDNESS_PRUNE_IN_FREQS"
@@ -93,11 +109,13 @@ analysis:
       version: "13.1.0"
       dockerId: "exomiser/exomiser-cli:13.1.0"
       resourceIds: ["EXOMISER_13_1_0_HG38", "EXOMISER_13_1_0_PHENOTYPE"]
+
     - id: "exomiser"
       version: "14.0.0"
       defaultVersion: true
       dockerId: "exomiser/exomiser-cli:14.0.0"
       resourceIds: ["EXOMISER_14_0_0_HG38", "EXOMISER_14_0_0_PHENOTYPE"]
+
     - id: "mutational-signature"
       resourceIds:
         - "REFERENCE_GENOME_GRCH38_FA"
@@ -106,8 +124,18 @@ analysis:
         - "REFERENCE_GENOME_GRCH37_FA"
         - "REFERENCE_GENOME_GRCH37_FAI"
         - "REFERENCE_GENOME_GRCH37_GZI"
+
     - id: "relatedness"
       resourceIds: ["RELATEDNESS_PRUNE_IN_FREQS", "RELATEDNESS_PRUNE_OUT_MARKERS", "RELATEDNESS_THRESHOLDS"]
+
+    - id: "liftover"
+      resourceIds:
+        - "REFERENCE_GENOME_GRCH38_FA"
+        - "REFERENCE_GENOME_GRCH38_CHAIN"
+        - "REFERENCE_GENOME_GRCH37_FA"
+        - "REFERENCE_GENOME_HG38_FA"
+        - "REFERENCE_GENOME_HG38_CHAIN"
+        - "REFERENCE_GENOME_HG19_FA"
 
   execution:
     # Accepted values are "local", "SGE", "azure-batch", "k8s"

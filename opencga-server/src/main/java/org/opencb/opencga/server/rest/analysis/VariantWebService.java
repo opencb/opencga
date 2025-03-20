@@ -53,6 +53,7 @@ import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserAnalysisUtils;
 import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.gatk.GatkWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.liftover.LiftoverWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.plink.PlinkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.rvtests.RvtestsWrapperAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -70,6 +71,8 @@ import org.opencb.opencga.core.models.clinical.ExomiserWrapperParams;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.JobType;
+import org.opencb.opencga.core.models.job.ToolInfo;
 import org.opencb.opencga.core.models.operations.variant.VariantFileDeleteParams;
 import org.opencb.opencga.core.models.operations.variant.VariantIndexParams;
 import org.opencb.opencga.core.models.operations.variant.VariantStatsExportParams;
@@ -98,9 +101,9 @@ import java.nio.file.Paths;
 import java.util.*;
 
 import static org.opencb.opencga.core.api.FieldConstants.FAMILY_QC_PARAMS_DESCRIPTION;
-import static org.opencb.opencga.core.models.variant.VariantQueryParams.SAVED_FILTER_DESCR;
 import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
+import static org.opencb.opencga.core.models.variant.VariantQueryParams.SAVED_FILTER_DESCR;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
 /**
@@ -194,7 +197,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = VariantIndexParams.DESCRIPTION, required = true) VariantIndexParams params) {
-        return submitJob(VariantIndexOperationTool.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE, VariantIndexOperationTool.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @Deprecated
@@ -213,7 +216,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = "Files to remove") @QueryParam("file") String file,
             @ApiParam(value = "Resume a previously failed indexation") @QueryParam("resume") boolean resume) throws WebServiceException {
         VariantFileDeleteParams params = new VariantFileDeleteParams(getIdList(file), resume);
-        return submitJob(VariantFileDeleteOperationTool.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE, VariantFileDeleteOperationTool.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @GET
@@ -414,7 +417,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = VariantExportParams.DESCRIPTION, required = true) VariantExportParams params) {
-        return submitJob(VariantExportTool.ID, project, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(project, study, JobType.NATIVE, VariantExportTool.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @POST
@@ -435,7 +438,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = VariantWalkerParams.DESCRIPTION, required = true) VariantWalkerParams params) {
-        return submitJob(VariantWalkerTool.ID, project, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(project, study, JobType.WALKER, VariantWalkerTool.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @GET
@@ -481,7 +484,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = VariantStatsAnalysisParams.DESCRIPTION, required = true) VariantStatsAnalysisParams params) {
-        return submitJob(VariantStatsAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE, VariantStatsAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @POST
@@ -498,7 +501,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = VariantStatsExportParams.DESCRIPTION, required = true) VariantStatsExportParams params) {
-        return submitJob("variant-stats-export", project, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(project, study, JobType.NATIVE, "variant-stats-export", params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
 //    public static class StatsDeleteParams extends ToolParams {
@@ -604,7 +607,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = SampleVariantFilterParams.DESCRIPTION, required = true) SampleVariantFilterParams params) {
-        return submitJob(SampleVariantFilterAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE, SampleVariantFilterAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @POST
@@ -620,7 +623,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = SampleEligibilityAnalysisParams.DESCRIPTION, required = true) SampleEligibilityAnalysisParams params) {
-        return submitJob(SampleEligibilityAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE, SampleEligibilityAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @POST
@@ -641,7 +644,9 @@ public class VariantWebService extends AnalysisWebService {
             ExomiserAnalysisUtils.checkResources(params.getExomiserVersion(), study, catalogManager, token, opencgaHome);
 
             // Submit the exomiser analysis
-            return submitJobRaw(ExomiserWrapperAnalysis.ID, null, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+            ToolInfo toolInfo = new ToolInfo()
+                    .setId(ExomiserWrapperAnalysis.ID);
+            return submitJobRaw(null, study, JobType.NATIVE, toolInfo, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
         });
     }
 
@@ -740,7 +745,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = SampleVariantStatsAnalysisParams.DESCRIPTION, required = true) SampleVariantStatsAnalysisParams params) {
-        return submitJob(SampleVariantStatsAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE, SampleVariantStatsAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @GET
@@ -792,7 +797,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = CohortVariantStatsAnalysisParams.DESCRIPTION, required = true) CohortVariantStatsAnalysisParams params) {
-        return submitJob(CohortVariantStatsAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE, CohortVariantStatsAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @GET
@@ -968,7 +973,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = GwasAnalysisParams.DESCRIPTION, required = true) GwasAnalysisParams params) {
-        return submitJob(GwasAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE, GwasAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
 //    @POST
@@ -998,7 +1003,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = MutationalSignatureAnalysisParams.DESCRIPTION, required = true) MutationalSignatureAnalysisParams params) {
-        return submitJob(MutationalSignatureAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE, MutationalSignatureAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @GET
@@ -1116,7 +1121,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = HRDetectAnalysisParams.DESCRIPTION, required = true) HRDetectAnalysisParams params) {
-        return submitJob(HRDetectAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE, HRDetectAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
 
@@ -1189,8 +1194,8 @@ public class VariantWebService extends AnalysisWebService {
             FamilyVariantQcAnalysis.checkParameters(params, study, catalogManager, token);
 
             // Submit the family QC analysis
-            return submitJobRaw(FamilyVariantQcAnalysis.ID, null, study, params, jobName, jobDescription, dependsOn, jobTags,
-                    scheduledStartTime, jobPriority, dryRun);
+            return submitJobRaw(null, study, JobType.NATIVE, FamilyVariantQcAnalysis.ID, params, jobName, jobDescription, dependsOn,
+                    jobTags, scheduledStartTime, jobPriority, dryRun);
         });
     }
 
@@ -1212,8 +1217,8 @@ public class VariantWebService extends AnalysisWebService {
             IndividualVariantQcAnalysis.checkParameters(params, study, catalogManager, token);
 
             // Submit the individual QC analysis
-            return submitJobRaw(IndividualVariantQcAnalysis.ID, null, study, params, jobName, jobDescription, dependsOn, jobTags,
-                    scheduledStartTime, jobPriority, dryRun);
+            return submitJobRaw(null, study, JobType.NATIVE, IndividualVariantQcAnalysis.ID, params, jobName, jobDescription, dependsOn,
+                    jobTags, scheduledStartTime, jobPriority, dryRun);
         });
     }
 
@@ -1235,9 +1240,25 @@ public class VariantWebService extends AnalysisWebService {
             SampleVariantQcAnalysis.checkParameters(params, study, catalogManager, token);
 
             // Submit the sample QC analysis
-            return submitJobRaw(SampleVariantQcAnalysis.ID, null, study, params, jobName, jobDescription, dependsOn, jobTags,
-                    scheduledStartTime, jobPriority, dryRun);
+            return submitJobRaw(null, study, JobType.NATIVE, SampleVariantQcAnalysis.ID, params, jobName, jobDescription, dependsOn,
+                    jobTags, scheduledStartTime, jobPriority, dryRun);
         });
+    }
+
+    @POST
+    @Path("/liftover/run")
+    @ApiOperation(value = LiftoverWrapperAnalysis.DESCRIPTION, response = Job.class)
+    public Response liftoverRun(
+            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
+            @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
+            @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
+            @ApiParam(value = LiftoverWrapperParams.DESCRIPTION, required = true) LiftoverWrapperParams params) {
+        return submitJob(study, JobType.NATIVE, LiftoverWrapperAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @POST
@@ -1253,7 +1274,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = PlinkWrapperParams.DESCRIPTION, required = true) PlinkWrapperParams params) {
-        return submitJob(PlinkWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE, PlinkWrapperAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @POST
@@ -1269,7 +1290,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = RvtestsWrapperParams.DESCRIPTION, required = true) RvtestsWrapperParams params) {
-        return submitJob(RvtestsWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE, RvtestsWrapperAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @POST
@@ -1285,7 +1306,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = GatkWrapperParams.DESCRIPTION, required = true) GatkWrapperParams params) {
-        return submitJob(GatkWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE, GatkWrapperAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @POST
@@ -1301,7 +1322,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = KnockoutAnalysisParams.DESCRIPTION, required = true) KnockoutAnalysisParams params) {
-        return submitJob(KnockoutAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE, KnockoutAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @GET
@@ -1347,7 +1368,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = GenomePlotAnalysisParams.DESCRIPTION, required = true) GenomePlotAnalysisParams params) {
         // To be sure: do not update quality control sample
         params.setSample(null);
-        return submitJob(GenomePlotAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE, GenomePlotAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @POST
@@ -1449,7 +1470,7 @@ public class VariantWebService extends AnalysisWebService {
     }
 
     // FIXME This method must be deleted once deprecated params are not supported any more
-    static Query getVariantQuery(QueryOptions queryOptions) {
+    public static Query getVariantQuery(QueryOptions queryOptions) {
         Query query = VariantStorageManager.getVariantQuery(queryOptions);
         queryOptions.forEach((key, value) -> {
             org.opencb.commons.datastore.core.QueryParam newKey = DEPRECATED_VARIANT_QUERY_PARAM.get(key);

@@ -1,9 +1,10 @@
 package org.opencb.opencga.server.generator.openapi.models;
 
 public class Property {
-    private String type; // Tipo de la propiedad ("string", "array", "object")
-    private String ref;  // Referencia a otra definición
-    private Property items; // Tipo de los elementos (para listas)
+
+    private String type;
+    private String ref;
+    private Property items;
 
     public Property() {
     }

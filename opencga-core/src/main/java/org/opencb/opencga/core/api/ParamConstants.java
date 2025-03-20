@@ -83,6 +83,8 @@ public class ParamConstants {
     public static final String OVERWRITE = "overwrite";
     private static final String UP_TO_100 = " up to a maximum of 100";
 
+    public static final String DEFAULT_MIN_NEXTFLOW_VERSION = "24.04.4";
+
     public static final String CELLBASE_URL = "https://ws.zettagenomics.com/cellbase";
     public static final String CELLBASE_VERSION = "v5.8";
     public static final String CELLBASE_DATA_RELEASE_GRCH38 = "7";
@@ -563,7 +565,17 @@ public class ParamConstants {
     public static final String JOB_DEPENDS_ON_PARAM = "dependsOn";
     public static final String JOB_DEPENDS_ON_DESCRIPTION = "Comma separated list of existing job IDs the job will depend on.";
     public static final String JOB_TOOL_ID_PARAM = "toolId";
+    public static final String JOB_TOOL_EXTERNAL_EXECUTOR_ID_PARAM = "tool.externalExecutor.id";
+    public static final String JOB_TOOL_EXTERNAL_EXECUTOR_ID_DESCRIPTION = "Id of the external executor. This field is only applicable for "
+            + "jobs executed by an external executor.";
+    public static final String JOB_DRY_RUN_PARAM = "dryRun";
+    public static final String JOB_TYPE_PARAM = "type";
+    public static final String JOB_PARENT_ID_PARAM = "parentId";
+    public static final String JOB_PARENT_ID_DESCRIPTION = "Job id that generated this job (if any).";
+    public static final String JOB_INTERNAL_KILL_JOB_REQUESTED_PARAM = "internal.killJobRequested";
+    public static final String JOB_INTERNAL_KILL_JOB_REQUESTED_DESCRIPTION = "Flag indicating that the user requested to kill the job.";
     public static final String JOB_TOOL_TYPE_PARAM = "toolType";
+    public static final String JOB_TYPE_DESCRIPTION = "Job type (NATIVE, WORKFLOW, CUSTOM or WALKER)";
     public static final String JOB_TOOL_ID_DESCRIPTION = "Tool ID executed by the job" + REGEX_SUPPORT;
     public static final String JOB_TOOL_TYPE_DESCRIPTION = "Tool type executed by the job [OPERATION, ANALYSIS]";
     public static final String JOB_USER_PARAM = "userId";
@@ -587,6 +599,31 @@ public class ParamConstants {
             + " OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will"
             + " not actually run.";
 
+    // ---------------------------------------------
+    // WORKFLOWS
+    public static final String WORKFLOW_VERSION_PARAM = "version";
+    public static final String WORKFLOW_VERSION_DESCRIPTION = "Comma separated list of workflow versions. 'all' to get all the workflow "
+            + "versions. Not supported if multiple workflow ids are provided";
+    public static final String WORKFLOWS_ID_PARAM = "id";
+    public static final String WORKFLOWS_UUID_PARAM = "uuid";
+    public static final String WORKFLOWS_NAME_PARAM = "name";
+    public static final String WORKFLOWS_TYPE_PARAM = "type";
+    public static final String WORKFLOWS_TAGS_PARAM = "tags";
+    public static final String WORKFLOWS_DRAFT_PARAM = "draft";
+    public static final String WORKFLOWS_INTERNAL_REGISTRATION_USER_ID_PARAM = "internal.registrationUserId";
+    public static final String WORKFLOWS_MANAGER_ID_PARAM = "manager.id";
+    public static final String WORKFLOWS_ID_DESCRIPTION = "Comma separated list of workflow IDs" + UP_TO_100 + REGEX_SUPPORT;
+    public static final String WORKFLOWS_NAME_DESCRIPTION = "Comma separated list of workflow names" + UP_TO_100 + REGEX_SUPPORT;
+    public static final String WORKFLOWS_UUID_DESCRIPTION = "Comma separated list of workflow UUIDs" + UP_TO_100;
+    public static final String WORKFLOWS_TYPE_DESCRIPTION = "Workflow type. Allowed types: [CLINICAL_INTERPRETATION, SECONDARY_ANALYSIS, "
+            + "RESEARCH or OTHER]";
+    public static final String WORKFLOWS_TAGS_DESCRIPTION = "Comma separated list of tags";
+    public static final String WORKFLOWS_DRAFT_DESCRIPTION = "Boolean field indicating whether the workflow is a draft or not.";
+    public static final String WORKFLOWS_INTERNAL_REGISTRATION_USER_ID_DESCRIPTION = "UserId that created the workflow.";
+    public static final String WORKFLOWS_MANAGER_ID_DESCRIPTION = "Id of the workflow system (Allowed values: NEXTFLOW).";
+    public static final String WORKFLOW_SCRIPTS_ACTION_DESCRIPTION = "Action to be performed if the array of scripts is being updated "
+            + "[SET, ADD, REMOVE]";
+    public static final String WORKFLOW_SCRIPTS_ACTION_PARAM = "scriptsAction";
     // ---------------------------------------------
     public static final String JOB_INPUT_FILES_PARAM = "input";
     public static final String JOB_INPUT_FILES_DESCRIPTION = "Comma separated list of file IDs used as input.";
@@ -1534,6 +1571,8 @@ public class ParamConstants {
     public static final String JOBS_DESCRIPTION = "Comma separated list of job IDs or UUIDs" + UP_TO_100;
     public static final String JOB_IDS_DESCRIPTION = "Comma separated list of job IDs" + UP_TO_100 + REGEX_SUPPORT;
     public static final String JOB_UUIDS_DESCRIPTION = "Comma separated list of job UUIDs" + UP_TO_100;
+    public static final String WORKFLOWS_DESCRIPTION = "Comma separated list workflow IDs or UUIDs" + UP_TO_100;
+    public static final String WORKFLOW_DESCRIPTION = "Workflow ID or UUID";
     // ---------------------------------------------
     public static final String PROJECTS_DESCRIPTION = "Comma separated list of projects [organization@]project" + UP_TO_100;
     // ---------------------------------------------
