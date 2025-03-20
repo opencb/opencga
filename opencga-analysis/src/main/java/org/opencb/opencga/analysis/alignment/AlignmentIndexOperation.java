@@ -137,20 +137,14 @@ public class AlignmentIndexOperation extends OpenCgaToolScopeStudy {
             }
 
             // Link generated BAI file and update samples info, related file
-            File baiCatalogFile = AlignmentAnalysisUtils.linkAndUpdate(inputCatalogFile, outputPath, getJobId(), study, catalogManager,
-                    token);
+            File baiCatalogFile = AlignmentAnalysisUtils.linkAndUpdate(inputCatalogFile, outputPath, moveSuccessful ? null : getJobId(),
+                    study, catalogManager, token);
 
             // Update BAM file internal in order to set the alignment index (BAI)
             FileInternalAlignmentIndex fileAlignmentIndex = new FileInternalAlignmentIndex(new InternalStatus(InternalStatus.READY),
                     baiCatalogFile.getId(), "HTSJDK library");
             catalogManager.getFileManager().updateFileInternalAlignmentIndex(study, inputCatalogFile, fileAlignmentIndex, token);
         });
-    }
-
-    @Override
-    public AlignmentIndexOperation setStudy(String study) {
-        super.setStudy(study);
-        return this;
     }
 
     public String getInputFile() {
