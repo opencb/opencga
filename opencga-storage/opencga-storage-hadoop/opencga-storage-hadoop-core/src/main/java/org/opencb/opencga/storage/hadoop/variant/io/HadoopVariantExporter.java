@@ -82,7 +82,9 @@ public class HadoopVariantExporter extends VariantExporter {
         Query query = variantQuery.getQuery();
         QueryOptions queryOptions = variantQuery.getInputOptions();
         boolean smallQuery = false;
-        if (!queryOptions.getBoolean("skipSmallQuery", false)) {
+        if (queryOptions.getBoolean("skipSmallQuery", false)) {
+            logger.info("Skip small query check");
+        } else {
             ParsedVariantQuery.VariantQueryXref xrefs = VariantQueryParser.parseXrefs(query);
             if (xrefs.getVariants().size() > 0 && xrefs.getVariants().size() < 2000) {
                 // FIXME: Is this scenario still needed?

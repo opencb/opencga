@@ -55,6 +55,13 @@ public class HadoopVariantWalkerTest extends VariantStorageBaseTest implements H
                         .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
         );
 
+        inputUri = VariantStorageBaseTest.getResourceUri("variant-test-unusual-contigs.vcf");
+        VariantStorageBaseTest.runDefaultETL(inputUri, variantStorageManager, studyMetadata,
+                new ObjectMap(VariantStorageOptions.TRANSFORM_FORMAT.key(), "avro")
+                        .append(VariantStorageOptions.ANNOTATE.key(), false)
+                        .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
+        );
+
         VariantHbaseTestUtils.printVariants(variantStorageManager.getDBAdaptor(), newOutputUri());
 
         dockerImage = buildDocker();
