@@ -59,6 +59,7 @@ if [ -d "$OPENCGA_HOME_DIR" ]; then
   OPENCGA_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=opencga.version -q -DforceStdout)"
   cd "$OPENCGA_HOME_DIR" || exit 2
   OPENCGA_CURRENT_VERSION="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
+  STORAGE_HADOOP_DEPS_DEFAULT="$(mvn help:evaluate -Dexpression=opencga-storage-hadoop-deps.id-default -q -DforceStdout)"
 
   echo "OPENCGA_DEPENDENCY_VERSION= $OPENCGA_DEPENDENCY_VERSION"
   echo "OPENCGA_CURRENT_VERSION= $OPENCGA_CURRENT_VERSION"
@@ -71,7 +72,7 @@ if [ -d "$OPENCGA_HOME_DIR" ]; then
     fi
 
     #mvn clean install -DskipTests -Pstorage-hadoop -P"$STORAGE_HADOOP_DEPS" -T 2
-    mvn clean install -DskipTests --no-transfer-progress -P storage-hadoop,"$STORAGE_HADOOP_DEPS",opencga-storage-hadoop-deps -Dopencga.war.name=opencga -Dcheckstyle.skip -pl ':opencga-app' --also-make -T 2 --no-transfer-progress
+    mvn clean install -DskipTests -P storage-hadoop,"$STORAGE_HADOOP_DEPS",opencga-storage-hadoop-deps -Dopencga.war.name=opencga -Dcheckstyle.skip -pl ':opencga-app' --also-make -T 2 --no-transfer-progress
     # shellcheck disable=SC2181
     if [ $? -eq 0 ]; then
       echo "Opencga compilation success!"
@@ -108,4 +109,8 @@ fi
 
 cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
 
-mvn clean install -DskipTests --no-transfer-progress -T 2 -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" -Dopencga-storage-hadoop-deps.id="$STORAGE_HADOOP_DEPS" -Dopencga.war.name=opencga
+mvn clean install -DskipTests --no-transfer-progress -T 2 \
+    -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
+    -Dopencga-storage-hadoop-deps.id-default=$STORAGE_HADOOP_DEPS_DEFAULT \
+    -Dopencga-storage-hadoop-deps.id="$STORAGE_HADOOP_DEPS" \
+    -Dopencga.war.name=opencga
