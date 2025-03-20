@@ -360,9 +360,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     @Override
     public List<StoragePipelineResult> index(List<URI> inputFiles, URI outdirUri, boolean doExtract, boolean doTransform, boolean doLoad)
             throws StorageEngineException {
-        boolean isolate = options.getBoolean(VariantStorageOptions.TRANSFORM_ISOLATE.key(),
-                VariantStorageOptions.TRANSFORM_ISOLATE.defaultValue());
-        if (!isolate) {
+        if (!doLoad) {
+            options.put(VariantStorageOptions.TRANSFORM_ISOLATE.key(), true);
+        } else {
             createStudyIfNeeded();
         }
         List<StoragePipelineResult> results = super.index(inputFiles, outdirUri, doExtract, doTransform, doLoad);
