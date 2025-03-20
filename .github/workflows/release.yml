@@ -10,10 +10,8 @@ jobs:
 #    uses: ./.github/workflows/build-java-enterprise-workflow.yml
 #    with:
 #      storage_hadoop: hdp3.1
-#      artifact_name: build-folder
+#      artifact_name: hdp-build-folder
 #      release: true
-
-
 
   build-emr:
     uses: ./.github/workflows/build-java-enterprise-workflow.yml
@@ -22,12 +20,12 @@ jobs:
       artifact_name: emr-build-folder
       release: true
 
-  deploy-hdp-docker:
-    uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
-    needs: build-emr
-    secrets: inherit
-    with:
-      artifact_name: build-folder
+#  deploy-hdp-docker:
+#    uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
+#    needs: hdp-build-hdp
+#    secrets: inherit
+#    with:
+#      artifact_name: build-folder
 
   deploy-emr-docker:
     uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
@@ -39,11 +37,11 @@ jobs:
   release:
     name: Create GitHub Release
     runs-on: ubuntu-22.04
-    needs: [ build-emr, deploy-hdp-docker, deploy-emr-docker ]
+    needs: [ build-emr, deploy-emr-docker ]
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: build-folder
+          name: emr-build-folder
       - name: GitHub Release
         uses: softprops/action-gh-release@v1
         with:
