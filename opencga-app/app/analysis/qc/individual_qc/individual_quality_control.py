@@ -1,8 +1,8 @@
+from common import Relatedness
 from pydantic import BaseModel, Field
+from quality_control import Software, Image
 from typing import Dict, List, Optional, Any
 
-from common import Relatedness
-from quality_control import Software, Image
 
 class InferredSex(BaseModel):
 	method: Optional[str] = None

@@ -1,19 +1,18 @@
 #!/usr/bin/env python3
 
-import os
-import sys
 import argparse
-import logging
-import json
-import shutil
 import gzip
+import json
+import logging
+import os
+import shutil
+import sys
 from datetime import datetime
 
-from utils import create_output_dir
-#from sample_qc.sample_qc import SampleQCExecutor
+from family_qc.family_qc_executor import FamilyQCExecutor
+# from sample_qc.sample_qc import SampleQCExecutor
 from individual_qc.individual_qc_executor import IndividualQCExecutor
-from family_qc.family_qc import FamilyQCExecutor
-
+from utils import create_output_dir
 
 VERSION = '0.0.1'
 LOGGER = logging.getLogger('variant_qc_logger')

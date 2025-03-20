@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
-import os
-import logging
-import subprocess
-import json
 import base64
+import json
+import logging
+import os
+import subprocess
 from pydantic import BaseModel, Field
-from typing import Dict, List, Optional, Any
+from typing import Dict, List
 
 LOGGER = logging.getLogger('variant_qc_logger')
 
@@ -50,6 +50,32 @@ def get_sex_from_individual_id(individual_id, samples_info):
     for sample_info in samples_info.values():
         if sample_info.individualId == individual_id:
             return sample_info.sex
+    return None
+
+def get_samples_info_from_individual(individual, sample_ids):
+    samples_info = {}
+
+    if individual.get("samples"):
+        for sample in individual.get("samples"):
+            sample_id = sample["id"]
+            if  sample_id in sample_ids:
+                info = SampleInfo(sampleId=sample_id,
+                                  fatherSampleId="0",
+                                  motherSampleId="0",
+                                  individualId=individual.get("id"),
+                                  familyIds=individual["familyIds"],
+                                  roles={},
+                                  sex=get_individual_sex(individual),
+                                  phenotype=get_individual_phenotype(individual))
+
+                samples_info[sample_id] = info
+
+    return samples_info
+
+def get_sample_info_from_individual_id(individual_id, samples_info):
+    for sample_id, sample_info in samples_info.items():
+        if sample_info.individualId == individual_id:
+            return sample_info
     return None
 
 def get_sample_id_from_individual_id(individual_id, samples_info):

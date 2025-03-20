@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
 
-import os
-import logging
-import gzip
-import json
-import subprocess
-
 import individual_qc
-from utils import *
+import logging
+import os
+import subprocess
 from quality_control import *
+from utils import *
 
 LOGGER = logging.getLogger('variant_qc_logger')
 

@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 
-import os
-import logging
-import gzip
-import json
-
 import common
-from utils import *
+import json
+import logging
+import os
 from quality_control import *
+from utils import *
 
 LOGGER = logging.getLogger('variant_qc_logger')
 
@@ -105,42 +103,6 @@ class RelatednessAnalysis:
 
         # Return filtered VCF path:
         return filtered_vcf_path
-
-    # def filter_rename_variants_vcf(self):
-    #     # Reading VCF
-    #     vcf_fhand = gzip.open(self.executor["vcf_file"], 'r')
-    #     # Reading pop_freq file
-    #     input_pop_freq_fhand = open(self.pop_freq_file, 'r')
-    #     LOGGER.info('Getting variant IDs to include in the VCF from file: "{}"'.format(self.pop_freq_file))
-    #     variant_ids_to_include = [line.strip().split()[1] for line in input_pop_freq_fhand]
-    #
-    #     # Create output dir and file
-    #     filtered_vcf_outdir_fpath = create_output_dir(path_elements=[self.output_relatedness_dir, 'filtered_vcf'])
-    #     output_file_name = 'filtered_vcf_' + os.path.basename(self.executor["vcf_file"])
-    #     filtered_vcf_fpath = os.path.join(filtered_vcf_outdir_fpath, output_file_name)
-    #     filtered_vcf_fhand = gzip.open(filtered_vcf_fpath, 'wt')
-    #     LOGGER.info('Generating filtered VCF with variant IDs under ID column: "{}"'.format(filtered_vcf_fpath))
-    #
-    #     # Generate VCF with variant IDs under ID column
-    #     for line in vcf_fhand:
-    #         line = line.decode()
-    #         if line.startswith('#'):
-    #             # Writing VCF header as it is
-    #             filtered_vcf_fhand.write(line)
-    #             continue
-    #         else:
-    #             # Getting variant data
-    #             variant_items = line.strip().split()
-    #             variant_id = ':'.join([variant_items[0], variant_items[1], variant_items[3], variant_items[4]])
-    #             if 'chr' not in variant_items[0]:
-    #                 variant_id = 'chr' + variant_id
-    #             if variant_id in variant_ids_to_include:
-    #                 variant_items[2] = variant_id
-    #                 filtered_vcf_fhand.write('\t'.join(variant_items) + '\n')
-    #     LOGGER.info('Filtered VCF with variant IDs under ID column generated: "{}"'.format(filtered_vcf_fpath))
-    #
-    #     # Return filtered VCF path (variant IDs under ID column)
-    #     return filtered_vcf_fpath
 
     def get_samples_individuals_info(self):
         family_info_fhand = open(self.executor["info_file"])
@@ -332,57 +294,6 @@ class RelatednessAnalysis:
         
         return inferred_relationship
 
-    # @staticmethod
-    # def relatedness_report(samples_individuals_info):
-    #     # Getting reported family relationship block:
-    #     expected_keys = {"sampleId1","individualInfo1","sampleId2","individualInfo2"}
-    #     if expected_keys != set(samples_individuals_info.keys()):
-    #         msg = "Expected keys {} are not present in samples_individuals_info dictionary. Keys found: {}".format(expected_keys, samples_individuals_info.keys())
-    #         LOGGER.error(msg)
-    #         raise TypeError(msg)
-    #     LOGGER.info('Getting reported relatedness information for sample {} and sample {}'.format(samples_individuals_info["sampleId1"], samples_individuals_info["sampleId2"]))
-    #
-    #     individual1_info = samples_individuals_info["individualInfo1"]
-    #     individual2_info = samples_individuals_info["individualInfo2"]
-    #     if individual1_info["individualId"] == "" or individual2_info["individualId"] == "":
-    #         LOGGER.warning('No individual information available for sample {} and sample {}). Hence reported family relationship UNKNOWN'.format(
-    #             samples_individuals_info["sampleId1"], samples_individuals_info["sampleId2"]))
-    #         reported_relationship = "UNKNOWN"
-    #     else:
-    #         reported_relationship = []
-    #         unknown_results = [False, False]
-    #         if individual1_info["individualId"] in individual2_info["familyMembersRoles"].keys():
-    #             reported_relationship.append(individual2_info["familyMembersRoles"][individual1_info["individualId"]])
-    #         else:
-    #             reported_relationship.append("UNKNOWN")
-    #             unknown_results[0] = True
-    #
-    #         if individual2_info["individualId"] in individual1_info["familyMembersRoles"].keys():
-    #             reported_relationship.append(
-    #                 individual1_info["familyMembersRoles"][individual2_info["individualId"]])
-    #         else:
-    #             reported_relationship.append("UNKNOWN")
-    #             unknown_results[1] = True
-    #
-    #         if all(unknown_results):
-    #             reported_relationship = "SPOUSE, UNRELATED"
-    #             LOGGER.info(
-    #                 "UNRELATED family relationship found for sample {} (individual: {}) and sample {} (individual: {})".format(
-    #                     samples_individuals_info["sampleId1"], individual1_info["individualId"], samples_individuals_info["sampleId2"],
-    #                     individual2_info["individualId"]))
-    #         elif any(unknown_results):
-    #             LOGGER.warning(
-    #                 'Family relationship discrepancy found for sample {} (individual: {}) and sample {} (individual: {}). Hence reported family relationship UNKNOWN'.format(
-    #                     samples_individuals_info["sampleId1"], individual1_info["individualId"], samples_individuals_info["sampleId2"],individual2_info["individualId"]))
-    #             reported_relationship = "UNKNOWN"
-    #         else:
-    #             reported_relationship = ', '.join(reported_relationship)
-    #             LOGGER.info(
-    #                 "Family relationship reported for sample {} (individual: {}) and sample {} (individual: {})".format(
-    #                     samples_individuals_info["sampleId1"], individual1_info["individualId"], samples_individuals_info["sampleId2"],individual2_info["individualId"]))
-    #
-    #     return reported_relationship
-
     def parse_plink_genome(self, plink_genome_fpath):
         # Reading plink genome file (.genome)
         LOGGER.info('Getting PLINK results from file: "{}"'.format(plink_genome_fpath))
@@ -420,37 +331,6 @@ class RelatednessAnalysis:
                     if score.sampleId2 in samples_info[score.sampleId1].roles:
                         score.reportedRelationship = samples_info[score.sampleId1].roles[score.sampleId2]
 
-                # all_samples_individuals_info = self.get_samples_individuals_info()
-                # samples_individuals = {}
-                # for sample,individual_info in all_samples_individuals_info.items():
-                #     if sample == score["sampleId1"]:
-                #         samples_individuals["sampleId1"] = sample
-                #         samples_individuals["individualInfo1"] = individual_info
-                #     if sample == score["sampleId2"]:
-                #         samples_individuals["sampleId2"] = sample
-                #         samples_individuals["individualInfo2"] = individual_info
-                # score["reportedRelationship"] = RelatednessAnalysis.relatedness_report(samples_individuals)
-
-                # if ((score.sampleId1 == self.executor["mother_id"] and score.sampleId2 == self.executor["father_id"])
-                #     or (score.sampleId1 == self.executor["father_id"] and score.sampleId2 == self.executor["mother_id"])):
-                #     score.reportedRelationship = "SPOUSE"
-                # elif ((score.sampleId1 == self.executor["sample_id"] and score.sampleId2 == self.executor["mother_id"])
-                #       or (score.sampleId1 == self.executor["mother_id"] and score.sampleId2 == self.executor["sample_id"])):
-                #     if self.executor["sex"] == 1:
-                #         score.reportedRelationship = "SON"
-                #     elif self.executor["sex"] == 2:
-                #         score.reportedRelationship = "DAUGTHER"
-                #     else:
-                #         score.reportedRelationship = "SON, DAUGTHER"
-                # elif ((score.sampleId1 == self.executor["sample_id"] and score.sampleId2 == self.executor["father_id"])
-                #       or (score.sampleId1 == self.executor["father_id"] and score.sampleId2 == self.executor["sample_id"])):
-                #     if self.executor["sex"] == 1:
-                #         score.reportedRelationship = "SON"
-                #     elif self.executor["sex"] == 2:
-                #         score.reportedRelationship = "DAUGTHER"
-                #     else:
-                #         score.reportedRelationship = "SON, DAUGTHER"
-
                 # Inferring family relationship block:
                 score.inferredRelationship = self.relatedness_inference(score.sampleId1, score.sampleId2, values)
 
@@ -472,7 +352,7 @@ class RelatednessAnalysis:
 
             # Filtering VCF and renaming variants
             filtered_vcf_fpath = self.filter_variants()
-            
+
             # Performing IBD analysis from PLINK
             plink_genome_fpath = self.relatedness_plink(filtered_vcf_fpath)
 

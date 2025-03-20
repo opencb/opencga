@@ -44,26 +44,6 @@ class IndividualQCExecutor:
 					return True
 		return False
 
-	def get_samples_info_from_individual(self, individual):
-		samples_info = {}
-
-		if individual.get("samples"):
-			for sample in individual.get("samples"):
-				sample_id = sample["id"]
-				if  sample_id in self.sample_ids:
-					info = SampleInfo(sampleId=sample_id,
-										fatherSampleId="0",
-										motherSampleId="0",
-									  	individualId=individual.get("id"),
-									  	familyIds=individual["familyIds"],
-									  	roles={},
-										sex=get_individual_sex(individual),
-										phenotype=get_individual_phenotype(individual))
-
-					samples_info[sample_id] = info
-
-		return samples_info
-
 	def get_sample_id_by_individual_id(self, samples_info, individual_id):
 		for sample_id, sample_info in samples_info.items():
 			if sample_info.individualId == individual_id:
@@ -74,15 +54,15 @@ class IndividualQCExecutor:
 		samples_info = {}
 
 		# Get sample info from the parents and child
-		samples_info.update(self.get_samples_info_from_individual(individual))
+		samples_info.update(get_samples_info_from_individual(individual, self.sample_ids))
 		father_id = None
 		if individual["father"] and individual["father"]["id"]:
 			father_id = individual["father"]["id"]
-			samples_info.update(self.get_samples_info_from_individual(individual["father"]))
+			samples_info.update(get_samples_info_from_individual(individual["father"], self.sample_ids))
 		mother_id = None
 		if individual["mother"] and individual["mother"]["id"]:
 			mother_id = individual["mother"]["id"]
-			samples_info.update(self.get_samples_info_from_individual(individual["mother"]))
+			samples_info.update(get_samples_info_from_individual(individual["mother"], self.sample_ids))
 
 		# Set parents info
 		if father_id != None and mother_id != None:

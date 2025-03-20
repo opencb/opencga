@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
+from quality_control import Software, Image
 from typing import Dict, List, Optional, Any
 
-from quality_control import Software, Image
 
 class Score(BaseModel):
     sampleId1: str
