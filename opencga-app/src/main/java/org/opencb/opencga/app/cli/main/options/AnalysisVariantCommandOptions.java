@@ -830,14 +830,8 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--overwrite"}, description = "Overwrite quality control in catalog", required = false, arity = 1)
         public Boolean overwrite;
     
-        @Parameter(names = {"--relatedness-prune-in-freqs-file"}, description = "Relatedness frequencies file to prune-in input variants", required = false, arity = 1)
-        public String relatednessPruneInFreqsFile;
-    
-        @Parameter(names = {"--relatedness-prune-out-markers-file"}, description = "Relatedness markers file to prune-out input variants", required = false, arity = 1)
-        public String relatednessPruneOutMarkersFile;
-    
-        @Parameter(names = {"--relatedness-thresholds-file"}, description = "Relatedness thresholds file", required = false, arity = 1)
-        public String relatednessThresholdsFile;
+        @Parameter(names = {"--resources-dir"}, description = "OpenCGA catalog directory where the analysis resources are located", required = false, arity = 1)
+        public String resourcesDir;
     
         @Parameter(names = {"--outdir"}, description = "Output dir for the job.", required = false, arity = 1)
         public String outdir;

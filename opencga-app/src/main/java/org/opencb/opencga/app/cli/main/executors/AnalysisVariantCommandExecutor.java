@@ -629,9 +629,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "relatednessMaf", commandOptions.relatednessMaf, true);
             putNestedIfNotNull(beanParams, "skipIndex", commandOptions.skipIndex, true);
             putNestedIfNotNull(beanParams, "overwrite", commandOptions.overwrite, true);
-            putNestedIfNotEmpty(beanParams, "relatednessPruneInFreqsFile", commandOptions.relatednessPruneInFreqsFile, true);
-            putNestedIfNotEmpty(beanParams, "relatednessPruneOutMarkersFile", commandOptions.relatednessPruneOutMarkersFile, true);
-            putNestedIfNotEmpty(beanParams, "relatednessThresholdsFile", commandOptions.relatednessThresholdsFile, true);
+            putNestedIfNotEmpty(beanParams, "resourcesDir", commandOptions.resourcesDir, true);
             putNestedIfNotEmpty(beanParams, "outdir", commandOptions.outdir, true);
 
             familyQcAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()

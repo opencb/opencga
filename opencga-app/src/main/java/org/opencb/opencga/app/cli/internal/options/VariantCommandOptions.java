@@ -1501,15 +1501,9 @@ public class VariantCommandOptions {
         @Parameter(names = {"--overwrite"}, description = QC_OVERWRITE_DESCRIPTION, arity = 1)
         public Boolean overwrite;
 
-        @Parameter(names = {"--relatedness-prune-in-freqs-file"}, description = RELATEDNESS_PRUNE_IN_FREQS_FILE_DESCRIPTION,
+        @Parameter(names = {"--resources-dir"}, description = RESOURCES_DIR_DESCRIPTION,
                 arity = 1)
-        public String relatednessPruneInFreqsFile;
-
-        @Parameter(names = {"--relatedness-prune-out-markers-file"}, description = RELATEDNESS_PRUNE_OUT_MARKERS_FILE_DESCRIPTION, arity = 1)
-        public String relatednessPruneOutMarkersFile;
-
-        @Parameter(names = {"--relatedness-thresholds-file"}, description = RELATEDNESS_THRESHOLDS_FILE_DESCRIPTION, arity = 1)
-        public String relatednessThresholdsFile;
+        public String resourcesDir;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
         public String outdir;

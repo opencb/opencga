@@ -171,6 +171,22 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
         }
     }
 
+    protected static Path checkUserResourcesDir(String userResourcesDir, String studyId, CatalogManager catalogManager, String token) throws ToolException {
+        Path userResourcesPath = null;
+        if (!StringUtils.isEmpty(userResourcesDir)) {
+            try {
+                File file = catalogManager.getFileManager().get(studyId, userResourcesDir, QueryOptions.empty(), token).first();
+                userResourcesPath = Paths.get(file.getUri().getPath());
+                if (!Files.exists(userResourcesPath)) {
+                    throw new ToolException("User resources path does not exist: " + userResourcesPath);
+                }
+            } catch (CatalogException e) {
+                throw new ToolException("Error accessing user resources dir '" + userResourcesDir + "'", e);
+            }
+        }
+        return userResourcesPath;
+    }
+
     protected static void checkPermissions(StudyPermissions.Permissions permissions, Boolean skipIndex, String studyId,
                                            CatalogManager catalogManager, String token) throws ToolException {
         checkStudy(studyId, catalogManager, token);

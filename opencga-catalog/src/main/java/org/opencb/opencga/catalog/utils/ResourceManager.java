@@ -209,6 +209,26 @@ public class ResourceManager  {
         throw new ResourceException("Unmatched configuration: resource '" + resourceId + "' not found in the configuration file.");
     }
 
+    public String getResourceFilename(String resourceId) throws ResourceException, IOException {
+        loadConfiguration();
+
+        // Sanity check
+        if (StringUtils.isEmpty(resourceId)) {
+            throw new ResourceException("Resource ID is empty.");
+        }
+
+        Resource resourceConfig = configuration.getAnalysis().getResource();
+        for (ResourceFile resourceFile : resourceConfig.getFiles()) {
+            if (resourceId.equalsIgnoreCase(resourceFile.getId())) {
+                Path analysisResourcePath = resourceConfig.getBasePath().resolve(resourceFile.getPath());
+                return analysisResourcePath.getFileName().toString();
+            }
+        }
+
+        // Resource not found !!
+        throw new ResourceException("Unmatched configuration: resource '" + resourceId + "' not found in the configuration file.");
+    }
+
     //-------------------------------------------------------------------------
     //  P R I V A T E      M E T H O D S
     //-------------------------------------------------------------------------

@@ -34,7 +34,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.ResourceException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.ResourceManager;
-import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
@@ -71,12 +70,7 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
     public static final String DESCRIPTION = "Run quality control (QC) for a given family. It computes the relatedness scores among the"
             + " family members";
 
-    private Path resourcePath;
-    private Path relatednessPruneInFreqsPath;
-    private Path relatednessPruneOutMarkersPath;
-    private Path relatednessThresholdsPath;
-
-    private ResourceManager resourceManager;
+    private Path userResourcesPath;
 
     @ToolParams
     protected final FamilyQcAnalysisParams analysisParams = new FamilyQcAnalysisParams();
@@ -96,30 +90,7 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
         checkParameters(analysisParams, study, catalogManager, token);
 
         // Check custom relatedness resources: prune-in, frq and thresholds files
-        if (StringUtils.isNotEmpty(analysisParams.getRelatednessPruneInFreqsFile())) {
-            relatednessPruneInFreqsPath = getCustomResourcePath(analysisParams.getRelatednessPruneInFreqsFile(), token,
-                    FieldConstants.RELATEDNESS_PRUNE_IN_FREQS_FILE_DESCRIPTION);
-        }
-        if (StringUtils.isNotEmpty(analysisParams.getRelatednessPruneOutMarkersFile())) {
-            relatednessPruneOutMarkersPath = getCustomResourcePath(analysisParams.getRelatednessPruneOutMarkersFile(), token,
-                    FieldConstants.RELATEDNESS_PRUNE_OUT_MARKERS_FILE_DESCRIPTION);
-        }
-        if (StringUtils.isNotEmpty(analysisParams.getRelatednessThresholdsFile())) {
-            relatednessThresholdsPath = getCustomResourcePath(analysisParams.getRelatednessThresholdsFile(), token,
-                    FieldConstants.RELATEDNESS_THRESHOLDS_FILE_DESCRIPTION);
-        }
-
-        // Check default resources, if necessary
-        resourceManager = new ResourceManager(getOpencgaHome());
-        if (relatednessPruneInFreqsPath == null) {
-            relatednessPruneInFreqsPath = resourceManager.checkResourcePath(RELATEDNESS_PRUNE_IN_FREQS);
-        }
-        if (relatednessPruneOutMarkersPath == null) {
-            relatednessPruneOutMarkersPath = resourceManager.checkResourcePath(RELATEDNESS_PRUNE_OUT_MARKERS);
-        }
-        if (relatednessThresholdsPath == null) {
-            relatednessThresholdsPath = resourceManager.checkResourcePath(RELATEDNESS_THRESHOLDS);
-        }
+        userResourcesPath = checkUserResourcesDir(analysisParams.getResourcesDir(), study, catalogManager, token);
     }
 
     @Override
@@ -146,15 +117,42 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
     }
 
     protected void prepareResources() throws IOException, ResourceException {
+        ResourceManager resourceManager = new ResourceManager(getOpencgaHome());
+
         // Create folder where the family QC resources will be saved (within the job dir, aka outdir)
-        resourcePath = Files.createDirectories(getOutDir().resolve(RESOURCES_DIRNAME));
+        Path resourcesPath = Files.createDirectories(getOutDir().resolve(RESOURCES_DIRNAME));
+
+        Path relatednessPruneInFreqsPath;
+        Path relatednessPruneOutMarkersPath;
+        Path relatednessThresholdsPath;
+
+        String filename = resourceManager.getResourceFilename(RELATEDNESS_PRUNE_IN_FREQS);
+        if (userResourcesPath == null || !Files.exists(userResourcesPath.resolve(filename))) {
+            relatednessPruneInFreqsPath = resourceManager.checkResourcePath(RELATEDNESS_PRUNE_IN_FREQS);
+        } else {
+            relatednessPruneInFreqsPath = userResourcesPath.resolve(filename);
+        }
+
+        filename = resourceManager.getResourceFilename(RELATEDNESS_PRUNE_OUT_MARKERS);
+        if (userResourcesPath == null || !Files.exists(userResourcesPath.resolve(filename))) {
+            relatednessPruneOutMarkersPath = resourceManager.checkResourcePath(RELATEDNESS_PRUNE_OUT_MARKERS);
+        } else {
+            relatednessPruneOutMarkersPath = userResourcesPath.resolve(filename);
+        }
+
+        filename = resourceManager.getResourceFilename(RELATEDNESS_THRESHOLDS);
+        if (userResourcesPath == null || !Files.exists(userResourcesPath.resolve(filename))) {
+            relatednessThresholdsPath = resourceManager.checkResourcePath(RELATEDNESS_THRESHOLDS);
+        } else {
+            relatednessThresholdsPath = userResourcesPath.resolve(filename);
+        }
 
         // Copy resource files
-        FileUtils.copyFile(relatednessPruneInFreqsPath.toFile(), resourcePath.resolve(relatednessPruneInFreqsPath.getFileName())
+        FileUtils.copyFile(relatednessPruneInFreqsPath.toFile(), resourcesPath.resolve(relatednessPruneInFreqsPath.getFileName())
                 .toFile());
-        FileUtils.copyFile(relatednessPruneOutMarkersPath.toFile(), resourcePath.resolve(relatednessPruneOutMarkersPath.getFileName())
+        FileUtils.copyFile(relatednessPruneOutMarkersPath.toFile(), resourcesPath.resolve(relatednessPruneOutMarkersPath.getFileName())
                 .toFile());
-        FileUtils.copyFile(relatednessThresholdsPath.toFile(), resourcePath.resolve(relatednessThresholdsPath.getFileName()).toFile());
+        FileUtils.copyFile(relatednessThresholdsPath.toFile(), resourcesPath.resolve(relatednessThresholdsPath.getFileName()).toFile());
     }
 
 
@@ -218,10 +216,6 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
     protected void runFamilyQc() throws ToolException {
         // Get executor to execute Python script that computes the family QC
         FamilyVariantQcAnalysisExecutor executor = getToolExecutor(FamilyVariantQcAnalysisExecutor.class);
-
-        analysisParams.setRelatednessPruneInFreqsFile(relatednessPruneInFreqsPath.getFileName().toString());
-        analysisParams.setRelatednessPruneOutMarkersFile(relatednessPruneOutMarkersPath.getFileName().toString());
-        analysisParams.setRelatednessThresholdsFile(relatednessThresholdsPath.getFileName().toString());
 
         executor.setVcfPaths(vcfPaths)
                 .setJsonPaths(jsonPaths)

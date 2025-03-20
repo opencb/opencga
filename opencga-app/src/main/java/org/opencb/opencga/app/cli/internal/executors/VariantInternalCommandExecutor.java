@@ -859,9 +859,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 .setFamilies(cliOptions.families)
                 .setSkipIndex(cliOptions.skipIndex)
                 .setOverwrite(cliOptions.overwrite)
-                .setRelatednessPruneInFreqsFile(cliOptions.relatednessPruneInFreqsFile)
-                .setRelatednessPruneOutMarkersFile(cliOptions.relatednessPruneOutMarkersFile)
-                .setRelatednessThresholdsFile(cliOptions.relatednessThresholdsFile)
+                .setResourcesDir(cliOptions.resourcesDir)
                 .setOutdir(cliOptions.outdir);
 
         ObjectMap params = familyParams.toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);

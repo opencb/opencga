@@ -203,6 +203,7 @@ public class FieldConstants {
     public static final String QC_COMMENTS_DESCRIPTION = "Comments related to the quality control";
 
     // QC parameters
+    public static final String RESOURCES_DIR_DESCRIPTION = "OpenCGA catalog directory where the analysis resources are located";
     public static final String INFERRED_SEX_ID = "inferred-sex";
     public static final String MENDELIAN_ERRORS_ID = "mendelian-errors";
     public static final String RELATEDNESS_ID = "relatedness";
@@ -212,9 +213,6 @@ public class FieldConstants {
     public static final String QC_RESOURCES_DIR_DESCRIPTION = "[DEPRECATED] Directory where the QC resource files are located";
 
     // Relatedness params used by family and individual QC
-    public static final String RELATEDNESS_PRUNE_IN_FREQS_FILE_DESCRIPTION = "Relatedness frequencies file to prune-in input variants";
-    public static final String RELATEDNESS_PRUNE_OUT_MARKERS_FILE_DESCRIPTION = "Relatedness markers file to prune-out input variants";
-    public static final String RELATEDNESS_THRESHOLDS_FILE_DESCRIPTION = "Relatedness thresholds file";
     @Deprecated
     public static final String RELATEDNESS_METHOD_DESCRIPTION = "[DEPRECATED] Relatedness method";
     @Deprecated

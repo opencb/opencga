@@ -46,7 +46,7 @@ public class VariantQcAnalysisExecutorUtils {
                            Path opencgaHome)
             throws ToolExecutorException {
         // Run the Python script responsible for performing the family QC analyses
-        //    variant_qc.main.py --vcf-file xxx --info-json xxx --bam-file xxx --qc-type xxx --config xxx --output-dir xxx
+        //    variant_qc.main.py --vcf-file xxx --info-json xxx --bam-file xxx --qc-type xxx --config xxx --resource-dir xxx --output-dir xxx
 
         // Build command line to run Python script via docker image
 
