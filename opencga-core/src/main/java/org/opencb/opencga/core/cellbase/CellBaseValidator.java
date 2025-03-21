@@ -149,8 +149,8 @@ public class CellBaseValidator {
         SpeciesProperties species;
         try {
             species = retryMetaSpecies();
-        } catch (RuntimeException e) {
-            throw new IllegalArgumentException("Unable to access cellbase url '" + getURL() + "', version '" + inputVersion + "'", e);
+        } catch (RuntimeException | IOException e) {
+            throw new IOException("Unable to access cellbase url '" + getURL() + "', version '" + inputVersion + "'", e);
         }
         if (species == null) {
             if (autoComplete && !cellBaseConfiguration.getVersion().startsWith("v")) {
@@ -161,7 +161,7 @@ public class CellBaseValidator {
             }
         }
         if (species == null) {
-            throw new IllegalArgumentException("Unable to access cellbase url '" + getURL() + "', version '" + inputVersion + "'");
+            throw new IOException("Unable to access cellbase url '" + getURL() + "', version '" + inputVersion + "'");
         }
         validateSpeciesAssembly(species);
 
