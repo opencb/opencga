@@ -281,7 +281,7 @@
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
-                <artifactId>opencga-storage-hadoop-deps-hdp3.1</artifactId>
+                <artifactId>opencga-storage-hadoop-deps-emr6.1</artifactId>
                 <version>${project.version}</version>
                 <classifier>shaded</classifier>
             </dependency>
