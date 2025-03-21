@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @Category(LongTests.class)
 public class HadoopVariantWalkerTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
@@ -104,21 +105,31 @@ public class HadoopVariantWalkerTest extends VariantStorageBaseTest implements H
 
 //        variantStorageEngine.walkData(outdir.resolve("variant3.txt.gz"), VariantWriterFactory.VariantOutputFormat.JSON, new Query(), new QueryOptions(), cmdDocker);
 //        variantStorageEngine.walkData(outdir.resolve("variant2.txt.gz"), VariantWriterFactory.VariantOutputFormat.JSON, new Query(), new QueryOptions(), cmdBash);
-        variantStorageEngine.walkData(outdir.resolve("variant1.txt.gz"), VariantWriterFactory.VariantOutputFormat.JSON, new Query(), new QueryOptions(), cmd);
+        List<URI> uris = variantStorageEngine.walkData(outdir.resolve("variant1.txt.gz"), VariantWriterFactory.VariantOutputFormat.JSON, new Query(), new QueryOptions(), cmd);
 //        variantStorageEngine.walkData(outdir.resolve("variant5.txt.gz"), VariantWriterFactory.VariantOutputFormat.JSON, new Query(), new QueryOptions(), cmdPython1);
 //        variantStorageEngine.walkData(outdir.resolve("variant8.txt.gz"), VariantWriterFactory.VariantOutputFormat.JSON, new Query(), new QueryOptions(), cmdPython2);
 //        variantStorageEngine.walkData(outdir.resolve("variant6.txt.gz"), VariantWriterFactory.VariantOutputFormat.VCF, new Query(), new QueryOptions(), cmdPython);
 //        variantStorageEngine.walkData(outdir.resolve("variant4.txt.gz"), VariantWriterFactory.VariantOutputFormat.JSON, new Query(), new QueryOptions(), "opencb/opencga-base", cmd);
 //        variantStorageEngine.walkData(outdir.resolve("variant4.txt.gz"), VariantWriterFactory.VariantOutputFormat.JSON, new Query(), new QueryOptions(), "opencb/opencga-base", cmdPython1);
+        assertEquals(3, uris.size());
+        for (URI uri : uris) {
+            // Ensure uri exists
+            assertTrue(uri + " not found!", Paths.get(uri).toFile().exists());
+        }
     }
 
     @Test
     public void exportDocker() throws Exception {
         URI outdir = newOutputUri();
 
-        String cmdPython1 = "python variant_walker.py walker_example Cut --length 30";
+        String cmdPython1 = "python variant_walker.py walker_example Echo --length 30";
         variantStorageEngine.getOptions().put(StreamVariantMapper.DOCKER_PRUNE_OPTS, " --filter label!=opencga_scope='test'");
-        variantStorageEngine.walkData(outdir.resolve("variant4.txt.gz"), VariantWriterFactory.VariantOutputFormat.JSON, new Query(), new QueryOptions(), dockerImage, cmdPython1);
+        List<URI> uris = variantStorageEngine.walkData(outdir.resolve("variant4.txt.gz"), VariantWriterFactory.VariantOutputFormat.VCF, new Query(), new QueryOptions(), dockerImage, cmdPython1);
+        assertEquals(3, uris.size());
+        for (URI uri : uris) {
+            // Ensure uri exists
+            assertTrue(uri + " not found!", Paths.get(uri).toFile().exists());
+        }
 
         // Ensure that the docker image is not pruned
         Command dockerImages = new Command(new String[]{"docker", "images", "--filter", "label=opencga_scope=test"}, Collections.emptyMap());
