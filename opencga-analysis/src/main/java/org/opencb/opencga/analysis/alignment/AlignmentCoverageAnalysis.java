@@ -205,7 +205,8 @@ public class AlignmentCoverageAnalysis extends OpenCgaToolScopeStudy {
             }
 
             // Link generated BIGWIG file and update samples info
-            File bwCatalogFile = AlignmentAnalysisUtils.linkAndUpdate(bamCatalogFile, bwPath, getJobId(), study, catalogManager, token);
+            File bwCatalogFile = AlignmentAnalysisUtils.linkAndUpdate(bamCatalogFile, bwPath, moveSuccessful ? null : getJobId(), study,
+                    catalogManager, token);
 
             // Update BAM file internal in order to set the coverage index (BIGWIG)
             FileInternalCoverageIndex fileCoverageIndex = new FileInternalCoverageIndex(new InternalStatus(InternalStatus.READY),
