@@ -20,6 +20,7 @@ import org.opencb.commons.annotations.DataClass;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.api.FieldConstants;
+import org.opencb.opencga.core.models.notification.NotificationConfiguration;
 import org.opencb.opencga.core.models.project.Project;
 
 import java.util.*;
@@ -64,6 +65,9 @@ public class User {
 
     @DataField(id = "quota", indexed = true, description = FieldConstants.USER_QUOTA)
     private UserQuota quota;
+
+    @DataField(id = "notifications", description = FieldConstants.USER_NOTIFICATIONS)
+    private NotificationConfiguration notifications;
 
     /**
      * A List with related projects.
@@ -264,6 +268,15 @@ public class User {
 
     public User setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
+        return this;
+    }
+
+    public NotificationConfiguration getNotifications() {
+        return notifications;
+    }
+
+    public User setNotifications(NotificationConfiguration notifications) {
+        this.notifications = notifications;
         return this;
     }
 }

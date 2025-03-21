@@ -130,6 +130,7 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         INTERNAL_ACCOUNT_EXPIRATION_DATE("internal.account.expirationDate", TEXT, ""),
         INTERNAL_ACCOUNT_PASSWORD_EXPIRATION_DATE("internal.account.password.expirationDate", TEXT, ""),
         INTERNAL_ACCOUNT_PASSWORD_LAST_MODIFIED("internal.account.password.lastModified", TEXT, ""),
+        NOTIFICATIONS("notifications", OBJECT, ""),
         QUOTA("quota", OBJECT, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
 

@@ -37,6 +37,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.JobType;
 import org.opencb.opencga.core.models.resource.ResourceFetcherToolParams;
 import org.opencb.opencga.master.monitor.daemons.ExecutionDaemon;
+import org.opencb.opencga.master.monitor.daemons.NotificationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,10 +61,12 @@ public class MonitorService {
     private int port;
 
     private ExecutionDaemon executionDaemon;
+    private NotificationService notificationService;
 //    private FileDaemon fileDaemon;
 //    private AuthorizationDaemon authorizationDaemon;
 
     private Thread executionThread;
+    private Thread notificationThread;
 //    private Thread indexThread;
 //    private Thread fileThread;
 //    private Thread authorizationThread;
@@ -113,10 +116,12 @@ public class MonitorService {
                 storageConfiguration,
                 appHome,
                 configuration.getAnalysis().getPackages());
+        notificationService = new NotificationService(5000, nonExpiringToken, catalogManager);
 //            fileDaemon = new FileDaemon(configuration.getMonitor().getFileDaemonInterval(),
 //                    configuration.getMonitor().getDaysToRemove(), nonExpiringToken, catalogManager);
 
         executionThread = new Thread(executionDaemon, "execution-thread");
+        notificationThread = new Thread(notificationService, "notification-thread");
 //            fileThread = new Thread(fileDaemon, "file-thread");
 //            authorizationThread = new Thread(authorizationDaemon, "authorization-thread");
 
@@ -129,6 +134,7 @@ public class MonitorService {
 
         // Launching the two daemons in two different threads
         executionThread.start();
+        notificationThread.start();
 //        indexThread.start();
 //        authorizationThread.start();
 //        fileThread.start();
@@ -185,6 +191,7 @@ public class MonitorService {
 
     public void stop() throws Exception {
         executionDaemon.setExit(true);
+        notificationService.setExit(true);
 //        fileDaemon.setExit(true);
 //        executionDaemon.setExit(true);
 //        authorizationDaemon.setExit(true);

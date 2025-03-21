@@ -75,6 +75,7 @@ public class CatalogManager implements AutoCloseable {
 
     private AdminManager adminManager;
     private NoteManager noteManager;
+    private NotificationManager notificationManager;
     private OrganizationManager organizationManager;
     private UserManager userManager;
     private ProjectManager projectManager;
@@ -380,6 +381,10 @@ public class CatalogManager implements AutoCloseable {
     @Override
     public void close() throws CatalogException {
         catalogDBAdaptorFactory.close();
+    }
+
+    public NotificationManager getNotificationManager() {
+        return notificationManager;
     }
 
     public AdminManager getAdminManager() {

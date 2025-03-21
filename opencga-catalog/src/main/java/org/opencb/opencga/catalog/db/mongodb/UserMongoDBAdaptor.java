@@ -766,15 +766,10 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
                     case ATTRIBUTES:
                         addAutoOrQuery(entry.getKey(), entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
-                    case INTERNAL_STATUS_ID:
-                        // Convert the status to a positive status
-                        query.put(queryParam.key(),
-                                InternalStatus.getPositiveStatus(UserStatus.STATUS_LIST, query.getString(queryParam.key())));
-                        addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
-                        break;
                     case NAME:
                     case EMAIL:
                     case ORGANIZATION:
+                    case INTERNAL_STATUS_ID:
                     case INTERNAL_STATUS_DATE:
                     case INTERNAL_ACCOUNT_AUTHENTICATION_ID:
                     case INTERNAL_ACCOUNT_CREATION_DATE:

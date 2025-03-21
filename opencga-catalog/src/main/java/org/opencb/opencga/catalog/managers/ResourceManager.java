@@ -361,4 +361,13 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
         return result;
     }
 
+    public void checkUpdateResult(OpenCGAResult<R> result) throws CatalogException {
+        if (result.getNumMatches() == 0) {
+            throw new CatalogException("Could not update " + getEntity() + ". " + getEntity() + " not found.");
+        }
+        if (result.getNumUpdated() == 0) {
+            result.addEvent(new Event(Event.Type.WARNING, getEntity() + " was already updated."));
+        }
+    }
+
 }
