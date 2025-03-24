@@ -304,7 +304,7 @@ public class UserManager extends AbstractManager {
 
     public void syncAllUsersOfExternalGroup(String organizationId, String study, String authOrigin, String token) throws CatalogException {
         JwtPayload payload = validateToken(token);
-        authorizationManager.checkIsOpencgaAdministrator(payload);
+        authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, payload.getUserId());
 
         OpenCGAResult<Group> allGroups = catalogManager.getStudyManager().getGroup(study, null, token);
 
@@ -391,7 +391,7 @@ public class UserManager extends AbstractManager {
                 .append("sync", sync)
                 .append("token", token);
         try {
-            authorizationManager.checkIsOpencgaAdministrator(payload);
+            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
 
             ParamUtils.checkParameter(authOrigin, "Authentication origin");
             ParamUtils.checkParameter(remoteGroup, "Remote group");
