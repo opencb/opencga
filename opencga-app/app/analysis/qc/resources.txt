@@ -1,3 +1,0 @@
-autosomes_1000G_QC_prune_in.frq
-autosomes_1000G_QC.prune.out
-relatedness_thresholds.tsv

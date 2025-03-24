@@ -10,14 +10,16 @@ from typing import Dict, List
 
 LOGGER = logging.getLogger('variant_qc_logger')
 
-INFERRED_SEX_THRESHOLDS_FILE = "karyotypic_sex_thresholds.json"
-INFERRED_SEX_CHR_X_FRQ_FILE = "inferred_sex_variants_filtered_annotated_chrX.frq"
-INFERRED_SEX_CHR_X_PRUNE_IN_FILE = "inferred_sex_variants_filtered_annotated_chrX.prune.in"
+# Relatedness resources
+RELATEDNESS_PRUNE_IN_MARKERS_FILE = "relatedness_prune_in_markers.txt"
+RELATEDNESS_FREQS_FILE = "relatedness_freqs.txt"
+RELATEDNESS_THRESHOLDS_FILE =  "relatedness_thresholds.tsv"
+
+# Inferred-sex resources
+INFERRED_SEX_CHRX_PRUNE_IN_MARKERS_FILE = "inferred_sex_chrX_prune_in_markers.txt"
+INFERRED_SEX_CHRX_FREQS_FILE = "inferred_sex_chrX_freqs.txt"
+INFERRED_SEX_KARYOTYPIC_THRESHOLDS_FILE = "inferred_sex_karyotypic_thresholds.json"
 INFERRED_SEX_REFERENCE_VALUES_FILE = "inferred_sex_reference_values.txt"
-RELATEDNESS_THRESHOLDS_FILE = "relatedness_thresholds.tsv"
-RELATEDNESS_PRUNE_IN_FILE = "relatedness.prune.in"
-RELATEDNESS_PRUNE_IN_FREQS_FILE = "relatedness_prune_in_freqs.txt"
-RELATEDNESS_PRUNE_OUT_MARKERS_FILE = "relatedness_prune_out_markers.txt"
 
 class SampleInfo(BaseModel):
     sampleId: str

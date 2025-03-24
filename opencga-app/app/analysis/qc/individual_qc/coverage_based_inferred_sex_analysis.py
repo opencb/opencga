@@ -136,7 +136,7 @@ class CoverageBasedInferredSexAnalysis:
 		LOGGER.info(f"Chromosome Y ratio: {ratio_chrY}")
 
 		# Load the karyotypic sex thresholds from the JSON file
-		thresholds_path = os.path.join(self.executor["resource_dir"], INFERRED_SEX_THRESHOLDS_FILE)
+		thresholds_path = os.path.join(self.executor["resource_dir"], INFERRED_SEX_KARYOTYPIC_THRESHOLDS_FILE)
 		with open(thresholds_path, "r") as file:
 			thresholds = json.load(file)
 

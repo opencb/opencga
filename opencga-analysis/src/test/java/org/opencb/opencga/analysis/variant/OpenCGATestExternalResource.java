@@ -291,17 +291,32 @@ public class OpenCGATestExternalResource extends ExternalResource {
 
         // QC commons
         analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/qc")).toAbsolutePath();
-        List<String> qcFiles = Arrays.asList("variant_qc.main.py", "utils.py", "resources.txt", "__init__.py");
+        List<String> qcFiles = Arrays.asList("variant_qc.main.py", "utils.py", "quality_control.py", "__init__.py");
         for (String qcFile : qcFiles) {
             try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/qc/" + qcFile)) {
                 Files.copy(inputStream, analysisPath.resolve(qcFile), StandardCopyOption.REPLACE_EXISTING);
             }
         }
+        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/qc/common")).toAbsolutePath();
+        qcFiles = Arrays.asList("relatedness.py", "relatedness_analysis.py", "__init__.py");
+        for (String qcFile : qcFiles) {
+            try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/qc/common/" + qcFile)) {
+                Files.copy(inputStream, analysisPath.resolve(qcFile), StandardCopyOption.REPLACE_EXISTING);
+            }
+        }
         // Family QC
         analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/qc/family_qc")).toAbsolutePath();
-        qcFiles = Arrays.asList("family_qc.py", "relatedness.py", "relatedness_results.py", "__init__.py");
+        qcFiles = Arrays.asList("family_qc_executor.py", "family_quality_control.py", "__init__.py");
         for (String qcFile : qcFiles) {
             try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/qc/family_qc/" + qcFile)) {
+                Files.copy(inputStream, analysisPath.resolve(qcFile), StandardCopyOption.REPLACE_EXISTING);
+            }
+        }
+        // Individual QC
+        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/qc/individual_qc")).toAbsolutePath();
+        qcFiles = Arrays.asList("coverage_based_inferred_sex_analysis.py", "individual_qc_executor.py", "individual_quality_control.py", "mendelian_errors_analysis.py", "plot_inferred_sex.R", "plot_karyotypic_sex.R", "plot_mendelian_errors.R", "variant_based_inferred_sex_analysis.py", "__init__.py");
+        for (String qcFile : qcFiles) {
+            try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/qc/individual_qc/" + qcFile)) {
                 Files.copy(inputStream, analysisPath.resolve(qcFile), StandardCopyOption.REPLACE_EXISTING);
             }
         }

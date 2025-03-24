@@ -25,6 +25,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.FileUtils;
+import org.opencb.opencga.analysis.ConfigurationUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
@@ -33,6 +34,7 @@ import org.opencb.opencga.catalog.exceptions.ResourceException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.ResourceManager;
+import org.opencb.opencga.core.config.AnalysisTool;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.common.InternalStatus;
@@ -55,7 +57,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.catalog.utils.ResourceManager.*;
+import static org.opencb.opencga.catalog.utils.ResourceManager.RESOURCES_DIRNAME;
 import static org.opencb.opencga.core.models.study.StudyPermissions.Permissions.WRITE_SAMPLES;
 
 public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
@@ -236,32 +238,20 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
     // QC resources management
     //-------------------------------------------------------------------------
 
-    protected void prepareRelatednessResources(ResourceManager resourceManager) throws ResourceException, IOException {
-        // Get resources source files
-        Path pruneInFreqsPath = getResourceFilePath(RELATEDNESS_PRUNE_IN_FREQS, resourceManager);
-        Path pruneOutMarkersPath = getResourceFilePath(RELATEDNESS_PRUNE_OUT_MARKERS, resourceManager);
-        Path thresholdsPath = getResourceFilePath(RELATEDNESS_THRESHOLDS, resourceManager);
-
-        // Create folder where the QC resources will be saved (within the job dir, aka outdir), and copy the source files there
+    protected void prepareResources(String analysisId, String analysisVersion, ResourceManager resourceManager)
+            throws ResourceException, IOException, ToolException {
+        // Create directory, if necessary, where the QC resources will be saved (within the job dir, aka outdir),
+        // and copy the source files there
         Path destPath = getResourcesPath();
-        FileUtils.copyFile(pruneInFreqsPath.toFile(), destPath.resolve(pruneInFreqsPath.getFileName()).toFile());
-        FileUtils.copyFile(pruneOutMarkersPath.toFile(), destPath.resolve(pruneOutMarkersPath.getFileName()).toFile());
-        FileUtils.copyFile(thresholdsPath.toFile(), destPath.resolve(thresholdsPath.getFileName()).toFile());
-    }
 
-    protected void prepareInferredSexResources(ResourceManager resourceManager) throws ResourceException, IOException {
-        // Get resources source files
-        Path karyotypicThresholdsPath = getResourceFilePath(INFERRED_SEX_KARYOTYPIC_THRESHOLDS, resourceManager);
-        Path chrxPruneInPath = getResourceFilePath(INFERRED_SEX_CHRX_PRUNE_IN, resourceManager);
-        Path chrxFreqsPath = getResourceFilePath(INFERRED_SEX_CHRX_FREQS, resourceManager);
-        Path refValuesPath = getResourceFilePath(INFERRED_SEX_REF_VALUES, resourceManager);
-
-        // Create folder where the QC resources will be saved (within the job dir, aka outdir), and copy the source files there
-        Path destPath = getResourcesPath();
-        FileUtils.copyFile(karyotypicThresholdsPath.toFile(), destPath.resolve(karyotypicThresholdsPath.getFileName()).toFile());
-        FileUtils.copyFile(chrxPruneInPath.toFile(), destPath.resolve(chrxPruneInPath.getFileName()).toFile());
-        FileUtils.copyFile(chrxFreqsPath.toFile(), destPath.resolve(chrxFreqsPath.getFileName()).toFile());
-        FileUtils.copyFile(refValuesPath.toFile(), destPath.resolve(refValuesPath.getFileName()).toFile());
+        // Get resources source files and copy them to the destination directory
+        AnalysisTool analysisTool = ConfigurationUtils.getAnalysisTool(analysisId, analysisVersion, configuration);
+        List<String> resourceIds = analysisTool.getResourceIds();
+        for (String resourceId : resourceIds) {
+            Path path = getResourceFilePath(resourceId, resourceManager);
+            logger.info("Copying resource {} to resource directory: {}", resourceId, destPath.resolve(path.getFileName()));
+            FileUtils.copyFile(path.toFile(), destPath.resolve(path.getFileName()).toFile());
+        }
     }
 
     private Path getResourcesPath() throws ResourceException, IOException {

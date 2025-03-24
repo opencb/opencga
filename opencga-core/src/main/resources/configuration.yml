@@ -159,18 +159,36 @@ analysis:
         path: "reference-genomes/hg19/hg19.fa.gz"
 
       # Relatedness resources
-      - id: "RELATEDNESS_PRUNE_IN_FREQS"
-        url: "relatedness/20250225_070521/relatedness_prune_in_freqs.txt"
+      - id: "RELATEDNESS_PRUNE_IN_MARKERS"
+        url: "relatedness/20250321_070521/relatedness_prune_in_markers.txt"
+        md5: "e26bc59a60b5011d61ecc7a4e75ea75c"
+        path: "relatedness/relatedness_prune_in_markers.txt"
+      - id: "RELATEDNESS_FREQS"
+        url: "relatedness/20250321_070521/relatedness_freqs.txt"
         md5: "0262b1a013484ddb01d3b96ab68f18d1"
-        path: "relatedness/relatedness_prune_in_freqs.txt"
-      - id: "RELATEDNESS_PRUNE_OUT_MARKERS"
-        url: "relatedness/20250225_070521/relatedness_prune_out_markers.txt"
-        md5: "d19a636702193ccff45688d9d46ef494"
-        path: "relatedness/relatedness_prune_out_markers.txt"
+        path: "relatedness/relatedness_freqs.txt"
       - id: "RELATEDNESS_THRESHOLDS"
-        url: "relatedness/20250225_070521/relatedness_thresholds.tsv"
+        url: "relatedness/20250321_070521/relatedness_thresholds.tsv"
         md5: "97175d1574f14fe45bae13ffe277f295"
         path: "relatedness/relatedness_thresholds.tsv"
+
+      # Inferred-sex resources
+      - id: "INFERRED_SEX_CHRX_PRUNE_IN_MARKERS"
+        url: "inferred-sex/20250321_070521/inferred_sex_chrX_prune_in_markers.txt"
+        md5: "28059c14f6f8f0dfaade839c96fe42a0"
+        path: "inferred-sex/inferred_sex_chrX_prune_in_markers.txt"
+      - id: "INFERRED_SEX_CHRX_FREQS"
+        url: "inferred-sex/20250321_070521/inferred_sex_chrX_freqs.txt"
+        md5: "e9092b63f4892195bcdaab11c5c08110"
+        path: "inferred-sex/inferred_sex_chrX_freqs.txt"
+      - id: "INFERRED_SEX_KARYOTYPIC_THRESHOLDS"
+        url: "inferred-sex/20250321_070521/inferred_sex_karyotypic_thresholds.json"
+        md5: "a9b3d35305a7b5f9f82a0d607bd0e9ee"
+        path: "inferred-sex/inferred_sex_karyotypic_thresholds.json"
+      - id: "INFERRED_SEX_REFERENCE_VALUES"
+        url: "inferred-sex/20250321_070521/inferred_sex_reference_values.txt"
+        md5: "c88938e2b9d18de4f7f6ccbd72f92750"
+        path: "inferred-sex/inferred_sex_reference_values.txt"
 
   # Docker used by OpenCGA analysis and containing external tools such as samtools, bcftools, tabix, fastqc, plink1.9, bwa and r-base
   # You can indicate the version, e.g: opencb/opencga-ext-tools:2.12.0, otherwise the current OpenCGA version will be used
@@ -197,10 +215,10 @@ analysis:
         - "REFERENCE_GENOME_GRCH37_GZI"
 
     - id: "relatedness"
-      resourceIds: ["RELATEDNESS_PRUNE_IN_FREQS", "RELATEDNESS_PRUNE_OUT_MARKERS", "RELATEDNESS_THRESHOLDS"]
+      resourceIds: ["RELATEDNESS_PRUNE_IN_MARKERS", "RELATEDNESS_FREQS", "RELATEDNESS_THRESHOLDS"]
 
     - id: "inferred-sex"
-      resourceIds: ["INFERRED_SEX_KARYOTYPIC_THRESHOLDS", "INFERRED_SEX_CHRX_PRUNE_IN", "INFERRED_SEX_CHRX_FREQS", "INFERRED_SEX_REF_VALUES"]
+      resourceIds: ["INFERRED_SEX_CHRX_PRUNE_IN_MARKERS", "INFERRED_SEX_CHRX_FREQS", "INFERRED_SEX_KARYOTYPIC_THRESHOLDS", "INFERRED_SEX_REFERENCE_VALUES"]
 
     - id: "liftover"
       resourceIds:

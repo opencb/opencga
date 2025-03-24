@@ -28,7 +28,6 @@ import org.opencb.biodata.models.clinical.qc.Relatedness;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.variant.qc.VariantQcAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.ResourceException;
@@ -56,7 +55,6 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.catalog.utils.ResourceManager.*;
 import static org.opencb.opencga.core.models.common.InternalStatus.READY;
 import static org.opencb.opencga.core.models.common.QualityControlStatus.ERROR;
 import static org.opencb.opencga.core.models.study.StudyPermissions.Permissions.WRITE_FAMILIES;
@@ -114,11 +112,11 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
         clean();
     }
 
-    protected void prepareResources() throws IOException, ResourceException {
+    protected void prepareResources() throws IOException, ResourceException, ToolException {
         ResourceManager resourceManager = new ResourceManager(getOpencgaHome());
 
         // Prepare relatedness resources
-        prepareRelatednessResources(resourceManager);
+        prepareResources(RELATEDNESS_ANALYSIS_ID, null, resourceManager);
     }
 
     protected void prepareQualityControl() throws ToolException {

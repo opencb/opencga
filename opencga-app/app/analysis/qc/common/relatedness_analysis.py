@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import common
-import json
 import logging
 import os
 from quality_control import *
@@ -15,7 +14,6 @@ ANALYSIS_PATH = "relatedness"
 # Get the directory of the script
 script_directory = os.path.dirname(os.path.abspath(__file__))
 
-
 class RelatednessAnalysis:
     def __init__(self, executor):
         """
@@ -24,10 +22,9 @@ class RelatednessAnalysis:
         self.name = ANALYSIS_NAME
         self.output_dir = create_output_dir(path_elements=[executor["output_parent_dir"], ANALYSIS_PATH])
 
-        self.prune_in_file = None
-        self.pop_freq_file = None
-        self.pop_exclude_var_file = None
-        self.relatedness_thresholds_file = None
+        self.prune_in_markers_fpath = None
+        self.freqs_fpath = None
+        self.thresholds_fpath = None
         self.executor = executor
         self.relatedness = common.Relatedness()
 
@@ -41,30 +38,28 @@ class RelatednessAnalysis:
 
     def set_relatedness_files(self):
         LOGGER.info('Checking and setting up relatedness files')
-        if os.path.exists(self.executor["resource_dir"]):
+        resources_fpath = self.executor["resource_dir"]
+        if os.path.exists(resources_fpath):
             relatedness_files = {
-                "prune_in_file": os.path.join(self.executor["resource_dir"], RELATEDNESS_PRUNE_IN_FILE),
-                "pop_freq_file": os.path.join(self.executor["resource_dir"], RELATEDNESS_PRUNE_IN_FREQS_FILE),
-                "pop_exclude_var_file": os.path.join(self.executor["resource_dir"], RELATEDNESS_PRUNE_OUT_MARKERS_FILE),
-                "relatedness_thresholds_file": os.path.join(self.executor["resource_dir"], RELATEDNESS_THRESHOLDS_FILE)
+                "prune_in_markers_file": os.path.join(resources_fpath, RELATEDNESS_PRUNE_IN_MARKERS_FILE),
+                "freqs_file": os.path.join(resources_fpath, RELATEDNESS_FREQS_FILE),
+                "thresholds_file": os.path.join(resources_fpath, RELATEDNESS_THRESHOLDS_FILE)
                 }
             for key,file in relatedness_files.items():
                 if os.path.isfile(file):
-                    if key == "prune_in_file":
-                        self.prune_in_file = file
-                    elif key == "pop_freq_file":
-                        self.pop_freq_file = file
-                    elif key == "pop_exclude_var_file":
-                        self.pop_exclude_var_file = file
+                    if key == "prune_in_markers_file":
+                        self.prune_in_markers_fpath = file
+                    elif key == "freqs_file":
+                        self.freqs_fpath = file
                     else:
-                        self.relatedness_thresholds_file = file
+                        self.thresholds_fpath = file
                     LOGGER.info('File {} set up successfully'.format(file))
                 else:
                     msg = 'File "{}" does not exist'.format(file)
                     LOGGER.error(msg)
                     raise FileNotFoundError(msg)
         else:
-            msg = 'Directory "{}" does not exist'.format(resources_path)
+            msg = 'Directory "{}" does not exist'.format(resources_fpath)
             LOGGER.error(msg)
             raise FileNotFoundError(msg)
 
@@ -92,111 +87,17 @@ class RelatednessAnalysis:
         if pass_vars == 0:
             LOGGER.debug("Annotating and filtering '{}' for all pruned chr X variants".format(vcf_file))
             LOGGER.info("WARNING: no FILTER information available, input data will not be filtered for PASS variants, results may be unreliable")
-            cmd = f"bcftools annotate --set-id '%CHROM\:%POS\:%REF\:%FIRST_ALT' {vcf_file} -Oz | bcftools view --include ID==@{self.prune_in_file} -Oz -o {filtered_vcf_path}"
+            cmd = f"bcftools annotate --set-id '%CHROM\:%POS\:%REF\:%FIRST_ALT' {vcf_file} -Oz | bcftools view --include ID==@{self.prune_in_markers_fpath} -Oz -o {filtered_vcf_path}"
             LOGGER.info(cmd)
             execute_bash_command(cmd)
         else:
             LOGGER.debug("Annotating and filtering '{}' for chr X pruned PASS variants".format(vcf_file))
-            cmd = f"bcftools annotate --set-id '%CHROM\:%POS\:%REF\:%FIRST_ALT' {vcf_file} -Oz | bcftools view --include ID==@{self.prune_in_file} -Oz | bcftools view -i 'FILTER=\"PASS\"' -Oz -o {filtered_vcf_path}"
+            cmd = f"bcftools annotate --set-id '%CHROM\:%POS\:%REF\:%FIRST_ALT' {vcf_file} -Oz | bcftools view --include ID==@{self.prune_in_markers_fpath} -Oz | bcftools view -i 'FILTER=\"PASS\"' -Oz -o {filtered_vcf_path}"
             LOGGER.info(cmd)
             execute_bash_command(cmd)
 
         # Return filtered VCF path:
         return filtered_vcf_path
-
-    def get_samples_individuals_info(self):
-        family_info_fhand = open(self.executor["info_file"])
-        family_info_json = json.load(family_info_fhand)
-        samples_individuals = {}
-        for sample in self.executor["sample_ids"]:
-            samples_individuals[sample] = {'individualId': '', 'individualSex': 0, 'fatherId': 'NA', 'motherId': 'NA',
-                                           'familyMembersRoles': 'NA'}
-
-        LOGGER.info('Getting individual information for each sample')
-        for member in family_info_json['members']:
-            for sample_member in member['samples']:
-                if sample_member['id'] in self.executor["sample_ids"]:
-                    # Filling in individual info
-                    LOGGER.info('Individual information for sample "{}" found'.format(sample_member['id']))
-                    samples_individuals[sample_member['id']]['individualId'] = member['id']
-                    if (member['sex']['id']).upper() == 'MALE' or member['karyotypicSex'] == 'XY':
-                        samples_individuals[sample_member['id']]['individualSex'] = 1
-                    elif (member['sex']['id']).upper() == 'FEMALE' or member['karyotypicSex'] == 'XX':
-                        samples_individuals[sample_member['id']]['individualSex'] = 2
-                    else:
-                        LOGGER.warning(
-                            'Sex information for individual "{}" (sample "{}") is not available. Hence, sex code for the fam file will be 0.'.format(
-                                member['id'], sample_member['id']))
-                        pass
-                    # Filling in father info
-                    if 'id' in member['father'].keys():
-                        samples_individuals[sample_member['id']]['fatherId'] = member['father']['id']
-                    # Filling in mother info
-                    if 'id' in member['mother'].keys():
-                        samples_individuals[sample_member['id']]['motherId'] = member['mother']['id']
-                    # Filling in family roles info for the individual
-                    samples_individuals[sample_member['id']]['familyMembersRoles'] = family_info_json['roles'][
-                        member['id']]
-
-        # Checking if individual information for each sample was found
-        for sample, individual_info in samples_individuals.items():
-            if individual_info['individualId'] == '':
-                LOGGER.warning('No individual information available for sample "{}".'.format(sample['id']))
-            else:
-                LOGGER.info('Individual information for sample "{}" found'.format(sample_member['id']))
-
-        # Return samples_individuals dictionary
-        return samples_individuals
-
-    def generate_files_for_plink_fam_file(self):
-        # Getting family id and sample_individuals_info
-        family_id = self.executor["id_"]
-        samples_individuals = self.get_samples_individuals_info()
-
-        # Create dir for PLINK if it does not exist yet:
-        plink_dir = create_output_dir(path_elements=[self.output_dir, 'plink_IBD'])
-
-        # Generating text file to update sex information
-        sex_information_output_file_name = family_id + '_individual_sample_sex_information.txt'
-        sex_information_output_fpath = os.path.join(plink_dir, sex_information_output_file_name)
-        sex_information_output_fhand = open(sex_information_output_fpath, 'w')
-        LOGGER.info('Generating text file to update individual, sample, sex information: "{}"'.format(
-            sex_information_output_fpath))
-
-        # Generating text file to update parent-offspring relationships
-        parent_offspring_output_file_name = family_id + '_parent_offspring_relationships.txt'
-        parent_offspring_output_fpath = os.path.join(plink_dir, parent_offspring_output_file_name)
-        parent_offspring_output_fhand = open(parent_offspring_output_fpath, 'w')
-        LOGGER.info('Generating text file to update parent-offspring relationships: "{}"'.format(parent_offspring_output_fpath))
-
-        for sample in self.executor["sample_ids"]:
-            # Individual information for that sample
-            individual_info = samples_individuals[sample]
-            # Structure = FamilyID SampleID Sex
-            sex_information_output_fhand.write(
-                ('\t'.join([family_id, sample, str(individual_info['individualSex'])])) + '\n')
-            # Structure = FamilyID SampleID FatherID MotherID
-            parent_offspring_info = [family_id, sample, str(0), str(0)]
-            father_id = individual_info['fatherId']
-            mother_id = individual_info['motherId']
-            if father_id != 'NA':
-                for sample_id, individual_info in samples_individuals.items():
-                    if individual_info['individualId'] == father_id:
-                        parent_offspring_info[2] = sample_id
-                        break
-            if mother_id != 'NA':
-                for sample_id, individual_info in samples_individuals.items():
-                    if individual_info['individualId'] == mother_id:
-                        parent_offspring_info[3] = sample_id
-                        break
-            parent_offspring_output_fhand.write(('\t'.join(parent_offspring_info)) + '\n')
-        LOGGER.info('Text file generated to update individual, sample, sex information: "{}"'.format(
-            sex_information_output_fpath))
-        LOGGER.info(
-            'Text file generated to update parent-offspring relationships: "{}"'.format(parent_offspring_output_fpath))
-
-        # Return paths of text files generated. First path: individual, sample, sex information file. Second path: parent-offspring information file.
-        return [sex_information_output_fpath, parent_offspring_output_fpath]
 
     def relatedness_plink(self, filtered_vcf_fpath, plink_path="plink1.9"):
         method = "PLINK/IBD"
@@ -215,13 +116,13 @@ class RelatednessAnalysis:
         file_prefix =  individual_id + "_plink_relatedness_results"
         plink_prefix = os.path.join(plink_dir, file_prefix)
 
-        cmd = f"{plink_path} --vcf {filtered_vcf_fpath} --make-bed --const-fid {family_id} --chr '1-22' --not-chr 'X,Y,MT' --allow-extra-chr --snps-only --biallelic-only strict --vcf-half-call haploid --update-sex {sex_fpath} --update-parents {parents_fpath} --pheno {phenotype_fpath} --out {plink_prefix}"
+        cmd = f"{plink_path} --vcf {filtered_vcf_fpath} --make-bed --const-fid {family_id} --allow-extra-chr --snps-only --biallelic-only strict --vcf-half-call haploid --update-sex {sex_fpath} --update-parents {parents_fpath} --pheno {phenotype_fpath} --out {plink_prefix}"
         LOGGER.info('Generating PLINK files (--make-bed)')
         execute_bash_command(cmd)
         files_generated = os.listdir(plink_dir)
         LOGGER.info('Files available in directory "{}":\n{}'.format(plink_dir, files_generated))
 
-        cmd = f"{plink_path} --bfile {plink_prefix} --genome rel-check --read-freq {self.pop_freq_file} --exclude {self.pop_exclude_var_file} --out {plink_prefix}"
+        cmd = f"{plink_path} --bfile {plink_prefix} --genome rel-check --read-freq {self.freqs_fpath} --out {plink_prefix}"
         LOGGER.info("Performing IBD analysis")
         execute_bash_command(cmd)
         files_generated = os.listdir(plink_dir)
@@ -259,8 +160,8 @@ class RelatednessAnalysis:
 
     def relatedness_inference(self, sampleId1, sampleId2, score_values):
         # Reading relatedness thresholds file (.tsv)
-        LOGGER.info('Getting relatedness thresholds from file: "{}"'.format(self.relatedness_thresholds_file))
-        relatedness_thresholds_fhand = open(self.relatedness_thresholds_file)
+        LOGGER.info('Getting relatedness thresholds from file: "{}"'.format(self.thresholds_fpath))
+        relatedness_thresholds_fhand = open(self.thresholds_fpath)
         relationship_groups_thresholds_dict = {}
         for index, line in enumerate(relatedness_thresholds_fhand):
             relatedness_thresholds_row_values = line.strip().split()

@@ -25,9 +25,9 @@ class VariantBasedInferredSexAnalysis:
 		self.output_dir = create_output_dir(path_elements=[executor["output_parent_dir"], ANALYSIS_PATH])
 		self.executor = executor
 		self.inferred_sex = individual_qc.InferredSex()
-		self.chrx_vars_fpath = None
-		self.chrx_var_frq_fpath = None
-		self.sexcheck_ref_values_fpath = None
+		self.chrx_prune_in_markers_fpath = None
+		self.chrx_freqs_fpath = None
+		self.reference_values_fpath = None
 
 	def setup(self):
 		if self.executor != None:
@@ -39,28 +39,28 @@ class VariantBasedInferredSexAnalysis:
 
 	def set_variant_based_inferred_sex_files(self):
 		LOGGER.info("Checking and setting up variant based inferred sex files.")
-		resources_path = self.executor["resource_dir"]
-		if os.path.exists(resources_path):
+		resources_fpath = self.executor["resource_dir"]
+		if os.path.exists(resources_fpath):
 			check_sex_files = {
-				"chrx_vars": os.path.join(resources_path, INFERRED_SEX_CHR_X_PRUNE_IN_FILE),
-				"chrx_var_frq": os.path.join(resources_path, INFERRED_SEX_CHR_X_FRQ_FILE),
-				"sexcheck_ref_values": os.path.join(resources_path, INFERRED_SEX_REFERENCE_VALUES_FILE)
+				"chrx_prune_in_markers": os.path.join(resources_fpath, INFERRED_SEX_CHRX_PRUNE_IN_MARKERS_FILE),
+				"chrx_freqs": os.path.join(resources_fpath, INFERRED_SEX_CHRX_FREQS_FILE),
+				"reference_values": os.path.join(resources_fpath, INFERRED_SEX_REFERENCE_VALUES_FILE)
 			}
 			for key,file in check_sex_files.items():
 				if os.path.isfile(file):
-					if key == "chrx_vars":
-						self.chrx_vars_fpath = file
-					elif key == "chrx_var_frq":
-						self.chrx_var_frq_fpath = file
-					elif key == "sexcheck_ref_values":
-						self.sexcheck_ref_values_fpath = file
+					if key == "chrx_prune_in_markers":
+						self.chrx_prune_in_markers_fpath = file
+					elif key == "chrx_freqs":
+						self.chrx_freqs_fpath = file
+					elif key == "reference_values":
+						self.reference_values_fpath = file
 					LOGGER.info("File '{}' set up successfully".format(file))
 				else:
-					msg = "File '{}' does notxist".format(file)
+					msg = "File '{}' does not exist".format(file)
 					LOGGER.error(msg)
 					raise FileNotFoundError(msg)
 		else:
-			msg = "Directory '{}' does not exist".format(resources_path)
+			msg = "Directory '{}' does not exist".format(resources_fpath)
 			LOGGER.error(msg)
 			raise FileNotFoundError(msg)
 
@@ -88,12 +88,12 @@ class VariantBasedInferredSexAnalysis:
 		if pass_vars == 0:
 			LOGGER.debug("Annotating and filtering '{}' for all pruned chr X variants".format(vcf_file))
 			LOGGER.info("WARNING: no FILTER information available, input data will not be filtered for PASS variants, results may be unreliable")
-			cmd = "bcftools annotate --set-id '%CHROM\:%POS\:%REF\:%FIRST_ALT' " + vcf_file + " -Oz | bcftools view --include ID==@" + self.chrx_vars_fpath + " -Oz -o " + filtered_vcf_path
+			cmd = "bcftools annotate --set-id '%CHROM\:%POS\:%REF\:%FIRST_ALT' " + vcf_file + " -Oz | bcftools view --include ID==@" + self.chrx_prune_in_markers_fpath + " -Oz -o " + filtered_vcf_path
 			LOGGER.info(cmd)
 			execute_bash_command(cmd)
 		else:
 			LOGGER.debug("Annotating and filtering '{}' for chr X pruned PASS variants".format(vcf_file))
-			cmd = "bcftools annotate --set-id '%CHROM\:%POS\:%REF\:%FIRST_ALT' " + vcf_file + " -Oz | bcftools view --include ID==@" + self.chrx_vars_fpath + " -Oz | bcftools view -i 'FILTER=\"PASS\"' -Oz -o " + filtered_vcf_path
+			cmd = "bcftools annotate --set-id '%CHROM\:%POS\:%REF\:%FIRST_ALT' " + vcf_file + " -Oz | bcftools view --include ID==@" + self.chrx_prune_in_markers_fpath + " -Oz | bcftools view -i 'FILTER=\"PASS\"' -Oz -o " + filtered_vcf_path
 			LOGGER.info(cmd)
 			execute_bash_command(cmd)
 
@@ -152,7 +152,7 @@ class VariantBasedInferredSexAnalysis:
 		LOGGER.info("Files available: '{}':\n{}".format(plink_dir, plink_files_generated))
 
 		# Run PLINK check-sex analysis:
-		cmd = f"{plink_path} --bfile {plink_output_prefix} --read-freq {self.chrx_var_frq_fpath} --check-sex --allow-extra-chr --out {plink_output_prefix}"
+		cmd = f"{plink_path} --bfile {plink_output_prefix} --read-freq {self.chrx_freqs_fpath} --check-sex --allow-extra-chr --out {plink_output_prefix}"
 		LOGGER.debug("Performing PLINK check-sex")
 		execute_bash_command(cmd)
 		# Get the output
@@ -188,7 +188,7 @@ class VariantBasedInferredSexAnalysis:
 		LOGGER.info("Files available: '{}':\n{}".format(plink_dir, plink_files_generated))
 
 		# Run PLINK impute-sex analysis:
-		cmd = f"{plink_path} --bfile {plink_prefix} --read-freq {str(self.chrx_var_frq_fpath)} --impute-sex --make-bed --out {plink_prefix}"
+		cmd = f"{plink_path} --bfile {plink_prefix} --read-freq {str(self.chrx_freqs_fpath)} --impute-sex --make-bed --out {plink_prefix}"
 		LOGGER.debug("Performing PLINK impute-sex")
 		execute_bash_command(cmd)
 		# Get the output
@@ -280,7 +280,7 @@ class VariantBasedInferredSexAnalysis:
 
 					# Images
 					image_fpath = os.path.join(self.output_dir, "variant_based_inferred_sex.png")
-					self.plot_inferred_sex(self.executor["id_"], sexcheck_fpath, self.sexcheck_ref_values_fpath, image_fpath)
+					self.plot_inferred_sex(self.executor["id_"], sexcheck_fpath, self.reference_values_fpath, image_fpath)
 					base64_string = get_base64_image(image_fpath)
 					self.inferred_sex.images = [Image(name=f"Inferred Sex ({method})", base64=base64_string)]
 

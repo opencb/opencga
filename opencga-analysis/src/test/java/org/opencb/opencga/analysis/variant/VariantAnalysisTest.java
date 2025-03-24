@@ -41,6 +41,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.analysis.clinical.ClinicalAnalysisLoadTask;
 import org.opencb.opencga.analysis.family.qc.FamilyVariantQcAnalysis;
+import org.opencb.opencga.analysis.individual.qc.IndividualVariantQcAnalysis;
 import org.opencb.opencga.analysis.resource.ResourceFetcherTool;
 import org.opencb.opencga.analysis.sample.qc.SampleVariantQcAnalysis;
 import org.opencb.opencga.analysis.tools.ToolRunner;
@@ -68,6 +69,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.AnalysisTool;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
@@ -84,6 +86,7 @@ import org.opencb.opencga.core.models.family.FamilyQualityControl;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualInternal;
+import org.opencb.opencga.core.models.individual.IndividualQualityControl;
 import org.opencb.opencga.core.models.individual.Location;
 import org.opencb.opencga.core.models.operations.variant.VariantIndexParams;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
@@ -97,6 +100,7 @@ import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.models.variant.qc.FamilyQcAnalysisParams;
+import org.opencb.opencga.core.models.variant.qc.IndividualQcAnalysisParams;
 import org.opencb.opencga.core.models.variant.qc.SampleQcAnalysisParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
@@ -1151,12 +1155,7 @@ public class VariantAnalysisTest {
 
     @Test
     public void testFamilyQC() throws Exception {
-        Path relatednessFreqsPruneInPath = Paths.get("/opt/opencga/analysis/resources/relatedness/relatedness_prune_in_freqs.txt");
-        Assume.assumeTrue(Files.exists(relatednessFreqsPruneInPath));
-        Path relatednessMarkersPruneOutPath = Paths.get("/opt/opencga/analysis/resources/relatedness/relatedness_prune_out_markers.txt");
-        Assume.assumeTrue(Files.exists(relatednessMarkersPruneOutPath));
-        Path relatednessThresholdsPath = Paths.get("/opt/opencga/analysis/resources/relatedness/relatedness_thresholds.tsv");
-        Assume.assumeTrue(Files.exists(relatednessThresholdsPath));
+        assumeResources(RELATEDNESS_ANALYSIS_ID);
 
         Path outDir = Paths.get(opencga.createTmpOutdir("_family_qc"));
 
@@ -1196,6 +1195,56 @@ public class VariantAnalysisTest {
         assertNotNull(fam.getQualityControl());
         assertEquals(1, fam.getQualityControl().getRelatedness().size());
         assertEquals(jobId, fam.getQualityControl().getRelatedness().get(0).getAttributes().get(OPENCGA_JOB_ID_ATTR));
+    }
+
+    @Test
+    public void testIndividualQC() throws Exception {
+        assumeResources(RELATEDNESS_ANALYSIS_ID);
+        assumeResources(INFERRED_SEX_ANALYSIS_ID);
+
+        Path outDir = Paths.get(opencga.createTmpOutdir("_individual_qc"));
+
+        Individual individualObj = catalogManager.getIndividualManager().get(STUDY, son, QueryOptions.empty(), token).first();
+        Individual fatherObj = catalogManager.getIndividualManager().get(STUDY, father, QueryOptions.empty(), token).first();
+        Individual motherObj = catalogManager.getIndividualManager().get(STUDY, mother, QueryOptions.empty(), token).first();
+        individualObj.setFather(fatherObj);
+        individualObj.setMother(motherObj);
+        JacksonUtils.getDefaultObjectMapper().writerFor(Individual.class).writeValue(Paths.get("/tmp/" + son + "_info.json").toFile(), individualObj);
+
+        // To be sure, all samples are no-somatic
+        SampleUpdateParams sampleUpdateParams = new SampleUpdateParams().setSomatic(false);
+        catalogManager.getSampleManager().update(STUDY, son, sampleUpdateParams, null, token);
+
+        // Update quality control for the cancer sample
+        catalogManager.getIndividualManager().updateQualityControl(STUDY, son, new IndividualQualityControl(), new QualityControlStatus(),
+                token);
+
+        // Individual QC analysis
+        IndividualQcAnalysisParams params = new IndividualQcAnalysisParams();
+        params.setIndividuals(Arrays.asList(son));
+
+        String jobId = "test-individual-qc-" + TimeUtils.getTimeMillis();
+        toolRunner.execute(IndividualVariantQcAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY),
+                outDir, jobId, false, token);
+
+        Individual individual = catalogManager.getIndividualManager().get(STUDY, son, QueryOptions.empty(), token).first();
+
+        // Some output to check
+        System.out.println("individual.getInternal().getQualityControlStatus() = " + individual.getInternal().getQualityControlStatus());
+        System.out.println("individual.getQualityControl() = " + individual.getQualityControl());
+        System.out.println("outDir = " + outDir);
+
+        // Restore
+        sampleUpdateParams = new SampleUpdateParams().setSomatic(true);
+        catalogManager.getSampleManager().update(STUDY, son, sampleUpdateParams, null, token);
+
+        // Asserts
+        assertEquals(individual.getInternal().getQualityControlStatus().getId(), QualityControlStatus.READY);
+        assertNotNull(individual.getQualityControl());
+        assertEquals(1, individual.getQualityControl().getRelatedness().size());
+        assertEquals(1, individual.getQualityControl().getInferredSex().size());
+        assertEquals(1, individual.getQualityControl().getMendelianError().size());
+        assertEquals(jobId, individual.getQualityControl().getRelatedness().get(0).getAttributes().get(OPENCGA_JOB_ID_ATTR));
     }
 
     @Test
@@ -1323,6 +1372,22 @@ public class VariantAnalysisTest {
     //-------------------------------------------------------------------------
     // Utilities
     //-------------------------------------------------------------------------
+
+    private void assumeResources(String analysisId) throws ResourceException, IOException {
+        ResourceManager resourceManager = new ResourceManager(opencga.getOpencgaHome());
+
+        List<String> resourceIds = null;
+        for (AnalysisTool tool : catalogManager.getConfiguration().getAnalysis().getTools()) {
+            if (analysisId.equals(tool.getId())) {
+                resourceIds = tool.getResourceIds();
+            }
+        }
+        Assume.assumeTrue(CollectionUtils.isNotEmpty(resourceIds));
+        for (String resourceId : resourceIds) {
+            String filename = resourceManager.getResourceFilename(resourceId);
+            Assume.assumeTrue(Files.exists(Paths.get("/opt/opencga/analysis/resources/" + analysisId + "/" + filename)));
+        }
+    }
 
     private File prepareLiftoverInputFile(String filename, String folder) throws IOException, CatalogException {
         File file;
