@@ -50,6 +50,8 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
 
     public static final String COSMIC_ANNOTATOR_INDEX_NAME = "cosmicAnnotatorIndex";
 
+    private static final String VARIANT_STRING_PATTERN = "([ACGTN]*)|(<CNV[0-9]+>)|(<DUP>)|(<DEL>)|(<INS>)|(<INV>)";
+
     private static Logger logger = LoggerFactory.getLogger(CosmicVariantAnnotatorExtensionTask.class);
 
     public CosmicVariantAnnotatorExtensionTask(ObjectMap options) {
@@ -64,14 +66,18 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
         logger.info("COSMIC file {}", cosmicFile.toAbsolutePath());
         FileUtils.checkFile(cosmicFile);
 
+        Path parentPath = cosmicFile.getParent();
+        FileUtils.checkDirectory(parentPath, true);
+
         // Check and decompress tarball, checking the COSMIC files: GenomeScreensMutant and Classification
         Path genomeScreensMutantFile = null;
         Path classificationFile = null;
         if (!cosmicFile.getFileName().toString().endsWith(".tar.gz")) {
             throw new ToolException("Invalid COSMIC file format '" + cosmicFile.getFileName() + "': it must be a .tar.gz file");
         }
-        decompressTarBall(cosmicFile, Paths.get(output.getPath()).toAbsolutePath());
-        for (File file : Paths.get(output.getPath()).toAbsolutePath().toFile().listFiles()) {
+        Path tmpPath = parentPath.resolve("tmp");
+        decompressTarBall(cosmicFile, tmpPath);
+        for (File file : tmpPath.toFile().listFiles()) {
             if (file.getName().contains("Classification")) {
                 classificationFile = file.toPath();
             } else if (file.getName().contains("GenomeScreensMutant")) {
@@ -95,7 +101,7 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
         }
 
         // Clean and init RocksDB
-        dbLocation = Paths.get(output.getPath()).toAbsolutePath().resolve(COSMIC_ANNOTATOR_INDEX_NAME);
+        dbLocation = parentPath.resolve(COSMIC_ANNOTATOR_INDEX_NAME);
         if (Files.exists(dbLocation)) {
             // Skipping setup but init RocksDB
             logger.info("Skipping setup, it was already done");
@@ -139,24 +145,23 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
     @Override
     public List<VariantAnnotation> apply(List<VariantAnnotation> list) throws Exception {
         for (VariantAnnotation variantAnnotation : list) {
-            Variant variant;
-            if (StringUtils.isNotEmpty(variantAnnotation.getChromosome())
-                    && variantAnnotation.getStart() != null
-                    && StringUtils.isNotEmpty(variantAnnotation.getReference())
-                    && StringUtils.isNotEmpty(variantAnnotation.getAlternate())) {
-                if (variantAnnotation.getEnd() == null) {
-                    variant = new Variant(variantAnnotation.getChromosome(), variantAnnotation.getStart(), variantAnnotation.getReference(),
-                            variantAnnotation.getAlternate());
-                } else {
-                    variant = new Variant(variantAnnotation.getChromosome(), variantAnnotation.getStart(), variantAnnotation.getEnd(),
-                            variantAnnotation.getReference(), variantAnnotation.getAlternate());
-                }
-            } else {
-                logger.warn("Skipping variant due one of these fields is missing: chromosome = {}, start = {}, reference = {},"
-                        + " alternate = {}", variantAnnotation.getChromosome(), variantAnnotation.getStart(),
-                        variantAnnotation.getReference(), variantAnnotation.getAlternate());
+            String reference = checkEmptySequence(variantAnnotation.getReference());
+            String alternate = checkEmptySequence(variantAnnotation.getAlternate());
+            if (!isValid(reference, alternate)) {
+                logger.warn("Skipping invalid variant: chromosome = {}, start = {}, reference = {}, alternate = {}",
+                        variantAnnotation.getChromosome(), variantAnnotation.getStart(), variantAnnotation.getReference(),
+                        variantAnnotation.getAlternate());
                 continue;
             }
+
+            Variant variant;
+            try {
+                variant = new Variant(variantAnnotation.getChromosome(), variantAnnotation.getStart(), reference, alternate);
+            } catch (Exception e) {
+                logger.warn("Skipping variant: it could not be built", e);
+                continue;
+            }
+
             byte[] key = variant.toString().getBytes();
             byte[] dbContent = rdb.get(key);
             if (dbContent != null) {
@@ -237,5 +242,15 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
                 }
             }
         }
+    }
+
+    private static String checkEmptySequence(String sequence) {
+        return sequence != null && !sequence.equals("-") ? sequence : "";
+    }
+
+    private boolean isValid(String reference, String alternate) {
+        return (reference.matches(VARIANT_STRING_PATTERN)
+                && (alternate.matches(VARIANT_STRING_PATTERN)
+                && !alternate.equals(reference)));
     }
 }
