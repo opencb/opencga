@@ -139,8 +139,24 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
     @Override
     public List<VariantAnnotation> apply(List<VariantAnnotation> list) throws Exception {
         for (VariantAnnotation variantAnnotation : list) {
-            Variant variant = new Variant(variantAnnotation.getChromosome(), variantAnnotation.getStart(), variantAnnotation.getEnd(),
-                    variantAnnotation.getReference(), variantAnnotation.getAlternate());
+            Variant variant;
+            if (StringUtils.isNotEmpty(variantAnnotation.getChromosome())
+                    && variantAnnotation.getStart() != null
+                    && StringUtils.isNotEmpty(variantAnnotation.getReference())
+                    && StringUtils.isNotEmpty(variantAnnotation.getAlternate())) {
+                if (variantAnnotation.getEnd() == null) {
+                    variant = new Variant(variantAnnotation.getChromosome(), variantAnnotation.getStart(), variantAnnotation.getReference(),
+                            variantAnnotation.getAlternate());
+                } else {
+                    variant = new Variant(variantAnnotation.getChromosome(), variantAnnotation.getStart(), variantAnnotation.getEnd(),
+                            variantAnnotation.getReference(), variantAnnotation.getAlternate());
+                }
+            } else {
+                logger.warn("Skipping variant due one of these fields is missing: chromosome = {}, start = {}, reference = {},"
+                        + " alternate = {}", variantAnnotation.getChromosome(), variantAnnotation.getStart(),
+                        variantAnnotation.getReference(), variantAnnotation.getAlternate());
+                continue;
+            }
             byte[] key = variant.toString().getBytes();
             byte[] dbContent = rdb.get(key);
             if (dbContent != null) {
