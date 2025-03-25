@@ -151,7 +151,7 @@ public class NotificationManager extends ResourceManager<Notification> {
                     userIds.addAll(organization.getAdmins());
                 case PROJECT_ADMINISTRATORS:
                     // Get all project administrators
-                    // TODO: Implement and add break; in ORGANIZATION_ADMINISTATORS case. Meanwhile, treat as ORG_ADMINS
+                    // TODO: Implement and add break; in ORGANIZATION_ADMINISTRATORS case. Meanwhile, treat as ORG_ADMINS
                     break;
                 case STUDY_ADMINISTRATORS:
                     // Get all study administrators
@@ -195,7 +195,7 @@ public class NotificationManager extends ResourceManager<Notification> {
             NotificationInternal notificationInternal = new NotificationInternal(new NotificationStatus(NotificationStatus.PENDING,
                     "Notification yet to be processed."), TimeUtils.getTime(), TimeUtils.getTime(), Collections.emptyList());
             notificationCopy.setInternal(notificationInternal);
-            notificationCopy.setTarget(targetUserId);
+            notificationCopy.setReceiver(targetUserId);
 
             notificationList.add(notificationCopy);
         }
@@ -367,7 +367,7 @@ public class NotificationManager extends ResourceManager<Notification> {
 
         boolean count = true;
         query.append(NotificationDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-        query.append(NotificationDBAdaptor.QueryParams.TARGET.key(), userId);
+        query.append(NotificationDBAdaptor.QueryParams.RECEIVER.key(), userId);
         OpenCGAResult queryResult = null;
         if (count) {
             // We do not need to check for permissions when we show the count of files

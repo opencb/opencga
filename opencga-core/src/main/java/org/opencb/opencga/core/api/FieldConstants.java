@@ -60,7 +60,10 @@ public class FieldConstants {
     public static final String NOTIFICATION_TYPE_DESCRIPTION = "Event that occurred and triggered the notification.";
     public static final String NOTIFICATION_INTERNAL_DESCRIPTION = "Notification internal object.";
     public static final String NOTIFICATION_SENDER_DESCRIPTION = "Sender of the notification.";
-    public static final String NOTIFICATION_TARGET_DESCRIPTION = "Target of the notification.";
+    public static final String NOTIFICATION_RECEIVER_DESCRIPTION = "Receiver of the notification.";
+    public static final String NOTIFICATION_TARGET_DESCRIPTION = "Target of the notification. It may be one of"
+            + " (ORGANIZATION_ADMINISTRATORS, PROJECT_ADMINISTRATORS, STUDY_ADMINISTRATORS, STUDY_MEMBERS, ANY_USER) or a specific"
+            + " group or user.";
     public static final String NOTIFICATION_INTERNAL_NOTIFICATIONS_DESCRIPTION = "List containing all the channels by which the user was"
             + " notified";
     public static final String NOTIFICATION_INTERNAL_NOTIFICATIONS_ID_DESCRIPTION = "Channel id of the notification (EMAIL, SLACK...).";

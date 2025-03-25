@@ -25,12 +25,19 @@ public class Notification extends PrivateStudyUid {
 
     @DataField(id = "type", immutable = true, description = FieldConstants.NOTIFICATION_TYPE_DESCRIPTION)
     private String type;
+    /*
+    *  scope: MANUAL, ORGANIZATION, PROJECT, STUDY
+    *
+    * */
 
     @DataField(id = "internal", description = FieldConstants.NOTIFICATION_INTERNAL_DESCRIPTION)
     private NotificationInternal internal;
 
     @DataField(id = "sender", immutable = true, description = FieldConstants.NOTIFICATION_SENDER_DESCRIPTION)
     private String sender;
+
+    @DataField(id = "receiver", immutable = true, description = FieldConstants.NOTIFICATION_RECEIVER_DESCRIPTION)
+    private String receiver;
 
     @DataField(id = "target", immutable = true, description = FieldConstants.NOTIFICATION_TARGET_DESCRIPTION)
     private String target;
@@ -72,6 +79,7 @@ public class Notification extends PrivateStudyUid {
         sb.append(", type='").append(type).append('\'');
         sb.append(", internal=").append(internal);
         sb.append(", sender='").append(sender).append('\'');
+        sb.append(", receiver='").append(receiver).append('\'');
         sb.append(", target='").append(target).append('\'');
         sb.append('}');
         return sb.toString();
@@ -150,6 +158,15 @@ public class Notification extends PrivateStudyUid {
 
     public Notification setSender(String sender) {
         this.sender = sender;
+        return this;
+    }
+
+    public String getReceiver() {
+        return receiver;
+    }
+
+    public Notification setReceiver(String receiver) {
+        this.receiver = receiver;
         return this;
     }
 

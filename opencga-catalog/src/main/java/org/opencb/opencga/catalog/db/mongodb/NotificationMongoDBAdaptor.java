@@ -370,7 +370,7 @@ public class NotificationMongoDBAdaptor extends CatalogMongoDBAdaptor implements
 
         Query queryCopy = new Query(query);
         if (StringUtils.isNotEmpty(user)) {
-            queryCopy.put(QueryParams.TARGET.key(), user);
+            queryCopy.put(QueryParams.RECEIVER.key(), user);
         }
 
         for (Map.Entry<String, Object> entry : queryCopy.entrySet()) {
@@ -393,7 +393,7 @@ public class NotificationMongoDBAdaptor extends CatalogMongoDBAdaptor implements
                     case ID:
                     case UUID:
                     case INTERNAL_STATUS_ID:
-                    case TARGET:
+                    case RECEIVER:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     default:

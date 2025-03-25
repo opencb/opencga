@@ -31,7 +31,7 @@ public interface NotificationDBAdaptor extends CoreDBAdaptor<Notification> {
         INTERNAL_STATUS_ID("internal.status.id", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         INTERNAL_NOTIFICATIONS("internal.notifications", TEXT_ARRAY, ""),
-        TARGET("target", TEXT, ""),
+        RECEIVER("receiver", TEXT, ""),
 
         STUDY_UID("studyUid", INTEGER_ARRAY, "");
 
