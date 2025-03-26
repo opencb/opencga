@@ -388,6 +388,13 @@ public abstract class ResourceManager<R extends IPrivateStudyUid, S extends Enum
     }
 
     /**
+     * Interface to execute an operation over a single element.
+     */
+    public interface ExecuteGenericOperation<T> {
+        T execute(String organizationId, Study study, String userId, EntryParam entryParam) throws CatalogException;
+    }
+
+    /**
      * Interface to obtain an iterator of the elements that will be processed.
      * @param <R> Type of the elements that will be processed.
      */
@@ -602,25 +609,25 @@ public abstract class ResourceManager<R extends IPrivateStudyUid, S extends Enum
                 "Could not update ACLs");
     }
 
-    protected OpenCGAResult<R> runForSingleEntry(ObjectMap params, Enums.Action action, String studyStr, String token,
-                                                 ExecuteOperationForSingleEntry<R> execution) throws CatalogException {
+    protected <T> OpenCGAResult<T> runForSingleEntry(ObjectMap params, Enums.Action action, String studyStr, String token,
+                                                 ExecuteOperationForSingleEntry<T> execution) throws CatalogException {
         return runForSingleEntry(params, action, studyStr, token, QueryOptions.empty(), execution, null);
     }
 
-    protected OpenCGAResult<R> runForSingleEntry(ObjectMap params, Enums.Action action, String studyStr, String token,
-                                                 ExecuteOperationForSingleEntry<R> execution, String errorMessage)
+    protected <T> OpenCGAResult<T> runForSingleEntry(ObjectMap params, Enums.Action action, String studyStr, String token,
+                                                 ExecuteOperationForSingleEntry<T> execution, String errorMessage)
             throws CatalogException {
         return runForSingleEntry(params, action, studyStr, token, QueryOptions.empty(), execution, errorMessage);
     }
 
-    protected OpenCGAResult<R> runForSingleEntry(ObjectMap params, Enums.Action action, String studyStr, String token,
-                                                 QueryOptions studyIncludeList, ExecuteOperationForSingleEntry<R> execution)
+    protected <T> OpenCGAResult<T> runForSingleEntry(ObjectMap params, Enums.Action action, String studyStr, String token,
+                                                 QueryOptions studyIncludeList, ExecuteOperationForSingleEntry<T> execution)
             throws CatalogException {
         return runForSingleEntry(params, action, studyStr, token, studyIncludeList, execution, null);
     }
 
-    protected OpenCGAResult<R> runForSingleEntry(ObjectMap params, Enums.Action action, String studyStr, String token,
-                                                 QueryOptions studyIncludeList, ExecuteOperationForSingleEntry<R> execution,
+    protected <T> OpenCGAResult<T> runForSingleEntry(ObjectMap params, Enums.Action action, String studyStr, String token,
+                                                 QueryOptions studyIncludeList, ExecuteOperationForSingleEntry<T> execution,
                                                  String errorMessage) throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
@@ -640,7 +647,7 @@ public abstract class ResourceManager<R extends IPrivateStudyUid, S extends Enum
 
             // Execute code
             EntryParam entryParam = new EntryParam();
-            OpenCGAResult<R> execute = execution.execute(organizationId, study, userId, entryParam);
+            OpenCGAResult<T> execute = execution.execute(organizationId, study, userId, entryParam);
 
             // Fill missing OpencgaEvent entries
             opencgaEvent.setResult(execute);
@@ -660,8 +667,49 @@ public abstract class ResourceManager<R extends IPrivateStudyUid, S extends Enum
         }
     }
 
+    protected <T> T runGenericOperation(ObjectMap params, Enums.Action action, String studyStr, String token,
+                                        ExecuteGenericOperation<T> execution) throws CatalogException {
+        return runGenericOperation(params, action, studyStr, token, QueryOptions.empty(), execution, null);
+    }
 
+    protected <T> T runGenericOperation(ObjectMap params, Enums.Action action, String studyStr, String token, QueryOptions studyIncludeList,
+                                        ExecuteGenericOperation<T> execution, String errorMessage) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
 
+        String eventId = getResource().name().toLowerCase() + "." + action.name().toLowerCase();
+
+        String eventUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.EVENT);
+        OpencgaEvent opencgaEvent = OpencgaEvent.build(eventUuid, eventId, params, organizationId, userId, tokenPayload.getToken());
+        CatalogEvent catalogEvent = CatalogEvent.build(opencgaEvent);
+        try {
+            // Get study
+            Study study = catalogManager.getStudyManager().resolveId(studyFqn, studyIncludeList, tokenPayload);
+            opencgaEvent.setStudyFqn(study.getFqn());
+            opencgaEvent.setStudyUuid(study.getUuid());
+
+            // Execute code
+            EntryParam entryParam = new EntryParam();
+            T execute = execution.execute(organizationId, study, userId, entryParam);
+
+            // Fill missing OpencgaEvent entries
+            opencgaEvent.setEntries(Collections.singletonList(entryParam));
+
+            // Notify event
+            EventManager.getInstance().notify(catalogEvent);
+
+            return execute;
+        } catch (Exception e) {
+            EventManager.getInstance().notify(catalogEvent, e);
+            if (StringUtils.isNotEmpty(errorMessage)) {
+                throw new CatalogException(errorMessage, e);
+            } else {
+                throw e;
+            }
+        }
+    }
 
     /**
      * Interface to execute a query operation. No particular elements are provided by the user.

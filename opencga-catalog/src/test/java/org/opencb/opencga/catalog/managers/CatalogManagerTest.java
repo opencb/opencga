@@ -1742,14 +1742,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
         Cohort myCohort = catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort").setType(Enums.CohortType.FAMILY)
                 .setSamples(Arrays.asList(sampleId1, sampleId2, sampleId3)), INCLUDE_RESULT, ownerToken).first();
 
-        DataResult<Sample> myCohort1 = catalogManager.getCohortManager().getSamples(studyFqn, "MyCohort", ownerToken);
-        assertEquals(3, myCohort1.getNumResults());
-
-        thrown.expect(CatalogParameterException.class);
-        catalogManager.getCohortManager().getSamples(studyFqn, "MyCohort,AnotherCohort", ownerToken);
-
-        thrown.expect(CatalogParameterException.class);
-        catalogManager.getCohortManager().getSamples(studyFqn, "MyCohort,MyCohort", ownerToken);
+        List<Sample> samples = catalogManager.getCohortManager().get(studyFqn, "MyCohort", CohortManager.INCLUDE_SAMPLE_IDS, ownerToken).first().getSamples();;
+        assertEquals(3, samples.size());
     }
 
     @Test

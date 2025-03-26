@@ -25,6 +25,7 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
+import org.opencb.opencga.catalog.managers.CohortManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -160,7 +161,7 @@ public class CatalogStorageMetadataSynchronizerTest {
             catalogManager.getFileManager().updateFileInternalVariantIndex(studyId, file,
                     FileInternalVariantIndex.init().setStatus(new VariantIndexStatus(InternalStatus.READY)), sessionId);
             indexedFiles.add(file.getName());
-            List<String> samples = catalogManager.getCohortManager().getSamples(studyId, cohortId, sessionId).getResults().stream().map(Sample::getId).collect(Collectors.toList());
+            List<String> samples = catalogManager.getCohortManager().get(studyId, cohortId, CohortManager.INCLUDE_SAMPLE_IDS, sessionId).first().getSamples().stream().map(Sample::getId).collect(Collectors.toList());
             samples.addAll(file.getSampleIds());
             List<SampleReferenceParam> sampleReferenceParams = samples.stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList());
             catalogManager.getCohortManager().update(studyId, cohortId,
@@ -174,8 +175,9 @@ public class CatalogStorageMetadataSynchronizerTest {
 
         StudyMetadata sm = studyConfigurationFactory.getStudyMetadata(studyId);
 
-        List<String> samples = catalogManager.getCohortManager().getSamples(studyId, cohortId, sessionId)
-                .getResults()
+        List<String> samples = catalogManager.getCohortManager().get(studyId, cohortId, CohortManager.INCLUDE_SAMPLE_IDS, sessionId)
+                .first()
+                .getSamples()
                 .stream()
                 .map(Sample::getId)
                 .collect(Collectors.toList());

@@ -24,11 +24,9 @@ import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.TestParamConstants;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoBackupUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.IOUtils;
@@ -171,20 +169,6 @@ public class FileWSServerTest {
         file = response.getResponse().get(0).first();
         assertEquals("data/file1.txt", file.getPath());
         assertEquals(fileUri, file.getUri());
-    }
-
-    @Test
-    public void updateFilePOST() throws Exception {
-        File file = OpenCGAWSServer.catalogManager.getFileManager().search(String.valueOf(studyId), new Query(FileDBAdaptor.QueryParams.TYPE
-                .key(), "FILE"), new QueryOptions(), sessionId).first();
-
-        ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.DESCRIPTION.key(), "Change description");
-        String json = webTarget.path("files").path(Long.toString(file.getUid())).path("update")
-                .queryParam("sid", sessionId).request().post(Entity.json(params), String.class);
-
-        QueryResponse<Object> response = WSServerTestUtils.parseResult(json, Object.class);
-        file = OpenCGAWSServer.catalogManager.getFileManager().get(organizationId, file.getUid(), null, sessionId).first();
-        assertEquals(params.getString(FileDBAdaptor.QueryParams.DESCRIPTION.key()), file.getDescription());
     }
 
     @Test

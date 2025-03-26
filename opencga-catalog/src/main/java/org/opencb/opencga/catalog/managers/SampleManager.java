@@ -349,33 +349,31 @@ public class SampleManager extends AnnotationSetManager<Sample, SamplePermission
 
     public OpenCGAResult<Sample> delete(String studyStr, List<String> sampleIds, ObjectMap params, boolean ignoreException, String token)
             throws CatalogException {
-        return deleteMany(studyStr, sampleIds, params, ignoreException, token,
-                (organizationId, study, userId, entryParam) -> {
-                    if (StringUtils.isEmpty(entryParam.getId())) {
-                        throw new CatalogException("Internal error: Missing sample id. This sample id should have been provided"
-                                + " internally.");
-                    }
-                    String sampleId = entryParam.getId();
+        return deleteMany(studyStr, sampleIds, params, ignoreException, token, (organizationId, study, userId, entryParam) -> {
+            if (StringUtils.isEmpty(entryParam.getId())) {
+                throw new CatalogException("Internal error: Missing sample id. This sample id should have been provided internally.");
+            }
+            String sampleId = entryParam.getId();
 
-                    Query query = new Query();
-                    authorizationManager.buildAclCheckQuery(userId, SamplePermissions.DELETE.name(), query);
-                    InternalGetDataResult<Sample> tmpResult = internalGet(organizationId, study.getUid(), sampleId, query,
-                            INCLUDE_SAMPLE_IDS, userId, true);
-                    if (tmpResult.getNumResults() == 0) {
-                        throw new CatalogException("Sample '" + sampleId + "' not found or user " + userId + " does not have the proper "
-                                + "permissions to delete it.");
-                    }
-                    Sample sample = tmpResult.first();
+            Query query = new Query();
+            authorizationManager.buildAclCheckQuery(userId, SamplePermissions.DELETE.name(), query);
+            InternalGetDataResult<Sample> tmpResult = internalGet(organizationId, study.getUid(), sampleId, query,
+                    INCLUDE_SAMPLE_IDS, userId, true);
+            if (tmpResult.getNumResults() == 0) {
+                throw new CatalogException("Sample '" + sampleId + "' not found or user " + userId + " does not have the proper "
+                        + "permissions to delete it.");
+            }
+            Sample sample = tmpResult.first();
 
-                    // We set the proper sample ids in the entry param object
-                    entryParam.setId(sample.getId());
-                    entryParam.setUuid(sample.getUuid());
+            // We set the proper sample ids in the entry param object
+            entryParam.setId(sample.getId());
+            entryParam.setUuid(sample.getUuid());
 
-                    // Check if the sample can be deleted
-                    checkSampleCanBeDeleted(organizationId, study.getUid(), sample, params.getBoolean(Constants.FORCE, false));
+            // Check if the sample can be deleted
+            checkSampleCanBeDeleted(organizationId, study.getUid(), sample, params.getBoolean(Constants.FORCE, false));
 
-                    return getSampleDBAdaptor(organizationId).delete(sample);
-                });
+            return getSampleDBAdaptor(organizationId).delete(sample);
+        });
     }
 
     @Override

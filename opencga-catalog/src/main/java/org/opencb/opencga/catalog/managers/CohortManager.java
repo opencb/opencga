@@ -70,17 +70,15 @@ public class CohortManager extends AnnotationSetManager<Cohort, CohortPermission
     public static final QueryOptions INCLUDE_COHORT_STATUS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             CohortDBAdaptor.QueryParams.STUDY_UID.key(), CohortDBAdaptor.QueryParams.ID.key(), CohortDBAdaptor.QueryParams.UID.key(),
             CohortDBAdaptor.QueryParams.UUID.key(), CohortDBAdaptor.QueryParams.INTERNAL_STATUS.key()));
+    public static final QueryOptions INCLUDE_SAMPLE_IDS = keepFieldInQueryOptions(INCLUDE_COHORT_IDS,
+            CohortDBAdaptor.QueryParams.SAMPLE_IDS.key());
     protected static Logger logger = LoggerFactory.getLogger(CohortManager.class);
-    private final String defaultFacet = "creationYear>>creationMonth;status;numSamples[0..10]:1";
-    private UserManager userManager;
     private StudyManager studyManager;
 
 
     CohortManager(AuthorizationManager authorizationManager, AuditManager auditManager,
                   CatalogManager catalogManager, DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
-
-        this.userManager = catalogManager.getUserManager();
         this.studyManager = catalogManager.getStudyManager();
     }
 
@@ -236,7 +234,7 @@ public class CohortManager extends AnnotationSetManager<Cohort, CohortPermission
                     stopWatch.start();
                     for (Cohort cohort : cohorts) {
                         try {
-                            validateNewCohort(organizationId, study, cohort);
+                            validateNewCohort(study, cohort);
                             OpenCGAResult<?> tmpResult = getCohortDBAdaptor(organizationId)
                                     .insert(study.getUid(), cohort, study.getVariableSets(), options);
                             insertResult.append(tmpResult);
@@ -322,7 +320,7 @@ public class CohortManager extends AnnotationSetManager<Cohort, CohortPermission
     OpenCGAResult<Cohort> privateCreate(String organizationId, Study study, Cohort cohort, QueryOptions options, String userId)
             throws CatalogException {
         authorizationManager.checkStudyPermission(organizationId, study.getUid(), userId, StudyPermissions.Permissions.WRITE_COHORTS);
-        validateNewCohort(organizationId, study, cohort);
+        validateNewCohort(study, cohort);
 
         OpenCGAResult<Cohort> insert = getCohortDBAdaptor(organizationId).insert(study.getUid(), cohort, study.getVariableSets(), options);
         if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
@@ -333,7 +331,7 @@ public class CohortManager extends AnnotationSetManager<Cohort, CohortPermission
         return insert;
     }
 
-    void validateNewCohort(String organizationId, Study study, Cohort cohort) throws CatalogException {
+    void validateNewCohort(Study study, Cohort cohort) throws CatalogException {
         ParamUtils.checkObj(cohort, "Cohort");
         ParamUtils.checkParameter(cohort.getId(), "id");
         ParamUtils.checkObj(cohort.getSamples(), "Sample list");
@@ -367,41 +365,6 @@ public class CohortManager extends AnnotationSetManager<Cohort, CohortPermission
         }
 
         cohort.setNumSamples(cohort.getSamples().size());
-    }
-
-    public Long getStudyId(String organizationId, long cohortId) throws CatalogException {
-        return getCohortDBAdaptor(organizationId).getStudyId(cohortId);
-    }
-
-    /**
-     * Fetch all the samples from a cohort.
-     *
-     * @param studyStr  Study id in string format. Could be one of
-     *                  [id|organization@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy]
-     * @param cohortStr Cohort id or name.
-     * @param token     Token of the user logged in.
-     * @return a OpenCGAResult containing all the samples belonging to the cohort.
-     * @throws CatalogException if there is any kind of error (permissions or invalid ids).
-     */
-    @Deprecated
-    public OpenCGAResult<Sample> getSamples(String studyStr, String cohortStr, String token) throws CatalogException {
-        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
-        String organizationId = studyFqn.getOrganizationId();
-        String userId = tokenPayload.getUserId(organizationId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, organizationId);
-        OpenCGAResult<Cohort> cohortDataResult = internalGet(organizationId, study.getUid(), cohortStr,
-                new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.SAMPLES.key()), userId);
-
-        if (cohortDataResult == null || cohortDataResult.getNumResults() == 0) {
-            throw new CatalogException("No cohort " + cohortStr + " found in study " + studyStr);
-        }
-        if (cohortDataResult.first().getSamples().size() == 0) {
-            return OpenCGAResult.empty();
-        }
-
-        return new OpenCGAResult<>(cohortDataResult.getTime(), cohortDataResult.getEvents(), cohortDataResult.first().getSamples().size(),
-                cohortDataResult.first().getSamples(), cohortDataResult.first().getSamples().size());
     }
 
     @Override

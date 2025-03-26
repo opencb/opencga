@@ -244,6 +244,7 @@ public final class Enums {
 
         RELATIVES,
 
+        SHOW_FOLDER_FILES,
         UPLOAD,
         LINK,
         UNLINK,
@@ -252,6 +253,7 @@ public final class Enums {
         DOWNLOAD_AND_REGISTER,
         MOVE,
         MOVE_AND_REGISTER,
+        SYNC_UNTRACKED_FILES,
 
         VISIT,
         KILL_JOB,
