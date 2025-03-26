@@ -69,37 +69,6 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
         Path parentPath = cosmicFile.getParent();
         FileUtils.checkDirectory(parentPath, true);
 
-        // Check and decompress tarball, checking the COSMIC files: GenomeScreensMutant and Classification
-        Path genomeScreensMutantFile = null;
-        Path classificationFile = null;
-        if (!cosmicFile.getFileName().toString().endsWith(".tar.gz")) {
-            throw new ToolException("Invalid COSMIC file format '" + cosmicFile.getFileName() + "': it must be a .tar.gz file");
-        }
-        Path tmpPath = parentPath.resolve("tmp");
-        decompressTarBall(cosmicFile, tmpPath);
-        for (File file : tmpPath.toFile().listFiles()) {
-            if (file.getName().contains("Classification")) {
-                classificationFile = file.toPath();
-            } else if (file.getName().contains("GenomeScreensMutant")) {
-                genomeScreensMutantFile = file.toPath();
-            }
-        }
-        if (genomeScreensMutantFile == null) {
-            throw new ToolException("Missing the GenomeScreensMutant file in the COSMIC tarball '" + cosmicFile.getFileName() + "'");
-        }
-        if (classificationFile == null) {
-            throw new ToolException("Missing the Classification file in the COSMIC tarball '" + cosmicFile.getFileName() + "'");
-        }
-
-        cosmicVersion = (String) options.getOrDefault(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key(), null);
-        if (StringUtils.isEmpty(cosmicVersion)) {
-            throw new IllegalArgumentException("Missing COSMIC version");
-        }
-        assembly = (String) options.getOrDefault(VariantStorageOptions.ASSEMBLY.key(), null);
-        if (StringUtils.isEmpty(assembly)) {
-            throw new IllegalArgumentException("Missing assembly");
-        }
-
         // Clean and init RocksDB
         dbLocation = parentPath.resolve(COSMIC_ANNOTATOR_INDEX_NAME);
         if (Files.exists(dbLocation)) {
@@ -107,7 +76,38 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
             logger.info("Skipping setup, it was already done");
             initRockDB(false);
         } else {
-            logger.info("Setup and populate RocksDB");
+            // Check and decompress tarball, checking the COSMIC files: GenomeScreensMutant and Classification
+            Path genomeScreensMutantFile = null;
+            Path classificationFile = null;
+            if (!cosmicFile.getFileName().toString().endsWith(".tar.gz")) {
+                throw new ToolException("Invalid COSMIC file format '" + cosmicFile.getFileName() + "': it must be a .tar.gz file");
+            }
+            Path tmpPath = parentPath.resolve("tmp");
+            decompressTarBall(cosmicFile, tmpPath);
+            for (File file : tmpPath.toFile().listFiles()) {
+                if (file.getName().contains("Classification")) {
+                    classificationFile = file.toPath();
+                } else if (file.getName().contains("GenomeScreensMutant")) {
+                    genomeScreensMutantFile = file.toPath();
+                }
+            }
+            if (genomeScreensMutantFile == null) {
+                throw new ToolException("Missing the GenomeScreensMutant file in the COSMIC tarball '" + cosmicFile.getFileName() + "'");
+            }
+            if (classificationFile == null) {
+                throw new ToolException("Missing the Classification file in the COSMIC tarball '" + cosmicFile.getFileName() + "'");
+            }
+
+            cosmicVersion = (String) options.getOrDefault(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key(), null);
+            if (StringUtils.isEmpty(cosmicVersion)) {
+                throw new IllegalArgumentException("Missing COSMIC version");
+            }
+            assembly = (String) options.getOrDefault(VariantStorageOptions.ASSEMBLY.key(), null);
+            if (StringUtils.isEmpty(assembly)) {
+                throw new IllegalArgumentException("Missing assembly");
+            }
+
+            logger.info("Setup and populate RocksDB by parsing COSMIC files (version {}, assembly {})", cosmicVersion, assembly);
 
             // Init RocksDB
             initRockDB(true);
