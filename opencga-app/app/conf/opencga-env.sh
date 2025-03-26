@@ -104,6 +104,8 @@ if ( ls "${BASEDIR}"/libs/opencga-storage-hadoop-core-*.jar >/dev/null 2>&1 ) ; 
     jackson=$(find "${BASEDIR}/libs/" -name "jackson-*-2.[0-9].[0-9].jar" | tr "\n" ":")
     proto=$(find "${BASEDIR}/libs/" -name "protobuf-java-*.jar" | tr "\n" ":")
     avro=$(find "${BASEDIR}/libs/" -name "avro-*.jar" | tr "\n" ":")
-    export HADOOP_CLASSPATH="${phoenix}:${proto}:${avro}:${jackson}:${CLASSPATH_PREFIX}"
+    tephra=$(find ${BASEDIR}/libs/ -name "tephra-*.jar" | tr "\n" ":")
+    disruptor=$(find ${BASEDIR}/libs/ -name "disruptor-*.jar" | tr "\n" ":")
+    export HADOOP_CLASSPATH="${phoenix}:${proto}:${avro}:${jackson}:${tephra}:${disruptor}:${CLASSPATH_PREFIX}"
     export HADOOP_USER_CLASSPATH_FIRST=true
 fi

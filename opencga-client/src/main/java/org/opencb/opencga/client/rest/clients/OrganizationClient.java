@@ -17,9 +17,10 @@
 package org.opencb.opencga.client.rest.clients;
 
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.*;
+import org.opencb.opencga.core.client.ParentClient;
+import org.opencb.opencga.core.config.client.ClientConfiguration;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.notes.Note;
 import org.opencb.opencga.core.models.notes.NoteCreateParams;
 import org.opencb.opencga.core.models.notes.NoteUpdateParams;
@@ -47,7 +48,7 @@ import org.opencb.opencga.core.response.RestResponse;
  * This class contains methods for the Organization webservices.
  *    PATH: organizations
  */
-public class OrganizationClient extends AbstractParentClient {
+public class OrganizationClient extends ParentClient {
 
     public OrganizationClient(String token, ClientConfiguration configuration) {
         super(token, configuration);
@@ -93,6 +94,7 @@ public class OrganizationClient extends AbstractParentClient {
      *       creationDate: Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
      *       modificationDate: Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
      *       id: Note unique identifier.
+     *       type: Note type.
      *       scope: Scope of the Note.
      *       visibility: Visibility of the Note.
      *       uuid: Unique 32-character identifier assigned automatically by OpenCGA.
@@ -146,9 +148,9 @@ public class OrganizationClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<ObjectMap> resetPassword(ObjectMap params) throws ClientException {
+    public RestResponse<ObjectMap> resetUserPassword(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("organizations", null, "password", null, "reset", params, POST, ObjectMap.class);
+        return execute("organizations", null, "user/password", null, "reset", params, POST, ObjectMap.class);
     }
 
     /**

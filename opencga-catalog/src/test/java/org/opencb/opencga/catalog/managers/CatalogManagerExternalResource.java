@@ -24,13 +24,13 @@ import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.auth.authentication.JwtManager;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -39,6 +39,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+import static org.opencb.opencga.catalog.utils.ResourceManager.ANALYSIS_DIRNAME;
+import static org.opencb.opencga.catalog.utils.ResourceManager.RESOURCES_DIRNAME;
 
 /**
  * Created on 05/05/16
@@ -47,16 +52,24 @@ import java.nio.file.StandardCopyOption;
  */
 public class CatalogManagerExternalResource extends ExternalResource {
 
-    private CatalogManager catalogManager;
-    private Configuration configuration;
-    private Path opencgaHome;
-    private String adminToken;
+    protected CatalogManager catalogManager;
+    protected Configuration configuration;
+    protected Path opencgaHome;
+    protected String adminToken;
     public boolean initialized = false;
 
+    protected Path sourceAnalysisPath;
+
     public CatalogManagerExternalResource() {
+        this(Paths.get("../opencga-app/app/analysis/"));
+    }
+
+    public CatalogManagerExternalResource(Path sourceAnalysisPath) {
+        this.sourceAnalysisPath = sourceAnalysisPath;
         Configurator.setLevel("org.mongodb.driver.cluster", Level.WARN);
         Configurator.setLevel("org.mongodb.driver.connection", Level.WARN);
     }
+
 
     @Override
     public void before() throws Exception {
@@ -77,7 +90,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
         String secretKey = PasswordUtils.getStrongRandomPassword(JwtManager.SECRET_KEY_MIN_LENGTH);
         catalogManager.installCatalogDB("HS256", secretKey, TestParamConstants.ADMIN_PASSWORD, "opencga@admin.com", true);
 
-        adminToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+        adminToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).first().getToken();
     }
 
     public Path clearOpenCGAHome(String testName) throws IOException {
@@ -88,13 +101,20 @@ public class CatalogManagerExternalResource extends ExternalResource {
         } while (opencgaHome.toFile().exists());
         Files.createDirectories(opencgaHome);
         configuration = Configuration.load(getClass().getResource("/configuration-test.yml").openStream());
+        Path confPath = Files.createDirectories(opencgaHome.resolve("conf"));
+        Files.copy(getClass().getResource("/configuration-test.yml").openStream(), confPath.resolve("configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
+
         configuration.setWorkspace(opencgaHome.resolve("sessions").toAbsolutePath().toString());
         configuration.setJobDir(opencgaHome.resolve("JOBS").toAbsolutePath().toString());
 
+        Path analysisPath = opencgaHome.resolve(ANALYSIS_DIRNAME);
+        Files.createDirectories(analysisPath.resolve(RESOURCES_DIRNAME));
+
         // Pedigree graph analysis
-        Path analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/pedigree-graph")).toAbsolutePath();
-        FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/pedigree-graph/ped.R");
+        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/pedigree-graph")).toAbsolutePath();
+        InputStream inputStream = getClass().getResource("/pedigree-graph/ped.R").openStream();
         Files.copy(inputStream, analysisPath.resolve("ped.R"), StandardCopyOption.REPLACE_EXISTING);
+
         return opencgaHome;
     }
 
@@ -124,7 +144,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
     public CatalogManager resetCatalogManager() throws CatalogException {
         catalogManager.close();
         catalogManager = new CatalogManager(configuration);
-        adminToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+        adminToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).first().getToken();
         return catalogManager;
     }
 
@@ -137,7 +157,8 @@ public class CatalogManagerExternalResource extends ExternalResource {
     }
 
     public static void clearCatalog(Configuration configuration) throws CatalogException, URISyntaxException {
-        try (MongoDBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(configuration, new IOManagerFactory())) {
+        CatalogIOManager catalogIOManager = new CatalogIOManager(configuration);
+        try (MongoDBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(configuration, new IOManagerFactory(), catalogIOManager)) {
             dbAdaptorFactory.deleteCatalogDB();
         }
 
@@ -178,6 +199,25 @@ public class CatalogManagerExternalResource extends ExternalResource {
             }
         }
         return resourcePath.toUri();
+    }
+
+    public String createTmpOutdir() throws IOException {
+        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+        // stackTrace[0] = "Thread.currentThread"
+        // stackTrace[1] = "newOutputUri"
+        // stackTrace[2] =  caller method
+        String testName = stackTrace[2].getMethodName();
+        return createTmpOutdir(testName);
+    }
+
+    public String createTmpOutdir(String suffix) throws IOException {
+        if (suffix.endsWith("_")) {
+            suffix = suffix.substring(0, suffix.length() - 1);
+        }
+        String folder = "I_tmp_" + new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss.SSS").format(new Date()) + suffix;
+        Path tmpOutDir = Paths.get(getCatalogManager().getConfiguration().getJobDir()).resolve(folder);
+        Files.createDirectories(tmpOutDir);
+        return tmpOutDir.toString();
     }
 
 }

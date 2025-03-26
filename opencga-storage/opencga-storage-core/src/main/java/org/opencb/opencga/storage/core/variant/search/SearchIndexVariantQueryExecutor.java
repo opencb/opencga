@@ -73,8 +73,9 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
     }
 
     @Override
-    public boolean canUseThisExecutor(ParsedVariantQuery variantQuery, QueryOptions options) throws StorageEngineException {
+    public boolean canUseThisExecutor(ParsedVariantQuery variantQuery) throws StorageEngineException {
         VariantQuery query = variantQuery.getQuery();
+        QueryOptions options = variantQuery.getInputOptions();
         return doQuerySearchManager(query, options) || doIntersectWithSearch(query, options);
     }
 

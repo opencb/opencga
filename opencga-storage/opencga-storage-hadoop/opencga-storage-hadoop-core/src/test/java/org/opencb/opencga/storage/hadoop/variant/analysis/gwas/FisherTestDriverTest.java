@@ -20,15 +20,16 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 @Category(LongTests.class)
 public class FisherTestDriverTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
@@ -78,17 +79,16 @@ public class FisherTestDriverTest extends VariantStorageBaseTest implements Hado
                 .map(s -> metadataManager.getSampleName(studyMetadata.getId(), s))
                 .collect(Collectors.toList());
 
+        URI local1 = localOut.resolve("fisher_result.tsv");
         ObjectMap objectMap = new ObjectMap()
                 .append(FisherTestDriver.CONTROL_COHORT, controlCohort)
                 .append(FisherTestDriver.CASE_COHORT, caseCohort)
-                .append(FisherTestDriver.OUTPUT, "fisher_result");
+                .append(FisherTestDriver.OUTPUT, local1);
         getMrExecutor().run(FisherTestDriver.class, FisherTestDriver.buildArgs(
                 dbAdaptor.getArchiveTableName(1),
                 dbAdaptor.getVariantTable(),
                 1,
                 Collections.emptySet(), objectMap), "");
-
-        URI local1 = copyToLocal("fisher_result");
 
         URI local2 = localOut.resolve("fisher_result2.tsv");
         objectMap.append(FisherTestDriver.OUTPUT, local2)
@@ -100,15 +100,14 @@ public class FisherTestDriverTest extends VariantStorageBaseTest implements Hado
                 1,
                 Collections.emptySet(), objectMap), "");
 
-//        URI local2 = copyToLocal("fisher_result2");
 
         variantStorageEngine.loadVariantScore(local1, studyMetadata.getName(), "fisher1", "ALL", null, new VariantScoreFormatDescriptor(1, 16, 15), new ObjectMap());
         variantStorageEngine.loadVariantScore(local2, studyMetadata.getName(), "fisher2", "ALL", null, new VariantScoreFormatDescriptor(1, 16, 15), new ObjectMap());
 
-        FileSystem fs = FileSystem.get(configuration.get());
+        FileSystem fs = FileSystem.get(local1, configuration.get());
         Set<String> lines1 = new HashSet<>();
         int lines2 = 0;
-        try (BufferedReader is = new BufferedReader(new InputStreamReader(fs.open(new Path("fisher_result/part-r-00000"))))) {
+        try (BufferedReader is = new BufferedReader(new InputStreamReader(fs.open(new Path(local1))))) {
             String x = is.readLine();
             while (StringUtils.isNotEmpty(x)) {
 //                System.out.println(x);
@@ -132,13 +131,6 @@ public class FisherTestDriverTest extends VariantStorageBaseTest implements Hado
 
         Assert.assertThat(lines2, VariantMatchers.lt(lines1.size()));
         Assert.assertThat(lines2, VariantMatchers.gt(0));
-    }
-
-    private URI copyToLocal(String s) throws IOException {
-        FileSystem fs = FileSystem.get(configuration.get());
-        URI local = localOut.resolve(s + ".tsv");
-        fs.copyToLocalFile(new Path(s + "/part-r-00000"), new Path(local));
-        return local;
     }
 
 }

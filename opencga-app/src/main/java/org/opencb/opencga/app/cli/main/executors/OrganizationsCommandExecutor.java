@@ -14,11 +14,12 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.UpdateAction;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.Optimizations;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.notes.Note;
 import org.opencb.opencga.core.models.notes.NoteCreateParams;
+import org.opencb.opencga.core.models.notes.NoteType;
 import org.opencb.opencga.core.models.notes.NoteUpdateParams;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.organizations.OrganizationConfiguration;
@@ -81,8 +82,8 @@ public class OrganizationsCommandExecutor extends OpencgaCommandExecutor {
             case "notes-update":
                 queryResponse = updateNotes();
                 break;
-            case "password-reset":
-                queryResponse = resetPassword();
+            case "user-password-reset":
+                queryResponse = resetUserPassword();
                 break;
             case "update-status-user":
                 queryResponse = userUpdateStatus();
@@ -167,6 +168,7 @@ public class OrganizationsCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
+            putNestedIfNotNull(beanParams, "type", commandOptions.type, true);
             putNestedIfNotNull(beanParams, "tags", commandOptions.tags, true);
             putNestedIfNotNull(beanParams, "visibility", commandOptions.visibility, true);
             putNestedIfNotNull(beanParams, "valueType", commandOptions.valueType, true);
@@ -189,6 +191,7 @@ public class OrganizationsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("creationDate", commandOptions.creationDate);
         queryParams.putIfNotEmpty("modificationDate", commandOptions.modificationDate);
         queryParams.putIfNotEmpty("id", commandOptions.id);
+        queryParams.putIfNotEmpty("type", commandOptions.type);
         queryParams.putIfNotEmpty("scope", commandOptions.scope);
         queryParams.putIfNotEmpty("visibility", commandOptions.visibility);
         queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
@@ -233,6 +236,7 @@ public class OrganizationsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), NoteUpdateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotNull(beanParams, "type", commandOptions.type, true);
             putNestedIfNotNull(beanParams, "tags", commandOptions.tags, true);
             putNestedIfNotNull(beanParams, "visibility", commandOptions.visibility, true);
 
@@ -243,15 +247,15 @@ public class OrganizationsCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getOrganizationClient().updateNotes(commandOptions.id, noteUpdateParams, queryParams);
     }
 
-    private RestResponse<ObjectMap> resetPassword() throws Exception {
-        logger.debug("Executing resetPassword in Organizations command line");
+    private RestResponse<ObjectMap> resetUserPassword() throws Exception {
+        logger.debug("Executing resetUserPassword in Organizations command line");
 
-        OrganizationsCommandOptions.ResetPasswordCommandOptions commandOptions = organizationsCommandOptions.resetPasswordCommandOptions;
+        OrganizationsCommandOptions.ResetUserPasswordCommandOptions commandOptions = organizationsCommandOptions.resetUserPasswordCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("userId", commandOptions.userId);
 
-        return openCGAClient.getOrganizationClient().resetPassword(queryParams);
+        return openCGAClient.getOrganizationClient().resetUserPassword(queryParams);
     }
 
     private RestResponse<User> userUpdateStatus() throws Exception {

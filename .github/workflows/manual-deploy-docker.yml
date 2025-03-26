@@ -45,7 +45,7 @@ jobs:
             ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }} ${{ inputs.hadoop }}
           fi
       - name: Maven Build (skip tests)
-        run: mvn -T 2 clean install -DskipTests -P${{ inputs.hadoop }} -Dopencga.war.name=opencga -Dcheckstyle.skip
+        run: mvn -T 2 clean install -DskipTests -P${{ inputs.hadoop }} -Dopencga.war.name=opencga -Dcheckstyle.skip  --no-transfer-progress
       - uses: actions/upload-artifact@v4
         with:
           name: build-folder
@@ -55,5 +55,5 @@ jobs:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
     needs: build
     with:
-      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag ${{ inputs.tag }}
+      cli: python3 ./build/cloud/docker/docker-build.py push --images base,workflow,init --tag ${{ inputs.tag }}
     secrets: inherit

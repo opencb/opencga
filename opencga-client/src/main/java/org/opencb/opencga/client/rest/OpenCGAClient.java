@@ -20,8 +20,9 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
-import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.core.client.ParentClient;
+import org.opencb.opencga.core.config.client.ClientConfiguration;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.client.rest.clients.*;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.LoginParams;
@@ -33,9 +34,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-/**
- * Created by imedina on 04/05/16.
- */
+
 public class OpenCGAClient {
 
     protected String userId;
@@ -43,7 +42,7 @@ public class OpenCGAClient {
     protected String refreshToken;
     protected ClientConfiguration clientConfiguration;
 
-    protected Map<String, AbstractParentClient> clients;
+    protected Map<String, ParentClient> clients;
     protected boolean throwExceptionOnError;
 
     public OpenCGAClient(ClientConfiguration clientConfiguration) {
@@ -73,7 +72,7 @@ public class OpenCGAClient {
     }
 
     private void init(AuthenticationResponse tokens, ClientConfiguration clientConfiguration) {
-        this.clients = new HashMap<>(25);
+        this.clients = new HashMap<>(30);
 
         if (tokens != null) {
             setToken(tokens.getToken());
@@ -81,9 +80,7 @@ public class OpenCGAClient {
             this.userId = getUserFromToken(tokens.getToken());
         }
 
-
         this.clientConfiguration = clientConfiguration;
-
     }
 
     public OrganizationClient getOrganizationClient() {
@@ -110,32 +107,28 @@ public class OpenCGAClient {
         return getClient(JobClient.class, () -> new JobClient(token, clientConfiguration));
     }
 
-    public IndividualClient getIndividualClient() {
-        return getClient(IndividualClient.class, () -> new IndividualClient(token, clientConfiguration));
-    }
-
     public SampleClient getSampleClient() {
         return getClient(SampleClient.class, () -> new SampleClient(token, clientConfiguration));
     }
 
-    public AdminClient getAdminClient() {
-        return getClient(AdminClient.class, () -> new AdminClient(token, clientConfiguration));
+    public IndividualClient getIndividualClient() {
+        return getClient(IndividualClient.class, () -> new IndividualClient(token, clientConfiguration));
+    }
+
+    public FamilyClient getFamilyClient() {
+        return getClient(FamilyClient.class, () -> new FamilyClient(token, clientConfiguration));
     }
 
     public CohortClient getCohortClient() {
         return getClient(CohortClient.class, () -> new CohortClient(token, clientConfiguration));
     }
 
-    public ClinicalAnalysisClient getClinicalAnalysisClient() {
-        return getClient(ClinicalAnalysisClient.class, () -> new ClinicalAnalysisClient(token, clientConfiguration));
-    }
-
     public DiseasePanelClient getDiseasePanelClient() {
         return getClient(DiseasePanelClient.class, () -> new DiseasePanelClient(token, clientConfiguration));
     }
 
-    public FamilyClient getFamilyClient() {
-        return getClient(FamilyClient.class, () -> new FamilyClient(token, clientConfiguration));
+    public WorkflowClient getWorkflowClient() {
+        return getClient(WorkflowClient.class, () -> new WorkflowClient(token, clientConfiguration));
     }
 
     public AlignmentClient getAlignmentClient() {
@@ -146,6 +139,10 @@ public class OpenCGAClient {
         return getClient(VariantClient.class, () -> new VariantClient(token, clientConfiguration));
     }
 
+    public ClinicalAnalysisClient getClinicalAnalysisClient() {
+        return getClient(ClinicalAnalysisClient.class, () -> new ClinicalAnalysisClient(token, clientConfiguration));
+    }
+
     public VariantOperationClient getVariantOperationClient() {
         return getClient(VariantOperationClient.class, () -> new VariantOperationClient(token, clientConfiguration));
     }
@@ -154,8 +151,12 @@ public class OpenCGAClient {
         return getClient(MetaClient.class, () -> new MetaClient(token, clientConfiguration));
     }
 
+    public AdminClient getAdminClient() {
+        return getClient(AdminClient.class, () -> new AdminClient(token, clientConfiguration));
+    }
+
     @SuppressWarnings("unchecked")
-    protected  <T extends AbstractParentClient> T getClient(Class<T> clazz, Supplier<T> constructor) {
+    protected  <T extends ParentClient> T getClient(Class<T> clazz, Supplier<T> constructor) {
         return (T) clients.computeIfAbsent(clazz.getName(), (k) -> {
             T t = constructor.get();
             t.setThrowExceptionOnError(throwExceptionOnError);
@@ -193,7 +194,6 @@ public class OpenCGAClient {
         this.userId = user;
         return login.firstResult();
     }
-
 
     /**
      * Logs in the user.

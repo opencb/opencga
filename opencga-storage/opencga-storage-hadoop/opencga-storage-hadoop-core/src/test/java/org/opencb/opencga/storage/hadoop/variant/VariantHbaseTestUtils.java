@@ -451,20 +451,24 @@ public class VariantHbaseTestUtils {
         try (
                 FileOutputStream fos = new FileOutputStream(fileName.toFile()); PrintStream out = new PrintStream(fos)
         ) {
+            String studyName = dbAdaptor.getMetadataManager().getStudyName(studyId);
+
             SampleIndexDBAdaptor sampleIndexDBAdaptor = new SampleIndexDBAdaptor(dbAdaptor.getHBaseManager(), dbAdaptor.getTableNameGenerator(), dbAdaptor.getMetadataManager());
             SampleIndexSchema schema = sampleIndexDBAdaptor.getSchemaLatest(studyId);
             for (Integer sampleId : dbAdaptor.getMetadataManager().getIndexedSamples(studyId)) {
                 String sampleName = dbAdaptor.getMetadataManager().getSampleName(studyId, sampleId);
-                RawSingleSampleIndexVariantDBIterator it = sampleIndexDBAdaptor.rawIterator(dbAdaptor.getMetadataManager().getStudyName(studyId), sampleName);
-
-                out.println("");
-                out.println("");
-                out.println("");
-                out.println("SAMPLE: " + sampleName + " , " + sampleId);
-                while (it.hasNext()) {
-                    SampleVariantIndexEntry entry = it.next();
-                    out.println("_______________________");
-                    out.println(entry.toString(schema));
+                try (RawSingleSampleIndexVariantDBIterator it = sampleIndexDBAdaptor.rawIterator(studyName, sampleName)) {
+                    out.println("");
+                    out.println("");
+                    out.println("");
+                    out.println("SAMPLE: " + sampleName + " (id=" + sampleId + ")");
+                    while (it.hasNext()) {
+                        SampleIndexVariant entry = it.next();
+                        out.println("_______________________");
+                        out.println(entry.toString(schema));
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
                 }
             }
         }
@@ -499,9 +503,12 @@ public class VariantHbaseTestUtils {
                         } else if (s.startsWith("_")) {
                             StringBuilder sb = new StringBuilder();
                             for (byte b : value) {
+                                if (sb.length() > 0) {
+                                    sb.append(" - ");
+                                }
                                 sb.append(IndexUtils.byteToString(b));
-                                sb.append(" - ");
                             }
+                            sb.append(" : ").append(Bytes.toStringBinary(value));
                             map.put(s, sb.toString());
                         } else if (s.startsWith(Bytes.toString(SampleIndexSchema.toMendelianErrorColumn()))) {
                             map.put(s, MendelianErrorSampleIndexConverter.toVariants(value, 0, value.length).toString());

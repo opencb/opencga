@@ -38,7 +38,7 @@ public class OrganizationsCommandOptions {
         public SearchNotesCommandOptions searchNotesCommandOptions;
         public DeleteNotesCommandOptions deleteNotesCommandOptions;
         public UpdateNotesCommandOptions updateNotesCommandOptions;
-        public ResetPasswordCommandOptions resetPasswordCommandOptions;
+        public ResetUserPasswordCommandOptions resetUserPasswordCommandOptions;
         public UserUpdateStatusCommandOptions userUpdateStatusCommandOptions;
         public UpdateUserCommandOptions updateUserCommandOptions;
         public UpdateConfigurationCommandOptions updateConfigurationCommandOptions;
@@ -55,7 +55,7 @@ public class OrganizationsCommandOptions {
         this.searchNotesCommandOptions = new SearchNotesCommandOptions();
         this.deleteNotesCommandOptions = new DeleteNotesCommandOptions();
         this.updateNotesCommandOptions = new UpdateNotesCommandOptions();
-        this.resetPasswordCommandOptions = new ResetPasswordCommandOptions();
+        this.resetUserPasswordCommandOptions = new ResetUserPasswordCommandOptions();
         this.userUpdateStatusCommandOptions = new UserUpdateStatusCommandOptions();
         this.updateUserCommandOptions = new UpdateUserCommandOptions();
         this.updateConfigurationCommandOptions = new UpdateConfigurationCommandOptions();
@@ -129,6 +129,9 @@ public class OrganizationsCommandOptions {
         @Parameter(names = {"--id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String id;
     
+        @Parameter(names = {"--type"}, description = "Enum param allowed values: VARIANT, GENE, TRANSCRIPT, PROTEIN, JOB, FILE, SAMPLE, INDIVIDUAL, FAMILY, COHORT, DISEASE_PANEL, CLINICAL_ANALYSIS, WORKFLOW, ORGANIZATION, OTHER, UNKNOWN", required = false, arity = 1)
+        public String type;
+    
         @Parameter(names = {"--tags"}, description = "The body web service tags parameter", required = false, arity = 1)
         public String tags;
     
@@ -160,6 +163,9 @@ public class OrganizationsCommandOptions {
     
         @Parameter(names = {"--id"}, description = "Note unique identifier.", required = false, arity = 1)
         public String id; 
+    
+        @Parameter(names = {"--type"}, description = "Note type.", required = false, arity = 1)
+        public String type; 
     
         @Parameter(names = {"--scope"}, description = "Scope of the Note.", required = false, arity = 1)
         public String scope; 
@@ -222,6 +228,9 @@ public class OrganizationsCommandOptions {
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
         public boolean includeResult = false; 
     
+        @Parameter(names = {"--type"}, description = "Enum param allowed values: VARIANT, GENE, TRANSCRIPT, PROTEIN, JOB, FILE, SAMPLE, INDIVIDUAL, FAMILY, COHORT, DISEASE_PANEL, CLINICAL_ANALYSIS, WORKFLOW, ORGANIZATION, OTHER, UNKNOWN", required = false, arity = 1)
+        public String type;
+    
         @Parameter(names = {"--tags"}, description = "The body web service tags parameter", required = false, arity = 1)
         public String tags;
     
@@ -230,8 +239,8 @@ public class OrganizationsCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"password-reset"}, commandDescription ="Reset user's password")
-    public class ResetPasswordCommandOptions {
+    @Parameters(commandNames = {"user-password-reset"}, commandDescription ="Reset user's password")
+    public class ResetUserPasswordCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;

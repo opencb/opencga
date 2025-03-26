@@ -27,6 +27,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobStudyParam;
+import org.opencb.opencga.core.models.job.JobType;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
@@ -66,7 +67,7 @@ public class PrivateJobUpdateParamsTest extends AbstractManagerTest {
 
     @Test
     public void updateJobInformation() throws CatalogException {
-        OpenCGAResult<Job> jobResult = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.HIGH,
+        OpenCGAResult<Job> jobResult = catalogManager.getJobManager().submit(studyFqn, JobType.NATIVE, "variant-index", Enums.Priority.HIGH,
                 new HashMap<>(), ownerToken);
 
         PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setCommandLine("myCommandLine");

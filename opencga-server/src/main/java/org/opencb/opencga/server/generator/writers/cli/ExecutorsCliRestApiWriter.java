@@ -58,7 +58,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         imports.add("com.fasterxml.jackson.databind.DeserializationFeature");
         imports.add("org.opencb.opencga.app.cli.main.*");
         imports.add("org.opencb.opencga.core.response.RestResponse");
-        imports.add("org.opencb.opencga.client.exceptions.ClientException");
+        imports.add("org.opencb.opencga.core.exceptions.ClientException");
         imports.add("org.opencb.commons.datastore.core.ObjectMap");
         imports.add("org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException");
         imports.add("org.opencb.opencga.core.common.JacksonUtils");

@@ -23,10 +23,7 @@ import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
 import org.opencb.biodata.models.common.Status;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
-import org.opencb.commons.datastore.core.Event;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
@@ -80,7 +77,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             SampleDBAdaptor.QueryParams.ID.key(), SampleDBAdaptor.QueryParams.UID.key(), SampleDBAdaptor.QueryParams.UUID.key(),
             SampleDBAdaptor.QueryParams.VERSION.key(), SampleDBAdaptor.QueryParams.STUDY_UID.key()));
     protected static Logger logger = LoggerFactory.getLogger(SampleManager.class);
-    private final String defaultFacet = "creationYear>>creationMonth;status;phenotypes;somatic";
     private StudyManager studyManager;
 
     SampleManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
@@ -285,6 +281,23 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     @Override
+    public OpenCGAResult<FacetField> facet(String studyStr, Query query, String facet, String token) throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+
+        Study study = catalogManager.getStudyManager().resolveId(studyFqn, StudyManager.INCLUDE_VARIABLE_SET, tokenPayload);
+
+        fixQueryObject(organizationId, study, query, userId);
+        query.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+
+        return getSampleDBAdaptor(organizationId).facet(study.getUid(), query, facet, userId);
+    }
+
+    @Override
     public OpenCGAResult<Sample> search(String studyStr, Query query, QueryOptions options, String token)
             throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
@@ -325,6 +338,48 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         }
     }
 
+    public OpenCGAResult<?> distinct(String field, Query query, String token) throws CatalogException {
+        return distinct(Collections.singletonList(field), query, token);
+    }
+
+    /**
+     * Fetch a list containing all the distinct values of the key {@code field}.
+     * Query object may or may not contain a study parameter, so only organization administrators will be able to call to this method.
+     *
+     * @param fields  Fields for which to return distinct values.
+     * @param query   Query object.
+     * @param token   Token of the user logged in.
+     * @return The list of distinct values.
+     * @throws CatalogException CatalogException.
+     */
+    public OpenCGAResult<?> distinct(List<String> fields, Query query, String token) throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        String organizationId = tokenPayload.getOrganization();
+        String userId = tokenPayload.getUserId(organizationId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("fields", fields)
+                .append("query", new Query(query))
+                .append("token", token);
+        try {
+            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
+            fixQueryObject(organizationId, null, query, userId);
+
+            OpenCGAResult<?> result = getSampleDBAdaptor(organizationId).distinct(fields, query);
+
+            auditManager.auditDistinct(organizationId, userId, Enums.Resource.SAMPLE, "", "", auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return result;
+        } catch (CatalogException e) {
+            auditManager.auditDistinct(organizationId, userId, Enums.Resource.SAMPLE, "", "", auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+    }
+
     @Override
     public OpenCGAResult<?> distinct(String studyStr, List<String> fields, Query query, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
@@ -358,6 +413,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             throw e;
         }
     }
+
+
 
     void fixQueryObject(String organizationId, Study study, Query query, String userId) throws CatalogException {
         changeQueryId(query, ParamConstants.SAMPLE_RGA_STATUS_PARAM, SampleDBAdaptor.QueryParams.INTERNAL_RGA_STATUS.key());
@@ -1391,7 +1448,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
         String organizationId = studyFqn.getOrganizationId();
         String userId = tokenPayload.getUserId(organizationId);
-        Study study = studyManager.resolveId(studyStr, userId, organizationId);
+        Study study = studyManager.resolveId(studyFqn, StudyManager.INCLUDE_CONFIGURATION, tokenPayload);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyStr)
@@ -1503,6 +1560,13 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             }
             checkMembers(organizationId, study.getUid(), members);
             authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
+            if (study.getInternal().isFederated()) {
+                try {
+                    checkIsNotAFederatedUser(organizationId, members);
+                } catch (CatalogException e) {
+                    throw new CatalogException("Cannot provide access to federated users to a federated study.", e);
+                }
+            }
         } catch (CatalogException e) {
             if (sampleStringList != null) {
                 for (String sampleId : sampleStringList) {

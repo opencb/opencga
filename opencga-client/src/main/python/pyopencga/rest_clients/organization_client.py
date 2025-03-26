@@ -66,6 +66,7 @@ class Organization(_ParentRestClient):
         :param str modification_date: Modification date. Format:
             yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         :param str id: Note unique identifier.
+        :param str type: Note type.
         :param str scope: Scope of the Note.
         :param str visibility: Visibility of the Note.
         :param str uuid: Unique 32-character identifier assigned automatically
@@ -112,15 +113,15 @@ class Organization(_ParentRestClient):
 
         return self._post(category='organizations', resource='update', subcategory='notes', second_query_id=id, data=data, **options)
 
-    def reset_password(self, **options):
+    def reset_user_password(self, **options):
         """
         Reset user's password.
-        PATH: /{apiVersion}/organizations/password/reset
+        PATH: /{apiVersion}/organizations/user/password/reset
 
         :param str user_id: User whose password needs to be reset.
         """
 
-        return self._post(category='organizations', resource='reset', subcategory='password', **options)
+        return self._post(category='organizations', resource='reset', subcategory='user/password', **options)
 
     def user_update_status(self, user, data=None, **options):
         """

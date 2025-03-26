@@ -149,7 +149,7 @@ public class OrganizationWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/password/reset")
+    @Path("/user/password/reset")
     @ApiOperation(value = "Reset user's password",
             notes = "Reset the user's password and send a new random one to the e-mail stored in catalog.")
     public Response resetPassword(
@@ -175,6 +175,7 @@ public class OrganizationWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.CREATION_DATE_PARAM) String creationDate,
             @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.MODIFICATION_DATE_PARAM) String modificationDate,
             @ApiParam(value = FieldConstants.NOTES_ID_DESCRIPTION) @QueryParam(FieldConstants.NOTES_ID_PARAM) String noteId,
+            @ApiParam(value = FieldConstants.NOTES_TYPE_DESCRIPTION) @QueryParam(FieldConstants.NOTES_TYPE_PARAM) String type,
             @ApiParam(value = FieldConstants.NOTES_SCOPE_DESCRIPTION) @QueryParam(FieldConstants.NOTES_SCOPE_PARAM) String scope,
             @ApiParam(value = FieldConstants.NOTES_VISIBILITY_DESCRIPTION) @QueryParam(FieldConstants.NOTES_VISIBILITY_PARAM) String visibility,
             @ApiParam(value = FieldConstants.GENERIC_UUID_DESCRIPTION) @QueryParam("uuid") String uuid,

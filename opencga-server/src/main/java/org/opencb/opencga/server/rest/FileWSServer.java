@@ -35,6 +35,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.JobType;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.*;
 
@@ -103,7 +104,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(name = "body", value = "Fetch parameters", required = true) FileFetch fetchParams) {
-        return submitJob(FetchAndRegisterTask.ID, studyStr, fetchParams, jobId, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(studyStr, JobType.NATIVE, FetchAndRegisterTask.ID, fetchParams, jobId, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @GET
@@ -171,14 +172,16 @@ public class FileWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @ApiOperation(httpMethod = "POST", value = "Resource to upload a file by chunks", response = File.class)
     public Response upload(
-            @ApiParam(value = "File to upload") @FormDataParam("file") InputStream fileInputStream,
-            @FormDataParam("file") FormDataContentDisposition fileMetaData,
-            @ApiParam(value = "File name to overwrite the input fileName") @FormDataParam("fileName") String fileName,
-            @ApiParam(value = "File format") @DefaultValue("") @FormDataParam("fileFormat") File.Format fileFormat,
+            @ApiParam(value = "File to upload") @FormDataParam("file") InputStream fileInputStream, @FormDataParam("file") FormDataContentDisposition fileMetaData,
+            @ApiParam(value = "File name to overwrite the input fileName") @FormDataParam("name") String name,
+            @ApiParam(value = "[DEPRECATED] File name to overwrite the input fileName") @FormDataParam("fileName") String fileName,
+            @ApiParam(value = "File format") @DefaultValue("") @FormDataParam("format") File.Format format,
+            @ApiParam(value = "[DEPRECATED] File format") @DefaultValue("") @FormDataParam("fileFormat") File.Format fileFormat,
             @ApiParam(value = "File bioformat") @DefaultValue("") @FormDataParam("bioformat") File.Bioformat bioformat,
             @ApiParam(value = "Expected MD5 file checksum") @DefaultValue("") @FormDataParam("checksum") String expectedChecksum,
+            @ApiParam(value = ParamConstants.FILE_RESOURCE_DESCRIPTION) @FormDataParam("resource") Boolean resource,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @FormDataParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Path within catalog where the file will be located (default: root folder)") @DefaultValue("") @FormDataParam("relativeFilePath") String relativeFilePath,
+            @ApiParam(value = "Path within catalog (directory) where the file will be located (default: root folder)") @DefaultValue("") @FormDataParam("relativeFilePath") String relativeFilePath,
             @ApiParam(value = "description") @DefaultValue("") @FormDataParam("description")
             String description,
             @ApiParam(value = "Create the parent directories if they do not exist", type = "form") @DefaultValue("true") @FormDataParam(
@@ -187,12 +190,12 @@ public class FileWSServer extends OpenCGAWSServer {
             if (relativeFilePath.equals(".")) {
                 relativeFilePath = "";
             } else if (!relativeFilePath.endsWith("/")) {
-                relativeFilePath = relativeFilePath + "/";
+                return createErrorResponse(new CatalogException("The relativeFilePath should be a directory and it must end in '/'"));
             }
         }
 
         if (relativeFilePath.startsWith("/")) {
-            return createErrorResponse(new CatalogException("The path cannot be absolute"));
+            return createErrorResponse(new CatalogException("The relativeFilePath cannot be absolute (it cannot start with '/')"));
         }
 
         if (fileInputStream == null) {
@@ -200,18 +203,25 @@ public class FileWSServer extends OpenCGAWSServer {
         }
 
         try {
-            if (fileName == null) {
-                fileName = fileMetaData.getFileName();
+            if (StringUtils.isEmpty(name) && StringUtils.isNotEmpty(fileName)) {
+                name = fileName;
+            }
+            if (StringUtils.isEmpty(name)) {
+                name = fileMetaData.getFileName();
+            }
+            if (format == null && fileFormat != null) {
+                format = fileFormat;
             }
             long expectedSize = fileMetaData.getSize();
 
+            boolean isResource = resource != null && resource;
             File file = new File()
-                    .setName(fileName)
-                    .setPath(relativeFilePath + fileName)
-                    .setFormat(fileFormat)
+                    .setName(name)
+                    .setPath(relativeFilePath + name)
+                    .setResource(isResource)
+                    .setFormat(format)
                     .setBioformat(bioformat);
-            return createOkResponse(fileManager.upload(studyStr, fileInputStream, file, false, parents, true,
-                    expectedChecksum, expectedSize, token));
+            return createOkResponse(fileManager.upload(studyStr, fileInputStream, file, false, parents, true, expectedChecksum, expectedSize, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -319,6 +329,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.FILE_BIOFORMAT_DESCRIPTION) @QueryParam("bioformat") String bioformat,
             @ApiParam(value = ParamConstants.FILE_FORMAT_DESCRIPTION) @QueryParam("format") String formats,
             @ApiParam(value = ParamConstants.FILE_EXTERNAL_DESCRIPTION) @QueryParam("external") Boolean external,
+            @ApiParam(value = ParamConstants.FILE_RESOURCE_DESCRIPTION) @QueryParam("resource") Boolean resource,
             @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
             @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
             @ApiParam(value = ParamConstants.INTERNAL_VARIANT_INDEX_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_VARIANT_INDEX_STATUS_PARAM) String internalVariantIndexStatus,
@@ -357,6 +368,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.FILE_BIOFORMAT_DESCRIPTION) @QueryParam("bioformat") String bioformat,
             @ApiParam(value = ParamConstants.FILE_FORMAT_DESCRIPTION) @QueryParam("format") String formats,
             @ApiParam(value = ParamConstants.FILE_EXTERNAL_DESCRIPTION) @QueryParam("external") Boolean external,
+            @ApiParam(value = ParamConstants.FILE_RESOURCE_DESCRIPTION) @QueryParam("resource") Boolean resource,
             @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
             @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
             @ApiParam(value = ParamConstants.INTERNAL_VARIANT_INDEX_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_VARIANT_INDEX_STATUS_PARAM) String internalIndexStatus,
@@ -716,7 +728,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(name = "body", value = "File parameters", required = true) PostLinkToolParams params) {
-        return submitJob(PostLinkSampleAssociation.ID, studyStr, params, jobId, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(studyStr, JobType.NATIVE, PostLinkSampleAssociation.ID, params, jobId, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @POST
@@ -732,7 +744,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(name = "body", value = "File parameters", required = true) FileLinkToolParams params) {
-        return submitJob(FileLinkTask.ID, studyStr, params, jobId, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(studyStr, JobType.NATIVE, FileLinkTask.ID, params, jobId, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @DELETE
@@ -747,7 +759,7 @@ public class FileWSServer extends OpenCGAWSServer {
             ObjectMap params = new ObjectMap()
                     .append("files", files)
                     .append("study", studyStr);
-            OpenCGAResult<Job> result = catalogManager.getJobManager().submit(studyStr, "files-unlink", Enums.Priority.MEDIUM, params,
+            OpenCGAResult<Job> result = catalogManager.getJobManager().submit(studyStr, JobType.NATIVE, "files-unlink", Enums.Priority.MEDIUM, params,
                     token);
             return createOkResponse(result);
         } catch (Exception e) {
@@ -958,7 +970,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     .append("files", files)
                     .append("study", studyStr)
                     .append(Constants.SKIP_TRASH, skipTrash);
-            OpenCGAResult<Job> result = catalogManager.getJobManager().submit(studyStr, FileDeleteTask.ID, Enums.Priority.MEDIUM, params,
+            OpenCGAResult<Job> result = catalogManager.getJobManager().submit(studyStr, JobType.NATIVE, FileDeleteTask.ID, Enums.Priority.MEDIUM, params,
                     token);
             return createOkResponse(result);
         } catch (Exception e) {
@@ -1024,44 +1036,43 @@ public class FileWSServer extends OpenCGAWSServer {
 //        }
 //    }
 
-//    @GET
-//    @Path("/aggregationStats")
-//    @ApiOperation(value = "Fetch catalog file stats", response = FacetField.class)
-//    public Response getAggregationStats(
-//            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
-//            @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-//            @ApiParam(value = "Name") @QueryParam("name") String name,
-//            @ApiParam(value = "Type") @QueryParam("type") String type,
-//            @ApiParam(value = "Format") @QueryParam("format") String format,
-//            @ApiParam(value = "Bioformat") @QueryParam("bioformat") String bioformat,
-//            @ApiParam(value = "Creation year") @QueryParam("creationYear") String creationYear,
-//            @ApiParam(value = "Creation month (JANUARY, FEBRUARY...)") @QueryParam("creationMonth") String creationMonth,
-//            @ApiParam(value = "Creation day") @QueryParam("creationDay") String creationDay,
-//            @ApiParam(value = "Creation day of week (MONDAY, TUESDAY...)") @QueryParam("creationDayOfWeek") String creationDayOfWeek,
-//            @ApiParam(value = "Status") @QueryParam("status") String status,
-//            @ApiParam(value = "Release") @QueryParam("release") String release,
-//            @ApiParam(value = "External") @QueryParam("external") Boolean external,
-//            @ApiParam(value = "Size") @QueryParam("size") String size,
-//            @ApiParam(value = "Software") @QueryParam("software") String software,
-//            @ApiParam(value = "Experiment") @QueryParam("experiment") String experiment,
-//            @ApiParam(value = "Number of samples") @QueryParam("numSamples") String numSamples,
-//            @ApiParam(value = "Number of related files") @QueryParam("numRelatedFiles") String numRelatedFiles,
-//            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
-//
-//            @ApiParam(value = "Calculate default stats", defaultValue = "false") @QueryParam("default") boolean defaultStats,
-//
-//            @ApiParam(value = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: " +
-//                    "studies>>biotype;type;numSamples[0..10]:1") @QueryParam("field") String facet) {
-//        try {
-//            query.remove(ParamConstants.STUDY_PARAM);
-//            query.remove("field");
-//
-//            queryOptions.put(QueryOptions.FACET, facet);
-//
-//            DataResult<FacetField> queryResult = catalogManager.getFileManager().facet(studyStr, query, queryOptions, defaultStats, token);
-//            return createOkResponse(queryResult);
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
+    @GET
+    @Path("/aggregationStats")
+    @ApiOperation(value = "Fetch catalog file stats", response = FacetField.class)
+    public Response getAggregationStats(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.FILES_ID_DESCRIPTION) @QueryParam("id") String id,
+            @ApiParam(value = ParamConstants.FILES_UUID_DESCRIPTION) @QueryParam("uuid") String uuid,
+            @ApiParam(value = ParamConstants.FILE_NAMES_DESCRIPTION) @QueryParam("name") String name,
+            @ApiParam(value = ParamConstants.FILE_PATHS_DESCRIPTION) @QueryParam("path") String path,
+            @ApiParam(value = ParamConstants.FILE_URIS_DESCRIPTION) @QueryParam("uri") String uri,
+            @ApiParam(value = ParamConstants.FILE_TYPE_DESCRIPTION) @QueryParam("type") String type,
+            @ApiParam(value = ParamConstants.FILE_BIOFORMAT_DESCRIPTION) @QueryParam("bioformat") String bioformat,
+            @ApiParam(value = ParamConstants.FILE_FORMAT_DESCRIPTION) @QueryParam("format") String formats,
+            @ApiParam(value = ParamConstants.FILE_EXTERNAL_DESCRIPTION) @QueryParam("external") Boolean external,
+            @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
+            @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
+            @ApiParam(value = ParamConstants.INTERNAL_VARIANT_INDEX_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_VARIANT_INDEX_STATUS_PARAM) String internalVariantIndexStatus,
+            @ApiParam(value = ParamConstants.FILE_SOFTWARE_NAME_DESCRIPTION) @QueryParam(ParamConstants.FILE_SOFTWARE_NAME_PARAM) String softwareName,
+            @ApiParam(value = ParamConstants.FILE_DIRECTORY_DESCRIPTION) @QueryParam("directory") String directory,
+            @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam("modificationDate") String modificationDate,
+            @ApiParam(value = ParamConstants.FILE_DESCRIPTION_DESCRIPTION) @QueryParam("description") String description,
+            @ApiParam(value = ParamConstants.FILE_TAGS_DESCRIPTION) @QueryParam("tags") String tags,
+            @ApiParam(value = ParamConstants.FILE_SIZE_DESCRIPTION) @QueryParam("size") String size,
+            @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION) @QueryParam("sampleIds") String samples,
+            @ApiParam(value = ParamConstants.FILE_JOB_ID_DESCRIPTION) @QueryParam("jobId") String jobId,
+            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
+            @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
+            @ApiParam(value = ParamConstants.DELETED_DESCRIPTION, defaultValue = "false") @QueryParam("deleted") boolean deleted,
+            @ApiParam(value = ParamConstants.RELEASE_DESCRIPTION) @QueryParam("release") String release,
+
+            // Facet field
+            @ApiParam(value = ParamConstants.FACET_DESCRIPTION) @QueryParam(ParamConstants.FACET_PARAM) String facet) {
+        return run(() -> {
+            query.remove(ParamConstants.STUDY_PARAM);
+            query.remove(ParamConstants.FACET_PARAM);
+            return catalogManager.getFileManager().facet(studyStr, query, facet, token);
+        });
+    }
 }
