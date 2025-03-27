@@ -67,12 +67,15 @@ public class JsonOpenApiGenerator {
                     method.setDescription(apiOperation.notes());
                     method.setTags(Collections.singletonList(api.value()));
                     Map<String,Response> responses=new HashMap<>();
-                    responses.put("200",new Response().setDescription("Successful operation").setSchema(new Schema().set$ref("#/definitions/"+apiOperation.response().getSimpleName())));
+                    Response response = new Response();
+                    response.setDescription("Successful operation");
                     if(!SwaggerDefinitionGenerator.isPrimitive(apiOperation.response())){
+                        response.setSchema(new Schema().set$ref("#/definitions/"+apiOperation.response().getSimpleName()));
                         if(!beansDefinitions.contains((Class) apiOperation.response())  && SwaggerDefinitionGenerator.isOpencbBean((Class) apiOperation.response())){
                             beansDefinitions.add((Class) apiOperation.response());
                         }
                     }
+                    responses.put("200",response);
                     method.setResponses(responses);
 
                     // Obtener el método HTTP

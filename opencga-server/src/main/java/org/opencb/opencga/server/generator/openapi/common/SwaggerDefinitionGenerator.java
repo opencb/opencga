@@ -225,7 +225,7 @@ public class SwaggerDefinitionGenerator {
                 clazz == Integer.class || clazz == Long.class ||
                 clazz == Boolean.class || clazz == Double.class ||
                 clazz == Float.class || clazz == Byte.class ||
-                clazz == Short.class || clazz == Character.class;
+                clazz == Short.class || clazz == Character.class || clazz == Void.class;
     }
 
     public static String mapJavaTypeToSwaggerType(Class<?> clazz) {
