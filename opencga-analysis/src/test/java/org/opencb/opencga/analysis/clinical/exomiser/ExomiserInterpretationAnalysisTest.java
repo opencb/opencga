@@ -1,10 +1,7 @@
 package org.opencb.opencga.analysis.clinical.exomiser;
 
 import org.apache.commons.lang3.StringUtils;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.variant.Variant;
@@ -18,6 +15,7 @@ import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
 import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.ResourceException;
 import org.opencb.opencga.catalog.managers.AbstractClinicalManagerTest;
 import org.opencb.opencga.catalog.utils.ResourceManager;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -42,6 +40,7 @@ import static org.junit.Assert.assertTrue;
 public class ExomiserInterpretationAnalysisTest  {
 
     private static AbstractClinicalManagerTest clinicalTest;
+    private static ResourceManager resourceManager;
 
     Path outDir;
 
@@ -52,6 +51,7 @@ public class ExomiserInterpretationAnalysisTest  {
     public static void setUp() throws Exception {
         opencga.clear();
         clinicalTest = ClinicalAnalysisUtilsTest.getClinicalTest(opencga);
+        resourceManager = new ResourceManager(opencga.getOpencgaHome());
     }
 
     @AfterClass
@@ -99,6 +99,11 @@ public class ExomiserInterpretationAnalysisTest  {
                 .setClinicalAnalysisId(clinicalTest.CA_ID2)
                 .setExomiserVersion(exomiserVersion);
 
+        try {
+            resourceManager.checkResourcePaths(ExomiserWrapperAnalysis.ID, exomiserVersion);
+        } catch (ResourceException e) {
+            Assume.assumeNoException(e);
+        }
         ExecutionResult result = exomiser.start();
 
         // Refresh clinical analysis
@@ -146,6 +151,11 @@ public class ExomiserInterpretationAnalysisTest  {
                 .setClinicalAnalysisId(clinicalTest.CA_ID3)
                 .setExomiserVersion(exomiserVersion);
 
+        try {
+            resourceManager.checkResourcePaths(ExomiserWrapperAnalysis.ID, exomiserVersion);
+        } catch (ResourceException e) {
+            Assume.assumeNoException(e);
+        }
         ExecutionResult result = exomiser.start();
 
         // Refresh clinical analysis
@@ -174,7 +184,7 @@ public class ExomiserInterpretationAnalysisTest  {
     }
 
     @Test
-    public void trioSingleExomiserAnalysis() throws IOException, CatalogException, ToolException {
+    public void trioSingleExomiserAnalysis() throws IOException, CatalogException, ToolException, ResourceException {
 //        String exomiserVersion = "13.1.0";
 //        String resourceVersion = "2109";
         String exomiserVersion = "14.0.0";
@@ -195,6 +205,11 @@ public class ExomiserInterpretationAnalysisTest  {
                 .setClinicalAnalysisId(clinicalTest.CA_ID4)
                 .setExomiserVersion(exomiserVersion);
 
+        try {
+            resourceManager.checkResourcePaths(ExomiserWrapperAnalysis.ID, exomiserVersion);
+        } catch (ResourceException e) {
+            Assume.assumeNoException(e);
+        }
         ExecutionResult result = exomiser.start();
 
         // Refresh clinical analysis

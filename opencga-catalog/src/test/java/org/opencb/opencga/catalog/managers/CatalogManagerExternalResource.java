@@ -103,7 +103,9 @@ public class CatalogManagerExternalResource extends ExternalResource {
         configuration = Configuration.load(getClass().getResource("/configuration-test.yml").openStream());
         Path confPath = Files.createDirectories(opencgaHome.resolve("conf"));
         Files.copy(getClass().getResource("/configuration-test.yml").openStream(), confPath.resolve("configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
-
+        Path scratch = opencgaHome.resolve("scratch");
+        Files.createDirectories(scratch);
+        configuration.getAnalysis().setScratchDir(scratch.toAbsolutePath().toString());
         configuration.setWorkspace(opencgaHome.resolve("sessions").toAbsolutePath().toString());
         configuration.setJobDir(opencgaHome.resolve("JOBS").toAbsolutePath().toString());
 

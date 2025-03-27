@@ -27,7 +27,6 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileInternalAlignmentIndex;
-import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
