@@ -75,6 +75,7 @@ public abstract class VariantStoragePipelineTransformTest extends VariantStorage
     public void transformIsolated() throws Exception {
 
         ObjectMap params = new ObjectMap();
+        params.put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
         URI outputUri = newOutputUri();
 
         VariantStorageEngine variantStorageManager = getVariantStorageEngine();
@@ -96,6 +97,7 @@ public abstract class VariantStoragePipelineTransformTest extends VariantStorage
     public void corruptedTransformNoFailTest() throws Exception {
 
         ObjectMap params = new ObjectMap(VariantStorageOptions.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.key(), YesNoAuto.YES);
+        params.append(VariantStorageOptions.STUDY.key(), STUDY_NAME);
 
         URI outputUri = newOutputUri();
 
@@ -122,7 +124,8 @@ public abstract class VariantStoragePipelineTransformTest extends VariantStorage
 
         ObjectMap params = new ObjectMap()
                 .append(VariantStorageOptions.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.key(), YesNoAuto.NO)
-                .append(VariantStorageOptions.TRANSFORM_BATCH_SIZE.key(), 2);
+                .append(VariantStorageOptions.TRANSFORM_BATCH_SIZE.key(), 2)
+                .append(VariantStorageOptions.STUDY.key(), STUDY_NAME);
         URI outputUri = newOutputUri();
         StoragePipelineResult result = runETL(getVariantStorageEngine(), corruptedInputUri, outputUri, params, true, true, false);
 
@@ -144,6 +147,7 @@ public abstract class VariantStoragePipelineTransformTest extends VariantStorage
 
         ObjectMap options = variantStorageManager.getOptions();
 
+        options.append(VariantStorageOptions.STUDY.key(), STUDY_NAME);
         options.append(VariantStorageOptions.STDIN.key(), true);
 
         URI inputFile = Paths.get(smallInputUri).getFileName().toUri();
@@ -169,6 +173,7 @@ public abstract class VariantStoragePipelineTransformTest extends VariantStorage
 
             options.append(VariantStorageOptions.STDOUT.key(), true);
             options.append(VariantStorageOptions.TRANSFORM_FORMAT.key(), "json");
+            options.append(VariantStorageOptions.STUDY.key(), STUDY_NAME);
 
             variantStorageManager.index(Collections.singletonList(smallInputUri), outputUri, true, true, false).get(0);
         } finally {
@@ -190,6 +195,7 @@ public abstract class VariantStoragePipelineTransformTest extends VariantStorage
 
             ObjectMap options = variantStorageManager.getOptions();
 
+            options.append(VariantStorageOptions.STUDY.key(), STUDY_NAME);
             options.append(VariantStorageOptions.STDOUT.key(), true);
             options.append(VariantStorageOptions.TRANSFORM_FORMAT.key(), "avro");
 
@@ -206,7 +212,9 @@ public abstract class VariantStoragePipelineTransformTest extends VariantStorage
         URI outputUri = newOutputUri();
 
         VariantStorageEngine variantStorageManager = getVariantStorageEngine();
-        variantStorageManager.getOptions().put(VariantStorageOptions.TRANSFORM_FORMAT.key(), "avro");
+        variantStorageManager.getOptions()
+                .append(VariantStorageOptions.STUDY.key(), STUDY_NAME)
+                .append(VariantStorageOptions.TRANSFORM_FORMAT.key(), "avro");
 
         URI platinumFile = getPlatinumFile(0);
 

@@ -16,10 +16,12 @@
 
 package org.opencb.opencga.analysis.alignment;
 
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.file.*;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.nio.file.Path;
@@ -28,12 +30,24 @@ import java.util.Collections;
 
 public class AlignmentAnalysisUtils {
 
-    public static File linkAndUpdate(File bamCatalogFile, Path outPath, String jobId, String study, CatalogManager catalogManager, String token)
-            throws CatalogException, ToolException {
-        // Link BW file and update sample info
+    public static File linkAndUpdate(File bamCatalogFile, Path outPath, String jobId, String study, CatalogManager catalogManager,
+                                     String token) throws CatalogException, ToolException {
+        Path catalogOutPath;
+        if (jobId == null) {
+            if (Paths.get(bamCatalogFile.getPath()).getParent() == null) {
+                catalogOutPath = outPath.getFileName();
+            } else {
+                catalogOutPath = Paths.get(bamCatalogFile.getPath()).resolve(outPath.getFileName());
+            }
+        } else {
+            Job job = catalogManager.getJobManager().get(study, jobId, QueryOptions.empty(), token).first();
+            catalogOutPath = Paths.get(job.getOutDir().getPath()).resolve(outPath.getFileName());
+        }
+
+        // Link BAI/BIGWIG file and update sample info; outPath is BAI or BIGWIG file
         FileLinkParams fileLinkParams = new FileLinkParams()
                 .setUri(outPath.toString())
-                .setPath(Paths.get(jobId).resolve(outPath.getFileName()).toString());
+                .setPath(catalogOutPath.toString());
         OpenCGAResult<File> fileResult = catalogManager.getFileManager().link(study, fileLinkParams, true, token);
         if (fileResult.getNumResults() != 1) {
             throw new ToolException("It could not link OpenCGA file catalog file for '" + outPath + "'");

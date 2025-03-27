@@ -2,11 +2,13 @@ package org.opencb.opencga.catalog.utils;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.opencb.opencga.catalog.exceptions.ResourceException;
 import org.opencb.opencga.catalog.managers.AbstractManagerTest;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -17,6 +19,7 @@ import java.util.Arrays;
 import static org.opencb.opencga.catalog.utils.ResourceManager.ANALYSIS_DIRNAME;
 import static org.opencb.opencga.catalog.utils.ResourceManager.RESOURCES_DIRNAME;
 
+@Category(MediumTests.class)
 public class ResourceManagerTest extends AbstractManagerTest {
 
     private Path openCgaHome;
