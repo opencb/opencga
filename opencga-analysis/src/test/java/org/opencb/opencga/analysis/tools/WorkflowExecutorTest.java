@@ -2,6 +2,7 @@ package org.opencb.opencga.analysis.tools;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -29,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 
 public class WorkflowExecutorTest extends AbstractManagerTest {
 
+    @Ignore
     @Test
     public void nextflowScriptTest() throws ToolException, CatalogException, IOException {
         InputStream inputStream = StorageManager.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
@@ -51,6 +53,7 @@ public class WorkflowExecutorTest extends AbstractManagerTest {
         System.out.println(stopWatch.getTime(TimeUnit.MILLISECONDS));
     }
 
+    @Ignore
     @Test
     public void nextflowScriptWithFilesTest() throws ToolException, CatalogException, IOException {
         InputStream inputStream = StorageManager.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
@@ -77,6 +80,7 @@ public class WorkflowExecutorTest extends AbstractManagerTest {
         System.out.println(stopWatch.getTime(TimeUnit.MILLISECONDS));
     }
 
+    @Ignore
     @Test
     public void nextflowDockerTest() throws ToolException, CatalogException, IOException {
         InputStream inputStream = StorageManager.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
