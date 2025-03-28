@@ -86,7 +86,7 @@ public class EnterpriseFederationWSServer extends OpenCGAWSServer {
     @Path("/client/{id}/synchronize")
     @ApiOperation(value = "Synchronize data from a known Federation server")
     public Response synchronize(
-            @ApiParam(name = "body", value = "Federation client id to be synchronized", required = true) @PathParam("id") String federationClientId) {
+            @ApiParam(value = "Federation client id to be synchronized", required = true) @PathParam("id") String federationClientId) {
         return run(() -> EnterpriseFactory.getEnterpriseFederationManager().sync(federationClientId, token));
     }
 
