@@ -2,12 +2,15 @@ package org.opencb.opencga.core.models.organizations;
 
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Optimizations;
+import org.opencb.opencga.core.config.UserOrganizationConfiguration;
 
 import java.util.List;
 
 public class OrganizationConfiguration {
 
     private List<AuthenticationOrigin> authenticationOrigins;
+    private UserOrganizationConfiguration user;
+    @Deprecated
     private String defaultUserExpirationDate;
     private Optimizations optimizations;
     private TokenConfiguration token;
@@ -15,10 +18,10 @@ public class OrganizationConfiguration {
     public OrganizationConfiguration() {
     }
 
-    public OrganizationConfiguration(List<AuthenticationOrigin> authenticationOrigins, String defaultUserExpirationDate,
+    public OrganizationConfiguration(List<AuthenticationOrigin> authenticationOrigins, UserOrganizationConfiguration user,
                                      Optimizations optimizations, TokenConfiguration token) {
         this.authenticationOrigins = authenticationOrigins;
-        this.defaultUserExpirationDate = defaultUserExpirationDate;
+        this.user = user;
         this.optimizations = optimizations;
         this.token = token;
     }
@@ -27,7 +30,7 @@ public class OrganizationConfiguration {
     public String toString() {
         final StringBuilder sb = new StringBuilder("OrganizationConfiguration{");
         sb.append("authenticationOrigins=").append(authenticationOrigins);
-        sb.append(", defaultUserExpirationDate='").append(defaultUserExpirationDate).append('\'');
+        sb.append(", user=").append(user);
         sb.append(", optimizations=").append(optimizations);
         sb.append(", token=").append(token);
         sb.append('}');
@@ -43,12 +46,26 @@ public class OrganizationConfiguration {
         return this;
     }
 
-    public String getDefaultUserExpirationDate() {
-        return defaultUserExpirationDate;
+    public UserOrganizationConfiguration getUser() {
+        return user;
     }
 
+    public OrganizationConfiguration setUser(UserOrganizationConfiguration user) {
+        this.user = user;
+        return this;
+    }
+
+//    @Deprecated
+//    public String getDefaultUserExpirationDate() {
+//        return null;
+//    }
+
+    @Deprecated
     public OrganizationConfiguration setDefaultUserExpirationDate(String defaultUserExpirationDate) {
-        this.defaultUserExpirationDate = defaultUserExpirationDate;
+        if (this.user == null) {
+            this.user = new UserOrganizationConfiguration();
+        }
+        this.user.setDefaultExpirationDate(defaultUserExpirationDate);
         return this;
     }
 
