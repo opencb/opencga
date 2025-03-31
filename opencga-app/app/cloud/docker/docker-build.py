@@ -201,7 +201,7 @@ else:
 
 # 5. Get a list with all images
 if args.images is None:
-    images = ["base", "init", "demo", "r", "samtools", "python-notebook", "ext-tools"]
+    images = ["base", "init", "demo", "r", "samtools", "python-notebook", "ext-tools", "regenie"]
 else:
     imagesUnsorted = args.images.split(",")
     images = []
