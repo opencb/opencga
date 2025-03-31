@@ -105,7 +105,8 @@ public class HadoopVariantStoragePipelineTransformTest extends VariantStoragePip
 
     private URI transform(URI file, URI outputUri, String format) throws Exception {
         VariantStorageEngine variantStorageManager = getVariantStorageEngine();
-        ObjectMap params = new ObjectMap(VariantStorageOptions.TRANSFORM_FORMAT.key(), format);
+        ObjectMap params = new ObjectMap(VariantStorageOptions.TRANSFORM_FORMAT.key(), format)
+                .append(VariantStorageOptions.STUDY.key(), STUDY_NAME);
         StoragePipelineResult etlResult = runETL(variantStorageManager, file, outputUri, params, true, true, false);
         System.out.println("etlResult = " + etlResult);
         return etlResult.getTransformResult();

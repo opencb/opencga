@@ -157,7 +157,9 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
         catalogManager.getProjectManager().create(projectId, projectId, "Project 1", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId);
         Study study = catalogManager.getStudyManager().create(projectId, "s1", "s1", "s1",
-                        "Study 1", null, null, null, Collections.singletonMap(VariantStatsAnalysis.STATS_AGGREGATION_CATALOG, getAggregation()), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId)
+                        "Study 1", null, null, null,
+                        Collections.singletonMap(VariantStatsAnalysis.STATS_AGGREGATION_CATALOG, getAggregation()),
+                        new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId)
                 .first();
         studyId = study.getId();
         studyFqn = study.getFqn();
@@ -165,7 +167,8 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
                 QueryOptions.empty(), sessionId).first().getId();
         outputPath = "data/index/";
         studyId2 = catalogManager.getStudyManager().create(projectId, "s2", "s2", "s2", "Study " + "2", null, null,
-                null, Collections.singletonMap(VariantStatsAnalysis.STATS_AGGREGATION_CATALOG, getAggregation()), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first().getId();
+                null, Collections.singletonMap(VariantStatsAnalysis.STATS_AGGREGATION_CATALOG, getAggregation()),
+                        new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first().getId();
         outputId2 = catalogManager.getFileManager().createFolder(studyId2, Paths.get("data", "index").toString(),
                 true, null, QueryOptions.empty(), sessionId).first().getId();
 

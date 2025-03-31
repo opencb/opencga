@@ -114,12 +114,21 @@ public class MongoBackupUtils {
     public static void restore(CatalogManager catalogManager, Path opencgaHome, URL restoreFolder)
             throws Exception {
         /*
-            dataset=v3.0.0
-            mongo test_dump --eval 'db.getCollectionNames()' --quiet | jq .[] -r | grep -v summary | while read i ; do
+            dataset=v3.1.0
+            mongosh test_dump --eval 'JSON.stringify(db.getCollectionNames())' --quiet | jq .[] -r | grep -v summary | sort | while read i ; do
               org=$(echo $i | cut -d "_" -f 1) ;
-              collection=$(echo $i | cut -d "_" -f 3) ;
-              mkdir -p opencga-app/src/test/resources/datasets/catalog/$dataset/mongodb/$org ;
-              mongo test_dump --quiet --eval "db.getCollection(\"$i\").find().forEach(function(d){  print(tojsononeline(d)); })" | gzip > opencga-app/src/test/resources/datasets/opencga/$dataset/mongodb/$org/$collection.json.gz ;
+              collection=$(echo $i | cut -d "_" -f 3-) ;
+              target="opencga-app/src/test/resources/datasets/opencga/$dataset/mongodb/$org"
+              echo "Create $target/$collection.json.gz" ;
+              mkdir -p $target ;
+              mongosh test_dump --quiet --eval "db.getCollection(\"$i\")"'
+                   .find()
+                   .forEach(function(d){
+                       print(EJSON.stringify(d, { relaxed: false})
+                           .replace(/\{"\$oid":"(\w{24})"\}/g, "ObjectId(\"$1\")")
+                           .replace(/\{"\$date":\{"\$numberLong":"([0-9]*)"\}\}/g, "{\"$date\":$1}")
+                           .replace(/\{"\$numberLong":"([0-9]*)"\}/g, "NumberLong($1)"));
+                   })' | gzip > "$target/$collection.json.gz" ;
             done
          */
         if (restoreFolder.getProtocol().equals("file")) {
