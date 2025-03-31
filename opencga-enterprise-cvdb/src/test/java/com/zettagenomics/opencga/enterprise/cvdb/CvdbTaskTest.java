@@ -1,6 +1,7 @@
 package com.zettagenomics.opencga.enterprise.cvdb;
 
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
+import com.zettagenomics.opencga.enterprise.cvdb.parsers.CollectionPrefixUtils;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.CvdbIndexTask;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbIndexTaskParams;
 import org.junit.*;
@@ -42,8 +43,7 @@ public class CvdbTaskTest {
 
     private ToolRunner toolRunner;
 
-    @Rule
-    public CvdbSolrExtenalResource cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, organizationId, projectId);
+    public CvdbSolrExtenalResource cvdbSolrExternalResource;
 
     @Rule
     public OpenCGAEnterpriseCatalogManagerExternalResource catalogManagerResource = new OpenCGAEnterpriseCatalogManagerExternalResource();
@@ -57,11 +57,16 @@ public class CvdbTaskTest {
     private static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
 
     @Before
-    public void before() throws Exception {
+    public void before() throws Throwable {
         // Catalog
         catalogManager = catalogManagerResource.getCatalogManager();
         familyManager = catalogManager.getFamilyManager();
         setUpCatalogManager(catalogManager);
+
+        // CVBD
+        String collectionPrefix = CollectionPrefixUtils.getInstance(catalogManager).getCollectionPrefix(organizationId, projectId, sessionIdUser);
+        cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, organizationId, projectId, collectionPrefix);
+        cvdbSolrExternalResource.before();
 
         // Copy the enterprise configuration in the opencga home
         InputStream stream = CvdbIndexTask.class.getClassLoader().getResourceAsStream("enterprise-configuration.yml");

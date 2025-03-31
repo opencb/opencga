@@ -24,6 +24,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.solr.FacetQueryParser;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -38,10 +39,10 @@ import java.util.*;
 import static com.zettagenomics.opencga.enterprise.cvdb.converters.SearchConverter.simpleDateFormat;
 import static com.zettagenomics.opencga.enterprise.cvdb.converters.SearchConverter.solrDateFormat;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
+import static com.zettagenomics.opencga.enterprise.cvdb.parsers.CollectionPrefixUtils.CVDB_DBPREFIX_KEY;
+import static com.zettagenomics.opencga.enterprise.cvdb.parsers.CollectionPrefixUtils.CVDB_SEP;
 
 public class ClinicalQueryParser {
-
-    protected String collectionPrefix;
 
     private SolrQueryParser solrParser;
 
@@ -63,8 +64,7 @@ public class ClinicalQueryParser {
 
     protected static Logger logger = LoggerFactory.getLogger(ClinicalQueryParser.class);
 
-    protected ClinicalQueryParser(String collectionPrefix, VariantStorageMetadataManager variantStorageMetadataManager) {
-        this.collectionPrefix = collectionPrefix;
+    protected ClinicalQueryParser(VariantStorageMetadataManager variantStorageMetadataManager) {
         this.solrParser = new SolrQueryParser(variantStorageMetadataManager);
     }
 
@@ -453,6 +453,14 @@ public class ClinicalQueryParser {
             String joinFilterQuery = join + "(" + StringUtils.join(filters, " AND ") + ")";
             solrQuery.addFilterQuery(joinFilterQuery);
         }
+    }
+
+    protected String getCollectionPrefix(QueryOptions queryOptions) throws CvdbException {
+        if (!queryOptions.containsKey(CVDB_DBPREFIX_KEY)) {
+            throw new CvdbException("Missing CVDB database prefix in query options");
+        }
+
+        return queryOptions.getString(CVDB_DBPREFIX_KEY);
     }
 
     private Query buildVariantQuery(Query query) {
