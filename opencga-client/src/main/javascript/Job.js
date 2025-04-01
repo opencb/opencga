@@ -44,6 +44,40 @@ export default class Job extends OpenCGAParentClass {
         return this._post("jobs", null, "acl", members, "update", data, action);
     }
 
+    /** Fetch catalog job stats
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
+    * @param {Boolean} [params.otherStudies = "false"] - Flag indicating the entries being queried can belong to any related study, not just
+    *     the primary one. The default value is false.
+    * @param {String} [params.id] - Comma separated list of job IDs up to a maximum of 100. Also admits basic regular expressions using the
+    *     operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+    * @param {String} [params.uuid] - Comma separated list of job UUIDs up to a maximum of 100.
+    * @param {String} [params.toolId] - Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e.
+    *     '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+    * @param {String} [params.toolType] - Tool type executed by the job [OPERATION, ANALYSIS].
+    * @param {String} [params.userId] - User that created the job.
+    * @param {String} [params.priority] - Priority of the job.
+    * @param {String} [params.status] - Filter by status.
+    * @param {String} [params.internalStatus] - Filter by internal status.
+    * @param {String} [params.creationDate] - Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+    * @param {String} [params.modificationDate] - Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+    * @param {Boolean} [params.visited] - Visited status of job.
+    * @param {String} [params.tags] - Job tags.
+    * @param {String} [params.input] - Comma separated list of file IDs used as input.
+    * @param {String} [params.output] - Comma separated list of file IDs used as output.
+    * @param {String} [params.acl] - Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}.
+    *     Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS
+    *     permissions. Only study owners or administrators can query by this field. .
+    * @param {String} [params.release] - Release when it was created.
+    * @param {Boolean} [params.deleted = "false"] - Boolean to retrieve deleted entries. The default value is false.
+    * @param {String} [params.field] - Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.:
+    *     studies;type;numSamples[0..10]:1;format:sum(size).
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    aggregationStats(params) {
+        return this._get("jobs", null, null, null, "aggregationStats", params);
+    }
+
     /** Register an executed job with POST method
     * @param {Object} data - job.
     * @param {Object} [params] - The Object containing the following optional parameters:
@@ -63,9 +97,16 @@ export default class Job extends OpenCGAParentClass {
     * @param {String} [params.id] - Comma separated list of job IDs up to a maximum of 100. Also admits basic regular expressions using the
     *     operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
     * @param {String} [params.uuid] - Comma separated list of job UUIDs up to a maximum of 100.
+    * @param {String} [params.type] - Job type (NATIVE, WORKFLOW, CUSTOM or WALKER).
     * @param {String} [params.toolId] - Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e.
     *     '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
     * @param {String} [params.toolType] - Tool type executed by the job [OPERATION, ANALYSIS].
+    * @param {String} [params.tool.externalExecutor.id] - Id of the external executor. This field is only applicable for jobs executed by an
+    *     external executor.
+    * @param {String} [params.parentId] - Job id that generated this job (if any).
+    * @param {Boolean} [params.dryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate
+    *     that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
+    * @param {Boolean} [params.internal.killJobRequested] - Flag indicating that the user requested to kill the job.
     * @param {String} [params.userId] - User that created the job.
     * @param {String} [params.priority] - Priority of the job.
     * @param {String} [params.status] - Filter by status.
@@ -117,9 +158,16 @@ export default class Job extends OpenCGAParentClass {
     * @param {String} [params.id] - Comma separated list of job IDs up to a maximum of 100. Also admits basic regular expressions using the
     *     operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
     * @param {String} [params.uuid] - Comma separated list of job UUIDs up to a maximum of 100.
+    * @param {String} [params.type] - Job type (NATIVE, WORKFLOW, CUSTOM or WALKER).
     * @param {String} [params.toolId] - Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e.
     *     '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
     * @param {String} [params.toolType] - Tool type executed by the job [OPERATION, ANALYSIS].
+    * @param {String} [params.tool.externalExecutor.id] - Id of the external executor. This field is only applicable for jobs executed by an
+    *     external executor.
+    * @param {String} [params.parentId] - Job id that generated this job (if any).
+    * @param {Boolean} [params.dryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate
+    *     that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
+    * @param {Boolean} [params.internal.killJobRequested] - Flag indicating that the user requested to kill the job.
     * @param {String} [params.userId] - User that created the job.
     * @param {String} [params.priority] - Priority of the job.
     * @param {String} [params.status] - Filter by status.
@@ -139,6 +187,44 @@ export default class Job extends OpenCGAParentClass {
     */
     search(params) {
         return this._get("jobs", null, null, null, "search", params);
+    }
+
+    /** Execute an analysis from a custom binary.
+    * @param {Object} data - body.
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
+    * @param {String} [params.jobId] - Job ID. It must be a unique string within the study. An ID will be autogenerated automatically if not
+    *     provided.
+    * @param {String} [params.jobDescription] - Job description.
+    * @param {String} [params.jobDependsOn] - Comma separated list of existing job IDs the job will depend on.
+    * @param {String} [params.jobTags] - Job tags.
+    * @param {String} [params.jobScheduledStartTime] - Time when the job is scheduled to start.
+    * @param {String} [params.jobPriority] - Priority of the job.
+    * @param {Boolean} [params.jobDryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will
+    *     validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    buildTool(data, params) {
+        return this._post("jobs", null, "tool", null, "build", data, params);
+    }
+
+    /** Execute an analysis from a custom binary.
+    * @param {Object} data - NextFlow run parameters.
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
+    * @param {String} [params.jobId] - Job ID. It must be a unique string within the study. An ID will be autogenerated automatically if not
+    *     provided.
+    * @param {String} [params.jobDescription] - Job description.
+    * @param {String} [params.jobDependsOn] - Comma separated list of existing job IDs the job will depend on.
+    * @param {String} [params.jobTags] - Job tags.
+    * @param {String} [params.jobScheduledStartTime] - Time when the job is scheduled to start.
+    * @param {String} [params.jobPriority] - Priority of the job.
+    * @param {Boolean} [params.jobDryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will
+    *     validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    runTool(data, params) {
+        return this._post("jobs", null, "tool", null, "run", data, params);
     }
 
     /** Provide a summary of the running jobs

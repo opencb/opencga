@@ -1,6 +1,5 @@
 package org.opencb.opencga.storage.hadoop.variant.stats;
 
-import org.apache.commons.io.FileUtils;
 import org.junit.*;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.ExternalResource;
@@ -23,8 +22,8 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 
-import java.io.File;
 import java.net.URI;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -105,7 +104,7 @@ public class SampleVariantStatsTest extends VariantStorageBaseTest implements Ha
         Integer childId = engine.getMetadataManager().getSampleId(studyId, child);
         engine.getMetadataManager().updateSampleMetadata(studyId, childId, sampleMetadata -> sampleMetadata.setStats(stats.get(2)));
 
-        URI localOutputUri = newOutputUri();
+        URI localOutputUri = newOutputUri().resolve("stats.json");
         ObjectMap params = new ObjectMap().append(SampleVariantStatsDriver.SAMPLES, "auto")
                 .append(SampleVariantStatsDriver.OUTPUT, localOutputUri);
         getMrExecutor().run(SampleVariantStatsDriver.class, SampleVariantStatsDriver.buildArgs(null, engine.getVariantTableName(), 1, null, params), "");
@@ -115,9 +114,7 @@ public class SampleVariantStatsTest extends VariantStorageBaseTest implements Ha
         Assert.assertEquals(stats, actualStats);
 
 
-        List<File> files = new ArrayList<>(FileUtils.listFiles(new File(localOutputUri), null, true));
-        Assert.assertEquals(1, files.size());
-        List<SampleVariantStats> statsFromFile = JacksonUtils.getDefaultObjectMapper().readerFor(SampleVariantStats.class).<SampleVariantStats>readValues(files.get(0)).readAll();
+        List<SampleVariantStats> statsFromFile = JacksonUtils.getDefaultObjectMapper().readerFor(SampleVariantStats.class).<SampleVariantStats>readValues(Paths.get(localOutputUri).toFile()).readAll();
         Map<String, SampleVariantStats> statsFromFileMap = statsFromFile.stream().collect(Collectors.toMap(SampleVariantStats::getId, i -> i));
         Assert.assertEquals(stats.get(0), statsFromFileMap.get(father));
         Assert.assertEquals(stats.get(1), statsFromFileMap.get(mother));
@@ -151,9 +148,8 @@ public class SampleVariantStatsTest extends VariantStorageBaseTest implements Ha
 
         List<SampleVariantStats> actualStats = readStatsFromMeta();
 
-        // When processing a child, its parents must be processed as well
-        Assert.assertEquals(3, actualStats.size());
-        Assert.assertEquals(stats, actualStats);
+        Assert.assertEquals(1, actualStats.size());
+        Assert.assertEquals(stats.get(2), actualStats.get(0));
     }
 
     public List<SampleVariantStats> readStatsFromMeta() throws StorageEngineException {

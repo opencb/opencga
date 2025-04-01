@@ -31,7 +31,6 @@ import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
@@ -90,8 +89,9 @@ public class VariantStatsAnalysis extends OpenCgaToolScopeStudy {
      * @param study Study id
      * @return this
      */
+    @Override
     public VariantStatsAnalysis setStudy(String study) {
-        params.put(ParamConstants.STUDY_PARAM, study);
+        super.setStudy(study);
         return this;
     }
 

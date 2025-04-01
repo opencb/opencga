@@ -30,6 +30,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
+import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoBackupUtils;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
@@ -199,15 +201,19 @@ public class  AbstractManagerTest extends GenericTest {
 
     private void initVariables() throws CatalogException {
         catalogManager = catalogManagerResource.resetCatalogManager();
-        opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
-        ownerToken = catalogManager.getUserManager().login(organizationId, orgOwnerUserId, TestParamConstants.PASSWORD).getToken();
-        orgAdminToken1 = catalogManager.getUserManager().login(organizationId, orgAdminUserId1, TestParamConstants.PASSWORD).getToken();
-        orgAdminToken2 = catalogManager.getUserManager().login(organizationId, orgAdminUserId2, TestParamConstants.PASSWORD).getToken();
-        studyAdminToken1 = catalogManager.getUserManager().login(organizationId, studyAdminUserId1, TestParamConstants.PASSWORD).getToken();
-        normalToken1 = catalogManager.getUserManager().login(organizationId, normalUserId1, TestParamConstants.PASSWORD).getToken();
-        normalToken2 = catalogManager.getUserManager().login(organizationId, normalUserId2, TestParamConstants.PASSWORD).getToken();
-        normalToken3 = catalogManager.getUserManager().login(organizationId, normalUserId3, TestParamConstants.PASSWORD).getToken();
-        noAccessToken1 = catalogManager.getUserManager().login(organizationId, noAccessUserId1, TestParamConstants.PASSWORD).getToken();
+        opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).first().getToken();
+        ownerToken = catalogManager.getUserManager().login(organizationId, orgOwnerUserId, TestParamConstants.PASSWORD).first().getToken();
+        orgAdminToken1 = catalogManager.getUserManager().login(organizationId, orgAdminUserId1, TestParamConstants.PASSWORD).first()
+                .getToken();
+        orgAdminToken2 = catalogManager.getUserManager().login(organizationId, orgAdminUserId2, TestParamConstants.PASSWORD).first()
+                .getToken();
+        studyAdminToken1 = catalogManager.getUserManager().login(organizationId, studyAdminUserId1, TestParamConstants.PASSWORD).first()
+                .getToken();
+        normalToken1 = catalogManager.getUserManager().login(organizationId, normalUserId1, TestParamConstants.PASSWORD).first().getToken();
+        normalToken2 = catalogManager.getUserManager().login(organizationId, normalUserId2, TestParamConstants.PASSWORD).first().getToken();
+        normalToken3 = catalogManager.getUserManager().login(organizationId, normalUserId3, TestParamConstants.PASSWORD).first().getToken();
+        noAccessToken1 = catalogManager.getUserManager().login(organizationId, noAccessUserId1, TestParamConstants.PASSWORD).first()
+                .getToken();
 
         Study study = catalogManager.getStudyManager().get(studyId, StudyManager.INCLUDE_STUDY_IDS, ownerToken).first();
         studyUid = study.getUid();
@@ -234,7 +240,7 @@ public class  AbstractManagerTest extends GenericTest {
 
     private void createDummyData(CatalogManager catalogManager) throws CatalogException {
         // Create new organization, owner and admins
-        opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+        opencgaToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).first().getToken();
         catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId(organizationId).setName("Test"), QueryOptions.empty(), opencgaToken);
         catalogManager.getUserManager().create(new User().setId(orgOwnerUserId).setName(orgOwnerUserId).setOrganization(organizationId), TestParamConstants.PASSWORD, opencgaToken);
         catalogManager.getUserManager().create(orgAdminUserId1, "User2 Name", "mail2@ebi.ac.uk", TestParamConstants.PASSWORD, organizationId, null, opencgaToken);
@@ -251,14 +257,14 @@ public class  AbstractManagerTest extends GenericTest {
                         .setAdmins(Arrays.asList(orgAdminUserId1, orgAdminUserId2)),
                 null, opencgaToken);
 
-        ownerToken = catalogManager.getUserManager().login(organizationId, orgOwnerUserId, TestParamConstants.PASSWORD).getToken();
-        orgAdminToken1 = catalogManager.getUserManager().login(organizationId, orgAdminUserId1, TestParamConstants.PASSWORD).getToken();
-        orgAdminToken2 = catalogManager.getUserManager().login(organizationId, orgAdminUserId2, TestParamConstants.PASSWORD).getToken();
-        studyAdminToken1 = catalogManager.getUserManager().login(organizationId, studyAdminUserId1, TestParamConstants.PASSWORD).getToken();
-        normalToken1 = catalogManager.getUserManager().login(organizationId, normalUserId1, TestParamConstants.PASSWORD).getToken();
-        normalToken2 = catalogManager.getUserManager().login(organizationId, normalUserId2, TestParamConstants.PASSWORD).getToken();
-        normalToken3 = catalogManager.getUserManager().login(organizationId, normalUserId3, TestParamConstants.PASSWORD).getToken();
-        noAccessToken1 = catalogManager.getUserManager().login(organizationId, noAccessUserId1, TestParamConstants.PASSWORD).getToken();
+        ownerToken = catalogManager.getUserManager().login(organizationId, orgOwnerUserId, TestParamConstants.PASSWORD).first().getToken();
+        orgAdminToken1 = catalogManager.getUserManager().login(organizationId, orgAdminUserId1, TestParamConstants.PASSWORD).first().getToken();
+        orgAdminToken2 = catalogManager.getUserManager().login(organizationId, orgAdminUserId2, TestParamConstants.PASSWORD).first().getToken();
+        studyAdminToken1 = catalogManager.getUserManager().login(organizationId, studyAdminUserId1, TestParamConstants.PASSWORD).first().getToken();
+        normalToken1 = catalogManager.getUserManager().login(organizationId, normalUserId1, TestParamConstants.PASSWORD).first().getToken();
+        normalToken2 = catalogManager.getUserManager().login(organizationId, normalUserId2, TestParamConstants.PASSWORD).first().getToken();
+        normalToken3 = catalogManager.getUserManager().login(organizationId, normalUserId3, TestParamConstants.PASSWORD).first().getToken();
+        noAccessToken1 = catalogManager.getUserManager().login(organizationId, noAccessUserId1, TestParamConstants.PASSWORD).first().getToken();
 
         catalogManager.getProjectManager().create(project1, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, ownerToken);
@@ -481,8 +487,19 @@ public class  AbstractManagerTest extends GenericTest {
         UserManager userManager = spy.getUserManager();
         UserManager userManagerSpy = Mockito.spy(userManager);
         Mockito.doReturn(userManagerSpy).when(spy).getUserManager();
-        MongoDBAdaptorFactory mongoDBAdaptorFactory = mockMongoDBAdaptorFactory();
-        Mockito.doReturn(mongoDBAdaptorFactory).when(userManagerSpy).getCatalogDBAdaptorFactory();
+        MongoDBAdaptorFactory mockMongoFactory = mockMongoDBAdaptorFactory();
+        Mockito.doReturn(mockMongoFactory).when(userManagerSpy).getCatalogDBAdaptorFactory();
+
+        JobManager jobManager = spy.getJobManager();
+        JobManager jobManagerSpy = Mockito.spy(jobManager);
+        Mockito.doReturn(jobManagerSpy).when(spy).getJobManager();
+        Mockito.doReturn(mockMongoFactory).when(jobManagerSpy).getCatalogDBAdaptorFactory();
+
+        ProjectManager projectManager = spy.getProjectManager();
+        ProjectManager projectManagerSpy = Mockito.spy(projectManager);
+        Mockito.doReturn(projectManagerSpy).when(spy).getProjectManager();
+        Mockito.doReturn(mockMongoFactory).when(projectManagerSpy).getCatalogDBAdaptorFactory();
+
         return spy;
     }
 
@@ -492,6 +509,15 @@ public class  AbstractManagerTest extends GenericTest {
         UserDBAdaptor userDBAdaptor = dbAdaptorFactorySpy.getCatalogUserDBAdaptor(organizationId);
         UserDBAdaptor userDBAdaptorSpy = Mockito.spy(userDBAdaptor);
         Mockito.doReturn(userDBAdaptorSpy).when(dbAdaptorFactorySpy).getCatalogUserDBAdaptor(organizationId);
+
+        JobDBAdaptor jobDBAdaptor = dbAdaptorFactorySpy.getCatalogJobDBAdaptor(organizationId);
+        JobDBAdaptor jobDBAdaptorSpy = Mockito.spy(jobDBAdaptor);
+        Mockito.doReturn(jobDBAdaptorSpy).when(dbAdaptorFactorySpy).getCatalogJobDBAdaptor(organizationId);
+
+        ProjectDBAdaptor projectDBAdaptor = dbAdaptorFactorySpy.getCatalogProjectDbAdaptor(organizationId);
+        ProjectDBAdaptor projectDBAdaptorSpy = Mockito.spy(projectDBAdaptor);
+        Mockito.doReturn(projectDBAdaptorSpy).when(dbAdaptorFactorySpy).getCatalogProjectDbAdaptor(organizationId);
+
         return dbAdaptorFactorySpy;
     }
 

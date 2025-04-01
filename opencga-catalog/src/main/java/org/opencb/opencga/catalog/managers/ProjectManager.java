@@ -37,6 +37,7 @@ import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.federation.FederationClientParamsRef;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.project.*;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -78,6 +79,8 @@ public class ProjectManager extends AbstractManager {
     public static final QueryOptions INCLUDE_PROJECT_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             ProjectDBAdaptor.QueryParams.UID.key(), ProjectDBAdaptor.QueryParams.ID.key(), ProjectDBAdaptor.QueryParams.UUID.key(),
             ProjectDBAdaptor.QueryParams.FQN.key()));
+    public static final QueryOptions INCLUDE_CELLBASE = keepFieldInQueryOptions(INCLUDE_PROJECT_IDS,
+            ProjectDBAdaptor.QueryParams.CELLBASE.key());
 
     ProjectManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                    DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManager catalogIOManager, Configuration configuration) {
@@ -120,13 +123,20 @@ public class ProjectManager extends AbstractManager {
             throw new CatalogException("Internal error. Missing project id or uuid.");
         }
 
-        OpenCGAResult<Project> projectDataResult = getProjectDBAdaptor(catalogFqn.getOrganizationId()).get(query, queryOptions, userId);
+        String organizationId = payload.getOrganization();
+        String organizationFqn = catalogFqn.getOrganizationId();
+        if (!organizationId.equals(organizationFqn) && !authorizationManager.isOpencgaAdministrator(payload)) {
+            // User may be trying to fetch a federated project
+            organizationFqn = organizationId;
+        }
+
+        OpenCGAResult<Project> projectDataResult = getProjectDBAdaptor(organizationFqn).get(query, queryOptions, userId);
         if (projectDataResult.getNumResults() > 1) {
             throw new CatalogException("Please be more concrete with the project. More than one project found for " + userId + " user");
         } else if (projectDataResult.getNumResults() == 1) {
             return projectDataResult;
         } else {
-            projectDataResult = getProjectDBAdaptor(catalogFqn.getOrganizationId()).get(query, queryOptions);
+            projectDataResult = getProjectDBAdaptor(organizationFqn).get(query, queryOptions);
             if (projectDataResult.getNumResults() == 0) {
                 throw new CatalogException("No project found given '" + catalogFqn.getProvidedId() + "'.");
             } else {
@@ -168,6 +178,9 @@ public class ProjectManager extends AbstractManager {
             authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
             ParamUtils.checkObj(projectCreateParams, "ProjectCreateParams");
             project = projectCreateParams.toProject();
+
+            // Check if we have already reached the limit of projects in the Organisation
+            checkProjectLimitQuota(organizationId);
             validateProjectForCreation(organizationId, project);
 
             queryResult = getProjectDBAdaptor(organizationId).insert(project, options);
@@ -202,6 +215,18 @@ public class ProjectManager extends AbstractManager {
         return queryResult;
     }
 
+    private void checkProjectLimitQuota(String organizationId) throws CatalogException {
+        if (configuration.getQuota().getMaxNumProjects() <= 0) {
+            logger.debug("No project limit quota set. Skipping quota check.");
+            return;
+        }
+        long numProjects = getProjectDBAdaptor(organizationId).count(new Query()).getNumMatches();
+        if (numProjects >= configuration.getQuota().getMaxNumProjects()) {
+            throw new CatalogException("The organization '" + organizationId + "' has reached the maximum quota of projects ("
+                    + configuration.getQuota().getMaxNumProjects() + ").");
+        }
+    }
+
     private void validateProjectForCreation(String organizationId, Project project) throws CatalogParameterException {
         ParamUtils.checkParameter(project.getId(), ProjectDBAdaptor.QueryParams.ID.key());
         project.setName(ParamUtils.defaultString(project.getName(), project.getId()));
@@ -212,6 +237,11 @@ public class ProjectManager extends AbstractManager {
                 ProjectDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
         project.setCurrentRelease(1);
         project.setInternal(ProjectInternal.init());
+        project.setFederation(ParamUtils.defaultObject(project.getFederation(), new FederationClientParamsRef()));
+        if (StringUtils.isNotEmpty(project.getFederation().getId())) {
+            FederationUtils.validateFederationId(organizationId, project.getFederation().getId(), catalogDBAdaptorFactory);
+            project.getInternal().setFederated(true);
+        }
         project.setAttributes(ParamUtils.defaultObject(project.getAttributes(), HashMap::new));
         project.setFqn(FqnUtils.buildFqn(organizationId, project.getId()));
 

@@ -39,6 +39,63 @@ class ClinicalAnalysis(_ParentRestClient):
         options['action'] = action
         return self._post(category='analysis', resource='update', subcategory='clinical/acl', second_query_id=members, data=data, **options)
 
+    def aggregation_stats(self, **options):
+        """
+        Fetch catalog clinical analysis aggregation stats.
+        PATH: /{apiVersion}/analysis/clinical/aggregationStats
+
+        :param str study: Study [[organization@]project:]study where study and
+            project can be either the ID or UUID.
+        :param str id: Comma separated list of Clinical Analysis IDs up to a
+            maximum of 100. Also admits basic regular expressions using the
+            operator '~', i.e. '~{perl-regex}' e.g. '~value' for case
+            sensitive, '~/value/i' for case insensitive search.
+        :param str uuid: Comma separated list of Clinical Analysis UUIDs up to
+            a maximum of 100.
+        :param str type: Clinical Analysis type.
+        :param str disorder: Clinical Analysis disorder. Also admits basic
+            regular expressions using the operator '~', i.e. '~{perl-regex}'
+            e.g. '~value' for case sensitive, '~/value/i' for case insensitive
+            search.
+        :param str files: Clinical Analysis files.
+        :param str sample: Sample associated to the proband or any member of a
+            family.
+        :param str individual: Proband or any member of a family.
+        :param str proband: Clinical Analysis proband.
+        :param str proband_samples: Clinical Analysis proband samples.
+        :param str family: Clinical Analysis family.
+        :param str family_members: Clinical Analysis family members.
+        :param str family_member_samples: Clinical Analysis family members
+            samples.
+        :param str panels: Clinical Analysis panels.
+        :param bool locked: Locked Clinical Analyses.
+        :param str analyst_id: Clinical Analysis analyst id.
+        :param str priority: Clinical Analysis priority.
+        :param str flags: Clinical Analysis flags.
+        :param str creation_date: Clinical Analysis Creation date. Format:
+            yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        :param str modification_date: Clinical Analysis Modification date.
+            Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        :param str due_date: Clinical Analysis due date. Format:
+            yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        :param str quality_control_summary: Clinical Analysis quality control
+            summary.
+        :param str release: Release when it was created.
+        :param int snapshot: Snapshot value (Latest version of the entry in
+            the specified release).
+        :param str status: Filter by status.
+        :param str internal_status: Filter by internal status.
+        :param str annotation: Annotation filters. Example:
+            age>30;gender=FEMALE. For more information, please visit
+            http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
+        :param bool deleted: Boolean to retrieve deleted entries.
+        :param str field: Field to apply aggregation statistics to (or a list
+            of fields separated by semicolons), e.g.:
+            studies;type;numSamples[0..10]:1;format:sum(size).
+        """
+
+        return self._get(category='analysis', resource='aggregationStats', subcategory='clinical', **options)
+
     def load_annotation_sets(self, variable_set_id, path, data=None, **options):
         """
         Load annotation sets from a TSV file.
@@ -153,6 +210,44 @@ class ClinicalAnalysis(_ParentRestClient):
 
         options['field'] = field
         return self._get(category='analysis', resource='distinct', subcategory='clinical', **options)
+
+    def aggregation_stats_interpretation(self, **options):
+        """
+        Fetch catalog interpretation aggregation stats.
+        PATH: /{apiVersion}/analysis/clinical/interpretation/aggregationStats
+
+        :param str study: Study [[organization@]project:]study where study and
+            project can be either the ID or UUID.
+        :param str id: Comma separated list of Interpretation IDs up to a
+            maximum of 100. Also admits basic regular expressions using the
+            operator '~', i.e. '~{perl-regex}' e.g. '~value' for case
+            sensitive, '~/value/i' for case insensitive search.
+        :param str uuid: Comma separated list of Interpretation UUIDs up to a
+            maximum of 100.
+        :param str name: Comma separated list of Interpretation names up to a
+            maximum of 100.
+        :param str clinical_analysis_id: Clinical Analysis id.
+        :param str analyst_id: Analyst ID.
+        :param str method_name: Interpretation method name. Also admits basic
+            regular expressions using the operator '~', i.e. '~{perl-regex}'
+            e.g. '~value' for case sensitive, '~/value/i' for case insensitive
+            search.
+        :param str panels: Interpretation panels.
+        :param str primary_findings: Interpretation primary findings.
+        :param str secondary_findings: Interpretation secondary findings.
+        :param str creation_date: Interpretation Creation date. Format:
+            yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        :param str modification_date: Interpretation Modification date.
+            Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        :param str status: Filter by status.
+        :param str internal_status: Filter by internal status.
+        :param str release: Release when it was created.
+        :param str field: Field to apply aggregation statistics to (or a list
+            of fields separated by semicolons), e.g.:
+            studies;type;numSamples[0..10]:1;format:sum(size).
+        """
+
+        return self._get(category='analysis', resource='aggregationStats', subcategory='clinical/interpretation', **options)
 
     def distinct_interpretation(self, field, **options):
         """
@@ -814,9 +909,9 @@ class ClinicalAnalysis(_ParentRestClient):
         :param str sample: Filter variants by sample genotype. This will
             automatically set 'includeSample' parameter when not provided. This
             filter accepts multiple 3 forms: 1) List of samples: Samples that
-            contain the main variant. Accepts AND (;) and OR (,) operators. 
+            contain the main variant. Accepts AND ';' and OR ',' operators. 
             e.g. HG0097,HG0098 . 2) List of samples with genotypes:
-            {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,) operators.  e.g.
+            {sample}:{gt1},{gt2}. Accepts AND ';' and OR ',' operators.  e.g.
             HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will
             also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice
             versa. When filtering by multi-allelic genotypes, any secondary
@@ -926,6 +1021,15 @@ class ClinicalAnalysis(_ParentRestClient):
         :param bool panel_intersection: Intersect panel genes and regions with
             given genes and regions from que input query. This will prevent
             returning variants from regions out of the panel.
+        :param str source: Select the variant data source from where to fetch
+            the data. Accepted values are 'variant_index' (default) and
+            'secondary_sample_index'. When selecting a secondary_index, the
+            data will be retrieved exclusively from that secondary index, and
+            the 'include/exclude' parameters will be ignored. If the given
+            query can not be fully resolved using the secondary index, an
+            exception will be raised. As the returned variants will only
+            contain data from the secondary_index, some data might be missing
+            or be partial.
         :param str trait: List of traits, based on ClinVar, HPO, COSMIC, i.e.:
             IDs, histologies, descriptions,...
         """

@@ -21,6 +21,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.commons.utils.CommandLineUtils;
+import org.opencb.opencga.analysis.workflow.NextFlowExecutor;
 import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.options.*;
@@ -111,6 +112,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
     private JobCommandOptions jobCommandOptions;
     private DiseasePanelInternalCommandOptions panelInternalCommandOptions;
     private StudyCommandOptions studyCommandOptions;
+    private WorkflowCommandOptions workflowCommandOptions;
 
     public InternalCliOptionsParser() {
         jCommander.setProgramName("opencga-internal.sh");
@@ -278,6 +280,11 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         jCommander.addCommand("studies", studyCommandOptions);
         JCommander studySubcommands = jCommander.getCommands().get("studies");
         studySubcommands.addCommand(TEMPLATE_RUN_COMMAND, studyCommandOptions.templateLoader);
+
+        workflowCommandOptions = new WorkflowCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("workflows", workflowCommandOptions);
+        JCommander workflowSubcommands = jCommander.getCommands().get("workflows");
+        workflowSubcommands.addCommand(NextFlowExecutor.ID, workflowCommandOptions.nextflowCommandOptions);
     }
 
     @Override
@@ -561,5 +568,9 @@ public class InternalCliOptionsParser extends CliOptionsParser {
 
     public StudyCommandOptions getStudyCommandOptions() {
         return studyCommandOptions;
+    }
+
+    public WorkflowCommandOptions getWorkflowCommandOptions() {
+        return workflowCommandOptions;
     }
 }

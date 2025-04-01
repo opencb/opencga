@@ -37,8 +37,10 @@ import org.opencb.opencga.core.models.alignment.AlignmentGeneCoverageStatsParams
 import org.opencb.opencga.core.models.alignment.AlignmentIndexParams;
 import org.opencb.opencga.core.models.alignment.CoverageIndexParams;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileCreateParams;
 import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.file.FileRelatedFile;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.user.User;
@@ -55,6 +57,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
+import java.util.jar.JarOutputStream;
 
 import static org.junit.Assert.assertEquals;
 
@@ -214,7 +217,7 @@ public class AlignmentAnalysisTest {
         catalogManager = opencga.getCatalogManager();
         variantStorageManager = new VariantStorageManager(catalogManager, opencga.getStorageEngineFactory());
         toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantStorageManager.getStorageConfiguration()));
-        token = catalogManager.getUserManager().login(ORGANIZATION, "user", PASSWORD).getToken();
+        token = catalogManager.getUserManager().login(ORGANIZATION, "user", PASSWORD).first().getToken();
     }
 
     @AfterClass
@@ -231,7 +234,7 @@ public class AlignmentAnalysisTest {
                 PASSWORD, opencga.getAdminToken());
         catalogManager.getOrganizationManager().update("test", new OrganizationUpdateParams().setOwner(USER), null, opencga.getAdminToken());
 
-        token = catalogManager.getUserManager().login(ORGANIZATION, "user", PASSWORD).getToken();
+        token = catalogManager.getUserManager().login(ORGANIZATION, "user", PASSWORD).first().getToken();
 
         String projectId = catalogManager.getProjectManager().create(PROJECT, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first().getId();
@@ -329,8 +332,16 @@ public class AlignmentAnalysisTest {
         // Run alignment index
         AlignmentIndexParams params = new AlignmentIndexParams();
         params.setFileId(bamFile.getId());
+
+        String jobId = "jobId-readonly-alignment-index";
         Path alignmentIndexOutdir = Paths.get(opencga.createTmpOutdir("_alignment_index"));
-        toolRunner.execute(AlignmentIndexOperation.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), alignmentIndexOutdir, "jobId-readonly-coverage-index", false, token);
+        FileCreateParams fileCreateParams = new FileCreateParams().setJobId(jobId).setPath(alignmentIndexOutdir.toString())
+                .setType(File.Type.DIRECTORY);
+        File catalogJobOutDir = catalogManager.getFileManager().create(STUDY, fileCreateParams, true, token).first();
+        Job job = new Job().setId(jobId).setOutDir(catalogJobOutDir);
+        catalogManager.getJobManager().create(STUDY, job, QueryOptions.empty(), token).first();
+
+        toolRunner.execute(AlignmentIndexOperation.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), alignmentIndexOutdir, jobId, false, token);
 
         // Checking BAI file
         Path baiPath = alignmentIndexOutdir.resolve(bamFilename + AlignmentConstants.BAI_EXTENSION);
@@ -357,8 +368,9 @@ public class AlignmentAnalysisTest {
         // Run alignment index
         AlignmentIndexParams indexParams = new AlignmentIndexParams();
         indexParams.setFileId(bamFile.getId());
-        Path alignmentIndexOutdir = Paths.get(opencga.createTmpOutdir("_alignment_index"));
-        toolRunner.execute(AlignmentIndexOperation.class, indexParams, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), alignmentIndexOutdir, "jobId-non-readonly-alignment-coverage-index", false, token);
+        String jobId = opencga.createTmpOutdir("_alignment_index");
+        Path alignmentIndexOutdir = Paths.get(jobId);
+        toolRunner.execute(AlignmentIndexOperation.class, indexParams, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), alignmentIndexOutdir, jobId, false, token);
 
         // Checking BAI file
         Path baiPath = nonReadOnlyDir.resolve(bamFilename + AlignmentConstants.BAI_EXTENSION);
@@ -399,7 +411,7 @@ public class AlignmentAnalysisTest {
         AlignmentIndexParams indexParams = new AlignmentIndexParams();
         indexParams.setFileId(bamFile.getId());
         Path alignmentIndexOutdir = Paths.get(opencga.createTmpOutdir("_alignment_index"));
-        toolRunner.execute(AlignmentIndexOperation.class, indexParams, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), alignmentIndexOutdir, "jobId-readonly-coverage-index", false, token);
+        toolRunner.execute(AlignmentIndexOperation.class, indexParams, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), alignmentIndexOutdir, "jobId-readonly-alignment-index", false, token);
 
         // Checking BAI file
         Path baiPath = readOnlyDir.resolve(bamFilename + AlignmentConstants.BAI_EXTENSION);
@@ -414,10 +426,18 @@ public class AlignmentAnalysisTest {
         Runtime.getRuntime().exec("chmod 555 " + readOnlyDir.toAbsolutePath());
 
         // Run coverage index
-        CoverageIndexParams coverageOarams = new CoverageIndexParams();
-        coverageOarams.setFileId(bamFile.getId());
+        CoverageIndexParams coverageParams = new CoverageIndexParams();
+        coverageParams.setFileId(bamFile.getId());
+
+        String jobId = "jobId-readonly-coverage-index";
         Path coverageIndexOutdir = Paths.get(opencga.createTmpOutdir("_coverage_index"));
-        toolRunner.execute(AlignmentCoverageAnalysis.class, coverageOarams, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), coverageIndexOutdir, "jobId-readonly-coverage-index", false, token);
+        FileCreateParams fileCreateParams = new FileCreateParams().setJobId(jobId).setPath(coverageIndexOutdir.toString())
+                .setType(File.Type.DIRECTORY);
+        File catalogJobOutDir = catalogManager.getFileManager().create(STUDY, fileCreateParams, true, token).first();
+        Job job = new Job().setId(jobId).setOutDir(catalogJobOutDir);
+        catalogManager.getJobManager().create(STUDY, job, QueryOptions.empty(), token).first();
+
+        toolRunner.execute(AlignmentCoverageAnalysis.class, coverageParams, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), coverageIndexOutdir, jobId, false, token);
 
         // Checking BW file
         Path bwPath = coverageIndexOutdir.resolve(bamFilename + AlignmentConstants.BIGWIG_EXTENSION);

@@ -1,11 +1,17 @@
 package org.opencb.opencga.storage.hadoop.variant.io;
 
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.junit.*;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.opencb.biodata.models.metadata.Individual;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.metadata.VariantMetadata;
+import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -17,6 +23,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
+import org.opencb.opencga.storage.core.variant.io.avro.VariantAvroReader;
 import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
 import org.opencb.opencga.storage.hadoop.HBaseCompat;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
@@ -24,8 +31,14 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
@@ -140,9 +153,28 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
     public void exportAvroGz() throws Exception {
         String fileName = "variants.avro_gz";
         URI uri = getOutputUri(fileName);
-        uri = variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.AVRO_GZ, null, new Query(STUDY.key(), study1), new QueryOptions()).get(0);
+        List<URI> uris = variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.AVRO_GZ, null, new Query(STUDY.key(), study1), new QueryOptions());
 
-        copyToLocal(uri);
+        URI outputUri = copyToLocal(uris.get(0));
+        if (exportToLocal) {
+            URI metaUri = copyToLocal(uris.get(1));
+
+            ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
+            VariantMetadata metadata;
+            try (InputStream is = ioConnectorProvider.newInputStream(metaUri)) {
+                metadata = objectMapper.readValue(is, VariantMetadata.class);
+            }
+
+            Map<String, LinkedHashMap<String, Integer>> samplesPositions = new HashMap<>();
+            for (VariantStudyMetadata study : metadata.getStudies()) {
+                LinkedHashMap<String, Integer> samples = samplesPositions.put(study.getId(), new LinkedHashMap<>());
+                for (Individual individual : study.getIndividuals()) {
+                    samples.put(individual.getId(), samples.size());
+                }
+            }
+            List<Variant> variants = new VariantAvroReader(Paths.get(outputUri).toFile(), samplesPositions).stream().collect(Collectors.toList());
+            System.out.println("variants.size() = " + variants.size());
+        }
     }
 
     @Test
@@ -158,6 +190,7 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
     public void exportVcfGz() throws Exception {
         String fileName = "variants.vcf.gz";
         URI uri = getOutputUri(fileName);
+        System.out.println("variantStorageEngine.getMRExecutor() = " + variantStorageEngine.getMRExecutor());
         variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.VCF_GZ, null, new Query(STUDY.key(), study1), new QueryOptions());
 
         copyToLocal(fileName, uri);
@@ -176,7 +209,7 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
     public void exportJson() throws Exception {
         String fileName = "variants.json";
         URI uri = getOutputUri(fileName);
-        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.JSON, null, new Query(STUDY.key(), study1), new QueryOptions());
+        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.JSON, null, new VariantQuery().study(study1).includeSampleAll(), new QueryOptions());
 
         copyToLocal(fileName, uri);
     }
@@ -281,11 +314,11 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
         copyToLocal(fileName, uri);
     }
 
-    protected void copyToLocal(URI uri) throws IOException {
-        copyToLocal(Paths.get(uri.getPath()).getFileName().toString(), uri);
+    protected URI copyToLocal(URI uri) throws IOException {
+        return copyToLocal(Paths.get(uri.getPath()).getFileName().toString(), uri);
     }
 
-    protected void copyToLocal(String fileName, URI uri) throws IOException {
+    protected URI copyToLocal(String fileName, URI uri) throws IOException {
         if (!exportToLocal) {
             System.out.println("Copy file " + uri);
             FileSystem.get(externalResource.getConf()).copyToLocalFile(true,
@@ -293,14 +326,20 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
                     new Path(outputUri.resolve(fileName)));
 
             if (fileName.endsWith(VariantExporter.TPED_FILE_EXTENSION)) {
+                Path dst = new Path(outputUri.resolve(fileName.replace(VariantExporter.TPED_FILE_EXTENSION, VariantExporter.TFAM_FILE_EXTENSION)));
                 FileSystem.get(externalResource.getConf()).copyToLocalFile(true,
                         new Path(uri.toString().replace(VariantExporter.TPED_FILE_EXTENSION, VariantExporter.TFAM_FILE_EXTENSION)),
-                        new Path(outputUri.resolve(fileName.replace(VariantExporter.TPED_FILE_EXTENSION, VariantExporter.TFAM_FILE_EXTENSION))));
+                        dst);
+                return dst.toUri();
             } else {
+                Path dst = new Path(outputUri.resolve(fileName + VariantExporter.METADATA_FILE_EXTENSION));
                 FileSystem.get(externalResource.getConf()).copyToLocalFile(true,
                         new Path(uri.toString() + VariantExporter.METADATA_FILE_EXTENSION),
-                        new Path(outputUri.resolve(fileName + VariantExporter.METADATA_FILE_EXTENSION)));
+                        dst);
+                return dst.toUri();
             }
+        } else {
+            return uri;
         }
     }
 

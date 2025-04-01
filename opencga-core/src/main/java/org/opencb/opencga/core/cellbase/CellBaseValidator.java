@@ -12,13 +12,11 @@ import org.opencb.cellbase.core.result.CellBaseDataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.VersionUtils;
-
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -148,13 +146,13 @@ public class CellBaseValidator {
     private CellBaseConfiguration validate(boolean autoComplete) throws IOException {
         CellBaseConfiguration cellBaseConfiguration = getCellBaseConfiguration();
         String inputVersion = getVersion();
-        CellBaseDataResponse<SpeciesProperties> species;
+        SpeciesProperties species;
         try {
             species = retryMetaSpecies();
-        } catch (RuntimeException e) {
-            throw new IllegalArgumentException("Unable to access cellbase url '" + getURL() + "', version '" + inputVersion + "'", e);
+        } catch (RuntimeException | IOException e) {
+            throw new IOException("Unable to access cellbase url '" + getURL() + "', version '" + inputVersion + "'", e);
         }
-        if (species == null || species.firstResult() == null) {
+        if (species == null) {
             if (autoComplete && !cellBaseConfiguration.getVersion().startsWith("v")) {
                 // Version might be missing the starting "v"
                 cellBaseConfiguration.setVersion("v" + cellBaseConfiguration.getVersion());
@@ -162,10 +160,10 @@ public class CellBaseValidator {
                 species = retryMetaSpecies();
             }
         }
-        if (species == null || species.firstResult() == null) {
-            throw new IllegalArgumentException("Unable to access cellbase url '" + getURL() + "', version '" + inputVersion + "'");
+        if (species == null) {
+            throw new IOException("Unable to access cellbase url '" + getURL() + "', version '" + inputVersion + "'");
         }
-        validateSpeciesAssembly(species.firstResult());
+        validateSpeciesAssembly(species);
 
         String serverVersion = getVersionFromServer();
         if (!supportsDataRelease(serverVersion)) {
@@ -281,6 +279,11 @@ public class CellBaseValidator {
         return VersionUtils.isMinVersion("5.4.0", serverVersion);
     }
 
+    /**
+     * Get the major version of a version string. Does not include the starting "v".
+     * @return Major version
+     * @throws IOException if unable to get version from server
+     */
     public String getVersionFromServerMajor() throws IOException {
         return major(getVersionFromServer());
     }
@@ -291,6 +294,11 @@ public class CellBaseValidator {
         return serverVersion;
     }
 
+    /**
+     * Get the major version of a version string.
+     * @param version Version string in the form "major.minor.patch"
+     * @return Major version
+     */
     private static String major(String version) {
 //        return String.valueOf(new VersionUtils.Version(version).getMajor());
         return version.split("\\.")[0];
@@ -324,44 +332,45 @@ public class CellBaseValidator {
     }
 
     private ObjectMap retryMetaAbout() throws IOException {
-        return retry(3, () -> cellBaseClient.getMetaClient().about().firstResult());
+        return retry("meta/about", () -> cellBaseClient.getMetaClient().about().firstResult());
     }
 
-    private CellBaseDataResponse<SpeciesProperties> retryMetaSpecies() throws IOException {
-        return retry(3, () -> cellBaseClient.getMetaClient().species());
+    private SpeciesProperties retryMetaSpecies() throws IOException {
+        return retry("meta/species", () -> cellBaseClient.getMetaClient().species().firstResult());
     }
 
-    private <T> T retry(int retries, Callable<T> function) throws IOException {
-        if (retries <= 0) {
-            return null;
-        }
-        T result = null;
-        Exception e = null;
+    private <T> T retry(String name, Callable<T> function) throws IOException {
+        return retry(name, function, 3);
+    }
+
+    private <T> T retry(String name, Callable<T> function, int retries) throws IOException {
+        Exception e;
+
+        // This attempt
         try {
-            result = function.call();
+            return function.call();
         } catch (Exception e1) {
             e = e1;
         }
-        if (result == null) {
-            try {
-                // Retry
-                logger.warn("Unable to get reach cellbase " + toString() + ". Retrying...");
-                result = retry(retries - 1, function);
-            } catch (Exception e1) {
-                if (e == null) {
-                    e = e1;
-                } else {
-                    e.addSuppressed(e1);
-                }
-                if (e instanceof IOException) {
-                    throw (IOException) e;
-                } else {
-                    throw new IOException("Error reading from cellbase " + toString(), e);
-                }
-            }
 
+        // Retry
+        if (retries > 0) {
+            try {
+                // Wait a bit
+                Thread.sleep(100);
+                logger.warn("Unable to get '{}' from cellbase " + toString() + ". Retrying...", name);
+                return retry(name, function, retries - 1);
+            } catch (Exception e1) {
+                e.addSuppressed(e1);
+            }
         }
-        return result;
+
+        // Throw exception
+        if (e instanceof IOException) {
+            throw (IOException) e;
+        } else {
+            throw new IOException("Error reading from cellbase " + toString(), e);
+        }
     }
 
     public boolean isMinVersion(String minVersion) throws IOException {

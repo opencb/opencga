@@ -87,14 +87,29 @@ jobs:
         with:
           mongodb-version: 6.0
           mongodb-replica-set: rs-test
-      - name: Maven build
+      - name: Maven build (skip tests)
         run: mvn -B clean install -DskipTests -P ${{ inputs.hadoop }} -Dcheckstyle.skip ${{ inputs.mvn_opts }}
+      - name: Build Junit log file name
+        id: BuildJunitLogFileName
+        run: |
+          MODULE=$(basename ${{ (inputs.module == '' || inputs.module == 'all') && 'opencga' || inputs.module }} )
+          if [[ -z "$MODULE" ]]; then
+            MODULE="opencga"
+          fi
+          TAGS=$(echo ${{ inputs.test_profile }} | sed -e 's/run\([^,]*\)Tests/\1/g'  | tr ',' '_' | tr '[:upper:]' '[:lower:]' )
+          echo "TESTS_LOG_FILE_NAME=junit_${{ inputs.hadoop }}_${TAGS}_${MODULE}.log.gz" >> $GITHUB_OUTPUT
       - name: Run Junit tests
-        run: mvn -B verify surefire-report:report --fail-never -Dsurefire.testFailureIgnore=true -f ${{ (inputs.module == '' || inputs.module == 'all') && '.' || inputs.module }} -P ${{ inputs.hadoop }},${{ inputs.test_profile }} -Dcheckstyle.skip ${{ inputs.mvn_opts }}
+        run: mvn -B verify surefire-report:report --fail-never -Dsurefire.testFailureIgnore=true -f ${{ (inputs.module == '' || inputs.module == 'all') && '.' || inputs.module }} -P ${{ inputs.hadoop }},${{ inputs.test_profile }} -Dcheckstyle.skip ${{ inputs.mvn_opts }}  |& tee >(gzip > ${{ steps.BuildJunitLogFileName.outputs.TESTS_LOG_FILE_NAME }} ) |& grep -P '^\[[^\]]*(INFO|WARNING|ERROR)' --colour=never --line-buffered
+      - name: Upload Junit test logs
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.BuildJunitLogFileName.outputs.TESTS_LOG_FILE_NAME }}
+          path: ${{ steps.BuildJunitLogFileName.outputs.TESTS_LOG_FILE_NAME }}
       - name: Publish Test Report on GitHub
         uses: scacap/action-surefire-report@v1
         env:
-          NODE_OPTIONS: '--max_old_space_size=4096'
+          NODE_OPTIONS: '--max_old_space_size=6144'
         ## Skip cancelled()
         ## https://docs.github.com/en/actions/learn-github-actions/expressions#cancelled
         if: success() || failure()

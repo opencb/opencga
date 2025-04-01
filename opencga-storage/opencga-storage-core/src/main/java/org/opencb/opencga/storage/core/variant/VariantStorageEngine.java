@@ -34,7 +34,6 @@ import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
 import org.opencb.opencga.core.models.variant.VariantSetupParams;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngine;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -57,9 +56,11 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnno
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
+import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.executors.*;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
@@ -284,6 +285,53 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         return exporter.export(outputFile, outputFormat, variantsFile, parsedVariantQuery);
     }
 
+    public List<URI> walkData(URI outputFile, VariantWriterFactory.VariantOutputFormat format, Query query, QueryOptions queryOptions,
+                              String dockerImage, String commandLine)
+            throws IOException, StorageEngineException {
+        if (format == VariantWriterFactory.VariantOutputFormat.VCF || format == VariantWriterFactory.VariantOutputFormat.VCF_GZ) {
+            if (!isValidParam(query, VariantQueryParam.UNKNOWN_GENOTYPE)) {
+                query.put(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.");
+            }
+        }
+        commandLine = commandLine.replace("'", "'\"'\"'");
+
+        String memory = getOptions().getString(WALKER_DOCKER_MEMORY.key(), WALKER_DOCKER_MEMORY.defaultValue());
+        String cpu = getOptions().getString(WALKER_DOCKER_CPU.key(), WALKER_DOCKER_CPU.defaultValue());
+        String user = getOptions().getString(WALKER_DOCKER_USER.key(), WALKER_DOCKER_USER.defaultValue());
+        String envs = getOptions().getString(WALKER_DOCKER_ENV.key(), WALKER_DOCKER_ENV.defaultValue());
+        String volume = getOptions().getString(WALKER_DOCKER_MOUNT.key(), WALKER_DOCKER_MOUNT.defaultValue());
+        String opts = getOptions().getString(WALKER_DOCKER_OPTS.key(), WALKER_DOCKER_OPTS.defaultValue());
+
+        String dockerCommandLine = "docker run --rm -i "
+                + "--memory " + memory + " "
+                + "--cpus " + cpu + " ";
+
+        if (StringUtils.isNotEmpty(user)) {
+            dockerCommandLine += "--user " + user + " ";
+        }
+
+        if (StringUtils.isNotEmpty(volume)) {
+            dockerCommandLine += "-v " + volume + ":/data ";
+        }
+
+        if (StringUtils.isNotEmpty(envs)) {
+            for (String s : envs.split(",")) {
+                dockerCommandLine += "--env " + s + " ";
+            }
+        }
+        dockerCommandLine = dockerCommandLine
+                + opts
+                + dockerImage + " bash -ce '" + commandLine + "'";
+        return walkData(outputFile, format, query, queryOptions, dockerCommandLine);
+    }
+
+
+    public List<URI> walkData(URI outputFile, VariantOutputFormat format, Query query, QueryOptions queryOptions,
+                                       String commandLine)
+            throws StorageEngineException {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * Creates a new {@link VariantExporter} for the current backend.
      * The default implementation iterates locally through the database.
@@ -312,6 +360,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     @Override
     public List<StoragePipelineResult> index(List<URI> inputFiles, URI outdirUri, boolean doExtract, boolean doTransform, boolean doLoad)
             throws StorageEngineException {
+        if (!doLoad) {
+            options.put(VariantStorageOptions.TRANSFORM_ISOLATE.key(), true);
+        } else {
+            createStudyIfNeeded();
+        }
         List<StoragePipelineResult> results = super.index(inputFiles, outdirUri, doExtract, doTransform, doLoad);
         if (doLoad) {
             annotateLoadedFiles(outdirUri, inputFiles, results, getOptions());
@@ -1161,6 +1214,14 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     @Override
     public abstract void testConnection() throws StorageEngineException;
 
+    public void validateNewConfiguration(ObjectMap params) throws StorageEngineException {
+        for (VariantStorageOptions option : VariantStorageOptions.values()) {
+            if (option.isProtected() && params.get(option.key()) != null) {
+                throw new StorageEngineException("Unable to update protected option '" + option.key() + "'");
+            }
+        }
+    }
+
     public void reloadCellbaseConfiguration() {
         cellBaseUtils = null;
     }
@@ -1358,7 +1419,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     public VariantQueryExecutor getVariantQueryExecutor(ParsedVariantQuery variantQuery) {
         try {
             for (VariantQueryExecutor executor : getVariantQueryExecutors()) {
-                if (executor.canUseThisExecutor(variantQuery, variantQuery.getInputOptions())) {
+                if (executor.acceptsQuery(variantQuery)) {
                     logger.info("Using VariantQueryExecutor : " + executor.getClass().getName());
                     logger.info("  Query : " + VariantQueryUtils.printQuery(variantQuery.getInputQuery()));
                     logger.info("  Options : " + variantQuery.getInputOptions().toJson());
@@ -1483,6 +1544,24 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             throw VariantQueryException.internalException(e);
         }
         return executors;
+    }
+
+    protected void createStudyIfNeeded() throws StorageEngineException {
+        String studyName = getOptions().getString(VariantStorageOptions.STUDY.key(), VariantStorageOptions.STUDY.defaultValue());
+        if (studyName == null || studyName.isEmpty()) {
+            throw new StorageEngineException("Missing study");
+        }
+        StudyMetadata studyMetadata = getMetadataManager().getStudyMetadata(studyName);
+        if (studyMetadata == null) {
+            logger.info("Creating a new StudyMetadata '{}'", studyName);
+            String cellbaseVersion;
+            try {
+                cellbaseVersion = getCellBaseUtils().getVersionFromServer();
+            } catch (IOException e) {
+                throw new StorageEngineException("Unable to get CellBase version", e);
+            }
+            getMetadataManager().createStudy(studyName, cellbaseVersion);
+        }
     }
 
     /**

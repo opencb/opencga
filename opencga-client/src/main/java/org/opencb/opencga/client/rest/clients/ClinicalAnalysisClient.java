@@ -19,9 +19,10 @@ package org.opencb.opencga.client.rest.clients;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.*;
+import org.opencb.opencga.core.client.ParentClient;
+import org.opencb.opencga.core.config.client.ClientConfiguration;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGeneSummary;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividualSummary;
@@ -65,7 +66,7 @@ import org.opencb.opencga.core.response.RestResponse;
  * This class contains methods for the ClinicalAnalysis webservices.
  *    PATH: analysis/clinical
  */
-public class ClinicalAnalysisClient extends AbstractParentClient {
+public class ClinicalAnalysisClient extends ParentClient {
 
     public ClinicalAnalysisClient(String token, ClientConfiguration configuration) {
         super(token, configuration);
@@ -88,6 +89,50 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
         params.putIfNotNull("action", action);
         params.put("body", data);
         return execute("analysis", null, "clinical/acl", members, "update", params, POST, ClinicalAnalysisAclEntryList.class);
+    }
+
+    /**
+     * Fetch catalog clinical analysis aggregation stats.
+     * @param params Map containing any of the following optional parameters.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
+     *       id: Comma separated list of Clinical Analysis IDs up to a maximum of 100. Also admits basic regular expressions using the
+     *            operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       uuid: Comma separated list of Clinical Analysis UUIDs up to a maximum of 100.
+     *       type: Clinical Analysis type.
+     *       disorder: Clinical Analysis disorder. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g.
+     *            '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       files: Clinical Analysis files.
+     *       sample: Sample associated to the proband or any member of a family.
+     *       individual: Proband or any member of a family.
+     *       proband: Clinical Analysis proband.
+     *       probandSamples: Clinical Analysis proband samples.
+     *       family: Clinical Analysis family.
+     *       familyMembers: Clinical Analysis family members.
+     *       familyMemberSamples: Clinical Analysis family members samples.
+     *       panels: Clinical Analysis panels.
+     *       locked: Locked Clinical Analyses.
+     *       analystId: Clinical Analysis analyst id.
+     *       priority: Clinical Analysis priority.
+     *       flags: Clinical Analysis flags.
+     *       creationDate: Clinical Analysis Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+     *       modificationDate: Clinical Analysis Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+     *       dueDate: Clinical Analysis due date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+     *       qualityControlSummary: Clinical Analysis quality control summary.
+     *       release: Release when it was created.
+     *       snapshot: Snapshot value (Latest version of the entry in the specified release).
+     *       status: Filter by status.
+     *       internalStatus: Filter by internal status.
+     *       annotation: Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit
+     *            http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
+     *       deleted: Boolean to retrieve deleted entries.
+     *       field: Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.:
+     *            studies;type;numSamples[0..10]:1;format:sum(size).
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<FacetField> aggregationStats(ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("analysis", null, "clinical", null, "aggregationStats", params, GET, FacetField.class);
     }
 
     /**
@@ -188,6 +233,36 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
         params = params != null ? params : new ObjectMap();
         params.putIfNotNull("field", field);
         return execute("analysis", null, "clinical", null, "distinct", params, GET, ObjectMap.class);
+    }
+
+    /**
+     * Fetch catalog interpretation aggregation stats.
+     * @param params Map containing any of the following optional parameters.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
+     *       id: Comma separated list of Interpretation IDs up to a maximum of 100. Also admits basic regular expressions using the
+     *            operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       uuid: Comma separated list of Interpretation UUIDs up to a maximum of 100.
+     *       name: Comma separated list of Interpretation names up to a maximum of 100.
+     *       clinicalAnalysisId: Clinical Analysis id.
+     *       analystId: Analyst ID.
+     *       methodName: Interpretation method name. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}'
+     *            e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       panels: Interpretation panels.
+     *       primaryFindings: Interpretation primary findings.
+     *       secondaryFindings: Interpretation secondary findings.
+     *       creationDate: Interpretation Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+     *       modificationDate: Interpretation Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+     *       status: Filter by status.
+     *       internalStatus: Filter by internal status.
+     *       release: Release when it was created.
+     *       field: Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.:
+     *            studies;type;numSamples[0..10]:1;format:sum(size).
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<FacetField> aggregationStatsInterpretation(ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("analysis", null, "clinical/interpretation", null, "aggregationStats", params, GET, FacetField.class);
     }
 
     /**
@@ -762,8 +837,8 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *            is specified, will use all files from "file" filter. e.g. AN>200 or file_1.vcf:AN>200;file_2.vcf:AN<10 . Many fields can
      *            be combined. e.g. file_1.vcf:AN>200;DB=true;file_2.vcf:AN<10,FILTER=PASS,LowDP.
      *       sample: Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This
-     *            filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND (;) and OR (,)
-     *            operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,)
+     *            filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND ';' and OR ','
+     *            operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND ';' and OR ','
      *            operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g.
      *            0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match,
      *            regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF,
@@ -826,6 +901,11 @@ public class ClinicalAnalysisClient extends AbstractParentClient {
      *       panelFeatureType: Filter elements from specific panels by type. Accepted values : [ gene, region, str, variant ].
      *       panelIntersection: Intersect panel genes and regions with given genes and regions from que input query. This will prevent
      *            returning variants from regions out of the panel.
+     *       source: Select the variant data source from where to fetch the data. Accepted values are 'variant_index' (default) and
+     *            'secondary_sample_index'. When selecting a secondary_index, the data will be retrieved exclusively from that secondary
+     *            index, and the 'include/exclude' parameters will be ignored. If the given query can not be fully resolved using the
+     *            secondary index, an exception will be raised. As the returned variants will only contain data from the secondary_index,
+     *            some data might be missing or be partial.
      *       trait: List of traits, based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.

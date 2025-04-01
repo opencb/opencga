@@ -22,10 +22,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.common.Status;
 import org.opencb.biodata.models.variant.StudyEntry;
-import org.opencb.commons.datastore.core.Event;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
@@ -470,6 +467,24 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         finalQuery.append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         return getCohortDBAdaptor(organizationId).iterator(study.getUid(), finalQuery, options, userId);
+    }
+
+    @Override
+    public OpenCGAResult<FacetField> facet(String studyStr, Query query, String facet, String token) throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+
+        Study study = catalogManager.getStudyManager().resolveId(studyFqn, StudyManager.INCLUDE_VARIABLE_SET, tokenPayload);
+
+        Query finalQuery = new Query(query);
+        fixQueryObject(organizationId, study, finalQuery, userId);
+        finalQuery.append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+
+        return getCohortDBAdaptor(organizationId).facet(study.getUid(), finalQuery, facet, userId);
     }
 
     @Override
@@ -1349,7 +1364,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, tokenPayload);
         String organizationId = studyFqn.getOrganizationId();
         String userId = tokenPayload.getUserId(organizationId);
-        Study study = studyManager.resolveId(studyId, StudyManager.INCLUDE_STUDY_UID, userId, organizationId);
+        Study study = studyManager.resolveId(studyId, StudyManager.INCLUDE_CONFIGURATION, userId, organizationId);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)
@@ -1391,6 +1406,13 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             }
             authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
             checkMembers(organizationId, study.getUid(), members);
+            if (study.getInternal().isFederated()) {
+                try {
+                    checkIsNotAFederatedUser(organizationId, members);
+                } catch (CatalogException e) {
+                    throw new CatalogException("Cannot provide access to federated users to a federated study.", e);
+                }
+            }
 
             List<Long> cohortUids = cohortList.stream().map(Cohort::getUid).collect(Collectors.toList());
 

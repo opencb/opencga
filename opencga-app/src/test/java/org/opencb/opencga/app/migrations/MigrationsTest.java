@@ -8,7 +8,10 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
+import org.opencb.opencga.app.migrations.v3.v3_1_0.UserBanMigration;
 import org.opencb.opencga.app.migrations.v3.v3_2_0.VariantSetupMigration;
+import org.opencb.opencga.app.migrations.v3.v3_2_1.MoveUserAccountToInternalMigration;
+import org.opencb.opencga.app.migrations.v4.v4_0_0.catalog.AddNewNoteTypeMigration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.migration.Migration;
 import org.opencb.opencga.catalog.migration.MigrationTool;
@@ -27,8 +30,29 @@ public class MigrationsTest {
     public OpenCGATestExternalResource opencga;
 
     @Test
-    public void testVariantSetupMigration() throws Exception {
+    public void testUserBanMigration() throws Exception {
         setup("v3.0.0", false);
+
+        runMigration(UserBanMigration.class);
+    }
+
+    @Test
+    public void testMoveUserAccountToInternalMigration() throws Exception {
+        setup("v3.1.0", false);
+
+        runMigration(MoveUserAccountToInternalMigration.class);
+    }
+
+    @Test
+    public void testAddNewNoteTypeMigration() throws Exception {
+        setup("v3.2.1", false);
+
+        runMigration(AddNewNoteTypeMigration.class);
+    }
+
+    @Test
+    public void testVamoriantSetupMigration() throws Exception {
+        setup("v3.1.0", false);
         String studyName = "test@1000G:phase1";
 
         VariantStorageMetadataManager metadataManager = opencga.getVariantStorageEngineByProject("test@1000G").getMetadataManager();

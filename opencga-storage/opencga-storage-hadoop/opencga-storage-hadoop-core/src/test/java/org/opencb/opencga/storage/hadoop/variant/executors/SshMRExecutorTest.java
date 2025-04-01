@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.executors;
 
+import org.apache.hadoop.conf.Configuration;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -36,14 +37,14 @@ public class SshMRExecutorTest {
 
     @Test
     public void testFactory() throws StorageEngineException {
-        MRExecutor mrExecutor = MRExecutorFactory.getMRExecutor(options);
+        MRExecutor mrExecutor = MRExecutorFactory.getMRExecutor("", options, new Configuration());
         assertThat(mrExecutor, instanceOf(SshMRExecutor.class));
     }
 
     @Test
     public void testRun() throws StorageEngineException {
         SshMRExecutor sshMRExecutor = new SshMRExecutor();
-        sshMRExecutor.init(options);
+        sshMRExecutor.init("", new Configuration(), options);
 
         String cmd = sshMRExecutor.buildCommand("echo", "hello world", HadoopVariantStorageOptions.MR_EXECUTOR_SSH_PASSWORD.key(), "password");
         assertEquals("/opt/opencga/misc/scripts/hadoop-ssh.sh echo \"hello world\" " + HadoopVariantStorageOptions.MR_EXECUTOR_SSH_PASSWORD.key() + " _redacted_", cmd);
@@ -57,7 +58,7 @@ public class SshMRExecutorTest {
     @Test
     public void testChangeRemoteOpenCGAHome() throws StorageEngineException {
         SshMRExecutor sshMRExecutor = new SshMRExecutor();
-        sshMRExecutor.init(options.append(HadoopVariantStorageOptions.MR_EXECUTOR_SSH_REMOTE_OPENCGA_HOME.key(), "/home/user/opencga"));
+        sshMRExecutor.init("", new Configuration(), options.append(HadoopVariantStorageOptions.MR_EXECUTOR_SSH_REMOTE_OPENCGA_HOME.key(), "/home/user/opencga"));
 
         String hadoopClasspath = "/opt/opencga/libs/myLib.jar::/opt/opencga/libs/myLibOther.jar:/opt/opencga/conf/hadoop";
         String expectedHadoopClasspath = "/home/user/opencga/libs/myLib.jar:/home/user/opencga/libs/myLibOther.jar:/home/user/opencga/conf/hadoop";

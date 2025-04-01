@@ -665,7 +665,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
     @Override
     OpenCGAResult<File> transactionalUpdate(ClientSession clientSession, File file, ObjectMap parameters,
-                                            List<VariableSet> variableSetList, QueryOptions queryOptions)
+                                            List<VariableSet> variableSetList, QueryOptions queryOptions, boolean incrementVersion)
             throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
         variableSetList = ParamUtils.defaultObject(variableSetList, Collections::emptyList);
         queryOptions = ParamUtils.defaultObject(queryOptions, QueryOptions::empty);
@@ -726,8 +726,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     }
 
     @Override
-    OpenCGAResult<File> transactionalUpdate(ClientSession clientSession, long studyUid, Bson query, UpdateDocument updateDocument)
-            throws CatalogDBException {
+    OpenCGAResult<File> transactionalUpdate(ClientSession clientSession, long studyUid, Bson query, UpdateDocument updateDocument,
+                                            boolean incrementVersion) throws CatalogDBException {
         long tmpStartTime = startQuery();
 
         Document fileUpdate = updateDocument.toFinalUpdateDocument();
@@ -1695,6 +1695,13 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     }
 
     @Override
+    public OpenCGAResult<FacetField> facet(long studyUid, Query query, String facet, String userId)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        Bson bson = parseQuery(query, userId);
+        return facet(fileCollection, bson, facet);
+    }
+
+    @Override
     public void forEach(Query query, Consumer<? super Object> action, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Objects.requireNonNull(action);
@@ -1840,6 +1847,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                         break;
                     case UUID:
                     case EXTERNAL:
+                    case RESOURCE:
                     case TYPE:
                     case URI:
                     case ID:

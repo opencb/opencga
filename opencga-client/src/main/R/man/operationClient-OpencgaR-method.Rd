@@ -13,15 +13,15 @@
 
 \item{annotationId}{Annotation identifier.}
 
-\item{skipRebuild}{Skip sample index re-build.}
-
 \item{name}{Unique name of the score within the study.}
 
 \item{resume}{Resume a previously failed remove.}
 
 \item{force}{Force remove of partially indexed scores.}
 
-\item{project}{Project \link{user@}project where project can be either the ID or the alias.}
+\item{skipRebuild}{Skip sample index re-build.}
+
+\item{project}{Project \link{organization@}project where project can be either the ID or the alias.}
 
 \item{samples}{Samples to remove. Needs to provide all the samples in the secondary index.}
 
@@ -33,7 +33,13 @@
 
 \item{jobTags}{Job tags.}
 
-\item{study}{Study [\link{user@}project:]study where study and project can be either the ID or UUID.}
+\item{jobScheduledStartTime}{Time when the job is scheduled to start.}
+
+\item{jobPriority}{Priority of the job.}
+
+\item{jobDryRun}{Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.}
+
+\item{study}{Study [\link{organization@}project:]study where study and project can be either the ID or UUID.}
 
 \item{data}{Variant delete study params.}
 }
@@ -42,29 +48,34 @@ This function implements the OpenCGA calls for managing Operations - Variant Sto
 The following table summarises the available \emph{actions} for this client:\tabular{llr}{
    endpointName \tab Endpoint WS \tab parameters accepted \cr
    configureCellbase \tab /{apiVersion}/operation/cellbase/configure \tab project, annotationUpdate, annotationSaveId, body \cr
-   aggregateVariant \tab /{apiVersion}/operation/variant/aggregate \tab jobId, jobDescription, jobDependsOn, jobTags, study, body \cr
-   deleteVariantAnnotation \tab /{apiVersion}/operation/variant/annotation/delete \tab jobId, jobDescription, jobDependsOn, jobTags, project, annotationId \cr
-   indexVariantAnnotation \tab /{apiVersion}/operation/variant/annotation/index \tab jobId, jobDescription, jobDependsOn, jobTags, project, study, body \cr
-   saveVariantAnnotation \tab /{apiVersion}/operation/variant/annotation/save \tab jobId, jobDescription, jobDependsOn, jobTags, project, body \cr
+   aggregateVariant \tab /{apiVersion}/operation/variant/aggregate \tab jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, study, body \cr
+   deleteVariantAnnotation \tab /{apiVersion}/operation/variant/annotation/delete \tab jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, project, annotationId \cr
+   indexVariantAnnotation \tab /{apiVersion}/operation/variant/annotation/index \tab jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, project, study, body \cr
+   saveVariantAnnotation \tab /{apiVersion}/operation/variant/annotation/save \tab jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, project, body \cr
    configureVariant \tab /{apiVersion}/operation/variant/configure \tab project, study, body \cr
-   deleteVariant \tab /{apiVersion}/operation/variant/delete \tab jobId, jobDescription, jobDependsOn, jobTags, study, body \cr
-   aggregateVariantFamily \tab /{apiVersion}/operation/variant/family/aggregate \tab jobId, jobDescription, jobDependsOn, jobTags, study, body \cr
-   indexVariantFamily \tab /{apiVersion}/operation/variant/family/index \tab jobId, jobDescription, jobDependsOn, jobTags, study, body \cr
-   indexVariant \tab /{apiVersion}/operation/variant/index \tab jobId, jobDescription, jobDependsOn, jobTags, study, body \cr
-   launcherVariantIndex \tab /{apiVersion}/operation/variant/index/launcher \tab jobId, jobDescription, jobDependsOn, jobTags, study, body \cr
-   runVariantJulie \tab /{apiVersion}/operation/variant/julie/run \tab jobId, jobDescription, jobDependsOn, jobTags, project, body\link{*} \cr
-   repairVariantMetadata \tab /{apiVersion}/operation/variant/metadata/repair \tab jobId, jobDescription, jobDependsOn, jobTags, body \cr
-   synchronizeVariantMetadata \tab /{apiVersion}/operation/variant/metadata/synchronize \tab jobId, jobDescription, jobDependsOn, jobTags, study, body \cr
-   deleteVariantSample \tab /{apiVersion}/operation/variant/sample/delete \tab jobId, jobDescription, jobDependsOn, jobTags, study, body \cr
-   indexVariantSample \tab /{apiVersion}/operation/variant/sample/index \tab jobId, jobDescription, jobDependsOn, jobTags, study, body \cr
+   deleteVariant \tab /{apiVersion}/operation/variant/delete \tab jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, study, body \cr
+   aggregateVariantFamily \tab /{apiVersion}/operation/variant/family/aggregate \tab jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, study, body \cr
+   indexVariantFamily \tab /{apiVersion}/operation/variant/family/index \tab jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, study, body \cr
+   indexVariant \tab /{apiVersion}/operation/variant/index \tab jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, study, body \cr
+   launcherVariantIndex \tab /{apiVersion}/operation/variant/index/launcher \tab jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, study, body \cr
+   runVariantJulie \tab /{apiVersion}/operation/variant/julie/run \tab jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, project, body\link{*} \cr
+   repairVariantMetadata \tab /{apiVersion}/operation/variant/metadata/repair \tab jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body \cr
+   synchronizeVariantMetadata \tab /{apiVersion}/operation/variant/metadata/synchronize \tab jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, study, body \cr
+   pruneVariant \tab /{apiVersion}/operation/variant/prune \tab jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body \cr
+   deleteVariantSample \tab /{apiVersion}/operation/variant/sample/delete \tab jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, study, body \cr
+   indexVariantSample \tab /{apiVersion}/operation/variant/sample/index \tab jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, study, body \cr
    variantSampleIndexConfigure \tab /{apiVersion}/operation/variant/sample/index/configure \tab study, skipRebuild, body \cr
-   deleteVariantScore \tab /{apiVersion}/operation/variant/score/delete \tab jobId, jobDescription, jobDependsOn, jobTags, study, name, resume, force \cr
-   indexVariantScore \tab /{apiVersion}/operation/variant/score/index \tab jobId, jobDescription, jobDependsOn, jobTags, study, body \cr
-   secondaryIndexVariant \tab /{apiVersion}/operation/variant/secondaryIndex \tab jobId, jobDescription, jobDependsOn, jobTags, project, study, body \cr
-   deleteVariantSecondaryIndex \tab /{apiVersion}/operation/variant/secondaryIndex/delete \tab jobId, jobDescription, jobDependsOn, jobTags, study, samples \cr
-   deleteVariantStats \tab /{apiVersion}/operation/variant/stats/delete \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
-   indexVariantStats \tab /{apiVersion}/operation/variant/stats/index \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
-   deleteVariantStudy \tab /{apiVersion}/operation/variant/study/delete \tab jobId, jobDescription, jobDependsOn, jobTags, study, body \cr
+   deleteVariantScore \tab /{apiVersion}/operation/variant/score/delete \tab jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, study, name, resume, force \cr
+   indexVariantScore \tab /{apiVersion}/operation/variant/score/index \tab jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, study, body \cr
+   variantSecondaryAnnotationIndex \tab /{apiVersion}/operation/variant/secondary/annotation/index \tab jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, project, study, body \cr
+   variantSecondarySampleIndex \tab /{apiVersion}/operation/variant/secondary/sample/index \tab jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, study, body \cr
+   configureVariantSecondarySampleIndex \tab /{apiVersion}/operation/variant/secondary/sample/index/configure \tab study, skipRebuild, body \cr
+   secondaryIndexVariant \tab /{apiVersion}/operation/variant/secondaryIndex \tab jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, project, study, body \cr
+   deleteVariantSecondaryIndex \tab /{apiVersion}/operation/variant/secondaryIndex/delete \tab jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, study, samples \cr
+   setupVariant \tab /{apiVersion}/operation/variant/setup \tab study, body \cr
+   deleteVariantStats \tab /{apiVersion}/operation/variant/stats/delete \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
+   indexVariantStats \tab /{apiVersion}/operation/variant/stats/index \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
+   deleteVariantStudy \tab /{apiVersion}/operation/variant/study/delete \tab jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, study, body \cr
 }
 }
 \section{Endpoint /{apiVersion}/operation/cellbase/configure}{
@@ -109,7 +120,7 @@ Find variants where not all the samples are present, and fill the empty values.
 
 \section{Endpoint /{apiVersion}/operation/variant/family/index}{
 
-Build the family index.
+DEPRECATED: integrated in index (DEPRECATED Build the family index).
 }
 
 \section{Endpoint /{apiVersion}/operation/variant/index}{
@@ -137,6 +148,11 @@ Execute some repairs on Variant Storage Metadata. Advanced users only.
 Synchronize catalog with variant storage metadata.
 }
 
+\section{Endpoint /{apiVersion}/operation/variant/prune}{
+
+Prune orphan variants from studies in a project.
+}
+
 \section{Endpoint /{apiVersion}/operation/variant/sample/delete}{
 
 Remove variant samples from the variant storage.
@@ -144,12 +160,12 @@ Remove variant samples from the variant storage.
 
 \section{Endpoint /{apiVersion}/operation/variant/sample/index}{
 
-Build and annotate the sample index.
+DEPRECATED You should use the new sample index method instead.
 }
 
 \section{Endpoint /{apiVersion}/operation/variant/sample/index/configure}{
 
-Update SampleIndex configuration.
+DEPRECATED You should use the new sample index configure method.
 }
 
 \section{Endpoint /{apiVersion}/operation/variant/score/delete}{
@@ -162,14 +178,34 @@ Remove a variant score in the database.
 Index a variant score in the database.
 }
 
+\section{Endpoint /{apiVersion}/operation/variant/secondary/annotation/index}{
+
+Creates a secondary index using a search engine. If samples are provided, sample data will be added to the secondary index. (New!).
+}
+
+\section{Endpoint /{apiVersion}/operation/variant/secondary/sample/index}{
+
+Build and annotate the sample index. (New!) .
+}
+
+\section{Endpoint /{apiVersion}/operation/variant/secondary/sample/index/configure}{
+
+Update SampleIndex configuration (New!).
+}
+
 \section{Endpoint /{apiVersion}/operation/variant/secondaryIndex}{
 
-Creates a secondary index using a search engine. If samples are provided, sample data will be added to the secondary index.
+DEPRECATED you should use the new annotation index method instead.
 }
 
 \section{Endpoint /{apiVersion}/operation/variant/secondaryIndex/delete}{
 
 Remove a secondary index from the search engine for a specific set of samples.
+}
+
+\section{Endpoint /{apiVersion}/operation/variant/setup}{
+
+Execute Variant Setup to allow using the variant engine. This setup is necessary before starting any variant operation.
 }
 
 \section{Endpoint /{apiVersion}/operation/variant/stats/delete}{

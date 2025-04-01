@@ -22,8 +22,8 @@ import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.SaveInterpretationAs;
 import org.opencb.opencga.catalog.utils.ParamUtils.UpdateAction;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGeneSummary;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividualSummary;
@@ -103,6 +103,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             case "acl-update":
                 queryResponse = updateAcl();
                 break;
+            case "aggregationstats":
+                queryResponse = aggregationStats();
+                break;
             case "annotation-sets-load":
                 queryResponse = loadAnnotationSets();
                 break;
@@ -114,6 +117,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "distinct":
                 queryResponse = distinct();
+                break;
+            case "interpretation-aggregation-stats":
+                queryResponse = aggregationStatsInterpretation();
                 break;
             case "interpretation-distinct":
                 queryResponse = distinctInterpretation();
@@ -246,6 +252,48 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), ClinicalAnalysisAclUpdateParams.class);
         }
         return openCGAClient.getClinicalAnalysisClient().updateAcl(commandOptions.members, commandOptions.action, clinicalAnalysisAclUpdateParams, queryParams);
+    }
+
+    private RestResponse<FacetField> aggregationStats() throws Exception {
+        logger.debug("Executing aggregationStats in Analysis - Clinical command line");
+
+        AnalysisClinicalCommandOptions.AggregationStatsCommandOptions commandOptions = analysisClinicalCommandOptions.aggregationStatsCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("id", commandOptions.id);
+        queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
+        queryParams.putIfNotEmpty("type", commandOptions.type);
+        queryParams.putIfNotEmpty("disorder", commandOptions.disorder);
+        queryParams.putIfNotEmpty("files", commandOptions.files);
+        queryParams.putIfNotEmpty("sample", commandOptions.sample);
+        queryParams.putIfNotEmpty("individual", commandOptions.individual);
+        queryParams.putIfNotEmpty("proband", commandOptions.proband);
+        queryParams.putIfNotEmpty("probandSamples", commandOptions.probandSamples);
+        queryParams.putIfNotEmpty("family", commandOptions.family);
+        queryParams.putIfNotEmpty("familyMembers", commandOptions.familyMembers);
+        queryParams.putIfNotEmpty("familyMemberSamples", commandOptions.familyMemberSamples);
+        queryParams.putIfNotEmpty("panels", commandOptions.panels);
+        queryParams.putIfNotNull("locked", commandOptions.locked);
+        queryParams.putIfNotEmpty("analystId", commandOptions.analystId);
+        queryParams.putIfNotEmpty("priority", commandOptions.priority);
+        queryParams.putIfNotEmpty("flags", commandOptions.flags);
+        queryParams.putIfNotEmpty("creationDate", commandOptions.creationDate);
+        queryParams.putIfNotEmpty("modificationDate", commandOptions.modificationDate);
+        queryParams.putIfNotEmpty("dueDate", commandOptions.dueDate);
+        queryParams.putIfNotEmpty("qualityControlSummary", commandOptions.qualityControlSummary);
+        queryParams.putIfNotEmpty("release", commandOptions.release);
+        queryParams.putIfNotNull("snapshot", commandOptions.snapshot);
+        queryParams.putIfNotEmpty("status", commandOptions.status);
+        queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
+        queryParams.putIfNotEmpty("annotation", commandOptions.annotation);
+        queryParams.putIfNotNull("deleted", commandOptions.deleted);
+        queryParams.putIfNotEmpty("field", commandOptions.field);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+        return openCGAClient.getClinicalAnalysisClient().aggregationStats(queryParams);
     }
 
     private RestResponse<Job> loadAnnotationSets() throws Exception {
@@ -430,6 +478,35 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         }
 
         return openCGAClient.getClinicalAnalysisClient().distinct(commandOptions.field, queryParams);
+    }
+
+    private RestResponse<FacetField> aggregationStatsInterpretation() throws Exception {
+        logger.debug("Executing aggregationStatsInterpretation in Analysis - Clinical command line");
+
+        AnalysisClinicalCommandOptions.AggregationStatsInterpretationCommandOptions commandOptions = analysisClinicalCommandOptions.aggregationStatsInterpretationCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("id", commandOptions.id);
+        queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
+        queryParams.putIfNotEmpty("name", commandOptions.name);
+        queryParams.putIfNotEmpty("clinicalAnalysisId", commandOptions.clinicalAnalysisId);
+        queryParams.putIfNotEmpty("analystId", commandOptions.analystId);
+        queryParams.putIfNotEmpty("methodName", commandOptions.methodName);
+        queryParams.putIfNotEmpty("panels", commandOptions.panels);
+        queryParams.putIfNotEmpty("primaryFindings", commandOptions.primaryFindings);
+        queryParams.putIfNotEmpty("secondaryFindings", commandOptions.secondaryFindings);
+        queryParams.putIfNotEmpty("creationDate", commandOptions.creationDate);
+        queryParams.putIfNotEmpty("modificationDate", commandOptions.modificationDate);
+        queryParams.putIfNotEmpty("status", commandOptions.status);
+        queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
+        queryParams.putIfNotEmpty("release", commandOptions.release);
+        queryParams.putIfNotEmpty("field", commandOptions.field);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+        return openCGAClient.getClinicalAnalysisClient().aggregationStatsInterpretation(queryParams);
     }
 
     private RestResponse<ObjectMap> distinctInterpretation() throws Exception {
@@ -1227,6 +1304,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("panelRoleInCancer", commandOptions.panelRoleInCancer);
         queryParams.putIfNotEmpty("panelFeatureType", commandOptions.panelFeatureType);
         queryParams.putIfNotNull("panelIntersection", commandOptions.panelIntersection);
+        queryParams.putIfNotEmpty("source", commandOptions.source);
         queryParams.putIfNotEmpty("trait", commandOptions.trait);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());

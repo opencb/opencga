@@ -28,10 +28,11 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.IPrivateStudyUid;
 import org.opencb.opencga.core.models.study.Group;
+import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -141,6 +142,10 @@ public abstract class AbstractManager {
         return getCatalogDBAdaptorFactory().getInterpretationDBAdaptor(organization);
     }
 
+    protected WorkflowDBAdaptor getWorkflowDBAdaptor(String organization) throws CatalogDBException {
+        return catalogDBAdaptorFactory.getWorkflowDBAdaptor(organization);
+    }
+
     protected void fixQueryObject(Query query) {
         changeQueryId(query, ParamConstants.INTERNAL_STATUS_PARAM, "internal.status");
     }
@@ -177,9 +182,8 @@ public abstract class AbstractManager {
      * @return the OpenCGAResult with the proper order of results.
      * @throws CatalogException In case of inconsistencies found.
      */
-    <T extends IPrivateStudyUid> InternalGetDataResult<T> keepOriginalOrder(List<String> entries, Function<T, String> getId,
-                                                                            OpenCGAResult<T> queryResult, boolean silent,
-                                                                            boolean keepAllVersions) throws CatalogException {
+    <T> InternalGetDataResult<T> keepOriginalOrder(List<String> entries, Function<T, String> getId, OpenCGAResult<T> queryResult,
+                                                   boolean silent, boolean keepAllVersions) throws CatalogException {
         InternalGetDataResult<T> internalGetDataResult = new InternalGetDataResult<>(queryResult);
 
         Map<String, List<T>> resultMap = new HashMap<>();
@@ -264,8 +268,7 @@ public abstract class AbstractManager {
      * @param <T>             Generic entry (Sample, File, Cohort...)
      * @return a list containing the entries that are in {@code originalEntries} that are not in {@code finalEntries}.
      */
-    <T extends IPrivateStudyUid> List<String> getMissingFields(List<String> originalEntries, List<T> finalEntries,
-                                                               Function<T, String> getId) {
+    <T> List<String> getMissingFields(List<String> originalEntries, List<T> finalEntries, Function<T, String> getId) {
         Set<String> entrySet = new HashSet<>();
         for (T finalEntry : finalEntries) {
             entrySet.add(getId.apply(finalEntry));
@@ -279,6 +282,25 @@ public abstract class AbstractManager {
         }
 
         return differences;
+    }
+
+    protected void checkIsNotAFederatedUser(String organizationId, List<String> users) throws CatalogException {
+        if (CollectionUtils.isNotEmpty(users)) {
+            Query query = new Query(UserDBAdaptor.QueryParams.ID.key(), users);
+            OpenCGAResult<User> result = catalogDBAdaptorFactory.getCatalogUserDBAdaptor(organizationId).get(query,
+                    UserManager.INCLUDE_INTERNAL);
+            if (result.getNumResults() != users.size()) {
+                throw new CatalogException("Some users were not found.");
+            }
+            for (User user : result.getResults()) {
+                ParamUtils.checkObj(user.getInternal(), "internal");
+                ParamUtils.checkObj(user.getInternal().getAccount(), "internal.account");
+                ParamUtils.checkObj(user.getInternal().getAccount().getAuthentication(), "internal.account.authentication");
+                if (user.getInternal().getAccount().getAuthentication().isFederation()) {
+                    throw new CatalogException("User '" + user.getId() + "' is a federated user.");
+                }
+            }
+        }
     }
 
     /**
