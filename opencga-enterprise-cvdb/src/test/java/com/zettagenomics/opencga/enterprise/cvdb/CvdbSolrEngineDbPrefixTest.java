@@ -33,7 +33,7 @@ import java.util.Arrays;
 import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.CLINICAL_ANALYSES_COLLECTION_SUFFIX;
 import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.ADMIN_PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.PASSWORD;
-import static com.zettagenomics.opencga.enterprise.cvdb.parsers.CollectionPrefixUtils.CVDB_DBPREFIX_KEY;
+import static com.zettagenomics.opencga.enterprise.cvdb.parsers.CollectionPrefixUtils.OPENCGA_CVDB_DBPREFIX_KEY;
 import static org.junit.Assert.*;
 
 public class CvdbSolrEngineDbPrefixTest {
@@ -99,14 +99,14 @@ public class CvdbSolrEngineDbPrefixTest {
 
         ObjectMap objectMap = new ObjectMap();
         ObjectMap attrs = new ObjectMap();
-        attrs.put(CVDB_DBPREFIX_KEY, CVDB_PREFIX);
+        attrs.put(OPENCGA_CVDB_DBPREFIX_KEY, CVDB_PREFIX);
         objectMap.put(ProjectDBAdaptor.QueryParams.ATTRIBUTES.key(), attrs);
 
         OpenCGAResult<Project> update = catalogManager.getProjectManager().update(projectId, objectMap, INCLUDE_RESULT, userToken);
         assertEquals(1, update.getNumResults());
         assertTrue(MapUtils.isNotEmpty(update.first().getAttributes()));
-        assertTrue(update.first().getAttributes().containsKey(CVDB_DBPREFIX_KEY));
-        assertEquals(CVDB_PREFIX, update.first().getAttributes().get(CVDB_DBPREFIX_KEY));
+        assertTrue(update.first().getAttributes().containsKey(OPENCGA_CVDB_DBPREFIX_KEY));
+        assertEquals(CVDB_PREFIX, update.first().getAttributes().get(OPENCGA_CVDB_DBPREFIX_KEY));
 
         study = catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null,
                 INCLUDE_RESULT, userToken).first();

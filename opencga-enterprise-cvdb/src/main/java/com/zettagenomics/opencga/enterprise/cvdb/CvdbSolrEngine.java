@@ -85,7 +85,7 @@ import java.util.stream.Collectors;
 
 import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.*;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
-import static com.zettagenomics.opencga.enterprise.cvdb.parsers.CollectionPrefixUtils.CVDB_DBPREFIX_KEY;
+import static com.zettagenomics.opencga.enterprise.cvdb.parsers.CollectionPrefixUtils.OPENCGA_CVDB_DBPREFIX_KEY;
 import static org.opencb.commons.datastore.core.QueryOptions.*;
 import static org.opencb.opencga.core.api.ParamConstants.ANONYMOUS_USER_ID;
 import static org.opencb.opencga.core.models.clinical.CvdbIndexStatus.ERROR;
@@ -1140,7 +1140,7 @@ public class CvdbSolrEngine {
         String organizationId = jwtPayload.getOrganization();
 
         String collectionPrefix = CollectionPrefixUtils.getInstance(catalogManager).getCollectionPrefix(organizationId, projectId, token);
-        queryOptions.put(CVDB_DBPREFIX_KEY, collectionPrefix);
+        queryOptions.put(OPENCGA_CVDB_DBPREFIX_KEY, collectionPrefix);
     }
 
     private void checkFacet(Query query, QueryOptions queryOptions, String token) throws CvdbException, CatalogException {

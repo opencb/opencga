@@ -28,14 +28,12 @@ import java.util.Map;
 
 public class CollectionPrefixUtils {
 
-    public static final String CVDB_DBPREFIX_KEY = "CVDB_DBPREFIX";
+    public static final String OPENCGA_CVDB_DBPREFIX_KEY = "OPENCGA_CVDB_DBPREFIX";
     public static final String CVDB_SEP = "_";
 
     private static CollectionPrefixUtils instance;
     private Map<String, String> collectionPrefixMap;
     private CatalogManager catalogManager;
-
-    private static final String KEY_SEP = "===";
 
     private CollectionPrefixUtils(CatalogManager catalogManager) {
         this.catalogManager = catalogManager;
@@ -50,14 +48,13 @@ public class CollectionPrefixUtils {
     }
 
     public String getCollectionPrefix(String organizationId, String projectId, String token) throws CatalogException {
-        String key = organizationId + KEY_SEP + projectId;
+        String key = organizationId + "===" + projectId;
         if (!collectionPrefixMap.containsKey(key)) {
-
             Project project = catalogManager.getProjectManager().get(projectId, new QueryOptions(QueryOptions.INCLUDE, "attributes"), token)
                     .first();
             String dbPrefix = null;
-            if (MapUtils.isNotEmpty(project.getAttributes()) && project.getAttributes().containsKey(CVDB_DBPREFIX_KEY)) {
-                dbPrefix = (String) project.getAttributes().get(CVDB_DBPREFIX_KEY);
+            if (MapUtils.isNotEmpty(project.getAttributes()) && project.getAttributes().containsKey(OPENCGA_CVDB_DBPREFIX_KEY)) {
+                dbPrefix = (String) project.getAttributes().get(OPENCGA_CVDB_DBPREFIX_KEY);
             }
             if ( StringUtils.isEmpty(dbPrefix)) {
                 dbPrefix = catalogManager.getConfiguration().getDatabasePrefix();

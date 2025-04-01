@@ -24,7 +24,6 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.solr.FacetQueryParser;
-import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -39,8 +38,7 @@ import java.util.*;
 import static com.zettagenomics.opencga.enterprise.cvdb.converters.SearchConverter.simpleDateFormat;
 import static com.zettagenomics.opencga.enterprise.cvdb.converters.SearchConverter.solrDateFormat;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
-import static com.zettagenomics.opencga.enterprise.cvdb.parsers.CollectionPrefixUtils.CVDB_DBPREFIX_KEY;
-import static com.zettagenomics.opencga.enterprise.cvdb.parsers.CollectionPrefixUtils.CVDB_SEP;
+import static com.zettagenomics.opencga.enterprise.cvdb.parsers.CollectionPrefixUtils.OPENCGA_CVDB_DBPREFIX_KEY;
 
 public class ClinicalQueryParser {
 
@@ -456,11 +454,11 @@ public class ClinicalQueryParser {
     }
 
     protected String getCollectionPrefix(QueryOptions queryOptions) throws CvdbException {
-        if (!queryOptions.containsKey(CVDB_DBPREFIX_KEY)) {
+        if (!queryOptions.containsKey(OPENCGA_CVDB_DBPREFIX_KEY)) {
             throw new CvdbException("Missing CVDB database prefix in query options");
         }
 
-        return queryOptions.getString(CVDB_DBPREFIX_KEY);
+        return queryOptions.getString(OPENCGA_CVDB_DBPREFIX_KEY);
     }
 
     private Query buildVariantQuery(Query query) {

@@ -1891,7 +1891,7 @@ public class CvdbSolrEngineQueryTest {
 //        }
 
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.put(CollectionPrefixUtils.CVDB_DBPREFIX_KEY, "test");
+        queryOptions.put(CollectionPrefixUtils.OPENCGA_CVDB_DBPREFIX_KEY, "test");
         queryOptions.put(EXCLUDE, "panels,interpretation.panels,secondaryInterpretations.panels");
 
         SolrQuery solrQuery = caParser.parse(query, queryOptions);
@@ -1999,7 +1999,7 @@ public class CvdbSolrEngineQueryTest {
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, "id,family.members.id");
-        queryOptions.put(CollectionPrefixUtils.CVDB_DBPREFIX_KEY, "test");
+        queryOptions.put(CollectionPrefixUtils.OPENCGA_CVDB_DBPREFIX_KEY, "test");
 
         SolrQuery solrQuery = caParser.parse(query, queryOptions);
         assertTrue(solrQuery.getFields().contains("id"));
@@ -2092,7 +2092,7 @@ public class CvdbSolrEngineQueryTest {
         query.put(CI_PRIMARY_NAME, Boolean.TRUE);
 
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.put(CollectionPrefixUtils.CVDB_DBPREFIX_KEY, "test");
+        queryOptions.put(CollectionPrefixUtils.OPENCGA_CVDB_DBPREFIX_KEY, "test");
         queryOptions.put(INCLUDE, "id,family.members.name,interpretation.primaryFindings.annotation");
 
         SolrQuery solrQuery = caParser.parse(query, queryOptions);
@@ -2106,7 +2106,7 @@ public class CvdbSolrEngineQueryTest {
         query.put(CI_PRIMARY_NAME, Boolean.TRUE);
 
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.put(CollectionPrefixUtils.CVDB_DBPREFIX_KEY, "test");
+        queryOptions.put(CollectionPrefixUtils.OPENCGA_CVDB_DBPREFIX_KEY, "test");
         queryOptions.put(INCLUDE, "id,family.members.name");
 
         SolrQuery solrQuery = caParser.parse(query, queryOptions);
@@ -2209,7 +2209,7 @@ public class CvdbSolrEngineQueryTest {
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, "id");
-        queryOptions.put(CollectionPrefixUtils.CVDB_DBPREFIX_KEY, catalogManager.getConfiguration().getDatabasePrefix());
+        queryOptions.put(CollectionPrefixUtils.OPENCGA_CVDB_DBPREFIX_KEY, catalogManager.getConfiguration().getDatabasePrefix());
 
         SolrQuery solrQuery = ciParser.parse(query, queryOptions);
         assertEquals("id", solrQuery.getFields());
@@ -2223,7 +2223,7 @@ public class CvdbSolrEngineQueryTest {
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, "primaryFindings.evidences");
-        queryOptions.put(CollectionPrefixUtils.CVDB_DBPREFIX_KEY, catalogManager.getConfiguration().getDatabasePrefix());
+        queryOptions.put(CollectionPrefixUtils.OPENCGA_CVDB_DBPREFIX_KEY, catalogManager.getConfiguration().getDatabasePrefix());
 
         SolrQuery solrQuery = ciParser.parse(query, queryOptions);
         assertEquals("minJson", solrQuery.getFields());
@@ -2236,7 +2236,7 @@ public class CvdbSolrEngineQueryTest {
         query.put(CI_PRIMARY_NAME, Boolean.TRUE);
 
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.put(CollectionPrefixUtils.CVDB_DBPREFIX_KEY, "test");
+        queryOptions.put(CollectionPrefixUtils.OPENCGA_CVDB_DBPREFIX_KEY, "test");
         queryOptions.put(INCLUDE, "primaryFindings.annotation.id");
 
         SolrQuery solrQuery = ciParser.parse(query, queryOptions);
@@ -2251,7 +2251,7 @@ public class CvdbSolrEngineQueryTest {
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, "panels.genes");
-        queryOptions.put(CollectionPrefixUtils.CVDB_DBPREFIX_KEY, catalogManager.getConfiguration().getDatabasePrefix());
+        queryOptions.put(CollectionPrefixUtils.OPENCGA_CVDB_DBPREFIX_KEY, catalogManager.getConfiguration().getDatabasePrefix());
 
         SolrQuery solrQuery = ciParser.parse(query, queryOptions);
         assertEquals("maxJson", solrQuery.getFields());
@@ -2265,7 +2265,7 @@ public class CvdbSolrEngineQueryTest {
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, ClinicalIncludeHandler.INTERNAL_INCLUDE_MINIMUM_JSON);
-        queryOptions.put(CollectionPrefixUtils.CVDB_DBPREFIX_KEY, "test");
+        queryOptions.put(CollectionPrefixUtils.OPENCGA_CVDB_DBPREFIX_KEY, "test");
 
         SolrQuery solrQuery = ciParser.parse(query, queryOptions);
         assertEquals("minJson", solrQuery.getFields());
@@ -2278,7 +2278,7 @@ public class CvdbSolrEngineQueryTest {
         query.put(CI_PRIMARY_NAME, Boolean.TRUE);
 
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.put(CollectionPrefixUtils.CVDB_DBPREFIX_KEY, "test");
+        queryOptions.put(CollectionPrefixUtils.OPENCGA_CVDB_DBPREFIX_KEY, "test");
         queryOptions.put(INCLUDE, ClinicalIncludeHandler.INTERNAL_INCLUDE_MEDIUM_JSON);
 
         SolrQuery solrQuery = ciParser.parse(query, queryOptions);
@@ -2293,7 +2293,7 @@ public class CvdbSolrEngineQueryTest {
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, ClinicalIncludeHandler.INTERNAL_INCLUDE_MEDIUM_JSON);
-        queryOptions.put(CollectionPrefixUtils.CVDB_DBPREFIX_KEY, "test");
+        queryOptions.put(CollectionPrefixUtils.OPENCGA_CVDB_DBPREFIX_KEY, "test");
 
         SolrQuery solrQuery = caParser.parse(query, queryOptions);
         assertEquals("mediumJson", solrQuery.getFields());
@@ -2424,7 +2424,7 @@ public class CvdbSolrEngineQueryTest {
         query.put(CV_ANNOT_CONSEQUENCE_TYPE_NAME, StringUtils.join(soTerms, ","));
 
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.put(CollectionPrefixUtils.CVDB_DBPREFIX_KEY, "test");
+        queryOptions.put(CollectionPrefixUtils.OPENCGA_CVDB_DBPREFIX_KEY, "test");
 
         SolrQuery solrQuery = caParser.parse(query, queryOptions);
         assertEquals("maxJson", solrQuery.getFields());
