@@ -90,7 +90,7 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
     public String openApi(@ApiParam(value = "List of categories to get API from") @QueryParam("token") String token, @QueryParam("environment") String environment) {
         JsonOpenApiGenerator generator = new JsonOpenApiGenerator();
         Swagger swagger = generator.generateJsonOpenApi(new EnterpriseApiCommonsImpl(), token, environment);
-        String swaggerJson ="ERROR: Swagger could not be generated";
+        String swaggerJson ="ERROR: openapi schema for swagger could not be generated";
         ObjectMapper mapper = new ObjectMapper();
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         try {
