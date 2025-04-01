@@ -54,13 +54,32 @@ public class SwaggerDefinitionGenerator {
         return definition;
     }
 
+    private static FieldDefinition manageEnumField(Class<?> enumClass) {
+        if (!enumClass.isEnum()) {
+            throw new IllegalArgumentException("Provided class is not an enum: " + enumClass.getName());
+        }
+
+        String joinedValues = String.join("|",
+                Arrays.stream(enumClass.getEnumConstants())
+                        .map(Object::toString)
+                        .toArray(String[]::new));
+
+        return new FieldDefinition()
+                .setType("string")  // OpenAPI treats enums as strings
+                .setRef(joinedValues);
+    }
+
     private static FieldDefinition manageField(Class<?> fieldType) {
         try {
             if (!isPrimitive(fieldType)) {
+                if(fieldType.isEnum()){
+                    return manageEnumField(fieldType);
+                }
                 if (!definitions.containsKey(fieldType.getSimpleName()) && !processedFields.contains(fieldType.getName()) && isOpencbBean(fieldType)) {
                     definitions.put(fieldType.getSimpleName(), generateDefinition(fieldType));
                 }
                 return manageComplexField(fieldType);
+
             } else {
                 return managePrimitiveField(fieldType);
             }
