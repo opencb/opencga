@@ -849,56 +849,55 @@ public class SampleManager extends AnnotationSetManager<Sample, SamplePermission
 
     public OpenCGAResult<AclEntryList<SamplePermissions>> getAcls(String studyStr, List<String> sampleList, List<String> members,
                                                                   boolean ignoreException, String token) throws CatalogException {
-        return getAcls(studyStr, sampleList, members, ignoreException, token,
-                (organizationId, study, userId, entryParamList) -> {
-                    OpenCGAResult<AclEntryList<SamplePermissions>> sampleAcls;
-                    Map<String, InternalGetDataResult<?>.Missing> missingMap = new HashMap<>();
+        return getAcls(studyStr, sampleList, members, ignoreException, token, (organizationId, study, userId, entryParamList) -> {
+            OpenCGAResult<AclEntryList<SamplePermissions>> sampleAcls;
+            Map<String, InternalGetDataResult<?>.Missing> missingMap = new HashMap<>();
 
-                    for (String sampleId : sampleList) {
-                        entryParamList.add(new EntryParam(sampleId, null));
-                    }
+            for (String sampleId : sampleList) {
+                entryParamList.add(new EntryParam(sampleId, null));
+            }
 
-                    InternalGetDataResult<Sample> queryResult = internalGet(organizationId, study.getUid(), sampleList, INCLUDE_SAMPLE_IDS,
-                            userId, ignoreException);
-                    entryParamList.clear();
-                    for (Sample result : queryResult.getResults()) {
-                        entryParamList.add(new EntryParam(result.getId(), result.getUuid()));
-                    }
-                    if (queryResult.getMissing() != null) {
-                        missingMap = queryResult.getMissing().stream()
-                                .collect(Collectors.toMap(InternalGetDataResult.Missing::getId, Function.identity()));
-                    }
+            InternalGetDataResult<Sample> queryResult = internalGet(organizationId, study.getUid(), sampleList, INCLUDE_SAMPLE_IDS, userId,
+                    ignoreException);
+            entryParamList.clear();
+            for (Sample result : queryResult.getResults()) {
+                entryParamList.add(new EntryParam(result.getId(), result.getUuid()));
+            }
+            if (queryResult.getMissing() != null) {
+                missingMap = queryResult.getMissing().stream()
+                        .collect(Collectors.toMap(InternalGetDataResult.Missing::getId, Function.identity()));
+            }
 
-                    List<Long> sampleUids = queryResult.getResults().stream().map(Sample::getUid).collect(Collectors.toList());
-                    if (CollectionUtils.isNotEmpty(members)) {
-                        sampleAcls = authorizationManager.getAcl(organizationId, study.getUid(), sampleUids, members, Enums.Resource.SAMPLE,
-                                SamplePermissions.class, userId);
-                    } else {
-                        sampleAcls = authorizationManager.getAcl(organizationId, study.getUid(), sampleUids, Enums.Resource.SAMPLE,
-                                SamplePermissions.class, userId);
-                    }
+            List<Long> sampleUids = queryResult.getResults().stream().map(Sample::getUid).collect(Collectors.toList());
+            if (CollectionUtils.isNotEmpty(members)) {
+                sampleAcls = authorizationManager.getAcl(organizationId, study.getUid(), sampleUids, members, Enums.Resource.SAMPLE,
+                        SamplePermissions.class, userId);
+            } else {
+                sampleAcls = authorizationManager.getAcl(organizationId, study.getUid(), sampleUids, Enums.Resource.SAMPLE,
+                        SamplePermissions.class, userId);
+            }
 
-                    // Include non-existing samples to the result list
-                    List<AclEntryList<SamplePermissions>> resultList = new ArrayList<>(sampleList.size());
-                    List<Event> eventList = new ArrayList<>(missingMap.size());
-                    int counter = 0;
-                    for (String sampleId : sampleList) {
-                        if (!missingMap.containsKey(sampleId)) {
-                            resultList.add(sampleAcls.getResults().get(counter));
-                            counter++;
-                        } else {
-                            resultList.add(new AclEntryList<>());
-                            eventList.add(new Event(Event.Type.ERROR, sampleId, missingMap.get(sampleId).getErrorMsg()));
-                        }
-                    }
-                    for (int i = 0; i < queryResult.getResults().size(); i++) {
-                        sampleAcls.getResults().get(i).setId(queryResult.getResults().get(i).getId());
-                    }
-                    sampleAcls.setResults(resultList);
-                    sampleAcls.setEvents(eventList);
+            // Include non-existing samples to the result list
+            List<AclEntryList<SamplePermissions>> resultList = new ArrayList<>(sampleList.size());
+            List<Event> eventList = new ArrayList<>(missingMap.size());
+            int counter = 0;
+            for (String sampleId : sampleList) {
+                if (!missingMap.containsKey(sampleId)) {
+                    resultList.add(sampleAcls.getResults().get(counter));
+                    counter++;
+                } else {
+                    resultList.add(new AclEntryList<>());
+                    eventList.add(new Event(Event.Type.ERROR, sampleId, missingMap.get(sampleId).getErrorMsg()));
+                }
+            }
+            for (int i = 0; i < queryResult.getResults().size(); i++) {
+                sampleAcls.getResults().get(i).setId(queryResult.getResults().get(i).getId());
+            }
+            sampleAcls.setResults(resultList);
+            sampleAcls.setEvents(eventList);
 
-                    return sampleAcls;
-                });
+            return sampleAcls;
+        });
     }
 
     public OpenCGAResult<AclEntryList<SamplePermissions>> updateAcl(String studyStr, List<String> sampleStringList, String memberList,
