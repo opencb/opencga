@@ -4,6 +4,7 @@ public class Response {
     private String description;
     private Schema schema = null;
 
+
     public Response() {
     }
 

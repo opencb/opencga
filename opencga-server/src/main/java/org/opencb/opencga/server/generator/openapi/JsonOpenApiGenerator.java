@@ -8,6 +8,7 @@ import org.opencb.opencga.server.generator.openapi.models.*;
 import org.opencb.opencga.server.generator.openapi.common.SwaggerDefinitionGenerator;
 
 import javax.ws.rs.*;
+import java.io.DataInputStream;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.*;
@@ -70,7 +71,12 @@ public class JsonOpenApiGenerator {
                     Response response = new Response();
                     response.setDescription("Successful operation");
                     if(!SwaggerDefinitionGenerator.isPrimitive(apiOperation.response())){
-                        response.setSchema(new Schema().set$ref("#/definitions/"+apiOperation.response().getSimpleName()));
+                        Schema schema = new Schema();
+                        schema.set$ref("#/definitions/"+apiOperation.response().getSimpleName());
+                        if(apiOperation.response().equals(DataInputStream.class)){
+                            schema.setType("application/octet-stream");
+                        }
+                        response.setSchema(schema);
                         if(!beansDefinitions.contains((Class) apiOperation.response())  && SwaggerDefinitionGenerator.isOpencbBean((Class) apiOperation.response())){
                             beansDefinitions.add((Class) apiOperation.response());
                         }
