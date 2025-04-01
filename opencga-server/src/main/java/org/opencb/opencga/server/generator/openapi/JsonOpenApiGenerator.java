@@ -67,21 +67,7 @@ public class JsonOpenApiGenerator {
                     method.setSummary(apiOperation.value());
                     method.setDescription(apiOperation.notes());
                     method.setTags(Collections.singletonList(api.value()));
-                    Map<String,Response> responses=new HashMap<>();
-                    Response response = new Response();
-                    response.setDescription("Successful operation");
-                    if(!SwaggerDefinitionGenerator.isPrimitive(apiOperation.response())){
-                        Schema schema = new Schema();
-                        schema.set$ref("#/definitions/"+apiOperation.response().getSimpleName());
-                        if(apiOperation.response().equals(DataInputStream.class)){
-                            schema.setType("application/octet-stream");
-                        }
-                        response.setSchema(schema);
-                        if(!beansDefinitions.contains((Class) apiOperation.response())  && SwaggerDefinitionGenerator.isOpencbBean((Class) apiOperation.response())){
-                            beansDefinitions.add((Class) apiOperation.response());
-                        }
-                    }
-                    responses.put("200",response);
+                    Map<String, Response> responses = getStringResponseMap(apiOperation);
                     method.setResponses(responses);
 
                     // Obtener el método HTTP
@@ -118,6 +104,33 @@ public class JsonOpenApiGenerator {
         swagger.setPaths(paths);
         swagger.setDefinitions(definitions);
         return swagger;
+    }
+
+    private Map<String, Response> getStringResponseMap(ApiOperation apiOperation) {
+        Map<String,Response> responses=new HashMap<>();
+        Response response = new Response();
+        if(apiOperation.response().equals(DataInputStream.class)){
+            Map<String, Content> content = new HashMap<>();
+            content.put("application/octet-stream", new Content()
+                    .setSchema(new Schema().setType("string").setFormat("binary")));
+           response.setDescription("File successfully downloaded").setContent(content);
+        }else {
+             response.setDescription("Successful operation");
+            if (!SwaggerDefinitionGenerator.isPrimitive(apiOperation.response())) {
+                Schema schema = new Schema();
+                schema.set$ref("#/definitions/" + apiOperation.response().getSimpleName());
+
+                response.setSchema(schema);
+                if (!beansDefinitions.contains((Class) apiOperation.response()) && SwaggerDefinitionGenerator.isOpencbBean((Class) apiOperation.response())) {
+                    beansDefinitions.add((Class) apiOperation.response());
+                }
+            }
+        }
+        responses.put("200",response);
+        Response responseError = new Response();
+        responseError.setDescription("Got server error, invalid parameters or missing data");
+        responses.put("503",responseError);
+        return responses;
     }
 
     private String extractHttpMethod(java.lang.reflect.Method method) {

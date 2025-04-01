@@ -12,13 +12,13 @@ public class Schema {
     private Schema items;
     private Map<String, Schema> properties = new HashMap<>();
 
-
     public String getType() {
         return type;
     }
 
-    public void setType(String type) {
+    public Schema setType(String type) {
         this.type = type;
+        return this;
     }
 
     public Schema getAdditionalProperties() {
