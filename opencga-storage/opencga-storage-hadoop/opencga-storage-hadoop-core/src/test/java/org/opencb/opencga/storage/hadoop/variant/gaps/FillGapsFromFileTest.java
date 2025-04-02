@@ -1,6 +1,8 @@
 package org.opencb.opencga.storage.hadoop.variant.gaps;
 
 import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.phoenix.schema.types.PVarcharArray;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -17,6 +19,9 @@ import org.opencb.opencga.storage.core.utils.iterators.CloseableIterator;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 
 import java.io.IOException;
 import java.net.URI;
@@ -65,13 +70,7 @@ public class FillGapsFromFileTest  {
 
         FillGapsFromFile task = new FillGapsFromFile(null, vsmm, readerUtils, new ObjectMap());
         Path result = task.fillGaps(VariantStorageBaseTest.STUDY_NAME, Arrays.asList(file1, file2), newOutputUri(), "0/0");
-        System.out.println("result = " + result);
-
-        try (CloseableIterator<Put> iterator = FillGapsFromFile.putProtoIterator(result)) {
-            while (iterator.hasNext()) {
-                System.out.println(iterator.next());
-            }
-        }
+        printResult(result);
     }
 
     @Test
@@ -93,11 +92,7 @@ public class FillGapsFromFileTest  {
         FillGapsFromFile task = new FillGapsFromFile(null, vsmm, readerUtils, new ObjectMap());
         task.setMaxBufferSize(1000);
         Path result = task.fillGaps(VariantStorageBaseTest.STUDY_NAME, Arrays.asList(file1, file2), newOutputUri(), "0/0");
-        try (CloseableIterator<Put> iterator = FillGapsFromFile.putProtoIterator(result)) {
-            while (iterator.hasNext()) {
-                System.out.println(iterator.next());
-            }
-        }
+        printResult(result);
     }
 
     @Test
@@ -106,6 +101,32 @@ public class FillGapsFromFileTest  {
         URI file2 = indexFile("platinum/1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz");
 
         FillGapsFromFile task = new FillGapsFromFile(null, vsmm, readerUtils, new ObjectMap());
-        task.fillGaps(VariantStorageBaseTest.STUDY_NAME, Arrays.asList(file1, file2), newOutputUri(), "0/0");
+        Path result = task.fillGaps(VariantStorageBaseTest.STUDY_NAME, Arrays.asList(file1, file2), newOutputUri(), "0/0");
+
+        printResult(result);
+    }
+
+    private static void printResult(Path result) throws Exception {
+        try (CloseableIterator<Put> iterator = FillGapsFromFile.putProtoIterator(result)) {
+            while (iterator.hasNext()) {
+                Put put = iterator.next();
+                StringBuilder sb = new StringBuilder();
+                sb.append(VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(put.getRow(), null, null))
+                        .append(" -> ");
+                put.getFamilyCellMap().get(GenomeHelper.COLUMN_FAMILY_BYTES).forEach(cell -> {
+                    String column = Bytes.toString(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
+                    sb.append(column)
+                            .append(":");
+                    if (column.endsWith(VariantPhoenixSchema.SAMPLE_DATA_SUFIX) || column.endsWith(VariantPhoenixSchema.FILE_SUFIX)) {
+                        sb.append(PVarcharArray.INSTANCE.toObject(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength()));
+                    } else {
+                        sb.append(Bytes.toString(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength()));
+                    }
+                    sb.append(" , ");
+                });
+                System.out.println(sb);
+            }
+
+        }
     }
 }

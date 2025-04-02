@@ -74,7 +74,6 @@ public class FillGapsFromFile {
         FillGapsTask fillGapsTask = new FillGapsTask(metadataManager, studyMetadata, false, false, gapsGenotype);
 
         List<VariantIterator> fileIterators = new ArrayList<>();
-        int numVariants = 0;
         for (URI inputFile : inputFiles) {
             File file = Paths.get(inputFile).toFile();
             String fileName = file.getName();
@@ -98,15 +97,18 @@ public class FillGapsFromFile {
             fileIterators.add(new VariantIterator(file, fileName, fileId, sampleIds, reader.iterator(), maxBufferSize));
         }
 
+        int numVariants = 0;
+        int numPuts = 0;
         try (OutputStream os = new GZIPOutputStream(Files.newOutputStream(output))) {
             String chromosome = getNextChromosome(fileIterators);
             while (chromosome != null) {
-                numVariants += fillGapsChromosome(chromosome, fileIterators, fillGapsTask, os);
+                Result result = fillGapsChromosome(chromosome, fileIterators, fillGapsTask, os);
+                numVariants += result.getNumVariants();
+                numPuts += result.getNumPuts();
                 chromosome = getNextChromosome(fileIterators);
             }
         }
-
-        logger.info("Fill gaps finished! " + numVariants + " variants written to " + output);
+        logger.info("Fill gaps finished! " + numVariants + " variants processed, " + numPuts + " mutations written to " + output);
         return output;
     }
 
@@ -380,9 +382,28 @@ public class FillGapsFromFile {
         return null;
     }
 
-    private int fillGapsChromosome(String chromosome, List<VariantIterator> fileIterators, FillGapsTask fillGapsTask, OutputStream os)
+    public static final class Result {
+        private final int numVariants;
+        private final int numPuts;
+
+        public Result(int numVariants, int numPuts) {
+            this.numVariants = numVariants;
+            this.numPuts = numPuts;
+        }
+
+        public int getNumVariants() {
+            return numVariants;
+        }
+
+        public int getNumPuts() {
+            return numPuts;
+        }
+    }
+
+    private Result fillGapsChromosome(String chromosome, List<VariantIterator> fileIterators, FillGapsTask fillGapsTask, OutputStream os)
             throws IOException {
         int numVariants = 0;
+        int numPuts = 0;
         for (VariantIterator fileIterator : fileIterators) {
             fileIterator.setChromosome(chromosome);
         }
@@ -407,12 +428,13 @@ public class FillGapsFromFile {
             if (!put.isEmpty()) {
                 ClientProtos.MutationProto proto = ProtobufUtil.toMutation(ClientProtos.MutationProto.MutationType.PUT, put);
                 proto.writeDelimitedTo(os);
+                numPuts++;
             }
 
             variant = getNextVariant(fileIterators, variant);
         }
-        logger.info("chr " + chromosome + " , numVariants = " + numVariants + " " + overlappingStatusCount);
-        return numVariants;
+        logger.info("chr " + chromosome + " , numVariants = " + numVariants + " , numPuts = " + numPuts + " " + overlappingStatusCount);
+        return new Result(numVariants, numPuts);
     }
 
     private Variant getNextVariant(List<VariantIterator> files, Variant prevVariant) {
