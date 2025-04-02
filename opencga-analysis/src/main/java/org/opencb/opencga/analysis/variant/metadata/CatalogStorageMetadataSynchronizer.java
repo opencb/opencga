@@ -505,7 +505,7 @@ public class CatalogStorageMetadataSynchronizer {
                 fileMetadata.setSamples(new LinkedHashSet<>());
                 try {
                     VariantFileMetadata variantFileMetadata =
-                            metadataManager.getVariantFileMetadata(study.getId(), fileMetadata.getId(), new QueryOptions()).first();
+                            metadataManager.getVariantFileMetadataOrNull(study.getId(), fileMetadata.getId());
                     if (variantFileMetadata == null) {
                         logger.error("Missing VariantFileMetadata from file {}", fileMetadata.getName());
                     } else {

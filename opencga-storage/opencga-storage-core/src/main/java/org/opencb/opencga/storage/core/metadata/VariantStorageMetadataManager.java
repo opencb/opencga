@@ -633,9 +633,20 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         }
     }
 
-    public DataResult<VariantFileMetadata> getVariantFileMetadata(int studyId, int fileId, QueryOptions options)
+    public VariantFileMetadata getVariantFileMetadataOrNull(int studyId, int fileId)
             throws StorageEngineException {
-        return fileDBAdaptor.getVariantFileMetadata(studyId, fileId, options);
+        return fileDBAdaptor.getVariantFileMetadata(studyId, fileId, null).first();
+    }
+
+    public VariantFileMetadata getVariantFileMetadata(int studyId, int fileId)
+            throws StorageEngineException {
+        VariantFileMetadata fileMetadata = getVariantFileMetadataOrNull(studyId, fileId);
+        if (fileMetadata == null) {
+            String studyName = getStudyName(studyId);
+            String fileName = getFileName(studyId, fileId);
+            throw VariantQueryException.variantFileMetadataNotFound(fileName, studyName);
+        }
+        return fileMetadata;
     }
 
     public Iterator<VariantFileMetadata> variantFileMetadataIterator(int studyId, QueryOptions options)

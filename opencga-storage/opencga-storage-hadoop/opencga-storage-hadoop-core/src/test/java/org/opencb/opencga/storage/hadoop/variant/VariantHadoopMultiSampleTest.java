@@ -402,7 +402,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
             assertThat(loadedFiles, hasItem(fileId));
         }
         for (Integer loadedFile : loadedFiles) {
-            VariantFileMetadata variantFileMetadata = dbAdaptor.getMetadataManager().getVariantFileMetadata(studyMetadata.getId(), loadedFile, null).first();
+            VariantFileMetadata variantFileMetadata = dbAdaptor.getMetadataManager().getVariantFileMetadata(studyMetadata.getId(), loadedFile);
             assertNotNull(variantFileMetadata);
         }
 

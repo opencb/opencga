@@ -109,7 +109,12 @@ public class DummyFileMetadataDBAdaptor implements FileMetadataDBAdaptor {
 
     @Override
     public Iterator<VariantFileMetadata> iterator(Query query, QueryOptions options) throws IOException {
-        return Collections.emptyIterator();
+        int studyId = query.getInt(VariantFileMetadataQueryParam.STUDY_ID.key());
+        int fileId = query.getInt(VariantFileMetadataQueryParam.FILE_ID.key());
+        return VARIANT_FILE_METADATAS.entrySet().stream()
+                .filter(e -> e.getKey().startsWith(studyId + "_" + fileId))
+                .map(Map.Entry::getValue)
+                .iterator();
     }
 
     @Override
