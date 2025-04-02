@@ -614,7 +614,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             throw new StorageEngineException("Unable to execute operation on files affected by TASK-633 : " + filesAffected633);
         }
         if (!filesWithoutArchive.isEmpty()) {
-            throw new StorageEngineException("Unable to execute operation on files without archive data : " + filesAffected633);
+            throw new StorageEngineException("Unable to execute operation on files without archive data : " + filesWithoutArchive);
         }
 
 

@@ -16,6 +16,7 @@ import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
@@ -181,6 +182,7 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
     @Test
     public void testFillMissingFilterNonRef() throws Exception {
         StudyMetadata studyMetadata = load(new QueryOptions(VariantStorageOptions.GVCF.key(), true)
+                .append(VariantStorageOptions.LOAD_ARCHIVE.key(), YesNoAuto.YES)
                 .append(ARCHIVE_NON_REF_FILTER.key(), "FORMAT:DP<6"), Arrays.asList(
                 getResourceUri("gaps/file1.genome.vcf"),
                 getResourceUri("gaps/file2.genome.vcf")));
@@ -279,7 +281,7 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
     @Test
     public void testFillMissingPlatinumFiles() throws Exception {
         ObjectMap options = new ObjectMap()
-                .append(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
+                .append(VariantStorageOptions.LOAD_ARCHIVE.key(), YesNoAuto.YES)
                 .append(HadoopVariantStorageOptions.ARCHIVE_FILE_BATCH_SIZE.key(), 2);
 
         // Load files 12877 , 12878
