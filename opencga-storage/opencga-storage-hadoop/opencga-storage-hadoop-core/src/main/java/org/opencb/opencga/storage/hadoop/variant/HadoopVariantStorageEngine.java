@@ -553,7 +553,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                 filesWithArchive.add(fileId);
             }
         }
-        if (fileExists.size() == fileIds.size()) {
+        boolean localEnabled = getOptions().getBoolean(FILL_GAPS_GAP_LOCAL_ENABLED.key(), FILL_GAPS_GAP_LOCAL_ENABLED.defaultValue());
+        if (!localEnabled) {
+            logger.info("Aggregation family operation locally is disabled. Use archive table.");
+        }
+        if (localEnabled && fileExists.size() == fileIds.size()) {
             logger.info("Run aggregation family operation locally for " + fileIds.size() + " files.");
             FillGapsFromFile fillGapsFromFile = new FillGapsFromFile(getDBAdaptor().getHBaseManager(),
                     metadataManager, getVariantReaderUtils(), options);
