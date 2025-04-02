@@ -1,5 +1,6 @@
 package org.opencb.opencga.core.models.organizations;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Optimizations;
 import org.opencb.opencga.core.config.UserOrganizationConfiguration;
@@ -55,11 +56,13 @@ public class OrganizationConfiguration {
         return this;
     }
 
-//    @Deprecated
-//    public String getDefaultUserExpirationDate() {
-//        return null;
-//    }
+    @JsonIgnore
+    @Deprecated
+    public String getDefaultUserExpirationDate() {
+        return this.user != null ? this.user.getDefaultExpirationDate() : null;
+    }
 
+    @JsonIgnore
     @Deprecated
     public OrganizationConfiguration setDefaultUserExpirationDate(String defaultUserExpirationDate) {
         if (this.user == null) {
