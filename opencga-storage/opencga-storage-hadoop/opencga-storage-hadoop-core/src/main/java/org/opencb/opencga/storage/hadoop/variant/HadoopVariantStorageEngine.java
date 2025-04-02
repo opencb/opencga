@@ -556,6 +556,9 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         if (fileExists.size() == fileIds.size()) {
             FillGapsFromFile fillGapsFromFile = new FillGapsFromFile(getDBAdaptor().getHBaseManager(),
                     metadataManager, getVariantReaderUtils(), options);
+            fillGapsFromFile.setMaxBufferSize(
+                    getOptions().getInt(FILL_GAPS_GAP_LOCAL_BUFFER_SIZE.key(),
+                    FILL_GAPS_GAP_LOCAL_BUFFER_SIZE.defaultValue()));
             try {
                 fillGapsFromFile.fillGaps(studyMetadata.getName(), uris, outdir, getVariantTableName(), "0/0");
             } catch (IOException e) {
