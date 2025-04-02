@@ -54,18 +54,18 @@ public class FillGapsFromFile {
         this.options = options;
     }
 
-    public void fillGaps(String studyId, List<URI> inputFiles, URI outdir, String variantTableName, String gapsGenotype)
+    public void fillGaps(String study, List<URI> inputFiles, URI outdir, String variantTableName, String gapsGenotype)
             throws IOException, StorageEngineException {
 
-        Path output = fillGaps(studyId, inputFiles, outdir, gapsGenotype);
+        Path output = fillGaps(study, inputFiles, outdir, gapsGenotype);
 
         writeGaps(variantTableName, output);
 
         Files.delete(output);
     }
 
-    public Path fillGaps(String studyId, List<URI> inputFiles, URI outdir, String gapsGenotype) throws StorageEngineException, IOException {
-        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(studyId);
+    public Path fillGaps(String study, List<URI> inputFiles, URI outdir, String gapsGenotype) throws StorageEngineException, IOException {
+        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
         Path output = Paths.get(outdir.resolve(OUTPUT_PROTO_GZ));
         if (Files.exists(output)) {
             throw new IOException("Output file already exists! " + output);

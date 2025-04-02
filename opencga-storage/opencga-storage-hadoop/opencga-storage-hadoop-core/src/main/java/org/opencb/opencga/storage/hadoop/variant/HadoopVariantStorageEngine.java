@@ -554,17 +554,22 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             }
         }
         if (fileExists.size() == fileIds.size()) {
+            logger.info("Run aggregation family operation locally for " + fileIds.size() + " files.");
             FillGapsFromFile fillGapsFromFile = new FillGapsFromFile(getDBAdaptor().getHBaseManager(),
                     metadataManager, getVariantReaderUtils(), options);
             fillGapsFromFile.setMaxBufferSize(
                     getOptions().getInt(FILL_GAPS_GAP_LOCAL_BUFFER_SIZE.key(),
                     FILL_GAPS_GAP_LOCAL_BUFFER_SIZE.defaultValue()));
+            String gapsGenotype = getOptions().getString(
+                    FILL_GAPS_GAP_GENOTYPE.key(),
+                    FILL_GAPS_GAP_GENOTYPE.defaultValue());
             try {
-                fillGapsFromFile.fillGaps(studyMetadata.getName(), uris, outdir, getVariantTableName(), "0/0");
+                fillGapsFromFile.fillGaps(studyMetadata.getName(), uris, outdir, getVariantTableName(), gapsGenotype);
             } catch (IOException e) {
                 throw new StorageEngineException("Error computing aggregation family operation", e);
             }
         } else if (filesWithArchive.size() == fileIds.size()) {
+            logger.info("Run aggregation family operation using archive table for " + fileIds.size() + " files.");
             fillGapsOrMissing(study, studyMetadata, fileIds, sampleIds, true, false, params.toObjectMap(options));
         } else {
             Set<String> fileName = new HashSet<>();
