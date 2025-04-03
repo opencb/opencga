@@ -110,6 +110,9 @@ public class LiftoverWrapperAnalysis extends OpenCgaToolScopeStudy {
             logger.info("Liftover 'vcfDestination' parameter is empty, the resultant VCF files will be stored in the job directory: {}",
                     getOutDir());
         } else if (!SAME_AS_INPUT_VCF.equals(vcfDest)) {
+            if (!analysisParams.getVcfDestination().endsWith("/")) {
+                analysisParams.setVcfDestination(analysisParams.getVcfDestination() + "/");
+            }
             File opencgaFile = getCatalogManager().getFileManager().get(study, analysisParams.getVcfDestination(), QueryOptions.empty(),
                     token).first();
             Path path = Paths.get(opencgaFile.getUri().getPath()).toAbsolutePath();
