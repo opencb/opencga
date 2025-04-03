@@ -1260,7 +1260,20 @@ public class VariantAnalysisTest {
 
     private boolean areLiftoverResourcesReady() throws IOException {
         // We can't download this for each test! It takes too long, and it might fill up the disk in small runners
-        return false;
+        Path path = Paths.get("/opt/opencga/analysis/resources/");
+        if (!Files.exists(path)
+                || !Files.exists(path.resolve("reference-genomes/hg38/hg19ToHg38.over.chain.gz"))
+                || !Files.exists(path.resolve("reference-genomes/hg38/hg38.fa.gz"))) {
+            return false;
+        }
+
+        String resourcePath = "reference-genomes";
+        Files.createSymbolicLink(opencga.getOpencgaHome().resolve(resourcePath).toAbsolutePath(), path.resolve(resourcePath));
+        if (!Files.exists(opencga.getOpencgaHome().resolve(resourcePath))) {
+            return false;
+        }
+
+        return true;
     }
 
     // TODO: Decide what to do with this

@@ -189,20 +189,22 @@ public class LiftoverWrapperAnalysis extends OpenCgaToolScopeStudy {
     }
 
     private void linkOutFile(String outFilename, File inputFile) throws CatalogException, ToolException {
-        Path parentPath;
+        Path outFile;
         String opencgaPath = null;
 
         if (SAME_AS_INPUT_VCF.equals(vcfDest)) {
-            parentPath = Paths.get(inputFile.getUri().getPath()).getParent();
+            outFile = Paths.get(inputFile.getUri().getPath()).getParent().resolve(outFilename);
             if (StringUtils.isNotEmpty(inputFile.getPath())) {
                 opencgaPath = Paths.get(inputFile.getPath()).getParent().resolve(outFilename).toString();
             }
         } else {
-            parentPath = Paths.get(vcfDest);
+            outFile = Paths.get(vcfDest).resolve(outFilename);
+            File destOpencgaPath = catalogManager.getFileManager().get(getStudy(), analysisParams.getVcfDestination(),
+                    QueryOptions.empty(), getToken()).first();
+            opencgaPath = destOpencgaPath.getPath();
         }
 
         // OpenCGA catalog link, if the output file exists
-        Path outFile = parentPath.resolve(outFilename);
         if (Files.exists(outFile)) {
             URI uri = outFile.toUri();
             StopWatch stopWatch = StopWatch.createStarted();
@@ -222,7 +224,7 @@ public class LiftoverWrapperAnalysis extends OpenCgaToolScopeStudy {
                 addGeneratedFile(file);
             }
         } else {
-            logger.warn("Something wrong happened, exptected output file {} does not exit", outFile.toAbsolutePath());
+            logger.warn("Something wrong happened, expected output file {} does not exit", outFile.toAbsolutePath());
         }
     }
 
