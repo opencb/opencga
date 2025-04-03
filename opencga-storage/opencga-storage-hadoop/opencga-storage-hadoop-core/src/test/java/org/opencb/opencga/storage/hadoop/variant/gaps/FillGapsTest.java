@@ -89,7 +89,7 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
             uris.add(Paths.get(metadataManager.getFileMetadata(studyMetadata.getId(), fileId).getPath()).toUri());
         }
         FillGapsFromFile fillGapsFromFile = new FillGapsFromFile(variantStorageEngine.getDBAdaptor().getHBaseManager(),
-                metadataManager, variantStorageEngine.getVariantReaderUtils(), variantStorageEngine.getOptions());
+                metadataManager, variantStorageEngine.getOptions());
 
         fillGapsFromFile.fillGaps(studyMetadata.getName(), uris, newOutputUri(), variantStorageEngine.getVariantTableName(), "0/0");
     }

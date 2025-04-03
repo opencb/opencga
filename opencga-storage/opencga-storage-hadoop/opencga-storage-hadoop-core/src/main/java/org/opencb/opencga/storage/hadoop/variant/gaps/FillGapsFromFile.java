@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.gaps;
 
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.BufferedMutator;
 import org.apache.hadoop.hbase.client.BufferedMutatorParams;
@@ -10,10 +11,14 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.tools.variant.VariantSorterTask;
+import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.io.DataReader;
 import org.opencb.commons.run.Task;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.io.plain.StringDataReader;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -36,21 +41,20 @@ import java.util.*;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.FILL_GAPS_GAP_LOCAL_BUFFER_SIZE;
+
 public class FillGapsFromFile {
 
     public static final String OUTPUT_PROTO_GZ = "mutations.proto.gz";
     private final HBaseManager hBaseManager;
     private final VariantStorageMetadataManager metadataManager;
-    private final VariantReaderUtils variantReaderUtils;
     private final ObjectMap options;
     private final Logger logger = LoggerFactory.getLogger(FillGapsFromFile.class);
-    private int maxBufferSize = 1000;
+    private int maxBufferSize = FILL_GAPS_GAP_LOCAL_BUFFER_SIZE.defaultValue();
 
-    public FillGapsFromFile(HBaseManager hBaseManager, VariantStorageMetadataManager metadataManager,
-                            VariantReaderUtils variantReaderUtils, ObjectMap options) {
+    public FillGapsFromFile(HBaseManager hBaseManager, VariantStorageMetadataManager metadataManager, ObjectMap options) {
         this.hBaseManager = hBaseManager;
         this.metadataManager = metadataManager;
-        this.variantReaderUtils = variantReaderUtils;
         this.options = options;
     }
 
@@ -70,18 +74,33 @@ public class FillGapsFromFile {
         if (Files.exists(output)) {
             throw new IOException("Output file already exists! " + output);
         }
+        StopWatch stopWatch = StopWatch.createStarted();
 
         FillGapsTask fillGapsTask = new FillGapsTask(metadataManager, studyMetadata, false, false, gapsGenotype);
 
+        long filesLengthBytes = 0;
         List<VariantIterator> fileIterators = new ArrayList<>();
         for (URI inputFile : inputFiles) {
             File file = Paths.get(inputFile).toFile();
+            if (!file.exists()) {
+                throw new FileNotFoundException("File not found: " + file);
+            }
+            long fileLength = file.length();
+            filesLengthBytes += fileLength;
             String fileName = file.getName();
             int fileId = metadataManager.getFileId(studyMetadata.getId(), fileName);
             FileMetadata fileMetadata = metadataManager.getFileMetadata(studyMetadata.getId(), fileId);
             LinkedHashSet<Integer> sampleIds = fileMetadata.getSamples();
             VariantFileMetadata variantFileMetadata = metadataManager.getVariantFileMetadata(studyMetadata.getId(), fileId);
-            DataReader<Variant> reader = variantReaderUtils.getVariantVcfReader(inputFile,
+
+            InputStream inputStream = Files.newInputStream(file.toPath());
+            StringDataReader.SizeInputStream sizeInputStream = new StringDataReader.SizeInputStream(inputStream, fileLength);
+            inputStream = sizeInputStream;
+            if (fileName.endsWith(".gz")) {
+                inputStream = new GZIPInputStream(inputStream);
+            }
+
+            DataReader<Variant> reader = new VariantVcfHtsjdkReader(inputStream,
                     new VariantFileMetadata(Integer.toString(fileId), Integer.toString(fileId))
                             .toVariantStudyMetadata(studyMetadata.getName()));
             ObjectMap thisOptions = new ObjectMap(this.options);
@@ -94,26 +113,30 @@ public class FillGapsFromFile {
             reader = reader.then(normalizer);
             VariantSorterTask sorter = new VariantSorterTask(100, SampleIndexSchema.VARIANT_COMPARATOR);
             reader = reader.then(sorter);
-            fileIterators.add(new VariantIterator(file, fileName, fileId, sampleIds, reader.iterator(), maxBufferSize));
+            fileIterators.add(new VariantIterator(file, fileName, fileId, sampleIds, reader.iterator(), sizeInputStream, maxBufferSize));
         }
 
         int numVariants = 0;
         int numPuts = 0;
+        ProgressLogger progressLogger = new ProgressLogger("Processed", filesLengthBytes, 100);
         try (OutputStream os = new GZIPOutputStream(Files.newOutputStream(output))) {
             String chromosome = getNextChromosome(fileIterators);
             while (chromosome != null) {
-                Result result = fillGapsChromosome(chromosome, fileIterators, fillGapsTask, os);
+                Result result = fillGapsChromosome(chromosome, fileIterators, fillGapsTask, progressLogger, os);
                 numVariants += result.getNumVariants();
                 numPuts += result.getNumPuts();
                 chromosome = getNextChromosome(fileIterators);
             }
         }
+
         logger.info("Fill gaps finished! " + numVariants + " variants processed, " + numPuts + " mutations written to " + output);
+        logger.info("Time taken: " + TimeUtils.durationToString(stopWatch));
         return output;
     }
 
-    public void setMaxBufferSize(int maxBufferSize) {
+    public FillGapsFromFile setMaxBufferSize(int maxBufferSize) {
         this.maxBufferSize = maxBufferSize;
+        return this;
     }
 
     public static CloseableIterator<Put> putProtoIterator(Path protoFile) throws IOException {
@@ -145,11 +168,13 @@ public class FillGapsFromFile {
         private final int fileId;
         private final LinkedHashSet<Integer> sampleIds;
         private final Iterator<Variant> variantIterator;
+        private final StringDataReader.SizeInputStream sizeInputStream;
+        private long lastAvailable;
         private String chromosome;
 
         // Variants buffer from the current chromosome
-        private RandomAccessDequeue<Variant> buffer = new RandomAccessDequeue<>();
-        private ListIterator<Variant> bufferIterator = buffer.listIterator();
+        private RandomAccessDequeue<Variant> buffer;
+        private ListIterator<Variant> bufferIterator;
 
         private final Set<String> prevChromosomes = new HashSet<>();
         // Buffer for other chromosomes
@@ -158,13 +183,28 @@ public class FillGapsFromFile {
 
 
         VariantIterator(File file, String fileName, int fileId, LinkedHashSet<Integer> sampleIds,
-                        Iterator<Variant> variantIterator, int maxBufferSize) {
+                        Iterator<Variant> variantIterator, StringDataReader.SizeInputStream sizeInputStream, int maxBufferSize) {
             this.file = file;
             this.fileName = fileName;
             this.fileId = fileId;
             this.sampleIds = sampleIds;
             this.variantIterator = variantIterator;
+            this.sizeInputStream = sizeInputStream;
             this.maxBufferSize = maxBufferSize;
+            buffer = newBuffer();
+            bufferIterator = buffer.listIterator();
+            this.lastAvailable = sizeInputStream.availableLong();
+        }
+
+        private RandomAccessDequeue<Variant> newBuffer() {
+            return new RandomAccessDequeue<>(this.maxBufferSize * 2);
+        }
+
+        public long getReadBytes() {
+            long newAvailable = sizeInputStream.availableLong();
+            long readBytes = lastAvailable - newAvailable;
+            lastAvailable = newAvailable;
+            return readBytes;
         }
 
         @Override
@@ -240,7 +280,7 @@ public class FillGapsFromFile {
                     buffer.add(variant);
                     return variant;
                 } else {
-                    bufferByChr.computeIfAbsent(variant.getChromosome(), k -> new RandomAccessDequeue<>()).add(variant);
+                    bufferByChr.computeIfAbsent(variant.getChromosome(), k -> newBuffer()).add(variant);
                     if (prevChromosomes.contains(variant.getChromosome())) {
                         throw new IllegalStateException("Chromosome \"" + variant.getChromosome() + "\" already processed!"
                                 + " Unordered chromosomes in file \"" + file + "\"");
@@ -307,7 +347,7 @@ public class FillGapsFromFile {
                 // When changing chromosome, change the buffer
                 prevChromosomes.add(this.chromosome);
                 RandomAccessDequeue<Variant> chrBuffer = bufferByChr.remove(newChromosome);
-                buffer = chrBuffer == null ? new RandomAccessDequeue<>() : chrBuffer;
+                buffer = chrBuffer == null ? newBuffer() : chrBuffer;
                 bufferIterator = buffer.listIterator();
             }
             this.chromosome = newChromosome;
@@ -400,7 +440,8 @@ public class FillGapsFromFile {
         }
     }
 
-    private Result fillGapsChromosome(String chromosome, List<VariantIterator> fileIterators, FillGapsTask fillGapsTask, OutputStream os)
+    private Result fillGapsChromosome(String chromosome, List<VariantIterator> fileIterators, FillGapsTask fillGapsTask,
+                                      ProgressLogger progressLogger, OutputStream os)
             throws IOException {
         int numVariants = 0;
         int numPuts = 0;
@@ -410,8 +451,8 @@ public class FillGapsFromFile {
         Variant variant = getNextVariant(fileIterators, null);
         EnumMap<VariantOverlappingStatus, Integer> overlappingStatusCount = new EnumMap<>(VariantOverlappingStatus.class);
         while (variant != null) {
+            Integer start = variant.getStart();
             numVariants++;
-            // FIXME: Como no encuentra una variante de ese chromosoma, ha leido todo el archivo..
             Put put = new Put(VariantPhoenixKeyFactory.generateVariantRowKey(variant));
             for (VariantIterator fileIterator : fileIterators) {
 //                int prevNextIndex = fileIterator.nextIndex();
@@ -423,6 +464,7 @@ public class FillGapsFromFile {
                 // The fillGapsTask may have consumed some variants from the iterator
                 // Trim the buffer to remove the consumed variants
                 fileIterator.trim();
+                progressLogger.increment(fileIterator.getReadBytes(), () -> " Bytes up to position " + chromosome + ":" + start);
             }
 
             if (!put.isEmpty()) {

@@ -24,10 +24,16 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenix
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.zip.GZIPOutputStream;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.newOutputUri;
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.newRootDir;
@@ -54,7 +60,10 @@ public class FillGapsFromFileTest  {
     }
 
     public URI indexFile(String fileName) throws StorageEngineException, IOException {
-        URI uri = VariantStorageBaseTest.getResourceUri(fileName);
+        return indexFile(VariantStorageBaseTest.getResourceUri(fileName));
+    }
+
+    public URI indexFile(URI uri) throws StorageEngineException, IOException {
         VariantFileMetadata variantFileMetadata = readerUtils.readVariantFileMetadata(uri);
         int fileId = vsmm.registerFile(studyId, variantFileMetadata);
         variantFileMetadata.setId(String.valueOf(fileId));
@@ -68,7 +77,7 @@ public class FillGapsFromFileTest  {
         URI file1 = indexFile("gaps/file1.genome.vcf");
         URI file2 = indexFile("gaps/file2.genome.vcf");
 
-        FillGapsFromFile task = new FillGapsFromFile(null, vsmm, readerUtils, new ObjectMap());
+        FillGapsFromFile task = new FillGapsFromFile(null, vsmm, new ObjectMap());
         Path result = task.fillGaps(VariantStorageBaseTest.STUDY_NAME, Arrays.asList(file1, file2), newOutputUri(), "0/0");
         printResult(result);
     }
@@ -78,7 +87,7 @@ public class FillGapsFromFileTest  {
         URI file1 = indexFile("gaps_unordered_chrs/file1.genome.vcf");
         URI file2 = indexFile("gaps_unordered_chrs/file2.genome.vcf");
 
-        FillGapsFromFile task = new FillGapsFromFile(null, vsmm, readerUtils, new ObjectMap());
+        FillGapsFromFile task = new FillGapsFromFile(null, vsmm, new ObjectMap());
         task.setMaxBufferSize(10);
         thrown.expectMessage("Chromosome \"2\" already processed!");
         task.fillGaps(VariantStorageBaseTest.STUDY_NAME, Arrays.asList(file1, file2), newOutputUri(), "0/0");
@@ -89,7 +98,7 @@ public class FillGapsFromFileTest  {
         URI file1 = indexFile("gaps_unordered_chrs/file1.genome.vcf");
         URI file2 = indexFile("gaps_unordered_chrs/file2.genome.vcf");
 
-        FillGapsFromFile task = new FillGapsFromFile(null, vsmm, readerUtils, new ObjectMap());
+        FillGapsFromFile task = new FillGapsFromFile(null, vsmm, new ObjectMap());
         task.setMaxBufferSize(1000);
         Path result = task.fillGaps(VariantStorageBaseTest.STUDY_NAME, Arrays.asList(file1, file2), newOutputUri(), "0/0");
         printResult(result);
@@ -97,17 +106,20 @@ public class FillGapsFromFileTest  {
 
     @Test
     public void testPlatinum() throws Exception {
-        URI file1 = indexFile("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz");
-        URI file2 = indexFile("platinum/1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz");
+        List<URI> files = new LinkedList<>();
 
-        FillGapsFromFile task = new FillGapsFromFile(null, vsmm, readerUtils, new ObjectMap());
-        Path result = task.fillGaps(VariantStorageBaseTest.STUDY_NAME, Arrays.asList(file1, file2), newOutputUri(), "0/0");
+        files.add(indexFile("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"));
+        files.add(indexFile("platinum/1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz"));
+
+        FillGapsFromFile task = new FillGapsFromFile(null, vsmm, new ObjectMap());
+        Path result = task.fillGaps(VariantStorageBaseTest.STUDY_NAME, files, newOutputUri(), "0/0");
 
         printResult(result);
     }
 
     private static void printResult(Path result) throws Exception {
-        try (CloseableIterator<Put> iterator = FillGapsFromFile.putProtoIterator(result)) {
+        try (CloseableIterator<Put> iterator = FillGapsFromFile.putProtoIterator(result);
+             PrintStream ps = new PrintStream(new GZIPOutputStream(Files.newOutputStream( result.getParent().resolve(result.getFileName() + ".txt.gz"))))) {
             while (iterator.hasNext()) {
                 Put put = iterator.next();
                 StringBuilder sb = new StringBuilder();
@@ -124,7 +136,7 @@ public class FillGapsFromFileTest  {
                     }
                     sb.append(" , ");
                 });
-                System.out.println(sb);
+                ps.println(sb);
             }
 
         }

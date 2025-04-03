@@ -42,7 +42,7 @@ public class RandomAccessDequeue<T> extends AbstractList<T> {
 
     public boolean addLast(T elem) {
         if (size + 1 == buffer.length) {
-            throw new IllegalStateException("Buffer is full");
+            throw new IllegalStateException("Buffer is full. Buffer length: " + buffer.length + ", Current size: " + size);
         }
         buffer[tail] = elem;
         tail = (tail + 1) % buffer.length;

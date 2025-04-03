@@ -521,6 +521,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
         List<Integer> sampleIds = new ArrayList<>(samples.size());
+        Set<Integer> fileIds = new HashSet<>();
         for (String sample : samples) {
             Integer sampleId = metadataManager.getSampleId(studyMetadata.getId(), sample);
             if (sampleId != null) {
@@ -528,10 +529,13 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             } else {
                 throw VariantQueryException.sampleNotFound(sample, studyMetadata.getName());
             }
+            List<Integer> sampleFiles = metadataManager.getFileIdsFromSampleId(studyMetadata.getId(), sampleId, true);
+            if (sampleFiles.size() > 1) {
+                throw new IllegalArgumentException("Unable to execute operation with more than one file per sample. Found "
+                        + sampleFiles.size() + " files for sample " + sample);
+            }
+            fileIds.addAll(sampleFiles);
         }
-
-        // Get files
-        Set<Integer> fileIds = metadataManager.getFileIdsFromSampleIds(studyMetadata.getId(), sampleIds);
 
         options = params.toObjectMap(options);
         if (StringUtils.isNotEmpty(params.getGapsGenotype())) {
@@ -560,7 +564,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         if (localEnabled && fileExists.size() == fileIds.size()) {
             logger.info("Run aggregation family operation locally for " + fileIds.size() + " files.");
             FillGapsFromFile fillGapsFromFile = new FillGapsFromFile(getDBAdaptor().getHBaseManager(),
-                    metadataManager, getVariantReaderUtils(), options);
+                    metadataManager, options);
             fillGapsFromFile.setMaxBufferSize(
                     getOptions().getInt(FILL_GAPS_GAP_LOCAL_BUFFER_SIZE.key(),
                     FILL_GAPS_GAP_LOCAL_BUFFER_SIZE.defaultValue()));
