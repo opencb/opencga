@@ -22,7 +22,7 @@ public class SwaggerGeneratorTest {
     @Test
     public void runServerTest() throws Exception {
         JsonOpenApiGenerator generator = new JsonOpenApiGenerator();
-        Swagger swagger = generator.generateJsonOpenApi(new EnterpriseApiCommonsImpl(), "El token va aquí", "task-xxxx");
+        Swagger swagger = generator.generateJsonOpenApi(new EnterpriseApiCommonsImpl(), "El token va aquí", "task-xxxx", "test.app.zettagenomics.com");
         ObjectMapper mapper = new ObjectMapper();
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         String swaggerJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(swagger);
