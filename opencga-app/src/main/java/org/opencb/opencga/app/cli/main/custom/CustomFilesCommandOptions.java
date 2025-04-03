@@ -17,6 +17,7 @@ public class CustomFilesCommandOptions {
     public JCommander jCommander;
     public CommonCommandOptions commonCommandOptions;
     public UploadCommandOptions uploadCommandOptions;
+    public DownloadCommandOptions downloadCommandOptions;
 
     public CustomFilesCommandOptions(CommonCommandOptions commonCommandOptions, JCommander jCommander) {
 
@@ -82,4 +83,22 @@ public class CustomFilesCommandOptions {
                 " UUID", required = false, arity = 1)
         public String study;
     }
+
+    @Parameters(commandNames = {"download"}, commandDescription ="Download file")
+    public class DownloadCommandOptions {
+
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--file"}, description = "File id, name or path. Paths must be separated by : instead of /", required = true, arity = 1)
+        public String file;
+
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study;
+
+        @Parameter(names = {"--to"}, description = "Path where the file will be downloaded", arity = 1, required = true)
+        public String to;
+
+    }
+
 }
