@@ -24,6 +24,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.config.DatabaseCredentials;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.config.storage.StorageEngineConfiguration;
+import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
@@ -130,6 +131,11 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
             });
         }
         return new DataResult<Trio>().setResults(trios);
+    }
+
+    @Override
+    public void aggregateFamily(String study, VariantAggregateFamilyParams params, ObjectMap options, URI outdir) throws StorageEngineException {
+        logger.info("Running family aggregation!");
     }
 
     @Override

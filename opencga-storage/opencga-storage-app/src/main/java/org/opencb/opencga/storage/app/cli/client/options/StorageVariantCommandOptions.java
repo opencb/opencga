@@ -756,7 +756,12 @@ public class StorageVariantCommandOptions {
      */
     public static class GenericAggregateFamilyOptions {
 
-        @Parameter(names = {"--samples"}, description = "Samples within the same study to fill", required = true)
+        @Parameter(names = {"--family"}, description = "Family ID to select the samples to aggregate." +
+                " Exclusively used when 'samples' is not set.", required = true)
+        public String family;
+
+        @Parameter(names = {"--samples"}, description = "Samples within the same family to aggregate. Other family members not provided won't be added automatically."
+                + " Exclusively used when 'family' is not set.", required = true)
         public List<String> samples;
 
         @Parameter(names = {"--gaps-genotype"}, description = "Genotype to be used in gaps. Either 0/0, ./. or ?/?.", required = false)
