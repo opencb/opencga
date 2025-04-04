@@ -70,8 +70,8 @@ public class JsonOpenApiGenerator {
                    if(apiOperation.response() != null && !apiOperation.response().equals(Void.class)) {
                        String response = apiOperation.response().getSimpleName();
                        if (StringUtils.isNotEmpty(response)) {
-                           String newDescription = String.format("%s. Response Type: %s", method.getDescription(), response);
-                           method.setDescription(newDescription);
+                           String newDescription = String.format("%s. Response Type: %s", method.getSummary(), response);
+                           method.setSummary(newDescription);
                        }
                    }
 
