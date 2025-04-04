@@ -256,6 +256,7 @@ public final class Enums {
         SYNC_UNTRACKED_FILES,
 
         VISIT,
+        SUBMIT_JOB,
         KILL_JOB,
         RESCHEDULE_JOB,
 

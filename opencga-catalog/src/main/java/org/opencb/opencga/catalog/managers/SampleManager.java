@@ -658,6 +658,7 @@ public class SampleManager extends AnnotationSetManager<Sample, SamplePermission
                                         String token) throws CatalogException {
         return update(studyStr, sampleId, updateParams, options, token, StudyManager.INCLUDE_VARIABLE_SET,
                 (organizationId, study, userId, entryParam) -> {
+                    entryParam.setId(sampleId);
                     OpenCGAResult<Sample> internalResult = internalGet(organizationId, study.getUid(), sampleId, INCLUDE_SAMPLE_IDS,
                             userId);
                     if (internalResult.getNumResults() == 0) {

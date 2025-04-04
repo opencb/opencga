@@ -388,6 +388,13 @@ public abstract class ResourceManager<R extends IPrivateStudyUid, S extends Enum
     }
 
     /**
+     * Interface to execute anything when an error happens.
+     */
+    public interface ExecuteOnError {
+        void execute(String organizationId, Study study, String userId, EntryParam entryParam, Exception e) throws CatalogException;
+    }
+
+    /**
      * Interface to execute an operation over a single element.
      */
     public interface ExecuteGenericOperation<T> {
@@ -629,6 +636,16 @@ public abstract class ResourceManager<R extends IPrivateStudyUid, S extends Enum
     protected <T> OpenCGAResult<T> runForSingleEntry(ObjectMap params, Enums.Action action, String studyStr, String token,
                                                  QueryOptions studyIncludeList, ExecuteOperationForSingleEntry<T> execution,
                                                  String errorMessage) throws CatalogException {
+        return runForSingleEntry(params, action, studyStr, token, studyIncludeList, execution, null, errorMessage);
+    }
+
+    protected void echo(Runnable runnable) throws CatalogException {
+
+    }
+
+    protected <T> OpenCGAResult<T> runForSingleEntry(ObjectMap params, Enums.Action action, String studyStr, String token,
+                                                     QueryOptions studyIncludeList, ExecuteOperationForSingleEntry<T> execution,
+                                                     ExecuteOnError onError, String errorMessage) throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
         String organizationId = studyFqn.getOrganizationId();
@@ -639,14 +656,15 @@ public abstract class ResourceManager<R extends IPrivateStudyUid, S extends Enum
         String eventUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.EVENT);
         OpencgaEvent opencgaEvent = OpencgaEvent.build(eventUuid, eventId, params, organizationId, userId, tokenPayload.getToken());
         CatalogEvent catalogEvent = CatalogEvent.build(opencgaEvent);
+        EntryParam entryParam = new EntryParam();
+        Study study = null;
         try {
             // Get study
-            Study study = catalogManager.getStudyManager().resolveId(studyFqn, studyIncludeList, tokenPayload);
+            study = catalogManager.getStudyManager().resolveId(studyFqn, studyIncludeList, tokenPayload);
             opencgaEvent.setStudyFqn(study.getFqn());
             opencgaEvent.setStudyUuid(study.getUuid());
 
             // Execute code
-            EntryParam entryParam = new EntryParam();
             OpenCGAResult<T> execute = execution.execute(organizationId, study, userId, entryParam);
 
             // Fill missing OpencgaEvent entries
@@ -659,6 +677,14 @@ public abstract class ResourceManager<R extends IPrivateStudyUid, S extends Enum
             return execute;
         } catch (Exception e) {
             EventManager.getInstance().notify(catalogEvent, e);
+            if (onError != null && study != null) {
+                try {
+                    onError.execute(organizationId, study, userId, entryParam, e);
+                } catch (RuntimeException e1) {
+                    logger.error("Error running onErrorRunnable", e1);
+                    e.addSuppressed(e1);
+                }
+            }
             if (StringUtils.isNotEmpty(errorMessage)) {
                 throw new CatalogException(errorMessage, e);
             } else {

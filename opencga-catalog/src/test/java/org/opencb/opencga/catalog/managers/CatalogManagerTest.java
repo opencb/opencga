@@ -1012,6 +1012,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         }
     }
 
+    @Test
     public void testJobQuotaLimit() throws CatalogException {
         // Submit a dummy job. This shouldn't raise any error
         catalogManager.getJobManager().submit(studyId, JobType.NATIVE, "command-subcommand", null, Collections.emptyMap(), ownerToken);
@@ -1033,6 +1034,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
             // Submit a job. This should raise an error
             CatalogException exception = assertThrows(CatalogException.class, () -> mockManager.getJobManager()
                     .submit(studyId, JobType.NATIVE, "command-subcommand", null, Collections.emptyMap(), ownerToken));
+            exception.printStackTrace();
             assertTrue(exception.getMessage().contains("quota"));
         }
     }
