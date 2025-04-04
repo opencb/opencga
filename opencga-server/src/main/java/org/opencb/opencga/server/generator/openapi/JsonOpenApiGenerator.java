@@ -213,6 +213,12 @@ public class JsonOpenApiGenerator {
                     parameter.setDescription(StringUtils.isEmpty(apiParam.value())?formDataParam.value():apiParam.value());
                     parameter.setRequired(apiParam.required());
                 }
+                String allowable = apiParam.allowableValues();
+                if (StringUtils.isNotEmpty(allowable)) {
+                    String formattedAllowable = allowable.replace(",", "|");
+                    String newDescription = String.format("%s. Allowable values: %s", parameter.getDescription(), formattedAllowable);
+                    parameter.setDescription(newDescription);
+                }
                 if(SwaggerDefinitionGenerator.isPrimitive(methodParam.getType())){
                     parameter.setType(SwaggerDefinitionGenerator.mapJavaTypeToSwaggerType(methodParam.getType()));
                 }else {
