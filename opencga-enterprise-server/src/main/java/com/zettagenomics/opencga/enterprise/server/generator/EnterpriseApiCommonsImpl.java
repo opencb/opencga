@@ -37,12 +37,12 @@ public class EnterpriseApiCommonsImpl implements ApiCommons {
         classes.add(VariantOperationWebService.class);
         classes.add(Ga4ghWSServer.class);
         classes.add(AdminWSServer.class);
-        classes.add(EnterpriseMetaWSServer.class);
         classes.add(MetaWSServer.class);
-        classes.add(EnterpriseClinicalWebService.class);
         classes.add(ClinicalWebService.class);
-        classes.add(EnterpriseUserWSServer.class);
         classes.add(UserWSServer.class);
+        classes.add(EnterpriseMetaWSServer.class);
+        classes.add(EnterpriseClinicalWebService.class);
+        classes.add(EnterpriseUserWSServer.class);
         classes.add(EnterpriseFederationWSServer.class);
         classes.add(EnterpriseCvdbWebService.class);
 
