@@ -37,7 +37,7 @@ public class EnterpriseApiCommonsImpl implements ApiCommons {
         classes.add(VariantOperationWebService.class);
         classes.add(Ga4ghWSServer.class);
         classes.add(AdminWSServer.class);
-        //Classes extended by Enterprise classes
+        // Opencga classes extended by custom enterprise implementations
         classes.add(MetaWSServer.class);
         classes.add(ClinicalWebService.class);
         classes.add(UserWSServer.class);
