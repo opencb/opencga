@@ -195,7 +195,7 @@ public class JsonOpenApiGenerator {
                 PathParam pathParam = methodParam.getAnnotation(PathParam.class);
                 if (pathParam != null) {
                     parameter.setName(pathParam.value());
-                    parameter.setDescription(pathParam.value());
+                    parameter.setDescription(StringUtils.isEmpty(apiParam.value())?pathParam.value():apiParam.value());
                     parameter.setRequired(true);
                 }
 
@@ -203,14 +203,14 @@ public class JsonOpenApiGenerator {
                 QueryParam queryParam = methodParam.getAnnotation(QueryParam.class);
                 if (queryParam != null) {
                     parameter.setName(queryParam.value());
-                    parameter.setDescription(queryParam.value());
+                    parameter.setDescription(StringUtils.isEmpty(apiParam.value())?queryParam.value():apiParam.value());
                     parameter.setRequired(apiParam.required());
                 }
 
                 FormDataParam formDataParam = methodParam.getAnnotation(FormDataParam.class);
                 if (formDataParam != null) {
                     parameter.setName(formDataParam.value());
-                    parameter.setDescription(formDataParam.value());
+                    parameter.setDescription(StringUtils.isEmpty(apiParam.value())?formDataParam.value():apiParam.value());
                     parameter.setRequired(apiParam.required());
                 }
                 if(SwaggerDefinitionGenerator.isPrimitive(methodParam.getType())){
