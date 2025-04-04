@@ -67,6 +67,14 @@ public class JsonOpenApiGenerator {
                     Method method = new Method();
                     method.setSummary(apiOperation.value());
                     method.setDescription(apiOperation.notes());
+                   if(apiOperation.response() != null && !apiOperation.response().equals(Void.class)) {
+                       String response = apiOperation.response().getSimpleName();
+                       if (StringUtils.isNotEmpty(response)) {
+                           String newDescription = String.format("%s. Response Type: %s", method.getDescription(), response);
+                           method.setDescription(newDescription);
+                       }
+                   }
+
                     method.setTags(Collections.singletonList(api.value()));
                     Map<String, Response> responses = getStringResponseMap(apiOperation);
                     method.setResponses(responses);
@@ -116,7 +124,7 @@ public class JsonOpenApiGenerator {
                     .setSchema(new Schema().setType("string").setFormat("binary")));
            response.setDescription("File successfully downloaded").setContent(content);
         }else {
-             response.setDescription("Successful operation");
+             response.setDescription("Successful operation: "+apiOperation.response().getSimpleName());
             if (!SwaggerDefinitionGenerator.isPrimitive(apiOperation.response())) {
                 Schema schema = new Schema();
                 schema.set$ref("#/definitions/" + apiOperation.response().getSimpleName());
