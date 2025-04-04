@@ -21,10 +21,7 @@ public class EnterpriseApiCommonsImpl implements ApiCommons {
     public List<Class<?>> getApiClasses() {
 
         List<Class<?>> classes = new ArrayList();
-        classes.add(EnterpriseFederationWSServer.class);
         classes.add(OrganizationWSServer.class);
-        classes.add(UserWSServer.class);
-        classes.add(EnterpriseUserWSServer.class);
         classes.add(ProjectWSServer.class);
         classes.add(StudyWSServer.class);
         classes.add(FileWSServer.class);
@@ -37,13 +34,16 @@ public class EnterpriseApiCommonsImpl implements ApiCommons {
         classes.add(PanelWSServer.class);
         classes.add(AlignmentWebService.class);
         classes.add(VariantWebService.class);
-        classes.add(ClinicalWebService.class);
-        classes.add(EnterpriseClinicalWebService.class);
         classes.add(VariantOperationWebService.class);
-        classes.add(EnterpriseMetaWSServer.class);
-        classes.add(MetaWSServer.class);
         classes.add(Ga4ghWSServer.class);
         classes.add(AdminWSServer.class);
+        classes.add(EnterpriseMetaWSServer.class);
+        classes.add(MetaWSServer.class);
+        classes.add(EnterpriseClinicalWebService.class);
+        classes.add(ClinicalWebService.class);
+        classes.add(EnterpriseUserWSServer.class);
+        classes.add(UserWSServer.class);
+        classes.add(EnterpriseFederationWSServer.class);
         classes.add(EnterpriseCvdbWebService.class);
 
         return classes;
