@@ -221,12 +221,7 @@ public class JsonOpenApiGenerator {
                     parameter.setDescription(StringUtils.isEmpty(apiParam.value())?formDataParam.value():apiParam.value());
                     parameter.setRequired(apiParam.required());
                 }
-                String allowable = apiParam.allowableValues();
-                if (StringUtils.isNotEmpty(allowable)) {
-                    String formattedAllowable = allowable.replace(",", "|");
-                    String newDescription = String.format("%s. Allowable values: %s", parameter.getDescription(), formattedAllowable);
-                    parameter.setDescription(newDescription);
-                }
+                parameter.setDescription(formatParameterDescription(apiParam, parameter));
                 if(SwaggerDefinitionGenerator.isPrimitive(methodParam.getType())){
                     parameter.setType(SwaggerDefinitionGenerator.mapJavaTypeToSwaggerType(methodParam.getType()));
                 }else {
@@ -242,6 +237,33 @@ public class JsonOpenApiGenerator {
         }
 
         return parameters;
+    }
+
+    public String formatParameterDescription(ApiParam apiParam, Parameter parameter) {
+        String allowable = apiParam.allowableValues();
+        String defaultValue = apiParam.defaultValue();
+        String description = StringUtils.defaultString(parameter.getDescription());
+
+        StringBuilder descriptionBuilder = new StringBuilder(description);
+
+        // Add period if the description does not already end with one
+        if (!description.trim().endsWith(".")) {
+            descriptionBuilder.append(".");
+        }
+
+        // Append allowable values if present, replacing commas with " | "
+        if (StringUtils.isNotEmpty(allowable)) {
+            String formattedAllowable = allowable.replace(",", " | ");
+            descriptionBuilder.append(" Allowable values: ").append(formattedAllowable).append(".");
+        }
+
+        // Append default value if specified
+        if (StringUtils.isNotEmpty(defaultValue)) {
+            descriptionBuilder.append(" Default: ").append(defaultValue).append(".");
+        }
+
+        // Set the final formatted description
+        return descriptionBuilder.toString();
     }
 
     public Schema getMapSchema(java.lang.reflect.Parameter methodParam) {
