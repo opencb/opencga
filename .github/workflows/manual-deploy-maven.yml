@@ -10,7 +10,7 @@ jobs:
       maven_opts: -Phdp3.1,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
 
   deploy-maven:
-    uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@TASK-7460
     needs: build
     with:
       maven_opts: -P hdp3.1 -Dopencga.war.name=opencga
