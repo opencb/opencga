@@ -1,10 +1,6 @@
 name: Push OpenCGA develop
 
 on:
-  push:
-    branches:
-      - develop
-      - release-*
   workflow_dispatch:
 
 jobs:
