@@ -1,4 +1,4 @@
-name: Push OpenCGA develop
+name: Manual deploy maven
 
 on:
   workflow_dispatch:
