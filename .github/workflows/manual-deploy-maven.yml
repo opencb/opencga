@@ -1,0 +1,21 @@
+name: Push OpenCGA develop
+
+on:
+  push:
+    branches:
+      - develop
+      - release-*
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
+    with:
+      maven_opts: -Phdp3.1,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
+
+  deploy-maven:
+    uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
+    needs: build
+    with:
+      maven_opts: -P hdp3.1 -Dopencga.war.name=opencga
+    secrets: inherit
