@@ -84,6 +84,7 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
         clearDB(DB_NAME);
 
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
+        solr.configure(variantStorageEngine);
 
         runDefaultETL(smallInputUri, variantStorageEngine, sm);
 

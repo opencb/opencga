@@ -514,8 +514,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         if (samples == null || samples.size() < 2) {
             throw new IllegalArgumentException("Aggregate family operation requires at least two samples.");
         } else if (samples.size() > FILL_GAPS_MAX_SAMPLES) {
-            throw new IllegalArgumentException("Unable to execute fill gaps operation with more than "
+            throw new IllegalArgumentException("Unable to execute aggregate-family operation with more than "
                     + FILL_GAPS_MAX_SAMPLES + " samples.");
+        } else if (new HashSet<>(samples).size() != samples.size()) {
+            // Fail if duplicated samples
+            throw new IllegalArgumentException("Unable to execute aggregate-family operation with duplicated samples.");
         }
 
         VariantStorageMetadataManager metadataManager = getMetadataManager();
@@ -557,29 +560,14 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                 filesWithArchive.add(fileId);
             }
         }
+
         boolean localEnabled = getOptions().getBoolean(FILL_GAPS_GAP_LOCAL_ENABLED.key(), FILL_GAPS_GAP_LOCAL_ENABLED.defaultValue());
         if (!localEnabled) {
             logger.info("Aggregation family operation locally is disabled. Use archive table.");
         }
-        if (localEnabled && fileExists.size() == fileIds.size()) {
-            logger.info("Run aggregation family operation locally for " + fileIds.size() + " files.");
-            FillGapsFromFile fillGapsFromFile = new FillGapsFromFile(getDBAdaptor().getHBaseManager(),
-                    metadataManager, options);
-            fillGapsFromFile.setMaxBufferSize(
-                    getOptions().getInt(FILL_GAPS_GAP_LOCAL_BUFFER_SIZE.key(),
-                    FILL_GAPS_GAP_LOCAL_BUFFER_SIZE.defaultValue()));
-            String gapsGenotype = getOptions().getString(
-                    FILL_GAPS_GAP_GENOTYPE.key(),
-                    FILL_GAPS_GAP_GENOTYPE.defaultValue());
-            try {
-                fillGapsFromFile.fillGaps(studyMetadata.getName(), uris, outdir, getVariantTableName(), gapsGenotype);
-            } catch (IOException e) {
-                throw new StorageEngineException("Error computing aggregation family operation", e);
-            }
-        } else if (filesWithArchive.size() == fileIds.size()) {
-            logger.info("Run aggregation family operation using archive table for " + fileIds.size() + " files.");
-            fillGapsOrMissing(study, studyMetadata, fileIds, sampleIds, true, false, params.toObjectMap(options));
-        } else {
+        boolean localExecution = localEnabled && fileExists.size() == fileIds.size();
+        boolean mrExecution = filesWithArchive.size() == fileIds.size();
+        if (!localExecution && !mrExecution) {
             Set<String> fileName = new HashSet<>();
             for (Integer fileId : CollectionUtils.subtract(fileIds, fileExists)) {
                 fileName.add(metadataManager.getFileMetadata(studyMetadata.getId(), fileId).getName());
@@ -591,6 +579,53 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                     + "Missing file or archive table. Files: " + fileName);
         }
 
+        // Try to register the cohort. It might fail if the cohort already exists.
+        int internalCohortId = getMetadataManager()
+                .registerAggregateFamilySamplesCohort(studyMetadata.getId(), samples, params.isResume(), params.isResume());
+
+        // Update family index status to NONE
+        for (Integer sampleId : sampleIds) {
+            metadataManager.updateSampleMetadata(studyMetadata.getId(), sampleId, sm -> {
+                Integer version = sm.getFamilyIndexVersion();
+                if (version != null) {
+                    logger.info("Updating family index status for sample '{}' to {}", sm.getName(), TaskMetadata.Status.NONE);
+                    sm.setFamilyIndexStatus(TaskMetadata.Status.NONE, version);
+                }
+            });
+        }
+
+        try {
+            if (localExecution) {
+                logger.info("Run aggregation family operation locally for " + fileIds.size() + " files.");
+                FillGapsFromFile fillGapsFromFile = new FillGapsFromFile(getDBAdaptor().getHBaseManager(),
+                        metadataManager, options);
+                fillGapsFromFile.setMaxBufferSize(
+                        getOptions().getInt(FILL_GAPS_GAP_LOCAL_BUFFER_SIZE.key(),
+                                FILL_GAPS_GAP_LOCAL_BUFFER_SIZE.defaultValue()));
+                String gapsGenotype = getOptions().getString(
+                        FILL_GAPS_GAP_GENOTYPE.key(),
+                        FILL_GAPS_GAP_GENOTYPE.defaultValue());
+
+                fillGapsFromFile.fillGaps(studyMetadata.getName(), uris, outdir, getVariantTableName(), gapsGenotype);
+            } else {
+                logger.info("Run aggregation family operation using archive table for " + fileIds.size() + " files.");
+                fillGapsOrMissing(study, studyMetadata, fileIds, sampleIds, true, false, params.toObjectMap(options));
+            }
+
+            metadataManager.updateCohortMetadata(studyMetadata.getId(), internalCohortId, cohort -> {
+                cohort.setStatusByType(TaskMetadata.Status.READY);
+            });
+            metadataManager.removeExtraInternalCohorts(studyMetadata.getId(), internalCohortId);
+        } catch (Exception e) {
+            try {
+                metadataManager.updateCohortMetadata(studyMetadata.getId(), internalCohortId, cohort -> {
+                    cohort.setStatusByType(TaskMetadata.Status.ERROR);
+                });
+            } catch (Exception e1) {
+                e.addSuppressed(e1);
+            }
+            throw e;
+        }
     }
 
     private void fillGapsOrMissing(String study, StudyMetadata studyMetadata, Set<Integer> fileIds, List<Integer> sampleIds,

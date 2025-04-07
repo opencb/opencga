@@ -59,13 +59,16 @@ public class FillGapsFromFile {
     }
 
     public void fillGaps(String study, List<URI> inputFiles, URI outdir, String variantTableName, String gapsGenotype)
-            throws IOException, StorageEngineException {
+            throws StorageEngineException {
+        try {
+            Path output = fillGaps(study, inputFiles, outdir, gapsGenotype);
 
-        Path output = fillGaps(study, inputFiles, outdir, gapsGenotype);
+            writeGaps(variantTableName, output);
 
-        writeGaps(variantTableName, output);
-
-        Files.delete(output);
+            Files.delete(output);
+        } catch (IOException e) {
+            throw new StorageEngineException("Error computing aggregation family operation", e);
+        }
     }
 
     public Path fillGaps(String study, List<URI> inputFiles, URI outdir, String gapsGenotype) throws StorageEngineException, IOException {
@@ -144,7 +147,7 @@ public class FillGapsFromFile {
         return new PutCloseableIterator(inputStream);
     }
 
-    public void writeGaps(String variantTableName, Path output) throws IOException {
+    public void writeGaps(String variantTableName, Path output) throws StorageEngineException {
         try (BufferedMutator bufferedMutator = hBaseManager.getConnection()
                 .getBufferedMutator(new BufferedMutatorParams(TableName.valueOf(variantTableName)))) {
             try (CloseableIterator<Put> iterator = putProtoIterator(output)) {
@@ -153,10 +156,8 @@ public class FillGapsFromFile {
                 }
             }
             bufferedMutator.flush();
-        } catch (IOException e) {
-            throw e;
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new StorageEngineException("Error computing aggregation family operation", e);
         }
     }
 

@@ -334,28 +334,18 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
     /* Static methods to run a simple ETL to index Variants */
     /* ---------------------------------------------------- */
 
-
-    public static StoragePipelineResult runETL(VariantStorageEngine variantStorageManager, ObjectMap options)
-            throws IOException, FileFormatException, StorageEngineException {
-        return runETL(variantStorageManager, options, true, true, true);
-    }
-
     public static StoragePipelineResult runETL(VariantStorageEngine variantStorageManager, URI input, String study, ObjectMap options)
             throws IOException, FileFormatException, StorageEngineException {
         return runETL(variantStorageManager, input, outputUri, options.append(VariantStorageOptions.STUDY.key(), study), true, true, true);
     }
 
-    public static StoragePipelineResult runETL(VariantStorageEngine variantStorageManager, ObjectMap options,
+    public static StoragePipelineResult runETL(VariantStorageEngine variantStorageManager, URI inputUri,
+                                               ObjectMap options,
                                                boolean doExtract,
                                                boolean doTransform,
                                                boolean doLoad)
             throws IOException, FileFormatException, StorageEngineException {
         return runETL(variantStorageManager, inputUri, outputUri, options, doExtract, doTransform, doLoad);
-    }
-
-    public static StoragePipelineResult runDefaultETL(VariantStorageEngine variantStorageManager, StudyMetadata studyMetadata)
-            throws URISyntaxException, IOException, FileFormatException, StorageEngineException {
-        return runDefaultETL(inputUri, variantStorageManager, studyMetadata);
     }
 
     public static StoragePipelineResult runDefaultETL(URI inputUri, VariantStorageEngine variantStorageManager, StudyMetadata studyMetadata)

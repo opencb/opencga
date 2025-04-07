@@ -130,7 +130,7 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     FILL_MISSING_SIMPLIFIED_MULTIALLELIC_VARIANTS("storage.hadoop.fill_missing.simplifiedMultiAllelicVariants", true),
     FILL_MISSING_GAP_GENOTYPE("storage.hadoop.fill_missing.gap_genotype", "0/0"),
     FILL_GAPS_GAP_GENOTYPE("storage.hadoop.fill_gaps.gap_genotype", "0/0"),
-    FILL_GAPS_GAP_LOCAL_BUFFER_SIZE("storage.hadoop.fill_gaps.local.bufferSize", 5000),
+    FILL_GAPS_GAP_LOCAL_BUFFER_SIZE("storage.hadoop.fill_gaps.local.bufferSize", 10000),
     FILL_GAPS_GAP_LOCAL_ENABLED("storage.hadoop.fill_gaps.local.enabled", true),
 
     WRITE_MAPPERS_LIMIT_FACTOR("storage.hadoop.write.mappers.limit.factor", 1.5F),
