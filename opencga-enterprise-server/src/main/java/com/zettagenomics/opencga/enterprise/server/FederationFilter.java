@@ -59,17 +59,25 @@ public class FederationFilter implements Filter {
         String rewrittenUri = REST_PATTERN.matcher(request.getRequestURI()).replaceAll("$1federations/redirect");
         logger.info("Requested URI: {}\nRewritten URI: {}", request.getRequestURI(), rewrittenUri);
 
-        return new HttpServletRequestWrapper(request) {
-                @Override
-                public String getRequestURI() {
-                    return rewrittenUri;
-                }
+        String rewrittenUrl = request.getRequestURL().toString().replace(request.getRequestURI(), rewrittenUri);
+        logger.info("Requested URL: {}\nRewritten URL: {}", request.getRequestURL(), rewrittenUrl);
 
-                @Override
-                public String getQueryString() {
-                    return queryString;
-                }
-            };
+        return new HttpServletRequestWrapper(request) {
+            @Override
+            public String getRequestURI() {
+                return rewrittenUri;
+            }
+
+            @Override
+            public String getQueryString() {
+                return queryString;
+            }
+
+            @Override
+            public StringBuffer getRequestURL() {
+                return new StringBuffer(rewrittenUrl);
+            }
+        };
     }
 
     private boolean requestFederatedData(HttpServletRequest request) {
