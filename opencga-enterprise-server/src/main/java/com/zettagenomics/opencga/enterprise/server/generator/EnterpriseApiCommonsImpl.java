@@ -41,7 +41,7 @@ public class EnterpriseApiCommonsImpl implements ApiCommons {
         classes.add(MetaWSServer.class);
         classes.add(ClinicalWebService.class);
         classes.add(UserWSServer.class);
-        //Enterprise classes
+        //Enterprise Api Rest classes
         classes.add(EnterpriseMetaWSServer.class);
         classes.add(EnterpriseClinicalWebService.class);
         classes.add(EnterpriseUserWSServer.class);
