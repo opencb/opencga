@@ -47,7 +47,7 @@ public class FederationFilter implements Filter {
         chain.doFilter(request, response);
     }
 
-    private HttpServletRequest rewriteRequestUrl(HttpServletRequest request) {
+    HttpServletRequest rewriteRequestUrl(HttpServletRequest request) {
         // request.getRequestURI(); // /opencga/webservices/rest/v2/sample/search
         // request.getRequestURL(); // http://localhost:8080/opencga/webservices/rest/v2/sample/search
 
