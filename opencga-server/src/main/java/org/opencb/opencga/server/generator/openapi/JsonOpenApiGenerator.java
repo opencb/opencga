@@ -90,7 +90,11 @@ public class JsonOpenApiGenerator {
                     if (consumes != null){
                         method.getConsumes().addAll(Arrays.asList(consumes.value()));
                     }
-                    method.getProduces().add("application/json");
+                    if(apiOperation.response() != null && !apiOperation.response().equals(Void.class) && apiOperation.response().equals(DataInputStream.class)){
+                        method.getProduces().add("application/octet-stream");
+                    }else {
+                        method.getProduces().add("application/json");
+                    }
 
                     // Ruta completa del endpoint
                     javax.ws.rs.Path methodPathAnnotation = wsmethod.getAnnotation(javax.ws.rs.Path.class);
