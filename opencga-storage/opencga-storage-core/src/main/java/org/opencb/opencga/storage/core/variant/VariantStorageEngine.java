@@ -877,14 +877,16 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 // then, load variants
                 QueryOptions queryOptions = new QueryOptions();
                 Query query = new Query(VariantQueryParam.STUDY.key(), study)
-                        .append(VariantQueryParam.SAMPLE.key(), samples);
+                        .append(VariantQueryParam.SAMPLE.key(), samples)
+                        .append(VariantSearchManager.USE_SEARCH_INDEX, UseSearchIndex.NO);
 
-                VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions);
+                VariantDBIterator iterator = iterator(query, queryOptions);
 
-                variantSearchManager.load(collectionName, iterator,
+                VariantSearchLoadResult result = variantSearchManager.load(collectionName, iterator,
                         new SolrInputDocumentDataWriter(collectionName,
                                 variantSearchManager.getSolrClient(),
                                 variantSearchManager.getInsertBatchSize()));
+                logger.info("Loaded {} variants into Solr collection '{}'", result.getNumLoadedVariants(), collectionName);
             } else {
                 throw new StorageEngineException("Solr is not alive!");
             }
