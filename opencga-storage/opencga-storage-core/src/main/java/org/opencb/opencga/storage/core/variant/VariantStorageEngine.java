@@ -1132,6 +1132,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                         f.getSamples().removeAll(sampleIds);
                     });
                 }
+                Set<Integer> updateCohorts = new HashSet<>();
                 for (Integer sampleId : sampleIds) {
                     metadataManager.updateSampleMetadata(studyMetadata.getId(), sampleId, s -> {
                         s.setIndexStatus(TaskMetadata.Status.NONE);
@@ -1147,7 +1148,12 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                         s.setAnnotationStatus(TaskMetadata.Status.NONE);
                         s.setMendelianErrorStatus(TaskMetadata.Status.NONE);
                         s.setFiles(Collections.emptyList());
+                        updateCohorts.addAll(s.getCohorts());
+                        updateCohorts.addAll(s.getInternalCohorts());
+                        updateCohorts.addAll(s.getSecondaryIndexCohorts());
                         s.setCohorts(Collections.emptySet());
+                        s.setInternalCohorts(Collections.emptySet());
+                        s.setSecondaryIndexCohorts(Collections.emptySet());
                         s.setAttributes(new ObjectMap());
                     });
                 }
@@ -1159,24 +1165,17 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 }
                 removedSamples.addAll(removedSamplesFromFiles);
 
-                List<Integer> cohortsToInvalidate = new LinkedList<>();
-                for (CohortMetadata cohort : metadataManager.getCalculatedCohorts(studyMetadata.getId())) {
-                    for (Integer removedSample : removedSamples) {
-                        if (cohort.getSamples().contains(removedSample)) {
+                for (Integer cohortId : updateCohorts) {
+                    metadataManager.updateCohortMetadata(studyMetadata.getId(), cohortId, cohort -> {
+                        cohort.getSamples().removeAll(removedSamples);
+                        cohort.getFiles().removeAll(fileIds);
+                        if (cohort.isStatsReady()) {
                             logger.info("Invalidating statistics of cohort "
                                     + cohort.getName()
                                     + " (" + cohort.getId() + ')');
-                            cohortsToInvalidate.add(cohort.getId());
-                            break;
+                            cohort.setStatsStatus(TaskMetadata.Status.ERROR);
                         }
-                    }
-                }
-                for (Integer cohortId : cohortsToInvalidate) {
-                    metadataManager.updateCohortMetadata(studyMetadata.getId(), cohortId,
-                            cohort -> {
-                                cohort.getFiles().removeAll(fileIds);
-                                cohort.setStatsStatus(TaskMetadata.Status.ERROR);
-                            });
+                    });
                 }
 
                 // Restore default cohort with indexed samples

@@ -75,7 +75,7 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
         return this;
     }
 
-    public Set<Integer> getCohorts(CohortMetadata.Type type) {
+    private Set<Integer> getCohorts(CohortMetadata.Type type) {
         switch (type) {
             case USER_DEFINED:
                 return cohorts;

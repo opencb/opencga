@@ -594,10 +594,97 @@ public class VariantOperationsTest {
             MatcherAssert.assertThat(e.getMessage(), containsString("Aggregate family operation requires at least two samples."));
         }
 
-        toolRunner.execute(VariantAggregateFamilyOperationTool.class, STUDY,
-                new VariantAggregateFamilyParams()
-                        .setSamples(samples), Paths.get(opencga.createTmpOutdir("_agg_family_samples")), null, false, token);
+        List<String> samples1 = VariantOperationsTest.samples.subList(0, 2);
+        List<String> samples2 = VariantOperationsTest.samples.subList(2, 4);
+        List<String> samplesMix = Arrays.asList(samples1.get(0), samples2.get(0));
 
+        {
+            // Run aggregate-family on subset 1
+            List<String> samples = samples1;
+            toolRunner.execute(VariantAggregateFamilyOperationTool.class, STUDY,
+                    new VariantAggregateFamilyParams()
+                            .setSamples(samples), Paths.get(opencga.createTmpOutdir("_agg_family_samples")), null, false, token);
+
+            for (String sampleId : samples) {
+                Sample sample = catalogManager.getSampleManager().get(STUDY, sampleId, new QueryOptions(), token).first();
+                assertEquals(1, sample.getInternal().getVariant().getAggregateFamily().size());
+                SampleInternalVariantAggregateFamily aggregateFamily = sample.getInternal().getVariant().getAggregateFamily().get(0);
+
+                assertEquals(IndexStatus.READY, aggregateFamily.getStatus().getId());
+                assertEquals(new HashSet<>(samples), new HashSet<>(aggregateFamily.getSampleIds()));
+            }
+        }
+
+        {
+            // Run aggregate-family on subset 2
+            List<String> samples = samples2;
+            toolRunner.execute(VariantAggregateFamilyOperationTool.class, STUDY,
+                    new VariantAggregateFamilyParams()
+                            .setSamples(samples), Paths.get(opencga.createTmpOutdir("_agg_family_samples")), null, false, token);
+
+            for (String sampleId : samples) {
+                Sample sample = catalogManager.getSampleManager().get(STUDY, sampleId, new QueryOptions(), token).first();
+                assertEquals(1, sample.getInternal().getVariant().getAggregateFamily().size());
+                SampleInternalVariantAggregateFamily aggregateFamily = sample.getInternal().getVariant().getAggregateFamily().get(0);
+
+                assertEquals(IndexStatus.READY, aggregateFamily.getStatus().getId());
+                assertEquals(new HashSet<>(samples), new HashSet<>(aggregateFamily.getSampleIds()));
+            }
+        }
+
+        {
+            // Run aggregate-family on mixed samples. Two aggregate-family status should be created.
+            List<String> samples = samplesMix;
+            toolRunner.execute(VariantAggregateFamilyOperationTool.class, STUDY,
+                    new VariantAggregateFamilyParams()
+                            .setSamples(samples), Paths.get(opencga.createTmpOutdir("_agg_family_samples")), null, false, token);
+
+            for (String sampleId : samples) {
+                Sample sample = catalogManager.getSampleManager().get(STUDY, sampleId, new QueryOptions(), token).first();
+                assertEquals(2, sample.getInternal().getVariant().getAggregateFamily().size());
+                SampleInternalVariantAggregateFamily aggregateFamily = sample.getInternal().getVariant().getAggregateFamily().get(1);
+
+                assertEquals(IndexStatus.READY, aggregateFamily.getStatus().getId());
+                assertEquals(new HashSet<>(samples), new HashSet<>(aggregateFamily.getSampleIds()));
+            }
+        }
+
+        {
+            // Run aggregate-family on all samples. One aggregate-family status should replace the previous ones.
+            List<String> samples = VariantOperationsTest.samples;
+            toolRunner.execute(VariantAggregateFamilyOperationTool.class, STUDY,
+                    new VariantAggregateFamilyParams()
+                            .setSamples(samples), Paths.get(opencga.createTmpOutdir("_agg_family_samples")), null, false, token);
+
+            for (String sampleId : samples) {
+                Sample sample = catalogManager.getSampleManager().get(STUDY, sampleId, new QueryOptions(), token).first();
+                assertEquals(1, sample.getInternal().getVariant().getAggregateFamily().size());
+                SampleInternalVariantAggregateFamily aggregateFamily = sample.getInternal().getVariant().getAggregateFamily().get(0);
+
+                assertEquals(IndexStatus.READY, aggregateFamily.getStatus().getId());
+                assertEquals(new HashSet<>(samples), new HashSet<>(aggregateFamily.getSampleIds()));
+            }
+        }
+
+        {
+            // Delete some samples.
+            // These should have no index nor aggregate-family status.
+            // The rest of samples should have a reduced list of samples.
+            toolRunner.execute(VariantSampleDeleteOperationTool.class, STUDY, new VariantSampleDeleteParams(samples2, false, false), Paths.get(opencga.createTmpOutdir("_delete")), null, false, token);
+
+            for (String sampleId : samples1) {
+                Sample sample = catalogManager.getSampleManager().get(STUDY, sampleId, new QueryOptions(), token).first();
+                assertEquals(1, sample.getInternal().getVariant().getAggregateFamily().size());
+                SampleInternalVariantAggregateFamily aggregateFamily = sample.getInternal().getVariant().getAggregateFamily().get(0);
+
+                assertEquals(IndexStatus.READY, aggregateFamily.getStatus().getId());
+                assertEquals(new HashSet<>(samples1), new HashSet<>(aggregateFamily.getSampleIds()));
+            }
+            for (String sampleId : samples2) {
+                Sample sample = catalogManager.getSampleManager().get(STUDY, sampleId, new QueryOptions(), token).first();
+                assertEquals(0, sample.getInternal().getVariant().getAggregateFamily().size());
+            }
+        }
     }
 
     @Test
@@ -614,6 +701,7 @@ public class VariantOperationsTest {
                     Paths.get(opencga.createTmpOutdir("_agg_family_fail2")), null, false, token);
             fail("Should have thrown an exception");
         } catch (ToolException e) {
+            e.printStackTrace();
             MatcherAssert.assertThat(e.getMessage(), containsString("Aggregate family operation requires at least two samples."));
         }
 

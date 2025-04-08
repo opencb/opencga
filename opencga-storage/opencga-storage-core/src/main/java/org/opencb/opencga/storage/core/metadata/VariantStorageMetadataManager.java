@@ -1096,10 +1096,17 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         }
     }
 
-    public void removeCohort(int studyId, Object cohort) {
+    public void removeCohort(int studyId, Object cohort) throws StorageEngineException {
         Integer cohortId = getCohortId(studyId, cohort);
         if (cohortId == null) {
             throw VariantQueryException.cohortNotFound(cohort.toString(), studyId, this);
+        }
+        CohortMetadata cohortMetadata = getCohortMetadata(studyId, cohortId);
+        for (Integer sample : cohortMetadata.getSamples()) {
+            updateSampleMetadata(studyId, sample, sampleMetadata -> {
+                sampleMetadata.getCohorts().remove(cohortId);
+                sampleMetadata.getInternalCohorts().remove(cohortId);
+            });
         }
         cohortDBAdaptor.removeCohort(studyId, cohortId);
     }
@@ -1696,7 +1703,12 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
         for (int sampleId : sampleIds) {
             SampleMetadata sampleMetadata = getSampleMetadata(studyId, sampleId);
-            Set<Integer> sampleCohorts = sampleMetadata.getCohorts(type);
+            Set<Integer> sampleCohorts;
+            if (type == CohortMetadata.Type.SECONDARY_INDEX) {
+                sampleCohorts = sampleMetadata.getSecondaryIndexCohorts();
+            } else {
+                sampleCohorts = sampleMetadata.getInternalCohorts();
+            }
             if (!sampleCohorts.isEmpty()) {
                 existingCohorts.addAll(sampleCohorts);
             }
@@ -1707,10 +1719,12 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         boolean reuseCohort = false;
         for (Integer thisCohortId : existingCohorts) {
             CohortMetadata internalCohort = getCohortMetadata(studyId, thisCohortId);
-            if (internalCohort.getSamples().size() == sampleIds.size()
-                    && new HashSet<>(internalCohort.getSamples()).containsAll(sampleIds)) {
-                reuseCohort = true;
-                cohortId = thisCohortId;
+            if (internalCohort.getType() == type) {
+                if (internalCohort.getSamples().size() == sampleIds.size()
+                        && new HashSet<>(internalCohort.getSamples()).containsAll(sampleIds)) {
+                    reuseCohort = true;
+                    cohortId = thisCohortId;
+                }
             }
         }
 
