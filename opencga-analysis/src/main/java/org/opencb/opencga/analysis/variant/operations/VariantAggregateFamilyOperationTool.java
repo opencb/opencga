@@ -51,7 +51,8 @@ public class VariantAggregateFamilyOperationTool extends OperationTool {
 
         // Check exclusivity between family and samples
         if (StringUtils.isNotEmpty(toolParams.getFamily()) && CollectionUtils.isNotEmpty(toolParams.getSamples())) {
-            throw new IllegalArgumentException("You can only set one of the following parameters: family or samples");
+            throw new IllegalArgumentException("You can not use both 'family' and 'samples' parameters at the same time. "
+                    + "Please, use only one of them.");
         }
 
         List<String> samples;
