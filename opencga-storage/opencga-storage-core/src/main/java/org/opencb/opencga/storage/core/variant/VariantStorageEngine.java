@@ -932,6 +932,14 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             sampleIds.add(sampleId);
             secIndexIdSet.addAll(secondaryIndexCohorts);
         }
+        for (Iterator<Integer> iterator = secIndexIdSet.iterator(); iterator.hasNext();) {
+            Integer cohortId = iterator.next();
+            CohortMetadata cohort = metadataManager.getCohortMetadata(sm.getId(), cohortId);
+            if (cohort.getSamples().size() != sampleIds.size() || !cohort.getSamples().containsAll(sampleIds)) {
+                // Discard those cohorts that don't contain all requested samples.
+                iterator.remove();
+            }
+        }
         if (secIndexIdSet.isEmpty() || secIndexIdSet.contains(null)) {
             throw new StorageEngineException("Samples not in a secondary index");
         } else if (secIndexIdSet.size() != 1) {

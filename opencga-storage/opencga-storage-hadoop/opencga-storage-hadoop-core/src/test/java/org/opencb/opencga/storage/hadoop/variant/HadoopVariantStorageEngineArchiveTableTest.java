@@ -43,8 +43,7 @@ public class HadoopVariantStorageEngineArchiveTableTest extends VariantStorageBa
         HadoopVariantStorageEngine variantStorageManager = externalResource.getVariantStorageEngine();
 
         ObjectMap extraParams = new ObjectMap(VariantStorageOptions.LOAD_HOM_REF.key(), true);
-//        extraParams.append(VariantStorageOptions.TRANSFORM_FORMAT.key(), "proto");
-//        extraParams.append(VariantStorageOptions.GVCF.key(), true);
+        extraParams.append(VariantStorageOptions.LOAD_ARCHIVE.key(), true);
 
         runETL(variantStorageManager, getResourceUri("impact/HG005_GRCh38_1_22_v4.2.1_benchmark.tuned.chr6-31.vcf.gz"), STUDY_NAME, extraParams);
         runETL(variantStorageManager, getResourceUri("impact/HG006_GRCh38_1_22_v4.2.1_benchmark.tuned.chr6-31.vcf.gz"), STUDY_NAME, extraParams);

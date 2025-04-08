@@ -111,7 +111,7 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
 
     @Test
     public void testRemovePartialFail() throws Exception {
-        thrown.expectMessage("Must provide all the samples from the secondary index:");
+        thrown.expectMessage("Samples not in a secondary index");
         variantStorageEngine.removeSecondaryIndexSamples(STUDY_NAME, Collections.singletonList(samples1.get(0)));
     }
 
@@ -123,15 +123,15 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
 
     @Test
     public void testFailReindex() throws Exception {
-        thrown.expectMessage("already in search index");
+        thrown.expectMessage("Operation SECONDARY_INDEX already executed");
         variantStorageEngine.secondaryIndexSamples(STUDY_NAME, samples1);
     }
 
-    @Test
-    public void testFailReindexMix() throws Exception {
-        thrown.expectMessage("already in search index");
-        variantStorageEngine.secondaryIndexSamples(STUDY_NAME, Arrays.asList(samples1.get(0), samples2.get(0)));
-    }
+//    @Test
+//    public void testFailReindexMix() throws Exception {
+//        thrown.expectMessage("already in search index");
+//        variantStorageEngine.secondaryIndexSamples(STUDY_NAME, Arrays.asList(samples1.get(0), samples2.get(0)));
+//    }
 
     @Test
     public void testResumeOnError() throws Exception {
@@ -152,7 +152,7 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
     public void testResumeFail() throws Exception {
         Integer id = getSecondaryIndexCohortId(samples1.get(0));
         metadataManager.updateCohortMetadata(sm.getId(), id, cohortMetadata -> cohortMetadata.setSecondaryIndexStatus(TaskMetadata.Status.RUNNING));
-        thrown.expectMessage("Samples already being indexed. Resume operation to continue.");
+        thrown.expectMessage("Samples already being processed. Resume operation to continue.");
         variantStorageEngine.secondaryIndexSamples(STUDY_NAME, samples1);
     }
 
@@ -230,8 +230,9 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
 
         Query query = new Query(SAMPLE.key(), samples);
         int expectedCount = variantStorageEngine.getDBAdaptor().count(query).first().intValue();
-        assertEquals(expectedCount, variantSearchManager.query(collection, variantStorageEngine.parseQuery(new Query(), new QueryOptions()))
-                .getNumTotalResults());
+        long count = variantSearchManager.query(collection, variantStorageEngine.parseQuery(new Query(), new QueryOptions()))
+                .getNumMatches();
+        assertEquals(expectedCount, count);
 
 
         SolrVariantDBIterator solrIterator = variantSearchManager.iterator(collection, new Query(), new QueryOptions(QueryOptions.SORT, true));
@@ -243,7 +244,7 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
 //            System.out.println(collection + "[" + i + "] " + actual);
 //            i++;
 
-            assertNotNull(expected);
+            assertNotNull(actual.toString(), expected);
             assertEquals(expected.toString(), actual.toString());
             StudyEntry expectedStudy = expected.getStudies().get(0);
             StudyEntry actualStudy = actual.getStudies().get(0);

@@ -49,6 +49,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.core.models.common.mixins.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.core.models.common.mixins.VariantStatsJsonMixin;
@@ -167,12 +168,14 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
                 new ObjectMap(VariantStorageOptions.TRANSFORM_FORMAT.key(), "avro"), true, false);
 
 
-        Path tempFile = Paths.get(outputUri).resolve("temp_file.avro.gz");
+        Path tempFile = Paths.get(outputUri).resolve("temp_file.variants.avro.gz");
         Files.move(Paths.get(etlResult.getTransformResult()), tempFile);
+        Files.copy(Paths.get(VariantReaderUtils.getMetaFromTransformedFile(etlResult.getTransformResult())),
+                Paths.get(VariantReaderUtils.getMetaFromTransformedFile(tempFile.toUri())));
         assertFalse(Files.exists(Paths.get(etlResult.getTransformResult())));
 
         InputStream in = System.in;
-        try (InputStream is = new FileInputStream(tempFile.toFile())) {
+        try (InputStream is = Files.newInputStream(tempFile)) {
             System.setIn(is);
 
             variantStorageEngine.getOptions()
