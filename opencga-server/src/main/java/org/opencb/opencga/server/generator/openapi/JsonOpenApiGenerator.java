@@ -27,7 +27,7 @@ public class JsonOpenApiGenerator {
         info.setVersion(GitRepositoryState.getInstance().getBuildVersion());
         swagger.setInfo(info);
         swagger.setHost(StringUtils.isEmpty(host) ? "test.app.zettagenomics.com" : host);
-        swagger.setBasePath(environment + "/opencga/webservices/rest");
+        swagger.setBasePath("/"+environment + "/opencga/webservices/rest");
         List<String> schemes = new ArrayList<>();
         schemes.add("https");
         swagger.setSchemes(schemes);
