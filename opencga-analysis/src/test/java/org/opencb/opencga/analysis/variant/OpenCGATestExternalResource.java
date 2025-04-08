@@ -295,6 +295,21 @@ public class OpenCGATestExternalResource extends ExternalResource {
             Files.copy(inputStream, analysisPath.resolve("liftover.sh"), StandardCopyOption.REPLACE_EXISTING);
         }
 
+        // opencga-regenie
+        Path dockerPath = Files.createDirectories(opencgaHome.resolve("cloud/docker/opencga-regenie")).toAbsolutePath();
+        try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/cloud/docker/opencga-regenie/regenie-docker-build.py")) {
+            Files.copy(inputStream, dockerPath.resolve("regenie-docker-build.py"), StandardCopyOption.REPLACE_EXISTING);
+        }
+
+        // walker
+        dockerPath = Files.createDirectories(opencgaHome.resolve("cloud/docker/walker")).toAbsolutePath();
+        List<String> pythonFiles = Arrays.asList("regenie_walker.py", "requirements.txt", "variant_walker.py");
+        for (String pythonFile : pythonFiles) {
+            try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/cloud/docker/walker/" + pythonFile)) {
+                Files.copy(inputStream, dockerPath.resolve(pythonFile), StandardCopyOption.REPLACE_EXISTING);
+            }
+        }
+
         return opencgaHome;
     }
 

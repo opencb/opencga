@@ -622,6 +622,16 @@ public class FieldConstants {
             + " is used, then VCF files be stored in the same folder as the input VCF files. Otherwise, they will be stored in the specified"
             + " destination path";
 
+    // Regenie
+    public static final String REGENIE_STEP1 = "step1";
+    public static final String REGENIE_STEP2 = "step2";
+    public static final String REGENIE_STEP_DESCRIPTION = "Regenie step. Valid values: " + REGENIE_STEP2;
+    public static final String REGENIE_PHENO_FILE_DESCRIPTION = "Phenotype file, which contains one or more traits to be analyzed.";
+    public static final String REGENIE_COVAR_FILE_DESCRIPTION = "Covariate file, used to adjust the analysis for confounding variables"
+            + " (e.g., sex, age, PCs).";
+    public static final String REGENIE_PRED_PATH_DESCRIPTION = "Path to the preidiction generated in " + REGENIE_STEP1 + " (it is used in "
+            + REGENIE_STEP2 + ")";
+
     // Fetch resources
     public static final String FETCH_RESOURCES_DESCRIPTION = "List of resource IDs, separated by commas, to fetch (available resources are"
             + " specified in the configuration file). The wildcard '*' can be used: for example, use '*' to fetch all resources, or"

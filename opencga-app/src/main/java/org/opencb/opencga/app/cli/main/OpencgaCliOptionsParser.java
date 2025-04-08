@@ -75,6 +75,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         analysisVariantSubCommands.addCommand("mutational-signature-run", analysisVariantCommandOptions.runMutationalSignatureCommandOptions);
         analysisVariantSubCommands.addCommand("plink-run", analysisVariantCommandOptions.runPlinkCommandOptions);
         analysisVariantSubCommands.addCommand("query", analysisVariantCommandOptions.queryCommandOptions);
+        analysisVariantSubCommands.addCommand("regenie-run", analysisVariantCommandOptions.runRegenieCommandOptions);
         analysisVariantSubCommands.addCommand("relatedness-run", analysisVariantCommandOptions.runRelatednessCommandOptions);
         analysisVariantSubCommands.addCommand("rvtests-run", analysisVariantCommandOptions.runRvtestsCommandOptions);
         analysisVariantSubCommands.addCommand("sample-aggregation-stats", analysisVariantCommandOptions.aggregationStatsSampleCommandOptions);
