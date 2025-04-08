@@ -24,8 +24,8 @@ import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.utils.iterators.CloseableIterator;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
-import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
+import org.opencb.opencga.storage.core.variant.transform.VariantNormalizerFactory;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
@@ -112,7 +112,7 @@ public class FillGapsFromFile {
                 logger.info("GVCF file detected: " + fileName);
                 thisOptions.put(VariantStorageOptions.GVCF.key(), true);
             }
-            Task<Variant, Variant> normalizer = VariantStoragePipeline.initNormalizer(variantFileMetadata, thisOptions);
+            Task<Variant, Variant> normalizer = new VariantNormalizerFactory(thisOptions).newNormalizer(variantFileMetadata);
             reader = reader.then(normalizer);
             VariantSorterTask sorter = new VariantSorterTask(100, SampleIndexSchema.VARIANT_COMPARATOR);
             reader = reader.then(sorter);
