@@ -55,9 +55,9 @@
 <!--        <opencga.war.name>opencga-enterprise</opencga.war.name>-->
         <opencga.env.file>opencga-env.sh</opencga.env.file>
         <!-- Default value in OpenCGA -->
-        <opencga-storage-hadoop-deps.id-default>hdp3.1</opencga-storage-hadoop-deps.id-default>
+        <opencga-storage-hadoop-deps.id-default>emr6.1</opencga-storage-hadoop-deps.id-default>
         <opencga-storage-hadoop-deps.artifactId-default>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id-default}</opencga-storage-hadoop-deps.artifactId-default>
-        <opencga-storage-hadoop-deps.id>emr3.1</opencga-storage-hadoop-deps.id>
+        <opencga-storage-hadoop-deps.id>emr6.1</opencga-storage-hadoop-deps.id>
         <opencga-storage-hadoop-deps.artifactId>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}</opencga-storage-hadoop-deps.artifactId>
 
         <sonar.organization>opencb</sonar.organization>
