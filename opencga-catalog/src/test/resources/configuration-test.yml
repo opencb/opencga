@@ -19,7 +19,7 @@ analysis:
   scratchDir: "/tmp/"    # Scratch folder for the analysis.
   resource:
     # Base URL from fetching/downloading analysis resources.
-    baseUrl: "http://resources.opencb.org/opencb/opencga/analysis/resources-test/"
+    baseUrl: "http://resources.opencb.org/opencb/opencga/analysis/resources/"
     # Base path where to download the analysis resources.
     basePath: "${OPENCGA.INSTALLATION.DIR}/analysis/resources"
     # List of resources to fetch during initialization; the willcard '*' can be used, e.g.: to fetch all resources, use '*';

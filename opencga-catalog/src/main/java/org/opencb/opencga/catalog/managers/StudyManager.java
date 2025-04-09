@@ -424,7 +424,7 @@ public class StudyManager extends AbstractManager {
 
             authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
             String cellbaseVersion;
-            if (project.getCellbase() == null || StringUtils.isEmpty(project.getCellbase().getUrl())) {
+            if (project.getCellbase() != null && StringUtils.isNotEmpty(project.getCellbase().getUrl())) {
                 CellBaseValidator cellBaseValidator = new CellBaseValidator(
                         project.getCellbase(),
                         project.getOrganism().getScientificName(),

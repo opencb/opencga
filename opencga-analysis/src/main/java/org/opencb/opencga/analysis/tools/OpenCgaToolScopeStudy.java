@@ -41,7 +41,7 @@ public abstract class OpenCgaToolScopeStudy extends OpenCgaTool {
      * The study is validated during {@link #check()}
      * @return study FQN
      */
-    public String getStudy() {
+    public final String getStudy() {
         return study;
     }
 

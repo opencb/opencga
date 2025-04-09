@@ -332,7 +332,7 @@ public class VariantOperationsTest {
     public void testSetup() throws Exception {
         String study2 = "study2";
         String study2fqn = catalogManager.getStudyManager()
-                .create(PROJECT, study2, null, "Phase 1", "Done", null, null, null, null, null, token)
+                .create(PROJECT, study2, null, "Phase 1", "Done", null, null, null, null, new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token)
                 .first().getFqn();
         File file = opencga.createFile(study2, "variant-test-file.vcf.gz", token);
 
