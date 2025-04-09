@@ -464,6 +464,12 @@ public abstract class ResourceManager<R extends IPrivateStudyUid, S extends Enum
                 .append("ignoreException", ignoreException)
                 .append("options", options)
                 .append("token", token);
+        return updateMany(params, studyStr, idList, ignoreException, token, studyIncludeList, execution);
+    }
+
+    protected OpenCGAResult<R> updateMany(ObjectMap params, String studyStr, List<String> idList, boolean ignoreException, String token,
+                                          QueryOptions studyIncludeList, ExecuteOperationForSingleEntry<R> execution)
+            throws CatalogException {
         OpenCGAResult<R> result = runList(params, Enums.Action.UPDATE, studyStr, idList, token, studyIncludeList, execution);
         return endResult(result, ignoreException);
     }
@@ -479,6 +485,12 @@ public abstract class ResourceManager<R extends IPrivateStudyUid, S extends Enum
                 .append("ignoreException", ignoreException)
                 .append("options", options)
                 .append("token", token);
+        return updateMany(params, studyStr, ignoreException, token, studyIncludeList, operationIterator, execution, errorMessage);
+    }
+
+    protected OpenCGAResult<R> updateMany(ObjectMap params, String studyStr, boolean ignoreException, String token,
+                                          QueryOptions studyIncludeList, ExecuteOperationIterator<R> operationIterator,
+                                          ExecuteBatchOperation<R> execution, String errorMessage) throws CatalogException {
         OpenCGAResult<R> result = runIterator(params, Enums.Action.UPDATE, studyStr, token, studyIncludeList, operationIterator, execution,
                 errorMessage);
         return endResult(result, ignoreException);
