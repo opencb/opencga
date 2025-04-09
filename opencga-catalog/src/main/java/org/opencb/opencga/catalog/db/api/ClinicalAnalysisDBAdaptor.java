@@ -254,7 +254,7 @@ public interface ClinicalAnalysisDBAdaptor extends AnnotationSetDBAdaptor<Clinic
     OpenCGAResult<ClinicalAnalysis> get(long studyUid, String clinicalAnalysisId, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    OpenCGAResult<?> delete(ClinicalAnalysis id, List<ClinicalAudit> clinicalAuditList)
+    OpenCGAResult<ClinicalAnalysis> delete(ClinicalAnalysis id, List<ClinicalAudit> clinicalAuditList)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult<ClinicalAnalysis> delete(Query query, List<ClinicalAudit> clinicalAuditList)

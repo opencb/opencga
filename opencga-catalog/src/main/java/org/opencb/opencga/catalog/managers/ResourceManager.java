@@ -499,14 +499,20 @@ public abstract class ResourceManager<R extends IPrivateStudyUid, S extends Enum
     protected OpenCGAResult<R> deleteMany(String studyStr, Query query, ObjectMap deleteParams, boolean ignoreException, String token,
                                           ExecuteOperationIterator<R> iteratorSupplier, ExecuteBatchOperation<R> execution)
             throws CatalogException {
+        return deleteMany(studyStr, query, deleteParams, ignoreException, token, QueryOptions.empty(), iteratorSupplier, execution);
+    }
+
+    protected OpenCGAResult<R> deleteMany(String studyStr, Query query, ObjectMap deleteParams, boolean ignoreException, String token,
+                                          QueryOptions studyIncludeList, ExecuteOperationIterator<R> iteratorSupplier,
+                                          ExecuteBatchOperation<R> execution) throws CatalogException {
         ObjectMap params = new ObjectMap()
                 .append("study", studyStr)
                 .append("query", query)
                 .append("params", deleteParams)
                 .append("ignoreException", ignoreException)
                 .append("token", token);
-        OpenCGAResult<R> result = runIterator(params, Enums.Action.DELETE, studyStr, token, QueryOptions.empty(), iteratorSupplier,
-                execution, null);
+        OpenCGAResult<R> result = runIterator(params, Enums.Action.DELETE, studyStr, token, studyIncludeList, iteratorSupplier, execution,
+                null);
         return endResult(result, ignoreException);
     }
 

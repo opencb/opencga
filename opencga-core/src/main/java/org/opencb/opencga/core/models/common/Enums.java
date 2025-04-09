@@ -240,6 +240,8 @@ public final class Enums {
         RUN_TEMPLATE,
         DELETE_TEMPLATE,
 
+        UPDATE_REPORT,
+
         AGGREGATION_STATS,
 
         RELATIVES,

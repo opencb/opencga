@@ -704,7 +704,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
     }
 
     @Override
-    public OpenCGAResult<?> delete(ClinicalAnalysis clinicalAnalysis, List<ClinicalAudit> clinicalAuditList)
+    public OpenCGAResult<ClinicalAnalysis> delete(ClinicalAnalysis clinicalAnalysis, List<ClinicalAudit> clinicalAuditList)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         try {
             return runTransaction(clientSession -> privateDelete(clientSession, clinicalAnalysis, clinicalAuditList));
@@ -747,7 +747,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
         throw new NotImplementedException("Use other delete method passing ClinicalAudit");
     }
 
-    OpenCGAResult<?> privateDelete(ClientSession clientSession, ClinicalAnalysis clinicalAnalysis, List<ClinicalAudit> clinicalAuditList)
+    OpenCGAResult<ClinicalAnalysis> privateDelete(ClientSession clientSession, ClinicalAnalysis clinicalAnalysis,
+                                                  List<ClinicalAudit> clinicalAuditList)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long tmpStartTime = startQuery();
 
