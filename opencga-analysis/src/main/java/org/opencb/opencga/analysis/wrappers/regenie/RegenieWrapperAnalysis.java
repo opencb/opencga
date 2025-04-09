@@ -79,6 +79,11 @@ public class RegenieWrapperAnalysis extends OpenCgaToolScopeStudy {
             throw new ToolException("Unsupportyed the regenie step " + analysisParams.getStep() + ". Valid step: " + REGENIE_STEP2);
         }
 
+        if (StringUtils.isNotEmpty(analysisParams.getWalkerDockerName())) {
+            // No need to check anything else
+            return;
+        }
+
         // Check pheno file
         if (StringUtils.isEmpty(analysisParams.getPhenoFile())) {
             throw new ToolException("Missing phenotype file.");
@@ -114,21 +119,29 @@ public class RegenieWrapperAnalysis extends OpenCgaToolScopeStudy {
 
     @Override
     protected List<String> getSteps() {
-        return Arrays.asList(PREPARE_RESOURCES_STEP, ID, CLEAN_RESOURCES_STEP);
+        if (StringUtils.isNotEmpty(analysisParams.getWalkerDockerName())) {
+            return Arrays.asList(ID);
+        } else {
+            return Arrays.asList(PREPARE_RESOURCES_STEP, ID, CLEAN_RESOURCES_STEP);
+        }
     }
 
     protected void run() throws ToolException, IOException {
-        // Download and copy liftover resource files in the job dir
-        step(PREPARE_RESOURCES_STEP, this::prepareResources);
+        if (StringUtils.isEmpty(analysisParams.getWalkerDockerName())) {
+            // Prepare regenie resource files in the job dir
+            step(PREPARE_RESOURCES_STEP, this::prepareResources);
+        }
 
-        // Run liftover script
+        // Run regenie
         step(ID, this::runRegenie);
 
-        // Do we have to clean the liftover resource folder
-        step(CLEAN_RESOURCES_STEP, this::cleanResources);
+        if (StringUtils.isEmpty(analysisParams.getWalkerDockerName())) {
+            // Do we have to clean the regenie resource folder
+            step(CLEAN_RESOURCES_STEP, this::cleanResources);
+        }
     }
 
-    protected void prepareResources() throws IOException, ResourceException {
+    protected void prepareResources() throws IOException {
         // Create folder where the regenie resources will be saved (within the job dir, aka outdir)
         resourcePath = Files.createDirectories(getOutDir().resolve(RESOURCES_DIRNAME));
 
@@ -150,7 +163,10 @@ public class RegenieWrapperAnalysis extends OpenCgaToolScopeStudy {
     protected void runRegenie() throws ToolException, CatalogException, StorageEngineException {
         logger.info("Running regenie with parameters {}...", analysisParams);
 
-        String dockerImage = buildDocker();
+        String dockerImage = analysisParams.getWalkerDockerName();
+        if (StringUtils.isEmpty(dockerImage)) {
+            dockerImage = buildDocker();
+        }
 
         String regenieCmd = "python3 variant_walker.py regenie_walker Regenie";
         Path regenieResults = getOutDir().resolve("regenie_results.txt");
@@ -187,7 +203,7 @@ public class RegenieWrapperAnalysis extends OpenCgaToolScopeStudy {
     }
 
     private String buildDocker() throws ToolException {
-        String dockerImage = "local/regine-walker:latest";
+        String dockerImage = "local/regenie-walker:latest";
 
         Path dockerBuildScript = getOpencgaHome().resolve("cloud/docker/opencga-regenie/regenie-docker-build.py");
         Path pythonUtilsPath = getOpencgaHome().resolve("cloud/docker/walker");

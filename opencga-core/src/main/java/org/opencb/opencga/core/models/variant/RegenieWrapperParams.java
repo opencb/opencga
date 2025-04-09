@@ -37,17 +37,21 @@ public class RegenieWrapperParams extends ToolParams {
     @DataField(id = "predPath", description = FieldConstants.REGENIE_PRED_PATH_DESCRIPTION)
     private String predPath;
 
-//    @DataField(id = "outdir", description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
+    @DataField(id = "walkerDockerName", description = FieldConstants.REGENIE_WALKER_DOCKER_NAME_DESCRIPTION)
+    private String walkerDockerName;
+
+    //    @DataField(id = "outdir", description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
 //    private String outdir;
 
     public RegenieWrapperParams() {
     }
 
-    public RegenieWrapperParams(String step, String phenoFile, String covarFile, String predPath) {
+    public RegenieWrapperParams(String step, String phenoFile, String covarFile, String predPath, String walkerDockerName) {
         this.step = step;
         this.phenoFile = phenoFile;
         this.covarFile = covarFile;
         this.predPath = predPath;
+        this.walkerDockerName = walkerDockerName;
     }
 
     @Override
@@ -57,6 +61,7 @@ public class RegenieWrapperParams extends ToolParams {
         sb.append(", phenoFile='").append(phenoFile).append('\'');
         sb.append(", covarFile='").append(covarFile).append('\'');
         sb.append(", predPath='").append(predPath).append('\'');
+        sb.append(", walkerDockerName='").append(walkerDockerName).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -94,6 +99,15 @@ public class RegenieWrapperParams extends ToolParams {
 
     public RegenieWrapperParams setPredPath(String predPath) {
         this.predPath = predPath;
+        return this;
+    }
+
+    public String getWalkerDockerName() {
+        return walkerDockerName;
+    }
+
+    public RegenieWrapperParams setWalkerDockerName(String walkerDockerName) {
+        this.walkerDockerName = walkerDockerName;
         return this;
     }
 }

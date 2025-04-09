@@ -3,12 +3,11 @@ import os
 import subprocess
 from pathlib import Path
 
-def generate_dockerfile(output_path: str = "Dockerfile"):
+def generate_dockerfile(source_image: str, output_path: str):
     """
     Generate a Dockerfile that:
-    1. Uses Ubuntu as base and install necessary dependencies: bcftools, plink1.9
-    2. Installs regenie
-    3. Copies files from a directory (known at Dockerfile creation time)
+    1. Uses the source image (it should be opencb/opencga-regenie:version
+    2. Copies files from a directory (known at Dockerfile creation time)
 
     Args:
         output_path: Where to save the generated Dockerfile
@@ -16,24 +15,7 @@ def generate_dockerfile(output_path: str = "Dockerfile"):
 
     # Dockerfile content
     dockerfile_content = f"""# Dynamically generated Dockerfile
-FROM ubuntu:22.04
-
-## Run update and install necessary packages
-RUN apt-get update -y && \\
-    ## 1. Install system dependencies
-    DEBIAN_FRONTEND="noninteractive" TZ="Europe/London" apt-get install -y libcurl4 git libgmp-dev libcurl4-openssl-dev libgit2-dev build-essential \\
-    libssl-dev libssh-dev libxml2-dev libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev \\
-    gnuplot pandoc samtools bcftools tabix fastqc plink1.9 bwa r-base wget libopenblas0-openmp libcholmod3 libsuitesparse-dev python3 python3-pip && \\
-    apt-get remove libopenblas0-pthread && \\
-    pip3 install pydantic && \\
-
-    ## 2. regenie
-    wget -qO- https://github.com/rgcgithub/regenie/releases/download/v4.0/regenie_v4.0.gz_x86_64_Linux.zip | gunzip > /usr/local/bin/regenie && \\
-    chmod +x /usr/local/bin/regenie && \\
-
-    ## 3. Clean up
-    rm -rf /var/lib/apt/lists/* /tmp/* && \\
-    strip --remove-section=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so.5
+FROM {source_image}
 
 # Create working directory
 WORKDIR /regenie_walker/python
@@ -45,9 +27,6 @@ COPY ./regenie_walker /regenie_walker
     # Write Dockerfile
     with open(output_path, 'w') as f:
         f.write(dockerfile_content)
-        # for file in files_to_copy:
-        #     f.write(f"COPY {base_dir}/{file} /data/{file}\n")
-        # f.write(f"COPY ./python /app")
 
     return output_path
 
@@ -122,6 +101,11 @@ def main():
         help="Output Dockerfile path"
     )
     parser.add_argument(
+        "--source-image-name",
+        required=True,
+        help="Name for the Docker image"
+    )
+    parser.add_argument(
         "--image-name",
         default="regine-walker",
         help="Name for the Docker image"
@@ -190,9 +174,7 @@ def main():
                 shutil.copy2(args.covar_file, regenie_walker_path)
 
         # Generate Dockerfile
-        dockerfile_path = generate_dockerfile(
-            args.output_dockerfile
-        )
+        dockerfile_path = generate_dockerfile(args.source_image_name, args.output_dockerfile)
 
         print(f"Generated Dockerfile at {dockerfile_path}")
 

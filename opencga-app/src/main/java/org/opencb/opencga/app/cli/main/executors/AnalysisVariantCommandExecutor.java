@@ -1441,6 +1441,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "phenoFile", commandOptions.phenoFile, true);
             putNestedIfNotEmpty(beanParams, "covarFile", commandOptions.covarFile, true);
             putNestedIfNotEmpty(beanParams, "predPath", commandOptions.predPath, true);
+            putNestedIfNotEmpty(beanParams, "walkerDockerName", commandOptions.walkerDockerName, true);
 
             regenieWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

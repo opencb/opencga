@@ -2071,6 +2071,9 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--pred-path"}, description = "Path to the preidiction generated in step1 (it is used in step2)", required = false, arity = 1)
         public String predPath;
     
+        @Parameter(names = {"--walker-docker-name"}, description = "Walker docker image name that contains the phenotype, covariates and prediction files.", required = false, arity = 1)
+        public String walkerDockerName;
+    
     }
 
     @Parameters(commandNames = {"relatedness-run"}, commandDescription ="Compute a score to quantify relatedness between samples.")

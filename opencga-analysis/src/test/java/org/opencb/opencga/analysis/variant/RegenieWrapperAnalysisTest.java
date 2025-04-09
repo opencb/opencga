@@ -278,4 +278,19 @@ public class RegenieWrapperAnalysisTest {
 
         System.out.println("Regenie outdir = " + regenieOutdir);
     }
+
+    @Test
+    public void testRegenieStep2WithDockerImage() throws IOException, ToolException, CatalogException {
+        // Run clinical analysis load task
+        Path regenieOutdir = Paths.get(opencga.createTmpOutdir("_withdockerimage_regenieOutdir"));
+
+        RegenieWrapperParams params = new RegenieWrapperParams()
+                .setStep(REGENIE_STEP2)
+                .setWalkerDockerName("joaquintarraga/regenie-walker-test:1");
+
+        toolRunner.execute(RegenieWrapperAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), regenieOutdir,
+                null, false, token);
+
+        System.out.println("Regenie outdir = " + regenieOutdir);
+    }
 }
