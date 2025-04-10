@@ -43,7 +43,6 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.HookConfiguration;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.JwtPayload;
-import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.EntryParam;
 import org.opencb.opencga.core.models.common.Enums;
@@ -2040,59 +2039,48 @@ public class FileManager extends AnnotationSetManager<File, FilePermissions> {
     @Deprecated
     public OpenCGAResult<File> update(String studyStr, String entryStr, ObjectMap parameters, QueryOptions options, String token)
             throws CatalogException {
-        ParamUtils.checkObj(parameters, "Parameters");
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-
-        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
-        String organizationId = studyFqn.getOrganizationId();
-        String userId = tokenPayload.getUserId(organizationId);
-        Study study = studyManager.resolveId(studyStr, StudyManager.INCLUDE_VARIABLE_SET, userId, organizationId);
-
-        File file = internalGet(organizationId, study.getUid(), entryStr, QueryOptions.empty(), userId).first();
-
-        ObjectMap auditParams = new ObjectMap()
+        ObjectMap methodParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("fileId", entryStr)
                 .append("updateParams", parameters)
                 .append("options", options)
                 .append("token", token);
-        try {
-            // Check permissions...
-            // Only check write annotation permissions if the user wants to update the annotation sets
-            if (parameters.containsKey(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key())) {
-                authorizationManager.checkFilePermission(organizationId, study.getUid(), file.getUid(), userId,
-                        FilePermissions.WRITE_ANNOTATIONS);
-            }
-            // Only check update permissions if the user wants to update anything apart from the annotation sets
-            if ((parameters.size() == 1 && !parameters.containsKey(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
-                    || parameters.size() > 1) {
-                authorizationManager.checkFilePermission(organizationId, study.getUid(), file.getUid(), userId, FilePermissions.WRITE);
-            }
+        return update(methodParams, studyStr, entryStr, parameters, options, token, StudyManager.INCLUDE_VARIABLE_SET,
+                (organizationId, study, userId, entryParam) -> {
+                    entryParam.setId(entryStr);
+                    File file = internalGet(organizationId, study.getUid(), entryStr, QueryOptions.empty(), userId).first();
+                    entryParam.setId(file.getPath());
+                    entryParam.setUuid(file.getUuid());
+                    // Check permissions...
+                    // Only check write annotation permissions if the user wants to update the annotation sets
+                    if (parameters.containsKey(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key())) {
+                        authorizationManager.checkFilePermission(organizationId, study.getUid(), file.getUid(), userId,
+                                FilePermissions.WRITE_ANNOTATIONS);
+                    }
+                    // Only check update permissions if the user wants to update anything apart from the annotation sets
+                    if ((parameters.size() == 1 && !parameters.containsKey(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
+                            || parameters.size() > 1) {
+                        authorizationManager.checkFilePermission(organizationId, study.getUid(), file.getUid(), userId,
+                                FilePermissions.WRITE);
+                    }
 
-            try {
-                ParamUtils.checkAllParametersExist(parameters.keySet().iterator(), (a) -> FileDBAdaptor.UpdateParams.getParam(a) != null);
-            } catch (CatalogParameterException e) {
-                throw new CatalogException("Could not update: " + e.getMessage(), e);
-            }
+                    try {
+                        ParamUtils.checkAllParametersExist(parameters.keySet().iterator(),
+                                (a) -> FileDBAdaptor.UpdateParams.getParam(a) != null);
+                    } catch (CatalogParameterException e) {
+                        throw new CatalogException("Could not update: " + e.getMessage(), e);
+                    }
 
-            // We make a query to check both if the samples exists and if the user has permissions to see them
-            if (parameters.get(FileDBAdaptor.QueryParams.SAMPLE_IDS.key()) != null
-                    && ListUtils.isNotEmpty(parameters.getAsStringList(FileDBAdaptor.QueryParams.SAMPLE_IDS.key()))) {
-                List<String> sampleIds = parameters.getAsStringList(FileDBAdaptor.QueryParams.SAMPLE_IDS.key());
-                catalogManager.getSampleManager().internalGet(organizationId, study.getUid(), sampleIds, SampleManager.INCLUDE_SAMPLE_IDS,
-                        userId, false);
-            }
+                    // We make a query to check both if the samples exists and if the user has permissions to see them
+                    if (parameters.get(FileDBAdaptor.QueryParams.SAMPLE_IDS.key()) != null
+                            && ListUtils.isNotEmpty(parameters.getAsStringList(FileDBAdaptor.QueryParams.SAMPLE_IDS.key()))) {
+                        List<String> sampleIds = parameters.getAsStringList(FileDBAdaptor.QueryParams.SAMPLE_IDS.key());
+                        catalogManager.getSampleManager().internalGet(organizationId, study.getUid(), sampleIds,
+                                SampleManager.INCLUDE_SAMPLE_IDS, userId, false);
+                    }
 
-            OpenCGAResult<File> queryResult = unsafeUpdate(organizationId, study, file, parameters, options, userId);
-            auditManager.auditUpdate(organizationId, userId, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
-                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            return queryResult;
-        } catch (CatalogException e) {
-            auditManager.auditUpdate(organizationId, userId, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
-                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
-        }
+                    return unsafeUpdate(organizationId, study, file, parameters, options, userId);
+                });
     }
 
     OpenCGAResult<File> unsafeUpdate(String organizationId, Study study, File file, ObjectMap parameters, QueryOptions options,
