@@ -867,8 +867,7 @@ public abstract class ResourceManager<R extends IPrivateStudyUid, S extends Enum
      * @param <R> Type of the elements that will be processed.
      */
     public interface ExecuteMultiOperation<R> {
-        OpenCGAResult<R> execute(String organizationId, Study study, String userId, List<EntryParam> entryParamList)
-                throws CatalogException;
+        OpenCGAResult<R> execute(String organizationId, Study study, String userId, List<EntryParam> entryParamList) throws Exception;
     }
 
     protected OpenCGAResult<R> runForMultiOperation(ObjectMap params, Enums.Action action, String studyStr, String token,
@@ -922,8 +921,10 @@ public abstract class ResourceManager<R extends IPrivateStudyUid, S extends Enum
             EventManager.getInstance().notify(catalogEvent, e);
             if (StringUtils.isNotEmpty(errorMessage)) {
                 throw new CatalogException(errorMessage, e);
+            } else if (e instanceof CatalogException) {
+                throw (CatalogException) e;
             } else {
-                throw e;
+                throw new CatalogException(e);
             }
         }
     }

@@ -243,13 +243,13 @@ public class SampleManager extends AnnotationSetManager<Sample, SamplePermission
     public DBIterator<Sample> iterator(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
         return iterator(studyStr, query, options, StudyManager.INCLUDE_VARIABLE_SET, token, (organizationId, study, userId) -> {
             Query finalQuery = query != null ? new Query(query) : new Query();
-            QueryOptions queryOptions = ParamUtils.defaultObject(options, QueryOptions::new);
+            QueryOptions finalOptions = options != null ? new QueryOptions(options) : new QueryOptions();
 
             fixQueryObject(organizationId, study, finalQuery, userId);
-            AnnotationUtils.fixQueryOptionAnnotation(queryOptions);
+            AnnotationUtils.fixQueryOptionAnnotation(finalOptions);
             finalQuery.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            return getSampleDBAdaptor(organizationId).iterator(study.getUid(), finalQuery, queryOptions, userId);
+            return getSampleDBAdaptor(organizationId).iterator(study.getUid(), finalQuery, finalOptions, userId);
         });
     }
 

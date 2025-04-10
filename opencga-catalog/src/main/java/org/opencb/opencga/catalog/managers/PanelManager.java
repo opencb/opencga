@@ -21,16 +21,16 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.common.Status;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
-import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
@@ -40,8 +40,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.AclParams;
-import org.opencb.opencga.core.models.JwtPayload;
-import org.opencb.opencga.core.models.audit.AuditRecord;
+import org.opencb.opencga.core.models.common.EntryParam;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelInternal;
@@ -55,7 +54,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
@@ -158,56 +156,32 @@ public class PanelManager extends ResourceManager<Panel, PanelPermissions> {
 
     @Override
     public OpenCGAResult<Panel> create(String studyStr, Panel panel, QueryOptions options, String token) throws CatalogException {
-        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
-        String organizationId = studyFqn.getOrganizationId();
-        String userId = tokenPayload.getUserId(organizationId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, organizationId);
+        return create(studyStr, panel, options, token, StudyManager.INCLUDE_STUDY_IDS, (organizationId, study, userId, entryParam) -> {
+            QueryOptions finalOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+            entryParam.setId(panel.getId());
 
-        ObjectMap auditParams = new ObjectMap()
-                .append("study", studyStr)
-                .append("panel", panel)
-                .append("options", options)
-                .append("token", token);
-        try {
-            // 1. We check everything can be done
             authorizationManager.checkStudyPermission(organizationId, study.getUid(), userId, StudyPermissions.Permissions.WRITE_PANELS);
 
             autoCompletePanel(organizationId, study, panel);
-            options = ParamUtils.defaultObject(options, QueryOptions::new);
+            entryParam.setUuid(panel.getUuid());
 
-            OpenCGAResult<Panel> insert = getPanelDBAdaptor(organizationId).insert(study.getUid(), panel, options);
-            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+            OpenCGAResult<Panel> insert = getPanelDBAdaptor(organizationId).insert(study.getUid(), panel, finalOptions);
+            if (finalOptions.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
                 // Fetch created panel
-                OpenCGAResult<Panel> result = getPanel(organizationId, study.getUid(), panel.getUuid(), options);
+                OpenCGAResult<Panel> result = getPanel(organizationId, study.getUid(), panel.getUuid(), finalOptions);
                 insert.setResults(result.getResults());
             }
-            auditManager.auditCreate(organizationId, userId, Enums.Resource.DISEASE_PANEL, panel.getId(), panel.getUuid(), study.getId(),
-                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-
             return insert;
-        } catch (CatalogException e) {
-            auditManager.auditCreate(organizationId, userId, Enums.Resource.DISEASE_PANEL, panel.getId(), "", study.getId(),
-                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
-        }
+        });
     }
 
     public OpenCGAResult<Panel> importFromSource(String studyId, String source, String panelIds, String token) throws CatalogException {
-        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, tokenPayload);
-        String organizationId = studyFqn.getOrganizationId();
-        String userId = tokenPayload.getUserId(organizationId);
-        Study study = catalogManager.getStudyManager().resolveId(studyId, userId, organizationId);
-
-        ObjectMap auditParams = new ObjectMap()
-                .append("studyId", studyId)
+        ObjectMap methodParams = new ObjectMap()
+                .append("studyStr", studyId)
                 .append("source", source)
                 .append("panelIds", panelIds)
                 .append("token", token);
-        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
-
-        try {
+        return runForMultiOperation(methodParams, Enums.Action.IMPORT, studyId, token, (organizationId, study, userId, entryParamList) -> {
             // 1. We check everything can be done
             authorizationManager.checkStudyPermission(organizationId, study.getUid(), userId, StudyPermissions.Permissions.WRITE_PANELS);
             ParamUtils.checkParameter(source, "source");
@@ -248,7 +222,7 @@ public class PanelManager extends ResourceManager<Panel, PanelPermissions> {
                 }
             }
 
-            OpenCGAResult<Panel> result = OpenCGAResult.empty();
+            OpenCGAResult<Panel> result = OpenCGAResult.empty(Panel.class);
             List<Panel> importedPanels = new LinkedList<>();
             for (String auxSource : sources) {
                 // Obtain available panel ids from panel host
@@ -284,6 +258,7 @@ public class PanelManager extends ResourceManager<Panel, PanelPermissions> {
                     try (InputStream inputStream = url.openStream()) {
                         Panel panel = JacksonUtils.getDefaultObjectMapper().readValue(inputStream, Panel.class);
                         autoCompletePanel(organizationId, study, panel);
+                        entryParamList.add(new EntryParam(panel.getId(), panel.getUuid()));
                         panelList.add(panel);
                     }
                 }
@@ -292,28 +267,8 @@ public class PanelManager extends ResourceManager<Panel, PanelPermissions> {
                 result.append(getPanelDBAdaptor(organizationId).insert(study.getUid(), panelList));
             }
             result.setResults(importedPanels);
-            auditManager.initAuditBatch(operationId);
-            // Audit creation
-            for (Panel importedPanel : importedPanels) {
-                auditManager.audit(organizationId, operationId, userId, Enums.Action.IMPORT, Enums.Resource.DISEASE_PANEL,
-                        importedPanel.getId(), importedPanel.getUuid(), study.getId(), study.getUuid(), auditParams,
-                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
-            }
-            auditManager.finishAuditBatch(organizationId, operationId);
-
             return result;
-        } catch (CatalogException e) {
-            auditManager.audit(organizationId, operationId, userId, Enums.Action.IMPORT, Enums.Resource.DISEASE_PANEL, "", "",
-                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()),
-                    new ObjectMap());
-            throw e;
-        } catch (IOException e) {
-            CatalogException exception = new CatalogException("Error parsing panels: " + e.getMessage(), e);
-            auditManager.audit(organizationId, operationId, userId, Enums.Action.IMPORT, Enums.Resource.DISEASE_PANEL, "", "",
-                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
-                            exception.getError()), new ObjectMap());
-            throw exception;
-        }
+        });
     }
 
     private void autoCompletePanel(String organizationId, Study study, Panel panel) throws CatalogException {
@@ -345,121 +300,33 @@ public class PanelManager extends ResourceManager<Panel, PanelPermissions> {
 
     public OpenCGAResult<Panel> update(String studyId, Query query, PanelUpdateParams updateParams, boolean ignoreException,
                                        QueryOptions options, String token) throws CatalogException {
-        Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
-
-        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, tokenPayload);
-        String organizationId = studyFqn.getOrganizationId();
-        String userId = tokenPayload.getUserId(organizationId);
-        Study study = studyManager.resolveId(studyId, userId, organizationId);
-
-        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
-
-        ObjectMap updateMap;
-        try {
-            updateMap = updateParams != null ? updateParams.getUpdateMap() : null;
-        } catch (JsonProcessingException e) {
-            throw new CatalogException("Could not parse PanelUpdateParams object: " + e.getMessage(), e);
-        }
-
-        ObjectMap auditParams = new ObjectMap()
-                .append("study", studyId)
-                .append("query", query)
-                .append("updateParams", updateMap)
-                .append("ignoreException", ignoreException)
-                .append("options", options)
-                .append("token", token);
-        fixQueryObject(finalQuery);
-
-        DBIterator<Panel> iterator;
-        try {
-            finalQuery.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            iterator = getPanelDBAdaptor(organizationId).iterator(study.getUid(), finalQuery, INCLUDE_PANEL_IDS, userId);
-        } catch (CatalogException e) {
-            auditManager.auditUpdate(organizationId, operationId, userId, Enums.Resource.DISEASE_PANEL, "", "", study.getId(),
-                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
-        }
-
-        auditManager.initAuditBatch(operationId);
-        OpenCGAResult<Panel> result = OpenCGAResult.empty();
-        while (iterator.hasNext()) {
-            Panel panel = iterator.next();
-            try {
-                OpenCGAResult updateResult = update(organizationId, study, panel, updateParams, options, userId);
-                result.append(updateResult);
-
-                auditManager.auditUpdate(organizationId, operationId, userId, Enums.Resource.DISEASE_PANEL, panel.getId(), panel.getUuid(),
-                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            } catch (CatalogException e) {
-                Event event = new Event(Event.Type.ERROR, panel.getId(), e.getMessage());
-                result.getEvents().add(event);
-                result.setNumErrors(result.getNumErrors() + 1);
-
-                logger.error("Could not update panel {}: {}", panel.getId(), e.getMessage(), e);
-                auditManager.auditUpdate(organizationId, operationId, userId, Enums.Resource.DISEASE_PANEL, panel.getId(), panel.getUuid(),
-                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            }
-        }
-        auditManager.finishAuditBatch(organizationId, operationId);
-
-        return endResult(result, ignoreException);
+        return updateMany(studyId, query, updateParams, ignoreException, options, token, StudyManager.INCLUDE_STUDY_IDS,
+                (organizationId, study, userId) -> {
+                    Query finalQuery = query != null ? new Query(query) : new Query();
+                    finalQuery.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+                    return getPanelDBAdaptor(organizationId).iterator(study.getUid(), finalQuery, INCLUDE_PANEL_IDS, userId);
+                }, (organizationId, study, userId, panel) -> update(organizationId, study, panel, updateParams, options, userId),
+                "Could not update disease panel");
     }
 
     public OpenCGAResult<Panel> update(String studyStr, String panelId, PanelUpdateParams updateParams, QueryOptions options, String token)
             throws CatalogException {
-        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
-        String organizationId = studyFqn.getOrganizationId();
-        String userId = tokenPayload.getUserId(organizationId);
-        Study study = studyManager.resolveId(studyStr, userId, organizationId);
+        return update(studyStr, panelId, updateParams, options, token, StudyManager.INCLUDE_STUDY_IDS,
+                (organizationId, study, userId, entryParam) -> {
+                    entryParam.setId(panelId);
+                    OpenCGAResult<Panel> internalResult = internalGet(organizationId, study.getUid(), panelId, QueryOptions.empty(),
+                            userId);
+                    if (internalResult.getNumResults() == 0) {
+                        throw new CatalogException("Panel '" + panelId + "' not found");
+                    }
+                    Panel panel = internalResult.first();
 
-        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
+                    // We set the proper values for the entry param object
+                    entryParam.setId(panel.getId());
+                    entryParam.setUuid(panel.getUuid());
 
-        ObjectMap updateMap;
-        try {
-            updateMap = updateParams != null ? updateParams.getUpdateMap() : null;
-        } catch (JsonProcessingException e) {
-            throw new CatalogException("Could not parse PanelUpdateParams object: " + e.getMessage(), e);
-        }
-
-        ObjectMap auditParams = new ObjectMap()
-                .append("study", studyStr)
-                .append("panelId", panelId)
-                .append("updateParams", updateMap)
-                .append("options", options)
-                .append("token", token);
-
-        OpenCGAResult<Panel> result = OpenCGAResult.empty();
-        String panelUuid = "";
-        try {
-            OpenCGAResult<Panel> internalResult = internalGet(organizationId, study.getUid(), panelId, QueryOptions.empty(), userId);
-            if (internalResult.getNumResults() == 0) {
-                throw new CatalogException("Panel '" + panelId + "' not found");
-            }
-            Panel panel = internalResult.first();
-
-            // We set the proper values for the audit
-            panelId = panel.getId();
-            panelUuid = panel.getUuid();
-
-            OpenCGAResult updateResult = update(organizationId, study, panel, updateParams, options, userId);
-            result.append(updateResult);
-
-            auditManager.auditUpdate(organizationId, userId, Enums.Resource.DISEASE_PANEL, panel.getId(), panel.getUuid(), study.getId(),
-                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-        } catch (CatalogException e) {
-            Event event = new Event(Event.Type.ERROR, panelId, e.getMessage());
-            result.getEvents().add(event);
-            result.setNumErrors(result.getNumErrors() + 1);
-
-            logger.error("Could not update panel {}: {}", panelId, e.getMessage(), e);
-            auditManager.auditUpdate(organizationId, operationId, userId, Enums.Resource.DISEASE_PANEL, panelId, panelUuid, study.getId(),
-                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
-        }
-
-        return result;
+                    return update(organizationId, study, panel, updateParams, options, userId);
+                });
     }
 
     /**
@@ -482,68 +349,26 @@ public class PanelManager extends ResourceManager<Panel, PanelPermissions> {
 
     public OpenCGAResult<Panel> update(String studyStr, List<String> panelIds, PanelUpdateParams updateParams, boolean ignoreException,
                                        QueryOptions options, String token) throws CatalogException {
-        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
-        String organizationId = studyFqn.getOrganizationId();
-        String userId = tokenPayload.getUserId(organizationId);
-        Study study = studyManager.resolveId(studyStr, userId, organizationId);
+        return updateMany(studyStr, panelIds, updateParams, ignoreException, options, token, StudyManager.INCLUDE_STUDY_IDS,
+                (organizationId, study, userId, entryParam) -> {
+                    String panelId = entryParam.getId();
+                    OpenCGAResult<Panel> internalResult = internalGet(organizationId, study.getUid(), panelId, QueryOptions.empty(),
+                            userId);
+                    if (internalResult.getNumResults() == 0) {
+                        throw new CatalogException("Panel '" + panelId + "' not found");
+                    }
+                    Panel panel = internalResult.first();
 
-        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
+                    // We set the proper values for the entry param object
+                    entryParam.setId(panel.getId());
+                    entryParam.setUuid(panel.getUuid());
 
-        ObjectMap updateMap;
-        try {
-            updateMap = updateParams != null ? updateParams.getUpdateMap() : null;
-        } catch (JsonProcessingException e) {
-            throw new CatalogException("Could not parse PanelUpdateParams object: " + e.getMessage(), e);
-        }
-
-        ObjectMap auditParams = new ObjectMap()
-                .append("study", studyStr)
-                .append("panelIds", panelIds)
-                .append("updateParams", updateMap)
-                .append("ignoreException", ignoreException)
-                .append("options", options)
-                .append("token", token);
-
-        auditManager.initAuditBatch(operationId);
-        OpenCGAResult<Panel> result = OpenCGAResult.empty();
-        for (String id : panelIds) {
-            String panelId = id;
-            String panelUuid = "";
-
-            try {
-                OpenCGAResult<Panel> internalResult = internalGet(organizationId, study.getUid(), panelId, QueryOptions.empty(), userId);
-                if (internalResult.getNumResults() == 0) {
-                    throw new CatalogException("Panel '" + id + "' not found");
-                }
-                Panel panel = internalResult.first();
-
-                // We set the proper values for the audit
-                panelId = panel.getId();
-                panelUuid = panel.getUuid();
-
-                OpenCGAResult updateResult = update(organizationId, study, panel, updateParams, options, userId);
-                result.append(updateResult);
-
-                auditManager.auditUpdate(organizationId, userId, Enums.Resource.DISEASE_PANEL, panel.getId(), panel.getUuid(),
-                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            } catch (CatalogException e) {
-                Event event = new Event(Event.Type.ERROR, panelId, e.getMessage());
-                result.getEvents().add(event);
-                result.setNumErrors(result.getNumErrors() + 1);
-
-                logger.error("Could not update panel {}: {}", panelId, e.getMessage(), e);
-                auditManager.auditUpdate(organizationId, operationId, userId, Enums.Resource.DISEASE_PANEL, panelId, panelUuid,
-                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            }
-        }
-        auditManager.finishAuditBatch(organizationId, operationId);
-
-        return endResult(result, ignoreException);
+                    return update(organizationId, study, panel, updateParams, options, userId);
+                });
     }
 
-    private OpenCGAResult update(String organizationId, Study study, Panel panel, PanelUpdateParams updateParams, QueryOptions options,
-                                 String userId) throws CatalogException {
+    private OpenCGAResult<Panel> update(String organizationId, Study study, Panel panel, PanelUpdateParams updateParams,
+                                        QueryOptions options, String userId) throws CatalogException {
         ObjectMap parameters = new ObjectMap();
         if (updateParams != null) {
             try {
@@ -577,349 +402,148 @@ public class PanelManager extends ResourceManager<Panel, PanelPermissions> {
 
     @Override
     public DBIterator<Panel> iterator(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
-        query = ParamUtils.defaultObject(query, Query::new);
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-
-        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(sessionId);
-        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
-        String organizationId = studyFqn.getOrganizationId();
-        String userId = tokenPayload.getUserId(organizationId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, organizationId);
-
-        fixQueryObject(query);
-        query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-        return getPanelDBAdaptor(organizationId).iterator(study.getUid(), query, options, userId);
+        return iterator(studyStr, query, options, StudyManager.INCLUDE_STUDY_IDS, sessionId, (organizationId, study, userId) -> {
+            Query finalQuery = query != null ? new Query(query) : new Query();
+            QueryOptions finalOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+            fixQueryObject(finalQuery);
+            finalQuery.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+            return getPanelDBAdaptor(organizationId).iterator(study.getUid(), finalQuery, finalOptions, userId);
+        });
     }
 
     @Override
     public OpenCGAResult<FacetField> facet(String studyStr, Query query, String facet, String token) throws CatalogException {
-        query = ParamUtils.defaultObject(query, Query::new);
-
-        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
-        String organizationId = studyFqn.getOrganizationId();
-        String userId = tokenPayload.getUserId(organizationId);
-
-        Study study = catalogManager.getStudyManager().resolveId(studyFqn, StudyManager.INCLUDE_VARIABLE_SET, tokenPayload);
-
-        fixQueryObject(query);
-        query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-
-        return getPanelDBAdaptor(organizationId).facet(study.getUid(), query, facet, userId);
+        return facet(studyStr, query, facet, token, StudyManager.INCLUDE_STUDY_IDS, (organizationId, study, userId) -> {
+            Query finalQuery = query != null ? new Query(query) : new Query();
+            fixQueryObject(finalQuery);
+            finalQuery.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+            return getPanelDBAdaptor(organizationId).facet(study.getUid(), finalQuery, facet, userId);
+        });
     }
 
     @Override
     public OpenCGAResult<Panel> search(String studyId, Query query, QueryOptions options, String token) throws CatalogException {
-        query = ParamUtils.defaultObject(query, Query::new);
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-
-        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, tokenPayload);
-        String organizationId = studyFqn.getOrganizationId();
-        String userId = tokenPayload.getUserId(organizationId);
-        Study study = studyManager.resolveId(studyId, new QueryOptions(QueryOptions.INCLUDE,
-                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()), userId, organizationId);
-
-        ObjectMap auditParams = new ObjectMap()
-                .append("studyId", studyId)
-                .append("query", new Query(query))
-                .append("options", options)
-                .append("token", token);
-
-        try {
-            fixQueryObject(query);
-            query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<Panel> result = getPanelDBAdaptor(organizationId).get(study.getUid(), query, options, userId);
-
-            auditManager.auditSearch(organizationId, userId, Enums.Resource.DISEASE_PANEL, study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            return result;
-        } catch (CatalogException e) {
-            auditManager.auditSearch(organizationId, userId, Enums.Resource.DISEASE_PANEL, study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
-        }
+        return search(studyId, query, options, token, StudyManager.INCLUDE_STUDY_IDS, (organizationId, study, userId) -> {
+            Query finalQuery = query != null ? new Query(query) : new Query();
+            QueryOptions finalOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+            fixQueryObject(finalQuery);
+            finalQuery.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+            return getPanelDBAdaptor(organizationId).get(study.getUid(), finalQuery, finalOptions, userId);
+        });
     }
 
     @Override
     public OpenCGAResult<?> distinct(String studyId, List<String> fields, Query query, String token) throws CatalogException {
-        query = ParamUtils.defaultObject(query, Query::new);
-
-        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, tokenPayload);
-        String organizationId = studyFqn.getOrganizationId();
-        String userId = tokenPayload.getUserId(organizationId);
-        Study study = catalogManager.getStudyManager().resolveId(studyId, userId, organizationId);
-
-        ObjectMap auditParams = new ObjectMap()
-                .append("studyId", studyId)
-                .append("fields", fields)
-                .append("query", new Query(query))
-                .append("token", token);
-        fixQueryObject(query);
-        try {
-            fixQueryObject(query);
-
-            query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<?> result = getPanelDBAdaptor(organizationId).distinct(study.getUid(), fields, query, userId);
-
-            auditManager.auditDistinct(organizationId, userId, Enums.Resource.DISEASE_PANEL, study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-
-            return result;
-        } catch (CatalogException e) {
-            auditManager.auditDistinct(organizationId, userId, Enums.Resource.DISEASE_PANEL, study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
-        }
+        return distinct(studyId, fields, query, token, StudyManager.INCLUDE_STUDY_IDS, (organizationId, study, userId) -> {
+            Query finalQuery = query != null ? new Query(query) : new Query();
+            fixQueryObject(finalQuery);
+            finalQuery.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+            return getPanelDBAdaptor(organizationId).distinct(study.getUid(), fields, finalQuery, userId);
+        });
     }
 
     @Override
     public OpenCGAResult<Panel> count(String studyId, Query query, String token) throws CatalogException {
-        query = ParamUtils.defaultObject(query, Query::new);
-
-        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, tokenPayload);
-        String organizationId = studyFqn.getOrganizationId();
-        String userId = tokenPayload.getUserId(organizationId);
-        Study study = studyManager.resolveId(studyId, new QueryOptions(QueryOptions.INCLUDE,
-                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()), userId, organizationId);
-
-        ObjectMap auditParams = new ObjectMap()
-                .append("studyId", studyId)
-                .append("query", new Query(query))
-                .append("token", token);
-        fixQueryObject(query);
-        try {
-            query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-
-            // Here view permissions will be checked
-            OpenCGAResult<Long> queryResultAux = getPanelDBAdaptor(organizationId).count(query, userId);
-
-            auditManager.auditCount(organizationId, userId, Enums.Resource.DISEASE_PANEL, study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-
+        return count(studyId, query, token, StudyManager.INCLUDE_STUDY_IDS, (organizationId, study, userId) -> {
+            Query finalQuery = query != null ? new Query(query) : new Query();
+            fixQueryObject(finalQuery);
+            finalQuery.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+            OpenCGAResult<Long> queryResultAux = getPanelDBAdaptor(organizationId).count(finalQuery, userId);
             return new OpenCGAResult<>(queryResultAux.getTime(), queryResultAux.getEvents(), 0, Collections.emptyList(),
                     queryResultAux.getNumMatches());
-        } catch (CatalogException e) {
-            auditManager.auditCount(organizationId, userId, Enums.Resource.DISEASE_PANEL, study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
-        }
+        });
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, List<String> panelIds, QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<Panel> delete(String studyStr, List<String> panelIds, QueryOptions options, String token) throws CatalogException {
         return delete(studyStr, panelIds, options, false, token);
     }
 
-    public OpenCGAResult delete(String studyStr, List<String> panelIds, ObjectMap params, boolean ignoreException, String token)
+    public OpenCGAResult<Panel> delete(String studyStr, List<String> panelIds, ObjectMap params, boolean ignoreException, String token)
             throws CatalogException {
-        if (panelIds == null || ListUtils.isEmpty(panelIds)) {
-            throw new CatalogException("Missing list of panel ids");
-        }
-
-        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
-        String organizationId = studyFqn.getOrganizationId();
-        String userId = tokenPayload.getUserId(organizationId);
-        Study study = studyManager.resolveId(studyStr, userId, organizationId);
-
-        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
-
-        ObjectMap auditParams = new ObjectMap()
-                .append("study", studyStr)
-                .append("panelIds", panelIds)
-                .append("params", params)
-                .append("ignoreException", ignoreException)
-                .append("token", token);
-
-        boolean checkPermissions;
-        try {
-            // If the user is the owner or the admin, we won't check if he has permissions for every single entry
-            long studyId = study.getUid();
-            checkPermissions = !authorizationManager.isAtLeastStudyAdministrator(organizationId, studyId, userId);
-        } catch (CatalogException e) {
-            auditManager.auditDelete(organizationId, operationId, userId, Enums.Resource.DISEASE_PANEL, "", "", study.getId(),
-                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
-        }
-
-        auditManager.initAuditBatch(operationId);
-        OpenCGAResult<Panel> result = OpenCGAResult.empty();
-        for (String id : panelIds) {
-
-            String panelId = id;
-            String panelUuid = "";
-            try {
-                OpenCGAResult<Panel> internalResult = internalGet(organizationId, study.getUid(), id, INCLUDE_PANEL_IDS, userId);
-                if (internalResult.getNumResults() == 0) {
-                    throw new CatalogException("Panel '" + id + "' not found");
-                }
-
-                Panel panel = internalResult.first();
-                // We set the proper values for the audit
-                panelId = panel.getId();
-                panelUuid = panel.getUuid();
-
-                if (checkPermissions) {
-                    authorizationManager.checkPanelPermission(organizationId, study.getUid(), panel.getUid(), userId,
-                            PanelPermissions.DELETE);
-                }
-
-                // Check if the panel can be deleted
-                // TODO: Check if the panel is used in an interpretation. At this point, it can be deleted no matter what.
-
-                // Delete the panel
-                result.append(getPanelDBAdaptor(organizationId).delete(panel));
-
-                auditManager.auditDelete(organizationId, operationId, userId, Enums.Resource.DISEASE_PANEL, panel.getId(), panel.getUuid(),
-                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            } catch (CatalogException e) {
-                Event event = new Event(Event.Type.ERROR, id, e.getMessage());
-                result.getEvents().add(event);
-                result.setNumErrors(result.getNumErrors() + 1);
-
-                logger.error("Cannot delete panel {}: {}", panelId, e.getMessage());
-                auditManager.auditDelete(organizationId, operationId, userId, Enums.Resource.DISEASE_PANEL, panelId, panelUuid,
-                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+        return deleteMany(studyStr, panelIds, params, ignoreException, token, (organizationId, study, userId, entryParam) -> {
+            if (StringUtils.isEmpty(entryParam.getId())) {
+                throw new CatalogException("Internal error: Missing disease panel id. This id should have been provided internally.");
             }
-        }
-        auditManager.finishAuditBatch(organizationId, operationId);
+            String panelId = entryParam.getId();
 
-        return endResult(result, ignoreException);
+            Query query = new Query();
+            authorizationManager.buildAclCheckQuery(userId, PanelPermissions.DELETE.name(), query);
+            OpenCGAResult<Panel> internalResult = internalGet(organizationId, study.getUid(), panelId, INCLUDE_PANEL_IDS, userId);
+            if (internalResult.getNumResults() == 0) {
+                throw new CatalogException("Disease panel '" + panelId + "' not found or user " + userId + " does not have the proper "
+                        + "permissions to delete it.");
+            }
+
+            Panel panel = internalResult.first();
+            // We set the proper values for the entry param object
+            entryParam.setId(panel.getId());
+            entryParam.setUuid(panel.getUuid());
+
+            // Check if the panel can be deleted
+            // TODO: Check if the panel is used in an interpretation. At this point, it can be deleted no matter what.
+
+            // Delete the panel
+            return getPanelDBAdaptor(organizationId).delete(panel);
+        });
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<Panel> delete(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
         return delete(studyStr, query, options, false, token);
     }
 
-    public OpenCGAResult delete(String studyStr, Query query, ObjectMap params, boolean ignoreException, String token)
+    public OpenCGAResult<Panel> delete(String studyStr, Query query, QueryOptions options, boolean ignoreException, String token)
             throws CatalogException {
-        Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
-        OpenCGAResult result = OpenCGAResult.empty();
-
-        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
-        String organizationId = studyFqn.getOrganizationId();
-        String userId = tokenPayload.getUserId(organizationId);
-        Study study = studyManager.resolveId(studyStr, userId, organizationId);
-
-        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
-
-        ObjectMap auditParams = new ObjectMap()
-                .append("study", studyStr)
-                .append("query", new Query(query))
-                .append("params", params)
-                .append("ignoreException", ignoreException)
-                .append("token", token);
-        fixQueryObject(finalQuery);
-
-        // If the user is the owner or the admin, we won't check if he has permissions for every single entry
-        boolean checkPermissions;
-
-        // We try to get an iterator containing all the families to be deleted
-        DBIterator<Panel> iterator;
-        try {
+        return deleteMany(studyStr, query, options, ignoreException, token, (organizationId, study, userId) -> {
+            Query finalQuery = query != null ? new Query(query) : new Query();
+            fixQueryObject(finalQuery);
             finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+            return getPanelDBAdaptor(organizationId).iterator(study.getUid(), finalQuery, INCLUDE_PANEL_IDS, userId);
+        }, (organizationId, study, userId, panel) -> {
+            QueryOptions finalOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+            // TODO: Check if the panel is used in an interpretation. At this point, it can be deleted no matter what.
+            // Delete the panel
+            return getPanelDBAdaptor(organizationId).delete(panel);
+        });
+    }
 
-            iterator = getPanelDBAdaptor(organizationId).iterator(study.getUid(), finalQuery, INCLUDE_PANEL_IDS, userId);
+    @Override
+    public OpenCGAResult<Panel> rank(String studyStr, Query query, String field, int numResults, boolean asc, String token)
+            throws CatalogException {
+        return rank(studyStr, query, field, numResults, asc, token, (organizationId, study, userId) -> {
+            authorizationManager.checkStudyPermission(organizationId, study.getUid(), userId, StudyPermissions.Permissions.VIEW_PANELS);
+            Query finalQuery = query != null ? new Query(query) : new Query();
+            fixQueryObject(finalQuery);
 
-            // If the user is the owner or the admin, we won't check if he has permissions for every single entry
-            long studyId = study.getUid();
-            checkPermissions = !authorizationManager.isAtLeastStudyAdministrator(organizationId, studyId, userId);
-        } catch (CatalogException e) {
-            auditManager.auditDelete(organizationId, operationId, userId, Enums.Resource.DISEASE_PANEL, "", "", study.getId(),
-                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
-        }
-
-        auditManager.initAuditBatch(operationId);
-        while (iterator.hasNext()) {
-            Panel panel = iterator.next();
-
-            try {
-                if (checkPermissions) {
-                    authorizationManager.checkPanelPermission(organizationId, study.getUid(), panel.getUid(), userId,
-                            PanelPermissions.DELETE);
-                }
-
-                // Check if the panel can be deleted
-                // TODO: Check if the panel is used in an interpretation. At this point, it can be deleted no matter what.
-
-                // Delete the panel
-                result.append(getPanelDBAdaptor(organizationId).delete(panel));
-
-                auditManager.auditDelete(organizationId, operationId, userId, Enums.Resource.DISEASE_PANEL, panel.getId(), panel.getUuid(),
-                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            } catch (CatalogException e) {
-                String errorMsg = "Cannot delete panel " + panel.getId() + ": " + e.getMessage();
-
-                Event event = new Event(Event.Type.ERROR, panel.getId(), e.getMessage());
-                result.getEvents().add(event);
-                result.setNumErrors(result.getNumErrors() + 1);
-
-                logger.error(errorMsg);
-                auditManager.auditDelete(organizationId, operationId, userId, Enums.Resource.DISEASE_PANEL, panel.getId(), panel.getUuid(),
-                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            // TODO: In next release, we will have to check the count parameter from the queryOptions object.
+            boolean count = true;
+            finalQuery.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+            OpenCGAResult<Panel> queryResult = null;
+            if (count) {
+                // We do not need to check for permissions when we show the count of files
+                queryResult = getPanelDBAdaptor(organizationId).rank(finalQuery, field, numResults, asc);
             }
-        }
-        auditManager.finishAuditBatch(organizationId, operationId);
-
-        return endResult(result, ignoreException);
+            return ParamUtils.defaultObject(queryResult, OpenCGAResult::new);
+        });
     }
 
     @Override
-    public OpenCGAResult rank(String studyStr, Query query, String field, int numResults, boolean asc, String token)
+    public OpenCGAResult<Panel> groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String token)
             throws CatalogException {
-        query = ParamUtils.defaultObject(query, Query::new);
-        ParamUtils.checkObj(field, "field");
-        ParamUtils.checkObj(token, "token");
+        return groupBy(studyStr, query, fields, options, token, (organizationId, study, userId) -> {
+            authorizationManager.checkStudyPermission(organizationId, study.getUid(), userId, StudyPermissions.Permissions.VIEW_PANELS);
+            Query finalQuery = query != null ? new Query(query) : new Query();
+            QueryOptions finalOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+            if (CollectionUtils.isEmpty(fields)) {
+                throw new CatalogException("Empty fields parameter.");
+            }
+            fixQueryObject(finalQuery);
+            // Add study id to the query
+            finalQuery.put(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
-        String organizationId = studyFqn.getOrganizationId();
-        String userId = tokenPayload.getUserId(organizationId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, organizationId);
-
-        authorizationManager.checkStudyPermission(organizationId, study.getUid(), userId, StudyPermissions.Permissions.VIEW_PANELS);
-
-        fixQueryObject(query);
-
-        // TODO: In next release, we will have to check the count parameter from the queryOptions object.
-        boolean count = true;
-        query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-        OpenCGAResult queryResult = null;
-        if (count) {
-            // We do not need to check for permissions when we show the count of files
-            queryResult = getPanelDBAdaptor(organizationId).rank(query, field, numResults, asc);
-        }
-
-        return ParamUtils.defaultObject(queryResult, OpenCGAResult::new);
-    }
-
-    @Override
-    public OpenCGAResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String sessionId)
-            throws CatalogException {
-        query = ParamUtils.defaultObject(query, Query::new);
-        fixQueryObject(query);
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-        if (CollectionUtils.isEmpty(fields)) {
-            throw new CatalogException("Empty fields parameter.");
-        }
-
-        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(sessionId);
-        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
-        String organizationId = studyFqn.getOrganizationId();
-        String userId = tokenPayload.getUserId(organizationId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, organizationId);
-
-        // Add study id to the query
-        query.put(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-
-        OpenCGAResult queryResult = getSampleDBAdaptor(organizationId).groupBy(query, fields, options, userId);
-        return ParamUtils.defaultObject(queryResult, OpenCGAResult::new);
+            return getPanelDBAdaptor(organizationId).groupBy(finalQuery, fields, finalOptions, userId);
+        });
     }
 
     // **************************   ACLs  ******************************** //
@@ -931,26 +555,20 @@ public class PanelManager extends ResourceManager<Panel, PanelPermissions> {
 
     public OpenCGAResult<AclEntryList<PanelPermissions>> getAcls(String studyId, List<String> panelList, List<String> members,
                                                                  boolean ignoreException, String token) throws CatalogException {
-        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, tokenPayload);
-        String organizationId = studyFqn.getOrganizationId();
-        String userId = tokenPayload.getUserId(organizationId);
-        Study study = studyManager.resolveId(studyId, userId, organizationId);
+        return getAcls(studyId, panelList, members, ignoreException, token, (organizationId, study, userId, entryParamList) -> {
+            OpenCGAResult<AclEntryList<PanelPermissions>> panelAcls;
+            Map<String, InternalGetDataResult<?>.Missing> missingMap = new HashMap<>();
 
-        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
-        ObjectMap auditParams = new ObjectMap()
-                .append("studyId", studyId)
-                .append("panelList", panelList)
-                .append("members", members)
-                .append("ignoreException", ignoreException)
-                .append("token", token);
+            for (String panelId : panelList) {
+                entryParamList.add(new EntryParam(panelId, null));
+            }
 
-        OpenCGAResult<AclEntryList<PanelPermissions>> panelAcls = OpenCGAResult.empty();
-        Map<String, InternalGetDataResult.Missing> missingMap = new HashMap<>();
-        try {
-            auditManager.initAuditBatch(operationId);
             InternalGetDataResult<Panel> queryResult = internalGet(organizationId, study.getUid(), panelList, INCLUDE_PANEL_IDS, userId,
                     ignoreException);
+            entryParamList.clear();
+            for (Panel panel : queryResult.getResults()) {
+                entryParamList.add(new EntryParam(panel.getId(), panel.getUuid()));
+            }
 
             if (queryResult.getMissing() != null) {
                 missingMap = queryResult.getMissing().stream()
@@ -972,18 +590,11 @@ public class PanelManager extends ResourceManager<Panel, PanelPermissions> {
             int counter = 0;
             for (String panelId : panelList) {
                 if (!missingMap.containsKey(panelId)) {
-                    Panel panel = queryResult.getResults().get(counter);
                     resultList.add(panelAcls.getResults().get(counter));
-                    auditManager.audit(organizationId, operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.DISEASE_PANEL,
-                            panel.getId(), panel.getUuid(), study.getId(), study.getUuid(), auditParams,
-                            new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
                     counter++;
                 } else {
                     resultList.add(new AclEntryList<>());
                     eventList.add(new Event(Event.Type.ERROR, panelId, missingMap.get(panelId).getErrorMsg()));
-                    auditManager.audit(organizationId, operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.DISEASE_PANEL, panelId,
-                            "", study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
-                                    new Error(0, "", missingMap.get(panelId).getErrorMsg())), new ObjectMap());
                 }
             }
             for (int i = 0; i < queryResult.getResults().size(); i++) {
@@ -991,47 +602,16 @@ public class PanelManager extends ResourceManager<Panel, PanelPermissions> {
             }
             panelAcls.setResults(resultList);
             panelAcls.setEvents(eventList);
-        } catch (CatalogException e) {
-            for (String panelId : panelList) {
-                auditManager.audit(organizationId, operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.DISEASE_PANEL, panelId, "",
-                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()),
-                        new ObjectMap());
-            }
-            if (!ignoreException) {
-                throw e;
-            } else {
-                for (String panelId : panelList) {
-                    Event event = new Event(Event.Type.ERROR, panelId, e.getMessage());
-                    panelAcls.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0, Collections.emptyList(), 0));
-                }
-            }
-        } finally {
-            auditManager.finishAuditBatch(organizationId, operationId);
-        }
 
-        return panelAcls;
+            return panelAcls;
+        });
     }
 
     public OpenCGAResult<AclEntryList<PanelPermissions>> updateAcl(String studyId, List<String> panelStrList, String memberList,
                                                                    AclParams aclParams, ParamUtils.AclAction action, String token)
             throws CatalogException {
-        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, tokenPayload);
-        String organizationId = studyFqn.getOrganizationId();
-        String userId = tokenPayload.getUserId(organizationId);
-        Study study = studyManager.resolveId(studyFqn, StudyManager.INCLUDE_CONFIGURATION, tokenPayload);
-
-        ObjectMap auditParams = new ObjectMap()
-                .append("studyId", studyId)
-                .append("panelStrList", panelStrList)
-                .append("memberList", memberList)
-                .append("aclParams", aclParams)
-                .append("action", action)
-                .append("token", token);
-        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
-
-        try {
-            auditManager.initAuditBatch(operationId);
+        return updateAcls(studyId, panelStrList, memberList, aclParams, action, token, (organizationId, study, userId, entryParamList) -> {
+            authorizationManager.checkCanAssignOrSeePermissions(organizationId, study.getUid(), userId);
 
             if (panelStrList == null || panelStrList.isEmpty()) {
                 throw new CatalogException("Update ACL: Missing panel parameter");
@@ -1049,7 +629,6 @@ public class PanelManager extends ResourceManager<Panel, PanelPermissions> {
 
             OpenCGAResult<Panel> panelDataResult = internalGet(organizationId, study.getUid(), panelStrList, INCLUDE_PANEL_IDS, userId,
                     false);
-            authorizationManager.checkCanAssignOrSeePermissions(organizationId, study.getUid(), userId);
 
             // Validate that the members are actually valid members
             List<String> members;
@@ -1094,24 +673,8 @@ public class PanelManager extends ResourceManager<Panel, PanelPermissions> {
             for (int i = 0; i < queryResultList.getResults().size(); i++) {
                 queryResultList.getResults().get(i).setId(panelDataResult.getResults().get(i).getId());
             }
-            for (Panel panel : panelDataResult.getResults()) {
-                auditManager.audit(organizationId, operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.DISEASE_PANEL,
-                        panel.getId(), panel.getUuid(), study.getId(), study.getUuid(), auditParams,
-                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
-            }
             return queryResultList;
-        } catch (CatalogException e) {
-            if (panelStrList != null) {
-                for (String panelId : panelStrList) {
-                    auditManager.audit(organizationId, operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.DISEASE_PANEL, panelId,
-                            "", study.getId(), study.getUuid(), auditParams,
-                            new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
-                }
-            }
-            throw e;
-        } finally {
-            auditManager.finishAuditBatch(organizationId, operationId);
-        }
+        });
     }
 
     protected void fixQueryObject(Query query) {
