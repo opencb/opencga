@@ -906,6 +906,8 @@ public class SampleManager extends AnnotationSetManager<Sample, SamplePermission
                                                                     String token) throws CatalogException {
         return updateAcls(studyStr, sampleStringList, memberList, sampleAclParams, action, token,
                 (organizationId, study, userId, entryParamList) -> {
+                    authorizationManager.checkCanAssignOrSeePermissions(organizationId, study.getUid(), userId);
+
                     int count = 0;
                     count += sampleStringList != null && !sampleStringList.isEmpty() ? 1 : 0;
                     count += StringUtils.isNotEmpty(sampleAclParams.getIndividual()) ? 1 : 0;
@@ -997,7 +999,6 @@ public class SampleManager extends AnnotationSetManager<Sample, SamplePermission
                     for (Sample sample : sampleList) {
                         entryParamList.add(new EntryParam(sample.getId(), sample.getUuid()));
                     }
-                    authorizationManager.checkCanAssignOrSeePermissions(organizationId, study.getUid(), userId);
 
                     // Validate that the members are actually valid members
                     List<String> members;

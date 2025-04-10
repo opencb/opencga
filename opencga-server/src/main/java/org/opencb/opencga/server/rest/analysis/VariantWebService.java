@@ -532,7 +532,7 @@ public class VariantWebService extends AnalysisWebService {
             }
 
             return createOkResponse(catalogManager.getFamilyManager().calculateFamilyGenotypes(studyStr, clinicalAnalysis, family, moi,
-                    disorder, penetrance, token));
+                    disorder, penetrance, token).first());
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -549,11 +549,8 @@ public class VariantWebService extends AnalysisWebService {
             @QueryParam("modeOfInheritance") ClinicalProperty.ModeOfInheritance moi,
             @ApiParam(value = "Penetrance", defaultValue = "COMPLETE") @QueryParam("penetrance") ClinicalProperty.Penetrance penetrance,
             @ApiParam(value = "Disorder id") @QueryParam("disorder") String disorder) {
-        return run(() -> {
-            Map<String, List<String>> map = catalogManager.getFamilyManager().calculateFamilyGenotypes(studyStr, clinicalAnalysis, family, moi,
-                    disorder, penetrance == null ? ClinicalProperty.Penetrance.COMPLETE : penetrance, token);
-            return new OpenCGAResult<>().setResults(Collections.singletonList(map));
-        });
+        return run(() -> catalogManager.getFamilyManager().calculateFamilyGenotypes(studyStr, clinicalAnalysis, family, moi,
+                disorder, penetrance == null ? ClinicalProperty.Penetrance.COMPLETE : penetrance, token));
     }
 
 //    @POST

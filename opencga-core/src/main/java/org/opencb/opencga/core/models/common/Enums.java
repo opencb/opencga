@@ -245,6 +245,7 @@ public final class Enums {
         AGGREGATION_STATS,
 
         RELATIVES,
+        CALCULATE_FAMILY_GENOTYPES,
 
         SHOW_FOLDER_FILES,
         UPLOAD,
