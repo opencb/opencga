@@ -859,21 +859,75 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             });
 //            deleteVariantFileMetadata(studyId, fileId);
         }
-        for (Integer sample : samples) {
-            updateSampleMetadata(studyId, sample, sampleMetadata -> {
-                boolean indexed = false;
-                for (Integer fileId : sampleMetadata.getFiles()) {
-                    if (!fileIds.contains(fileId)) {
-                        if (getFileMetadata(studyId, fileId).isIndexed()) {
-                            indexed = true;
+        removeSamples(studyId, samples, fileIds, false);
+    }
+
+    public void removeSamples(int studyId, Collection<Integer> sampleId) throws StorageEngineException {
+        removeSamples(studyId, sampleId, Collections.emptyList(), true);
+    }
+
+    public void removeSamples(int studyId, Collection<Integer> sampleIds, Collection<Integer> removedFileIds, boolean removeFromAllFiles)
+            throws StorageEngineException {
+        Set<Integer> fileIdsToCleanSamples = new HashSet<>();
+        Set<Integer> cohortIds = new HashSet<>();
+        List<Integer> removedSampleIds = new ArrayList<>(sampleIds.size());
+        for (Integer sampleId : sampleIds) {
+            updateSampleMetadata(studyId, sampleId, sample -> {
+                boolean totalRemove = true;
+
+                for (Integer fileId : sample.getFiles()) {
+                    if (!removedFileIds.contains(fileId)) {
+                        if (removeFromAllFiles) {
+                            fileIdsToCleanSamples.add(fileId);
+                        } else {
+                            if (isFileIndexed(studyId, fileId)) {
+                                // There is a file from the sample that is still indexed. Sample is partially removed.
+                                totalRemove = false;
+                            } else {
+                                fileIdsToCleanSamples.add(fileId);
+                            }
                         }
                     }
                 }
-                if (!indexed) {
-                    sampleMetadata.setIndexStatus(TaskMetadata.Status.NONE);
+                cohortIds.addAll(sample.getCohorts());
+                cohortIds.addAll(sample.getInternalCohorts());
+                cohortIds.addAll(sample.getSecondaryIndexCohorts());
+                if (removeFromAllFiles || totalRemove) {
+                    removedSampleIds.add(sampleId);
+                    sample.setIndexStatus(TaskMetadata.Status.NONE);
+                    sample.setIndexStatus(TaskMetadata.Status.NONE);
+                    for (Integer v : sample.getSampleIndexVersions()) {
+                        sample.setSampleIndexStatus(TaskMetadata.Status.NONE, v);
+                    }
+                    for (Integer v : sample.getSampleIndexAnnotationVersions()) {
+                        sample.setSampleIndexAnnotationStatus(TaskMetadata.Status.NONE, v);
+                    }
+                    for (Integer v : sample.getFamilyIndexVersions()) {
+                        sample.setFamilyIndexStatus(TaskMetadata.Status.NONE, v);
+                    }
+
+                    sample.setAnnotationStatus(TaskMetadata.Status.NONE);
+                    sample.setMendelianErrorStatus(TaskMetadata.Status.NONE);
+                    sample.setFiles(Collections.emptyList());
+                    sample.setCohorts(Collections.emptySet());
+                    sample.setInternalCohorts(Collections.emptySet());
+                    sample.setSecondaryIndexCohorts(Collections.emptySet());
+                    sample.setAttributes(new ObjectMap());
+                } else {
+                    // Removed only from removed files.
+                    sample.getFiles().removeAll(removedFileIds);
                 }
             });
         }
+
+        // Remove from files
+        for (Integer fileId : fileIdsToCleanSamples) {
+            updateFileMetadata(studyId, fileId, file -> {
+                file.getSamples().removeAll(sampleIds);
+            });
+        }
+
+        removeSamplesFromCohorts(studyId, cohortIds, removedFileIds, removedSampleIds);
     }
 
     public Iterable<FileMetadata> fileMetadataIterable(int studyId) {
@@ -1109,6 +1163,23 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             });
         }
         cohortDBAdaptor.removeCohort(studyId, cohortId);
+    }
+
+    public void removeSamplesFromCohorts(int studyId, Collection<Integer> cohortIds,
+                                         Collection<Integer> fileIds, Collection<Integer> samples)
+            throws StorageEngineException {
+        for (Integer cohortId : cohortIds) {
+            updateCohortMetadata(studyId, cohortId, cohort -> {
+                boolean modified = cohort.getSamples().removeAll(samples);
+                modified |= cohort.getFiles().removeAll(fileIds);
+                if (modified && cohort.isStatsReady()) {
+                    logger.info("Invalidating statistics of cohort "
+                            + cohort.getName()
+                            + " (" + cohort.getId() + ')');
+                    cohort.setStatsStatus(TaskMetadata.Status.ERROR);
+                }
+            });
+        }
     }
 
     public Integer getCohortId(int studyId, String cohortName) {
@@ -2045,8 +2116,8 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         }
     }
 
-    public Integer registerCohort(String study, String cohortName, Collection<String> samples) throws StorageEngineException {
-        return registerCohorts(study, Collections.singletonMap(cohortName, samples)).get(cohortName);
+    public int registerCohort(String study, String cohortName, Collection<String> samples) throws StorageEngineException {
+        return registerCohorts(study, Collections.singletonMap(cohortName, samples)).get(cohortName).intValue();
     }
 
     public CohortMetadata registerTemporaryCohort(String study, String alias, List<String> samples) throws StorageEngineException {

@@ -1082,7 +1082,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     @Override
-    protected void postRemoveFiles(String study, List<Integer> fileIds, List<Integer> sampleIds, int taskId, boolean error)
+    protected void postRemoveFiles(String study, List<Integer> fileIds, List<Integer> samplesPartial, int taskId, boolean error)
             throws StorageEngineException {
         // First, if the operation finished without errors, remove the phoenix columns.
         if (!error) {
@@ -1091,13 +1091,13 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
 
             try (VariantPhoenixSchemaManager schemaManager = new VariantPhoenixSchemaManager(dbAdaptor)) {
                 schemaManager.dropFiles(sm.getId(), fileIds);
-                schemaManager.dropSamples(sm.getId(), sampleIds);
+                schemaManager.dropSamples(sm.getId(), samplesPartial);
             } catch (SQLException e) {
                 throw new StorageEngineException("Error removing columns from Phoenix", e);
             }
         }
         // Then, run the default postRemoveFiles
-        super.postRemoveFiles(study, fileIds, sampleIds, taskId, error);
+        super.postRemoveFiles(study, fileIds, samplesPartial, taskId, error);
     }
 
     @Override

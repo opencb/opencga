@@ -37,9 +37,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 /**
@@ -56,7 +54,6 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor, Samp
     public static Map<Integer, Map<Integer, CohortMetadata>> COHORT_METADATA_MAP = new ConcurrentHashMap<>();
     public static Map<Integer, Map<Integer, TaskMetadata>> TASK_METADATA_MAP = new ConcurrentHashMap<>();
 
-    private static Map<Integer, java.util.concurrent.locks.Lock> LOCK_STUDIES = new ConcurrentHashMap<>();
     private static AtomicInteger NUM_PRINTS = new AtomicInteger();
 
     @Override
@@ -105,26 +102,7 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor, Samp
 
     @Override
     public Lock lock(int studyId, long lockDuration, long timeout, String lockName) throws StorageEngineException {
-        if (!LOCK_STUDIES.containsKey(studyId)) {
-            LOCK_STUDIES.put(studyId, new ReentrantLock());
-        }
-        try {
-            LOCK_STUDIES.get(studyId).tryLock(timeout, TimeUnit.MILLISECONDS);
-            return new Lock(studyId) {
-                @Override
-                public void unlock0() {
-                    LOCK_STUDIES.get(studyId).unlock();
-                }
-
-                @Override
-                public void refresh() {
-
-                }
-            };
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new StorageEngineException("", e);
-        }
+        return DummyLock.getLock(studyId, "study", studyId);
     }
 
     @Override
@@ -144,7 +122,9 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor, Samp
 
     @Override
     public void updateSampleMetadata(int studyId, SampleMetadata sample, Long timeStamp) {
-        SAMPLE_METADATA_MAP.computeIfAbsent(studyId, s -> new ConcurrentHashMap<>()).put(sample.getId(), sample);
+        DummyLock.lock(studyId, "sample", sample.getId(), (lock) -> {
+            return SAMPLE_METADATA_MAP.computeIfAbsent(studyId, s -> new ConcurrentHashMap<>()).put(sample.getId(), sample);
+        });
     }
 
     @Override
@@ -164,17 +144,7 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor, Samp
 
     @Override
     public Lock lock(int studyId, int id, long lockDuration, long timeout) {
-        return new Lock(0) {
-            @Override
-            public void unlock0() {
-
-            }
-
-            @Override
-            public void refresh() {
-
-            }
-        };
+        return DummyLock.getLock(studyId, "other", id);
     }
 
     @Override
@@ -268,7 +238,7 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor, Samp
         SAMPLE_METADATA_MAP.clear();
         COHORT_METADATA_MAP.clear();
         TASK_METADATA_MAP.clear();
-        LOCK_STUDIES.clear();
+        DummyLock.LOCKS.clear();
     }
 
     public static synchronized void writeAndClear(Path path) {

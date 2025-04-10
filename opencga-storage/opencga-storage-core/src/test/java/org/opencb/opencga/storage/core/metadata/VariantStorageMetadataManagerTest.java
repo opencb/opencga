@@ -3,13 +3,12 @@ package org.opencb.opencga.storage.core.metadata;
 import com.google.common.collect.Iterators;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
-import org.opencb.opencga.storage.core.variant.VariantStorageTest;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,14 +24,16 @@ import java.util.stream.IntStream;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public abstract class VariantStorageMetadataManagerTest extends VariantStorageBaseTest implements VariantStorageTest {
+public abstract class VariantStorageMetadataManagerTest {
 
     private VariantStorageMetadataManager metadataManager;
 
     @Before
     public void setUp() throws Exception {
-        metadataManager = getVariantStorageEngine().getMetadataManager();
+        metadataManager = getMetadataManager();
     }
+
+    protected abstract VariantStorageMetadataManager getMetadataManager() throws Exception;
 
     @Test
     public void testGetId() throws StorageEngineException {
@@ -135,6 +136,106 @@ public abstract class VariantStorageMetadataManagerTest extends VariantStorageBa
         Mockito.reset(metadataManager);
         metadataManager.setSamplesToCohort(study.getId(), "cohort1", sampleIds.subList(0, 6));
         Mockito.verify(metadataManager, Mockito.times(6)).updateSampleMetadata(Mockito.anyInt(), Mockito.anyInt(), Mockito.any());
+    }
+
+    @Test
+    public void testRemoveSample() throws StorageEngineException {
+        StudyMetadata study = metadataManager.createStudy("study");
+        int fileId = metadataManager.registerFile(study.getId(), "file.txt", Arrays.asList("s1", "s2"));
+        metadataManager.addIndexedFiles(study.getId(), Arrays.asList(fileId));
+        int sampleId = metadataManager.getSampleId(study.getId(), "s1");
+        int cohortId = metadataManager.registerCohort(study.getName(), "ALL", Arrays.asList("s1", "s2"));
+        metadataManager.updateCohortMetadata(study.getId(), cohortId, cm -> {
+            cm.setStatsStatus(TaskMetadata.Status.READY);
+        });
+
+        Assert.assertEquals(2, metadataManager.getFileMetadata(study.getId(), fileId).getSamples().size());
+        Assert.assertEquals(1, metadataManager.getSampleMetadata(study.getId(), sampleId).getFiles().size());
+        Assert.assertTrue(metadataManager.getCohortMetadata(study.getId(), cohortId).isStatsReady());
+
+        metadataManager.removeSamples(study.getId(), Collections.singletonList(sampleId));
+
+        Assert.assertEquals(1, metadataManager.getFileMetadata(study.getId(), fileId).getSamples().size());
+        Assert.assertEquals(0, metadataManager.getSampleMetadata(study.getId(), sampleId).getFiles().size());
+        Assert.assertFalse(metadataManager.getCohortMetadata(study.getId(), cohortId).isStatsReady());
+    }
+
+    @Test
+    public void testRemoveSampleMultiFile() throws StorageEngineException {
+        StudyMetadata study = metadataManager.createStudy("study");
+        int fileId = metadataManager.registerFile(study.getId(), "file.txt", Arrays.asList("s1", "s2"));
+        int fileId2 = metadataManager.registerFile(study.getId(), "file2.txt", Arrays.asList("s1", "s2"));
+        metadataManager.addIndexedFiles(study.getId(), Arrays.asList(fileId, fileId2));
+        int sampleId = metadataManager.getSampleId(study.getId(), "s1");
+        int cohortId = metadataManager.registerCohort(study.getName(), "ALL", Arrays.asList("s1", "s2"));
+        metadataManager.updateCohortMetadata(study.getId(), cohortId, cm -> {
+            cm.setStatsStatus(TaskMetadata.Status.READY);
+        });
+
+        Assert.assertEquals(2, metadataManager.getFileMetadata(study.getId(), fileId).getSamples().size());
+        Assert.assertEquals(2, metadataManager.getSampleMetadata(study.getId(), sampleId).getFiles().size());
+        Assert.assertTrue(metadataManager.getCohortMetadata(study.getId(), cohortId).isStatsReady());
+
+        metadataManager.removeSamples(study.getId(), Collections.singletonList(sampleId));
+
+        Assert.assertEquals(1, metadataManager.getFileMetadata(study.getId(), fileId).getSamples().size());
+        Assert.assertEquals(0, metadataManager.getSampleMetadata(study.getId(), sampleId).getFiles().size());
+        Assert.assertFalse(metadataManager.getCohortMetadata(study.getId(), cohortId).isStatsReady());
+    }
+
+    @Test
+    public void testRemoveFile() throws StorageEngineException {
+        StudyMetadata study = metadataManager.createStudy("study");
+        int fileId = metadataManager.registerFile(study.getId(), "file.txt", Arrays.asList("s1", "s2"));
+        int fileId2 = metadataManager.registerFile(study.getId(), "file2.txt", Arrays.asList("s3", "s4"));
+        metadataManager.addIndexedFiles(study.getId(), Arrays.asList(fileId, fileId2));
+        int sampleId1 = metadataManager.getSampleId(study.getId(), "s1");
+        int sampleId3 = metadataManager.getSampleId(study.getId(), "s3");
+        int cohortId = metadataManager.registerCohort(study.getName(), "ALL", Arrays.asList("s1", "s2", "s3", "s4"));
+        metadataManager.updateCohortMetadata(study.getId(), cohortId, cm -> {
+            cm.setStatsStatus(TaskMetadata.Status.READY);
+        });
+
+        Assert.assertEquals(2, metadataManager.getFileMetadata(study.getId(), fileId).getSamples().size());
+        Assert.assertEquals(2, metadataManager.getFileMetadata(study.getId(), fileId2).getSamples().size());
+        Assert.assertEquals(1, metadataManager.getSampleMetadata(study.getId(), sampleId1).getFiles().size());
+        Assert.assertEquals(1, metadataManager.getSampleMetadata(study.getId(), sampleId3).getFiles().size());
+        Assert.assertTrue(metadataManager.getCohortMetadata(study.getId(), cohortId).isStatsReady());
+        Assert.assertEquals(4, metadataManager.getCohortMetadata(study.getId(), cohortId).getSamples().size());
+
+        metadataManager.removeIndexedFiles(study.getId(), Collections.singletonList(fileId2));
+
+        Assert.assertEquals(2, metadataManager.getFileMetadata(study.getId(), fileId).getSamples().size());
+        Assert.assertEquals(1, metadataManager.getSampleMetadata(study.getId(), sampleId1).getFiles().size());
+        Assert.assertEquals(0, metadataManager.getSampleMetadata(study.getId(), sampleId3).getFiles().size());
+        Assert.assertTrue(metadataManager.getCohortMetadata(study.getId(), cohortId).isInvalid());
+        Assert.assertEquals(2, metadataManager.getCohortMetadata(study.getId(), cohortId).getSamples().size());
+    }
+
+    @Test
+    public void testRemoveFileSampleMultiFile() throws StorageEngineException {
+        StudyMetadata study = metadataManager.createStudy("study");
+        int fileId = metadataManager.registerFile(study.getId(), "file.txt", Arrays.asList("s1", "s2"));
+        int fileId2 = metadataManager.registerFile(study.getId(), "file2.txt", Arrays.asList("s1", "s2"));
+        metadataManager.addIndexedFiles(study.getId(), Arrays.asList(fileId, fileId2));
+        int sampleId = metadataManager.getSampleId(study.getId(), "s1");
+        int cohortId = metadataManager.registerCohort(study.getName(), "ALL", Arrays.asList("s1", "s2"));
+        metadataManager.updateCohortMetadata(study.getId(), cohortId, cm -> {
+            cm.setStatsStatus(TaskMetadata.Status.READY);
+        });
+
+        Assert.assertEquals(2, metadataManager.getFileMetadata(study.getId(), fileId).getSamples().size());
+        Assert.assertEquals(2, metadataManager.getFileMetadata(study.getId(), fileId2).getSamples().size());
+        Assert.assertEquals(2, metadataManager.getSampleMetadata(study.getId(), sampleId).getFiles().size());
+        Assert.assertTrue(metadataManager.getCohortMetadata(study.getId(), cohortId).isStatsReady());
+        Assert.assertEquals(2, metadataManager.getCohortMetadata(study.getId(), cohortId).getSamples().size());
+
+        metadataManager.removeIndexedFiles(study.getId(), Collections.singletonList(fileId2));
+
+        Assert.assertEquals(2, metadataManager.getFileMetadata(study.getId(), fileId).getSamples().size());
+        Assert.assertEquals(1, metadataManager.getSampleMetadata(study.getId(), sampleId).getFiles().size());
+        Assert.assertTrue(metadataManager.getCohortMetadata(study.getId(), cohortId).isInvalid());
+        Assert.assertEquals(2, metadataManager.getCohortMetadata(study.getId(), cohortId).getSamples().size());
     }
 
 }

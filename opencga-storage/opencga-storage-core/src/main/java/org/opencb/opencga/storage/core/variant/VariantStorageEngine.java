@@ -1112,12 +1112,12 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      *
      * @param study      Study
      * @param fileIds    Files to fully delete, including all their samples.
-     * @param sampleIds  Samples to remove, leaving partial files.
+     * @param samplesPartial  Samples to remove, leaving partial files.
      * @param taskId     Remove task id
      * @param error      If the remove operation succeeded
      * @throws StorageEngineException StorageEngineException
      */
-    protected void postRemoveFiles(String study, List<Integer> fileIds, List<Integer> sampleIds, int taskId, boolean error)
+    protected void postRemoveFiles(String study, List<Integer> fileIds, List<Integer> samplesPartial, int taskId, boolean error)
             throws StorageEngineException {
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         metadataManager.updateStudyMetadata(study, studyMetadata -> {
@@ -1125,58 +1125,19 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 metadataManager.setStatus(studyMetadata.getId(), taskId, TaskMetadata.Status.ERROR);
             } else {
                 metadataManager.setStatus(studyMetadata.getId(), taskId, TaskMetadata.Status.READY);
+
+                Set<Integer> samples = new HashSet<>(samplesPartial);
+                Set<Integer> samplesFromFiles = new HashSet<>();
+                for (Integer fileId : fileIds) {
+                    samplesFromFiles.addAll(metadataManager.getFileMetadata(studyMetadata.getId(), fileId).getSamples());
+                }
+                samples.addAll(samplesFromFiles);
+
+                // Remove files and belonging samples
                 metadataManager.removeIndexedFiles(studyMetadata.getId(), fileIds);
 
-                for (Integer fileId : metadataManager.getFileIdsFromSampleIds(studyMetadata.getId(), sampleIds)) {
-                    metadataManager.updateFileMetadata(studyMetadata.getId(), fileId, f -> {
-                        f.getSamples().removeAll(sampleIds);
-                    });
-                }
-                Set<Integer> updateCohorts = new HashSet<>();
-                for (Integer sampleId : sampleIds) {
-                    metadataManager.updateSampleMetadata(studyMetadata.getId(), sampleId, s -> {
-                        s.setIndexStatus(TaskMetadata.Status.NONE);
-                        for (Integer v : s.getSampleIndexVersions()) {
-                            s.setSampleIndexStatus(TaskMetadata.Status.NONE, v);
-                        }
-                        for (Integer v : s.getSampleIndexAnnotationVersions()) {
-                            s.setSampleIndexAnnotationStatus(TaskMetadata.Status.NONE, v);
-                        }
-                        for (Integer v : s.getFamilyIndexVersions()) {
-                            s.setFamilyIndexStatus(TaskMetadata.Status.NONE, v);
-                        }
-                        s.setAnnotationStatus(TaskMetadata.Status.NONE);
-                        s.setMendelianErrorStatus(TaskMetadata.Status.NONE);
-                        s.setFiles(Collections.emptyList());
-                        updateCohorts.addAll(s.getCohorts());
-                        updateCohorts.addAll(s.getInternalCohorts());
-                        updateCohorts.addAll(s.getSecondaryIndexCohorts());
-                        s.setCohorts(Collections.emptySet());
-                        s.setInternalCohorts(Collections.emptySet());
-                        s.setSecondaryIndexCohorts(Collections.emptySet());
-                        s.setAttributes(new ObjectMap());
-                    });
-                }
-
-                Set<Integer> removedSamples = new HashSet<>(sampleIds);
-                Set<Integer> removedSamplesFromFiles = new HashSet<>();
-                for (Integer fileId : fileIds) {
-                    removedSamplesFromFiles.addAll(metadataManager.getFileMetadata(studyMetadata.getId(), fileId).getSamples());
-                }
-                removedSamples.addAll(removedSamplesFromFiles);
-
-                for (Integer cohortId : updateCohorts) {
-                    metadataManager.updateCohortMetadata(studyMetadata.getId(), cohortId, cohort -> {
-                        cohort.getSamples().removeAll(removedSamples);
-                        cohort.getFiles().removeAll(fileIds);
-                        if (cohort.isStatsReady()) {
-                            logger.info("Invalidating statistics of cohort "
-                                    + cohort.getName()
-                                    + " (" + cohort.getId() + ')');
-                            cohort.setStatsStatus(TaskMetadata.Status.ERROR);
-                        }
-                    });
-                }
+                // Remove samples partial
+                metadataManager.removeSamples(studyMetadata.getId(), samplesPartial, fileIds, true);
 
                 // Restore default cohort with indexed samples
                 metadataManager.setSamplesToCohort(studyMetadata.getId(), StudyEntry.DEFAULT_COHORT,

@@ -27,7 +27,7 @@ public abstract class Lock implements Closeable {
     private final AtomicBoolean keepAlive;
     private final AtomicBoolean sleeping = new AtomicBoolean(false);
     private final AtomicReference<Exception> exception = new AtomicReference<>();
-    private boolean locked = true;
+    protected boolean locked = true;
     private Future<?> keepAliveFuture;
 
     public Lock(long token) {
