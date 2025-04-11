@@ -1,11 +1,18 @@
 package org.opencb.opencga.core.common;
 
+import org.passay.CharacterData;
 import org.passay.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class PasswordUtils {
+
+    public static final int MIN_STRONG_PASSWORD_LENGTH = 8;
+    public static final int DEFAULT_PASSWORD_LENGTH = 10;
+    public static final int DEFAULT_SALT_LENGTH = 32;
+    public static final String PASSWORD_REQUIREMENT = "Password must contain at least " + MIN_STRONG_PASSWORD_LENGTH
+            + " characters, including at least one uppercase letter, one lowercase letter, one digit and one special character.";
 
     private final static CharacterRule SPECIAL_CHARACTER_RULE = new CharacterRule(new CharacterData() {
         @Override
@@ -20,7 +27,11 @@ public class PasswordUtils {
     });
 
     public static String getStrongRandomPassword() {
-        return getStrongRandomPassword(10);
+        return getStrongRandomPassword(DEFAULT_PASSWORD_LENGTH);
+    }
+
+    public static String getStrongRandomSalt() {
+        return getStrongRandomPassword(DEFAULT_SALT_LENGTH);
     }
 
     public static String getStrongRandomPassword(int length) {
@@ -33,14 +44,10 @@ public class PasswordUtils {
     }
 
     public static boolean isStrongPassword(String password) {
-        return isStrongPassword(password, 8);
-    }
-
-    public static boolean isStrongPassword(String password, int minLength) {
         List<Rule> rules = new ArrayList<>();
         //Rule 1: Password length should be in between
-        //minLength and 100 characters
-        rules.add(new LengthRule(minLength, 100));
+        //MIN_STRONG_PASSWORD_LENGTH and 100 characters
+        rules.add(new LengthRule(MIN_STRONG_PASSWORD_LENGTH, 100));
         //Rule 2: No whitespace allowed
         rules.add(new WhitespaceRule());
         //Rule 3.a: At least one Upper-case character

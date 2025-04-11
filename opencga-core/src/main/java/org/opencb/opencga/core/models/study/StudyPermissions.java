@@ -109,7 +109,10 @@ public class StudyPermissions {
         WRITE_CLINICAL_ANNOTATIONS(Arrays.asList(VIEW_CLINICAL_ANALYSIS, VIEW_CLINICAL_ANNOTATIONS),
                 ClinicalAnalysisPermissions.WRITE_ANNOTATIONS.name(), CLINICAL_ANALYSIS),
         DELETE_CLINICAL_ANNOTATIONS(Arrays.asList(VIEW_CLINICAL_ANALYSIS, VIEW_CLINICAL_ANNOTATIONS, WRITE_CLINICAL_ANNOTATIONS),
-                ClinicalAnalysisPermissions.DELETE_ANNOTATIONS.name(), CLINICAL_ANALYSIS);
+                ClinicalAnalysisPermissions.DELETE_ANNOTATIONS.name(), CLINICAL_ANALYSIS),
+        ADMIN_CLINICAL_ANALYSIS(Arrays.asList(VIEW_CLINICAL_ANALYSIS, WRITE_CLINICAL_ANALYSIS, DELETE_CLINICAL_ANALYSIS,
+                VIEW_CLINICAL_ANNOTATIONS, WRITE_CLINICAL_ANNOTATIONS, DELETE_CLINICAL_ANNOTATIONS),
+                ClinicalAnalysisPermissions.ADMIN.name(), CLINICAL_ANALYSIS);
 
         private final static Map<String, Permissions> map;
 
@@ -136,6 +139,14 @@ public class StudyPermissions {
 
         public static Permissions getStudyPermission(String permission, int type) {
             return map.get(permission + "-" + type);
+        }
+
+        public String getPermission() {
+            return permission;
+        }
+
+        public int getType() {
+            return type;
         }
 
         public List<Permissions> getImplicitPermissions() {

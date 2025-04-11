@@ -1,0 +1,25 @@
+name: "Pull Request Merge Workflow"
+
+on:
+  pull_request:
+    branches:
+      - "develop"
+      - "release-*"
+    types:
+      - closed
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
+    with:
+      maven_opts: -P storage-hadoop,${{ vars.HADOOP_FLAVOUR }},RClient,opencga-storage-hadoop-deps -Dopencga.war.name=opencga -Dcheckstyle.skip -pl ':opencga-app' --also-make
+
+
+  delete-docker:
+    uses: opencb/java-common-libs/.github/workflows/delete-docker-hub-workflow.yml@develop
+    needs: build
+    with:
+      cli: python3 ./build/cloud/docker/docker-build.py delete --images base --tag ${{ github.head_ref }}
+    secrets: inherit
+

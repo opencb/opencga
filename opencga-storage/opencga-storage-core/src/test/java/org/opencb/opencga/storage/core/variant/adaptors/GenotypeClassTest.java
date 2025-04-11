@@ -5,7 +5,9 @@ import org.junit.experimental.categories.Category;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 
@@ -28,7 +30,41 @@ public class GenotypeClassTest {
         assertEquals(Arrays.asList("./1", "1/."), GenotypeClass.HET_MISS.filter(gts));
         assertEquals(Arrays.asList("./.", "."), GenotypeClass.MISS.filter(gts));
         assertEquals(Arrays.asList("0/2", "2/2", "2/3", "2/."), GenotypeClass.SEC_ALT.filter(gts));
+    }
 
+    @Test
+    public void classify() {
+        checkClassify("0/0", GenotypeClass.HOM_REF);
+        checkClassify("0|0", GenotypeClass.HOM_REF);
+        checkClassify("0", GenotypeClass.HOM_REF);
+        checkClassify("1/1", GenotypeClass.MAIN_ALT, GenotypeClass.HOM_ALT);
+        checkClassify("1/1/1", GenotypeClass.MAIN_ALT, GenotypeClass.HOM_ALT);
+        checkClassify("1", GenotypeClass.MAIN_ALT, GenotypeClass.HOM_ALT);
+        checkClassify("0/1", GenotypeClass.MAIN_ALT, GenotypeClass.HET_REF, GenotypeClass.HET);
+        checkClassify("1/0", GenotypeClass.MAIN_ALT, GenotypeClass.HET_REF, GenotypeClass.HET);
+        checkClassify("0|1", GenotypeClass.MAIN_ALT, GenotypeClass.HET_REF, GenotypeClass.HET);
+        checkClassify("1|0", GenotypeClass.MAIN_ALT, GenotypeClass.HET_REF, GenotypeClass.HET);
+        checkClassify("1/2", GenotypeClass.MAIN_ALT, GenotypeClass.SEC, GenotypeClass.HET, GenotypeClass.HET_ALT);
+        checkClassify("1/4", GenotypeClass.MAIN_ALT, GenotypeClass.SEC, GenotypeClass.HET, GenotypeClass.HET_ALT);
+        checkClassify("3/4", GenotypeClass.SEC_ALT, GenotypeClass.SEC);
+        checkClassify("3/4/5", GenotypeClass.SEC_ALT, GenotypeClass.SEC, GenotypeClass.HET);
+        checkClassify("561/941", GenotypeClass.SEC_ALT, GenotypeClass.SEC);
+        checkClassify("561/1", GenotypeClass.MAIN_ALT, GenotypeClass.SEC, GenotypeClass.HET, GenotypeClass.HET_ALT);
+        checkClassify("0/2", GenotypeClass.SEC_ALT, GenotypeClass.SEC);
+        checkClassify("0/3", GenotypeClass.SEC_ALT, GenotypeClass.SEC);
+        checkClassify("3/3", GenotypeClass.SEC_ALT, GenotypeClass.SEC);
+        checkClassify("1/.", GenotypeClass.MAIN_ALT, GenotypeClass.HET_MISS, GenotypeClass.HET);
+        checkClassify("0/.");
+        checkClassify("./.", GenotypeClass.MISS);
+        checkClassify(".", GenotypeClass.MISS);
+        checkClassify("NA", GenotypeClass.NA);
+        checkClassify("THIS_IS_NOT_A_GENOTYPE");
+    }
+
+    private void checkClassify(String gt, GenotypeClass... expected) {
+        Set<GenotypeClass> actual = GenotypeClass.classify(gt);
+//        System.out.println("GenotypeClass.classify(" + gt + ") = " + actual);
+        assertEquals(new HashSet<>(Arrays.asList(expected)), actual);
     }
 
     @Test

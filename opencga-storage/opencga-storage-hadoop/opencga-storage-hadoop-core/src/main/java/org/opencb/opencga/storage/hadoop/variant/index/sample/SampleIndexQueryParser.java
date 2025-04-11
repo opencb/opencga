@@ -1217,7 +1217,6 @@ public class SampleIndexQueryParser {
         IndexFilter clinicalFilter = schema.getClinicalIndexSchema().noOpFilter();
 
         final Boolean intergenic = isIntergenicQuery(query);
-
 //        BiotypeConsquenceTypeFlagCombination combination = BiotypeConsquenceTypeFlagCombination
 //                .fromQuery(query, Arrays.asList(schema.getTranscriptFlagIndexSchema().getField().getConfiguration().getValues()));
         BiotypeConsquenceTypeFlagCombination combination = BiotypeConsquenceTypeFlagCombination.fromQuery(query, null);
@@ -1285,8 +1284,9 @@ public class SampleIndexQueryParser {
             // - The query has the combination CT+TF
             boolean useCtIndexFilter =
                     intergenic == Boolean.FALSE && (!ctFilterCoveredBySummary
-                            || (!ctBtCombinationCoveredBySummary && combination.isBiotype())
-                            || combination.isFlag());
+                                    || (!ctBtCombinationCoveredBySummary && combination.isBiotype())
+                                    || combination.isFlag());
+
             if (useCtIndexFilter) {
                 ctCovered = completeIndex;
                 consequenceTypeFilter = schema.getCtIndex().getField().buildFilter(new OpValue<>("=", soNames));
@@ -1526,7 +1526,7 @@ public class SampleIndexQueryParser {
             }
         }
 
-        return new SampleAnnotationIndexQuery(new byte[]{annotationIndexMask, annotationIndex},
+        return new SampleAnnotationIndexQuery(new byte[]{annotationIndexMask, annotationIndex}, intergenic,
                 consequenceTypeFilter, biotypeFilter, tfFilter, ctBtTfFilter, clinicalFilter, populationFrequencyFilter);
     }
 

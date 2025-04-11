@@ -54,6 +54,11 @@ public @interface Migration {
      */
     boolean manual() default false;
 
+    /**
+     * @return the version when the migration was deprecated.
+     */
+    String deprecatedSince() default "";
+
     enum MigrationDomain {
         CATALOG,
         STORAGE

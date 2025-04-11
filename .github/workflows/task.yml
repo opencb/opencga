@@ -17,10 +17,11 @@ jobs:
   test:
     uses: ./.github/workflows/test-analysis.yml
     needs: build
-    secrets: inherit
     with:
       test_profile: runShortTests
       hadoop_flavour: ${{ vars.TASK_HADOOP_FLAVOUR }}
+    secrets: inherit
+
 
   deploy-docker:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop

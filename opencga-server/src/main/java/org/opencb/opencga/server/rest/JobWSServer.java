@@ -18,8 +18,6 @@ package org.opencb.opencga.server.rest;
 
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
@@ -83,6 +81,7 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTagsStr,
+            @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String jobScheduledStartTime,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = "job", required = true) JobRetryParams params
 
@@ -101,12 +100,22 @@ public class JobWSServer extends OpenCGAWSServer {
             } else {
                 jobTags = Collections.emptyList();
             }
-            OpenCGAResult<Job> result = catalogManager.getJobManager().retry(study, params,
-                    null, jobId, jobDescription, jobDependsOn, jobTags, token);
+            OpenCGAResult<Job> result = catalogManager.getJobManager().retry(study, params, null, jobId, jobDescription, jobDependsOn,
+                    jobTags, jobScheduledStartTime, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
+    }
+
+    @POST
+    @Path("/{job}/kill")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Send a signal to kill a pending or running job", response = Job.class)
+    public Response kill(
+            @ApiParam(value = ParamConstants.JOB_ID_DESCRIPTION, required = true) @PathParam("job") String jobId,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study) {
+        return run(() -> catalogManager.getJobManager().kill(study, jobId, token));
     }
 
     @GET
@@ -357,39 +366,39 @@ public class JobWSServer extends OpenCGAWSServer {
     }
 
 
-    @GET
-    @Path("/aggregationStats")
-    @ApiOperation(value = "Fetch catalog job stats", response = FacetField.class)
-    public Response getAggregationStats(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Tool id") @QueryParam("toolId") String toolId,
-            @ApiParam(value = "Tool scope") @QueryParam("toolScope") String toolScope,
-            @ApiParam(value = "Tool type") @QueryParam("toolType") String toolType,
-            @ApiParam(value = "Tool resource") @QueryParam("toolResource") String toolResource,
-            @ApiParam(value = "User id") @QueryParam("userId") String userId,
-            @ApiParam(value = "Priority") @QueryParam("priority") String priority,
-            @ApiParam(value = "Tags") @QueryParam("tags") String tags,
-            @ApiParam(value = "Executor id") @QueryParam("executorId") String executorId,
-            @ApiParam(value = "Executor framework") @QueryParam("executorFramework") String executorFramework,
-            @ApiParam(value = "Creation year") @QueryParam("creationYear") String creationYear,
-            @ApiParam(value = "Creation month (JANUARY, FEBRUARY...)") @QueryParam("creationMonth") String creationMonth,
-            @ApiParam(value = "Creation day") @QueryParam("creationDay") String creationDay,
-            @ApiParam(value = "Creation day of week (MONDAY, TUESDAY...)") @QueryParam("creationDayOfWeek") String creationDayOfWeek,
-            @ApiParam(value = "Status") @QueryParam("status") String status,
-            @ApiParam(value = "Release") @QueryParam("release") String release,
-            @ApiParam(value = "Calculate default stats", defaultValue = "false") @QueryParam("default") boolean defaultStats,
-            @ApiParam(value = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1") @QueryParam("field") String facet) {
-        try {
-            query.remove(ParamConstants.STUDY_PARAM);
-            query.remove("field");
-
-            queryOptions.put(QueryOptions.FACET, facet);
-
-            DataResult<FacetField> queryResult = catalogManager.getJobManager().facet(studyStr, query, queryOptions, defaultStats,
-                    token);
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//    @GET
+//    @Path("/aggregationStats")
+//    @ApiOperation(value = "Fetch catalog job stats", response = FacetField.class)
+//    public Response getAggregationStats(
+//            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+//            @ApiParam(value = "Tool id") @QueryParam("toolId") String toolId,
+//            @ApiParam(value = "Tool scope") @QueryParam("toolScope") String toolScope,
+//            @ApiParam(value = "Tool type") @QueryParam("toolType") String toolType,
+//            @ApiParam(value = "Tool resource") @QueryParam("toolResource") String toolResource,
+//            @ApiParam(value = "User id") @QueryParam("userId") String userId,
+//            @ApiParam(value = "Priority") @QueryParam("priority") String priority,
+//            @ApiParam(value = "Tags") @QueryParam("tags") String tags,
+//            @ApiParam(value = "Executor id") @QueryParam("executorId") String executorId,
+//            @ApiParam(value = "Executor framework") @QueryParam("executorFramework") String executorFramework,
+//            @ApiParam(value = "Creation year") @QueryParam("creationYear") String creationYear,
+//            @ApiParam(value = "Creation month (JANUARY, FEBRUARY...)") @QueryParam("creationMonth") String creationMonth,
+//            @ApiParam(value = "Creation day") @QueryParam("creationDay") String creationDay,
+//            @ApiParam(value = "Creation day of week (MONDAY, TUESDAY...)") @QueryParam("creationDayOfWeek") String creationDayOfWeek,
+//            @ApiParam(value = "Status") @QueryParam("status") String status,
+//            @ApiParam(value = "Release") @QueryParam("release") String release,
+//            @ApiParam(value = "Calculate default stats", defaultValue = "false") @QueryParam("default") boolean defaultStats,
+//            @ApiParam(value = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1") @QueryParam("field") String facet) {
+//        try {
+//            query.remove(ParamConstants.STUDY_PARAM);
+//            query.remove("field");
+//
+//            queryOptions.put(QueryOptions.FACET, facet);
+//
+//            DataResult<FacetField> queryResult = catalogManager.getJobManager().facet(studyStr, query, queryOptions, defaultStats,
+//                    token);
+//            return createOkResponse(queryResult);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 }

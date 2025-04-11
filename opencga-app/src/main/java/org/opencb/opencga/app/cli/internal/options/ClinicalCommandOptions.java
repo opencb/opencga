@@ -23,6 +23,8 @@ import java.util.List;
 
 import static org.opencb.opencga.analysis.clinical.InterpretationAnalysis.*;
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.*;
+import static org.opencb.opencga.core.api.FieldConstants.EXOMISER_CLINICAL_ANALYSIS_DESCRIPTION;
+import static org.opencb.opencga.core.api.FieldConstants.EXOMISER_VERSION_DESCRIPTION;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
 @Parameters(commandNames = {"clinical"}, commandDescription = "Clinical analysis commands")
@@ -35,6 +37,7 @@ public class ClinicalCommandOptions {
     public final RgaSecondaryIndexCommandOptions rgaSecondaryIndexCommandOptions;
     public final RgaAuxiliarSecondaryIndexCommandOptions rgaAuxiliarSecondaryIndexCommandOptions;
     public final ExomiserInterpretationCommandOptions exomiserInterpretationCommandOptions;
+    public final ImportClinicalAnalysesCommandOptions importClinicalAnalysesCommandOptions;
     public final TsvLoad tsvLoad;
 
     public JCommander jCommander;
@@ -56,6 +59,7 @@ public class ClinicalCommandOptions {
         this.rgaSecondaryIndexCommandOptions = new RgaSecondaryIndexCommandOptions();
         this.rgaAuxiliarSecondaryIndexCommandOptions = new RgaAuxiliarSecondaryIndexCommandOptions();
         this.exomiserInterpretationCommandOptions = new ExomiserInterpretationCommandOptions();
+        this.importClinicalAnalysesCommandOptions = new ImportClinicalAnalysesCommandOptions();
         this.tsvLoad = new TsvLoad();
     }
 
@@ -333,11 +337,31 @@ public class ClinicalCommandOptions {
         @ParametersDelegate
         public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
 
-        @Parameter(names = {"--" + CLINICAL_ANALYISIS_PARAM_NAME}, description = "Clinical analysis", required = true, arity = 1)
+        @Parameter(names = {"--" + CLINICAL_ANALYISIS_PARAM_NAME}, description = EXOMISER_CLINICAL_ANALYSIS_DESCRIPTION,
+                required = true, arity = 1)
         public String clinicalAnalysis;
+
+        @Parameter(names = {"--exomiser-version"}, description = EXOMISER_VERSION_DESCRIPTION)
+        public String exomiserVersion;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", arity = 1)
         public String outdir;
+    }
+
+    @Parameters(commandNames = {ImportClinicalAnalysesCommandOptions.IMPORT_COMMAND},
+            commandDescription = "Import clinical analyses from a folder")
+    public class ImportClinicalAnalysesCommandOptions extends GeneralCliOptions.StudyOption {
+
+        public static final String IMPORT_COMMAND = "import";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
+
+        @Parameter(names = {"-i", "--input"}, description = "Input directory where clinical analysis JSON files are located", arity = 1)
+        public String input;
     }
 
     @Parameters(commandNames = {"tsv-load"}, commandDescription = "Load annotations from a TSV file")

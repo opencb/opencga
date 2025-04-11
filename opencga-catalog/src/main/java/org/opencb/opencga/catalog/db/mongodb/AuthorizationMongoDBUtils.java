@@ -25,7 +25,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.study.StudyPermissions;
 
@@ -41,8 +40,7 @@ import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBAdaptor.
 public class AuthorizationMongoDBUtils {
 
     static final String OPENCGA = "opencga";
-    static final String PRIVATE_OWNER_ID = "_ownerId";
-    private static final String PRIVATE_ACL = "_acl";
+    public static final String PRIVATE_ACL = "_acl";
     private static final String VARIABLE_SETS = "variableSets";
     private static final String ANNOTATION_SETS = AnnotationMongoDBAdaptor.AnnotationSetParams.ANNOTATION_SETS.key();
 
@@ -58,12 +56,19 @@ public class AuthorizationMongoDBUtils {
     private static final Pattern REGISTERED_USERS_PATTERN = Pattern.compile("^" + REGISTERED_USERS);
     private static final Pattern ANONYMOUS_PATTERN = Pattern.compile("^\\" + ANONYMOUS);
 
-    public static boolean checkCanViewStudy(Document study, String user) {
-        // 0. If the user corresponds with the owner, we don't have to check anything else
-        if (study.getString(PRIVATE_OWNER_ID).equals(user)) {
-            return true;
-        }
-        if (OPENCGA.equals(user)) {
+    /**
+     * Checks whether the user belongs to the administration organization.
+     *
+     * @param organizationId Organization the user wants to access.
+     * @param user           User id.
+     * @return               True if the user is a super administrator, False otherwise.
+     */
+    public static boolean isOpencgaAdministrator(String organizationId, String user) {
+        return ParamConstants.ADMIN_ORGANIZATION.equals(organizationId) || user.startsWith(ParamConstants.ADMIN_ORGANIZATION + ":");
+    }
+
+    public static boolean checkCanViewStudy(String organizationId, Document study, String user) {
+        if (isOpencgaAdministrator(organizationId, user)) {
             return true;
         }
         // If user does not exist in the members group, the user will not have any permission
@@ -73,15 +78,8 @@ public class AuthorizationMongoDBUtils {
         return false;
     }
 
-    public static boolean checkStudyPermission(Document study, String user, String studyPermission) {
-        // 0. If the user corresponds with the owner, we don't have to check anything else
-        if (study.getString(PRIVATE_OWNER_ID).equals(user)) {
-            return true;
-        }
-        if (OPENCGA.equals(user)) {
-            return true;
-        }
-        if (getAdminUsers(study).contains(user)) {
+    public static boolean checkStudyPermission(String organizationId, Document study, String user, String studyPermission) {
+        if (isAtLeastOrganizationOwnerOrStudyAdmin(organizationId, study, user)) {
             return true;
         }
 
@@ -101,9 +99,20 @@ public class AuthorizationMongoDBUtils {
         }
     }
 
+    public static boolean isAtLeastOrganizationOwnerOrStudyAdmin(String organizationId, Document study, String user) {
+        if (isOpencgaAdministrator(organizationId, user)) {
+            return true;
+        }
+        if (getAdminUsers(study).contains(user)) {
+            return true;
+        }
+        return false;
+    }
+
     /**
      * Removes annotation sets from results if the user does not have the proper permissions.
      *
+     * @param organizationId  Organization id.
      * @param study           study document.
      * @param entry           Annotable document entry.
      * @param user            user.
@@ -111,16 +120,12 @@ public class AuthorizationMongoDBUtils {
      * @param entryPermission entry permission to check.
      * @return the document modified.
      */
-    public static Document filterAnnotationSets(Document study, Document entry, String user, String studyPermission,
+    public static Document filterAnnotationSets(String organizationId, Document study, Document entry, String user, String studyPermission,
                                                 String entryPermission) {
         if (study == null || entry == null || user == null) {
             return entry;
         }
 
-        // If the user corresponds with the owner, we don't have to check anything else
-        if (study.getString(PRIVATE_OWNER_ID).equals(user)) {
-            return entry;
-        }
         if (OPENCGA.equals(user)) {
             return entry;
         }
@@ -138,8 +143,8 @@ public class AuthorizationMongoDBUtils {
             entry.put(ANNOTATION_SETS, Collections.emptyList());
         } else {
             // Check if the user has the CONFIDENTIAL PERMISSION
-            boolean confidential =
-                    checkStudyPermission(study, user, StudyPermissions.Permissions.CONFIDENTIAL_VARIABLE_SET_ACCESS.toString());
+            boolean confidential = checkStudyPermission(organizationId, study, user,
+                    StudyPermissions.Permissions.CONFIDENTIAL_VARIABLE_SET_ACCESS.toString());
             if (!confidential) {
                 // If the user does not have the confidential permission, we will have to remove those annotation sets coming from
                 // confidential variable sets
@@ -194,35 +199,18 @@ public class AuthorizationMongoDBUtils {
     /**
      * If query contains {@link ParamConstants#ACL_PARAM}, it will parse the value to generate the corresponding mongo query documents.
      *
-     * @param study    Queried study document.
-     * @param query    Original query.
-     * @param resource Affected resource.
-     * @param user     User performing the query.
-     * @return A list of documents to satisfy the ACL query.
-     * @throws CatalogDBException            when there is a DB error.
-     * @throws CatalogParameterException     if there is any formatting error.
-     * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
-     */
-    public static List<Document> parseAclQuery(Document study, Query query, Enums.Resource resource, String user)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return parseAclQuery(study, query, resource, user, null);
-    }
-
-    /**
-     * If query contains {@link ParamConstants#ACL_PARAM}, it will parse the value to generate the corresponding mongo query documents.
-     *
-     * @param study         Queried study document.
-     * @param query         Original query.
-     * @param resource      Affected resource.
-     * @param user          User performing the query.
-     * @param configuration Configuration object.
+     * @param study               Queried study document.
+     * @param query               Original query.
+     * @param resource            Affected resource.
+     * @param user                User performing the query.
+     * @param simplifyPermissions Boolean indicating whether permission check can be simplified.
      * @return A list of documents to satisfy the ACL query.
      * @throws CatalogDBException            when there is a DB error.
      * @throws CatalogParameterException     if there is any formatting error.
      * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
      */
     public static List<Document> parseAclQuery(Document study, Query query, Enums.Resource resource, String user,
-                                               Configuration configuration)
+                                               boolean simplifyPermissions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         List<Document> aclDocuments = new LinkedList<>();
         if (!query.containsKey(ParamConstants.ACL_PARAM)) {
@@ -241,14 +229,10 @@ public class AuthorizationMongoDBUtils {
         List<String> permissions = Arrays.asList(userPermission[1].split(","));
 
         // If user is not checking its own permissions and it is not the owner or admin of the study, we fail
-        if (!user.equals(affectedUser) && !study.getString(PRIVATE_OWNER_ID).equals(user) && !getAdminUsers(study).contains(user)) {
+        if (!user.equals(affectedUser) && !getAdminUsers(study).contains(user)) {
             throw new CatalogAuthorizationException("Only study owners or admins are authorised to see other user's permissions.");
         }
 
-        // 0. If the user is the admin or corresponds with the owner, we don't have to check anything else
-        if (study.getString(PRIVATE_OWNER_ID).equals(affectedUser)) {
-            return aclDocuments;
-        }
         if (OPENCGA.equals(affectedUser)) {
             return aclDocuments;
         }
@@ -260,11 +244,6 @@ public class AuthorizationMongoDBUtils {
         if (!isUserInMembers(study, affectedUser)) {
             throw new CatalogAuthorizationException("User " + affectedUser + " does not have any permissions in study "
                     + study.getString(StudyDBAdaptor.QueryParams.ID.key()));
-        }
-
-        boolean simplifyPermissionCheck = false;
-        if (configuration != null && configuration.getOptimizations() != null) {
-            simplifyPermissionCheck = configuration.getOptimizations().isSimplifyPermissions();
         }
 
         boolean isAnonymousPresent = false;
@@ -300,7 +279,7 @@ public class AuthorizationMongoDBUtils {
             }
 
             Document queryDocument = getAuthorisedEntries(affectedUser, groups, permission, isRegisteredUsersPresent, isAnonymousPresent,
-                    simplifyPermissionCheck);
+                    simplifyPermissions);
             if (hasStudyPermissions) {
                 // The user has permissions defined globally, so we also have to check the entries where the user/groups/members/* have no
                 // permissions defined as the user will also be allowed to see them
@@ -315,23 +294,14 @@ public class AuthorizationMongoDBUtils {
         return aclDocuments;
     }
 
-    public static Document getQueryForAuthorisedEntries(Document study, String user, String permission, Enums.Resource resource)
-            throws CatalogAuthorizationException, CatalogParameterException {
-        return getQueryForAuthorisedEntries(study, user, permission, resource, null);
-    }
-
     public static Document getQueryForAuthorisedEntries(Document study, String user, String permission, Enums.Resource resource,
-                                                        Configuration configuration)
+                                                        boolean simplifyPermissions)
             throws CatalogAuthorizationException, CatalogParameterException {
         if (StringUtils.isEmpty(user)) {
             return new Document();
         }
 
-        // 0. If the user is the admin or corresponds with the owner, we don't have to check anything else
-        if (study.getString(PRIVATE_OWNER_ID).equals(user)) {
-            return new Document();
-        }
-        if (OPENCGA.equals(user)) {
+        if (OPENCGA.equals(user) || ParamConstants.OPENCGA_USER_FQN.equals(user)) {
             return new Document();
         }
         if (getAdminUsers(study).contains(user)) {
@@ -342,11 +312,6 @@ public class AuthorizationMongoDBUtils {
         if (!isUserInMembers(study, user)) {
             throw new CatalogAuthorizationException("User " + user + " does not have any permissions in study "
                     + study.getString(StudyDBAdaptor.QueryParams.ID.key()));
-        }
-
-        boolean simplifyPermissionCheck = false;
-        if (configuration != null && configuration.getOptimizations() != null) {
-            simplifyPermissionCheck = configuration.getOptimizations().isSimplifyPermissions();
         }
 
         String studyPermission = StudyPermissions.Permissions.getStudyPermission(permission, getPermissionType(resource)).name();
@@ -377,8 +342,8 @@ public class AuthorizationMongoDBUtils {
         }
 
         Document queryDocument = getAuthorisedEntries(user, groups, permission, isRegisteredUsersPresent, isAnonymousPresent,
-                simplifyPermissionCheck);
-        if (hasStudyPermissions && !simplifyPermissionCheck) {
+                simplifyPermissions);
+        if (hasStudyPermissions && !simplifyPermissions) {
             // The user has permissions defined globally, so we also have to check the entries where the user/groups/members/* have no
             // permissions defined as the user will also be allowed to see them
             queryDocument = new Document("$or", Arrays.asList(

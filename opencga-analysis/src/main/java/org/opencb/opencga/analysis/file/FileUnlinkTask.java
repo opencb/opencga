@@ -38,7 +38,8 @@ import org.opencb.opencga.core.tools.annotations.Tool;
 
 import java.util.*;
 
-@Tool(id = FileUnlinkTask.ID, resource = Enums.Resource.FILE, type = Tool.Type.OPERATION, description = "Unlink files.")
+@Tool(id = FileUnlinkTask.ID, resource = Enums.Resource.FILE, type = Tool.Type.OPERATION, description = "Unlink files.",
+        priority = Enums.Priority.HIGH)
 public class FileUnlinkTask extends OpenCgaTool {
 
     public final static String ID = "files-unlink";
@@ -183,8 +184,7 @@ public class FileUnlinkTask extends OpenCgaTool {
     }
 
     private void addCriticalError(CatalogException e) {
-        CatalogException exception = new CatalogException("Critical: Could not restore status of pending files to "
-                + FileStatus.READY, e);
+        CatalogException exception = new CatalogException("Critical: Could not restore status of pending files to " + FileStatus.READY, e);
         logger.error("{}", e.getMessage(), e);
         try {
             addError(exception);

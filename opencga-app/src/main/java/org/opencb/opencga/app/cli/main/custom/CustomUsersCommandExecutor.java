@@ -60,7 +60,7 @@ public class CustomUsersCommandExecutor extends CustomCommandExecutor {
             if (StringUtils.isNotEmpty(user) && StringUtils.isNotEmpty(password)) {
                 AuthenticationResponse response = null;
                 try {
-                    response = openCGAClient.login(user, password);
+                    response = openCGAClient.login(commandOptions.organization, user, password);
                 } catch (Exception e) {
                     logger.debug("Login error", e);
                     Event event = new Event();
@@ -77,7 +77,7 @@ public class CustomUsersCommandExecutor extends CustomCommandExecutor {
                 String token = session.getSession().getToken();
                 String errorMsg = "Missing password. ";
                 if (StringUtils.isNotEmpty(token)) {
-                    errorMsg += "Active token detected ";
+                    errorMsg += "Active token detected. Please logout first.";
                 }
                 CommandLineUtils.error(errorMsg);
             }

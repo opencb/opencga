@@ -31,6 +31,12 @@ public interface SampleIndexEntryIterator extends Iterator<Variant> {
      */
     Variant next();
 
+    /**
+     * Get next variant without moving the cursor.
+     * @return next variant
+     */
+    Variant nextVariant();
+
     default SampleVariantIndexEntry nextSampleVariantIndexEntry() {
         AnnotationIndexEntry annotationIndexEntry = nextAnnotationIndexEntry();
         if (annotationIndexEntry != null) {

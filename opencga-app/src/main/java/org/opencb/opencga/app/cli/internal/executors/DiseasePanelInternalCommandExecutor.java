@@ -45,7 +45,8 @@ public class DiseasePanelInternalCommandExecutor extends InternalCommandExecutor
                 .toObjectMap(options.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, options.studyId);
 
-        toolRunner.execute(PanelImportTask.class, params, Paths.get(options.outDir), jobId, token);
+        toolRunner.execute(PanelImportTask.class, params, Paths.get(options.outDir), jobId,
+                diseasePanelCommandOptions.internalJobOptions.dryRun, token);
     }
 
 }

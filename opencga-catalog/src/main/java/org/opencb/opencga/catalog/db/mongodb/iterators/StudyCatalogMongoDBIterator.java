@@ -16,12 +16,28 @@
 
 package org.opencb.opencga.catalog.db.mongodb.iterators;
 
+import com.mongodb.client.ClientSession;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
+import org.opencb.opencga.catalog.db.api.NoteDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils;
+import org.opencb.opencga.catalog.db.mongodb.NoteMongoDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.OrganizationMongoDBAdaptorFactory;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.models.notes.Note;
+import org.opencb.opencga.core.response.OpenCGAResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.function.Function;
 
 /**
@@ -29,31 +45,26 @@ import java.util.function.Function;
  */
 public class StudyCatalogMongoDBIterator<E> extends CatalogMongoDBIterator<E> {
 
-    private Function<Document, Boolean> studyFilter;
+    private final Function<Document, Boolean> studyFilter;
+    private final String user;
+    private final QueryOptions options;
+    private final NoteMongoDBAdaptor noteMongoDBAdaptor;
     private Document previousDocument;
-    private QueryOptions options;
 
-    public StudyCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, QueryOptions options) {
-        this(mongoCursor, options, null, null);
-    }
+    private final Logger logger;
 
-    public StudyCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, QueryOptions options,
-                                       GenericDocumentComplexConverter<E> converter) {
-        this(mongoCursor, options, converter, null);
-    }
-
-    public StudyCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, QueryOptions options,
-                                       Function<Document, Boolean> studyFilter) {
-        this(mongoCursor, options, null, studyFilter);
-    }
-
-    public StudyCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, QueryOptions options,
-                                       GenericDocumentComplexConverter<E> converter, Function<Document, Boolean> studyFilter) {
-        super(mongoCursor, null, converter, null);
+    public StudyCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession,
+                                       OrganizationMongoDBAdaptorFactory dbAdaptorFactory, QueryOptions options,
+                                       GenericDocumentComplexConverter<E> converter, Function<Document, Boolean> studyFilter, String user) {
+        super(mongoCursor, clientSession, converter, null);
         this.mongoCursor = mongoCursor;
         this.converter = converter;
         this.studyFilter = studyFilter;
         this.options = ParamUtils.defaultObject(options, QueryOptions::new);
+        this.user = user;
+        this.noteMongoDBAdaptor = dbAdaptorFactory.getCatalogNotesDBAdaptor();
+
+        this.logger = LoggerFactory.getLogger(StudyCatalogMongoDBIterator.class);
 
         getNextStudy();
     }
@@ -72,7 +83,29 @@ public class StudyCatalogMongoDBIterator<E> extends CatalogMongoDBIterator<E> {
                 }
             }
 
-            addAclInformation(previousDocument, options);
+            if (previousDocument != null) {
+                List<String> noteField = Collections.singletonList(StudyDBAdaptor.QueryParams.NOTES.key());
+                if (includeField(options, noteField)) {
+                    Query query = new Query()
+                            .append(NoteDBAdaptor.QueryParams.STUDY_UID.key(), previousDocument.get(StudyDBAdaptor.QueryParams.UID.key()))
+                            .append(NoteDBAdaptor.QueryParams.SCOPE.key(), Note.Scope.STUDY.name());
+                    if (!isAtLeastStudyAdmin(previousDocument)) {
+                        query.append(NoteDBAdaptor.QueryParams.VISIBILITY.key(), Note.Visibility.PUBLIC.name());
+                    }
+
+                    QueryOptions noteOptions = createInnerQueryOptionsForVersionedEntity(options,
+                            StudyDBAdaptor.QueryParams.NOTES.key(), true);
+                    noteOptions.put(QueryOptions.LIMIT, 1000);
+                    try {
+                        OpenCGAResult<Document> result = noteMongoDBAdaptor.nativeGet(clientSession, query, noteOptions);
+                        previousDocument.put(StudyDBAdaptor.QueryParams.NOTES.key(), result.getResults());
+                    } catch (CatalogDBException e) {
+                        logger.warn("Could not obtain the organization notes", e);
+                    }
+                }
+
+                addAclInformation(previousDocument, options);
+            }
         } else {
             this.previousDocument = null;
         }
@@ -93,6 +126,17 @@ public class StudyCatalogMongoDBIterator<E> extends CatalogMongoDBIterator<E> {
         } else {
             return (E) next;
         }
+    }
+
+    private boolean isAtLeastStudyAdmin(Document studyDoc) {
+        if (StringUtils.isEmpty(user)) {
+            return true;
+        }
+        if (user.startsWith(ParamConstants.ADMIN_ORGANIZATION + ":")) {
+            return true;
+        }
+        List<String> users = AuthorizationMongoDBUtils.getAdminUsers(studyDoc);
+        return users.contains(user);
     }
 
     @Override

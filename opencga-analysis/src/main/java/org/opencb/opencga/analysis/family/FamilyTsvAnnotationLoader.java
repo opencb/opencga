@@ -25,7 +25,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.tools.annotations.Tool;
 
 @Tool(id = FamilyTsvAnnotationLoader.ID, resource = Enums.Resource.FAMILY, type = Tool.Type.OPERATION,
-        description = "Load annotations from TSV file.")
+        description = "Load annotations from TSV file.", priority = Enums.Priority.HIGH)
 public class FamilyTsvAnnotationLoader extends TsvAnnotationLoader {
     public final static String ID = "family-tsv-load";
 

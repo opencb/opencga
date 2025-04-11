@@ -10,11 +10,16 @@ on:
         description: "The tag for the new docker."
         type: string
         required: true
-      hadoop_flavour:
-        description: "The hadoop flavour to use."
-        type: string
+      hadoop:
+        type: choice
+        description: 'Hadoop flavour. Any of: [hdp3.1, hdi5.1, emr6.1, emr6.13]'
         required: false
-        default: "emr6.1"
+        default: hdp3.1
+        options:
+          - hdp3.1
+          - hdi5.1
+          - emr6.1
+          - emr6.13
 
 jobs:
   build:
@@ -37,15 +42,14 @@ jobs:
         run: |
           if [ -f "./.github/workflows/scripts/get_same_branch.sh" ]; then
             chmod +x ./.github/workflows/scripts/get_same_branch.sh
-            ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }}
+            ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }} ${{ inputs.hadoop }}
           fi
       - name: Maven Build (skip tests)
-        run: mvn -T 2 clean install -DskipTests -P storage-hadoop,${{ inputs.hadoop_flavour }},RClient,opencga-storage-hadoop-deps -Dopencga.war.name=opencga -Dcheckstyle.skip -pl ':opencga-app' --also-make
+        run: mvn -T 2 clean install -DskipTests -P storage-hadoop,${{ inputs.hadoop }},RClient,opencga-storage-hadoop-deps -Dopencga.war.name=opencga -Dcheckstyle.skip -pl ':opencga-app' --also-make
       - uses: actions/upload-artifact@v4
         with:
           name: build-folder
           path: build
-
 
   deploy-docker:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop

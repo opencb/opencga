@@ -32,7 +32,10 @@ import org.opencb.opencga.core.models.file.VariantIndexStatus;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -83,6 +86,42 @@ public class RemoveVariantsTest extends AbstractVariantOperationManagerTest {
         testLoadAndRemoveOne();
     }
 
+    @Test
+    public void testLoadAndRemoveForce() throws Exception {
+        File file77 = create("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz");
+        File file78 = create("platinum/1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz");
+        File file79 = create("platinum/1K.end.platinum-genomes-vcf-NA12879_S1.genome.vcf.gz");
+        indexFile(file77, new QueryOptions(), outputId);
+        indexFile(file78, new QueryOptions(), outputId);
+
+        removeFile(file77, new QueryOptions());
+
+        try {
+            removeFile(file77, new QueryOptions());
+        } catch (Exception e) {
+            assertTrue(e.getMessage(), e.getMessage().contains("Unable to remove variants from file"));
+        }
+        removeFile(file77, new QueryOptions(VariantStorageOptions.FORCE.key(), true));
+
+        try {
+            removeFile(file79, new QueryOptions(VariantStorageOptions.FORCE.key(), true));
+        } catch (Exception e) {
+            assertTrue(e.getMessage(), e.getMessage().contains("File not found in storage."));
+        }
+        Path file77Path = Paths.get(file77.getUri());
+        Path otherDir = file77Path.getParent().resolve("other_dir");
+        Files.createDirectory(otherDir);
+        Path otherFile = Files.copy(file77Path, otherDir.resolve(file77Path.getFileName()));
+        File file77_2 = create(studyFqn, otherFile.toUri(), "other_dir");
+
+        try {
+            removeFile(studyFqn, Collections.singletonList(file77_2.getPath()), new QueryOptions(VariantStorageOptions.FORCE.key(), true));
+        } catch (Exception e) {
+            assertTrue(e.getMessage(), e.getMessage().contains("Unable to remove variants from file"));
+            assertTrue(e.getMessage(), e.getMessage().contains("Instead, found file with same name but different path"));
+        }
+    }
+
 
     @Test
     public void testLoadAndRemoveMany() throws Exception {
@@ -101,7 +140,7 @@ public class RemoveVariantsTest extends AbstractVariantOperationManagerTest {
         List<File> files = new ArrayList<>();
         files.add(create("1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"));
         files.add(create("10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"));
-        indexFiles(files, new QueryOptions(), outputId);
+        indexFiles(files, new QueryOptions(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.SplitData.CHROMOSOME), outputId);
 
         removeFile(files.get(0), new QueryOptions());
     }
@@ -124,11 +163,16 @@ public class RemoveVariantsTest extends AbstractVariantOperationManagerTest {
     private void removeFile(List<File> files, QueryOptions options) throws Exception {
         List<String> fileIds = files.stream().map(File::getId).collect(Collectors.toList());
 
-        Study study = catalogManager.getFileManager().getStudy(files.get(0), sessionId);
+        Study study = catalogManager.getFileManager().getStudy(ORGANIZATION, files.get(0), sessionId);
         String studyId = study.getFqn();
 
+        removeFile(studyId, fileIds, options);
+    }
+
+    private void removeFile(String studyId, List<String> fileIds, QueryOptions options) throws Exception {
+
         Path outdir = Paths.get(opencga.createTmpOutdir(studyId, "_REMOVE_", sessionId));
-        variantManager.removeFile(studyId, fileIds, new QueryOptions(), outdir.toUri(), sessionId);
+        variantManager.removeFile(studyId, fileIds, new QueryOptions(options), outdir.toUri(), sessionId);
 //        assertEquals(files.size(), removedFiles.size());
 
         Cohort all = catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(),

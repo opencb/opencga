@@ -16,41 +16,34 @@
 
 package org.opencb.opencga.master.monitor.daemons;
 
-import org.opencb.opencga.catalog.db.DBAdaptorFactory;
-import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.master.monitor.executors.BatchExecutor;
 import org.opencb.opencga.master.monitor.executors.ExecutorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.file.Path;
+import java.io.Closeable;
+import java.io.IOException;
 
 /**
  * Created by imedina on 16/06/16.
  */
-public abstract class MonitorParentDaemon implements Runnable {
+public abstract class MonitorParentDaemon implements Runnable, Closeable {
 
-    protected int interval;
-    protected CatalogManager catalogManager;
-    // FIXME: This should not be used directly! All the queries MUST go through the CatalogManager
-    @Deprecated
-    protected DBAdaptorFactory dbAdaptorFactory;
+    protected final int interval;
+    protected final CatalogManager catalogManager;
     protected BatchExecutor batchExecutor;
 
-    protected boolean exit = false;
+    private volatile boolean exit = false;
 
-    protected String token;
+    protected final String token;
+    protected final Logger logger;
 
-    protected Logger logger;
-
-    public MonitorParentDaemon(int interval, String token, CatalogManager catalogManager) throws CatalogDBException {
+    public MonitorParentDaemon(int interval, String token, CatalogManager catalogManager) {
         this.interval = interval;
         this.catalogManager = catalogManager;
         this.token = token;
         logger = LoggerFactory.getLogger(this.getClass());
-        dbAdaptorFactory = new MongoDBAdaptorFactory(catalogManager.getConfiguration(), catalogManager.getIoManagerFactory());
         ExecutorFactory executorFactory = new ExecutorFactory(catalogManager.getConfiguration());
         this.batchExecutor = executorFactory.getExecutor();
     }
@@ -63,12 +56,42 @@ public abstract class MonitorParentDaemon implements Runnable {
         this.exit = exit;
     }
 
-    static Path getJobTemporaryFolder(long jobId, Path tempJobFolder) {
-        return tempJobFolder.resolve(getJobTemporaryFolderName(jobId));
+    public void run() {
+        try {
+            init();
+        } catch (Exception e) {
+            logger.error("Error initializing daemon", e);
+            throw new RuntimeException(e);
+        }
+
+        while (!exit) {
+            try {
+                Thread.sleep(interval);
+            } catch (InterruptedException e) {
+                if (!exit) {
+                    logger.warn("Interrupted while sleeping", e);
+                }
+                // If interrupted, stop the daemon
+                break;
+            }
+
+            try {
+                apply();
+            } catch (Exception e) {
+                logger.error("Catch exception " + e.getMessage(), e);
+            }
+        }
+
+        try {
+            close();
+        } catch (IOException e) {
+            logger.error("Error closing daemon", e);
+        }
     }
 
-    static String getJobTemporaryFolderName(long jobId) {
-        return "J_" + jobId;
+    public void init() throws Exception {
+
     }
 
+    public abstract void apply() throws Exception;
 }

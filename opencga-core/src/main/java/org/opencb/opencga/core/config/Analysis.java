@@ -17,21 +17,38 @@
 package org.opencb.opencga.core.config;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
 public class Analysis {
 
+    private List<String> packages;
+
     private String scratchDir;
+    private String resourceUrl;
+
+    private String opencgaExtTools;
+    private List<AnalysisTool> tools;
 
     private Execution execution;
 
     private List<FrameworkConfiguration> frameworks;
 
     public Analysis() {
+        packages = new ArrayList<>();
+        tools = new ArrayList<>();
         execution = new Execution();
         frameworks = new ArrayList<>();
+    }
+
+    public List<String> getPackages() {
+        return packages;
+    }
+
+    public Analysis setPackages(List<String> packages) {
+        this.packages = packages;
+        return this;
     }
 
     public String getScratchDir() {
@@ -40,6 +57,33 @@ public class Analysis {
 
     public Analysis setScratchDir(String scratchDir) {
         this.scratchDir = scratchDir;
+        return this;
+    }
+
+    public String getResourceUrl() {
+        return resourceUrl;
+    }
+
+    public Analysis setResourceUrl(String resourceUrl) {
+        this.resourceUrl = resourceUrl;
+        return this;
+    }
+
+    public String getOpencgaExtTools() {
+        return opencgaExtTools;
+    }
+
+    public Analysis setOpencgaExtTools(String opencgaExtTools) {
+        this.opencgaExtTools = opencgaExtTools;
+        return this;
+    }
+
+    public List<AnalysisTool> getTools() {
+        return tools;
+    }
+
+    public Analysis setTools(List<AnalysisTool> tools) {
+        this.tools = tools;
         return this;
     }
 

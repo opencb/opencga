@@ -17,7 +17,6 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
@@ -30,7 +29,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.IPrivateStudyUid;
 import org.opencb.opencga.core.models.study.Group;
@@ -54,18 +52,6 @@ public abstract class AbstractManager {
     protected Configuration configuration;
 
     protected final DBAdaptorFactory catalogDBAdaptorFactory;
-    protected final UserDBAdaptor userDBAdaptor;
-    protected final ProjectDBAdaptor projectDBAdaptor;
-    protected final StudyDBAdaptor studyDBAdaptor;
-    protected final FileDBAdaptor fileDBAdaptor;
-    protected final IndividualDBAdaptor individualDBAdaptor;
-    protected final SampleDBAdaptor sampleDBAdaptor;
-    protected final CohortDBAdaptor cohortDBAdaptor;
-    protected final FamilyDBAdaptor familyDBAdaptor;
-    protected final JobDBAdaptor jobDBAdaptor;
-    protected final PanelDBAdaptor panelDBAdaptor;
-    protected final ClinicalAnalysisDBAdaptor clinicalDBAdaptor;
-    protected final InterpretationDBAdaptor interpretationDBAdaptor;
 
     public static final String OPENCGA = ParamConstants.OPENCGA_USER_ID;
     public static final String ANONYMOUS = ParamConstants.ANONYMOUS_USER_ID;
@@ -81,23 +67,78 @@ public abstract class AbstractManager {
         this.authorizationManager = authorizationManager;
         this.auditManager = auditManager;
         this.configuration = configuration;
-        this.userDBAdaptor = catalogDBAdaptorFactory.getCatalogUserDBAdaptor();
-        this.studyDBAdaptor = catalogDBAdaptorFactory.getCatalogStudyDBAdaptor();
-        this.fileDBAdaptor = catalogDBAdaptorFactory.getCatalogFileDBAdaptor();
-        this.individualDBAdaptor = catalogDBAdaptorFactory.getCatalogIndividualDBAdaptor();
-        this.sampleDBAdaptor = catalogDBAdaptorFactory.getCatalogSampleDBAdaptor();
-        this.jobDBAdaptor = catalogDBAdaptorFactory.getCatalogJobDBAdaptor();
-        this.cohortDBAdaptor = catalogDBAdaptorFactory.getCatalogCohortDBAdaptor();
-        this.familyDBAdaptor = catalogDBAdaptorFactory.getCatalogFamilyDBAdaptor();
-        this.panelDBAdaptor = catalogDBAdaptorFactory.getCatalogPanelDBAdaptor();
-        this.clinicalDBAdaptor = catalogDBAdaptorFactory.getClinicalAnalysisDBAdaptor();
-        this.interpretationDBAdaptor = catalogDBAdaptorFactory.getInterpretationDBAdaptor();
         this.catalogDBAdaptorFactory = catalogDBAdaptorFactory;
         this.catalogManager = catalogManager;
 
-        projectDBAdaptor = catalogDBAdaptorFactory.getCatalogProjectDbAdaptor();
-
         logger = LoggerFactory.getLogger(this.getClass());
+    }
+
+    protected DBAdaptorFactory getCatalogDBAdaptorFactory() {
+        return catalogDBAdaptorFactory;
+    }
+
+    protected MigrationDBAdaptor getMigrationDBAdaptor(String organization) throws CatalogDBException {
+        return getCatalogDBAdaptorFactory().getMigrationDBAdaptor(organization);
+    }
+
+    protected MetaDBAdaptor getCatalogMetaDBAdaptor(String organization) throws CatalogDBException {
+        return getCatalogDBAdaptorFactory().getCatalogMetaDBAdaptor(organization);
+    }
+
+    protected OrganizationDBAdaptor getOrganizationDBAdaptor(String organization) throws CatalogDBException {
+        return getCatalogDBAdaptorFactory().getCatalogOrganizationDBAdaptor(organization);
+    }
+
+    protected UserDBAdaptor getUserDBAdaptor(String organization) throws CatalogDBException {
+        return getCatalogDBAdaptorFactory().getCatalogUserDBAdaptor(organization);
+    }
+
+    protected ProjectDBAdaptor getProjectDBAdaptor(String organization) throws CatalogDBException {
+        return getCatalogDBAdaptorFactory().getCatalogProjectDbAdaptor(organization);
+    }
+
+    protected StudyDBAdaptor getStudyDBAdaptor(String organization) throws CatalogDBException {
+        return getCatalogDBAdaptorFactory().getCatalogStudyDBAdaptor(organization);
+    }
+
+    protected FileDBAdaptor getFileDBAdaptor(String organization) throws CatalogDBException {
+        return getCatalogDBAdaptorFactory().getCatalogFileDBAdaptor(organization);
+    }
+
+    protected SampleDBAdaptor getSampleDBAdaptor(String organization) throws CatalogDBException {
+        return getCatalogDBAdaptorFactory().getCatalogSampleDBAdaptor(organization);
+    }
+
+    protected IndividualDBAdaptor getIndividualDBAdaptor(String organization) throws CatalogDBException {
+        return getCatalogDBAdaptorFactory().getCatalogIndividualDBAdaptor(organization);
+    }
+
+    protected JobDBAdaptor getJobDBAdaptor(String organization) throws CatalogDBException {
+        return getCatalogDBAdaptorFactory().getCatalogJobDBAdaptor(organization);
+    }
+
+    protected AuditDBAdaptor getAuditDbAdaptor(String organization) throws CatalogDBException {
+        return getCatalogDBAdaptorFactory().getCatalogAuditDbAdaptor(organization);
+    }
+
+    protected CohortDBAdaptor getCohortDBAdaptor(String organization) throws CatalogDBException {
+        return getCatalogDBAdaptorFactory().getCatalogCohortDBAdaptor(organization);
+    }
+
+    protected PanelDBAdaptor getPanelDBAdaptor(String organization) throws CatalogDBException {
+        return getCatalogDBAdaptorFactory().getCatalogPanelDBAdaptor(organization);
+    }
+
+    protected FamilyDBAdaptor getFamilyDBAdaptor(String organization) throws CatalogDBException {
+        return getCatalogDBAdaptorFactory().getCatalogFamilyDBAdaptor(organization);
+    }
+
+    protected ClinicalAnalysisDBAdaptor getClinicalAnalysisDBAdaptor(String organization) throws CatalogDBException {
+        return getCatalogDBAdaptorFactory().getClinicalAnalysisDBAdaptor(organization);
+    }
+
+    protected InterpretationDBAdaptor getInterpretationDBAdaptor(String organization) throws CatalogDBException {
+        return getCatalogDBAdaptorFactory().getInterpretationDBAdaptor(organization);
     }
 
     protected void fixQueryObject(Query query) {
@@ -119,50 +160,6 @@ public abstract class AbstractManager {
             query.remove(currentKey);
             query.put(newKey, value);
         }
-    }
-
-    /**
-     * Prior to the conversion to a numerical featureId, there is a need to know in which user/project/study look for the string.
-     * This method calculates those parameters to know how to obtain the numerical id.
-     *
-     * @param userId     User id of the user asking for the id. If no user is found in featureStr, we will assume that it is asking for its
-     *                   projects/studies...
-     * @param featureStr Feature id in string format. Could be one of [user@aliasProject:aliasStudy:XXXXX
-     *                   | user@aliasStudy:XXXXX | aliasStudy:XXXXX | XXXXX].
-     * @return an objectMap with the following possible keys: "user", "project", "study", "featureName"
-     */
-    protected ObjectMap parseFeatureId(String userId, String featureStr) {
-        ObjectMap result = new ObjectMap("user", userId);
-
-        String[] split = featureStr.split("@");
-        if (split.length == 2) { // user@project:study
-            result.put("user", split[0]);
-            featureStr = split[1];
-        }
-
-        split = featureStr.split(":", 3);
-        if (split.length == 2) {
-            result.put("study", split[0]);
-            result.put("featureName", split[1]);
-        } else if (split.length == 3) {
-            result.put("project", split[0]);
-            result.put("study", split[1]);
-            result.put("featureName", split[2]);
-        } else {
-            result.put("featureName", featureStr);
-        }
-        return result;
-    }
-
-    AuthenticationOrigin getAuthenticationOrigin(String authOrigin) {
-        if (configuration.getAuthentication().getAuthenticationOrigins() != null) {
-            for (AuthenticationOrigin authenticationOrigin : configuration.getAuthentication().getAuthenticationOrigins()) {
-                if (authOrigin.equals(authenticationOrigin.getId())) {
-                    return authenticationOrigin;
-                }
-            }
-        }
-        return null;
     }
 
 
@@ -293,16 +290,17 @@ public abstract class AbstractManager {
      * - '@{groupId}' referring to a {@link Group}.
      * - '{userId}' referring to a specific user.
      *
+     * @param organization organization
      * @param studyId studyId
      * @param members List of members
      * @throws CatalogDBException            CatalogDBException
      * @throws CatalogParameterException     if there is any formatting error.
      * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
      */
-    protected void checkMembers(long studyId, List<String> members)
+    protected void checkMembers(String organization, long studyId, List<String> members)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         for (String member : members) {
-            checkMember(studyId, member);
+            checkMember(organization, studyId, member);
         }
     }
 
@@ -314,23 +312,24 @@ public abstract class AbstractManager {
      * - '@{groupId}' referring to a {@link Group}.
      * - '{userId}' referring to a specific user.
      *
+     * @param organization organization
      * @param studyId studyId
      * @param member  member
      * @throws CatalogDBException            CatalogDBException
      * @throws CatalogParameterException     if there is any formatting error.
      * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
      */
-    protected void checkMember(long studyId, String member)
+    protected void checkMember(String organization, long studyId, String member)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (member.equals("*")) {
             return;
         } else if (member.startsWith("@")) {
-            OpenCGAResult<Group> queryResult = studyDBAdaptor.getGroup(studyId, member, Collections.emptyList());
+            OpenCGAResult<Group> queryResult = getStudyDBAdaptor(organization).getGroup(studyId, member, Collections.emptyList());
             if (queryResult.getNumResults() == 0) {
                 throw CatalogDBException.idNotFound("Group", member);
             }
         } else {
-            userDBAdaptor.checkId(member);
+            getUserDBAdaptor(organization).checkId(member);
         }
     }
 
@@ -365,89 +364,4 @@ public abstract class AbstractManager {
         }
     }
 
-    @Deprecated
-    public static class MyResourceId {
-        private String user;
-        private long studyId;
-        private long resourceId;
-
-        public MyResourceId() {
-        }
-
-        public MyResourceId(String user, long studyId, long resourceId) {
-            this.user = user;
-            this.studyId = studyId;
-            this.resourceId = resourceId;
-        }
-
-        public String getUser() {
-            return user;
-        }
-
-        public MyResourceId setUser(String user) {
-            this.user = user;
-            return this;
-        }
-
-        public long getStudyId() {
-            return studyId;
-        }
-
-        public MyResourceId setStudyId(long studyId) {
-            this.studyId = studyId;
-            return this;
-        }
-
-        public long getResourceId() {
-            return resourceId;
-        }
-
-        public MyResourceId setResourceId(long resourceId) {
-            this.resourceId = resourceId;
-            return this;
-        }
-    }
-
-    @Deprecated
-    public static class MyResourceIds {
-        private String user;
-        private long studyId;
-        private List<Long> resourceIds;
-
-        public MyResourceIds() {
-        }
-
-        public MyResourceIds(String user, long studyId, List<Long> resourceIds) {
-            this.user = user;
-            this.studyId = studyId;
-            this.resourceIds = resourceIds;
-        }
-
-        public String getUser() {
-            return user;
-        }
-
-        public MyResourceIds setUser(String user) {
-            this.user = user;
-            return this;
-        }
-
-        public long getStudyId() {
-            return studyId;
-        }
-
-        public MyResourceIds setStudyId(long studyId) {
-            this.studyId = studyId;
-            return this;
-        }
-
-        public List<Long> getResourceIds() {
-            return resourceIds;
-        }
-
-        public MyResourceIds setResourceIds(List<Long> resourceIds) {
-            this.resourceIds = resourceIds;
-            return this;
-        }
-    }
 }
