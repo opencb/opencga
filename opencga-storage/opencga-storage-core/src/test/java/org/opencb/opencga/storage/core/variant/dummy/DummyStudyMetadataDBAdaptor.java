@@ -47,12 +47,12 @@ import java.util.stream.Collectors;
  */
 public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor, SampleMetadataDBAdaptor, CohortMetadataDBAdaptor, TaskMetadataDBAdaptor {
 
-    public static Map<String, StudyConfiguration> STUDY_CONFIGURATIONS_BY_NAME = new ConcurrentHashMap<>();
-    public static Map<Integer, StudyConfiguration> STUDY_CONFIGURATIONS_BY_ID = new ConcurrentHashMap<>();
-    public static Map<Integer, StudyMetadata> STUDY_METADATA_MAP = new ConcurrentHashMap<>();
-    public static Map<Integer, Map<Integer, SampleMetadata>> SAMPLE_METADATA_MAP = new ConcurrentHashMap<>();
-    public static Map<Integer, Map<Integer, CohortMetadata>> COHORT_METADATA_MAP = new ConcurrentHashMap<>();
-    public static Map<Integer, Map<Integer, TaskMetadata>> TASK_METADATA_MAP = new ConcurrentHashMap<>();
+    public static Map<String, StudyConfiguration> STUDY_CONFIGURATIONS_BY_NAME = newMap();
+    public static Map<Integer, StudyConfiguration> STUDY_CONFIGURATIONS_BY_ID = newMap();
+    public static Map<Integer, StudyMetadata> STUDY_METADATA_MAP = newMap();
+    public static Map<Integer, Map<Integer, SampleMetadata>> SAMPLE_METADATA_MAP = newMap();
+    public static Map<Integer, Map<Integer, CohortMetadata>> COHORT_METADATA_MAP = newMap();
+    public static Map<Integer, Map<Integer, TaskMetadata>> TASK_METADATA_MAP = newMap();
 
     private static AtomicInteger NUM_PRINTS = new AtomicInteger();
 
@@ -102,7 +102,7 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor, Samp
 
     @Override
     public Lock lock(int studyId, long lockDuration, long timeout, String lockName) throws StorageEngineException {
-        return DummyLock.getLock(studyId, "study", studyId);
+        return DummyLock.getLock(studyId, "study", studyId, lockDuration, timeout);
     }
 
     @Override
@@ -122,9 +122,7 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor, Samp
 
     @Override
     public void updateSampleMetadata(int studyId, SampleMetadata sample, Long timeStamp) {
-        DummyLock.lock(studyId, "sample", sample.getId(), (lock) -> {
-            return SAMPLE_METADATA_MAP.computeIfAbsent(studyId, s -> new ConcurrentHashMap<>()).put(sample.getId(), sample);
-        });
+        SAMPLE_METADATA_MAP.computeIfAbsent(studyId, s -> newMap()).put(sample.getId(), sample);
     }
 
     @Override
@@ -136,7 +134,7 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor, Samp
     public Integer getSampleId(int studyId, String sampleName) {
         return SAMPLE_METADATA_MAP.getOrDefault(studyId, Collections.emptyMap()).values()
                 .stream()
-                .filter(f->f.getName().equals(sampleName))
+                .filter(f -> f.getName().equals(sampleName))
                 .map(SampleMetadata::getId)
                 .findFirst()
                 .orElse(null);
@@ -144,7 +142,7 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor, Samp
 
     @Override
     public Lock lock(int studyId, int id, long lockDuration, long timeout) {
-        return DummyLock.getLock(studyId, "other", id);
+        return DummyLock.getLock(studyId, "other", id, lockDuration, timeout);
     }
 
     @Override
@@ -154,7 +152,7 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor, Samp
 
     @Override
     public void updateCohortMetadata(int studyId, CohortMetadata cohort, Long timeStamp) {
-        COHORT_METADATA_MAP.computeIfAbsent(studyId, s -> new ConcurrentHashMap<>()).put(cohort.getId(), cohort);
+        COHORT_METADATA_MAP.computeIfAbsent(studyId, s -> newMap()).put(cohort.getId(), cohort);
     }
 
     @Override
@@ -204,7 +202,7 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor, Samp
 
     @Override
     public void updateTask(int studyId, TaskMetadata task, Long timeStamp) {
-        TASK_METADATA_MAP.computeIfAbsent(studyId, s -> new ConcurrentHashMap<>()).put(task.getId(), task);
+        TASK_METADATA_MAP.computeIfAbsent(studyId, s -> newMap()).put(task.getId(), task);
     }
 
     public static void writeAll(Path path) {
@@ -248,5 +246,10 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor, Samp
 
     @Override
     public void close() {
+    }
+
+    private static <K,V> Map<K, V> newMap() {
+        return new ConcurrentHashMap<>();
+//        return Collections.synchronizedMap(new LinkedHashMap<>());
     }
 }

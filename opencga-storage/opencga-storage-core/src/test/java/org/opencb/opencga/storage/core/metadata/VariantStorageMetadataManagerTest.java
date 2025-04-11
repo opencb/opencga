@@ -3,7 +3,6 @@ package org.opencb.opencga.storage.core.metadata;
 import com.google.common.collect.Iterators;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -233,7 +232,8 @@ public abstract class VariantStorageMetadataManagerTest {
         metadataManager.removeIndexedFiles(study.getId(), Collections.singletonList(fileId2));
 
         Assert.assertEquals(2, metadataManager.getFileMetadata(study.getId(), fileId).getSamples().size());
-        Assert.assertEquals(1, metadataManager.getSampleMetadata(study.getId(), sampleId).getFiles().size());
+        // Files are not removed from sample metadata. We need to preserve the files order.
+        Assert.assertEquals(2, metadataManager.getSampleMetadata(study.getId(), sampleId).getFiles().size());
         Assert.assertTrue(metadataManager.getCohortMetadata(study.getId(), cohortId).isInvalid());
         Assert.assertEquals(2, metadataManager.getCohortMetadata(study.getId(), cohortId).getSamples().size());
     }

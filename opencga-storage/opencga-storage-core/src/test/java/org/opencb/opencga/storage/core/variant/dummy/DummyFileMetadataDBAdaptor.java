@@ -129,6 +129,6 @@ public class DummyFileMetadataDBAdaptor implements FileMetadataDBAdaptor {
 
     @Override
     public Lock lock(int studyId, int id, long lockDuration, long timeout) throws StorageEngineException {
-        return DummyLock.getLock(studyId, "file", id);
+        return DummyLock.getLock(studyId, "file", id, lockDuration, timeout);
     }
 }

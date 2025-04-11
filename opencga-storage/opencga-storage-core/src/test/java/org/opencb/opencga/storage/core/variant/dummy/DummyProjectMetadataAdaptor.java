@@ -14,8 +14,8 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class DummyProjectMetadataAdaptor implements ProjectMetadataAdaptor {
     private static ProjectMetadata projectMetadata;
-    private static Map<String, Integer> counters = new HashMap<>();
+    private static Map<String, Integer> counters = new ConcurrentHashMap<>();
 
     @Override
     public Lock lockProject(long lockDuration, long timeout, String lockName) {

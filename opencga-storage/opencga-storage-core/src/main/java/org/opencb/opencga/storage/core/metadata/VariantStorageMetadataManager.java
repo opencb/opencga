@@ -908,15 +908,17 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
                     sample.setAnnotationStatus(TaskMetadata.Status.NONE);
                     sample.setMendelianErrorStatus(TaskMetadata.Status.NONE);
-                    sample.setFiles(Collections.emptyList());
-                    sample.setCohorts(Collections.emptySet());
-                    sample.setInternalCohorts(Collections.emptySet());
-                    sample.setSecondaryIndexCohorts(Collections.emptySet());
+                    sample.setFiles(new ArrayList<>());
+                    sample.setCohorts(new HashSet<>());
+                    sample.setInternalCohorts(new HashSet<>());
+                    sample.setSecondaryIndexCohorts(new HashSet<>());
                     sample.setAttributes(new ObjectMap());
-                } else {
-                    // Removed only from removed files.
-                    sample.getFiles().removeAll(removedFileIds);
                 }
+                // else {
+                //      WARN: Do not remove files from sample.files list!
+                //            ORDER MUST BE KEPT!!
+                //     >>>  sample.getFiles().removeAll(removedFileIds); <<< NOT ALLOWED
+                //  }
             });
         }
 

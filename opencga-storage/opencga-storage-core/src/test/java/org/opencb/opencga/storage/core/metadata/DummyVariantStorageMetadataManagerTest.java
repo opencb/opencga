@@ -1,6 +1,5 @@
 package org.opencb.opencga.storage.core.metadata;
 
-import org.junit.Assume;
 import org.junit.experimental.categories.Category;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
@@ -20,8 +19,4 @@ public class DummyVariantStorageMetadataManagerTest extends VariantStorageMetada
         return new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
     }
 
-    @Override
-    public void registerFileParallel() throws Exception {
-        Assume.assumeTrue("DummyVariantStorageMetadataDBAdaptorFactory does not support parallel operations", false);
-    }
 }

@@ -484,6 +484,10 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         }
     }
 
+    default void clearDB() throws Exception {
+        clearDB(VariantStorageBaseTest.DB_NAME);
+    }
+
     @Override
     default void clearDB(String tableName) throws Exception {
         try (Connection con = ConnectionFactory.createConnection(configuration.get()); Admin admin = con.getAdmin()) {
