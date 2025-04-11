@@ -623,15 +623,9 @@ public class CohortManager extends AnnotationSetManager<Cohort, CohortPermission
                                         boolean allowModifyCohortAll, boolean ignoreException, QueryOptions options, String token)
             throws CatalogException {
         ObjectMap methodParams = new ObjectMap()
-                .append("studyStr", studyStr)
-                .append("cohortIds", cohortIds)
-                .append("updateParams", updateParams)
-                .append("allowModifyCohortAll", allowModifyCohortAll)
-                .append("ignoreException", ignoreException)
-                .append("options", options)
-                .append("token", token);
-        return updateMany(methodParams, studyStr, cohortIds, ignoreException, token, StudyManager.INCLUDE_VARIABLE_SET,
-                (organizationId, study, userId, entryParam) -> {
+                .append("allowModifyCohortAll", allowModifyCohortAll);
+        return updateMany(methodParams, studyStr, cohortIds, updateParams, ignoreException, token, options,
+                StudyManager.INCLUDE_VARIABLE_SET, (organizationId, study, userId, entryParam) -> {
                     String id = entryParam.getId();
                     OpenCGAResult<Cohort> internalResult = internalGet(organizationId, study.getUid(), id, INCLUDE_COHORT_STATUS, userId);
                     if (internalResult.getNumResults() == 0) {

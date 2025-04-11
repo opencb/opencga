@@ -380,6 +380,13 @@ public abstract class ResourceManager<R extends IPrivateStudyUid, S extends Enum
     /** Centralised code to handle all operations **/
 
     /**
+     * Interface to execute any checks that could be made before processing the element.
+     */
+    public interface BeforeCheckOperation {
+        void execute(String organizationId, Study study, String userId) throws CatalogException;
+    }
+
+    /**
      * Interface to execute an operation over a single element.
      * @param <R> Type of the element that will be processed.
      */
@@ -457,20 +464,20 @@ public abstract class ResourceManager<R extends IPrivateStudyUid, S extends Enum
     protected OpenCGAResult<R> updateMany(String studyStr, List<String> idList, Object updateParams, boolean ignoreException,
                                           QueryOptions options, String token, QueryOptions studyIncludeList,
                                           ExecuteOperationForSingleEntry<R> execution) throws CatalogException {
-        ObjectMap params = new ObjectMap()
-                .append("study", studyStr)
-                .append("ids", idList)
-                .append("updateParams", updateParams)
-                .append("ignoreException", ignoreException)
-                .append("options", options)
-                .append("token", token);
-        return updateMany(params, studyStr, idList, ignoreException, token, studyIncludeList, execution);
+        return updateMany(new ObjectMap(), studyStr, idList, updateParams, ignoreException, token, options, studyIncludeList, execution);
     }
 
-    protected OpenCGAResult<R> updateMany(ObjectMap params, String studyStr, List<String> idList, boolean ignoreException, String token,
-                                          QueryOptions studyIncludeList, ExecuteOperationForSingleEntry<R> execution)
-            throws CatalogException {
-        OpenCGAResult<R> result = runList(params, Enums.Action.UPDATE, studyStr, idList, token, studyIncludeList, execution);
+    protected OpenCGAResult<R> updateMany(ObjectMap params, String studyStr, List<String> idList, Object updateParams,
+                                          boolean ignoreException, String token, QueryOptions options, QueryOptions studyIncludeList,
+                                          ExecuteOperationForSingleEntry<R> execution) throws CatalogException {
+        params = params != null ? params : new ObjectMap();
+        params.putIfAbsent("study", studyStr);
+        params.putIfAbsent("ids", idList);
+        params.putIfAbsent("updateParams", updateParams);
+        params.putIfAbsent("ignoreException", ignoreException);
+        params.putIfAbsent("options", options);
+        params.putIfAbsent("token", token);
+        OpenCGAResult<R> result = runList(params, Enums.Action.UPDATE, studyStr, idList, token, studyIncludeList, null, execution);
         return endResult(result, ignoreException);
     }
 
@@ -498,13 +505,19 @@ public abstract class ResourceManager<R extends IPrivateStudyUid, S extends Enum
 
     protected OpenCGAResult<R> deleteMany(String studyStr, List<String> idList, ObjectMap deleteParams, boolean ignoreException,
                                           String token, ExecuteOperationForSingleEntry<R> execution) throws CatalogException {
+       return deleteMany(studyStr, idList, deleteParams, ignoreException, token, null, execution);
+    }
+
+    protected OpenCGAResult<R> deleteMany(String studyStr, List<String> idList, ObjectMap deleteParams, boolean ignoreException,
+                                          String token, BeforeCheckOperation before, ExecuteOperationForSingleEntry<R> execution)
+            throws CatalogException {
         ObjectMap params = new ObjectMap()
                 .append("study", studyStr)
                 .append("ids", idList)
                 .append("params", deleteParams)
                 .append("ignoreException", ignoreException)
                 .append("token", token);
-        OpenCGAResult<R> result = runList(params, Enums.Action.DELETE, studyStr, idList, token, QueryOptions.empty(), execution);
+        OpenCGAResult<R> result = runList(params, Enums.Action.DELETE, studyStr, idList, token, QueryOptions.empty(), before, execution);
         return endResult(result, ignoreException);
     }
 
@@ -1007,12 +1020,12 @@ public abstract class ResourceManager<R extends IPrivateStudyUid, S extends Enum
 
     protected OpenCGAResult<R> runList(ObjectMap params, Enums.Action action, String studyStr, List<String> idList, String token,
                                        ExecuteOperationForSingleEntry<R> execution) throws CatalogException {
-        return runList(params, action, studyStr, idList, token, QueryOptions.empty(), execution);
+        return runList(params, action, studyStr, idList, token, QueryOptions.empty(), null, execution);
     }
 
     protected OpenCGAResult<R> runList(ObjectMap params, Enums.Action action, String studyStr, List<String> idList, String token,
-                                       QueryOptions studyIncludeList, ExecuteOperationForSingleEntry<R> execution)
-            throws CatalogException {
+                                       QueryOptions studyIncludeList, BeforeCheckOperation before,
+                                       ExecuteOperationForSingleEntry<R> execution) throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
         String organizationId = studyFqn.getOrganizationId();
@@ -1037,9 +1050,18 @@ public abstract class ResourceManager<R extends IPrivateStudyUid, S extends Enum
             EventManager.getInstance().notify(catalogEvent, exception);
             throw exception;
         }
+        OpenCGAResult<R> result = OpenCGAResult.empty();
+
+        if (before != null) {
+            try {
+                before.execute(organizationId, study, userId);
+            } catch (Exception e) {
+                EventManager.getInstance().notify(catalogEvent, e);
+                throw e;
+            }
+        }
 
         // Execute code
-        OpenCGAResult<R> result = OpenCGAResult.empty();
         for (String id : idList) {
             opencgaEvent = OpencgaEvent.build(eventUuid, eventId, params, organizationId, study.getFqn(), study.getUuid(), userId,
                     tokenPayload.getToken());
