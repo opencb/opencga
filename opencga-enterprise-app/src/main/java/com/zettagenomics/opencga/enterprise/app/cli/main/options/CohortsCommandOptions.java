@@ -34,7 +34,6 @@ public class CohortsCommandOptions {
         public CommonCommandOptions commonCommandOptions;
 
         public UpdateAclCommandOptions updateAclCommandOptions;
-        public AggregationStatsCommandOptions aggregationStatsCommandOptions;
         public LoadAnnotationSetsCommandOptions loadAnnotationSetsCommandOptions;
         public CreateCommandOptions createCommandOptions;
         public DistinctCommandOptions distinctCommandOptions;
@@ -52,7 +51,6 @@ public class CohortsCommandOptions {
         this.jCommander = jCommander;
         this.commonCommandOptions = commonCommandOptions;
         this.updateAclCommandOptions = new UpdateAclCommandOptions();
-        this.aggregationStatsCommandOptions = new AggregationStatsCommandOptions();
         this.loadAnnotationSetsCommandOptions = new LoadAnnotationSetsCommandOptions();
         this.createCommandOptions = new CreateCommandOptions();
         this.distinctCommandOptions = new DistinctCommandOptions();
@@ -78,7 +76,7 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
         public Boolean jsonDataModel = false;
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--members"}, description = "Comma separated list of user or group ids", required = true, arity = 1)
@@ -95,50 +93,6 @@ public class CohortsCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"aggregationstats"}, commandDescription ="Fetch catalog cohort stats")
-    public class AggregationStatsCommandOptions {
-    
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
-    
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
-        public String study; 
-    
-        @Parameter(names = {"--type"}, description = "Type", required = false, arity = 1)
-        public String type; 
-    
-        @Parameter(names = {"--creation-year"}, description = "Creation year", required = false, arity = 1)
-        public String creationYear; 
-    
-        @Parameter(names = {"--creation-month"}, description = "Creation month (JANUARY, FEBRUARY...)", required = false, arity = 1)
-        public String creationMonth; 
-    
-        @Parameter(names = {"--creation-day"}, description = "Creation day", required = false, arity = 1)
-        public String creationDay; 
-    
-        @Parameter(names = {"--creation-day-of-week"}, description = "Creation day of week (MONDAY, TUESDAY...)", required = false, arity = 1)
-        public String creationDayOfWeek; 
-    
-        @Parameter(names = {"--num-samples"}, description = "Number of samples", required = false, arity = 1)
-        public String numSamples; 
-    
-        @Parameter(names = {"--status"}, description = "Status", required = false, arity = 1)
-        public String status; 
-    
-        @Parameter(names = {"--release"}, description = "Release", required = false, arity = 1)
-        public String release; 
-    
-        @Parameter(names = {"--annotation"}, description = "Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0", required = false, arity = 1)
-        public String annotation; 
-    
-        @Parameter(names = {"--default"}, description = "Calculate default stats", required = false, help = true, arity = 0)
-        public boolean default_values = false; 
-    
-        @Parameter(names = {"--field"}, description = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1", required = false, arity = 1)
-        public String field; 
-    
-    }
-
     @Parameters(commandNames = {"annotation-sets-load"}, commandDescription ="Load annotation sets from a TSV file")
     public class LoadAnnotationSetsCommandOptions {
     
@@ -151,7 +105,7 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
         public Boolean jsonDataModel = false;
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--variable-set-id"}, description = "Variable set ID or name", required = true, arity = 1)
@@ -189,7 +143,7 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
         public String exclude; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--variable-set"}, description = "Deprecated: Use /generate web service and filter by annotation", required = false, arity = 1)
@@ -239,7 +193,7 @@ public class CohortsCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--id"}, description = "Comma separated list of cohort IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
@@ -307,7 +261,7 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
         public String exclude; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--id"}, description = "Comma separated list sample IDs or UUIDs up to a maximum of 100", required = false, arity = 1)
@@ -408,7 +362,7 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--flatten-annotations"}, description = "Flatten the annotations?", required = false, help = true, arity = 0)
         public boolean flattenAnnotations = false; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--id"}, description = "Comma separated list of cohort IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
@@ -464,7 +418,7 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--cohorts"}, description = "Comma separated list of cohort IDs or UUIDs up to a maximum of 100", required = true, arity = 1)
         public String cohorts; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--member"}, description = "User or group id", required = false, arity = 1)
@@ -481,7 +435,7 @@ public class CohortsCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--cohorts"}, description = "Comma separated list of cohort ids", required = true, arity = 1)
@@ -507,7 +461,7 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--cohorts"}, description = "Comma separated list of cohort IDs or UUIDs up to a maximum of 100", required = true, arity = 1)
         public String cohorts; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted cohorts", required = false, help = true, arity = 0)
@@ -536,7 +490,7 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--cohorts"}, description = "Comma separated list of cohort ids", required = true, arity = 1)
         public String cohorts; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
@@ -589,7 +543,7 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--cohort"}, description = "Cohort ID", required = true, arity = 1)
         public String cohort; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--annotation-set"}, description = "AnnotationSet ID to be updated.", required = true, arity = 1)

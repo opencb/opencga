@@ -14,10 +14,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 
-@JsonIgnoreProperties({"cvdb"})
 public class EnterpriseConfiguration {
 
     private SsoConfiguration sso;
+    private CvdbConfiguration cvdb;
 
     private static final String DEFAULT_CONFIGURATION_FORMAT = "YAML";
 
@@ -29,6 +29,7 @@ public class EnterpriseConfiguration {
 
     public EnterpriseConfiguration() {
         sso = new SsoConfiguration();
+        cvdb = new CvdbConfiguration();
     }
 
 
@@ -162,6 +163,15 @@ public class EnterpriseConfiguration {
 
     public EnterpriseConfiguration setSso(SsoConfiguration sso) {
         this.sso = sso;
+        return this;
+    }
+
+    public CvdbConfiguration getCvdb() {
+        return cvdb;
+    }
+
+    public EnterpriseConfiguration setCvdb(CvdbConfiguration cvdb) {
+        this.cvdb = cvdb;
         return this;
     }
 }
