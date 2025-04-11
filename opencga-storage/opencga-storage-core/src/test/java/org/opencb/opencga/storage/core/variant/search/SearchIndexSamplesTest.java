@@ -111,13 +111,13 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
 
     @Test
     public void testRemovePartialFail() throws Exception {
-        thrown.expectMessage("Samples not in a secondary index");
+        thrown.expectMessage("Need to delete all samples from the secondary index");
         variantStorageEngine.removeSecondaryIndexSamples(STUDY_NAME, Collections.singletonList(samples1.get(0)));
     }
 
     @Test
     public void testRemoveMixFail() throws Exception {
-        thrown.expectMessage("Samples in multiple secondary indexes");
+        thrown.expectMessage("Samples not in the same secondary index");
         variantStorageEngine.removeSecondaryIndexSamples(STUDY_NAME, Arrays.asList(samples1.get(0), samples2.get(0)));
     }
 
