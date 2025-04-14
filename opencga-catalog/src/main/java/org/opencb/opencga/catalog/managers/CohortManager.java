@@ -806,7 +806,7 @@ public class CohortManager extends AnnotationSetManager<Cohort, CohortPermission
 
     public void setStatus(String studyStr, String cohortId, String status, String message, String token) throws CatalogException {
         ObjectMap methodParams = new ObjectMap()
-                .append("studyStr", studyStr)
+                .append("study", studyStr)
                 .append("cohortId", cohortId)
                 .append("status", status)
                 .append("message", message)

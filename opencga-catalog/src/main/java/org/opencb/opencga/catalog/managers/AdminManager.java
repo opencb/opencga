@@ -201,7 +201,7 @@ public class AdminManager extends AbstractManager {
                                                       String category, String token) throws CatalogException {
         StopWatch stopWatch = StopWatch.createStarted();
         ObjectMap auditParams = new ObjectMap()
-                .append("studyStr", studyStr)
+                .append("study", studyStr)
                 .append("entryIdList", entryIdList)
                 .append("permissionList", permissionList)
                 .append("category", category)

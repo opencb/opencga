@@ -1038,7 +1038,7 @@ public class InterpretationManager extends ResourceManager<Interpretation, Clini
     public OpenCGAResult<Interpretation> revert(String studyStr, String clinicalAnalysisId, String interpretationId,
                                                 int version, String token) throws CatalogException {
         ObjectMap methodParams = new ObjectMap()
-                .append("studyStr", studyStr)
+                .append("study", studyStr)
                 .append("clinicalAnalysisId", clinicalAnalysisId)
                 .append("interpretationId", interpretationId)
                 .append("version", version)

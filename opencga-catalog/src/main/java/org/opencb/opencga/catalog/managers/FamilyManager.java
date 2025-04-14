@@ -762,7 +762,7 @@ public class FamilyManager extends AnnotationSetManager<Family, FamilyPermission
                                                                              ClinicalProperty.ModeOfInheritance moi, String disorderId,
                                                                              Penetrance penetrance, String token) throws CatalogException {
         ObjectMap methodParams = new ObjectMap()
-                .append("studyStr", studyStr)
+                .append("study", studyStr)
                 .append("clinicalAnalysisId", clinicalAnalysisId)
                 .append("familyId", familyId)
                 .append("moi", moi)

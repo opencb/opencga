@@ -572,7 +572,7 @@ public class StudyManager extends AbstractManager {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("studyStr", studyStr)
+                .append("study", studyStr)
                 .append("options", options)
                 .append("token", token);
         try {
@@ -1748,7 +1748,7 @@ public class StudyManager extends AbstractManager {
         Study study = resolveId(studyFqn, QueryOptions.empty(), tokenPayload);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("studyStr", studyStr)
+                .append("study", studyStr)
                 .append("memberIds", memberIds)
                 .append("aclParams", aclParams)
                 .append("action", action)
@@ -2021,7 +2021,7 @@ public class StudyManager extends AbstractManager {
         String templateId = "template." + TimeUtils.getTime() + "." + RandomStringUtils.random(6, true, false);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("studyStr", studyStr)
+                .append("study", studyStr)
                 .append("filename", filename)
                 .append("token", token);
         try {
@@ -2114,7 +2114,7 @@ public class StudyManager extends AbstractManager {
         Study study = resolveId(studyFqn, QueryOptions.empty(), tokenPayload);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("studyStr", studyStr)
+                .append("study", studyStr)
                 .append("templateId", templateId)
                 .append("token", token);
         try {

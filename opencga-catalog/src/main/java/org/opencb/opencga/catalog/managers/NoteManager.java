@@ -253,7 +253,7 @@ public class NoteManager extends AbstractManager {
     public OpenCGAResult<Note> updateStudyNote(String studyStr, String noteStr, NoteUpdateParams noteUpdateParams, QueryOptions options,
                                                String token) throws CatalogException {
         ObjectMap auditParams = new ObjectMap()
-                .append("studyStr", studyStr)
+                .append("study", studyStr)
                 .append("noteId", noteStr)
                 .append("update", noteUpdateParams)
                 .append("options", options)
@@ -342,7 +342,7 @@ public class NoteManager extends AbstractManager {
 
     public OpenCGAResult<Note> deleteStudyNote(String studyStr, String noteId, QueryOptions options, String token) throws CatalogException {
         ObjectMap auditParams = new ObjectMap()
-                .append("studyStr", studyStr)
+                .append("study", studyStr)
                 .append("noteId", noteId)
                 .append("options", options)
                 .append("token", token);

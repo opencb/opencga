@@ -177,7 +177,7 @@ public class PanelManager extends ResourceManager<Panel, PanelPermissions> {
 
     public OpenCGAResult<Panel> importFromSource(String studyId, String source, String panelIds, String token) throws CatalogException {
         ObjectMap methodParams = new ObjectMap()
-                .append("studyStr", studyId)
+                .append("study", studyId)
                 .append("source", source)
                 .append("panelIds", panelIds)
                 .append("token", token);

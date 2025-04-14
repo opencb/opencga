@@ -637,7 +637,7 @@ public abstract class ResourceManager<R extends IPrivateStudyUid, S extends Enum
                                                         ExecuteMultiOperation<AclEntryList<S>> execution)
             throws CatalogException {
         params = params != null ? params : new ObjectMap();
-        params.putIfAbsent("studyStr", studyStr);
+        params.putIfAbsent("study", studyStr);
         params.putIfAbsent("idList", idList);
         params.putIfAbsent("memberList", memberList);
         params.putIfAbsent("aclParams", aclParams);

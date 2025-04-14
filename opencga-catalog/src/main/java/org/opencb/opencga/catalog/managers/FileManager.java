@@ -942,7 +942,7 @@ public class FileManager extends AnnotationSetManager<File, FilePermissions> {
                                       boolean calculateChecksum, String expectedChecksum, Long expectedSize, String token)
             throws CatalogException {
         ObjectMap pparams = new ObjectMap()
-                .append("studyStr", studyStr)
+                .append("study", studyStr)
                 .append("file", file)
                 .append("overwrite", overwrite)
                 .append("parents", parents)
@@ -1159,7 +1159,7 @@ public class FileManager extends AnnotationSetManager<File, FilePermissions> {
     public OpenCGAResult<File> moveAndRegister(String studyStr, Path fileSource, @Nullable Path folderDestiny, @Nullable String path,
                                                boolean isResource, String token) throws CatalogException {
         ObjectMap pparams = new ObjectMap()
-                .append("studyStr", studyStr)
+                .append("study", studyStr)
                 .append("fileSource", fileSource)
                 .append("folderDestiny", folderDestiny)
                 .append("path", path)
@@ -1305,7 +1305,7 @@ public class FileManager extends AnnotationSetManager<File, FilePermissions> {
     public OpenCGAResult<FileTree> getTree(@Nullable String studyStr, String fileId, int maxDepth, QueryOptions options, String token)
             throws CatalogException {
         ObjectMap pparams = new ObjectMap()
-                .append("studyStr", studyStr)
+                .append("study", studyStr)
                 .append("fileId", fileId)
                 .append("options", options)
                 .append("maxDepth", maxDepth)
@@ -1381,7 +1381,7 @@ public class FileManager extends AnnotationSetManager<File, FilePermissions> {
     public OpenCGAResult<File> getFilesFromFolder(String studyStr, String folderStr, QueryOptions options, String token)
             throws CatalogException {
         ObjectMap params = new ObjectMap()
-                .append("studyStr", studyStr)
+                .append("study", studyStr)
                 .append("folderStr", folderStr)
                 .append("options", options)
                 .append("token", token);
@@ -1658,7 +1658,7 @@ public class FileManager extends AnnotationSetManager<File, FilePermissions> {
     public OpenCGAResult<File> syncUntrackedFiles(String studyStr, String folderId, Predicate<URI> filter, String jobId, String token)
             throws CatalogException {
         ObjectMap pparams = new ObjectMap()
-                .append("studyStr", studyStr)
+                .append("study", studyStr)
                 .append("folderId", folderId)
                 .append("filter", filter)
                 .append("jobId", jobId)

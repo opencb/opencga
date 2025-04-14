@@ -2121,7 +2121,7 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
                                                                               AclParams clinicalAclParams, ParamUtils.AclAction action,
                                                                               boolean propagate, String token) throws CatalogException {
         ObjectMap pparams = new ObjectMap()
-                .append("studyStr", studyStr)
+                .append("study", studyStr)
                 .append("idList", clinicalList)
                 .append("memberList", memberIds)
                 .append("aclParams", clinicalAclParams)
@@ -2265,7 +2265,7 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
     public OpenCGAResult configureStudy(String studyStr, ClinicalAnalysisStudyConfiguration clinicalConfiguration, String token)
             throws CatalogException {
         ObjectMap auditParams = new ObjectMap()
-                .append("studyStr", studyStr)
+                .append("study", studyStr)
                 .append("clinicalConfiguration", clinicalConfiguration)
                 .append("token", token);
         return runForSingleEntry(auditParams, Enums.Action.UPDATE_INTERNAL, studyStr, token,
