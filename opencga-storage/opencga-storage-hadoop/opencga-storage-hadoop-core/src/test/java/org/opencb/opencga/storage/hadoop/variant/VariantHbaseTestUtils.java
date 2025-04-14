@@ -485,7 +485,8 @@ public class VariantHbaseTestUtils {
                 FileOutputStream fos = new FileOutputStream(fileName.toFile()); PrintStream out = new PrintStream(fos)
         ) {
             SampleIndexSchema schema = new SampleIndexSchemaFactory(dbAdaptor.getMetadataManager()).getSchemaLatest(studyId);
-            dbAdaptor.getHBaseManager().act(sampleGtTableName, table -> {
+            dbAdaptor.getHBaseManager().act(sampleGtTableName, (table, admin) -> {
+                admin.flush(table.getName());
 
                 table.getScanner(new Scan()).iterator().forEachRemaining(result -> {
 
@@ -524,7 +525,7 @@ public class VariantHbaseTestUtils {
                     }
 
                 });
-
+                return null;
             });
         }
     }
