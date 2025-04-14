@@ -22,18 +22,18 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.exec.Command;
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.catalog.utils.PedigreeGraphUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
-import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Tool(id = PedigreeGraphInitAnalysis.ID, resource = Enums.Resource.FAMILY)
 public class PedigreeGraphInitAnalysis extends OpenCgaToolScopeStudy {
@@ -68,30 +68,27 @@ public class PedigreeGraphInitAnalysis extends OpenCgaToolScopeStudy {
 
         step(getId(), () -> {
             // Get all families from that study
-            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("id", "members", "pedigreeGraph"));
-            OpenCGAResult<Family> results = catalogManager.getFamilyManager().search(study, new Query(), queryOptions, token);
-
-            // Get families to update by filtering
-            List<Family> familiesToUpdate = results.getResults().stream().filter(family -> PedigreeGraphUtils.hasMinTwoGenerations(family)
-                            && (family.getPedigreeGraph() == null || StringUtils.isEmpty(family.getPedigreeGraph().getBase64())))
-                    .collect(Collectors.toList());
-
-            // Update those families
-            for (Family family: familiesToUpdate) {
-                try {
-                    logger.info("Updating pedigree graph for family '{}'", family.getId());
-                    catalogManager.getFamilyManager().update(study, family.getId(), null,
-                            new QueryOptions(ParamConstants.FAMILY_UPDATE_PEDIGREEE_GRAPH_PARAM, true), token);
-                    String msg = "Updated pedigree graph for family '" + family.getId() + "'";
-                    logger.info(msg);
-                    addInfo(msg);
-                } catch (CatalogException e) {
-                    String msg = "Something wrong happened when updating pedigree graph for family '" + family.getId() + "'. Error: "
-                            + e.getMessage();
-                    logger.info(msg);
-                    addWarning(msg);
+            try (DBIterator<Family> iterator = catalogManager.getFamilyManager().iterator(study, new Query(), FamilyManager.INCLUDE_FAMILY_FOR_PEDIGREE, token)) {
+                while (iterator.hasNext()) {
+                    Family family = iterator.next();
+                    if (PedigreeGraphUtils.hasMinTwoGenerations(family)
+                            && (family.getPedigreeGraph() == null || StringUtils.isEmpty(family.getPedigreeGraph().getBase64()))) {
+                        try {
+                            logger.info("Updating pedigree graph for family '{}'", family.getId());
+                            catalogManager.getFamilyManager().update(study, family.getId(), null,
+                                    new QueryOptions(ParamConstants.FAMILY_UPDATE_PEDIGREEE_GRAPH_PARAM, true), token);
+                            String msg = "Updated pedigree graph for family '" + family.getId() + "'";
+                            logger.info(msg);
+                            addInfo(msg);
+                        } catch (CatalogException e) {
+                            String msg = "Something wrong happened when updating pedigree graph for family '" + family.getId() + "'.";
+                            logger.warn(msg, e);
+                            addWarning(msg + " Error: " + e.getMessage());
+                        }
+                    }
                 }
             }
+
             logger.info("Finished updating pedigree graph for families of the study '{}'", study);
         });
     }
