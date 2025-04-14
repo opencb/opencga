@@ -235,6 +235,11 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
 
 
     @Override
+    public AuthenticationOrigin.AuthenticationType getAuthenticationType() {
+        return AuthenticationOrigin.AuthenticationType.AzureAD;
+    }
+
+    @Override
     public AuthenticationResponse authenticate(String organizationId, String userId, String password)
             throws CatalogAuthenticationException {
         AuthenticationContext context;

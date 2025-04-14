@@ -897,13 +897,16 @@ public class UserManager extends AbstractManager {
             for (Map.Entry<String, AuthenticationManager> entry
                     : authenticationFactory.getOrganizationAuthenticationManagers(organizationId).entrySet()) {
                 AuthenticationManager authenticationManager = entry.getValue();
-                try {
-                    response = authenticationManager.authenticate(organizationId, username, password);
-                    authId = entry.getKey();
-                    userId = authenticationManager.getUserId(response.getToken());
-                    break;
-                } catch (CatalogAuthenticationException e) {
-                    logger.debug("Attempted authentication failed with {} for user '{}'\n{}", entry.getKey(), username, e.getMessage(), e);
+                if (authenticationManager.getAuthenticationType() != AuthenticationOrigin.AuthenticationType.SSO) {
+                    try {
+                        response = authenticationManager.authenticate(organizationId, username, password);
+                        authId = entry.getKey();
+                        userId = authenticationManager.getUserId(response.getToken());
+                        break;
+                    } catch (CatalogAuthenticationException e) {
+                        logger.debug("Attempted authentication failed with {} for user '{}'\n{}", entry.getKey(), username, e.getMessage(),
+                                e);
+                    }
                 }
             }
 

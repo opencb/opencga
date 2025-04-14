@@ -74,6 +74,11 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
     }
 
     @Override
+    public AuthenticationOrigin.AuthenticationType getAuthenticationType() {
+        return AuthenticationOrigin.AuthenticationType.OPENCGA;
+    }
+
+    @Override
     public AuthenticationResponse authenticate(String organizationId, String userId, String password)
             throws CatalogAuthenticationException {
         try {

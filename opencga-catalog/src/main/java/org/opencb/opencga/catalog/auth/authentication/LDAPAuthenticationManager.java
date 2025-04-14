@@ -148,6 +148,11 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     }
 
     @Override
+    public AuthenticationType getAuthenticationType() {
+        return AuthenticationType.LDAP;
+    }
+
+    @Override
     public AuthenticationResponse authenticate(String organizationId, String userId, String password)
             throws CatalogAuthenticationException {
         Map<String, Object> claims = new HashMap<>();

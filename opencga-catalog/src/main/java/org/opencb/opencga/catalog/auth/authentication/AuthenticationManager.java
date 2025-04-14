@@ -26,6 +26,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JwtUtils;
+import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
@@ -68,6 +69,8 @@ public abstract class AuthenticationManager implements Closeable {
     Key converStringToKeyObject(String keyString, String jcaAlgorithm) {
         return new SecretKeySpec(keyString.getBytes(), jcaAlgorithm);
     }
+
+    public abstract AuthenticationOrigin.AuthenticationType getAuthenticationType();
 
     /**
      * Authenticate the user against the Authentication server.

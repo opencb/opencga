@@ -37,6 +37,11 @@ public class SSOAuthenticationManager extends AuthenticationManager {
     }
 
     @Override
+    public AuthenticationOrigin.AuthenticationType getAuthenticationType() {
+        return AuthenticationOrigin.AuthenticationType.SSO;
+    }
+
+    @Override
     public AuthenticationResponse authenticate(String organizationId, String userId, String password)
             throws CatalogAuthenticationException {
         throw new NotImplementedException("Authentication should be done through SSO");
