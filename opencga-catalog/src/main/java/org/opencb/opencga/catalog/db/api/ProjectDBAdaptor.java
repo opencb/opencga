@@ -63,6 +63,7 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         INTERNAL_DATASTORES("internal.datastores", TEXT_ARRAY, ""),
         INTERNAL_DATASTORES_VARIANT("internal.datastores.variant", TEXT_ARRAY, ""),
+        INTERNAL_DATASTORES_CVDB("internal.datastores.cvdb", TEXT_ARRAY, ""),
         INTERNAL("internal", TEXT_ARRAY, ""),
 
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"

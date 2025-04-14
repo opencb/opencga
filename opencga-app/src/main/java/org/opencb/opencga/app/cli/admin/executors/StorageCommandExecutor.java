@@ -170,7 +170,8 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
                         continue;
                     }
                 }
-                final DataStore currentDataStore;
+
+                DataStore currentDataStore;
                 if (project.getInternal() != null && project.getInternal().getDatastores() != null) {
                     currentDataStore = project.getInternal().getDatastores().getVariant();
                 } else {
@@ -187,29 +188,39 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
                     }
                 }
 
-                final DataStore defaultDataStore;
-                if (StringUtils.isEmpty(commandOptions.dbPrefix)) {
-                    defaultDataStore = VariantStorageManager.defaultDataStore(catalogManager, project);
-                } else {
-                    defaultDataStore = VariantStorageManager.defaultDataStore(commandOptions.dbPrefix, project.getFqn());
-                }
-
-                final DataStore newDataStore;
-                logger.info("------");
-                logger.info("Project '" + project.getFqn() + "'");
-                if (currentDataStore == null) {
-                    newDataStore = defaultDataStore;
-                    logger.info("Old DBName: null");
-                } else {
-                    logger.info("Old DBName: " + currentDataStore.getDbName());
-                    currentDataStore.setDbName(defaultDataStore.getDbName());
-                    newDataStore = currentDataStore;
-                }
-                logger.info("New DBName: " + newDataStore.getDbName());
-
+                // Variant datastore
+                DataStore newDataStore = createNewDataStore(commandOptions.dbPrefix, currentDataStore, project, catalogManager);
                 catalogManager.getProjectManager().setDatastoreVariant(project.getFqn(), newDataStore, token);
+
+                // CVDB datastore
+                newDataStore = createNewDataStore(commandOptions.cvdbPrefix, currentDataStore, project, catalogManager);
+                catalogManager.getProjectManager().setDatastoreCvdb(project.getFqn(), newDataStore, token);
             }
         }
+    }
+
+    private DataStore createNewDataStore(String dbPrefix, DataStore currentDataStore, Project project, CatalogManager catalogManager) {
+        final DataStore defaultDataStore;
+        if (StringUtils.isEmpty(dbPrefix)) {
+            defaultDataStore = VariantStorageManager.defaultDataStore(catalogManager, project);
+        } else {
+            defaultDataStore = VariantStorageManager.defaultDataStore(dbPrefix, project.getFqn());
+        }
+
+        final DataStore newDataStore;
+        logger.info("------");
+        logger.info("Project '" + project.getFqn() + "'");
+        if (currentDataStore == null) {
+            newDataStore = defaultDataStore;
+            logger.info("Old DBName: null");
+        } else {
+            logger.info("Old DBName: " + currentDataStore.getDbName());
+            currentDataStore.setDbName(defaultDataStore.getDbName());
+            newDataStore = currentDataStore;
+        }
+        logger.info("New DBName: " + newDataStore.getDbName());
+
+        return newDataStore;
     }
 
     private List<String> parseOrganizationIds(CatalogManager catalogManager, String organizationId) throws CatalogException {

@@ -1806,7 +1806,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return dataStore;
     }
 
-    public static DataStore defaultDataStore(CatalogManager catalogManager, Project project) throws CatalogException {
+    public static DataStore defaultDataStore(CatalogManager catalogManager, Project project) {
         return defaultDataStore(catalogManager.getConfiguration().getDatabasePrefix(), project.getFqn());
     }
 
@@ -1817,7 +1817,22 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return new DataStore(StorageEngineFactory.get().getDefaultStorageEngineId(), dbName);
     }
 
+    public static DataStore defaultCvdbDataStore(CatalogManager catalogManager, Project project) {
+        return defaultCvdbDataStore(catalogManager.getConfiguration().getDatabasePrefix(), project.getFqn());
+    }
+
+    public static DataStore defaultCvdbDataStore(String databasePrefix, String projectFqnStr) {
+        CatalogFqn projectFqn = CatalogFqn.extractFqnFromProjectFqn(projectFqnStr);
+
+        String dbName = buildDatabaseName(databasePrefix, projectFqn.getOrganizationId(), projectFqn.getProjectId(), true);
+        return new DataStore(StorageEngineFactory.get().getDefaultStorageEngineId(), dbName);
+    }
+
     public static String buildDatabaseName(String databasePrefix, String organizationId, String projectId) {
+        return buildDatabaseName(databasePrefix, organizationId, projectId, false);
+    }
+
+    public static String buildDatabaseName(String databasePrefix, String organizationId, String projectId, boolean cvdb) {
         // Replace possible dots at the organization. Usually a special character in almost all databases. See #532
         organizationId = organizationId.replace('.', '_');
 
@@ -1837,7 +1852,10 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             projectId = projectId.substring(idx + 1);
         }
 
-        return prefix + organizationId + '_' + projectId;
+        if (cvdb) {
+            return prefix + "cvdb_" + organizationId + '_' + projectId;
+        } else {
+            return prefix + organizationId + '_' + projectId;
+        }
     }
-
 }

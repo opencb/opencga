@@ -58,6 +58,9 @@ public class StorageCommandOptions extends GeneralCliOptions {
         @Parameter(names = {"--db-prefix"}, hidden = true, description = "Database prefix. If empty, use the system db prefix.")
         public String dbPrefix;
 
+        @Parameter(names = {"--cvdb-prefix"}, hidden = true, description = "CVDB prefix. If empty, use the system CVDB prefix.")
+        public String cvdbPrefix;
+
         @Parameter(names = {"--projects-without-storage"}, arity = 0, description = "Only update projects that don't exist on the VariantStorage")
         public boolean projectsWithoutStorage;
 
