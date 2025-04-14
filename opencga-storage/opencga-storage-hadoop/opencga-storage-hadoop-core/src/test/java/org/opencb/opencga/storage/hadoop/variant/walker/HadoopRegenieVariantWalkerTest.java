@@ -1,18 +1,13 @@
 package org.opencb.opencga.storage.hadoop.variant.walker;
 
 
-import htsjdk.variant.vcf.VCFFileReader;
-import htsjdk.variant.vcf.VCFHeader;
-import htsjdk.variant.vcf.VCFReader;
-import org.apache.hadoop.util.ToolRunner;
 import org.junit.*;
 import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.exec.Command;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
-import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -28,9 +23,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -111,6 +104,8 @@ public class HadoopRegenieVariantWalkerTest extends VariantStorageBaseTest imple
                                                         "--step1-path", step1Path.toAbsolutePath().toString(),
                                                         "--python-path", pythonPath.toAbsolutePath().toString(),
                                                         "--pheno-file", phenoPath.toAbsolutePath().toString(),
+                                                        "--source-image-name", "opencb/opencga-regenie:"
+                                                            + GitRepositoryState.getInstance().getBuildVersion(),
                                                         "--output-dockerfile", dockerfilePath.toAbsolutePath().toString()
                                                 },
                 Collections.emptyMap());

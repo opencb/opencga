@@ -23,7 +23,7 @@ import org.opencb.commons.exec.Command;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.ResourceException;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
@@ -212,6 +212,7 @@ public class RegenieWrapperAnalysis extends OpenCgaToolScopeStudy {
                 "--step1-path", predPath.toAbsolutePath().toString(),
                 "--python-path", pythonUtilsPath.toAbsolutePath().toString(),
                 "--pheno-file", phenoFile.toAbsolutePath().toString(),
+                "--source-image-name", "opencb/opencga-regenie:" + GitRepositoryState.getInstance().getBuildVersion(),
                 "--output-dockerfile", resourcePath.resolve("Dockerfile").toString()
         }, Collections.emptyMap());
 
