@@ -130,8 +130,8 @@ public class WorkflowsCommandOptions {
         @Parameter(names = {"--manager-version"}, description = "Workflow system id. Valid values: NEXTFLOW.", required = false, arity = 1)
         public String managerVersion;
     
-        @Parameter(names = {"--type"}, description = "Workflow type. Valid values: NEXTFLOW.", required = false, arity = 1)
-        public String type;
+        @Parameter(names = {"--scope"}, description = "Workflow scope. Valid values: SECONDARY_ANALYSIS, RESEARCH_ANALYSIS, CLINICAL_INTERPRETATION_ANALYSIS or OTHER.", required = false, arity = 1)
+        public String scope;
     
         @Parameter(names = {"--tags"}, description = "List of tags.", required = false, arity = 1)
         public String tags;
@@ -404,8 +404,8 @@ public class WorkflowsCommandOptions {
         @Parameter(names = {"--manager-version"}, description = "Workflow system id. Valid values: NEXTFLOW.", required = false, arity = 1)
         public String managerVersion;
     
-        @Parameter(names = {"--type"}, description = "Workflow type. Valid values: NEXTFLOW.", required = false, arity = 1)
-        public String type;
+        @Parameter(names = {"--scope"}, description = "Workflow scope. Valid values: SECONDARY_ANALYSIS, RESEARCH_ANALYSIS, CLINICAL_INTERPRETATION_ANALYSIS or OTHER.", required = false, arity = 1)
+        public String scope;
     
         @Parameter(names = {"--tags"}, description = "List of tags.", required = false, arity = 1)
         public String tags;

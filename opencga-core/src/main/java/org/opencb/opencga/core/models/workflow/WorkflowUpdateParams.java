@@ -18,8 +18,8 @@ public class WorkflowUpdateParams {
     @DataField(id = "manager", description = FieldConstants.WORKFLOW_MANAGER_DESCRIPTION)
     private WorkflowSystem manager;
 
-    @DataField(id = "type", description = FieldConstants.WORKFLOW_TYPE_DESCRIPTION)
-    private Workflow.Type type;
+    @DataField(id = "scope", description = FieldConstants.WORKFLOW_SCOPE_DESCRIPTION)
+    private Workflow.Scope scope;
 
     @DataField(id = "tags", description = FieldConstants.WORKFLOW_TAGS_DESCRIPTION)
     private List<String> tags;
@@ -51,14 +51,14 @@ public class WorkflowUpdateParams {
     public WorkflowUpdateParams() {
     }
 
-    public WorkflowUpdateParams(String name, String description, WorkflowSystem manager, Workflow.Type type, List<String> tags,
+    public WorkflowUpdateParams(String name, String description, WorkflowSystem manager, Workflow.Scope scope, List<String> tags,
                                 boolean draft, WorkflowRepository repository, List<WorkflowScript> scripts,
                                 List<WorkflowVariable> variables, MinimumRequirements minimumRequirements, String creationDate,
                                 String modificationDate, Map<String, Object> attributes) {
         this.name = name;
         this.description = description;
         this.manager = manager;
-        this.type = type;
+        this.scope = scope;
         this.tags = tags;
         this.draft = draft;
         this.repository = repository;
@@ -76,7 +76,7 @@ public class WorkflowUpdateParams {
         sb.append("name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", manager=").append(manager);
-        sb.append(", type=").append(type);
+        sb.append(", scope=").append(scope);
         sb.append(", tags=").append(tags);
         sb.append(", draft=").append(draft);
         sb.append(", repository=").append(repository);
@@ -117,12 +117,12 @@ public class WorkflowUpdateParams {
         return this;
     }
 
-    public Workflow.Type getType() {
-        return type;
+    public Workflow.Scope getScope() {
+        return scope;
     }
 
-    public WorkflowUpdateParams setType(Workflow.Type type) {
-        this.type = type;
+    public WorkflowUpdateParams setScope(Workflow.Scope scope) {
+        this.scope = scope;
         return this;
     }
 

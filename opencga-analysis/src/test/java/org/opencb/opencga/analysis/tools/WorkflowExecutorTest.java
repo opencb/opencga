@@ -87,7 +87,7 @@ public class WorkflowExecutorTest extends AbstractManagerTest {
         StorageConfiguration storageConfiguration = StorageConfiguration.load(inputStream, "yml");
         WorkflowCreateParams workflow = new WorkflowCreateParams()
                 .setId("workflow")
-                .setType(Workflow.Type.OTHER)
+                .setScope(Workflow.Scope.OTHER)
                 .setVariables(Arrays.asList(
                         new WorkflowVariable()
                                 .setId("input")
@@ -147,7 +147,7 @@ public class WorkflowExecutorTest extends AbstractManagerTest {
         String content = IOUtils.toString(inputStream, "UTF-8");
         return new WorkflowCreateParams()
                 .setId("workflow")
-                .setType(Workflow.Type.OTHER)
+                .setScope(Workflow.Scope.OTHER)
                 .setScripts(Collections.singletonList(new WorkflowScript("pipeline.nf", content, true)));
     }
 }

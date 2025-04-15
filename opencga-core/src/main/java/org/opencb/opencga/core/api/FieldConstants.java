@@ -338,7 +338,8 @@ public class FieldConstants {
     // Workflow
     public static final String WORKFLOW_ID_DESCRIPTION = "Workflow ID.";
     public static final String WORKFLOW_NAME_DESCRIPTION = "Workflow name.";
-    public static final String WORKFLOW_TYPE_DESCRIPTION = "Workflow type. Valid values: NEXTFLOW.";
+    public static final String WORKFLOW_SCOPE_DESCRIPTION = "Workflow scope. Valid values: SECONDARY_ANALYSIS, RESEARCH_ANALYSIS, "
+            + "CLINICAL_INTERPRETATION_ANALYSIS or OTHER.";
     public static final String WORKFLOW_MANAGER_DESCRIPTION = "Workflow system corresponding to the workflow.";
     public static final String WORKFLOW_DRAFT_DESCRIPTION = "Flag indicating whether the workflow is still a draft or not.";
     public static final String WORKFLOW_REPOSITORY_DESCRIPTION = "Workflow repository image to execute. If any, providing a list of"

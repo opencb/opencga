@@ -164,7 +164,7 @@ public class WorkflowsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "description", commandOptions.description, true);
             putNestedIfNotNull(beanParams, "manager.id", commandOptions.managerId, true);
             putNestedIfNotEmpty(beanParams, "manager.version", commandOptions.managerVersion, true);
-            putNestedIfNotNull(beanParams, "type", commandOptions.type, true);
+            putNestedIfNotNull(beanParams, "scope", commandOptions.scope, true);
             putNestedIfNotNull(beanParams, "tags", commandOptions.tags, true);
             putNestedIfNotNull(beanParams, "draft", commandOptions.draft, true);
             putNestedIfNotEmpty(beanParams, "repository.id", commandOptions.repositoryId, true);
@@ -350,7 +350,7 @@ public class WorkflowsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "description", commandOptions.description, true);
             putNestedIfNotNull(beanParams, "manager.id", commandOptions.managerId, true);
             putNestedIfNotEmpty(beanParams, "manager.version", commandOptions.managerVersion, true);
-            putNestedIfNotNull(beanParams, "type", commandOptions.type, true);
+            putNestedIfNotNull(beanParams, "scope", commandOptions.scope, true);
             putNestedIfNotNull(beanParams, "tags", commandOptions.tags, true);
             putNestedIfNotNull(beanParams, "draft", commandOptions.draft, true);
             putNestedIfNotEmpty(beanParams, "repository.id", commandOptions.repositoryId, true);

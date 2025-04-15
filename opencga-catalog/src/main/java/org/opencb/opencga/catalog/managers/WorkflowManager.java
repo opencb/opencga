@@ -911,7 +911,7 @@ public class WorkflowManager extends ResourceManager<Workflow> {
         if (workflow.getManager().getId() == null) {
             workflow.getManager().setId(WorkflowSystem.SystemId.NEXTFLOW);
         }
-        workflow.setType(ParamUtils.defaultObject(workflow.getType(), Workflow.Type.OTHER));
+        workflow.setScope(ParamUtils.defaultObject(workflow.getScope(), Workflow.Scope.OTHER));
         workflow.setTags(workflow.getTags() != null ? workflow.getTags() : Collections.emptyList());
         workflow.setScripts(workflow.getScripts() != null ? workflow.getScripts() : Collections.emptyList());
         boolean main = false;

@@ -26,8 +26,8 @@ public class Workflow extends PrivateStudyUid {
     @DataField(id = "description", description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
 
-    @DataField(id = "type", description = FieldConstants.WORKFLOW_TYPE_DESCRIPTION)
-    private Type type;
+    @DataField(id = "scope", description = FieldConstants.WORKFLOW_SCOPE_DESCRIPTION)
+    private Scope scope;
 
     @DataField(id = "manager", description = FieldConstants.WORKFLOW_MANAGER_DESCRIPTION)
     private WorkflowSystem manager;
@@ -68,7 +68,7 @@ public class Workflow extends PrivateStudyUid {
     @DataField(id = "attributes", description = FieldConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
-    public enum Type {
+    public enum Scope {
         SECONDARY_ANALYSIS,
         RESEARCH_ANALYSIS,
         CLINICAL_INTERPRETATION_ANALYSIS,
@@ -78,7 +78,7 @@ public class Workflow extends PrivateStudyUid {
     public Workflow() {
     }
 
-    public Workflow(String id, String name, String description, Type type, WorkflowSystem manager, List<String> tags,
+    public Workflow(String id, String name, String description, Scope scope, WorkflowSystem manager, List<String> tags,
                     List<WorkflowVariable> variables, MinimumRequirements minimumRequirements, boolean draft,
                     WorkflowRepository repository, List<WorkflowScript> scripts, WorkflowInternal internal, String creationDate,
                     String modificationDate, Map<String, Object> attributes) {
@@ -86,7 +86,7 @@ public class Workflow extends PrivateStudyUid {
         this.name = name;
         this.description = description;
         this.draft = draft;
-        this.type = type;
+        this.scope = scope;
         this.manager = manager;
         this.repository = repository;
         this.scripts = scripts;
@@ -106,7 +106,7 @@ public class Workflow extends PrivateStudyUid {
         sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
-        sb.append(", type=").append(type);
+        sb.append(", scope=").append(scope);
         sb.append(", manager=").append(manager);
         sb.append(", tags=").append(tags);
         sb.append(", variables=").append(variables);
@@ -194,12 +194,12 @@ public class Workflow extends PrivateStudyUid {
         return this;
     }
 
-    public Type getType() {
-        return type;
+    public Scope getScope() {
+        return scope;
     }
 
-    public Workflow setType(Type type) {
-        this.type = type;
+    public Workflow setScope(Scope scope) {
+        this.scope = scope;
         return this;
     }
 

@@ -22,8 +22,8 @@ public class WorkflowCreateParams {
     @DataField(id = "manager", description = FieldConstants.WORKFLOW_MANAGER_DESCRIPTION)
     private WorkflowSystem manager;
 
-    @DataField(id = "type", description = FieldConstants.WORKFLOW_TYPE_DESCRIPTION)
-    private Workflow.Type type;
+    @DataField(id = "scope", description = FieldConstants.WORKFLOW_SCOPE_DESCRIPTION)
+    private Workflow.Scope scope;
 
     @DataField(id = "tags", description = FieldConstants.WORKFLOW_TAGS_DESCRIPTION)
     private List<String> tags;
@@ -55,7 +55,7 @@ public class WorkflowCreateParams {
     public WorkflowCreateParams() {
     }
 
-    public WorkflowCreateParams(String id, String name, String description, WorkflowSystem manager, Workflow.Type type, List<String> tags,
+    public WorkflowCreateParams(String id, String name, String description, WorkflowSystem manager, Workflow.Scope scope, List<String> tags,
                                 boolean draft, WorkflowRepository repository, List<WorkflowVariable> variables,
                                 MinimumRequirements minimumRequirements, List<WorkflowScript> scripts, String creationDate,
                                 String modificationDate, Map<String, Object> attributes) {
@@ -63,7 +63,7 @@ public class WorkflowCreateParams {
         this.name = name;
         this.description = description;
         this.manager = manager;
-        this.type = type;
+        this.scope = scope;
         this.tags = tags;
         this.draft = draft;
         this.repository = repository;
@@ -82,7 +82,7 @@ public class WorkflowCreateParams {
         sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", manager=").append(manager);
-        sb.append(", type=").append(type);
+        sb.append(", scope=").append(scope);
         sb.append(", tags=").append(tags);
         sb.append(", draft=").append(draft);
         sb.append(", repository=").append(repository);
@@ -97,7 +97,7 @@ public class WorkflowCreateParams {
     }
 
     public Workflow toWorkflow() {
-        return new Workflow(id, name, description, type, manager, tags, variables, minimumRequirements, draft, repository, scripts,
+        return new Workflow(id, name, description, scope, manager, tags, variables, minimumRequirements, draft, repository, scripts,
                 new WorkflowInternal(), creationDate, modificationDate, attributes);
     }
 
@@ -137,12 +137,12 @@ public class WorkflowCreateParams {
         return this;
     }
 
-    public Workflow.Type getType() {
-        return type;
+    public Workflow.Scope getScope() {
+        return scope;
     }
 
-    public WorkflowCreateParams setType(Workflow.Type type) {
-        this.type = type;
+    public WorkflowCreateParams setScope(Workflow.Scope scope) {
+        this.scope = scope;
         return this;
     }
 

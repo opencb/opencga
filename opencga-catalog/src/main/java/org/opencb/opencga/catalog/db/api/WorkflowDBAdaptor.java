@@ -23,7 +23,7 @@ public interface WorkflowDBAdaptor extends CoreDBAdaptor<Workflow> {
         NAME("name", TEXT, ""),
         DESCRIPTION("description", TEXT, ""),
         DRAFT("draft", BOOLEAN, ""),
-        TYPE("type", TEXT, ""),
+        SCOPE("scope", TEXT, ""),
         TAGS("tags", TEXT_ARRAY, ""),
         COMMAND_LINE("commandLine", TEXT, ""),
         MANAGER("manager", OBJECT, ""),

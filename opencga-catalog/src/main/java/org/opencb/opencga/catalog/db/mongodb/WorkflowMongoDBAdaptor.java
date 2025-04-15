@@ -332,7 +332,7 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
         filterBooleanParams(parameters, document.getSet(), acceptedBooleanParams);
 
         final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.DESCRIPTION.key(), QueryParams.COMMAND_LINE.key(),
-            QueryParams.TYPE.key()};
+            QueryParams.SCOPE.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
@@ -573,7 +573,7 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
                     case VERSION:
                     case INTERNAL_REGISTRATION_USER_ID:
                     case MANAGER_ID:
-                    case TYPE:
+                    case SCOPE:
                     case DRAFT:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
