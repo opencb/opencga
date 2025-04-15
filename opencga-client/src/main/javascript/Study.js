@@ -118,8 +118,9 @@ export default class Study extends OpenCGAParentClass {
     * @param {String} [params.operationId] - Audit operation UUID.
     * @param {String} [params.userId] - User ID.
     * @param {String} [params.action] - Action performed by the user.
-    * @param {"AUDIT NOTE ORGANIZATION USER PROJECT STUDY FILE SAMPLE JOB INDIVIDUAL COHORT DISEASE_PANEL FAMILY CLINICAL_ANALYSIS
-    *     INTERPRETATION VARIANT ALIGNMENT CLINICAL EXPRESSION RGA FUNCTIONAL WORKFLOW RESOURCE"} [params.resource] - Resource involved.
+    * @param {"AUDIT ADMIN EVENT NOTE ORGANIZATION USER PROJECT STUDY FILE SAMPLE JOB INDIVIDUAL COHORT DISEASE_PANEL FAMILY
+    *     CLINICAL_ANALYSIS INTERPRETATION VARIANT ALIGNMENT CLINICAL EXPRESSION RGA FUNCTIONAL WORKFLOW RESOURCE"} [params.resource] - Resource
+    *     involved.
     * @param {String} [params.resourceId] - Resource ID.
     * @param {String} [params.resourceUuid] - resource UUID.
     * @param {"SUCCESS ERROR"} [params.status] - Filter by status.

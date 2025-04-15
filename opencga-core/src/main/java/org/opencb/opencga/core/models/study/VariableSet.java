@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.models.study;
 
+import jdk.nashorn.internal.ir.annotations.Ignore;
 import org.opencb.opencga.core.models.PrivateFields;
 
 import java.util.List;
@@ -90,6 +91,12 @@ public class VariableSet extends PrivateFields {
     public VariableSet setId(String id) {
         this.id = id;
         return this;
+    }
+
+    @Ignore
+    @Override
+    public String getUuid() {
+        return null;
     }
 
     public VariableSet setUid(long uid) {

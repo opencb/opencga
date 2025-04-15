@@ -2151,4 +2151,8 @@ public class StudyManager extends AbstractManager {
         }
     }
 
+    @Override
+    Enums.Resource getResource() {
+        return Enums.Resource.STUDY;
+    }
 }

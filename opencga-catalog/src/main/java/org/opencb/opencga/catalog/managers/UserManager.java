@@ -1640,4 +1640,9 @@ public class UserManager extends AbstractManager {
         String organizationId = catalogFqn.getOrganizationId();
         return tokenPayload.getUserId(organizationId);
     }
+
+    @Override
+    Enums.Resource getResource() {
+        return Enums.Resource.USER;
+    }
 }

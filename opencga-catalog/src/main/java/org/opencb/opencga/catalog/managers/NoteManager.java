@@ -43,6 +43,11 @@ public class NoteManager extends AbstractManager {
         this.logger = LoggerFactory.getLogger(NoteManager.class);
     }
 
+    @Override
+    Enums.Resource getResource() {
+        return Enums.Resource.NOTE;
+    }
+
     private OpenCGAResult<Note> internalGet(String organizationId, long studyUid, String noteId) throws CatalogException {
         Query query = new Query();
         if (studyUid > 0) {

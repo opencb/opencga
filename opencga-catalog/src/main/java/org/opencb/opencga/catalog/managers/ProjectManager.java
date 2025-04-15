@@ -1145,4 +1145,8 @@ public class ProjectManager extends AbstractManager {
         return false;
     }
 
+    @Override
+    Enums.Resource getResource() {
+        return Enums.Resource.PROJECT;
+    }
 }

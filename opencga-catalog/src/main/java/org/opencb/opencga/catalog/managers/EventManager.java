@@ -17,6 +17,7 @@ import org.opencb.opencga.core.events.EventFactory;
 import org.opencb.opencga.core.events.IEventHandler;
 import org.opencb.opencga.core.events.OpenCgaObserver;
 import org.opencb.opencga.core.models.JwtPayload;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.event.CatalogEvent;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -220,5 +221,10 @@ public final class EventManager extends AbstractManager implements Closeable {
             this.eventHandler.close();
         }
         THREAD_POOL.shutdown();
+    }
+
+    @Override
+    Enums.Resource getResource() {
+        return Enums.Resource.EVENT;
     }
 }

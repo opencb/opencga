@@ -18,6 +18,10 @@ package org.opencb.opencga.core.models;
 
 public interface IPrivateFields {
 
+    String getId();
+
+    String getUuid();
+
     IPrivateFields setUid(long uid);
 
     long getUid();

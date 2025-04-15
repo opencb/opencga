@@ -632,4 +632,9 @@ public class OrganizationManager extends AbstractManager {
             }
         }
     }
+
+    @Override
+    Enums.Resource getResource() {
+        return Enums.Resource.ORGANIZATION;
+    }
 }

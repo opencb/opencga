@@ -25,10 +25,10 @@ class Admin(_ParentRestClient):
         PATH: /{apiVersion}/admin/audit/groupBy
 
         :param str entity: Entity to be grouped by. Allowed values: ['AUDIT
-            NOTE ORGANIZATION USER PROJECT STUDY FILE SAMPLE JOB INDIVIDUAL
-            COHORT DISEASE_PANEL FAMILY CLINICAL_ANALYSIS INTERPRETATION
-            VARIANT ALIGNMENT CLINICAL EXPRESSION RGA FUNCTIONAL WORKFLOW
-            RESOURCE'] (REQUIRED)
+            ADMIN EVENT NOTE ORGANIZATION USER PROJECT STUDY FILE SAMPLE JOB
+            INDIVIDUAL COHORT DISEASE_PANEL FAMILY CLINICAL_ANALYSIS
+            INTERPRETATION VARIANT ALIGNMENT CLINICAL EXPRESSION RGA FUNCTIONAL
+            WORKFLOW RESOURCE'] (REQUIRED)
         :param str fields: Comma separated list of fields by which to group
             by. (REQUIRED)
         :param bool count: Count the number of elements matching the group.

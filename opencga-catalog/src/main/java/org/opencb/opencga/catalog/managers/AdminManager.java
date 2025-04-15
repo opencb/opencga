@@ -236,4 +236,9 @@ public class AdminManager extends AbstractManager {
             throw e;
         }
     }
+
+    @Override
+    Enums.Resource getResource() {
+        return Enums.Resource.ADMIN;
+    }
 }
