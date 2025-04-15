@@ -156,19 +156,15 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
                     logger.info("Skip project '{}'", project.getFqn());
                     continue;
                 }
-                if (commandOptions.projectsWithoutStorage) {
+                if (commandOptions.projectsWithoutStorage && variantStorageProjects.contains(project.getFqn())) {
                     // Only accept projects WITHOUT storage. so discard projects with storage
-                    if (variantStorageProjects.contains(project.getFqn())) {
-                        logger.info("Skip project '{}' as it has a variant storage.", project.getFqn());
-                        continue;
-                    }
+                    logger.info("Skip project '{}' as it has a variant storage.", project.getFqn());
+                    continue;
                 }
-                if (commandOptions.projectsWithStorage) {
+                if (commandOptions.projectsWithStorage && !variantStorageProjects.contains(project.getFqn())) {
                     // Only accept projects WITH storage. so discard projects without storage
-                    if (!variantStorageProjects.contains(project.getFqn())) {
-                        logger.info("Skip project '{}' as it doesn't have a variant storage.", project.getFqn());
-                        continue;
-                    }
+                    logger.info("Skip project '{}' as it doesn't have a variant storage.", project.getFqn());
+                    continue;
                 }
 
                 DataStore currentDataStore;
@@ -193,7 +189,12 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
                 catalogManager.getProjectManager().setDatastoreVariant(project.getFqn(), newDataStore, token);
 
                 // CVDB datastore
-                newDataStore = createNewDataStore(commandOptions.cvdbPrefix, currentDataStore, project, catalogManager);
+                String cvdbPrefix = commandOptions.cvdbPrefix;
+                if (StringUtils.isEmpty(cvdbPrefix)) {
+                    cvdbPrefix = catalogManager.getConfiguration().getDatabasePrefix() + "_cvdb";
+                }
+                newDataStore = createNewDataStore(cvdbPrefix, currentDataStore, project, catalogManager);
+                newDataStore.setStorageEngine("solr");
                 catalogManager.getProjectManager().setDatastoreCvdb(project.getFqn(), newDataStore, token);
             }
         }
@@ -209,16 +210,16 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
 
         final DataStore newDataStore;
         logger.info("------");
-        logger.info("Project '" + project.getFqn() + "'");
+        logger.info("Project '{}'", project.getFqn());
         if (currentDataStore == null) {
             newDataStore = defaultDataStore;
             logger.info("Old DBName: null");
         } else {
-            logger.info("Old DBName: " + currentDataStore.getDbName());
+            logger.info("Old DBName: {}", currentDataStore.getDbName());
             currentDataStore.setDbName(defaultDataStore.getDbName());
             newDataStore = currentDataStore;
         }
-        logger.info("New DBName: " + newDataStore.getDbName());
+        logger.info("New DBName: {}", newDataStore.getDbName());
 
         return newDataStore;
     }
@@ -242,7 +243,8 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
      * @return List of projects
      * @throws Exception on error
      */
-    protected final List<String> getVariantStorageProjects(List<String> organizationIds, CatalogManager catalogManager, VariantStorageManager variantStorageManager) throws Exception {
+    protected final List<String> getVariantStorageProjects(List<String> organizationIds, CatalogManager catalogManager,
+                                                           VariantStorageManager variantStorageManager) throws Exception {
         Set<String> projects = new LinkedHashSet<>();
 
         for (String studyFqn : getVariantStorageStudies(organizationIds, catalogManager, variantStorageManager)) {
@@ -257,7 +259,8 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
      * @return List of projects
      * @throws Exception on error
      */
-    protected final List<String> getVariantStorageStudies(List<String> organizationIds, CatalogManager catalogManager, VariantStorageManager variantStorageManager) throws Exception {
+    protected final List<String> getVariantStorageStudies(List<String> organizationIds, CatalogManager catalogManager,
+                                                          VariantStorageManager variantStorageManager) throws Exception {
         Set<String> studies = new LinkedHashSet<>();
         for (String organizationId : organizationIds) {
             int studiesCount = 0;
@@ -277,6 +280,4 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
         }
         return new ArrayList<>(studies);
     }
-
-
 }
