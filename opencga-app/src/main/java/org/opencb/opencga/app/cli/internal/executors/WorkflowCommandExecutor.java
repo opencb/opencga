@@ -4,7 +4,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.workflow.NextFlowExecutor;
 import org.opencb.opencga.app.cli.internal.options.WorkflowCommandOptions;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.workflow.NextFlowRunParams;
+import org.opencb.opencga.core.models.externalTool.NextFlowRunParams;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;

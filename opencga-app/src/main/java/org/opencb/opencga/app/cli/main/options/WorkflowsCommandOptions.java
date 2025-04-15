@@ -83,8 +83,8 @@ public class WorkflowsCommandOptions {
         @Parameter(names = {"--action"}, description = "Action to be performed [ADD, SET, REMOVE or RESET].", required = true, arity = 1)
         public String action = "ADD"; 
     
-        @Parameter(names = {"--workflow-ids"}, description = "The body web service workflowIds parameter", required = false, arity = 1)
-        public String workflowIds;
+        @Parameter(names = {"--external-tool-ids"}, description = "The body web service externalToolIds parameter", required = false, arity = 1)
+        public String externalToolIds;
     
         @Parameter(names = {"--permissions"}, description = "The body web service permissions parameter", required = false, arity = 1)
         public String permissions;

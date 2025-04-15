@@ -140,7 +140,7 @@ public class OrganizationMongoDBAdaptorFactory {
     private final PanelMongoDBAdaptor panelDBAdaptor;
     private final ClinicalAnalysisMongoDBAdaptor clinicalDBAdaptor;
     private final InterpretationMongoDBAdaptor interpretationDBAdaptor;
-    private final WorkflowMongoDBAdaptor workflowDBAdaptor;
+    private final ExternalToolMongoDBAdaptor workflowDBAdaptor;
     private final AuditMongoDBAdaptor auditDBAdaptor;
 //    private final MetaMongoDBAdaptor metaDBAdaptor;
     private final MigrationMongoDBAdaptor migrationDBAdaptor;
@@ -230,7 +230,7 @@ public class OrganizationMongoDBAdaptorFactory {
                 configuration, this);
         interpretationDBAdaptor = new InterpretationMongoDBAdaptor(interpretationCollection, interpretationArchivedCollection,
                 deletedInterpretationCollection, configuration, this);
-        workflowDBAdaptor = new WorkflowMongoDBAdaptor(workflowCollection, workflowArchivedCollection, deletedWorkflowCollection,
+        workflowDBAdaptor = new ExternalToolMongoDBAdaptor(workflowCollection, workflowArchivedCollection, deletedWorkflowCollection,
                 configuration, this);
 //        metaDBAdaptor = new MetaMongoDBAdaptor(metaCollection, configuration, this);
         migrationDBAdaptor = new MigrationMongoDBAdaptor(migrationCollection, configuration, this);
@@ -499,7 +499,7 @@ public class OrganizationMongoDBAdaptorFactory {
         return interpretationDBAdaptor;
     }
 
-    public WorkflowMongoDBAdaptor getWorkflowDBAdaptor() {
+    public ExternalToolMongoDBAdaptor getWorkflowDBAdaptor() {
         return workflowDBAdaptor;
     }
 

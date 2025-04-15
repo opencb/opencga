@@ -5,11 +5,11 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.db.api.WorkflowDBAdaptor;
+import org.opencb.opencga.catalog.db.api.ExternalToolDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.models.workflow.*;
+import org.opencb.opencga.core.models.externalTool.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
@@ -19,114 +19,114 @@ import java.util.Collections;
 import static org.junit.Assert.*;
 
 @Category(MediumTests.class)
-public class WorkflowManagerTest extends AbstractManagerTest {
+public class ExternalToolManagerTest extends AbstractManagerTest {
 
-    private WorkflowManager workflowManager;
+    private ExternalToolManager externalToolManager;
 
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        workflowManager = catalogManager.getWorkflowManager();
+        externalToolManager = catalogManager.getWorkflowManager();
     }
 
     @Test
     public void importWorkflow() throws CatalogException {
         WorkflowRepositoryParams params = new WorkflowRepositoryParams("nf-core/rnaseq");
-        OpenCGAResult<Workflow> result = workflowManager.importWorkflow(studyFqn, params, INCLUDE_RESULT, ownerToken);
+        OpenCGAResult<ExternalTool> result = externalToolManager.importWorkflow(studyFqn, params, INCLUDE_RESULT, ownerToken);
         assertEquals(1, result.getNumInserted());
         assertEquals(1, result.first().getVersion());
 
         // Update imported workflow
-        result = workflowManager.importWorkflow(studyFqn, params, INCLUDE_RESULT, ownerToken);
+        result = externalToolManager.importWorkflow(studyFqn, params, INCLUDE_RESULT, ownerToken);
         assertEquals(2, result.first().getVersion());
 
         params = new WorkflowRepositoryParams("nf-core/proteinfold");
-        result = workflowManager.importWorkflow(studyFqn, params, INCLUDE_RESULT, ownerToken);
+        result = externalToolManager.importWorkflow(studyFqn, params, INCLUDE_RESULT, ownerToken);
         assertEquals(1, result.getNumInserted());
         assertEquals(1, result.first().getVersion());
 
         params = new WorkflowRepositoryParams("nf-core/methylseq");
-        result = workflowManager.importWorkflow(studyFqn, params, INCLUDE_RESULT, ownerToken);
+        result = externalToolManager.importWorkflow(studyFqn, params, INCLUDE_RESULT, ownerToken);
         assertEquals(1, result.getNumInserted());
         assertEquals(1, result.first().getVersion());
 
         params = new WorkflowRepositoryParams("nf-core/pacvar");
-        result = workflowManager.importWorkflow(studyFqn, params, INCLUDE_RESULT, ownerToken);
+        result = externalToolManager.importWorkflow(studyFqn, params, INCLUDE_RESULT, ownerToken);
         assertEquals(1, result.getNumInserted());
         assertEquals(1, result.first().getVersion());
     }
 
     @Test
     public void createWorkflowTest() throws CatalogException {
-        Workflow workflow = new Workflow()
+        ExternalTool externalTool = new ExternalTool()
                 .setId("workflow")
-                .setScope(Workflow.Scope.OTHER)
+                .setScope(ExternalTool.Scope.OTHER)
                 .setScripts(Collections.singletonList(new WorkflowScript("pipeline.nf", "echo 'Hello world!'", true)));
-        OpenCGAResult<Workflow> result = workflowManager.create(studyFqn, workflow, INCLUDE_RESULT, ownerToken);
+        OpenCGAResult<ExternalTool> result = externalToolManager.create(studyFqn, externalTool, INCLUDE_RESULT, ownerToken);
         assertEquals(1, result.getNumResults());
         assertNotNull(result.first());
-        assertEquals(workflow.getId(), result.first().getId());
+        assertEquals(externalTool.getId(), result.first().getId());
 
         // Add repository to workflow
-        workflow.setId("workflow2");
-        workflow.setRepository(new WorkflowRepository("blabla"));
+        externalTool.setId("workflow2");
+        externalTool.setRepository(new WorkflowRepository("blabla"));
         CatalogException catalogException = assertThrows(CatalogException.class,
-                () -> workflowManager.create(studyFqn, workflow, INCLUDE_RESULT, ownerToken));
+                () -> externalToolManager.create(studyFqn, externalTool, INCLUDE_RESULT, ownerToken));
         assertTrue(catalogException.getMessage().contains("script") && catalogException.getMessage().contains("repository"));
 
         // Remove script from workflow
-        workflow.setScripts(Collections.emptyList());
-        result = workflowManager.create(studyFqn, workflow, INCLUDE_RESULT, ownerToken);
+        externalTool.setScripts(Collections.emptyList());
+        result = externalToolManager.create(studyFqn, externalTool, INCLUDE_RESULT, ownerToken);
         assertEquals(1, result.getNumResults());
         assertNotNull(result.first());
-        assertEquals(workflow.getId(), result.first().getId());
+        assertEquals(externalTool.getId(), result.first().getId());
 
         // Remove script and add two scripts with 2 mains
-        workflow.setId("workflow3");
-        workflow.setRepository(null);
-        workflow.setScripts(Arrays.asList(
+        externalTool.setId("workflow3");
+        externalTool.setRepository(null);
+        externalTool.setScripts(Arrays.asList(
                 new WorkflowScript("script1", "echo 'Hello'", true),
                 new WorkflowScript("script2", "echo 'World'", true)
         ));
         catalogException = assertThrows(CatalogException.class,
-                () -> workflowManager.create(studyFqn, workflow, INCLUDE_RESULT, ownerToken));
+                () -> externalToolManager.create(studyFqn, externalTool, INCLUDE_RESULT, ownerToken));
         assertTrue(catalogException.getMessage().contains("script") && catalogException.getMessage().contains("main"));
 
         // Add one single script without main
-        workflow.setScripts(Collections.singletonList(
+        externalTool.setScripts(Collections.singletonList(
                 new WorkflowScript("script1", "echo 'Hello'", false)
         ));
         catalogException = assertThrows(CatalogException.class,
-                () -> workflowManager.create(studyFqn, workflow, INCLUDE_RESULT, ownerToken));
+                () -> externalToolManager.create(studyFqn, externalTool, INCLUDE_RESULT, ownerToken));
         assertTrue(catalogException.getMessage().contains("script") && catalogException.getMessage().contains("main"));
     }
 
     @Test
     public void workflowSearchTest() throws CatalogException {
-        Workflow workflow = new Workflow()
+        ExternalTool externalTool = new ExternalTool()
                 .setId("workflow")
-                .setScope(Workflow.Scope.OTHER)
+                .setScope(ExternalTool.Scope.OTHER)
                 .setScripts(Collections.singletonList(new WorkflowScript("pipeline.nf", "echo 'Hello world!'", true)));
-        workflowManager.create(studyFqn, workflow, INCLUDE_RESULT, ownerToken);
+        externalToolManager.create(studyFqn, externalTool, INCLUDE_RESULT, ownerToken);
 
-        workflow = new Workflow()
+        externalTool = new ExternalTool()
                 .setId("workflow2")
-                .setScope(Workflow.Scope.OTHER)
+                .setScope(ExternalTool.Scope.OTHER)
                 .setDraft(true)
                 .setScripts(Collections.singletonList(new WorkflowScript("pipeline.nf", "echo 'Hello world!'", true)));
-        workflowManager.create(studyFqn, workflow, INCLUDE_RESULT, ownerToken);
+        externalToolManager.create(studyFqn, externalTool, INCLUDE_RESULT, ownerToken);
 
-        OpenCGAResult<Workflow> search = workflowManager.search(studyFqn, new Query(), QueryOptions.empty(), ownerToken);
+        OpenCGAResult<ExternalTool> search = externalToolManager.search(studyFqn, new Query(), QueryOptions.empty(), ownerToken);
         assertEquals(2, search.getNumResults());
 
-        Query query = new Query(WorkflowDBAdaptor.QueryParams.DRAFT.key(), true);
-        search = workflowManager.search(studyFqn, query, QueryOptions.empty(), ownerToken);
+        Query query = new Query(ExternalToolDBAdaptor.QueryParams.DRAFT.key(), true);
+        search = externalToolManager.search(studyFqn, query, QueryOptions.empty(), ownerToken);
         assertEquals(1, search.getNumResults());
         assertEquals("workflow2", search.first().getId());
         assertTrue(search.first().isDraft());
 
-        query = new Query(WorkflowDBAdaptor.QueryParams.DRAFT.key(), false);
-        search = workflowManager.search(studyFqn, query, QueryOptions.empty(), ownerToken);
+        query = new Query(ExternalToolDBAdaptor.QueryParams.DRAFT.key(), false);
+        search = externalToolManager.search(studyFqn, query, QueryOptions.empty(), ownerToken);
         assertEquals(1, search.getNumResults());
         assertEquals("workflow", search.first().getId());
         assertFalse(search.first().isDraft());
@@ -134,61 +134,61 @@ public class WorkflowManagerTest extends AbstractManagerTest {
 
     @Test
     public void updateWorkflowTest() throws CatalogException {
-        Workflow workflow = new Workflow()
+        ExternalTool externalTool = new ExternalTool()
                 .setId("workflow")
-                .setScope(Workflow.Scope.OTHER)
+                .setScope(ExternalTool.Scope.OTHER)
                 .setScripts(Collections.singletonList(new WorkflowScript("pipeline.nf", "echo 'Hello world!'", true)));
-        workflowManager.create(studyFqn, workflow, INCLUDE_RESULT, ownerToken);
+        externalToolManager.create(studyFqn, externalTool, INCLUDE_RESULT, ownerToken);
 
-        WorkflowUpdateParams updateParams = new WorkflowUpdateParams()
+        ExternalToolUpdateParams updateParams = new ExternalToolUpdateParams()
                 .setName("newName")
-                .setScope(Workflow.Scope.OTHER)
+                .setScope(ExternalTool.Scope.OTHER)
                 .setDraft(true)
                 .setCreationDate("20240101000000")
                 .setModificationDate("20240201000000")
                 .setDescription("description");
 
-        OpenCGAResult<Workflow> update = workflowManager.update(studyFqn, workflow.getId(), updateParams, INCLUDE_RESULT, ownerToken);
+        OpenCGAResult<ExternalTool> update = externalToolManager.update(studyFqn, externalTool.getId(), updateParams, INCLUDE_RESULT, ownerToken);
         assertEquals(1, update.getNumUpdated());
-        Workflow updatedWorkflow = update.first();
-        assertEquals(updateParams.getName(), updatedWorkflow.getName());
-        assertEquals(updateParams.isDraft(), updatedWorkflow.isDraft());
-        assertEquals(updateParams.getCreationDate(), updatedWorkflow.getCreationDate());
-        assertEquals(updateParams.getModificationDate(), updatedWorkflow.getModificationDate());
-        assertEquals(updateParams.getDescription(), updatedWorkflow.getDescription());
+        ExternalTool updatedExternalTool = update.first();
+        assertEquals(updateParams.getName(), updatedExternalTool.getName());
+        assertEquals(updateParams.isDraft(), updatedExternalTool.isDraft());
+        assertEquals(updateParams.getCreationDate(), updatedExternalTool.getCreationDate());
+        assertEquals(updateParams.getModificationDate(), updatedExternalTool.getModificationDate());
+        assertEquals(updateParams.getDescription(), updatedExternalTool.getDescription());
     }
 
     @Test
     public void deleteWorkflowTest() throws CatalogException {
-        Workflow workflow = new Workflow()
+        ExternalTool externalTool = new ExternalTool()
                 .setId("workflow")
-                .setScope(Workflow.Scope.OTHER)
+                .setScope(ExternalTool.Scope.OTHER)
                 .setScripts(Collections.singletonList(new WorkflowScript("pipeline.nf", "echo 'Hello world!'", true)));
-        workflowManager.create(studyFqn, workflow, QueryOptions.empty(), ownerToken);
+        externalToolManager.create(studyFqn, externalTool, QueryOptions.empty(), ownerToken);
 
-        OpenCGAResult<Workflow> result = workflowManager.delete(studyFqn, workflow.getId(), QueryOptions.empty(), ownerToken);
+        OpenCGAResult<ExternalTool> result = externalToolManager.delete(studyFqn, externalTool.getId(), QueryOptions.empty(), ownerToken);
         assertEquals(1, result.getNumDeleted());
 
         CatalogException exception = assertThrows(CatalogException.class,
-                () -> workflowManager.get(studyFqn, workflow.getId(), QueryOptions.empty(), ownerToken));
+                () -> externalToolManager.get(studyFqn, externalTool.getId(), QueryOptions.empty(), ownerToken));
         assertTrue(exception.getMessage().contains("not found"));
     }
 
     @Test
     public void updateWorkflowAclTest() throws CatalogException {
-        Workflow workflow = new Workflow()
+        ExternalTool externalTool = new ExternalTool()
                 .setId("workflow")
-                .setScope(Workflow.Scope.OTHER)
+                .setScope(ExternalTool.Scope.OTHER)
                 .setScripts(Collections.singletonList(new WorkflowScript("pipeline.nf", "echo 'Hello world!'", true)));
-        workflowManager.create(studyFqn, workflow, QueryOptions.empty(), ownerToken);
+        externalToolManager.create(studyFqn, externalTool, QueryOptions.empty(), ownerToken);
 
         CatalogAuthorizationException catalogAuthorizationException = assertThrows(CatalogAuthorizationException.class,
-                () -> workflowManager.get(studyFqn, workflow.getId(), QueryOptions.empty(), noAccessToken1));
+                () -> externalToolManager.get(studyFqn, externalTool.getId(), QueryOptions.empty(), noAccessToken1));
         assertTrue(catalogAuthorizationException.getMessage().contains("denied"));
 
-        workflowManager.updateAcl(studyFqn, noAccessUserId1, new WorkflowAclUpdateParams(Collections.singletonList(workflow.getId()), Collections.singletonList("VIEW")),
+        externalToolManager.updateAcl(studyFqn, noAccessUserId1, new ExternalToolAclUpdateParams(Collections.singletonList(externalTool.getId()), Collections.singletonList("VIEW")),
                 ParamUtils.AclAction.ADD, ownerToken);
-        OpenCGAResult<Workflow> result = workflowManager.get(studyFqn, workflow.getId(), QueryOptions.empty(), noAccessToken1);
+        OpenCGAResult<ExternalTool> result = externalToolManager.get(studyFqn, externalTool.getId(), QueryOptions.empty(), noAccessToken1);
         assertEquals(1, result.getNumResults());
     }
 

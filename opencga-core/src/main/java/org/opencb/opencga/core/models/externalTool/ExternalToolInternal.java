@@ -1,16 +1,16 @@
-package org.opencb.opencga.core.models.workflow;
+package org.opencb.opencga.core.models.externalTool;
 
 import org.opencb.opencga.core.models.common.Internal;
 import org.opencb.opencga.core.models.common.InternalStatus;
 
-public class WorkflowInternal extends Internal {
+public class ExternalToolInternal extends Internal {
 
     private String registrationUserId;
 
-    public WorkflowInternal() {
+    public ExternalToolInternal() {
     }
 
-    public WorkflowInternal(InternalStatus status, String registrationDate, String lastModified, String registrationUserId) {
+    public ExternalToolInternal(InternalStatus status, String registrationDate, String lastModified, String registrationUserId) {
         super(status, registrationDate, lastModified);
         this.registrationUserId = registrationUserId;
     }
@@ -30,7 +30,7 @@ public class WorkflowInternal extends Internal {
         return registrationUserId;
     }
 
-    public WorkflowInternal setRegistrationUserId(String registrationUserId) {
+    public ExternalToolInternal setRegistrationUserId(String registrationUserId) {
         this.registrationUserId = registrationUserId;
         return this;
     }

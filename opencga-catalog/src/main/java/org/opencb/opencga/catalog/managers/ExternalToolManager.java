@@ -9,7 +9,7 @@ import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.WorkflowDBAdaptor;
+import org.opencb.opencga.catalog.db.api.ExternalToolDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
@@ -35,7 +35,7 @@ import org.opencb.opencga.core.models.job.MinimumRequirements;
 import org.opencb.opencga.core.models.job.ToolInfo;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyPermissions;
-import org.opencb.opencga.core.models.workflow.*;
+import org.opencb.opencga.core.models.externalTool.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,10 +51,10 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
-import static org.opencb.opencga.catalog.db.api.WorkflowDBAdaptor.QueryParams.*;
+import static org.opencb.opencga.catalog.db.api.ExternalToolDBAdaptor.QueryParams.*;
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
-public class WorkflowManager extends ResourceManager<Workflow> {
+public class ExternalToolManager extends ResourceManager<ExternalTool> {
 
     public static final QueryOptions INCLUDE_WORKFLOW_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(ID.key(), UID.key(),
             UUID.key(), VERSION.key(), DESCRIPTION.key(), STUDY_UID.key(), MANAGER.key()));
@@ -70,14 +70,14 @@ public class WorkflowManager extends ResourceManager<Workflow> {
 
     private final Logger logger;
 
-    WorkflowManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                    DBAdaptorFactory catalogDBAdaptorFactory, IOManagerFactory ioManagerFactory, CatalogIOManager catalogIOManager,
-                    Configuration configuration) {
+    ExternalToolManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
+                        DBAdaptorFactory catalogDBAdaptorFactory, IOManagerFactory ioManagerFactory, CatalogIOManager catalogIOManager,
+                        Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
 
         this.catalogIOManager = catalogIOManager;
         this.ioManagerFactory = ioManagerFactory;
-        this.logger = LoggerFactory.getLogger(WorkflowManager.class);
+        this.logger = LoggerFactory.getLogger(ExternalToolManager.class);
     }
 
 
@@ -87,8 +87,9 @@ public class WorkflowManager extends ResourceManager<Workflow> {
     }
 
     @Override
-    InternalGetDataResult<Workflow> internalGet(String organizationId, long studyUid, List<String> workflowIdList, @Nullable Query query,
-                                                QueryOptions options, String user, boolean ignoreException) throws CatalogException {
+    InternalGetDataResult<ExternalTool> internalGet(String organizationId, long studyUid, List<String> workflowIdList,
+                                                    @Nullable Query query, QueryOptions options, String user, boolean ignoreException)
+            throws CatalogException {
         if (ListUtils.isEmpty(workflowIdList)) {
             throw new CatalogException("Missing workflow entries.");
         }
@@ -105,24 +106,24 @@ public class WorkflowManager extends ResourceManager<Workflow> {
             throw new CatalogException("Only one workflow allowed when requesting multiple versions");
         }
 
-        WorkflowDBAdaptor.QueryParams idQueryParam = getFieldFilter(uniqueList);
+        ExternalToolDBAdaptor.QueryParams idQueryParam = getFieldFilter(uniqueList);
         queryCopy.put(idQueryParam.key(), uniqueList);
 
         // Ensure the field by which we are querying for will be kept in the results
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
-        OpenCGAResult<Workflow> workflowResult = getWorkflowDBAdaptor(organizationId).get(studyUid, queryCopy, queryOptions, user);
+        OpenCGAResult<ExternalTool> workflowResult = getWorkflowDBAdaptor(organizationId).get(studyUid, queryCopy, queryOptions, user);
 
-        Function<Workflow, String> workflowStringFunction = Workflow::getId;
+        Function<ExternalTool, String> workflowStringFunction = ExternalTool::getId;
         if (idQueryParam.equals(UUID)) {
-            workflowStringFunction = Workflow::getUuid;
+            workflowStringFunction = ExternalTool::getUuid;
         }
 
         if (ignoreException || workflowResult.getNumResults() >= uniqueList.size()) {
             return keepOriginalOrder(uniqueList, workflowStringFunction, workflowResult, ignoreException, versioned);
         }
         // Query without adding the user check
-        OpenCGAResult<Workflow> resultsNoCheck = getWorkflowDBAdaptor(organizationId).get(queryCopy, queryOptions);
+        OpenCGAResult<ExternalTool> resultsNoCheck = getWorkflowDBAdaptor(organizationId).get(queryCopy, queryOptions);
 
         if (resultsNoCheck.getNumResults() == workflowResult.getNumResults()) {
             throw CatalogException.notFound("workflows", getMissingFields(uniqueList, workflowResult.getResults(), workflowStringFunction));
@@ -132,7 +133,8 @@ public class WorkflowManager extends ResourceManager<Workflow> {
     }
 
     @Override
-    public OpenCGAResult<Workflow> create(String studyStr, Workflow workflow, QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<ExternalTool> create(String studyStr, ExternalTool externalTool, QueryOptions options, String token)
+            throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
@@ -140,7 +142,7 @@ public class WorkflowManager extends ResourceManager<Workflow> {
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
-                .append("workflow", workflow)
+                .append("workflow", externalTool)
                 .append("options", options)
                 .append("token", token);
 
@@ -158,24 +160,24 @@ public class WorkflowManager extends ResourceManager<Workflow> {
                     StudyPermissions.Permissions.WRITE_WORKFLOWS);
 
             // 2. Validate the workflow parameters
-            validateNewWorkflow(workflow, userId);
+            validateNewWorkflow(externalTool, userId);
 
             // 3. We insert the workflow
-            OpenCGAResult<Workflow> insert = getWorkflowDBAdaptor(organizationId).insert(study.getUid(), workflow, options);
+            OpenCGAResult<ExternalTool> insert = getWorkflowDBAdaptor(organizationId).insert(study.getUid(), externalTool, options);
             if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
                 // Fetch created workflow
                 Query query = new Query()
                         .append(STUDY_UID.key(), study.getUid())
-                        .append(UID.key(), workflow.getUid());
-                OpenCGAResult<Workflow> result = getWorkflowDBAdaptor(organizationId).get(query, options);
+                        .append(UID.key(), externalTool.getUid());
+                OpenCGAResult<ExternalTool> result = getWorkflowDBAdaptor(organizationId).get(query, options);
                 insert.setResults(result.getResults());
             }
-            auditManager.auditCreate(organizationId, userId, Enums.Resource.WORKFLOW, workflow.getId(), workflow.getUuid(), studyId,
+            auditManager.auditCreate(organizationId, userId, Enums.Resource.WORKFLOW, externalTool.getId(), externalTool.getUuid(), studyId,
                     studyUuid, auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return insert;
         } catch (CatalogException e) {
-            auditManager.auditCreate(organizationId, userId, Enums.Resource.WORKFLOW, workflow.getId(), "", studyId, studyUuid, auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            auditManager.auditCreate(organizationId, userId, Enums.Resource.WORKFLOW, externalTool.getId(), "", studyId, studyUuid,
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -194,15 +196,16 @@ public class WorkflowManager extends ResourceManager<Workflow> {
         if (runParams.getVersion() != null) {
             query.append(VERSION.key(), runParams.getVersion());
         }
-        Workflow workflow = internalGet(organizationId, study.getUid(), runParams.getId(), query, QueryOptions.empty(), userId).first();
+        ExternalTool externalTool = internalGet(organizationId, study.getUid(), runParams.getId(), query, QueryOptions.empty(), userId)
+                .first();
 
         ToolInfo toolInfo = new ToolInfo()
-                .setId(workflow.getId())
+                .setId(externalTool.getId())
                 // Set workflow minimum requirements
-                .setMinimumRequirements(workflow.getMinimumRequirements() != null
-                        ? workflow.getMinimumRequirements()
+                .setMinimumRequirements(externalTool.getMinimumRequirements() != null
+                        ? externalTool.getMinimumRequirements()
                         : configuration.getAnalysis().getWorkflow().getMinRequirements())
-                .setDescription(workflow.getDescription());
+                .setDescription(externalTool.getDescription());
 
         Map<String, Object> paramsMap = runParams.toParams();
         paramsMap.putIfAbsent(ParamConstants.STUDY_PARAM, study.getFqn());
@@ -230,8 +233,8 @@ public class WorkflowManager extends ResourceManager<Workflow> {
                 jobDependsOn, jobTags, null, jobScheduledStartTime, dryRun, Collections.emptyMap(), token);
     }
 
-    public OpenCGAResult<Workflow> importWorkflow(String studyStr, WorkflowRepositoryParams repository, QueryOptions options, String token)
-            throws CatalogException {
+    public OpenCGAResult<ExternalTool> importWorkflow(String studyStr, WorkflowRepositoryParams repository, QueryOptions options,
+                                                      String token) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
@@ -257,24 +260,24 @@ public class WorkflowManager extends ResourceManager<Workflow> {
                     StudyPermissions.Permissions.WRITE_WORKFLOWS);
 
             // 2. Download workflow
-            Workflow workflow = downloadWorkflow(repository);
-            validateNewWorkflow(workflow, userId);
-            workflowId = workflow.getId();
+            ExternalTool externalTool = downloadWorkflow(repository);
+            validateNewWorkflow(externalTool, userId);
+            workflowId = externalTool.getId();
 
-            OpenCGAResult<Workflow> result;
+            OpenCGAResult<ExternalTool> result;
 
             Query query = new Query()
                     .append(STUDY_UID.key(), study.getUid())
-                    .append(ID.key(), workflow.getId());
-            OpenCGAResult<Workflow> tmpResult = getWorkflowDBAdaptor(organizationId).get(query, INCLUDE_WORKFLOW_IDS);
+                    .append(ID.key(), externalTool.getId());
+            OpenCGAResult<ExternalTool> tmpResult = getWorkflowDBAdaptor(organizationId).get(query, INCLUDE_WORKFLOW_IDS);
             if (tmpResult.getNumResults() > 0) {
                 logger.warn("Workflow '" + workflowId + "' already exists. Updating with the latest workflow information.");
                 try {
                     // Set workflow uid just in case users want to get the final result
-                    workflow.setUid(tmpResult.first().getUid());
+                    externalTool.setUid(tmpResult.first().getUid());
 
                     // Create update map removing the id to avoid the dbAdaptor exception
-                    ObjectMap updateMap = new ObjectMap(getUpdateObjectMapper().writeValueAsString(workflow));
+                    ObjectMap updateMap = new ObjectMap(getUpdateObjectMapper().writeValueAsString(externalTool));
                     updateMap.remove("id");
                     result = getWorkflowDBAdaptor(organizationId).update(tmpResult.first().getUid(), updateMap, QueryOptions.empty());
                 } catch (JsonProcessingException e) {
@@ -283,18 +286,18 @@ public class WorkflowManager extends ResourceManager<Workflow> {
                 }
             } else {
                 // 3. We insert the workflow
-                result = getWorkflowDBAdaptor(organizationId).insert(study.getUid(), workflow, options);
+                result = getWorkflowDBAdaptor(organizationId).insert(study.getUid(), externalTool, options);
             }
 
             if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
                 // Fetch created workflow
                 query = new Query()
                         .append(STUDY_UID.key(), study.getUid())
-                        .append(UID.key(), workflow.getUid());
-                OpenCGAResult<Workflow> tmpTmpResult = getWorkflowDBAdaptor(organizationId).get(query, options);
+                        .append(UID.key(), externalTool.getUid());
+                OpenCGAResult<ExternalTool> tmpTmpResult = getWorkflowDBAdaptor(organizationId).get(query, options);
                 result.setResults(tmpTmpResult.getResults());
             }
-            auditManager.auditCreate(organizationId, userId, Enums.Resource.WORKFLOW, workflow.getId(), workflow.getUuid(), studyId,
+            auditManager.auditCreate(organizationId, userId, Enums.Resource.WORKFLOW, externalTool.getId(), externalTool.getUuid(), studyId,
                     studyUuid, auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return result;
         } catch (CatalogException e) {
@@ -304,27 +307,27 @@ public class WorkflowManager extends ResourceManager<Workflow> {
         }
     }
 
-    private Workflow downloadWorkflow(WorkflowRepositoryParams repository) throws CatalogException {
+    private ExternalTool downloadWorkflow(WorkflowRepositoryParams repository) throws CatalogException {
         ParamUtils.checkObj(repository, "Workflow repository parameters");
         if (StringUtils.isEmpty(repository.getId())) {
             throw new CatalogParameterException("Missing 'id' field in workflow import parameters");
         }
         String workflowId = repository.getId().replace("/", ".");
-        Workflow workflow = new Workflow("", "", "", null, new WorkflowSystem(WorkflowSystem.SystemId.NEXTFLOW, ""), new LinkedList<>(),
-                new LinkedList<>(), new MinimumRequirements(), false, repository.toWorkflowRepository(), new LinkedList<>(),
-                new WorkflowInternal(), TimeUtils.getTime(), TimeUtils.getTime(), new HashMap<>());
+        ExternalTool externalTool = new ExternalTool("", "", "", null, new WorkflowSystem(WorkflowSystem.SystemId.NEXTFLOW, ""),
+                new LinkedList<>(), new LinkedList<>(), new MinimumRequirements(), false, repository.toWorkflowRepository(),
+                new LinkedList<>(), new ExternalToolInternal(), TimeUtils.getTime(), TimeUtils.getTime(), new HashMap<>());
 
         try {
-            processNextflowConfig(workflow, repository);
-            processMemoryRequirements(workflow, repository);
+            processNextflowConfig(externalTool, repository);
+            processMemoryRequirements(externalTool, repository);
         } catch (CatalogException e) {
             throw new CatalogException("Could not process repository information from workflow '" + workflowId + "'.", e);
         }
 
-        return workflow;
+        return externalTool;
     }
 
-    private void processMemoryRequirements(Workflow workflow, WorkflowRepositoryParams repository) throws CatalogException {
+    private void processMemoryRequirements(ExternalTool externalTool, WorkflowRepositoryParams repository) throws CatalogException {
         String urlStr;
 
         if (StringUtils.isEmpty(repository.getVersion())) {
@@ -369,10 +372,10 @@ public class WorkflowManager extends ResourceManager<Workflow> {
                 }
             }
             if (cpus > 0 && memory != null) {
-                workflow.getMinimumRequirements().setCpu(String.valueOf(cpus));
-                workflow.getMinimumRequirements().setMemory(memory);
+                externalTool.getMinimumRequirements().setCpu(String.valueOf(cpus));
+                externalTool.getMinimumRequirements().setMemory(memory);
             } else {
-                logger.warn("Could not find the minimum requirements for the workflow " + workflow.getId());
+                logger.warn("Could not find the minimum requirements for the workflow " + externalTool.getId());
             }
             in.close();
         } catch (Exception e) {
@@ -380,7 +383,7 @@ public class WorkflowManager extends ResourceManager<Workflow> {
         }
     }
 
-    private void processNextflowConfig(Workflow workflow, WorkflowRepositoryParams repository) throws CatalogException {
+    private void processNextflowConfig(ExternalTool externalTool, WorkflowRepositoryParams repository) throws CatalogException {
         String urlStr;
         if (StringUtils.isEmpty(repository.getVersion())) {
             urlStr = "https://raw.githubusercontent.com/" + repository.getId() + "/refs/heads/master/nextflow.config";
@@ -406,7 +409,7 @@ public class WorkflowManager extends ResourceManager<Workflow> {
                         manifestBracketClose = null;
                     } else {
                         // Process manifest line
-                        fillWithWorkflowManifest(workflow, inputLine);
+                        fillWithWorkflowManifest(externalTool, inputLine);
                     }
                 } else if (profilesBracketClose != null) {
                     if (gitpodBracketClose != null) {
@@ -414,7 +417,7 @@ public class WorkflowManager extends ResourceManager<Workflow> {
                             gitpodBracketClose = null;
                         } else {
                             // Process gitpod line
-                            fillWithGitpodManifest(workflow, inputLine);
+                            fillWithGitpodManifest(externalTool, inputLine);
                         }
                     } else if (inputLine.trim().startsWith("gitpod {")) {
                         int position = inputLine.indexOf("gitpod {");
@@ -437,7 +440,7 @@ public class WorkflowManager extends ResourceManager<Workflow> {
         }
     }
 
-    private void fillWithWorkflowManifest(Workflow workflow, String rawline) {
+    private void fillWithWorkflowManifest(ExternalTool externalTool, String rawline) {
         String[] split = rawline.split("= ");
         if (split.length != 2) {
             return;
@@ -447,32 +450,32 @@ public class WorkflowManager extends ResourceManager<Workflow> {
         String value = split[1].replace("\"", "").replace("'", "").trim();
         switch (key) {
             case "name":
-                workflow.setId(value.replace("/", "."));
-                workflow.setName(value.replace("/", " "));
-                workflow.getRepository().setId(value);
+                externalTool.setId(value.replace("/", "."));
+                externalTool.setName(value.replace("/", " "));
+                externalTool.getRepository().setId(value);
                 break;
             case "author":
-                workflow.getRepository().setAuthor(value);
+                externalTool.getRepository().setAuthor(value);
                 break;
             case "description":
-                workflow.setDescription(value);
-                workflow.getRepository().setDescription(value);
+                externalTool.setDescription(value);
+                externalTool.getRepository().setDescription(value);
                 break;
             case "version":
                 String version = value.replaceAll("^[^0-9]+|[^0-9.]+$", "");
-                workflow.getRepository().setVersion(version);
+                externalTool.getRepository().setVersion(version);
                 break;
             case "nextflowVersion":
                 // Nextflow version must start with a number
                 version = value.replaceAll("^[^0-9]+|[^0-9.]+$", "");
-                workflow.getManager().setVersion(version);
+                externalTool.getManager().setVersion(version);
                 break;
             default:
                 break;
         }
     }
 
-    private void fillWithGitpodManifest(Workflow workflow, String rawline) {
+    private void fillWithGitpodManifest(ExternalTool externalTool, String rawline) {
         String[] split = rawline.split("=");
         if (split.length != 2) {
             return;
@@ -481,10 +484,10 @@ public class WorkflowManager extends ResourceManager<Workflow> {
         String value = split[1].replace("\"", "").replace("'", "").trim();
         switch (key) {
             case "executor.cpus":
-                workflow.getMinimumRequirements().setCpu(value);
+                externalTool.getMinimumRequirements().setCpu(value);
                 break;
             case "executor.memory":
-                workflow.getMinimumRequirements().setMemory(value);
+                externalTool.getMinimumRequirements().setMemory(value);
                 break;
             default:
                 break;
@@ -492,8 +495,8 @@ public class WorkflowManager extends ResourceManager<Workflow> {
     }
 
 
-    public OpenCGAResult<Workflow> update(String studyStr, String workflowId, WorkflowUpdateParams updateParams, QueryOptions options,
-                                          String token) throws CatalogException {
+    public OpenCGAResult<ExternalTool> update(String studyStr, String workflowId, ExternalToolUpdateParams updateParams,
+                                              QueryOptions options, String token) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
@@ -517,14 +520,14 @@ public class WorkflowManager extends ResourceManager<Workflow> {
             studyId = study.getId();
             studyUuid = study.getUuid();
 
-            Workflow workflow = internalGet(organizationId, study.getUid(), Collections.singletonList(workflowId), null,
+            ExternalTool externalTool = internalGet(organizationId, study.getUid(), Collections.singletonList(workflowId), null,
                     INCLUDE_WORKFLOW_IDS, userId, false).first();
-            id = workflow.getId();
-            uuid = workflow.getUuid();
+            id = externalTool.getId();
+            uuid = externalTool.getUuid();
 
             // Check permission
-            authorizationManager.checkWorkflowPermission(organizationId, study.getUid(), workflow.getUid(), userId,
-                    WorkflowPermissions.WRITE);
+            authorizationManager.checkWorkflowPermission(organizationId, study.getUid(), externalTool.getUid(), userId,
+                    ExternalToolPermissions.WRITE);
 
             if (updateParams == null) {
                 throw new CatalogException("Missing parameters to update the workflow.");
@@ -547,12 +550,12 @@ public class WorkflowManager extends ResourceManager<Workflow> {
             }
 
             // 2. Update workflow object
-            OpenCGAResult<Workflow> insert = getWorkflowDBAdaptor(organizationId).update(workflow.getUid(), updateMap, options);
+            OpenCGAResult<ExternalTool> insert = getWorkflowDBAdaptor(organizationId).update(externalTool.getUid(), updateMap, options);
             if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
                 // Fetch updated workflow
                 Query query = new Query()
-                        .append(UID.key(), workflow.getUid());
-                OpenCGAResult<Workflow> result = getWorkflowDBAdaptor(organizationId).get(query, options);
+                        .append(UID.key(), externalTool.getUid());
+                OpenCGAResult<ExternalTool> result = getWorkflowDBAdaptor(organizationId).get(query, options);
                 insert.setResults(result.getResults());
             }
             auditManager.auditUpdate(organizationId, userId, Enums.Resource.WORKFLOW, id, uuid, studyId, studyUuid, auditParams,
@@ -566,7 +569,7 @@ public class WorkflowManager extends ResourceManager<Workflow> {
     }
 
     @Override
-    public DBIterator<Workflow> iterator(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
+    public DBIterator<ExternalTool> iterator(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
@@ -578,7 +581,7 @@ public class WorkflowManager extends ResourceManager<Workflow> {
 
         Query finalQuery = new Query(query);
         fixQueryObject(finalQuery);
-        finalQuery.append(WorkflowDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+        finalQuery.append(ExternalToolDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         return getWorkflowDBAdaptor(organizationId).iterator(study.getUid(), finalQuery, options, userId);
     }
@@ -596,13 +599,13 @@ public class WorkflowManager extends ResourceManager<Workflow> {
 
         Query finalQuery = new Query(query);
         fixQueryObject(finalQuery);
-        finalQuery.append(WorkflowDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+        finalQuery.append(ExternalToolDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         return getWorkflowDBAdaptor(organizationId).facet(study.getUid(), finalQuery, facet, userId);
     }
 
     @Override
-    public OpenCGAResult<Workflow> search(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<ExternalTool> search(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
@@ -624,9 +627,9 @@ public class WorkflowManager extends ResourceManager<Workflow> {
             studyUuid = study.getUuid();
 
             fixQueryObject(query);
-            query.append(WorkflowDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+            query.append(ExternalToolDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            OpenCGAResult<Workflow> queryResult = getWorkflowDBAdaptor(organizationId).get(study.getUid(), query, options, userId);
+            OpenCGAResult<ExternalTool> queryResult = getWorkflowDBAdaptor(organizationId).get(study.getUid(), query, options, userId);
 
             auditManager.auditSearch(organizationId, userId, Enums.Resource.WORKFLOW, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -658,7 +661,7 @@ public class WorkflowManager extends ResourceManager<Workflow> {
         try {
             fixQueryObject(query);
 
-            query.append(WorkflowDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+            query.append(ExternalToolDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
             OpenCGAResult<?> result = getWorkflowDBAdaptor(organizationId).distinct(study.getUid(), fields, query, userId);
 
             auditManager.auditDistinct(organizationId, userId, Enums.Resource.WORKFLOW, study.getId(), study.getUuid(), auditParams,
@@ -673,7 +676,7 @@ public class WorkflowManager extends ResourceManager<Workflow> {
     }
 
     @Override
-    public OpenCGAResult<Workflow> count(String studyStr, Query query, String token) throws CatalogException {
+    public OpenCGAResult<ExternalTool> count(String studyStr, Query query, String token) throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
         String organizationId = studyFqn.getOrganizationId();
@@ -690,7 +693,7 @@ public class WorkflowManager extends ResourceManager<Workflow> {
         try {
             fixQueryObject(query);
 
-            query.append(WorkflowDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+            query.append(ExternalToolDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
             OpenCGAResult<Long> queryResultAux = getWorkflowDBAdaptor(organizationId).count(query, userId);
 
             auditManager.auditCount(organizationId, userId, Enums.Resource.WORKFLOW, study.getId(), study.getUuid(), auditParams,
@@ -706,11 +709,12 @@ public class WorkflowManager extends ResourceManager<Workflow> {
     }
 
     @Override
-    public OpenCGAResult<Workflow> delete(String studyStr, List<String> ids, QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<ExternalTool> delete(String studyStr, List<String> ids, QueryOptions options, String token)
+            throws CatalogException {
         return delete(studyStr, ids, options, false, token);
     }
 
-    public OpenCGAResult<Workflow> delete(String studyStr, List<String> ids, ObjectMap params, boolean ignoreException, String token)
+    public OpenCGAResult<ExternalTool> delete(String studyStr, List<String> ids, ObjectMap params, boolean ignoreException, String token)
             throws CatalogException {
         if (ids == null || ListUtils.isEmpty(ids)) {
             throw new CatalogException("Missing list of workflow ids");
@@ -743,33 +747,34 @@ public class WorkflowManager extends ResourceManager<Workflow> {
         }
 
         auditManager.initAuditBatch(operationId);
-        OpenCGAResult<Workflow> result = OpenCGAResult.empty(Workflow.class);
+        OpenCGAResult<ExternalTool> result = OpenCGAResult.empty(ExternalTool.class);
         for (String id : ids) {
             String workflowId = id;
             String workflowUuid = "";
             try {
-                OpenCGAResult<Workflow> internalResult = internalGet(organizationId, study.getUid(), id, INCLUDE_WORKFLOW_IDS, userId);
+                OpenCGAResult<ExternalTool> internalResult = internalGet(organizationId, study.getUid(), id, INCLUDE_WORKFLOW_IDS, userId);
                 if (internalResult.getNumResults() == 0) {
                     throw new CatalogException("Workflow '" + id + "' not found");
                 }
-                Workflow workflow = internalResult.first();
+                ExternalTool externalTool = internalResult.first();
 
                 // We set the proper values for the audit
-                workflowId = workflow.getId();
-                workflowUuid = workflow.getUuid();
+                workflowId = externalTool.getId();
+                workflowUuid = externalTool.getUuid();
 
                 if (checkPermissions) {
-                    authorizationManager.checkWorkflowPermission(organizationId, study.getUid(), workflow.getUid(), userId,
-                            WorkflowPermissions.DELETE);
+                    authorizationManager.checkWorkflowPermission(organizationId, study.getUid(), externalTool.getUid(), userId,
+                            ExternalToolPermissions.DELETE);
                 }
 
                 // Check if the workflow can be deleted
-                checkWorkflowCanBeDeleted(organizationId, study.getUid(), workflow, params.getBoolean(Constants.FORCE, false));
+                checkWorkflowCanBeDeleted(organizationId, study.getUid(), externalTool, params.getBoolean(Constants.FORCE, false));
 
-                result.append(getWorkflowDBAdaptor(organizationId).delete(workflow));
+                result.append(getWorkflowDBAdaptor(organizationId).delete(externalTool));
 
-                auditManager.auditDelete(organizationId, operationId, userId, Enums.Resource.WORKFLOW, workflow.getId(), workflow.getUuid(),
-                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+                auditManager.auditDelete(organizationId, operationId, userId, Enums.Resource.WORKFLOW, externalTool.getId(),
+                        externalTool.getUuid(), study.getId(), study.getUuid(), auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
                 String errorMsg = "Cannot delete workflow " + workflowId + ": " + e.getMessage();
 
@@ -787,7 +792,7 @@ public class WorkflowManager extends ResourceManager<Workflow> {
         return endResult(result, ignoreException);
     }
 
-    private void checkWorkflowCanBeDeleted(String organizationId, long uid, Workflow workflow, boolean force) {
+    private void checkWorkflowCanBeDeleted(String organizationId, long uid, ExternalTool externalTool, boolean force) {
         return;
     }
 
@@ -822,10 +827,10 @@ public class WorkflowManager extends ResourceManager<Workflow> {
         boolean checkPermissions;
 
         // We try to get an iterator containing all the workflows to be deleted
-        DBIterator<Workflow> iterator;
+        DBIterator<ExternalTool> iterator;
         try {
             fixQueryObject(finalQuery);
-            finalQuery.append(WorkflowDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+            finalQuery.append(ExternalToolDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
             iterator = getWorkflowDBAdaptor(organizationId).iterator(study.getUid(), finalQuery, INCLUDE_WORKFLOW_IDS, userId);
 
@@ -840,32 +845,32 @@ public class WorkflowManager extends ResourceManager<Workflow> {
 
         auditManager.initAuditBatch(operationUuid);
         while (iterator.hasNext()) {
-            Workflow workflow = iterator.next();
+            ExternalTool externalTool = iterator.next();
 
             try {
                 if (checkPermissions) {
-                    authorizationManager.checkWorkflowPermission(organizationId, study.getUid(), workflow.getUid(), userId,
-                            WorkflowPermissions.DELETE);
+                    authorizationManager.checkWorkflowPermission(organizationId, study.getUid(), externalTool.getUid(), userId,
+                            ExternalToolPermissions.DELETE);
                 }
 
                 // Check if the workflow can be deleted
-                checkWorkflowCanBeDeleted(organizationId, study.getUid(), workflow, params.getBoolean(Constants.FORCE, false));
+                checkWorkflowCanBeDeleted(organizationId, study.getUid(), externalTool, params.getBoolean(Constants.FORCE, false));
 
-                result.append(getWorkflowDBAdaptor(organizationId).delete(workflow));
+                result.append(getWorkflowDBAdaptor(organizationId).delete(externalTool));
 
-                auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.WORKFLOW, workflow.getId(),
-                        workflow.getUuid(), study.getId(), study.getUuid(), auditParams,
+                auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.WORKFLOW, externalTool.getId(),
+                        externalTool.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
-                String errorMsg = "Cannot delete workflow " + workflow.getId() + ": " + e.getMessage();
+                String errorMsg = "Cannot delete workflow " + externalTool.getId() + ": " + e.getMessage();
 
-                Event event = new Event(Event.Type.ERROR, workflow.getId(), e.getMessage());
+                Event event = new Event(Event.Type.ERROR, externalTool.getId(), e.getMessage());
                 result.getEvents().add(event);
                 result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error(errorMsg);
-                auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.WORKFLOW, workflow.getId(),
-                        workflow.getUuid(), study.getId(), study.getUuid(), auditParams,
+                auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.WORKFLOW, externalTool.getId(),
+                        externalTool.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
@@ -886,10 +891,10 @@ public class WorkflowManager extends ResourceManager<Workflow> {
         return null;
     }
 
-    private WorkflowDBAdaptor.QueryParams getFieldFilter(List<String> idList) throws CatalogException {
-        WorkflowDBAdaptor.QueryParams idQueryParam = null;
+    private ExternalToolDBAdaptor.QueryParams getFieldFilter(List<String> idList) throws CatalogException {
+        ExternalToolDBAdaptor.QueryParams idQueryParam = null;
         for (String entry : idList) {
-            WorkflowDBAdaptor.QueryParams param = ID;
+            ExternalToolDBAdaptor.QueryParams param = ID;
             if (UuidUtils.isOpenCgaUuid(entry)) {
                 param = UUID;
             }
@@ -903,19 +908,19 @@ public class WorkflowManager extends ResourceManager<Workflow> {
         return idQueryParam;
     }
 
-    private void validateNewWorkflow(Workflow workflow, String userId) throws CatalogParameterException {
-        ParamUtils.checkIdentifier(workflow.getId(), ID.key());
-        if (workflow.getManager() == null) {
-            workflow.setManager(new WorkflowSystem());
+    private void validateNewWorkflow(ExternalTool externalTool, String userId) throws CatalogParameterException {
+        ParamUtils.checkIdentifier(externalTool.getId(), ID.key());
+        if (externalTool.getManager() == null) {
+            externalTool.setManager(new WorkflowSystem());
         }
-        if (workflow.getManager().getId() == null) {
-            workflow.getManager().setId(WorkflowSystem.SystemId.NEXTFLOW);
+        if (externalTool.getManager().getId() == null) {
+            externalTool.getManager().setId(WorkflowSystem.SystemId.NEXTFLOW);
         }
-        workflow.setScope(ParamUtils.defaultObject(workflow.getScope(), Workflow.Scope.OTHER));
-        workflow.setTags(workflow.getTags() != null ? workflow.getTags() : Collections.emptyList());
-        workflow.setScripts(workflow.getScripts() != null ? workflow.getScripts() : Collections.emptyList());
+        externalTool.setScope(ParamUtils.defaultObject(externalTool.getScope(), ExternalTool.Scope.OTHER));
+        externalTool.setTags(externalTool.getTags() != null ? externalTool.getTags() : Collections.emptyList());
+        externalTool.setScripts(externalTool.getScripts() != null ? externalTool.getScripts() : Collections.emptyList());
         boolean main = false;
-        for (WorkflowScript script : workflow.getScripts()) {
+        for (WorkflowScript script : externalTool.getScripts()) {
             ParamUtils.checkIdentifier(script.getFileName(), SCRIPTS.key() + ".id");
             ParamUtils.checkParameter(script.getContent(), SCRIPTS.key() + ".content");
             if (script.isMain()) {
@@ -925,38 +930,38 @@ public class WorkflowManager extends ResourceManager<Workflow> {
                 main = script.isMain();
             }
         }
-        if (CollectionUtils.isNotEmpty(workflow.getScripts()) && !main) {
+        if (CollectionUtils.isNotEmpty(externalTool.getScripts()) && !main) {
             throw new CatalogParameterException("No main script found.");
         }
-        workflow.setRepository(workflow.getRepository() != null ? workflow.getRepository() : new WorkflowRepository(""));
-        if (StringUtils.isEmpty(workflow.getRepository().getId()) && CollectionUtils.isEmpty(workflow.getScripts())) {
+        externalTool.setRepository(externalTool.getRepository() != null ? externalTool.getRepository() : new WorkflowRepository(""));
+        if (StringUtils.isEmpty(externalTool.getRepository().getId()) && CollectionUtils.isEmpty(externalTool.getScripts())) {
             throw new CatalogParameterException("No repository image or scripts found.");
         }
-        if (StringUtils.isNotEmpty(workflow.getRepository().getId()) && CollectionUtils.isNotEmpty(workflow.getScripts())) {
+        if (StringUtils.isNotEmpty(externalTool.getRepository().getId()) && CollectionUtils.isNotEmpty(externalTool.getScripts())) {
             throw new CatalogParameterException("Both repository image and scripts found. Please, either add scripts or a repository"
                     + " image.");
         }
 
-        workflow.setName(ParamUtils.defaultString(workflow.getName(), workflow.getId()));
-        workflow.setDescription(ParamUtils.defaultString(workflow.getDescription(), ""));
-        workflow.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.WORKFLOW));
-        workflow.setVersion(1);
-        workflow.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(workflow.getCreationDate(), CREATION_DATE.key()));
-        workflow.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(workflow.getModificationDate(), MODIFICATION_DATE.key()));
-        workflow.setAttributes(ParamUtils.defaultObject(workflow.getAttributes(), Collections.emptyMap()));
-        workflow.setInternal(new WorkflowInternal(new InternalStatus(InternalStatus.READY), TimeUtils.getTime(), TimeUtils.getTime(),
-                userId));
+        externalTool.setName(ParamUtils.defaultString(externalTool.getName(), externalTool.getId()));
+        externalTool.setDescription(ParamUtils.defaultString(externalTool.getDescription(), ""));
+        externalTool.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.WORKFLOW));
+        externalTool.setVersion(1);
+        externalTool.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(externalTool.getCreationDate(), CREATION_DATE.key()));
+        externalTool.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(externalTool.getModificationDate(), MODIFICATION_DATE.key()));
+        externalTool.setAttributes(ParamUtils.defaultObject(externalTool.getAttributes(), Collections.emptyMap()));
+        externalTool.setInternal(new ExternalToolInternal(new InternalStatus(InternalStatus.READY), TimeUtils.getTime(),
+                TimeUtils.getTime(), userId));
     }
 
     // **************************   ACLs  ******************************** //
-    public OpenCGAResult<AclEntryList<WorkflowPermissions>> getAcls(String studyId, List<String> workflowList, String member,
-                                                                    boolean ignoreException, String token) throws CatalogException {
+    public OpenCGAResult<AclEntryList<ExternalToolPermissions>> getAcls(String studyId, List<String> workflowList, String member,
+                                                                        boolean ignoreException, String token) throws CatalogException {
         return getAcls(studyId, workflowList,
                 StringUtils.isNotEmpty(member) ? Collections.singletonList(member) : Collections.emptyList(), ignoreException, token);
     }
 
-    public OpenCGAResult<AclEntryList<WorkflowPermissions>> getAcls(String studyStr, List<String> workflowList, List<String> members,
-                                                                  boolean ignoreException, String token) throws CatalogException {
+    public OpenCGAResult<AclEntryList<ExternalToolPermissions>> getAcls(String studyStr, List<String> workflowList, List<String> members,
+                                                                        boolean ignoreException, String token) throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
         String organizationId = studyFqn.getOrganizationId();
@@ -971,37 +976,37 @@ public class WorkflowManager extends ResourceManager<Workflow> {
                 .append("ignoreException", ignoreException)
                 .append("token", token);
 
-        OpenCGAResult<AclEntryList<WorkflowPermissions>> workflowAcls = OpenCGAResult.empty();
+        OpenCGAResult<AclEntryList<ExternalToolPermissions>> workflowAcls = OpenCGAResult.empty();
         Map<String, InternalGetDataResult.Missing> missingMap = new HashMap<>();
         try {
             auditManager.initAuditBatch(operationId);
-            InternalGetDataResult<Workflow> queryResult = internalGet(organizationId, study.getUid(), workflowList, INCLUDE_WORKFLOW_IDS,
-                    userId, ignoreException);
+            InternalGetDataResult<ExternalTool> queryResult = internalGet(organizationId, study.getUid(), workflowList,
+                    INCLUDE_WORKFLOW_IDS, userId, ignoreException);
 
             if (queryResult.getMissing() != null) {
                 missingMap = queryResult.getMissing().stream()
                         .collect(Collectors.toMap(InternalGetDataResult.Missing::getId, Function.identity()));
             }
 
-            List<Long> workflowUids = queryResult.getResults().stream().map(Workflow::getUid).collect(Collectors.toList());
+            List<Long> workflowUids = queryResult.getResults().stream().map(ExternalTool::getUid).collect(Collectors.toList());
             if (CollectionUtils.isNotEmpty(members)) {
                 workflowAcls = authorizationManager.getAcl(organizationId, study.getUid(), workflowUids, members, Enums.Resource.WORKFLOW,
-                        WorkflowPermissions.class, userId);
+                        ExternalToolPermissions.class, userId);
             } else {
                 workflowAcls = authorizationManager.getAcl(organizationId, study.getUid(), workflowUids, Enums.Resource.WORKFLOW,
-                        WorkflowPermissions.class, userId);
+                        ExternalToolPermissions.class, userId);
             }
 
             // Include non-existing samples to the result list
-            List<AclEntryList<WorkflowPermissions>> resultList = new ArrayList<>(workflowList.size());
+            List<AclEntryList<ExternalToolPermissions>> resultList = new ArrayList<>(workflowList.size());
             List<Event> eventList = new ArrayList<>(missingMap.size());
             int counter = 0;
             for (String workflowId : workflowList) {
                 if (!missingMap.containsKey(workflowId)) {
-                    Workflow workflow = queryResult.getResults().get(counter);
+                    ExternalTool externalTool = queryResult.getResults().get(counter);
                     resultList.add(workflowAcls.getResults().get(counter));
                     auditManager.audit(organizationId, operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.WORKFLOW,
-                            workflow.getId(), workflow.getUuid(), study.getId(), study.getUuid(), auditParams,
+                            externalTool.getId(), externalTool.getUuid(), study.getId(), study.getUuid(), auditParams,
                             new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
                     counter++;
                 } else {
@@ -1038,8 +1043,9 @@ public class WorkflowManager extends ResourceManager<Workflow> {
         return workflowAcls;
     }
 
-    public OpenCGAResult<AclEntryList<WorkflowPermissions>> updateAcl(String studyStr, String memberList, WorkflowAclUpdateParams params,
-                                                                      ParamUtils.AclAction action, String token) throws CatalogException {
+    public OpenCGAResult<AclEntryList<ExternalToolPermissions>> updateAcl(String studyStr, String memberList,
+                                                                          ExternalToolAclUpdateParams params, ParamUtils.AclAction action,
+                                                                          String token) throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
         String organizationId = studyFqn.getOrganizationId();
@@ -1055,23 +1061,23 @@ public class WorkflowManager extends ResourceManager<Workflow> {
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         List<String> members;
-        List<Workflow> workflowList;
+        List<ExternalTool> externalToolList;
         try {
             auditManager.initAuditBatch(operationId);
 
             ParamUtils.checkObj(params, "WorkflowAclUpdateParams");
 
-            if (CollectionUtils.isEmpty(params.getWorkflowIds())) {
+            if (CollectionUtils.isEmpty(params.getExternalToolIds())) {
                 throw new CatalogException("Update ACL: No workflows provided to be updated.");
             }
             if (action == null) {
                 throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
             }
             if (CollectionUtils.isNotEmpty(params.getPermissions())) {
-                checkPermissions(params.getPermissions(), WorkflowPermissions::valueOf);
+                checkPermissions(params.getPermissions(), ExternalToolPermissions::valueOf);
             }
 
-            workflowList = internalGet(organizationId, study.getUid(), params.getWorkflowIds(), INCLUDE_WORKFLOW_IDS, userId, false)
+            externalToolList = internalGet(organizationId, study.getUid(), params.getExternalToolIds(), INCLUDE_WORKFLOW_IDS, userId, false)
                     .getResults();
             authorizationManager.checkCanAssignOrSeePermissions(organizationId, study.getUid(), userId);
 
@@ -1084,8 +1090,8 @@ public class WorkflowManager extends ResourceManager<Workflow> {
             checkMembers(organizationId, study.getUid(), members);
             authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
         } catch (CatalogException e) {
-            if (CollectionUtils.isNotEmpty(params.getWorkflowIds())) {
-                for (String workflowId : params.getWorkflowIds()) {
+            if (CollectionUtils.isNotEmpty(params.getExternalToolIds())) {
+                for (String workflowId : params.getExternalToolIds()) {
                     auditManager.audit(organizationId, operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.WORKFLOW, workflowId,
                             "", study.getId(), study.getUuid(), auditParams,
                             new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
@@ -1095,17 +1101,17 @@ public class WorkflowManager extends ResourceManager<Workflow> {
             throw e;
         }
 
-        OpenCGAResult<AclEntryList<WorkflowPermissions>> aclResultList = OpenCGAResult.empty();
+        OpenCGAResult<AclEntryList<ExternalToolPermissions>> aclResultList = OpenCGAResult.empty();
         int numProcessed = 0;
         do {
-            List<Workflow> batchWorkflowList = new ArrayList<>();
-            while (numProcessed < Math.min(numProcessed + BATCH_OPERATION_SIZE, workflowList.size())) {
-                batchWorkflowList.add(workflowList.get(numProcessed));
+            List<ExternalTool> batchExternalToolList = new ArrayList<>();
+            while (numProcessed < Math.min(numProcessed + BATCH_OPERATION_SIZE, externalToolList.size())) {
+                batchExternalToolList.add(externalToolList.get(numProcessed));
                 numProcessed += 1;
             }
 
-            List<Long> workflowUids = batchWorkflowList.stream().map(Workflow::getUid).collect(Collectors.toList());
-            List<String> workflowIds = batchWorkflowList.stream().map(Workflow::getId).collect(Collectors.toList());
+            List<Long> workflowUids = batchExternalToolList.stream().map(ExternalTool::getUid).collect(Collectors.toList());
+            List<String> workflowIds = batchExternalToolList.stream().map(ExternalTool::getId).collect(Collectors.toList());
             List<AuthorizationManager.CatalogAclParams> aclParamsList = new ArrayList<>();
             AuthorizationManager.CatalogAclParams.addToList(workflowUids, params.getPermissions(), Enums.Resource.WORKFLOW, aclParamsList);
 
@@ -1130,39 +1136,40 @@ public class WorkflowManager extends ResourceManager<Workflow> {
                         throw new CatalogException("Unexpected error occurred. No valid action found.");
                 }
 
-                OpenCGAResult<AclEntryList<WorkflowPermissions>> queryResults = authorizationManager.getAcls(organizationId, study.getUid(),
-                        workflowUids, members, Enums.Resource.WORKFLOW, WorkflowPermissions.class);
+                OpenCGAResult<AclEntryList<ExternalToolPermissions>> queryResults = authorizationManager.getAcls(organizationId,
+                        study.getUid(),
+                        workflowUids, members, Enums.Resource.WORKFLOW, ExternalToolPermissions.class);
 
                 for (int i = 0; i < queryResults.getResults().size(); i++) {
                     queryResults.getResults().get(i).setId(workflowIds.get(i));
                 }
                 aclResultList.append(queryResults);
 
-                for (Workflow workflow : batchWorkflowList) {
+                for (ExternalTool externalTool : batchExternalToolList) {
                     auditManager.audit(organizationId, operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.WORKFLOW,
-                            workflow.getId(), workflow.getUuid(), study.getId(), study.getUuid(), auditParams,
+                            externalTool.getId(), externalTool.getUuid(), study.getId(), study.getUuid(), auditParams,
                             new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
                 }
             } catch (CatalogException e) {
                 // Process current batch
-                for (Workflow workflow : batchWorkflowList) {
+                for (ExternalTool externalTool : batchExternalToolList) {
                     auditManager.audit(organizationId, operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.WORKFLOW,
-                            workflow.getId(), workflow.getUuid(), study.getId(), study.getUuid(), auditParams,
+                            externalTool.getId(), externalTool.getUuid(), study.getId(), study.getUuid(), auditParams,
                             new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
                 }
 
                 // Process remaining unprocessed batches
-                while (numProcessed < workflowList.size()) {
-                    Workflow workflow = workflowList.get(numProcessed);
+                while (numProcessed < externalToolList.size()) {
+                    ExternalTool externalTool = externalToolList.get(numProcessed);
                     auditManager.audit(organizationId, operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.WORKFLOW,
-                            workflow.getId(), workflow.getUuid(), study.getId(), study.getUuid(), auditParams,
+                            externalTool.getId(), externalTool.getUuid(), study.getId(), study.getUuid(), auditParams,
                             new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
                 }
 
                 auditManager.finishAuditBatch(organizationId, operationId);
                 throw e;
             }
-        } while (numProcessed < workflowList.size());
+        } while (numProcessed < externalToolList.size());
 
         auditManager.finishAuditBatch(organizationId, operationId);
         return aclResultList;

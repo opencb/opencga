@@ -32,7 +32,7 @@ import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.file.FileContent;
 import org.opencb.opencga.core.models.job.*;
-import org.opencb.opencga.core.models.workflow.NextFlowRunParams;
+import org.opencb.opencga.core.models.externalTool.NextFlowRunParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.*;
 

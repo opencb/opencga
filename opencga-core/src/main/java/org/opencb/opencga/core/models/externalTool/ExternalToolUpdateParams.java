@@ -1,4 +1,4 @@
-package org.opencb.opencga.core.models.workflow;
+package org.opencb.opencga.core.models.externalTool;
 
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
@@ -7,11 +7,7 @@ import org.opencb.opencga.core.models.job.MinimumRequirements;
 import java.util.List;
 import java.util.Map;
 
-public class WorkflowCreateParams {
-
-    @DataField(id = "id", required = true, indexed = true, unique = true, immutable = true,
-            description = FieldConstants.WORKFLOW_ID_DESCRIPTION)
-    private String id;
+public class ExternalToolUpdateParams {
 
     @DataField(id = "name", description = FieldConstants.WORKFLOW_NAME_DESCRIPTION)
     private String name;
@@ -23,7 +19,7 @@ public class WorkflowCreateParams {
     private WorkflowSystem manager;
 
     @DataField(id = "scope", description = FieldConstants.WORKFLOW_SCOPE_DESCRIPTION)
-    private Workflow.Scope scope;
+    private ExternalTool.Scope scope;
 
     @DataField(id = "tags", description = FieldConstants.WORKFLOW_TAGS_DESCRIPTION)
     private List<String> tags;
@@ -34,14 +30,14 @@ public class WorkflowCreateParams {
     @DataField(id = "repository", description = FieldConstants.WORKFLOW_REPOSITORY_DESCRIPTION)
     private WorkflowRepository repository;
 
+    @DataField(id = "scripts", description = FieldConstants.WORKFLOW_SCRIPTS_DESCRIPTION)
+    private List<WorkflowScript> scripts;
+
     @DataField(id = "variables", description = FieldConstants.WORKFLOW_VARIABLES_DESCRIPTION)
-    private List<WorkflowVariable> variables;
+    private List<ExternalToolVariable> variables;
 
     @DataField(id = "minimumRequirements", description = FieldConstants.MINIMUM_REQUIREMENTS_DESCRIPTION)
     private MinimumRequirements minimumRequirements;
-
-    @DataField(id = "scripts", description = FieldConstants.WORKFLOW_SCRIPTS_DESCRIPTION)
-    private List<WorkflowScript> scripts;
 
     @DataField(id = "creationDate", indexed = true, description = FieldConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
@@ -52,14 +48,13 @@ public class WorkflowCreateParams {
     @DataField(id = "attributes", description = FieldConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
-    public WorkflowCreateParams() {
+    public ExternalToolUpdateParams() {
     }
 
-    public WorkflowCreateParams(String id, String name, String description, WorkflowSystem manager, Workflow.Scope scope, List<String> tags,
-                                boolean draft, WorkflowRepository repository, List<WorkflowVariable> variables,
-                                MinimumRequirements minimumRequirements, List<WorkflowScript> scripts, String creationDate,
-                                String modificationDate, Map<String, Object> attributes) {
-        this.id = id;
+    public ExternalToolUpdateParams(String name, String description, WorkflowSystem manager, ExternalTool.Scope scope, List<String> tags,
+                                    boolean draft, WorkflowRepository repository, List<WorkflowScript> scripts,
+                                    List<ExternalToolVariable> variables, MinimumRequirements minimumRequirements, String creationDate,
+                                    String modificationDate, Map<String, Object> attributes) {
         this.name = name;
         this.description = description;
         this.manager = manager;
@@ -67,9 +62,9 @@ public class WorkflowCreateParams {
         this.tags = tags;
         this.draft = draft;
         this.repository = repository;
+        this.scripts = scripts;
         this.variables = variables;
         this.minimumRequirements = minimumRequirements;
-        this.scripts = scripts;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
         this.attributes = attributes;
@@ -77,18 +72,17 @@ public class WorkflowCreateParams {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("WorkflowCreateParams{");
-        sb.append("id='").append(id).append('\'');
-        sb.append(", name='").append(name).append('\'');
+        final StringBuilder sb = new StringBuilder("WorkflowUpdateParams{");
+        sb.append("name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", manager=").append(manager);
         sb.append(", scope=").append(scope);
         sb.append(", tags=").append(tags);
         sb.append(", draft=").append(draft);
         sb.append(", repository=").append(repository);
+        sb.append(", scripts=").append(scripts);
         sb.append(", variables=").append(variables);
         sb.append(", minimumRequirements=").append(minimumRequirements);
-        sb.append(", scripts=").append(scripts);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", attributes=").append(attributes);
@@ -96,25 +90,11 @@ public class WorkflowCreateParams {
         return sb.toString();
     }
 
-    public Workflow toWorkflow() {
-        return new Workflow(id, name, description, scope, manager, tags, variables, minimumRequirements, draft, repository, scripts,
-                new WorkflowInternal(), creationDate, modificationDate, attributes);
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public WorkflowCreateParams setId(String id) {
-        this.id = id;
-        return this;
-    }
-
     public String getName() {
         return name;
     }
 
-    public WorkflowCreateParams setName(String name) {
+    public ExternalToolUpdateParams setName(String name) {
         this.name = name;
         return this;
     }
@@ -123,7 +103,7 @@ public class WorkflowCreateParams {
         return description;
     }
 
-    public WorkflowCreateParams setDescription(String description) {
+    public ExternalToolUpdateParams setDescription(String description) {
         this.description = description;
         return this;
     }
@@ -132,16 +112,16 @@ public class WorkflowCreateParams {
         return manager;
     }
 
-    public WorkflowCreateParams setManager(WorkflowSystem manager) {
+    public ExternalToolUpdateParams setManager(WorkflowSystem manager) {
         this.manager = manager;
         return this;
     }
 
-    public Workflow.Scope getScope() {
+    public ExternalTool.Scope getScope() {
         return scope;
     }
 
-    public WorkflowCreateParams setScope(Workflow.Scope scope) {
+    public ExternalToolUpdateParams setScope(ExternalTool.Scope scope) {
         this.scope = scope;
         return this;
     }
@@ -150,7 +130,7 @@ public class WorkflowCreateParams {
         return tags;
     }
 
-    public WorkflowCreateParams setTags(List<String> tags) {
+    public ExternalToolUpdateParams setTags(List<String> tags) {
         this.tags = tags;
         return this;
     }
@@ -159,7 +139,7 @@ public class WorkflowCreateParams {
         return draft;
     }
 
-    public WorkflowCreateParams setDraft(boolean draft) {
+    public ExternalToolUpdateParams setDraft(boolean draft) {
         this.draft = draft;
         return this;
     }
@@ -168,26 +148,8 @@ public class WorkflowCreateParams {
         return repository;
     }
 
-    public WorkflowCreateParams setRepository(WorkflowRepository repository) {
+    public ExternalToolUpdateParams setRepository(WorkflowRepository repository) {
         this.repository = repository;
-        return this;
-    }
-
-    public List<WorkflowVariable> getVariables() {
-        return variables;
-    }
-
-    public WorkflowCreateParams setVariables(List<WorkflowVariable> variables) {
-        this.variables = variables;
-        return this;
-    }
-
-    public MinimumRequirements getMinimumRequirements() {
-        return minimumRequirements;
-    }
-
-    public WorkflowCreateParams setMinimumRequirements(MinimumRequirements minimumRequirements) {
-        this.minimumRequirements = minimumRequirements;
         return this;
     }
 
@@ -195,8 +157,17 @@ public class WorkflowCreateParams {
         return scripts;
     }
 
-    public WorkflowCreateParams setScripts(List<WorkflowScript> scripts) {
+    public ExternalToolUpdateParams setScripts(List<WorkflowScript> scripts) {
         this.scripts = scripts;
+        return this;
+    }
+
+    public List<ExternalToolVariable> getVariables() {
+        return variables;
+    }
+
+    public ExternalToolUpdateParams setVariables(List<ExternalToolVariable> variables) {
+        this.variables = variables;
         return this;
     }
 
@@ -204,7 +175,7 @@ public class WorkflowCreateParams {
         return creationDate;
     }
 
-    public WorkflowCreateParams setCreationDate(String creationDate) {
+    public ExternalToolUpdateParams setCreationDate(String creationDate) {
         this.creationDate = creationDate;
         return this;
     }
@@ -213,8 +184,17 @@ public class WorkflowCreateParams {
         return modificationDate;
     }
 
-    public WorkflowCreateParams setModificationDate(String modificationDate) {
+    public ExternalToolUpdateParams setModificationDate(String modificationDate) {
         this.modificationDate = modificationDate;
+        return this;
+    }
+
+    public MinimumRequirements getMinimumRequirements() {
+        return minimumRequirements;
+    }
+
+    public ExternalToolUpdateParams setMinimumRequirements(MinimumRequirements minimumRequirements) {
+        this.minimumRequirements = minimumRequirements;
         return this;
     }
 
@@ -222,7 +202,7 @@ public class WorkflowCreateParams {
         return attributes;
     }
 
-    public WorkflowCreateParams setAttributes(Map<String, Object> attributes) {
+    public ExternalToolUpdateParams setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
         return this;
     }

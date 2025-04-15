@@ -1,14 +1,14 @@
-package org.opencb.opencga.core.models.workflow;
+package org.opencb.opencga.core.models.externalTool;
 
-public class WorkflowImportParams {
+public class ExternalToolImportParams {
 
     private String source;
     private String id;
 
-    public WorkflowImportParams() {
+    public ExternalToolImportParams() {
     }
 
-    public WorkflowImportParams(String source, String id) {
+    public ExternalToolImportParams(String source, String id) {
         this.source = source;
         this.id = id;
     }
@@ -26,7 +26,7 @@ public class WorkflowImportParams {
         return source;
     }
 
-    public WorkflowImportParams setSource(String source) {
+    public ExternalToolImportParams setSource(String source) {
         this.source = source;
         return this;
     }
@@ -35,7 +35,7 @@ public class WorkflowImportParams {
         return id;
     }
 
-    public WorkflowImportParams setId(String id) {
+    public ExternalToolImportParams setId(String id) {
         this.id = id;
         return this;
     }
