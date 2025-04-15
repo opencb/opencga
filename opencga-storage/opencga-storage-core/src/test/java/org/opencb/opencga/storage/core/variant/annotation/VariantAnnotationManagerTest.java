@@ -8,12 +8,16 @@ import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.EvidenceEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.cellbase.core.models.DataRelease;
+import org.opencb.cellbase.core.models.DataReleaseSource;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -26,11 +30,12 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantAnnotator;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collection;
+import java.util.*;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.*;
@@ -62,17 +67,17 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
                 .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER);
 
         // First annotation. Should run ok.
-        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyVariantAnnotator.ANNOT_KEY, "v1"));
+        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyVariantAnnotator.ANNOT_VERSION, "v1"));
         assertEquals("v1", variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getVersion());
 
         // Second annotation. New annotator. Overwrite. Should run ok.
-        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyVariantAnnotator.ANNOT_KEY, "v2").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
+        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyVariantAnnotator.ANNOT_VERSION, "v2").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
         assertEquals("v2", variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getVersion());
 
         // Third annotation. New annotator. Do not overwrite. Should fail.
         thrown.expect(VariantAnnotatorException.class);
         thrown.expectMessage("Using a different annotator!");
-        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyVariantAnnotator.ANNOT_KEY, "v3").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), false));
+        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyVariantAnnotator.ANNOT_VERSION, "v3").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), false));
     }
 
     @Test
@@ -102,7 +107,7 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
 
 
         // Second annotation bis. New annotator. Overwrite.
-        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyVariantAnnotator.ANNOT_KEY, "v2")
+        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyVariantAnnotator.ANNOT_VERSION, "v2")
                 .append(DummyVariantAnnotator.FAIL, false)
                 .append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
         assertEquals("v2", variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getVersion());
@@ -145,13 +150,14 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
     @Test
     public void testChangeDataRelease() throws Exception {
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
-        variantStorageEngine.getConfiguration().getCellbase().setUrl(ParamConstants.CELLBASE_URL);
-        variantStorageEngine.getConfiguration().getCellbase().setVersion("v5.2");
-        variantStorageEngine.getConfiguration().getCellbase().setDataRelease("2");
+        variantStorageEngine.getOptions()
+                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyVariantAnnotator.class.getName())
+                .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER)
+                .append(DummyVariantAnnotator.ANNOT_KEY, "k1")
+                .append(DummyVariantAnnotator.ANNOT_VERSION, "v1")
+                .append(DummyVariantAnnotator.ANNOT_DATARELEASE, 2);
         variantStorageEngine.getOptions().put(VariantStorageOptions.ASSEMBLY.key(), "grch38");
         variantStorageEngine.getOptions().put(VariantStorageOptions.SPECIES.key(), "hsapiens");
-        variantStorageEngine.reloadCellbaseConfiguration();
-        variantStorageEngine.getCellBaseUtils().validate();
 
         runETL(variantStorageEngine, smallInputUri, STUDY_NAME,
                 new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));
@@ -159,10 +165,10 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
         // First annotation. Should run ok.
         variantStorageEngine.annotate(outputUri, new ObjectMap());
         assertEquals(2, variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getDataRelease().getRelease());
+        assertEquals("k1", variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getName());
+        assertEquals("v1", variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getVersion());
 
-        variantStorageEngine.getConfiguration().getCellbase().setVersion("v5.8");
-        variantStorageEngine.getConfiguration().getCellbase().setDataRelease("2");
-        variantStorageEngine.reloadCellbaseConfiguration();
+        variantStorageEngine.getOptions().append(DummyVariantAnnotator.ANNOT_KEY, "k2");
 
         // New annotator. Do not overwrite. Should fail.
         try {
@@ -175,10 +181,11 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
         // New annotator. Overwrite. Should run ok.
         variantStorageEngine.annotate(outputUri, new ObjectMap(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
         assertEquals(2, variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getDataRelease().getRelease());
+        assertEquals("k2", variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getName());
+        assertEquals("v1", variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getVersion());
 
 
-        variantStorageEngine.getConfiguration().getCellbase().setDataRelease("3");
-        variantStorageEngine.reloadCellbaseConfiguration();
+        variantStorageEngine.getOptions().append(DummyVariantAnnotator.ANNOT_DATARELEASE, 3);
 
         // Same annotator, new datarelease. Do not overwrite. Should fail.
         try {
@@ -192,11 +199,15 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
         // Same annotator, new datarelease. Overwrite. Should run ok.
         variantStorageEngine.annotate(outputUri, new ObjectMap(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
         assertEquals(3, variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getDataRelease().getRelease());
+        assertEquals("k2", variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getName());
+        assertEquals("v1", variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getVersion());
 
-        // Revert annotator to 5.2. Do not overwrite. Should fail.
-        variantStorageEngine.getConfiguration().getCellbase().setDataRelease("3");
-        variantStorageEngine.getConfiguration().getCellbase().setVersion("v5.2");
-        variantStorageEngine.reloadCellbaseConfiguration();
+
+        // Revert annotator. Do not overwrite. Should fail.
+        variantStorageEngine.getOptions()
+                .append(DummyVariantAnnotator.ANNOT_KEY, "k1")
+                .append(DummyVariantAnnotator.ANNOT_VERSION, "v1")
+                .append(DummyVariantAnnotator.ANNOT_DATARELEASE, 2);
         try {
             variantStorageEngine.annotate(outputUri, new ObjectMap(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), false));
             fail("Should fail");
@@ -204,9 +215,51 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
             e.printStackTrace();
         }
 
-        // Revert annotator to 5.2 Overwrite. Should run ok.
+        // Overwrite. Should run ok.
         variantStorageEngine.annotate(outputUri, new ObjectMap(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
-        assertEquals(3, variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getDataRelease().getRelease());
+        assertEquals(2, variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getDataRelease().getRelease());
+        assertEquals("k1", variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getName());
+        assertEquals("v1", variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getVersion());
+
+
+        // Change data release "active" and "activeByDefaultIn". Do not overwrite. Should run ok.
+        ProjectMetadata.VariantAnnotationMetadata current = variantStorageEngine.getMetadataManager().getProjectMetadata().copy()
+                .getAnnotation().getCurrent();
+        current.getDataRelease().setActive(!current.getDataRelease().isActive());
+        current.getDataRelease().setActiveByDefaultIn(Arrays.asList("here", "there"));
+        variantStorageEngine.getOptions()
+                .append(DummyVariantAnnotator.ANNOT_METADATA, current);
+        variantStorageEngine.annotate(outputUri, new ObjectMap(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), false));
+    }
+
+    @Test
+    public void testDataReleaseEquals() throws IOException {
+        DataRelease dr1 = new DataRelease(1, "date", Arrays.asList("here", "there"), new HashMap<String, String>(){{put("a", "b");}}, Arrays.asList(new DataReleaseSource("source", "v2", "so", "2020", null)));
+        DataRelease dr2 = JacksonUtils.copy(dr1);
+        assertTrue(VariantAnnotationManager.dataReleaseEquals(dr1, dr2));
+
+        dr2 = JacksonUtils.copy(dr1).setActive(!dr2.isActive());
+        assertTrue(VariantAnnotationManager.dataReleaseEquals(dr1, dr2));
+
+        dr2 = JacksonUtils.copy(dr1).setActiveByDefaultIn(Arrays.asList("h", "d"));
+        assertTrue(VariantAnnotationManager.dataReleaseEquals(dr1, dr2));
+
+        dr2 = JacksonUtils.copy(dr1).setDate("otherDate");
+        assertFalse(VariantAnnotationManager.dataReleaseEquals(dr1, dr2));
+
+        dr2 = JacksonUtils.copy(dr1);
+        dr2.getSources().get(0).setName("otherName");
+        assertFalse(VariantAnnotationManager.dataReleaseEquals(dr1, dr2));
+    }
+
+    @Test
+    public void testDataReleaseKnownFields() {
+        Map<String, Class<?>> fields = JacksonUtils.getFields(DataRelease.class);
+        fields.remove("active");
+        fields.remove("activeByDefaultIn");
+        // This test will fail if the DataRelease object is modified.
+        // Modifications in this object will require to update the method VariantAnnotationManager::dataReleaseEquals
+        assertEquals(new HashSet<>(Arrays.asList("date", "sources", "collections", "release")), fields.keySet());
     }
 
     @Test

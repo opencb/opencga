@@ -5,6 +5,7 @@ import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.Xref;
+import org.opencb.cellbase.core.models.DataRelease;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
@@ -21,14 +22,29 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.Addi
 public class DummyVariantAnnotator extends VariantAnnotator {
 
     public static final String ANNOT_KEY = "ANNOT_KEY";
+    public static final String ANNOT_VERSION = "ANNOT_VERSION";
+    public static final String ANNOT_DATARELEASE = "ANNOT_DATARELEASE";
+    public static final String ANNOT_METADATA = "ANNOT_METADATA";
     public static final String FAIL = "ANNOT_FAIL";
     private final boolean fail;
     private String key;
+    private final ProjectMetadata.VariantAnnotationMetadata metadata;
 
     public DummyVariantAnnotator(StorageConfiguration configuration, ProjectMetadata projectMetadata, ObjectMap options) throws VariantAnnotatorException {
         super(configuration, projectMetadata, options);
-        key = options.getString(ANNOT_KEY);
+        key = options.getString(ANNOT_KEY, "k1");
+        String version = options.getString(ANNOT_VERSION, "v1");
+        int dataReleaseId = options.getInt(ANNOT_DATARELEASE, 1);
         fail = options.getBoolean(FAIL, false);
+        if (options.containsKey(ANNOT_METADATA)) {
+            metadata = options.get(ANNOT_METADATA, ProjectMetadata.VariantAnnotationMetadata.class);
+        } else {
+            DataRelease dataRelease = new DataRelease();
+            dataRelease.setRelease(dataReleaseId);
+            metadata = new ProjectMetadata.VariantAnnotationMetadata(-1, null, null,
+                    new ProjectMetadata.VariantAnnotatorProgram(key, version, null),
+                    Collections.singletonList(new ObjectMap("data", "genes")), dataRelease, null);
+        }
     }
 
     public static String getRs(Variant variant) {
@@ -63,10 +79,8 @@ public class DummyVariantAnnotator extends VariantAnnotator {
     }
 
     @Override
-    public ProjectMetadata.VariantAnnotationMetadata getVariantAnnotationMetadata() throws VariantAnnotatorException {
-        return new ProjectMetadata.VariantAnnotationMetadata(-1, null, null,
-                new ProjectMetadata.VariantAnnotatorProgram("MyAnnotator", key, null),
-                Collections.singletonList(new ObjectMap("data", "genes")), null,null);
+    public ProjectMetadata.VariantAnnotationMetadata getVariantAnnotationMetadata() {
+        return new ProjectMetadata.VariantAnnotationMetadata(metadata);
     }
 
 }
