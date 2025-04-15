@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.variant.annotation;
+package org.opencb.opencga.storage.core.variant.dummy;
 
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
@@ -6,9 +6,9 @@ import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.Xref;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.utils.CryptoUtils;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 
 import java.util.Collections;
@@ -18,20 +18,20 @@ import java.util.stream.Collectors;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.VARIANT_ID;
 
-public class DummyTestAnnotator extends VariantAnnotator {
+public class DummyVariantAnnotator extends VariantAnnotator {
 
     public static final String ANNOT_KEY = "ANNOT_KEY";
     public static final String FAIL = "ANNOT_FAIL";
     private final boolean fail;
     private String key;
 
-    public DummyTestAnnotator(StorageConfiguration configuration, ProjectMetadata projectMetadata, ObjectMap options) throws VariantAnnotatorException {
+    public DummyVariantAnnotator(StorageConfiguration configuration, ProjectMetadata projectMetadata, ObjectMap options) throws VariantAnnotatorException {
         super(configuration, projectMetadata, options);
         key = options.getString(ANNOT_KEY);
         fail = options.getBoolean(FAIL, false);
     }
 
-    static String getRs(Variant variant) {
+    public static String getRs(Variant variant) {
         return "rs" + variant.toString().hashCode();
     }
 
@@ -49,7 +49,7 @@ public class DummyTestAnnotator extends VariantAnnotator {
             a.setAlternate(v.getAlternate());
             a.setId("an id -- " + key);
             ConsequenceType ct = new ConsequenceType();
-            ct.setGeneName("a gene");
+            ct.setGeneName("a gene from " + key);
             ct.setSequenceOntologyTerms(Collections.emptyList());
             ct.setExonOverlap(Collections.emptyList());
             ct.setTranscriptFlags(Collections.emptyList());

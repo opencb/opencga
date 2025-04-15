@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.core.variant.annotation;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.junit.Assume;
+import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.EvidenceEntry;
@@ -22,6 +23,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.CosmicVariantAnnotatorExtensionTaskTest;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.cosmic.CosmicVariantAnnotatorExtensionTask;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantAnnotator;
 
 import java.io.File;
 import java.net.URI;
@@ -30,7 +32,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.*;
+import static org.junit.internal.matchers.ThrowableMessageMatcher.hasMessage;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
 
 /**
@@ -40,27 +44,35 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.Addi
  */
 public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTest {
 
+    private URI annotatorExtensionInputUri;
+
+    @Before
+    public void setUp() throws Exception {
+        annotatorExtensionInputUri = getResourceUri(ANNOTATOR_EXTENSION_VCF_TEST_FILE_NAME);
+    }
+
     @Test
     public void testChangeAnnotator() throws Exception {
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
-        runDefaultETL(smallInputUri, variantStorageEngine, newStudyMetadata(),
+        runETL(variantStorageEngine, smallInputUri, STUDY_NAME,
                 new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));
 
         variantStorageEngine.getOptions()
-                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyTestAnnotator.class.getName())
+                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyVariantAnnotator.class.getName())
                 .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER);
 
         // First annotation. Should run ok.
-        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v1"));
+        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyVariantAnnotator.ANNOT_KEY, "v1"));
         assertEquals("v1", variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getVersion());
 
         // Second annotation. New annotator. Overwrite. Should run ok.
-        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v2").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
+        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyVariantAnnotator.ANNOT_KEY, "v2").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
         assertEquals("v2", variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getVersion());
 
         // Third annotation. New annotator. Do not overwrite. Should fail.
         thrown.expect(VariantAnnotatorException.class);
-        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v3").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), false));
+        thrown.expectMessage("Using a different annotator!");
+        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyVariantAnnotator.ANNOT_KEY, "v3").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), false));
     }
 
     @Test
@@ -70,16 +82,16 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
                 new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));
 
         variantStorageEngine.getOptions()
-                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyTestAnnotator.class.getName())
+                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyVariantAnnotator.class.getName())
                 .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER);
 
         // First annotation. Should run ok.
-        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v1"));
+        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyVariantAnnotator.ANNOT_KEY, "v1"));
 
         try {
             // Second annotation. New annotator. Overwrite. Fail annotation
-            variantStorageEngine.annotate(outputUri, new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v2")
-                    .append(DummyTestAnnotator.FAIL, true)
+            variantStorageEngine.annotate(outputUri, new ObjectMap(DummyVariantAnnotator.ANNOT_KEY, "v2")
+                    .append(DummyVariantAnnotator.FAIL, true)
                     .append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
             fail("Expected to fail!");
         } catch (VariantAnnotatorException e) {
@@ -90,8 +102,8 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
 
 
         // Second annotation bis. New annotator. Overwrite.
-        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v2")
-                .append(DummyTestAnnotator.FAIL, false)
+        variantStorageEngine.annotate(outputUri, new ObjectMap(DummyVariantAnnotator.ANNOT_KEY, "v2")
+                .append(DummyVariantAnnotator.FAIL, false)
                 .append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
         assertEquals("v2", variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getVersion());
     }
@@ -137,10 +149,11 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
         variantStorageEngine.getConfiguration().getCellbase().setVersion("v5.2");
         variantStorageEngine.getConfiguration().getCellbase().setDataRelease("2");
         variantStorageEngine.getOptions().put(VariantStorageOptions.ASSEMBLY.key(), "grch38");
+        variantStorageEngine.getOptions().put(VariantStorageOptions.SPECIES.key(), "hsapiens");
         variantStorageEngine.reloadCellbaseConfiguration();
         variantStorageEngine.getCellBaseUtils().validate();
 
-        runDefaultETL(smallInputUri, variantStorageEngine, newStudyMetadata(),
+        runETL(variantStorageEngine, smallInputUri, STUDY_NAME,
                 new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));
 
         // First annotation. Should run ok.
@@ -204,27 +217,27 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
                 new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));
 
         variantStorageEngine.getOptions()
-                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyTestAnnotator.class.getName())
+                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyVariantAnnotator.class.getName())
                 .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER);
 
         URI annotOutdir = outputUri.resolve("annot1");
         Files.createDirectories(Paths.get(annotOutdir));
         variantStorageEngine.saveAnnotation("v0", new ObjectMap());
-        variantStorageEngine.annotate(annotOutdir, new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v1").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
+        variantStorageEngine.annotate(annotOutdir, new ObjectMap(DummyVariantAnnotator.ANNOT_KEY, "v1").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
         Collection<File> files = FileUtils.listFiles(Paths.get(annotOutdir).toFile(), null, false);
         assertNotEquals(0, files.size());
 
         annotOutdir = outputUri.resolve("annot2");
         Files.createDirectories(Paths.get(annotOutdir));
         variantStorageEngine.saveAnnotation("v1", new ObjectMap());
-        variantStorageEngine.annotate(annotOutdir, new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v2").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
+        variantStorageEngine.annotate(annotOutdir, new ObjectMap(DummyVariantAnnotator.ANNOT_KEY, "v2").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
         files = FileUtils.listFiles(Paths.get(annotOutdir).toFile(), null, false);
         assertNotEquals(0, files.size());
 
         annotOutdir = outputUri.resolve("annot3");
         Files.createDirectories(Paths.get(annotOutdir));
         variantStorageEngine.saveAnnotation("v2", new ObjectMap());
-        variantStorageEngine.annotate(annotOutdir, new Query(VariantQueryParam.REGION.key(), "1"), new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v3")
+        variantStorageEngine.annotate(annotOutdir, new Query(VariantQueryParam.REGION.key(), "1"), new ObjectMap(DummyVariantAnnotator.ANNOT_KEY, "v3")
                 .append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true)
                 .append(VariantStorageOptions.ANNOTATION_FILE_DELETE_AFTER_LOAD.key(), true)
         );
@@ -246,63 +259,60 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
     @Test
     public void testCosmicAnnotatorExtensionWithCosmicAnnotation() throws Exception {
         // Setup COSMIC directory
-        Path cosmicFile = CosmicVariantAnnotatorExtensionTaskTest.initCosmicPath();
-        System.out.println("cosmicFile = " + cosmicFile.toAbsolutePath());
+        URI annotOutdir = newOutputUri();
+        Files.createDirectories(Paths.get(annotOutdir));
+        Path cosmicFile = CosmicVariantAnnotatorExtensionTaskTest.initCosmicPath(Paths.get(annotOutdir));
 
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
-        runDefaultETL(annotatorExtensionInputUri, variantStorageEngine, newStudyMetadata(),
-                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));
+        runETL(variantStorageEngine, annotatorExtensionInputUri, STUDY_NAME,
+                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false)
+                        .append(VariantStorageOptions.ASSEMBLY.key(), "GRCh38"));
 
         variantStorageEngine.getOptions()
-                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyTestAnnotator.class.getName())
+                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyVariantAnnotator.class.getName())
                 .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER)
                 .append(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key(), CosmicVariantAnnotatorExtensionTask.ID)
                 .append(VariantStorageOptions.ASSEMBLY.key(), "GRCh38")
                 .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key(), "v95")
                 .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key(), cosmicFile);
 
-        URI annotOutdir = outputUri.resolve("annot1");
-        Files.createDirectories(Paths.get(annotOutdir));
-        variantStorageEngine.annotate(annotOutdir, new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v1").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
-        variantStorageEngine.saveAnnotation("v1", new ObjectMap());
-
+        variantStorageEngine.annotate(annotOutdir, new ObjectMap(DummyVariantAnnotator.ANNOT_KEY, "v1").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
         // Check that cosmic variants are annotated
-        DataResult<VariantAnnotation> annotationDataResult = variantStorageEngine.getAnnotation("v1", new Query(), new QueryOptions());
-        checkCosmicVariants(annotationDataResult, COSMIC_VARIANTS.size());
+        DataResult<VariantAnnotation> annotationDataResult = variantStorageEngine.getAnnotation(new Query(), new QueryOptions());
+        checkCosmicVariants(annotationDataResult, true);
     }
 
     @Test
     public void testCosmicAnnotatorExtensionWithoutCosmicAnnotation() throws Exception {
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
-        runDefaultETL(annotatorExtensionInputUri, variantStorageEngine, newStudyMetadata(),
+        runETL(variantStorageEngine, annotatorExtensionInputUri, STUDY_NAME,
                 new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));
 
         variantStorageEngine.getOptions()
-                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyTestAnnotator.class.getName())
+                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyVariantAnnotator.class.getName())
                 .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER);
 
         URI annotOutdir = outputUri.resolve("annot1");
         Files.createDirectories(Paths.get(annotOutdir));
-        variantStorageEngine.annotate(annotOutdir, new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v1").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
-        variantStorageEngine.saveAnnotation("v1", new ObjectMap());
+        variantStorageEngine.annotate(annotOutdir, new ObjectMap(DummyVariantAnnotator.ANNOT_KEY, "v1").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
 
         // Check that cosmic variants are annotated
-        DataResult<VariantAnnotation> annotationDataResult = variantStorageEngine.getAnnotation("v1", new Query(), new QueryOptions());
-        checkCosmicVariants(annotationDataResult, 0);
+        DataResult<VariantAnnotation> annotationDataResult = variantStorageEngine.getAnnotation(new Query(), new QueryOptions());
+        checkCosmicVariants(annotationDataResult, false);
     }
 
     @Test
     public void testCosmicAnnotatorExtensionInvalidCosmicFile() throws Exception {
         // Setup COSMIC directory
         Path cosmicFile = CosmicVariantAnnotatorExtensionTaskTest.initInvalidCosmicPath();
-        System.out.println("cosmicFile = " + cosmicFile.toAbsolutePath());
 
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
-        runDefaultETL(annotatorExtensionInputUri, variantStorageEngine, newStudyMetadata(),
-                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));
+        runETL(variantStorageEngine, annotatorExtensionInputUri, STUDY_NAME,
+                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false)
+                        .append(VariantStorageOptions.ASSEMBLY.key(), "GRCh38"));
 
         variantStorageEngine.getOptions()
-                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyTestAnnotator.class.getName())
+                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyVariantAnnotator.class.getName())
                 .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER)
                 .append(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key(), CosmicVariantAnnotatorExtensionTask.ID)
                 .append(VariantStorageOptions.ASSEMBLY.key(), "GRCh38")
@@ -314,17 +324,20 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
         Files.createDirectories(Paths.get(annotOutdir));
 
         thrown.expect(VariantAnnotatorException.class);
-        variantStorageEngine.annotate(annotOutdir, new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v1").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
+        thrown.expectMessage("Error creating annotations");
+        thrown.expectCause(hasMessage(containsString("Invalid COSMIC format file")));
+        variantStorageEngine.annotate(annotOutdir, new ObjectMap(DummyVariantAnnotator.ANNOT_KEY, "v1").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
     }
 
     @Test
     public void testCosmicAnnotatorExtensionMissingCosmicFile() throws Exception {
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
-        runDefaultETL(annotatorExtensionInputUri, variantStorageEngine, newStudyMetadata(),
-                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));
+        runETL(variantStorageEngine, annotatorExtensionInputUri, STUDY_NAME,
+                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false)
+                        .append(VariantStorageOptions.ASSEMBLY.key(), "GRCh38"));
 
         variantStorageEngine.getOptions()
-                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyTestAnnotator.class.getName())
+                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyVariantAnnotator.class.getName())
                 .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER)
                 .append(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key(), CosmicVariantAnnotatorExtensionTask.ID)
                 .append(VariantStorageOptions.ASSEMBLY.key(), "GRCh38")
@@ -334,87 +347,95 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
         Files.createDirectories(Paths.get(annotOutdir));
 
         thrown.expect(VariantAnnotatorException.class);
-        variantStorageEngine.annotate(annotOutdir, new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v1").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
+        thrown.expectMessage("Error creating annotations");
+        thrown.expectCause(hasMessage(containsString("must be a file and not a directory")));
+        variantStorageEngine.annotate(annotOutdir, new ObjectMap(DummyVariantAnnotator.ANNOT_KEY, "v1").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
     }
 
     @Test
     public void testCosmicAnnotatorExtensionMissingCosmicVersion() throws Exception {
         // Setup COSMIC directory
-        Path cosmicFile = CosmicVariantAnnotatorExtensionTaskTest.initCosmicPath();
-        System.out.println("cosmicFile = " + cosmicFile.toAbsolutePath());
+        URI annotOutdir = newOutputUri();
+        Files.createDirectories(Paths.get(annotOutdir));
+        Path cosmicFile = CosmicVariantAnnotatorExtensionTaskTest.initCosmicPath(Paths.get(annotOutdir));
 
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
-        runDefaultETL(annotatorExtensionInputUri, variantStorageEngine, newStudyMetadata(),
-                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));
+        runETL(variantStorageEngine, annotatorExtensionInputUri, STUDY_NAME,
+                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false)
+                        .append(VariantStorageOptions.ASSEMBLY.key(), "GRCh38"));
 
         variantStorageEngine.getOptions()
-                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyTestAnnotator.class.getName())
+                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyVariantAnnotator.class.getName())
                 .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER)
                 .append(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key(), CosmicVariantAnnotatorExtensionTask.ID)
                 .append(VariantStorageOptions.ASSEMBLY.key(), "GRCh38")
                 .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key(), cosmicFile);
 
-        URI annotOutdir = outputUri.resolve("annot1");
-        Files.createDirectories(Paths.get(annotOutdir));
-
         thrown.expect(VariantAnnotatorException.class);
-        variantStorageEngine.annotate(annotOutdir, new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v1").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
+        thrown.expectMessage("Error creating annotations");
+        thrown.expectCause(hasMessage(containsString("Missing COSMIC version")));
+        variantStorageEngine.annotate(annotOutdir, new ObjectMap(DummyVariantAnnotator.ANNOT_KEY, "v1").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
     }
 
     @Test
     public void testCosmicAnnotatorExtensionMissingAssembly() throws Exception {
         // Setup COSMIC directory
-        Path cosmicFile = CosmicVariantAnnotatorExtensionTaskTest.initCosmicPath();
-        System.out.println("cosmicFile = " + cosmicFile.toAbsolutePath());
+        URI annotOutdir = newOutputUri();
+        Files.createDirectories(Paths.get(annotOutdir));
+        Path cosmicFile = CosmicVariantAnnotatorExtensionTaskTest.initCosmicPath(Paths.get(annotOutdir));
 
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
-        runDefaultETL(annotatorExtensionInputUri, variantStorageEngine, newStudyMetadata(),
+        variantStorageEngine.getOptions()
+                .remove(VariantStorageOptions.ASSEMBLY.key());
+        runETL(variantStorageEngine, annotatorExtensionInputUri, STUDY_NAME,
                 new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));
 
         variantStorageEngine.getOptions()
-                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyTestAnnotator.class.getName())
+                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyVariantAnnotator.class.getName())
                 .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER)
                 .append(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key(), CosmicVariantAnnotatorExtensionTask.ID)
                 .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key(), "v95")
                 .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key(), cosmicFile);
 
-        URI annotOutdir = outputUri.resolve("annot1");
-        Files.createDirectories(Paths.get(annotOutdir));
-
         thrown.expect(VariantAnnotatorException.class);
-        variantStorageEngine.annotate(annotOutdir, new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v1").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
+        thrown.expectMessage("Error creating annotations");
+        thrown.expectCause(hasMessage(containsString("Missing assembly")));
+        variantStorageEngine.annotate(annotOutdir, new ObjectMap(DummyVariantAnnotator.ANNOT_KEY, "v1").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
     }
 
     @Test
     public void testCosmicAnnotatorExtensionMismatchAssembly() throws Exception {
         // Setup COSMIC directory
-        Path cosmicFile = CosmicVariantAnnotatorExtensionTaskTest.initCosmicPath();
-        System.out.println("cosmicFile = " + cosmicFile.toAbsolutePath());
+        URI annotOutdir = newOutputUri();
+        Files.createDirectories(Paths.get(annotOutdir));
+        Path cosmicFile = CosmicVariantAnnotatorExtensionTaskTest.initCosmicPath(Paths.get(annotOutdir));
 
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
-        runDefaultETL(annotatorExtensionInputUri, variantStorageEngine, newStudyMetadata(),
-                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));
+        runETL(variantStorageEngine, annotatorExtensionInputUri, STUDY_NAME,
+                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false)
+                        .append(VariantStorageOptions.ASSEMBLY.key(), "GRCh37"));
 
         variantStorageEngine.getOptions()
-                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyTestAnnotator.class.getName())
+                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyVariantAnnotator.class.getName())
                 .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER)
                 .append(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key(), CosmicVariantAnnotatorExtensionTask.ID)
                 .append(VariantStorageOptions.ASSEMBLY.key(), "GRCh37")
                 .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key(), "v95")
                 .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key(), cosmicFile);
 
-        URI annotOutdir = outputUri.resolve("annot1");
-        Files.createDirectories(Paths.get(annotOutdir));
-
         thrown.expect(VariantAnnotatorException.class);
-        variantStorageEngine.annotate(annotOutdir, new ObjectMap(DummyTestAnnotator.ANNOT_KEY, "v1").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
+        thrown.expectMessage("Error creating annotations");
+        thrown.expectCause(hasMessage(containsString("Mismatch assembly: COSMIC file assembly is")));
+        variantStorageEngine.annotate(annotOutdir, new ObjectMap(DummyVariantAnnotator.ANNOT_KEY, "v1").append(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
     }
 
-    public void checkCosmicVariants(DataResult<VariantAnnotation> annotationDataResult, int expected) {
+    public void checkCosmicVariants(DataResult<VariantAnnotation> annotationDataResult, boolean withCosmicAnnotation) {
         int cosmicCount = 0;
+        int expectedCount = 0;
         for (VariantAnnotation va : annotationDataResult.getResults()) {
             String variantId = va.getChromosome() + ":" + va.getStart() + ":" + va.getReference() + ":" + va.getAlternate();
             if (COSMIC_VARIANTS.contains(variantId)) {
+                expectedCount++;
                 if (va.getTraitAssociation() != null) {
                     for (EvidenceEntry entry : va.getTraitAssociation()) {
                         if (CosmicVariantAnnotatorExtensionTask.ID.equals(entry.getSource().getName())) {
@@ -425,7 +446,11 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
                 }
             }
         }
-        assertEquals(expected, cosmicCount);
+        if (withCosmicAnnotation) {
+            assertEquals(expectedCount, cosmicCount);
+        } else {
+            assertEquals(0, cosmicCount);
+        }
     }
 
     public void testQueries(VariantStorageEngine variantStorageEngine) throws StorageEngineException {
@@ -454,7 +479,7 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
         }
 
         for (Variant variant : variantStorageEngine) {
-            Variant thisVariant = variantStorageEngine.getVariant(DummyTestAnnotator.getRs(variant));
+            Variant thisVariant = variantStorageEngine.getVariant(DummyVariantAnnotator.getRs(variant));
             assertThat(thisVariant, VariantMatchers.samePosition(variant));
         }
 

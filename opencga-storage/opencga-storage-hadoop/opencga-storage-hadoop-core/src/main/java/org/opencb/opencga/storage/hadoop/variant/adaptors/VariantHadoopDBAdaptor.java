@@ -282,7 +282,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         } else {
             ProjectMetadata.VariantAnnotationMetadata saved = getMetadataManager().getProjectMetadata().
                     getAnnotation().getSaved(name);
-
             annotationColumn = Bytes.toBytes(VariantPhoenixSchema.getAnnotationSnapshotColumn(saved.getId()));
             query.put(ANNOT_NAME.key(), saved.getId());
         }
@@ -303,15 +302,17 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 .setIncludeFields(selectElements.getFields());
         converter.setAnnotationColumn(annotationColumn, name);
         Iterator<Result> iterator = Iterators.concat(iterators);
+        Iterator<VariantAnnotation> varAnnotIterator = Iterators.transform(iterator, converter::convert);
+        varAnnotIterator = Iterators.filter(varAnnotIterator, Objects::nonNull);
         int skip = options.getInt(QueryOptions.SKIP);
         if (skip > 0) {
-            Iterators.advance(iterator, skip);
+            Iterators.advance(varAnnotIterator, skip);
         }
         int limit = options.getInt(QueryOptions.LIMIT);
         if (limit >= 0) {
-            iterator = Iterators.limit(iterator, limit);
+            varAnnotIterator = Iterators.limit(varAnnotIterator, limit);
         }
-        return Iterators.transform(iterator, converter::convert);
+        return varAnnotIterator;
     }
 
     @Override

@@ -344,11 +344,16 @@ public class VariantHBaseQueryParser {
         }
 
         if (isValidParam(query, ANNOTATION_EXISTS)) {
-            if (!query.getBoolean(ANNOTATION_EXISTS.key())) {
+            byte[] annotationColumn;
+            if (isValidParam(query, VariantHadoopDBAdaptor.ANNOT_NAME)) {
+                int id = query.getInt(VariantHadoopDBAdaptor.ANNOT_NAME.key());
+                annotationColumn = Bytes.toBytes(VariantPhoenixSchema.getAnnotationSnapshotColumn(id));
+            } else {
                 // Use a column different from FULL_ANNOTATION to read few elements from disk
-//                byte[] annotationColumn = VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes();
-                byte[] annotationColumn = VariantColumn.SO.bytes();
-
+//                annotationColumn = VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes();
+                annotationColumn = VariantColumn.SO.bytes();
+            }
+            if (!query.getBoolean(ANNOTATION_EXISTS.key())) {
                 filters.addFilter(missingColumnFilter(annotationColumn));
                 if (!selectElements.getFields().contains(VariantField.ANNOTATION)) {
                     scan.addColumn(family, annotationColumn);
