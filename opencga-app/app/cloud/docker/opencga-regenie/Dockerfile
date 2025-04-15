@@ -14,7 +14,7 @@ RUN apt-get update -y && \
     libssl-dev libssh-dev libxml2-dev libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev \
     gnuplot pandoc tabix plink1.9 bwa r-base wget libopenblas0-openmp libcholmod3 libsuitesparse-dev python3 python3-pip && \
     apt-get remove libopenblas0-pthread && \
-    pip3 install pydantic && \
+    pip3 install pydantic docker && \
 
     ## 2. Install bcftools 1.21 and plugins
     wget http://github.com/samtools/bcftools/releases/download/1.21/bcftools-1.21.tar.bz2 && \

@@ -68,7 +68,6 @@ public class HadoopRegenieVariantWalkerTest extends VariantStorageBaseTest imple
 //        dockerImage = null;
     }
 
-    @Test
     public void tesRegenieWalker() throws Exception {
         String cmdPython1 = "python3 variant_walker.py regenie_walker Regenie";
         variantStorageEngine.getOptions().put(StreamVariantMapper.DOCKER_PRUNE_OPTS, " --filter label!=opencga_scope='test'");

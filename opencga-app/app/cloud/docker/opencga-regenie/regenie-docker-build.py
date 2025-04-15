@@ -1,7 +1,17 @@
 import shutil
 import os
 import subprocess
+import docker
+import logging
+from getpass import getpass
 from pathlib import Path
+
+# Setup logging
+logging.basicConfig(
+    filename="regenie-docker-build.log",
+    level=logging.INFO,
+    format="%(asctime)s - %(message)s",
+)
 
 def generate_dockerfile(source_image: str, output_path: str):
     """
@@ -30,7 +40,7 @@ COPY ./regenie_walker /regenie_walker
 
     return output_path
 
-def build_docker_image(dockerfile_path: str, image_name: str = "regenie-walker"):
+def build_docker_image(dockerfile_path: str, image_name: str):
     """
     Build Docker image from the generated Dockerfile.
     """
@@ -45,7 +55,7 @@ def build_docker_image(dockerfile_path: str, image_name: str = "regenie-walker")
         "-f", dockerfile_path,
         str(output_path)
     ]
-    print(f"Building Docker image '{' '.join(build_cmd)}'...")
+    logging.info(f"Building Docker image '{' '.join(build_cmd)}'...")
     result = subprocess.run(
         build_cmd,
         stdout=subprocess.PIPE,
@@ -54,10 +64,11 @@ def build_docker_image(dockerfile_path: str, image_name: str = "regenie-walker")
     )
 
     if result.returncode != 0:
-        error_msg = f"Build failed with error:\n{result.stderr}"
+        error_msg = f"Build failed with error: {result.stderr}"
+        logging.error(error_msg);
         raise RuntimeError(error_msg)
 
-    print(f"Successfully built image '{image_name}'")
+    logging.info(f"Successfully built image '{image_name}'")
     return image_name
 
 def copy_files(src_folder: str, dest_folder: str):
@@ -69,6 +80,48 @@ def copy_files(src_folder: str, dest_folder: str):
             shutil.copy2(src_file, dest_file)  # Preserves metadata (timestamps, etc.)
         elif os.path.isdir(src_file):  # If you want to copy subfolders recursively
             shutil.copytree(src_file, dest_file)  # Recursive copy
+
+def push_to_dockerhub(image_name, repo, version, username, password):
+    """
+    Push a locally built Docker image to Docker Hub.
+
+    Args:
+        image_name (str): Local Docker image name (e.g., "my-app").
+        repo (str): Docker Hub repository (e.g., "repo").
+        version (str): Docker Hub repository version (e.g., "123").
+        username (str): Docker Hub username.
+        password (str): Docker Hub password.
+    """
+    client = docker.from_env()
+
+    # Tag the image for Docker Hub
+    tagged_image = f"{username}/{repo}:{version}"
+    client.images.get(image_name).tag(tagged_image)
+    logging.info(f"Tagged image: {tagged_image}")
+
+    # Authenticate
+    client.login(
+        username=username,
+        password=password,
+        registry="https://index.docker.io/v1/"
+    )
+    logging.info("Logged in to Docker Hub")
+
+    # Push the image
+    logging.info(f"Pushing {tagged_image} to Docker Hub...")
+    push_log = client.images.push(
+        repository=f"{username}/{repo}",
+        tag=version,
+        stream=True,
+        decode=True
+    )
+
+    # Print push logs
+    for log in push_log:
+        if "status" in log:
+            logging.info(log["status"])
+
+    logging.info("Push completed!")
 
 def main():
     import argparse
@@ -106,14 +159,29 @@ def main():
         help="Name for the Docker image"
     )
     parser.add_argument(
-        "--image-name",
-        default="regine-walker",
-        help="Name for the Docker image"
-    )
-    parser.add_argument(
         "--no-build",
         action="store_true",
         help="Only generate Dockerfile, don't build"
+    )
+    parser.add_argument(
+        "--docker-username",
+        default=None,
+        help="Docker Hub username"
+    )
+    parser.add_argument(
+        "--docker-password",
+        default=None,
+        help="Docker Hub password"
+    )
+    parser.add_argument(
+        "--docker-repo",
+        default=None,
+        help="Docker Hub repository name"
+    )
+    parser.add_argument(
+        "--docker-repo-version",
+        default=None,
+        help="Docker Hub repository version"
     )
 
     args = parser.parse_args()
@@ -131,7 +199,7 @@ def main():
                     elif os.path.isdir(file_path):
                         shutil.rmtree(file_path)  # Delete subfolder
                 except Exception as e:
-                    print(f"Failed to delete {file_path}. Reason: {e}")
+                    logging.error(f"Failed to delete {file_path}. Reason: {e}")
                     sys.exit(1)
         else:
             # Create the destination folder if it doesn't exist
@@ -176,16 +244,25 @@ def main():
         # Generate Dockerfile
         dockerfile_path = generate_dockerfile(args.source_image_name, args.output_dockerfile)
 
-        print(f"Generated Dockerfile at {dockerfile_path}")
+        logging.info(f"Generated Dockerfile at {dockerfile_path}")
 
         # Build image unless --no-build specified
         if not args.no_build:
-            image_name = build_docker_image(dockerfile_path, args.image_name)
-            print(f"\nRun the image with:")
-            print(f"docker run -it --rm {image_name}")
+            image_name = f"{args.docker_username}/{args.docker_repo}:{args.docker_repo_version}"
+            logging.info(f"Building docker image: {image_name}")
+            build_docker_image(dockerfile_path, image_name)
+            logging.info(f"Run the image with: docker run -it --rm {image_name}")
+            if args.docker_repo and args.docker_repo_version and args.docker_username and args.docker_password:
+                push_to_dockerhub(
+                    image_name,
+                    args.docker_repo,
+                    args.docker_repo_version,
+                    args.docker_username,
+                    args.docker_password
+                )
 
     except Exception as e:
-        print(f"Error: {str(e)}", file=sys.stderr)
+        logging.error(f"Error: {str(e)}")
         sys.exit(1)
 
 if __name__ == "__main__":

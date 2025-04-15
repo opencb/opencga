@@ -45,6 +45,7 @@ import org.opencb.opencga.core.models.variant.LiftoverWrapperParams;
 import org.opencb.opencga.core.models.variant.MendelianErrorAnalysisParams;
 import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
 import org.opencb.opencga.core.models.variant.PlinkWrapperParams;
+import org.opencb.opencga.core.models.variant.RegenieStep2WrapperParams;
 import org.opencb.opencga.core.models.variant.RegenieWrapperParams;
 import org.opencb.opencga.core.models.variant.RelatednessAnalysisParams;
 import org.opencb.opencga.core.models.variant.RvtestsWrapperParams;
@@ -182,6 +183,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "regenie-run":
                 queryResponse = runRegenie();
+                break;
+            case "regenie-step2-run":
+                queryResponse = runRegenieStep2();
                 break;
             case "relatedness-run":
                 queryResponse = runRelatedness();
@@ -1448,6 +1452,49 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), RegenieWrapperParams.class);
         }
         return openCGAClient.getVariantClient().runRegenie(regenieWrapperParams, queryParams);
+    }
+
+    private RestResponse<Job> runRegenieStep2() throws Exception {
+        logger.debug("Executing runRegenieStep2 in Analysis - Variant command line");
+
+        AnalysisVariantCommandOptions.RunRegenieStep2CommandOptions commandOptions = analysisVariantCommandOptions.runRegenieStep2CommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
+        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
+        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
+        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        RegenieStep2WrapperParams regenieStep2WrapperParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/regenie/step2/run"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            regenieStep2WrapperParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), RegenieStep2WrapperParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "phenoFile", commandOptions.phenoFile, true);
+            putNestedIfNotEmpty(beanParams, "covarFile", commandOptions.covarFile, true);
+            putNestedIfNotEmpty(beanParams, "predPath", commandOptions.predPath, true);
+            putNestedIfNotEmpty(beanParams, "dockerUsername", commandOptions.dockerUsername, true);
+            putNestedIfNotEmpty(beanParams, "dockerPassword", commandOptions.dockerPassword, true);
+
+            regenieStep2WrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), RegenieStep2WrapperParams.class);
+        }
+        return openCGAClient.getVariantClient().runRegenieStep2(regenieStep2WrapperParams, queryParams);
     }
 
     private RestResponse<Job> runRelatedness() throws Exception {

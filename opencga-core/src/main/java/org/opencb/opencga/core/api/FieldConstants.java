@@ -633,6 +633,8 @@ public class FieldConstants {
             + REGENIE_STEP2 + ")";
     public static final String REGENIE_WALKER_DOCKER_NAME_DESCRIPTION = "Walker docker image name that contains the phenotype, covariates"
             + " and prediction files.";
+    public static final String REGENIE_WALKER_DOCKER_USERNAME_DESCRIPTION = "Docker Hub username.";
+    public static final String REGENIE_WALKER_DOCKER_PASSWORD_DESCRIPTION = "Docker Hub password.";
 
     // Fetch resources
     public static final String FETCH_RESOURCES_DESCRIPTION = "List of resource IDs, separated by commas, to fetch (available resources are"
