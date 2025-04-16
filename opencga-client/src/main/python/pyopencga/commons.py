@@ -173,12 +173,11 @@ def _fetch(config, sid, category, resource, method, subcategory=None, query_id=N
         time_out_counter = 0
 
         if r.status_code == 401:
-            raise OpencgaInvalidToken(r.content)
+            raise OpencgaInvalidToken(r.text)
         elif r.status_code == 403:
-            raise OpencgaAuthorisationError(r.content)
-
+            raise OpencgaAuthorisationError(r.text)
         elif r.status_code != 200:
-            raise Exception(r.content)
+            raise Exception(r.text)
 
         try:
             response = r.json()
@@ -191,8 +190,7 @@ def _fetch(config, sid, category, resource, method, subcategory=None, query_id=N
                     query_result['results'] = query_result['result']
 
         except ValueError:
-            msg = 'Bad JSON format retrieved from server'
-            raise ValueError(msg)
+            return r.text
 
         # Setting up final_response
         if final_response is None:
@@ -324,7 +322,7 @@ def execute(config, sid, category, resource, method, subcategory=None, query_id=
                                          'options': options})
             # Setting threads as "daemon" allows main program to exit eventually
             # even if these do not finish correctly
-            t.setDaemon(True)
+            t.daemon = True
             t.start()
 
         # Loading up the queue with index and id batches for each job
