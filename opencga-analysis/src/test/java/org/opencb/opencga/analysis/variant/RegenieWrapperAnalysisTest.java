@@ -16,10 +16,7 @@
 
 package org.opencb.opencga.analysis.variant;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
@@ -27,6 +24,7 @@ import org.junit.runners.Parameterized;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.manager.VariantOperationsTest;
@@ -65,6 +63,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Collections;
+import java.util.List;
 
 import static org.opencb.opencga.core.api.FieldConstants.REGENIE_STEP1;
 import static org.opencb.opencga.core.api.FieldConstants.REGENIE_STEP2;
@@ -233,8 +232,17 @@ public class RegenieWrapperAnalysisTest {
 //        }
     }
 
+    @Test
     public void testPushAndRegenieStep2() throws IOException, ToolException, CatalogException {
-        // Run clinical analysis load task
+        // Check if credentials are present to run the test
+        Path credentialsPath = Paths.get("/opt/resources/DH");
+        Assume.assumeTrue(Files.exists(credentialsPath));
+        List<String> lines = Files.readAllLines(credentialsPath);
+        Assert.assertEquals(1, lines.size());
+        String[] split = lines.get(0).split(" ");
+        String username = split[0];
+        String password = split[1];
+
         Path regenieOutdir = Paths.get(opencga.createTmpOutdir("_push_regenieOutdir"));
 
 //        Assume.assumeTrue(areLiftoverResourcesReady());
@@ -269,8 +277,8 @@ public class RegenieWrapperAnalysisTest {
         RegenieStep2WrapperParams params = new RegenieStep2WrapperParams()
                 .setPhenoFile(opencgaPhenoFile.getId())
                 .setPredPath(opencgaPredPath.getId())
-                .setDockerUsername("xxxxx")
-                .setDockerPassword("yyyyy");
+                .setDockerUsername(username)
+                .setDockerPassword(password);
 
         toolRunner.execute(RegenieStep2WrapperAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), regenieOutdir,
                 null, false, token);

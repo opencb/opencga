@@ -1,17 +1,9 @@
 import shutil
 import os
 import subprocess
-import docker
 import logging
 from getpass import getpass
 from pathlib import Path
-
-# Setup logging
-logging.basicConfig(
-    filename="regenie-docker-build.log",
-    level=logging.INFO,
-    format="%(asctime)s - %(message)s",
-)
 
 def generate_dockerfile(source_image: str, output_path: str):
     """
@@ -39,6 +31,7 @@ COPY ./regenie_walker /regenie_walker
         f.write(dockerfile_content)
 
     return output_path
+
 
 def build_docker_image(dockerfile_path: str, image_name: str):
     """
@@ -81,47 +74,66 @@ def copy_files(src_folder: str, dest_folder: str):
         elif os.path.isdir(src_file):  # If you want to copy subfolders recursively
             shutil.copytree(src_file, dest_file)  # Recursive copy
 
-def push_to_dockerhub(image_name, repo, version, username, password):
+
+def push_to_dockerhub(local_image_name, repo, version, username, password):
     """
-    Push a locally built Docker image to Docker Hub.
-
-    Args:
-        image_name (str): Local Docker image name (e.g., "my-app").
-        repo (str): Docker Hub repository (e.g., "repo").
-        version (str): Docker Hub repository version (e.g., "123").
-        username (str): Docker Hub username.
-        password (str): Docker Hub password.
+    Pushes a locally built Docker image to Docker Hub with the specified repository and tag.
     """
-    client = docker.from_env()
+    full_image_name = f"{username}/{repo}:{version}"
 
-    # Tag the image for Docker Hub
-    tagged_image = f"{username}/{repo}:{version}"
-    client.images.get(image_name).tag(tagged_image)
-    logging.info(f"Tagged image: {tagged_image}")
-
-    # Authenticate
-    client.login(
-        username=username,
-        password=password,
-        registry="https://index.docker.io/v1/"
-    )
-    logging.info("Logged in to Docker Hub")
-
-    # Push the image
-    logging.info(f"Pushing {tagged_image} to Docker Hub...")
-    push_log = client.images.push(
-        repository=f"{username}/{repo}",
-        tag=version,
-        stream=True,
-        decode=True
+    logging.info(f"Tagging local image '{local_image_name}' as '{full_image_name}'...")
+    tag_cmd = [
+        "docker", "tag",
+        local_image_name,
+        full_image_name
+    ]
+    result_tag = subprocess.run(
+        tag_cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
     )
 
-    # Print push logs
-    for log in push_log:
-        if "status" in log:
-            logging.info(log["status"])
+    if result_tag.returncode != 0:
+        error_msg = f"Failed to tag image '{local_image_name}' as '{full_image_name}': {result_tag.stderr}"
+        logging.error(error_msg)
+        raise RuntimeError(error_msg)
 
-    logging.info("Push completed!")
+    logging.info(f"Successfully tagged '{local_image_name}' as '{full_image_name}'.")
+    logging.info(f"Logging into Docker Hub as '{username}'...")
+    login_cmd = [
+        "docker", "login",
+        "-u", username,
+        "--password-stdin"
+    ]
+    process = subprocess.Popen(login_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    stdout, stderr = process.communicate(input=password)
+
+    if process.returncode != 0:
+        error_msg = f"Docker login failed: {stderr}"
+        logging.error(error_msg)
+        raise RuntimeError(error_msg)
+
+    logging.info(f"Successfully logged into Docker Hub.")
+    logging.info(f"Pushing Docker image '{full_image_name}'...")
+    push_cmd = [
+        "docker", "push",
+        full_image_name
+    ]
+    result_push = subprocess.run(
+        push_cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
+    )
+
+    if result_push.returncode != 0:
+        error_msg = f"Push failed for image '{full_image_name}' with error: {result_push.stderr}"
+        logging.error(error_msg)
+        raise RuntimeError(error_msg)
+
+    logging.info(f"Successfully pushed image '{full_image_name}' to Docker Hub.")
+    return full_image_name
 
 def main():
     import argparse
@@ -188,6 +200,14 @@ def main():
 
     try:
         output_path = Path(args.output_dockerfile).parent
+
+        # Setup logging
+        logging.basicConfig(
+            filename=f"{output_path}/regenie-docker-build.log",
+            level=logging.INFO,
+            format="%(asctime)s - %(message)s",
+        )
+
         regenie_walker_path = os.path.join(output_path , "regenie_walker")
         if os.path.exists(regenie_walker_path):
             # Empty the folder (remove all contents)
@@ -253,6 +273,7 @@ def main():
             build_docker_image(dockerfile_path, image_name)
             logging.info(f"Run the image with: docker run -it --rm {image_name}")
             if args.docker_repo and args.docker_repo_version and args.docker_username and args.docker_password:
+                logging.info(f"Pushing docker image: {image_name}")
                 push_to_dockerhub(
                     image_name,
                     args.docker_repo,

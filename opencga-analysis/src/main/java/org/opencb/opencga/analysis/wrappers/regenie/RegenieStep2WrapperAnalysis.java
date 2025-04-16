@@ -206,7 +206,7 @@ public class RegenieStep2WrapperAnalysis extends OpenCgaToolScopeStudy {
                 "--docker-password", analysisParams.getDockerPassword()
         }, Collections.emptyMap());
 
-        logger.info("Building and push the regenie docker image: {}", dockerBuild.getCommandLine()
+        logger.info("Building and pushing the regenie docker image: {}", dockerBuild.getCommandLine()
                 .replace(analysisParams.getDockerPassword(), "XXXXX"));
 
         dockerBuild.run();
