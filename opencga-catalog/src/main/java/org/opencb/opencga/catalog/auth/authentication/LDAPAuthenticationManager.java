@@ -161,9 +161,8 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
                 while (iDs.hasMore()) {
                     logger.debug("User id: {}", iDs.next());
                 }
-            }
-            catch (NamingException e) {
-                logger.warn("{}", e.getMessage());
+            } catch (NamingException e) {
+                logger.warn(e.getMessage());
             }
         }
         String rdn = getDN(userInfoFromLDAP.get(0));
