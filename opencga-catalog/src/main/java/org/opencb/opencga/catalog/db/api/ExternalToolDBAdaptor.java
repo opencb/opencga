@@ -23,6 +23,7 @@ public interface ExternalToolDBAdaptor extends CoreDBAdaptor<ExternalTool> {
         NAME("name", TEXT, ""),
         DESCRIPTION("description", TEXT, ""),
         DRAFT("draft", BOOLEAN, ""),
+        TYPE("type", TEXT, ""),
         SCOPE("scope", TEXT, ""),
         TAGS("tags", TEXT_ARRAY, ""),
         COMMAND_LINE("commandLine", TEXT, ""),

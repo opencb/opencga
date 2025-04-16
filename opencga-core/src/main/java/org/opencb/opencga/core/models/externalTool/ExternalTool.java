@@ -13,7 +13,7 @@ import java.util.Map;
 public class ExternalTool extends PrivateStudyUid {
 
     @DataField(id = "id", required = true, indexed = true, unique = true, immutable = true,
-            description = FieldConstants.WORKFLOW_ID_DESCRIPTION)
+            description = FieldConstants.EXTERNAL_TOOL_ID_DESCRIPTION)
     private String id;
 
     @DataField(id = "uuid", managed = true, indexed = true, unique = true, immutable = true,
@@ -26,29 +26,29 @@ public class ExternalTool extends PrivateStudyUid {
     @DataField(id = "description", description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
 
-    @DataField(id = "scope", description = FieldConstants.WORKFLOW_SCOPE_DESCRIPTION)
+    @DataField(id = "type", description = FieldConstants.EXTERNAL_TOOL_TYPE_DESCRIPTION)
+    private Type type;
+
+    @DataField(id = "scope", description = FieldConstants.EXTERNAL_TOOL_SCOPE_DESCRIPTION)
     private Scope scope;
 
-    @DataField(id = "manager", description = FieldConstants.WORKFLOW_MANAGER_DESCRIPTION)
-    private WorkflowSystem manager;
+    @DataField(id = "workflow", description = FieldConstants.EXTERNAL_TOOL_WORKFLOW_DESCRIPTION)
+    private Workflow workflow;
 
-    @DataField(id = "tags", description = FieldConstants.WORKFLOW_TAGS_DESCRIPTION)
+    @DataField(id = "docker", description = FieldConstants.EXTERNAL_TOOL_DOCKER_DESCRIPTION)
+    private Docker docker;
+
+    @DataField(id = "tags", description = FieldConstants.EXTERNAL_TOOL_TAGS_DESCRIPTION)
     private List<String> tags;
 
-    @DataField(id = "variables", description = FieldConstants.WORKFLOW_VARIABLES_DESCRIPTION)
+    @DataField(id = "variables", description = FieldConstants.EXTERNAL_TOOL_VARIABLES_DESCRIPTION)
     private List<ExternalToolVariable> variables;
 
     @DataField(id = "minimumRequirements", description = FieldConstants.MINIMUM_REQUIREMENTS_DESCRIPTION)
     private MinimumRequirements minimumRequirements;
 
-    @DataField(id = "draft", description = FieldConstants.WORKFLOW_DRAFT_DESCRIPTION)
+    @DataField(id = "draft", description = FieldConstants.EXTERNAL_TOOL_DRAFT_DESCRIPTION)
     private boolean draft;
-
-    @DataField(id = "repository", description = FieldConstants.WORKFLOW_REPOSITORY_DESCRIPTION)
-    private WorkflowRepository repository;
-
-    @DataField(id = "scripts", description = FieldConstants.WORKFLOW_SCRIPTS_DESCRIPTION)
-    private List<WorkflowScript> scripts;
 
     @DataField(id = "version", managed = true, indexed = true, description = FieldConstants.GENERIC_VERSION_DESCRIPTION)
     private int version;
@@ -56,7 +56,7 @@ public class ExternalTool extends PrivateStudyUid {
     @DataField(id = "release", managed = true, indexed = true, description = FieldConstants.GENERIC_RELEASE_DESCRIPTION)
     private int release;
 
-    @DataField(id = "internal", description = FieldConstants.WORKFLOW_INTERNAL_DESCRIPTION)
+    @DataField(id = "internal", description = FieldConstants.EXTERNAL_TOOL_INTERNAL_DESCRIPTION)
     private ExternalToolInternal internal;
 
     @DataField(id = "creationDate", indexed = true, description = FieldConstants.GENERIC_CREATION_DATE_DESCRIPTION)
@@ -84,6 +84,7 @@ public class ExternalTool extends PrivateStudyUid {
     public ExternalTool() {
     }
 
+    @Deprecated
     public ExternalTool(String id, String name, String description, Scope scope, WorkflowSystem manager, List<String> tags,
                         List<ExternalToolVariable> variables, MinimumRequirements minimumRequirements, boolean draft,
                         WorkflowRepository repository, List<WorkflowScript> scripts, ExternalToolInternal internal, String creationDate,
@@ -105,21 +106,45 @@ public class ExternalTool extends PrivateStudyUid {
         this.attributes = attributes;
     }
 
+    public ExternalTool(String id, String uuid, String name, String description, Type type, Scope scope, Workflow workflow, Docker docker,
+                        List<String> tags, List<ExternalToolVariable> variables, MinimumRequirements minimumRequirements, boolean draft,
+                        int version, int release, ExternalToolInternal internal, String creationDate, String modificationDate,
+                        Map<String, Object> attributes) {
+        this.id = id;
+        this.uuid = uuid;
+        this.name = name;
+        this.description = description;
+        this.type = type;
+        this.scope = scope;
+        this.workflow = workflow;
+        this.docker = docker;
+        this.tags = tags;
+        this.variables = variables;
+        this.minimumRequirements = minimumRequirements;
+        this.draft = draft;
+        this.version = version;
+        this.release = release;
+        this.internal = internal;
+        this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
+        this.attributes = attributes;
+    }
+
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("Workflow{");
+        final StringBuilder sb = new StringBuilder("ExternalTool{");
         sb.append("id='").append(id).append('\'');
         sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
+        sb.append(", type=").append(type);
         sb.append(", scope=").append(scope);
-        sb.append(", manager=").append(manager);
+        sb.append(", workflow=").append(workflow);
+        sb.append(", docker=").append(docker);
         sb.append(", tags=").append(tags);
         sb.append(", variables=").append(variables);
         sb.append(", minimumRequirements=").append(minimumRequirements);
         sb.append(", draft=").append(draft);
-        sb.append(", repository=").append(repository);
-        sb.append(", scripts=").append(scripts);
         sb.append(", version=").append(version);
         sb.append(", release=").append(release);
         sb.append(", internal=").append(internal);
@@ -173,30 +198,12 @@ public class ExternalTool extends PrivateStudyUid {
         return this;
     }
 
-    public boolean isDraft() {
-        return draft;
+    public Type getType() {
+        return type;
     }
 
-    public ExternalTool setDraft(boolean draft) {
-        this.draft = draft;
-        return this;
-    }
-
-    public int getVersion() {
-        return version;
-    }
-
-    public ExternalTool setVersion(int version) {
-        this.version = version;
-        return this;
-    }
-
-    public int getRelease() {
-        return release;
-    }
-
-    public ExternalTool setRelease(int release) {
-        this.release = release;
+    public ExternalTool setType(Type type) {
+        this.type = type;
         return this;
     }
 
@@ -209,30 +216,21 @@ public class ExternalTool extends PrivateStudyUid {
         return this;
     }
 
-    public WorkflowSystem getManager() {
-        return manager;
+    public Workflow getWorkflow() {
+        return workflow;
     }
 
-    public ExternalTool setManager(WorkflowSystem manager) {
-        this.manager = manager;
+    public ExternalTool setWorkflow(Workflow workflow) {
+        this.workflow = workflow;
         return this;
     }
 
-    public WorkflowRepository getRepository() {
-        return repository;
+    public Docker getDocker() {
+        return docker;
     }
 
-    public ExternalTool setRepository(WorkflowRepository repository) {
-        this.repository = repository;
-        return this;
-    }
-
-    public List<WorkflowScript> getScripts() {
-        return scripts;
-    }
-
-    public ExternalTool setScripts(List<WorkflowScript> scripts) {
-        this.scripts = scripts;
+    public ExternalTool setDocker(Docker docker) {
+        this.docker = docker;
         return this;
     }
 
@@ -260,6 +258,33 @@ public class ExternalTool extends PrivateStudyUid {
 
     public ExternalTool setMinimumRequirements(MinimumRequirements minimumRequirements) {
         this.minimumRequirements = minimumRequirements;
+        return this;
+    }
+
+    public boolean isDraft() {
+        return draft;
+    }
+
+    public ExternalTool setDraft(boolean draft) {
+        this.draft = draft;
+        return this;
+    }
+
+    public int getVersion() {
+        return version;
+    }
+
+    public ExternalTool setVersion(int version) {
+        this.version = version;
+        return this;
+    }
+
+    public int getRelease() {
+        return release;
+    }
+
+    public ExternalTool setRelease(int release) {
+        this.release = release;
         return this;
     }
 

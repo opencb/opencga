@@ -9,7 +9,7 @@ import java.util.Map;
 
 public class ExternalToolUpdateParams {
 
-    @DataField(id = "name", description = FieldConstants.WORKFLOW_NAME_DESCRIPTION)
+    @DataField(id = "name", description = FieldConstants.EXTERNAL_TOOL_NAME_DESCRIPTION)
     private String name;
 
     @DataField(id = "description", description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
@@ -18,13 +18,13 @@ public class ExternalToolUpdateParams {
     @DataField(id = "manager", description = FieldConstants.WORKFLOW_MANAGER_DESCRIPTION)
     private WorkflowSystem manager;
 
-    @DataField(id = "scope", description = FieldConstants.WORKFLOW_SCOPE_DESCRIPTION)
+    @DataField(id = "scope", description = FieldConstants.EXTERNAL_TOOL_SCOPE_DESCRIPTION)
     private ExternalTool.Scope scope;
 
-    @DataField(id = "tags", description = FieldConstants.WORKFLOW_TAGS_DESCRIPTION)
+    @DataField(id = "tags", description = FieldConstants.EXTERNAL_TOOL_TAGS_DESCRIPTION)
     private List<String> tags;
 
-    @DataField(id = "draft", description = FieldConstants.WORKFLOW_DRAFT_DESCRIPTION)
+    @DataField(id = "draft", description = FieldConstants.EXTERNAL_TOOL_DRAFT_DESCRIPTION)
     private boolean draft;
 
     @DataField(id = "repository", description = FieldConstants.WORKFLOW_REPOSITORY_DESCRIPTION)
@@ -33,7 +33,7 @@ public class ExternalToolUpdateParams {
     @DataField(id = "scripts", description = FieldConstants.WORKFLOW_SCRIPTS_DESCRIPTION)
     private List<WorkflowScript> scripts;
 
-    @DataField(id = "variables", description = FieldConstants.WORKFLOW_VARIABLES_DESCRIPTION)
+    @DataField(id = "variables", description = FieldConstants.EXTERNAL_TOOL_VARIABLES_DESCRIPTION)
     private List<ExternalToolVariable> variables;
 
     @DataField(id = "minimumRequirements", description = FieldConstants.MINIMUM_REQUIREMENTS_DESCRIPTION)

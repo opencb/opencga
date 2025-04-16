@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
@@ -29,6 +30,7 @@ import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.InternalStatus;
+import org.opencb.opencga.core.models.externalTool.workflow.WorkflowCreateParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobType;
 import org.opencb.opencga.core.models.job.MinimumRequirements;
@@ -54,9 +56,9 @@ import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorization
 import static org.opencb.opencga.catalog.db.api.ExternalToolDBAdaptor.QueryParams.*;
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
-public class ExternalToolManager extends ResourceManager<ExternalTool> {
+public class WorkflowManager extends ResourceManager<ExternalTool> {
 
-    public static final QueryOptions INCLUDE_WORKFLOW_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(ID.key(), UID.key(),
+    public static final QueryOptions INCLUDE_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(ID.key(), UID.key(),
             UUID.key(), VERSION.key(), DESCRIPTION.key(), STUDY_UID.key(), MANAGER.key()));
 
     private final CatalogIOManager catalogIOManager;
@@ -70,20 +72,20 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
 
     private final Logger logger;
 
-    ExternalToolManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                        DBAdaptorFactory catalogDBAdaptorFactory, IOManagerFactory ioManagerFactory, CatalogIOManager catalogIOManager,
-                        Configuration configuration) {
+    WorkflowManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
+                    DBAdaptorFactory catalogDBAdaptorFactory, IOManagerFactory ioManagerFactory, CatalogIOManager catalogIOManager,
+                    Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
 
         this.catalogIOManager = catalogIOManager;
         this.ioManagerFactory = ioManagerFactory;
-        this.logger = LoggerFactory.getLogger(ExternalToolManager.class);
+        this.logger = LoggerFactory.getLogger(WorkflowManager.class);
     }
 
 
     @Override
     Enums.Resource getEntity() {
-        return Enums.Resource.WORKFLOW;
+        return Enums.Resource.EXTERNAL_TOOL;
     }
 
     @Override
@@ -99,6 +101,7 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
 
         Query queryCopy = query == null ? new Query() : new Query(query);
         queryCopy.put(STUDY_UID.key(), studyUid);
+        queryCopy.put(TYPE.key(), ExternalTool.Type.WORKFLOW);
 
         boolean versioned = queryCopy.getBoolean(Constants.ALL_VERSIONS)
                 || queryCopy.containsKey(VERSION.key());
@@ -135,6 +138,11 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
     @Override
     public OpenCGAResult<ExternalTool> create(String studyStr, ExternalTool externalTool, QueryOptions options, String token)
             throws CatalogException {
+        throw new NotImplementedException("Not implemented yet");
+    }
+
+    public OpenCGAResult<ExternalTool> create(String studyStr, WorkflowCreateParams workflow, QueryOptions options, String token)
+            throws CatalogException {   
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
@@ -142,7 +150,7 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
-                .append("workflow", externalTool)
+                .append("workflow", workflow)
                 .append("options", options)
                 .append("token", token);
 
@@ -172,11 +180,11 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
                 OpenCGAResult<ExternalTool> result = getWorkflowDBAdaptor(organizationId).get(query, options);
                 insert.setResults(result.getResults());
             }
-            auditManager.auditCreate(organizationId, userId, Enums.Resource.WORKFLOW, externalTool.getId(), externalTool.getUuid(), studyId,
+            auditManager.auditCreate(organizationId, userId, Enums.Resource.EXTERNAL_TOOL, externalTool.getId(), externalTool.getUuid(), studyId,
                     studyUuid, auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return insert;
         } catch (CatalogException e) {
-            auditManager.auditCreate(organizationId, userId, Enums.Resource.WORKFLOW, externalTool.getId(), "", studyId, studyUuid,
+            auditManager.auditCreate(organizationId, userId, Enums.Resource.EXTERNAL_TOOL, externalTool.getId(), "", studyId, studyUuid,
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -269,7 +277,7 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
             Query query = new Query()
                     .append(STUDY_UID.key(), study.getUid())
                     .append(ID.key(), externalTool.getId());
-            OpenCGAResult<ExternalTool> tmpResult = getWorkflowDBAdaptor(organizationId).get(query, INCLUDE_WORKFLOW_IDS);
+            OpenCGAResult<ExternalTool> tmpResult = getWorkflowDBAdaptor(organizationId).get(query, INCLUDE_IDS);
             if (tmpResult.getNumResults() > 0) {
                 logger.warn("Workflow '" + workflowId + "' already exists. Updating with the latest workflow information.");
                 try {
@@ -297,11 +305,11 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
                 OpenCGAResult<ExternalTool> tmpTmpResult = getWorkflowDBAdaptor(organizationId).get(query, options);
                 result.setResults(tmpTmpResult.getResults());
             }
-            auditManager.auditCreate(organizationId, userId, Enums.Resource.WORKFLOW, externalTool.getId(), externalTool.getUuid(), studyId,
+            auditManager.auditCreate(organizationId, userId, Enums.Resource.EXTERNAL_TOOL, externalTool.getId(), externalTool.getUuid(), studyId,
                     studyUuid, auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return result;
         } catch (CatalogException e) {
-            auditManager.auditCreate(organizationId, userId, Enums.Resource.WORKFLOW, workflowId, "", studyId, studyUuid, auditParams,
+            auditManager.auditCreate(organizationId, userId, Enums.Resource.EXTERNAL_TOOL, workflowId, "", studyId, studyUuid, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -346,8 +354,8 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
             String inputLine;
             long maxMemory = IOUtils.fromHumanReadableToByte(MAX_MEMORY);
             while ((inputLine = in.readLine()) != null) {
-                Matcher cpuMatcher = CPU_PATTERN.matcher(inputLine);
-                Matcher memoryMatcher = MEMORY_PATTERN.matcher(inputLine);
+                Matcher cpuMatcher = WORKFLOW_CPU_PATTERN.matcher(inputLine);
+                Matcher memoryMatcher = WORKFLOW_MEMORY_PATTERN.matcher(inputLine);
                 if (cpuMatcher.find()) {
                     String value = cpuMatcher.group(1);
                     int intValue = Integer.parseInt(value);
@@ -452,23 +460,23 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
             case "name":
                 externalTool.setId(value.replace("/", "."));
                 externalTool.setName(value.replace("/", " "));
-                externalTool.getRepository().setId(value);
+                externalTool.getWorkflow().getRepository().setId(value);
                 break;
             case "author":
-                externalTool.getRepository().setAuthor(value);
+                externalTool.getWorkflow().getRepository().setAuthor(value);
                 break;
             case "description":
                 externalTool.setDescription(value);
-                externalTool.getRepository().setDescription(value);
+                externalTool.getWorkflow().getRepository().setDescription(value);
                 break;
             case "version":
                 String version = value.replaceAll("^[^0-9]+|[^0-9.]+$", "");
-                externalTool.getRepository().setVersion(version);
+                externalTool.getWorkflow().getRepository().setVersion(version);
                 break;
             case "nextflowVersion":
                 // Nextflow version must start with a number
                 version = value.replaceAll("^[^0-9]+|[^0-9.]+$", "");
-                externalTool.getManager().setVersion(version);
+                externalTool.getWorkflow().getManager().setVersion(version);
                 break;
             default:
                 break;
@@ -521,7 +529,7 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
             studyUuid = study.getUuid();
 
             ExternalTool externalTool = internalGet(organizationId, study.getUid(), Collections.singletonList(workflowId), null,
-                    INCLUDE_WORKFLOW_IDS, userId, false).first();
+                    INCLUDE_IDS, userId, false).first();
             id = externalTool.getId();
             uuid = externalTool.getUuid();
 
@@ -558,11 +566,11 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
                 OpenCGAResult<ExternalTool> result = getWorkflowDBAdaptor(organizationId).get(query, options);
                 insert.setResults(result.getResults());
             }
-            auditManager.auditUpdate(organizationId, userId, Enums.Resource.WORKFLOW, id, uuid, studyId, studyUuid, auditParams,
+            auditManager.auditUpdate(organizationId, userId, Enums.Resource.EXTERNAL_TOOL, id, uuid, studyId, studyUuid, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return insert;
         } catch (CatalogException e) {
-            auditManager.auditUpdate(organizationId, userId, Enums.Resource.WORKFLOW, id, uuid, studyId, studyUuid, auditParams,
+            auditManager.auditUpdate(organizationId, userId, Enums.Resource.EXTERNAL_TOOL, id, uuid, studyId, studyUuid, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -631,12 +639,12 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
 
             OpenCGAResult<ExternalTool> queryResult = getWorkflowDBAdaptor(organizationId).get(study.getUid(), query, options, userId);
 
-            auditManager.auditSearch(organizationId, userId, Enums.Resource.WORKFLOW, study.getId(), study.getUuid(), auditParams,
+            auditManager.auditSearch(organizationId, userId, Enums.Resource.EXTERNAL_TOOL, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return queryResult;
         } catch (CatalogException e) {
-            auditManager.auditSearch(organizationId, userId, Enums.Resource.WORKFLOW, studyId, studyUuid, auditParams,
+            auditManager.auditSearch(organizationId, userId, Enums.Resource.EXTERNAL_TOOL, studyId, studyUuid, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -664,12 +672,12 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
             query.append(ExternalToolDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
             OpenCGAResult<?> result = getWorkflowDBAdaptor(organizationId).distinct(study.getUid(), fields, query, userId);
 
-            auditManager.auditDistinct(organizationId, userId, Enums.Resource.WORKFLOW, study.getId(), study.getUuid(), auditParams,
+            auditManager.auditDistinct(organizationId, userId, Enums.Resource.EXTERNAL_TOOL, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return result;
         } catch (CatalogException e) {
-            auditManager.auditDistinct(organizationId, userId, Enums.Resource.WORKFLOW, study.getId(), study.getUuid(), auditParams,
+            auditManager.auditDistinct(organizationId, userId, Enums.Resource.EXTERNAL_TOOL, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -696,13 +704,13 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
             query.append(ExternalToolDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
             OpenCGAResult<Long> queryResultAux = getWorkflowDBAdaptor(organizationId).count(query, userId);
 
-            auditManager.auditCount(organizationId, userId, Enums.Resource.WORKFLOW, study.getId(), study.getUuid(), auditParams,
+            auditManager.auditCount(organizationId, userId, Enums.Resource.EXTERNAL_TOOL, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return new OpenCGAResult<>(queryResultAux.getTime(), queryResultAux.getEvents(), 0, Collections.emptyList(),
                     queryResultAux.getNumMatches());
         } catch (CatalogException e) {
-            auditManager.auditCount(organizationId, userId, Enums.Resource.WORKFLOW, study.getId(), study.getUuid(), auditParams,
+            auditManager.auditCount(organizationId, userId, Enums.Resource.EXTERNAL_TOOL, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -741,7 +749,7 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
             long studyId = study.getUid();
             checkPermissions = !authorizationManager.isAtLeastStudyAdministrator(organizationId, studyId, userId);
         } catch (CatalogException e) {
-            auditManager.auditDelete(organizationId, operationId, userId, Enums.Resource.WORKFLOW, "", "", study.getId(), study.getUuid(),
+            auditManager.auditDelete(organizationId, operationId, userId, Enums.Resource.EXTERNAL_TOOL, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -752,7 +760,7 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
             String workflowId = id;
             String workflowUuid = "";
             try {
-                OpenCGAResult<ExternalTool> internalResult = internalGet(organizationId, study.getUid(), id, INCLUDE_WORKFLOW_IDS, userId);
+                OpenCGAResult<ExternalTool> internalResult = internalGet(organizationId, study.getUid(), id, INCLUDE_IDS, userId);
                 if (internalResult.getNumResults() == 0) {
                     throw new CatalogException("Workflow '" + id + "' not found");
                 }
@@ -772,7 +780,7 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
 
                 result.append(getWorkflowDBAdaptor(organizationId).delete(externalTool));
 
-                auditManager.auditDelete(organizationId, operationId, userId, Enums.Resource.WORKFLOW, externalTool.getId(),
+                auditManager.auditDelete(organizationId, operationId, userId, Enums.Resource.EXTERNAL_TOOL, externalTool.getId(),
                         externalTool.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
@@ -783,7 +791,7 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
                 result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error(errorMsg);
-                auditManager.auditDelete(organizationId, operationId, userId, Enums.Resource.WORKFLOW, workflowId, workflowUuid,
+                auditManager.auditDelete(organizationId, operationId, userId, Enums.Resource.EXTERNAL_TOOL, workflowId, workflowUuid,
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
@@ -832,13 +840,13 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
             fixQueryObject(finalQuery);
             finalQuery.append(ExternalToolDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            iterator = getWorkflowDBAdaptor(organizationId).iterator(study.getUid(), finalQuery, INCLUDE_WORKFLOW_IDS, userId);
+            iterator = getWorkflowDBAdaptor(organizationId).iterator(study.getUid(), finalQuery, INCLUDE_IDS, userId);
 
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             long studyId = study.getUid();
             checkPermissions = !authorizationManager.isAtLeastStudyAdministrator(organizationId, studyId, userId);
         } catch (CatalogException e) {
-            auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.WORKFLOW, "", "", study.getId(), study.getUuid(),
+            auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.EXTERNAL_TOOL, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -858,7 +866,7 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
 
                 result.append(getWorkflowDBAdaptor(organizationId).delete(externalTool));
 
-                auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.WORKFLOW, externalTool.getId(),
+                auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.EXTERNAL_TOOL, externalTool.getId(),
                         externalTool.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
@@ -869,7 +877,7 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
                 result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error(errorMsg);
-                auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.WORKFLOW, externalTool.getId(),
+                auditManager.auditDelete(organizationId, operationUuid, userId, Enums.Resource.EXTERNAL_TOOL, externalTool.getId(),
                         externalTool.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
@@ -910,17 +918,17 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
 
     private void validateNewWorkflow(ExternalTool externalTool, String userId) throws CatalogParameterException {
         ParamUtils.checkIdentifier(externalTool.getId(), ID.key());
-        if (externalTool.getManager() == null) {
+        if (externalTool.getWorkflow().getManager() == null) {
             externalTool.setManager(new WorkflowSystem());
         }
-        if (externalTool.getManager().getId() == null) {
-            externalTool.getManager().setId(WorkflowSystem.SystemId.NEXTFLOW);
+        if (externalTool.getWorkflow().getManager().getId() == null) {
+            externalTool.getWorkflow().getManager().setId(WorkflowSystem.SystemId.NEXTFLOW);
         }
         externalTool.setScope(ParamUtils.defaultObject(externalTool.getScope(), ExternalTool.Scope.OTHER));
         externalTool.setTags(externalTool.getTags() != null ? externalTool.getTags() : Collections.emptyList());
-        externalTool.setScripts(externalTool.getScripts() != null ? externalTool.getScripts() : Collections.emptyList());
+        externalTool.setScripts(externalTool.getWorkflow().getScripts() != null ? externalTool.getWorkflow().getScripts() : Collections.emptyList());
         boolean main = false;
-        for (WorkflowScript script : externalTool.getScripts()) {
+        for (WorkflowScript script : externalTool.getWorkflow().getScripts()) {
             ParamUtils.checkIdentifier(script.getFileName(), SCRIPTS.key() + ".id");
             ParamUtils.checkParameter(script.getContent(), SCRIPTS.key() + ".content");
             if (script.isMain()) {
@@ -930,14 +938,14 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
                 main = script.isMain();
             }
         }
-        if (CollectionUtils.isNotEmpty(externalTool.getScripts()) && !main) {
+        if (CollectionUtils.isNotEmpty(externalTool.getWorkflow().getScripts()) && !main) {
             throw new CatalogParameterException("No main script found.");
         }
-        externalTool.setRepository(externalTool.getRepository() != null ? externalTool.getRepository() : new WorkflowRepository(""));
-        if (StringUtils.isEmpty(externalTool.getRepository().getId()) && CollectionUtils.isEmpty(externalTool.getScripts())) {
+        externalTool.setRepository(externalTool.getWorkflow().getRepository() != null ? externalTool.getWorkflow().getRepository() : new WorkflowRepository(""));
+        if (StringUtils.isEmpty(externalTool.getWorkflow().getRepository().getId()) && CollectionUtils.isEmpty(externalTool.getWorkflow().getScripts())) {
             throw new CatalogParameterException("No repository image or scripts found.");
         }
-        if (StringUtils.isNotEmpty(externalTool.getRepository().getId()) && CollectionUtils.isNotEmpty(externalTool.getScripts())) {
+        if (StringUtils.isNotEmpty(externalTool.getWorkflow().getRepository().getId()) && CollectionUtils.isNotEmpty(externalTool.getWorkflow().getScripts())) {
             throw new CatalogParameterException("Both repository image and scripts found. Please, either add scripts or a repository"
                     + " image.");
         }
@@ -981,7 +989,7 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
         try {
             auditManager.initAuditBatch(operationId);
             InternalGetDataResult<ExternalTool> queryResult = internalGet(organizationId, study.getUid(), workflowList,
-                    INCLUDE_WORKFLOW_IDS, userId, ignoreException);
+                    INCLUDE_IDS, userId, ignoreException);
 
             if (queryResult.getMissing() != null) {
                 missingMap = queryResult.getMissing().stream()
@@ -990,10 +998,10 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
 
             List<Long> workflowUids = queryResult.getResults().stream().map(ExternalTool::getUid).collect(Collectors.toList());
             if (CollectionUtils.isNotEmpty(members)) {
-                workflowAcls = authorizationManager.getAcl(organizationId, study.getUid(), workflowUids, members, Enums.Resource.WORKFLOW,
+                workflowAcls = authorizationManager.getAcl(organizationId, study.getUid(), workflowUids, members, Enums.Resource.EXTERNAL_TOOL,
                         ExternalToolPermissions.class, userId);
             } else {
-                workflowAcls = authorizationManager.getAcl(organizationId, study.getUid(), workflowUids, Enums.Resource.WORKFLOW,
+                workflowAcls = authorizationManager.getAcl(organizationId, study.getUid(), workflowUids, Enums.Resource.EXTERNAL_TOOL,
                         ExternalToolPermissions.class, userId);
             }
 
@@ -1005,14 +1013,14 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
                 if (!missingMap.containsKey(workflowId)) {
                     ExternalTool externalTool = queryResult.getResults().get(counter);
                     resultList.add(workflowAcls.getResults().get(counter));
-                    auditManager.audit(organizationId, operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.WORKFLOW,
+                    auditManager.audit(organizationId, operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.EXTERNAL_TOOL,
                             externalTool.getId(), externalTool.getUuid(), study.getId(), study.getUuid(), auditParams,
                             new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
                     counter++;
                 } else {
                     resultList.add(new AclEntryList<>());
                     eventList.add(new Event(Event.Type.ERROR, workflowId, missingMap.get(workflowId).getErrorMsg()));
-                    auditManager.audit(organizationId, operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.WORKFLOW, workflowId,
+                    auditManager.audit(organizationId, operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.EXTERNAL_TOOL, workflowId,
                             "", study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                                     new Error(0, "", missingMap.get(workflowId).getErrorMsg())), new ObjectMap());
                 }
@@ -1024,7 +1032,7 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
             workflowAcls.setEvents(eventList);
         } catch (CatalogException e) {
             for (String workflowId : workflowList) {
-                auditManager.audit(organizationId, operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.WORKFLOW, workflowId, "",
+                auditManager.audit(organizationId, operationId, userId, Enums.Action.FETCH_ACLS, Enums.Resource.EXTERNAL_TOOL, workflowId, "",
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()),
                         new ObjectMap());
             }
@@ -1077,7 +1085,7 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
                 checkPermissions(params.getPermissions(), ExternalToolPermissions::valueOf);
             }
 
-            externalToolList = internalGet(organizationId, study.getUid(), params.getExternalToolIds(), INCLUDE_WORKFLOW_IDS, userId, false)
+            externalToolList = internalGet(organizationId, study.getUid(), params.getExternalToolIds(), INCLUDE_IDS, userId, false)
                     .getResults();
             authorizationManager.checkCanAssignOrSeePermissions(organizationId, study.getUid(), userId);
 
@@ -1092,7 +1100,7 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
         } catch (CatalogException e) {
             if (CollectionUtils.isNotEmpty(params.getExternalToolIds())) {
                 for (String workflowId : params.getExternalToolIds()) {
-                    auditManager.audit(organizationId, operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.WORKFLOW, workflowId,
+                    auditManager.audit(organizationId, operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.EXTERNAL_TOOL, workflowId,
                             "", study.getId(), study.getUuid(), auditParams,
                             new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
                 }
@@ -1113,7 +1121,7 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
             List<Long> workflowUids = batchExternalToolList.stream().map(ExternalTool::getUid).collect(Collectors.toList());
             List<String> workflowIds = batchExternalToolList.stream().map(ExternalTool::getId).collect(Collectors.toList());
             List<AuthorizationManager.CatalogAclParams> aclParamsList = new ArrayList<>();
-            AuthorizationManager.CatalogAclParams.addToList(workflowUids, params.getPermissions(), Enums.Resource.WORKFLOW, aclParamsList);
+            AuthorizationManager.CatalogAclParams.addToList(workflowUids, params.getPermissions(), Enums.Resource.EXTERNAL_TOOL, aclParamsList);
 
             try {
                 switch (action) {
@@ -1138,7 +1146,7 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
 
                 OpenCGAResult<AclEntryList<ExternalToolPermissions>> queryResults = authorizationManager.getAcls(organizationId,
                         study.getUid(),
-                        workflowUids, members, Enums.Resource.WORKFLOW, ExternalToolPermissions.class);
+                        workflowUids, members, Enums.Resource.EXTERNAL_TOOL, ExternalToolPermissions.class);
 
                 for (int i = 0; i < queryResults.getResults().size(); i++) {
                     queryResults.getResults().get(i).setId(workflowIds.get(i));
@@ -1146,14 +1154,14 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
                 aclResultList.append(queryResults);
 
                 for (ExternalTool externalTool : batchExternalToolList) {
-                    auditManager.audit(organizationId, operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.WORKFLOW,
+                    auditManager.audit(organizationId, operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.EXTERNAL_TOOL,
                             externalTool.getId(), externalTool.getUuid(), study.getId(), study.getUuid(), auditParams,
                             new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
                 }
             } catch (CatalogException e) {
                 // Process current batch
                 for (ExternalTool externalTool : batchExternalToolList) {
-                    auditManager.audit(organizationId, operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.WORKFLOW,
+                    auditManager.audit(organizationId, operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.EXTERNAL_TOOL,
                             externalTool.getId(), externalTool.getUuid(), study.getId(), study.getUuid(), auditParams,
                             new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
                 }
@@ -1161,7 +1169,7 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
                 // Process remaining unprocessed batches
                 while (numProcessed < externalToolList.size()) {
                     ExternalTool externalTool = externalToolList.get(numProcessed);
-                    auditManager.audit(organizationId, operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.WORKFLOW,
+                    auditManager.audit(organizationId, operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.EXTERNAL_TOOL,
                             externalTool.getId(), externalTool.getUuid(), study.getId(), study.getUuid(), auditParams,
                             new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
                 }

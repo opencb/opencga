@@ -8,7 +8,7 @@ public class WorkflowSystem {
     @DataField(id = "id", description = FieldConstants.WORKFLOW_SYSTEM_ID_DESCRIPTION)
     private SystemId id;
 
-    @DataField(id = "version", description = FieldConstants.WORKFLOW_SYSTEM_ID_DESCRIPTION)
+    @DataField(id = "version", description = FieldConstants.WORKFLOW_SYSTEM_VERSION_DESCRIPTION)
     private String version;
 
     public enum SystemId {

@@ -504,11 +504,11 @@ public class ExternalToolMongoDBAdaptor extends CatalogMongoDBAdaptor implements
             boolean simplifyPermissions = simplifyPermissions();
 
             if (query.containsKey(ParamConstants.ACL_PARAM)) {
-                andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.WORKFLOW, user,
+                andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.EXTERNAL_TOOL, user,
                         simplifyPermissions));
             } else {
                     andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, ExternalToolPermissions.VIEW.name(),
-                            Enums.Resource.WORKFLOW, simplifyPermissions));
+                            Enums.Resource.EXTERNAL_TOOL, simplifyPermissions));
             }
 
             query.remove(ParamConstants.ACL_PARAM);
