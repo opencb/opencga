@@ -13,15 +13,19 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ClientException;
+import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.externalTool.ExternalTool;
 import org.opencb.opencga.core.models.externalTool.ExternalToolAclEntryList;
 import org.opencb.opencga.core.models.externalTool.ExternalToolAclUpdateParams;
-import org.opencb.opencga.core.models.externalTool.ExternalToolCreateParams;
+import org.opencb.opencga.core.models.externalTool.ExternalToolInternal;
+import org.opencb.opencga.core.models.externalTool.ExternalToolScope;
 import org.opencb.opencga.core.models.externalTool.ExternalToolUpdateParams;
 import org.opencb.opencga.core.models.externalTool.NextFlowRunParams;
+import org.opencb.opencga.core.models.externalTool.Workflow;
 import org.opencb.opencga.core.models.externalTool.WorkflowRepository;
 import org.opencb.opencga.core.models.externalTool.WorkflowRepositoryParams;
 import org.opencb.opencga.core.models.externalTool.WorkflowSystem;
+import org.opencb.opencga.core.models.externalTool.workflow.WorkflowCreateParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.MinimumRequirements;
 import org.opencb.opencga.core.response.QueryType;
@@ -148,41 +152,38 @@ public class WorkflowsCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        ExternalToolCreateParams externalToolCreateParams = null;
+        WorkflowCreateParams workflowCreateParams = null;
         if (commandOptions.jsonDataModel) {
             RestResponse<ExternalTool> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/workflows/create"));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            externalToolCreateParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), ExternalToolCreateParams.class);
+            workflowCreateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), WorkflowCreateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
             putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
             putNestedIfNotEmpty(beanParams, "description", commandOptions.description, true);
-            putNestedIfNotNull(beanParams, "manager.id", commandOptions.managerId, true);
-            putNestedIfNotEmpty(beanParams, "manager.version", commandOptions.managerVersion, true);
             putNestedIfNotNull(beanParams, "scope", commandOptions.scope, true);
             putNestedIfNotNull(beanParams, "tags", commandOptions.tags, true);
-            putNestedIfNotNull(beanParams, "draft", commandOptions.draft, true);
-            putNestedIfNotEmpty(beanParams, "repository.id", commandOptions.repositoryId, true);
-            putNestedIfNotEmpty(beanParams, "repository.version", commandOptions.repositoryVersion, true);
-            putNestedIfNotEmpty(beanParams, "repository.author", commandOptions.repositoryAuthor, true);
-            putNestedIfNotEmpty(beanParams, "repository.description", commandOptions.repositoryDescription, true);
             putNestedIfNotEmpty(beanParams, "minimumRequirements.cpu", commandOptions.minimumRequirementsCpu, true);
             putNestedIfNotEmpty(beanParams, "minimumRequirements.memory", commandOptions.minimumRequirementsMemory, true);
             putNestedIfNotEmpty(beanParams, "minimumRequirements.disk", commandOptions.minimumRequirementsDisk, true);
+            putNestedIfNotNull(beanParams, "draft", commandOptions.draft, true);
+            putNestedIfNotEmpty(beanParams, "internal.registrationDate", commandOptions.internalRegistrationDate, true);
+            putNestedIfNotEmpty(beanParams, "internal.lastModified", commandOptions.internalLastModified, true);
+            putNestedIfNotEmpty(beanParams, "internal.registrationUserId", commandOptions.internalRegistrationUserId, true);
             putNestedIfNotEmpty(beanParams, "creationDate", commandOptions.creationDate, true);
             putNestedIfNotEmpty(beanParams, "modificationDate", commandOptions.modificationDate, true);
             putNestedMapIfNotEmpty(beanParams, "attributes", commandOptions.attributes, true);
 
-            externalToolCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
+            workflowCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), ExternalToolCreateParams.class);
+                    .readValue(beanParams.toJson(), WorkflowCreateParams.class);
         }
-        return openCGAClient.getWorkflowClient().create(externalToolCreateParams, queryParams);
+        return openCGAClient.getWorkflowClient().create(workflowCreateParams, queryParams);
     }
 
     private RestResponse<Object> distinct() throws Exception {
@@ -236,8 +237,10 @@ public class WorkflowsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), WorkflowRepositoryParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
-            putNestedIfNotEmpty(beanParams, "version", commandOptions.version, true);
+            putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "tag", commandOptions.tag, true);
+            putNestedIfNotEmpty(beanParams, "user", commandOptions.user, true);
+            putNestedIfNotEmpty(beanParams, "password", commandOptions.password, true);
 
             workflowRepositoryParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -353,8 +356,8 @@ public class WorkflowsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotNull(beanParams, "scope", commandOptions.scope, true);
             putNestedIfNotNull(beanParams, "tags", commandOptions.tags, true);
             putNestedIfNotNull(beanParams, "draft", commandOptions.draft, true);
-            putNestedIfNotEmpty(beanParams, "repository.id", commandOptions.repositoryId, true);
-            putNestedIfNotEmpty(beanParams, "repository.version", commandOptions.repositoryVersion, true);
+            putNestedIfNotEmpty(beanParams, "repository.name", commandOptions.repositoryName, true);
+            putNestedIfNotEmpty(beanParams, "repository.tag", commandOptions.repositoryTag, true);
             putNestedIfNotEmpty(beanParams, "repository.author", commandOptions.repositoryAuthor, true);
             putNestedIfNotEmpty(beanParams, "repository.description", commandOptions.repositoryDescription, true);
             putNestedIfNotEmpty(beanParams, "minimumRequirements.cpu", commandOptions.minimumRequirementsCpu, true);

@@ -2,51 +2,57 @@ package org.opencb.opencga.core.models.externalTool;
 
 public class WorkflowRepository {
 
-    private String id;
-    private String version;
+    private String name;
+    private String tag;
     private String author;
     private String description;
+    private String user;
+    private String password;
 
     public WorkflowRepository() {
     }
 
-    public WorkflowRepository(String id) {
-        this.id = id;
+    public WorkflowRepository(String name) {
+        this.name = name;
     }
 
-    public WorkflowRepository(String id, String version, String author, String description) {
-        this.id = id;
-        this.version = version;
+    public WorkflowRepository(String name, String tag, String author, String description, String user, String password) {
+        this.name = name;
+        this.tag = tag;
         this.author = author;
         this.description = description;
+        this.user = user;
+        this.password = password;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("WorkflowRepository{");
-        sb.append("id='").append(id).append('\'');
-        sb.append(", version='").append(version).append('\'');
+        sb.append("name='").append(name).append('\'');
+        sb.append(", tag='").append(tag).append('\'');
         sb.append(", author='").append(author).append('\'');
         sb.append(", description='").append(description).append('\'');
+        sb.append(", user='").append(user).append('\'');
+        sb.append(", password='").append(password).append('\'');
         sb.append('}');
         return sb.toString();
     }
 
-    public String getId() {
-        return id;
+    public String getName() {
+        return name;
     }
 
-    public WorkflowRepository setId(String id) {
-        this.id = id;
+    public WorkflowRepository setName(String name) {
+        this.name = name;
         return this;
     }
 
-    public String getVersion() {
-        return version;
+    public String getTag() {
+        return tag;
     }
 
-    public WorkflowRepository setVersion(String version) {
-        this.version = version;
+    public WorkflowRepository setTag(String tag) {
+        this.tag = tag;
         return this;
     }
 

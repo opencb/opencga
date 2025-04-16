@@ -13,6 +13,7 @@ import org.opencb.opencga.catalog.managers.AbstractManagerTest;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.externalTool.workflow.WorkflowCreateParams;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileCreateParams;
 import org.opencb.opencga.core.models.externalTool.*;
@@ -36,8 +37,8 @@ public class ExternalToolExecutorTest extends AbstractManagerTest {
         InputStream inputStream = StorageManager.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
         StorageConfiguration storageConfiguration = StorageConfiguration.load(inputStream, "yml");
 
-        ExternalToolCreateParams workflow = createDummyWorkflow();
-        catalogManager.getWorkflowManager().create(studyFqn, workflow.toWorkflow(), QueryOptions.empty(), ownerToken);
+        WorkflowCreateParams workflow = createDummyWorkflow();
+        catalogManager.getWorkflowManager().create(studyFqn, workflow, QueryOptions.empty(), ownerToken);
 
         Path outDir = Paths.get(catalogManagerResource.createTmpOutdir("_nextflow"));
 
@@ -61,8 +62,8 @@ public class ExternalToolExecutorTest extends AbstractManagerTest {
 
         catalogManager.getFileManager().create(studyFqn, new FileCreateParams().setPath("myfile.txt").setContent("hello world").setType(File.Type.FILE), false, ownerToken);
 
-        ExternalToolCreateParams workflow = createDummyWorkflow("pipeline_cat_file.nf");
-        catalogManager.getWorkflowManager().create(studyFqn, workflow.toWorkflow(), QueryOptions.empty(), ownerToken);
+        WorkflowCreateParams workflow = createDummyWorkflow("pipeline_cat_file.nf");
+        catalogManager.getWorkflowManager().create(studyFqn, workflow, QueryOptions.empty(), ownerToken);
 
         Path outDir = Paths.get(catalogManagerResource.createTmpOutdir("_nextflow"));
 
@@ -85,9 +86,9 @@ public class ExternalToolExecutorTest extends AbstractManagerTest {
     public void nextflowDockerTest() throws ToolException, CatalogException, IOException {
         InputStream inputStream = StorageManager.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
         StorageConfiguration storageConfiguration = StorageConfiguration.load(inputStream, "yml");
-        ExternalToolCreateParams workflow = new ExternalToolCreateParams()
+        WorkflowCreateParams workflow = new WorkflowCreateParams()
                 .setId("workflow")
-                .setScope(ExternalTool.Scope.OTHER)
+                .setScope(ExternalToolScope.OTHER)
                 .setVariables(Arrays.asList(
                         new ExternalToolVariable()
                                 .setId("input")
@@ -109,8 +110,8 @@ public class ExternalToolExecutorTest extends AbstractManagerTest {
 //                                .setRequired(true)
 //                                .setType(WorkflowVariable.WorkflowVariableType.FLAG)
                 ))
-                .setRepository(new WorkflowRepository("nf-core/demo"));
-        catalogManager.getWorkflowManager().create(studyFqn, workflow.toWorkflow(), QueryOptions.empty(), ownerToken);
+                .setWorkflow(new Workflow().setRepository(new WorkflowRepository("nf-core/demo")));
+        catalogManager.getWorkflowManager().create(studyFqn, workflow, QueryOptions.empty(), ownerToken);
 
         catalogManager.getFileManager().create(studyFqn, new FileCreateParams()
                 .setPath("samplesheet.csv")
@@ -138,16 +139,16 @@ public class ExternalToolExecutorTest extends AbstractManagerTest {
         System.out.println(stopWatch.getTime(TimeUnit.MILLISECONDS));
     }
 
-    private ExternalToolCreateParams createDummyWorkflow() throws IOException {
+    private WorkflowCreateParams createDummyWorkflow() throws IOException {
         return createDummyWorkflow("pipeline.nf");
     }
 
-    private ExternalToolCreateParams createDummyWorkflow(String pipelineId) throws IOException {
+    private WorkflowCreateParams createDummyWorkflow(String pipelineId) throws IOException {
         InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream("nextflow/" + pipelineId);
         String content = IOUtils.toString(inputStream, "UTF-8");
-        return new ExternalToolCreateParams()
+        return new WorkflowCreateParams()
                 .setId("workflow")
-                .setScope(ExternalTool.Scope.OTHER)
-                .setScripts(Collections.singletonList(new WorkflowScript("pipeline.nf", content, true)));
+                .setScope(ExternalToolScope.OTHER)
+                .setWorkflow(new Workflow().setScripts(Collections.singletonList(new WorkflowScript("pipeline.nf", content, true))));
     }
 }

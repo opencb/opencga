@@ -2,49 +2,73 @@ package org.opencb.opencga.core.models.externalTool;
 
 public class WorkflowRepositoryParams {
 
-    private String id;
-    private String version;
+    private String name;
+    private String tag;
+    private String user;
+    private String password;
 
     public WorkflowRepositoryParams() {
     }
 
-    public WorkflowRepositoryParams(String id) {
-        this.id = id;
+    public WorkflowRepositoryParams(String name) {
+        this.name = name;
     }
 
-    public WorkflowRepositoryParams(String id, String version) {
-        this.id = id;
-        this.version = version;
+    public WorkflowRepositoryParams(String name, String tag, String user, String password) {
+        this.name = name;
+        this.tag = tag;
+        this.user = user;
+        this.password = password;
     }
 
     public WorkflowRepository toWorkflowRepository() {
-        return new WorkflowRepository(id, version, "", "");
+        return new WorkflowRepository(name, tag, "", "", user, password);
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("WorkflowRepositoryParams{");
-        sb.append("id='").append(id).append('\'');
-        sb.append(", version='").append(version).append('\'');
+        sb.append("name='").append(name).append('\'');
+        sb.append(", tag='").append(tag).append('\'');
+        sb.append(", user='").append(user).append('\'');
+        sb.append(", password='").append(password).append('\'');
         sb.append('}');
         return sb.toString();
     }
 
-    public String getId() {
-        return id;
+    public String getName() {
+        return name;
     }
 
-    public WorkflowRepositoryParams setId(String id) {
-        this.id = id;
+    public WorkflowRepositoryParams setName(String name) {
+        this.name = name;
         return this;
     }
 
-    public String getVersion() {
-        return version;
+    public String getTag() {
+        return tag;
     }
 
-    public WorkflowRepositoryParams setVersion(String version) {
-        this.version = version;
+    public WorkflowRepositoryParams setTag(String tag) {
+        this.tag = tag;
+        return this;
+    }
+
+    public String getUser() {
+        return user;
+    }
+
+    public WorkflowRepositoryParams setUser(String user) {
+        this.user = user;
+        return this;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public WorkflowRepositoryParams setPassword(String password) {
+        this.password = password;
         return this;
     }
 }

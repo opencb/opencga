@@ -25,10 +25,10 @@ import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.externalTool.ExternalTool;
 import org.opencb.opencga.core.models.externalTool.ExternalToolAclEntryList;
 import org.opencb.opencga.core.models.externalTool.ExternalToolAclUpdateParams;
-import org.opencb.opencga.core.models.externalTool.ExternalToolCreateParams;
 import org.opencb.opencga.core.models.externalTool.ExternalToolUpdateParams;
 import org.opencb.opencga.core.models.externalTool.NextFlowRunParams;
 import org.opencb.opencga.core.models.externalTool.WorkflowRepositoryParams;
+import org.opencb.opencga.core.models.externalTool.workflow.WorkflowCreateParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.RestResponse;
 
@@ -82,7 +82,7 @@ public class WorkflowClient extends ParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<ExternalTool> create(ExternalToolCreateParams data, ObjectMap params) throws ClientException {
+    public RestResponse<ExternalTool> create(WorkflowCreateParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("workflows", null, null, null, "create", params, POST, ExternalTool.class);

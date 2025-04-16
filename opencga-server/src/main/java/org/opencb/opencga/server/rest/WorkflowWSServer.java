@@ -1,15 +1,15 @@
 package org.opencb.opencga.server.rest;
 
-import org.apache.commons.lang3.ObjectUtils;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.managers.ExternalToolManager;
+import org.opencb.opencga.catalog.managers.WorkflowManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
-import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.externalTool.*;
+import org.opencb.opencga.core.models.externalTool.workflow.WorkflowCreateParams;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.tools.annotations.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -25,12 +25,12 @@ import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 @Api(value = "Workflows", description = "Methods for working with 'workflows' endpoint")
 public class WorkflowWSServer extends OpenCGAWSServer {
 
-    private ExternalToolManager externalToolManager;
+    private WorkflowManager workflowManager;
 
     public WorkflowWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
-        externalToolManager = catalogManager.getWorkflowManager();
+        workflowManager = catalogManager.getWorkflowManager();
     }
 
     @GET
@@ -51,7 +51,7 @@ public class WorkflowWSServer extends OpenCGAWSServer {
             query.remove(ParamConstants.STUDY_PARAM);
 
             List<String> workflowList = getIdList(workflowStr);
-            DataResult<ExternalTool> workflowDataResult = externalToolManager.get(studyStr, workflowList, query, queryOptions, true, token);
+            DataResult<ExternalTool> workflowDataResult = workflowManager.get(studyStr, workflowList, query, queryOptions, true, token);
             return createOkResponse(workflowDataResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -70,13 +70,9 @@ public class WorkflowWSServer extends OpenCGAWSServer {
     public Response createWorkflowPOST(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
-            @ApiParam(value = "JSON containing workflow information", required = true) ExternalToolCreateParams params) {
+            @ApiParam(value = "JSON containing workflow information", required = true) WorkflowCreateParams workflow) {
         try {
-            params = ObjectUtils.defaultIfNull(params, new ExternalToolCreateParams());
-
-            ExternalTool externalTool = params.toWorkflow();
-
-            return createOkResponse(externalToolManager.create(studyStr, externalTool, queryOptions, token));
+            return createOkResponse(workflowManager.create(studyStr, workflow, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -143,7 +139,7 @@ public class WorkflowWSServer extends OpenCGAWSServer {
     ) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
-            return createOkResponse(externalToolManager.search(studyStr, query, queryOptions, token));
+            return createOkResponse(workflowManager.search(studyStr, query, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -173,7 +169,7 @@ public class WorkflowWSServer extends OpenCGAWSServer {
             query.remove(ParamConstants.STUDY_PARAM);
             query.remove(ParamConstants.DISTINCT_FIELD_PARAM);
             List<String> fields = split(field, ParamConstants.DISTINCT_FIELD_PARAM, true);
-            return createOkResponse(externalToolManager.distinct(studyStr, fields, query, token));
+            return createOkResponse(workflowManager.distinct(studyStr, fields, query, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -199,7 +195,7 @@ public class WorkflowWSServer extends OpenCGAWSServer {
 //            Map<String, Object> actionMap = new HashMap<>();
 //            queryOptions.put(Constants.ACTIONS, actionMap);
 
-            return createOkResponse(externalToolManager.update(studyStr, workflowId, parameters, queryOptions, token), "Workflow update success");
+            return createOkResponse(workflowManager.update(studyStr, workflowId, parameters, queryOptions, token), "Workflow update success");
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -212,7 +208,7 @@ public class WorkflowWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.WORKFLOWS_DESCRIPTION) @PathParam("workflows") String workflows) {
         try {
-            return createOkResponse(externalToolManager.delete(studyStr, getIdList(workflows), queryOptions, token));
+            return createOkResponse(workflowManager.delete(studyStr, getIdList(workflows), queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -228,7 +224,7 @@ public class WorkflowWSServer extends OpenCGAWSServer {
                             @ApiParam(value = ParamConstants.SILENT_DESCRIPTION, defaultValue = "false") @QueryParam(Constants.SILENT) boolean silent) {
         try {
             List<String> idList = getIdList(workflowIdsStr);
-            return createOkResponse(externalToolManager.getAcls(studyStr, idList, member, silent, token));
+            return createOkResponse(workflowManager.getAcls(studyStr, idList, member, silent, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -244,7 +240,7 @@ public class WorkflowWSServer extends OpenCGAWSServer {
                 @QueryParam(ParamConstants.ACL_ACTION_PARAM) ParamUtils.AclAction action,
             @ApiParam(value = "JSON containing the parameters to update the permissions.", required = true) ExternalToolAclUpdateParams params) {
         try {
-            return createOkResponse(externalToolManager.updateAcl(studyStr, memberIds, params, action, token));
+            return createOkResponse(workflowManager.updateAcl(studyStr, memberIds, params, action, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

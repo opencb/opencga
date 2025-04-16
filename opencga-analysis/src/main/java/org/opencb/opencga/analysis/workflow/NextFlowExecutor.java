@@ -18,11 +18,8 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.externalTool.ExternalTool;
+import org.opencb.opencga.core.models.externalTool.*;
 import org.opencb.opencga.core.models.job.ToolInfoExecutor;
-import org.opencb.opencga.core.models.externalTool.NextFlowRunParams;
-import org.opencb.opencga.core.models.externalTool.WorkflowScript;
-import org.opencb.opencga.core.models.externalTool.ExternalToolVariable;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.ToolDependency;
 import org.opencb.opencga.core.tools.annotations.Tool;
@@ -44,7 +41,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Stream;
 
-@Tool(id = NextFlowExecutor.ID, resource = Enums.Resource.WORKFLOW, description = NextFlowExecutor.DESCRIPTION)
+@Tool(id = NextFlowExecutor.ID, resource = Enums.Resource.EXTERNAL_TOOL, description = NextFlowExecutor.DESCRIPTION)
 public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
 
     public final static String ID = "nextflow";
@@ -106,26 +103,28 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
             }
         }
 
-        if (StringUtils.isEmpty(externalTool.getManager().getVersion())) {
-            externalTool.getManager().setVersion(ParamConstants.DEFAULT_MIN_NEXTFLOW_VERSION);
+        if (StringUtils.isEmpty(externalTool.getWorkflow().getManager().getVersion())) {
+            externalTool.getWorkflow().getManager().setVersion(ParamConstants.DEFAULT_MIN_NEXTFLOW_VERSION);
         }
         // Update job tags and attributes
-        ToolInfoExecutor toolInfoExecutor = new ToolInfoExecutor(externalTool.getManager().getId().name().toLowerCase(),
-                externalTool.getManager().getVersion());
+        ToolInfoExecutor toolInfoExecutor = new ToolInfoExecutor(externalTool.getWorkflow().getManager().getId().name().toLowerCase(),
+                externalTool.getWorkflow().getManager().getVersion());
         Set<String> tags = new HashSet<>();
         tags.add(ID);
-        tags.add(externalTool.getManager().getId().name());
-        tags.add(externalTool.getManager().getId() + ":" + externalTool.getManager().getVersion());
+        tags.add(externalTool.getWorkflow().getManager().getId().name());
+        tags.add(externalTool.getWorkflow().getManager().getId() + ":" + externalTool.getWorkflow().getManager().getVersion());
         tags.add(externalTool.getId());
         if (CollectionUtils.isNotEmpty(externalTool.getTags())) {
             tags.addAll(externalTool.getTags());
         }
         List<ToolDependency> dependencyList = new ArrayList<>(4);
         dependencyList.add(new ToolDependency("opencb/opencga-workflow", GitRepositoryState.getInstance().getBuildVersion() + "-hdp3.1"));
-        dependencyList.add(new ToolDependency("nextflow", externalTool.getManager().getVersion()));
+        dependencyList.add(new ToolDependency("nextflow", externalTool.getWorkflow().getManager().getVersion()));
         dependencyList.add(new ToolDependency(externalTool.getId(), String.valueOf(externalTool.getVersion())));
-        if (externalTool.getRepository() != null && StringUtils.isNotEmpty(externalTool.getRepository().getId())) {
-            dependencyList.add(new ToolDependency(externalTool.getRepository().getId(), externalTool.getRepository().getVersion()));
+        if (externalTool.getWorkflow().getRepository() != null) {
+            if (StringUtils.isNotEmpty(externalTool.getWorkflow().getRepository().getName())) {
+                dependencyList.add(new ToolDependency(externalTool.getWorkflow().getRepository().getName(), externalTool.getWorkflow().getRepository().getTag()));
+            }
         }
         addDependencies(dependencyList);
         updateJobInformation(new ArrayList<>(tags), toolInfoExecutor);
@@ -190,9 +189,9 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
 
     @Override
     protected void run() throws Exception {
-        for (WorkflowScript script : externalTool.getScripts()) {
+        for (WorkflowScript script : externalTool.getWorkflow().getScripts()) {
             // Write script files
-            Path path = temporalInputDir.resolve(script.getFileName());
+            Path path = temporalInputDir.resolve(script.getName());
             Files.write(path, script.getContent().getBytes());
             dockerInputBindings.add(new AbstractMap.SimpleEntry<>(path.toString(), path.toString()));
         }
@@ -216,23 +215,23 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
         String dockerImage = "opencb/opencga-workflow:" + GitRepositoryState.getInstance().getBuildVersion() + "-hdp3.1";
         StringBuilder stringBuilder = new StringBuilder()
                 .append("bash -c \"NXF_VER=")
-                .append(externalTool.getManager().getVersion())
+                .append(externalTool.getWorkflow().getManager().getVersion())
                 .append(" nextflow -c ")
                 .append(nextflowConfigPath)
                 .append(" run ");
-        if (externalTool.getRepository() != null && StringUtils.isNotEmpty(externalTool.getRepository().getId())) {
+        if (externalTool.getWorkflow().getRepository() != null && StringUtils.isNotEmpty(externalTool.getWorkflow().getRepository().getName())) {
 //            stringBuilder.append(workflow.getRepository().getImage()).append(" -with-docker");
-            stringBuilder.append(externalTool.getRepository().getId());
+            stringBuilder.append(externalTool.getWorkflow().getRepository().getName());
             // Add the repository version if we have it and the user is not specifying it
-            if (StringUtils.isNotEmpty(externalTool.getRepository().getVersion()) && !cliParams.contains("-r ")) {
+            if (StringUtils.isNotEmpty(externalTool.getWorkflow().getRepository().getTag()) && !cliParams.contains("-r ")) {
                 stringBuilder
                         .append(" -r ")
-                        .append(externalTool.getRepository().getVersion());
+                        .append(externalTool.getWorkflow().getRepository().getTag());
             }
         } else {
-            for (WorkflowScript script : externalTool.getScripts()) {
+            for (WorkflowScript script : externalTool.getWorkflow().getScripts()) {
                 if (script.isMain()) {
-                    stringBuilder.append(temporalInputDir.resolve(script.getFileName()));
+                    stringBuilder.append(temporalInputDir.resolve(script.getName()));
                     break;
                 }
             }

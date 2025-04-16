@@ -88,7 +88,7 @@ public class CatalogManager implements AutoCloseable {
     private ClinicalAnalysisManager clinicalAnalysisManager;
     private InterpretationManager interpretationManager;
     private PanelManager panelManager;
-    private ExternalToolManager externalToolManager;
+    private WorkflowManager workflowManager;
 
     private AuditManager auditManager;
     private AuthorizationManager authorizationManager;
@@ -164,7 +164,7 @@ public class CatalogManager implements AutoCloseable {
         clinicalAnalysisManager = new ClinicalAnalysisManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 configuration);
         interpretationManager = new InterpretationManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
-        externalToolManager = new ExternalToolManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, ioManagerFactory,
+        workflowManager = new WorkflowManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, ioManagerFactory,
                 catalogIOManager, configuration);
     }
 
@@ -458,7 +458,7 @@ public class CatalogManager implements AutoCloseable {
         return migrationManager;
     }
 
-    public ExternalToolManager getWorkflowManager() {
-        return externalToolManager;
+    public WorkflowManager getWorkflowManager() {
+        return workflowManager;
     }
 }

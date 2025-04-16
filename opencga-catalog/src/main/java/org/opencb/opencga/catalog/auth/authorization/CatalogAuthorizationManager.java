@@ -754,7 +754,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                                 .collect(Collectors.toSet())
                         );
                         break;
-                    case WORKFLOW:
+                    case EXTERNAL_TOOL:
                         allPermissions.addAll(aclParam.getPermissions()
                                 .stream()
                                 .map(ExternalToolPermissions::valueOf)
@@ -879,7 +879,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                             .collect(Collectors.toSet())
                     );
                     break;
-                case WORKFLOW:
+                case EXTERNAL_TOOL:
                     allPermissions.addAll(aclParam.getPermissions()
                             .stream()
                             .map(ExternalToolPermissions::valueOf)
@@ -1002,7 +1002,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                         .collect(Collectors.toSet())
                 );
                 break;
-            case WORKFLOW:
+            case EXTERNAL_TOOL:
                 allPermissions.addAll(permissions
                         .stream()
                         .map(ExternalToolPermissions::valueOf)
