@@ -869,7 +869,7 @@ public class VariantClient extends ParentClient {
     }
 
     /**
-     * Regenie is a program for whole genome regression modelling of large genome-wide association studies. This performs the step1 of the
+     * Regenie is a program for whole genome regression modelling of large genome-wide association studies. This performs the step2 of the
      *     regenie analysis.
      * @param data Regenie step2 parameters.
      * @param params Map containing any of the following optional parameters.

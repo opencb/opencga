@@ -4,13 +4,17 @@ import argparse
 import os
 import sys
 
+BASE_IMAGE = "ubuntu:24.04"
+
 ## Configure command-line options
 parser = argparse.ArgumentParser()
 parser.add_argument("action", help="Action to execute", choices=["dockerfile", "build", "push"], default="dockerfile")
+parser.add_argument("-b", "--base-image", help="Dockerfile FROM image", default=BASE_IMAGE)
 parser.add_argument("-t", "--custom-tool-dir", help="Path to the tool folder, this can contain a requirement.txt and/or install.r files", required=True)
+parser.add_argument("--update-os", help="Update OS using 'apt update'", action='store_true')
 parser.add_argument("--install-r", help="Install R", action='store_true')
 parser.add_argument("--apt-get", help="List of apt-get packages to install")
-parser.add_argument("-o", "--organisation", help="Organisation of the Docker image", default="opencb")
+parser.add_argument("-o", "--organisation", help="Organisation (or namespace) of the Docker image", default="opencb")
 parser.add_argument("-n", "--name", help="Name of the docker image, e.g. my-tool")
 parser.add_argument("-v", "--version", help="Tag of the docker image, e.g. v1.0.0", default="1.0.0")
 parser.add_argument("-l", "--latest", help="Make the docker image latest, e.g. v1.0.0", default="False")
@@ -50,9 +54,9 @@ def login(loginRequired=False):
         else:
             return
 
-    code = os.system("docker login -u " + args.username + " --password " + args.password)
+    code = os.system(f"docker login -u \"{args.username}\" --password \"{args.password}\"")
     if code != 0:
-        error("Error executing: '" + "docker login -u " + args.username + " --password " + args.password + "'")
+        error("Error executing: '" + "docker login -u " + args.username + " --password xxxxxxx'")
 
 def get_docker_image_id():
     print_header('Getting docker image ID: ...')
@@ -69,44 +73,52 @@ def dockerfile():
 
     with open(custom_build_folder + "/Dockerfile", "w") as f:
         ## Set base image and copy the custom tool folder
-        f.write("FROM ubuntu:24.04\n\n")
+        f.write(f"FROM {args.base_image}\n\n")
         f.write("COPY . /opt/app\n\n")
 
-        ## Install Ubuntu OS dependencies with 'apt'
-        # 1. Update Ubuntu and install base libraries
-        f.write("RUN apt update && apt -y upgrade && apt install -y python3 python3-pip ca-certificates curl && \\ \n")
+        run = "RUN"
+        if args.update_os is True:
+            ## Install Ubuntu OS dependencies with 'apt'
+            # 1. Update Ubuntu and install base libraries
+            f.write(f"{run} apt update && apt -y upgrade && apt install -y python3 python3-pip ca-certificates curl && \\ \n")
 
-        # 2. Install Docker
-        f.write("install -m 0755 -d /etc/apt/keyrings && \\ \n")
-        f.write("curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc && \\ \n")
-        f.write("chmod a+r /etc/apt/keyrings/docker.asc && \\ \n")
-        f.write("echo \"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo \"$VERSION_CODENAME\") stable\" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \\ \n")
-        f.write("apt update && apt install -y docker-ce docker-ce-cli containerd.io && \\ \n")
+            # 2. Install Docker
+            f.write("install -m 0755 -d /etc/apt/keyrings && \\ \n")
+            f.write("curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc && \\ \n")
+            f.write("chmod a+r /etc/apt/keyrings/docker.asc && \\ \n")
+            f.write("echo \"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo \"$VERSION_CODENAME\") stable\" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \\ \n")
+            f.write("apt update && apt install -y docker-ce docker-ce-cli containerd.io && \\ \n")
+            run = ""
 
         # 3. Install R
         if args.install_r is True:
-            f.write("apt install -y r-base && \\ \n")
+            f.write(f"{run} apt install -y r-base && \\ \n")
+            run = ""
 
         # 4. Install user's apt dependencies
         if args.apt_get is not None and not args.apt_get == "":
-            f.write("apt install -y " + args.apt_get.replace(",", " ") + " && \\ \n")
+            f.write(f"{run} apt install -y " + args.apt_get.replace(",", " ") + " && \\ \n")
+            run = ""
 
         # 5. Check and build C/C++ tools
         if os.path.isfile(custom_build_folder + "/makefile") or os.path.isfile(custom_build_folder + "/Makefile"):
-            f.write("apt install -y build-essential && \\ \n")
+            f.write(f"{run}apt install -y build-essential && \\ \n")
             f.write("make -C /opt/app && \\ \n")
+            run = ""
 
         ## Install application dependencies, only Python and R supported
         # 1. Install Python dependencies
         if os.path.isfile(custom_build_folder + "/requirements.txt"):
-            f.write("pip3 install -r /opt/app/requirements.txt --break-system-packages && \\ \n")
+            f.write(f"{run} pip3 install -r /opt/app/requirements.txt --break-system-packages && \\ \n")
+            run = ""
 
         # 2. Install R dependencies
         if args.install_r is True and os.path.isfile(custom_build_folder + "/install.r"):
-            f.write("Rscript /opt/app/install.r && \\ \n")
+            f.write(f"{run} Rscript /opt/app/install.r && \\ \n")
+            run = ""
 
         ## Clean up and set working directory
-        f.write("rm -rf /var/lib/apt/lists/* \n\n")
+        f.write(f"{run} rm -rf /var/lib/apt/lists/* \n\n")
         f.write("WORKDIR /opt/app\n\n")
         f.write("CMD bash\n")
 
@@ -127,6 +139,7 @@ def build():
                    + " -t " + image
                    + " -f " + custom_build_folder +  "/Dockerfile"
                    + " " + custom_build_folder)
+    print(f"Build command: {command}")
     run(command)
 
 def tag_latest(image):

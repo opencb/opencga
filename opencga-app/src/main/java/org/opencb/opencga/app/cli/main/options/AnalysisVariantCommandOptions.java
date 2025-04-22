@@ -2078,7 +2078,7 @@ public class AnalysisVariantCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"regenie-step2-run"}, commandDescription ="Regenie is a program for whole genome regression modelling of large genome-wide association studies. This performs the step1 of the regenie analysis.")
+    @Parameters(commandNames = {"regenie-step2-run"}, commandDescription ="Regenie is a program for whole genome regression modelling of large genome-wide association studies. This performs the step2 of the regenie analysis.")
     public class RunRegenieStep2CommandOptions {
     
         @ParametersDelegate

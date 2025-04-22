@@ -746,7 +746,7 @@ export default class Variant extends OpenCGAParentClass {
         return this._post("analysis", null, "variant/regenie", null, "run", data, params);
     }
 
-    /** Regenie is a program for whole genome regression modelling of large genome-wide association studies. This performs the step1 of the
+    /** Regenie is a program for whole genome regression modelling of large genome-wide association studies. This performs the step2 of the
     * regenie analysis.
     * @param {Object} data - Regenie step2 parameters.
     * @param {Object} [params] - The Object containing the following optional parameters:

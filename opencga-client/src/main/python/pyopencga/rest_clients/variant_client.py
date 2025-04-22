@@ -1016,7 +1016,7 @@ class Variant(_ParentRestClient):
     def run_regenie_step2(self, data=None, **options):
         """
         Regenie is a program for whole genome regression modelling of large
-            genome-wide association studies. This performs the step1 of the
+            genome-wide association studies. This performs the step2 of the
             regenie analysis.
         PATH: /{apiVersion}/analysis/variant/regenie/step2/run
 

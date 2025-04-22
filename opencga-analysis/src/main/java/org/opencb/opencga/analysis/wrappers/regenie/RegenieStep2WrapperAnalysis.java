@@ -52,7 +52,7 @@ public class RegenieStep2WrapperAnalysis extends OpenCgaToolScopeStudy {
 
     public static final String ID = "regenie-step2";
     public static final String DESCRIPTION = "Regenie is a program for whole genome regression modelling of large genome-wide association"
-            + " studies. This performs the step1 of the regenie analysis.";
+            + " studies. This performs the step2 of the regenie analysis.";
 
     private static final String PREPARE_RESOURCES_STEP = "prepare-resources";
     private static final String CLEAN_RESOURCES_STEP = "clean-resources";
