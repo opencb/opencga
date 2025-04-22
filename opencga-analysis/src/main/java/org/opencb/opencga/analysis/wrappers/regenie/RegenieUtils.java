@@ -21,6 +21,17 @@ import java.util.Random;
 
 public final class RegenieUtils {
 
+    public static final String VCF_BASENAME = "input";
+    public static final String VCF_FILENAME = VCF_BASENAME + ".vcf.gz";
+    public static final String PHENO_FILENAME = "phenoFile.txt";
+    public static final String COVAR_FILENAME = "covarFile.txt";
+    public static final String STEP1_PRED_LIST_FILNEMANE = "step1_pred.list";
+    public static final String OPT_APP_VIRTUAL_DIR = "/opt/app/";
+    public static final String PYTHON_PATH = "python/";
+    public static final String OPT_APP_PYTHON_VIRTUAL_DIR = OPT_APP_VIRTUAL_DIR + PYTHON_PATH;
+    public static final String PREDICTION_PATH = "pred/";
+    public static final String OPT_APP_PRED_VIRTUAL_DIR = OPT_APP_VIRTUAL_DIR + PREDICTION_PATH;
+
     public static final String OPENCGA_REGENIE_WALKER_DOCKER_IMAGE_KEY = "OPENCGA_REGENIE_WALKER_DOCKER_IMAGE";
 
     private static Logger logger = LoggerFactory.getLogger(RegenieUtils.class);
@@ -61,16 +72,16 @@ public final class RegenieUtils {
         String dockerRepo = "regenie-walker";
         String dockerRepoVersion = Instant.now().getEpochSecond() + "-" + (new Random().nextInt(9000) + 1000);
 
-        Path dockerBuildScript = opencgaHome.resolve("cloud/docker/custom-tool-docker-build/custom-tool-docker-build.py");
+        Path dockerBuildScript = opencgaHome.resolve("cloud/docker/custom-tool-docker-builder/custom-tool-docker-build.py");
         Command dockerBuild = new Command(new String[]{"python3", dockerBuildScript.toAbsolutePath().toString(),
-                "--custom-too-dir", dataDir.toAbsolutePath().toString(),
+                "--custom-tool-dir", dataDir.toAbsolutePath().toString(),
                 "--base-image", "joaquintarraga/opencga-regenie:" + GitRepositoryState.getInstance().getBuildVersion(),
-                "--organization", dockerNamespace,
+                "--organisation", dockerNamespace,
                 "--name", dockerRepo,
                 "--version", dockerRepoVersion,
                 "--username", username,
                 "--password", password,
-                "build"
+                "push"
         }, Collections.emptyMap());
 
         logger.info("Executing command: {}", dockerBuild.getCommandLine().replace(password, "XXXXX"));

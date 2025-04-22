@@ -267,46 +267,67 @@ public class OpenCGATestExternalResource extends ExternalResource {
 
         // Mutational signatue analysis
         Path analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/mutational-signature")).toAbsolutePath();
-        try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/mutational-signature/sv_clustering.R")) {
-            Files.copy(inputStream, analysisPath.resolve("sv_clustering.R"), StandardCopyOption.REPLACE_EXISTING);
+        List<String> filenames = Arrays.asList("sv_clustering.R");
+        for (String filename : filenames) {
+            try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/mutational-signature/" + filename)) {
+                Files.copy(inputStream, analysisPath.resolve(filename), StandardCopyOption.REPLACE_EXISTING);
+            }
         }
 
         // Pedigree graph analysis
         analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/pedigree-graph")).toAbsolutePath();
-        try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/pedigree-graph/ped.R")) {
-            Files.copy(inputStream, analysisPath.resolve("ped.R"), StandardCopyOption.REPLACE_EXISTING);
+        filenames = Arrays.asList("ped.R");
+        for (String filename : filenames) {
+            try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/pedigree-graph/" + filename)) {
+                Files.copy(inputStream, analysisPath.resolve(filename), StandardCopyOption.REPLACE_EXISTING);
+            }
         }
 
         // Exomiser analysis files
         List<String> exomiserVersions = Arrays.asList("13.1.0", "14.0.0");
-        List<String> exomiserFiles = Arrays.asList("application.properties", "exomiser-analysis.yml", "output.yml");
+        filenames = Arrays.asList("application.properties", "exomiser-analysis.yml", "output.yml");
         for (String exomiserVersion : exomiserVersions) {
             analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/exomiser").resolve(exomiserVersion).toAbsolutePath());
             Path exomiserPath = Paths.get("../opencga-app/app/analysis/exomiser");
-            for (String exomiserFile : exomiserFiles) {
-                String resource = exomiserVersion + "/" + exomiserFile;
-                Files.copy(exomiserPath.resolve(resource).toAbsolutePath(), analysisPath.resolve(exomiserFile), StandardCopyOption.REPLACE_EXISTING);
+            for (String filename : filenames) {
+                String resource = exomiserVersion + "/" + filename;
+                Files.copy(exomiserPath.resolve(resource).toAbsolutePath(), analysisPath.resolve(filename), StandardCopyOption.REPLACE_EXISTING);
             }
         }
 
         // Liftover analysis
         analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/liftover")).toAbsolutePath();
-        try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/liftover/liftover.sh")) {
-            Files.copy(inputStream, analysisPath.resolve("liftover.sh"), StandardCopyOption.REPLACE_EXISTING);
+        filenames = Arrays.asList("liftover.sh");
+        for (String filename : filenames) {
+            try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/liftover/" + filename)) {
+                Files.copy(inputStream, analysisPath.resolve(filename), StandardCopyOption.REPLACE_EXISTING);
+            }
+        }
+
+        // custom-tool-docker-builder
+        Path dockerPath = Files.createDirectories(opencgaHome.resolve("cloud/docker/custom-tool-docker-builder")).toAbsolutePath();
+        filenames = Arrays.asList("custom-tool-docker-build.py");
+        for (String filename : filenames) {
+            try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/cloud/docker/custom-tool-docker-builder/" + filename)) {
+                Files.copy(inputStream, dockerPath.resolve(filename), StandardCopyOption.REPLACE_EXISTING);
+            }
         }
 
         // opencga-regenie
-        Path dockerPath = Files.createDirectories(opencgaHome.resolve("cloud/docker/opencga-regenie")).toAbsolutePath();
-        try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/cloud/docker/opencga-regenie/regenie-docker-build.py")) {
-            Files.copy(inputStream, dockerPath.resolve("regenie-docker-build.py"), StandardCopyOption.REPLACE_EXISTING);
+        dockerPath = Files.createDirectories(opencgaHome.resolve("cloud/docker/opencga-regenie")).toAbsolutePath();
+        filenames = Arrays.asList("regenie_walker.py", "regenie_step1.sh");
+        for (String filename : filenames) {
+            try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/cloud/docker/opencga-regenie/" + filename)) {
+                Files.copy(inputStream, dockerPath.resolve(filename), StandardCopyOption.REPLACE_EXISTING);
+            }
         }
 
         // walker
         dockerPath = Files.createDirectories(opencgaHome.resolve("cloud/docker/walker")).toAbsolutePath();
-        List<String> pythonFiles = Arrays.asList("regenie_walker.py", "requirements.txt", "variant_walker.py");
-        for (String pythonFile : pythonFiles) {
-            try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/cloud/docker/walker/" + pythonFile)) {
-                Files.copy(inputStream, dockerPath.resolve(pythonFile), StandardCopyOption.REPLACE_EXISTING);
+        filenames = Arrays.asList("requirements.txt", "variant_walker.py");
+        for (String filename : filenames) {
+            try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/cloud/docker/walker/" + filename)) {
+                Files.copy(inputStream, dockerPath.resolve(filename), StandardCopyOption.REPLACE_EXISTING);
             }
         }
 

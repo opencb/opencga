@@ -25,31 +25,39 @@ echo "Running with input dir: $input_dir, basename: $basename, phenotype filenam
 
 # 1. bcftools annotate
 echo "1. Annotating VCF using bcftools..."
-bcftools annotate --set-id '%CHROM:%POS:%REF:%FIRST_ALT' "${input_dir}${basename}.vcf.gz" -Oz > "${input_dir}${basename}.annotated.vcf.gz"
+bcftools annotate --set-id '%CHROM:%POS:%REF:%FIRST_ALT' "${input_dir}/${basename}.vcf.gz" -Oz > "${input_dir}/${basename}.annotated.vcf.gz"
 if [ $? -ne 0 ]; then
   echo "Error: bcftools annotate failed!"
   exit 1
 fi
 
-# 2. plink --indep-pairwise
-echo "2. Running plink --indep-pairwise..."
-plink1.9 --bfile "${input_dir}${basename}.annotated" --indep-pairwise 50 5 0.2 --maf 0.05 --out "${input_dir}${basename}.annotated" --memory 30600
+# 2. plink --make-bed
+echo "2. Running plink --make-bed..."
+plink1.9 --vcf "${input_dir}/${basename}.annotated.vcf.gz" --make-bed --out "${input_dir}/${basename}.annotated" --memory 30600
+if [ $? -ne 0 ]; then
+  echo "Error: plink --make-bed failed!"
+  exit 1
+fi
+
+# 3. plink --indep-pairwise
+echo "3. Running plink --indep-pairwise..."
+plink1.9 --bfile "${input_dir}/${basename}.annotated" --indep-pairwise 50 5 0.2 --maf 0.05 --out "${input_dir}/variants" --memory 30600
 if [ $? -ne 0 ]; then
   echo "Error: plink --indep-pairwise failed!"
   exit 1
 fi
 
-# 3. plink --extract
-echo "3. Running plink --extract..."
-plink1.9 --bfile "${input_dir}${basename}.annotated" --extract "${input_dir}${basename}.annotated.prune.in" --make-bed --out "${input_dir}${basename}.annotated.pruned.in" --memory 30600
+# 4. plink --extract
+echo "4. Running plink --extract..."
+plink1.9 --bfile "${input_dir}/${basename}.annotated" --extract "${input_dir}/variants.prune.in" --make-bed --out "${input_dir}/${basename}.annotated.pruned.in" --memory 30600
 if [ $? -ne 0 ]; then
   echo "Error: plink --extract failed!"
   exit 1
 fi
 
-# 4. regenie --step 1
-echo "4. Running regenie --step 1..."
-regenie --step 1 --bed "${input_dir}${basename}.annotated.pruned.in" --bsize 1000 --out "${output_dir}step1" --phenoFile "${input_dir}phenotype.txt" --bt
+# 5. regenie --step 1
+echo "5. Running regenie --step 1..."
+regenie --step 1 --bed "${input_dir}/${basename}.annotated.pruned.in" --bsize 1000 --out "${output_dir}/step1" --phenoFile "${input_dir}/${pheno_filename}" --bt
 if [ $? -ne 0 ]; then
   echo "Error: regenie --step 1 failed!"
   exit 1
