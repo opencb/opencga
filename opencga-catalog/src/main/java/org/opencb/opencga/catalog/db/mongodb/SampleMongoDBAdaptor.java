@@ -1468,7 +1468,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                     case VERSION:
                     case INDIVIDUAL_ID:
                     case INTERNAL_RGA_STATUS:
-                    case INTERNAL_VARIANT_INDEX_STATUS_ID:
                     case SOMATIC:
                     case PHENOTYPES_ID:
 //                    case ANNOTATION_SETS:
