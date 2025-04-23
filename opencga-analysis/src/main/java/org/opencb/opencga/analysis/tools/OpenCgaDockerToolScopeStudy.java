@@ -104,6 +104,11 @@ public abstract class OpenCgaDockerToolScopeStudy extends OpenCgaToolScopeStudy 
     }
 
     protected void updateJobInformation(List<String> tags, ToolInfoExecutor executor) throws CatalogException {
+        if (getJobId() == null || getJobId().isEmpty()) {
+            // Job id might be empty if the tool is not executed in the context of a job (e.g. in a test)
+            logger.warn("Job id is empty. Cannot update job information with tags {} and executor {}", tags, executor);
+            return;
+        }
         ObjectMap params = new ObjectMap()
                 .append(JobDBAdaptor.QueryParams.TAGS.key(), tags)
                 .append(JobDBAdaptor.QueryParams.TOOL_EXTERNAL_EXECUTOR.key(), executor);

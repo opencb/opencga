@@ -583,9 +583,9 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         }
 
         files = catalogManager.getFileManager().count(studyFqn, new Query(FileDBAdaptor.QueryParams.JOB_ID.key(), ""), ownerToken);
-        assertEquals(16, files.getNumMatches());
+        assertEquals(17, files.getNumMatches());
         files = catalogManager.getFileManager().count(studyFqn, new Query(FileDBAdaptor.QueryParams.JOB_ID.key(), "NonE"), ownerToken);
-        assertEquals(16, files.getNumMatches());
+        assertEquals(17, files.getNumMatches());
     }
 
     @Test

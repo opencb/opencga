@@ -957,7 +957,7 @@ public class UserManager extends AbstractManager {
             throw CatalogAuthorizationException.userIsSuspended(username);
         }
         Account account2 = user.getInternal().getAccount();
-        if (account2.getPassword().getExpirationDate() != null) {
+        if (StringUtils.isNotEmpty(account2.getPassword().getExpirationDate())) {
             Account account1 = user.getInternal().getAccount();
             Date passwordExpirationDate = TimeUtils.toDate(account1.getPassword().getExpirationDate());
             if (passwordExpirationDate == null) {
@@ -971,7 +971,7 @@ public class UserManager extends AbstractManager {
                 eventList.add(new Event(Event.Type.WARNING, "Password expiration date is close. Please, consider changing it."));
             }
         }
-        if (user.getInternal().getAccount().getExpirationDate() != null) {
+        if (StringUtils.isNotEmpty(user.getInternal().getAccount().getExpirationDate())) {
             Date date = TimeUtils.toDate(user.getInternal().getAccount().getExpirationDate());
             if (date == null) {
                 throw new CatalogException("Unexpected null 'expirationDate' for user '" + username + "'.");

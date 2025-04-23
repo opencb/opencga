@@ -22,7 +22,7 @@ public class PasswordUtils {
 
         @Override
         public String getCharacters() {
-            return "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~¡";
+            return "!#$%&'()*+,-./:;<=>?@[]^_`{|}~¡";
         }
     });
 
