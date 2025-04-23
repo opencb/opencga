@@ -62,8 +62,8 @@ class Regenie(VariantWalker):
                 "--bed", plink_file,
                 "--bsize", "1000",
                 "--out", self.gwas_results,
-                "--phenoFile", "/regenie_walker/phenotype.txt",
-                "--pred", "/regenie_walker/step1/step1_pred.list",
+                "--phenoFile", "/opt/app/phenoFile.txt",
+                "--pred", "/opt/app/pred/step1_pred.list",
                 "--bt"
             ]
             # self.write(f"Running regenie {regenie_cmd}...")

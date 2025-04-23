@@ -12,6 +12,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -27,8 +29,6 @@ public final class RegenieUtils {
     public static final String COVAR_FILENAME = "covarFile.txt";
     public static final String STEP1_PRED_LIST_FILNEMANE = "step1_pred.list";
     public static final String OPT_APP_VIRTUAL_DIR = "/opt/app/";
-    public static final String PYTHON_PATH = "python/";
-    public static final String OPT_APP_PYTHON_VIRTUAL_DIR = OPT_APP_VIRTUAL_DIR + PYTHON_PATH;
     public static final String PREDICTION_PATH = "pred/";
     public static final String OPT_APP_PRED_VIRTUAL_DIR = OPT_APP_VIRTUAL_DIR + PREDICTION_PATH;
 
@@ -94,23 +94,47 @@ public final class RegenieUtils {
         return dockerImage;
     }
 
-    public static void deleteDirectory(java.io.File directory) throws IOException {
-        if (!directory.exists()) {
-            return;
+    public static boolean isDockerImageAvailable(String inputDockerImage) {
+        String namespace;
+        String imageName;
+        String tagName;
+
+        if (inputDockerImage.contains("/")) {
+            String[] parts = inputDockerImage.split("/");
+            namespace = parts[0];
+            imageName = parts[1];
+        } else {
+            String msg = "Missing namespace in docker image " + inputDockerImage + ", please, provide: namespace/repository:tag";
+            logger.error(msg);
+            throw new IllegalArgumentException(msg);
         }
 
-        // If it's a directory, delete contents recursively
-        if (directory.isDirectory()) {
-            java.io.File[] files = directory.listFiles();
-            if (files != null) { // Not null if directory is not empty
-                for (java.io.File file : files) {
-                    // Recursively delete subdirectories and files
-                    deleteDirectory(file);
-                }
-            }
+        if (imageName.contains(":")) {
+            String[] parts = imageName.split(":");
+            imageName = parts[0];
+            tagName = parts[1];
+        } else {
+            // If no tag is provided, we can just check the repository exists
+            String msg = "Missing tag in docker image " + inputDockerImage + ", please, provide: namespace/repository:tag";
+            logger.error(msg);
+            throw new IllegalArgumentException(msg);
         }
 
-        // Finally, delete the directory or file itself
-        Files.delete(directory.toPath());
+        String apiUrl = String.format("https://hub.docker.com/v2/repositories/%s/%s/tags/%s/", namespace, imageName, tagName);
+        logger.info("Checking docker image {} at Docker Hub: {}", apiUrl);
+
+        try {
+            URL url = new URL(apiUrl);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+
+            int responseCode = connection.getResponseCode();
+            connection.disconnect();
+
+            return responseCode == HttpURLConnection.HTTP_OK;
+        } catch (IOException e) {
+            logger.error("Error when accessing Docker Hub {}: {}", apiUrl, e.getMessage());
+            return false;
+        }
     }
 }

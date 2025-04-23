@@ -45,8 +45,8 @@ import org.opencb.opencga.core.models.variant.LiftoverWrapperParams;
 import org.opencb.opencga.core.models.variant.MendelianErrorAnalysisParams;
 import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
 import org.opencb.opencga.core.models.variant.PlinkWrapperParams;
+import org.opencb.opencga.core.models.variant.RegenieStep1WrapperParams;
 import org.opencb.opencga.core.models.variant.RegenieStep2WrapperParams;
-import org.opencb.opencga.core.models.variant.RegenieWrapperParams;
 import org.opencb.opencga.core.models.variant.RelatednessAnalysisParams;
 import org.opencb.opencga.core.models.variant.RvtestsWrapperParams;
 import org.opencb.opencga.core.models.variant.SampleEligibilityAnalysisParams;
@@ -181,8 +181,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             case "query":
                 queryResponse = query();
                 break;
-            case "regenie-run":
-                queryResponse = runRegenie();
+            case "regenie-step1-run":
+                queryResponse = runRegenieStep1();
                 break;
             case "regenie-step2-run":
                 queryResponse = runRegenieStep2();
@@ -1411,10 +1411,10 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getVariantClient().query(queryParams);
     }
 
-    private RestResponse<Job> runRegenie() throws Exception {
-        logger.debug("Executing runRegenie in Analysis - Variant command line");
+    private RestResponse<Job> runRegenieStep1() throws Exception {
+        logger.debug("Executing runRegenieStep1 in Analysis - Variant command line");
 
-        AnalysisVariantCommandOptions.RunRegenieCommandOptions commandOptions = analysisVariantCommandOptions.runRegenieCommandOptions;
+        AnalysisVariantCommandOptions.RunRegenieStep1CommandOptions commandOptions = analysisVariantCommandOptions.runRegenieStep1CommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -1430,28 +1430,28 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        RegenieWrapperParams regenieWrapperParams = null;
+        RegenieStep1WrapperParams regenieStep1WrapperParams = null;
         if (commandOptions.jsonDataModel) {
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/regenie/run"));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/regenie/step1/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            regenieWrapperParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), RegenieWrapperParams.class);
+            regenieStep1WrapperParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), RegenieStep1WrapperParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "step", commandOptions.step, true);
             putNestedIfNotEmpty(beanParams, "phenoFile", commandOptions.phenoFile, true);
             putNestedIfNotEmpty(beanParams, "covarFile", commandOptions.covarFile, true);
-            putNestedIfNotEmpty(beanParams, "predPath", commandOptions.predPath, true);
-            putNestedIfNotEmpty(beanParams, "walkerDockerName", commandOptions.walkerDockerName, true);
+            putNestedIfNotEmpty(beanParams, "dockerNamespace", commandOptions.dockerNamespace, true);
+            putNestedIfNotEmpty(beanParams, "dockerUsername", commandOptions.dockerUsername, true);
+            putNestedIfNotEmpty(beanParams, "dockerPassword", commandOptions.dockerPassword, true);
 
-            regenieWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
+            regenieStep1WrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), RegenieWrapperParams.class);
+                    .readValue(beanParams.toJson(), RegenieStep1WrapperParams.class);
         }
-        return openCGAClient.getVariantClient().runRegenie(regenieWrapperParams, queryParams);
+        return openCGAClient.getVariantClient().runRegenieStep1(regenieStep1WrapperParams, queryParams);
     }
 
     private RestResponse<Job> runRegenieStep2() throws Exception {
@@ -1484,11 +1484,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), RegenieStep2WrapperParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "phenoFile", commandOptions.phenoFile, true);
-            putNestedIfNotEmpty(beanParams, "covarFile", commandOptions.covarFile, true);
-            putNestedIfNotEmpty(beanParams, "predPath", commandOptions.predPath, true);
-            putNestedIfNotEmpty(beanParams, "dockerUsername", commandOptions.dockerUsername, true);
-            putNestedIfNotEmpty(beanParams, "dockerPassword", commandOptions.dockerPassword, true);
+            putNestedIfNotEmpty(beanParams, "step1JobId", commandOptions.step1JobId, true);
+            putNestedIfNotEmpty(beanParams, "walkerDockerImage", commandOptions.walkerDockerImage, true);
 
             regenieStep2WrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

@@ -629,9 +629,10 @@ public class FieldConstants {
     public static final String REGENIE_PHENO_FILE_DESCRIPTION = "Phenotype file, which contains one or more traits to be analyzed.";
     public static final String REGENIE_COVAR_FILE_DESCRIPTION = "Covariate file, used to adjust the analysis for confounding variables"
             + " (e.g., sex, age, PCs).";
-    public static final String REGENIE_PRED_PATH_DESCRIPTION = "Path to the preidiction generated in " + REGENIE_STEP1 + " (it is used in "
+    public static final String REGENIE_PRED_PATH_DESCRIPTION = "Path to the prediction generated in " + REGENIE_STEP1 + " (it is used in "
             + REGENIE_STEP2 + ")";
-    public static final String REGENIE_WALKER_DOCKER_NAME_DESCRIPTION = "Walker docker image name that contains the phenotype, covariates"
+    public static final String REGENIE_STEP1_JOB_ID_DESCRIPTION = "Job ID that performed the regenie step1 analysis.";
+    public static final String REGENIE_WALKER_DOCKER_IMAGE_NAME_DESCRIPTION = "Walker docker image name that contains the phenotype, covariates"
             + " and prediction files.";
     public static final String REGENIE_WALKER_DOCKER_NAMESPACE_DESCRIPTION = "Docker Hub namespace.";
     public static final String REGENIE_WALKER_DOCKER_USERNAME_DESCRIPTION = "Docker Hub username.";

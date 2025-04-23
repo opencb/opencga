@@ -24,89 +24,44 @@ public class RegenieStep2WrapperParams extends ToolParams {
 
     public static final String DESCRIPTION = "Regenie step2 parameters";
 
-    @DataField(id = "phenoFile", description = FieldConstants.REGENIE_PHENO_FILE_DESCRIPTION, required = true)
-    private String phenoFile;
+    @DataField(id = "step1JobId", description = FieldConstants.REGENIE_STEP1_JOB_ID_DESCRIPTION)
+    private String step1JobId;
 
-    @DataField(id = "covarFile", description = FieldConstants.REGENIE_COVAR_FILE_DESCRIPTION)
-    private String covarFile;
-
-    @DataField(id = "predPath", description = FieldConstants.REGENIE_PRED_PATH_DESCRIPTION, required = true)
-    private String predPath;
-
-    @DataField(id = "dockerUsername", description = FieldConstants.REGENIE_WALKER_DOCKER_USERNAME_DESCRIPTION, required = true)
-    private String dockerUsername;
-
-    @DataField(id = "dockerPassword", description = FieldConstants.REGENIE_WALKER_DOCKER_PASSWORD_DESCRIPTION, required = true)
-    private String dockerPassword;
-
-    //    @DataField(id = "outdir", description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
-//    private String outdir;
+    @DataField(id = "walkerDockerImage", description = FieldConstants.REGENIE_WALKER_DOCKER_IMAGE_NAME_DESCRIPTION)
+    private String walkerDockerImage;
 
     public RegenieStep2WrapperParams() {
     }
 
-    public RegenieStep2WrapperParams(String phenoFile, String covarFile, String predPath, String dockerUsername, String dockerPassword) {
-        this.phenoFile = phenoFile;
-        this.covarFile = covarFile;
-        this.predPath = predPath;
-        this.dockerUsername = dockerUsername;
-        this.dockerPassword = dockerPassword;
+    public RegenieStep2WrapperParams(String step1JobId, String walkerDockerImage) {
+        this.step1JobId = step1JobId;
+        this.walkerDockerImage = walkerDockerImage;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("RegenieStep2WrapperParams{");
-        sb.append("phenoFile='").append(phenoFile).append('\'');
-        sb.append(", covarFile='").append(covarFile).append('\'');
-        sb.append(", predPath='").append(predPath).append('\'');
-        sb.append(", dockerUsername='").append(dockerUsername).append('\'');
-        sb.append(", dockerPassword='").append(dockerPassword).append('\'');
+        sb.append("step1JobId='").append(step1JobId).append('\'');
+        sb.append(", walkerDockerImage='").append(walkerDockerImage).append('\'');
         sb.append('}');
         return sb.toString();
     }
 
-    public String getPhenoFile() {
-        return phenoFile;
+    public String getStep1JobId() {
+        return step1JobId;
     }
 
-    public RegenieStep2WrapperParams setPhenoFile(String phenoFile) {
-        this.phenoFile = phenoFile;
+    public RegenieStep2WrapperParams setStep1JobId(String step1JobId) {
+        this.step1JobId = step1JobId;
         return this;
     }
 
-    public String getCovarFile() {
-        return covarFile;
+    public String getWalkerDockerImage() {
+        return walkerDockerImage;
     }
 
-    public RegenieStep2WrapperParams setCovarFile(String covarFile) {
-        this.covarFile = covarFile;
-        return this;
-    }
-
-    public String getPredPath() {
-        return predPath;
-    }
-
-    public RegenieStep2WrapperParams setPredPath(String predPath) {
-        this.predPath = predPath;
-        return this;
-    }
-
-    public String getDockerUsername() {
-        return dockerUsername;
-    }
-
-    public RegenieStep2WrapperParams setDockerUsername(String dockerUsername) {
-        this.dockerUsername = dockerUsername;
-        return this;
-    }
-
-    public String getDockerPassword() {
-        return dockerPassword;
-    }
-
-    public RegenieStep2WrapperParams setDockerPassword(String dockerPassword) {
-        this.dockerPassword = dockerPassword;
+    public RegenieStep2WrapperParams setWalkerDockerImage(String walkerDockerImage) {
+        this.walkerDockerImage = walkerDockerImage;
         return this;
     }
 }

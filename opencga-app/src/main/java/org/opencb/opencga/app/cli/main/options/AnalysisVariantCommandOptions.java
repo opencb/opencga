@@ -62,7 +62,7 @@ public class AnalysisVariantCommandOptions {
         public RunMutationalSignatureCommandOptions runMutationalSignatureCommandOptions;
         public RunPlinkCommandOptions runPlinkCommandOptions;
         public QueryCommandOptions queryCommandOptions;
-        public RunRegenieCommandOptions runRegenieCommandOptions;
+        public RunRegenieStep1CommandOptions runRegenieStep1CommandOptions;
         public RunRegenieStep2CommandOptions runRegenieStep2CommandOptions;
         public RunRelatednessCommandOptions runRelatednessCommandOptions;
         public RunRvtestsCommandOptions runRvtestsCommandOptions;
@@ -111,7 +111,7 @@ public class AnalysisVariantCommandOptions {
         this.runMutationalSignatureCommandOptions = new RunMutationalSignatureCommandOptions();
         this.runPlinkCommandOptions = new RunPlinkCommandOptions();
         this.queryCommandOptions = new QueryCommandOptions();
-        this.runRegenieCommandOptions = new RunRegenieCommandOptions();
+        this.runRegenieStep1CommandOptions = new RunRegenieStep1CommandOptions();
         this.runRegenieStep2CommandOptions = new RunRegenieStep2CommandOptions();
         this.runRelatednessCommandOptions = new RunRelatednessCommandOptions();
         this.runRvtestsCommandOptions = new RunRvtestsCommandOptions();
@@ -2025,8 +2025,8 @@ public class AnalysisVariantCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"regenie-run"}, commandDescription ="Program for whole genome regression modelling of large genome-wide association studies.")
-    public class RunRegenieCommandOptions {
+    @Parameters(commandNames = {"regenie-step1-run"}, commandDescription ="Regenie is a program for whole genome regression modelling of large genome-wide association studies. This performs the step1 of the regenie analysis.")
+    public class RunRegenieStep1CommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
@@ -2061,20 +2061,20 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean jobDryRun; 
     
-        @Parameter(names = {"--step"}, description = "Regenie step. Valid values: step2", required = false, arity = 1)
-        public String step;
-    
         @Parameter(names = {"--pheno-file"}, description = "Phenotype file, which contains one or more traits to be analyzed.", required = false, arity = 1)
         public String phenoFile;
     
         @Parameter(names = {"--covar-file"}, description = "Covariate file, used to adjust the analysis for confounding variables (e.g., sex, age, PCs).", required = false, arity = 1)
         public String covarFile;
     
-        @Parameter(names = {"--pred-path"}, description = "Path to the preidiction generated in step1 (it is used in step2)", required = false, arity = 1)
-        public String predPath;
+        @Parameter(names = {"--docker-namespace"}, description = "Docker Hub namespace.", required = false, arity = 1)
+        public String dockerNamespace;
     
-        @Parameter(names = {"--walker-docker-name"}, description = "Walker docker image name that contains the phenotype, covariates and prediction files.", required = false, arity = 1)
-        public String walkerDockerName;
+        @Parameter(names = {"--docker-username"}, description = "Docker Hub username.", required = false, arity = 1)
+        public String dockerUsername;
+    
+        @Parameter(names = {"--docker-password"}, description = "Docker Hub password.", required = false, arity = 1)
+        public String dockerPassword;
     
     }
 
@@ -2114,20 +2114,11 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean jobDryRun; 
     
-        @Parameter(names = {"--pheno-file"}, description = "Phenotype file, which contains one or more traits to be analyzed.", required = false, arity = 1)
-        public String phenoFile;
+        @Parameter(names = {"--step1job-id"}, description = "Job ID that performed the regenie step1 analysis.", required = false, arity = 1)
+        public String step1JobId;
     
-        @Parameter(names = {"--covar-file"}, description = "Covariate file, used to adjust the analysis for confounding variables (e.g., sex, age, PCs).", required = false, arity = 1)
-        public String covarFile;
-    
-        @Parameter(names = {"--pred-path"}, description = "Path to the preidiction generated in step1 (it is used in step2)", required = false, arity = 1)
-        public String predPath;
-    
-        @Parameter(names = {"--docker-username"}, description = "Docker Hub username.", required = false, arity = 1)
-        public String dockerUsername;
-    
-        @Parameter(names = {"--docker-password"}, description = "Docker Hub password.", required = false, arity = 1)
-        public String dockerPassword;
+        @Parameter(names = {"--walker-docker-image"}, description = "Walker docker image name that contains the phenotype, covariates and prediction files.", required = false, arity = 1)
+        public String walkerDockerImage;
     
     }
 
