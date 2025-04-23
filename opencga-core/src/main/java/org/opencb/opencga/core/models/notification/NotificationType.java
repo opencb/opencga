@@ -4,6 +4,7 @@ public enum NotificationType {
 
     INFO,
     WARNING,
-    CRITICAL
+    ERROR,
+    URGENT
 
 }
