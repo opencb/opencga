@@ -1,12 +1,10 @@
 package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.FacetField;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
@@ -22,15 +20,14 @@ import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.notification.Notification;
-import org.opencb.opencga.core.models.notification.NotificationInternal;
-import org.opencb.opencga.core.models.notification.NotificationStatus;
-import org.opencb.opencga.core.models.notification.NotificationUpdateParams;
+import org.opencb.opencga.core.models.notification.*;
 import org.opencb.opencga.core.models.organizations.Organization;
+import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.User;
@@ -38,15 +35,12 @@ import org.opencb.opencga.core.models.user.UserStatus;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import javax.annotation.Nullable;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.function.Function;
 
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
-public class NotificationManager extends ResourceManager<Notification> {
+public class NotificationManager extends AbstractManager {
 
     public static final String ORGANIZATION_ADMINISTRATORS = "ORGANIZATION_ADMINISTRATORS";
     public static final String PROJECT_ADMINISTRATORS = "PROJECT_ADMINISTRATORS";
@@ -62,12 +56,10 @@ public class NotificationManager extends ResourceManager<Notification> {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
     }
 
-    @Override
     Enums.Resource getEntity() {
         return Enums.Resource.NOTIFICATION;
     }
 
-    @Override
     InternalGetDataResult<Notification> internalGet(String organizationId, long studyUid, List<String> entryList, @Nullable Query query,
                                                     QueryOptions options, String user, boolean ignoreException) throws CatalogException {
         if (ListUtils.isEmpty(entryList)) {
@@ -102,37 +94,47 @@ public class NotificationManager extends ResourceManager<Notification> {
         }
     }
 
-    @Override
-    public OpenCGAResult<Notification> create(String studyStr, Notification notification, QueryOptions options, String token)
+    public OpenCGAResult<Notification> create(NotificationCreateParams notification, QueryOptions options, String token)
             throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
-        String organizationId = studyFqn.getOrganizationId();
+
+        ParamUtils.checkObj(notification, "notification");
+        ParamUtils.checkObj(notification.getScope(), "scope");
+        ParamUtils.checkParameter(notification.getFqn(), "fqn");
+
+        CatalogFqn fqn = CatalogFqn.extractFqnFromGenericFqn(notification.getFqn());
+        String organizationId = fqn.getOrganizationId();
         String userId = tokenPayload.getUserId(organizationId);
-        Study study = catalogManager.getStudyManager().resolveId(studyFqn, tokenPayload);
 
         authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
-        validateNotificationParameters(notification, organizationId, study, userId);
-        List<Notification> notificationList = generateNotificationInstances(notification, organizationId, study, userId);
+        validateAndObtainNotification(notification, organizationId);
+        List<Notification> notificationList = generateNotificationInstances(notification, organizationId, fqn, tokenPayload);
 
-        return catalogDBAdaptorFactory.getNotificationDBAdaptor(organizationId).insert(study.getUid(), notificationList, options);
+        return catalogDBAdaptorFactory.getNotificationDBAdaptor(organizationId).insert(notificationList, options);
     }
 
-    private List<Notification> generateNotificationInstances(Notification notification, String organizationId, Study study, String userId)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    private List<Notification> generateNotificationInstances(NotificationCreateParams notificationCreateInstance, String organizationId,
+                                                             CatalogFqn fqn, JwtPayload payload) throws CatalogException {
         List<Notification> notificationList = new LinkedList<>();
 
         List<String> userIds = new LinkedList<>();
         boolean validGroup = false;
         for (String notificationGroup : NOTIFICATION_GROUPS) {
-            if (notification.getTarget().equalsIgnoreCase(notificationGroup)) {
-                notification.setTarget(notificationGroup);
+            if (notificationCreateInstance.getTarget().equalsIgnoreCase(notificationGroup)) {
+                notificationCreateInstance.setTarget(notificationGroup);
                 validGroup = true;
                 break;
             }
         }
+        Project project = null;
+        Study study = null;
+        if (notificationCreateInstance.getScope().equals(NotificationScope.STUDY)) {
+            study = catalogManager.getStudyManager().resolveId(fqn, payload);
+        } else if (notificationCreateInstance.getScope().equals(NotificationScope.PROJECT)) {
+            project = catalogManager.getProjectManager().resolveId(fqn, null, payload).first();
+        }
         if (validGroup) {
-            switch (notification.getTarget()) {
+            switch (notificationCreateInstance.getTarget()) {
                 case ANY_USER:
                     // Get all users
                     try (DBIterator<User> iterator = catalogDBAdaptorFactory.getCatalogUserDBAdaptor(organizationId)
@@ -149,79 +151,113 @@ public class NotificationManager extends ResourceManager<Notification> {
                             .get(OrganizationManager.INCLUDE_ORGANIZATION_ADMINS).first();
                     userIds.add(organization.getOwner());
                     userIds.addAll(organization.getAdmins());
+                    break;
                 case PROJECT_ADMINISTRATORS:
-                    // Get all project administrators
-                    // TODO: Implement and add break; in ORGANIZATION_ADMINISTRATORS case. Meanwhile, treat as ORG_ADMINS
+                    userIds.addAll(catalogManager.getProjectManager().getProjectAdmins(project));
                     break;
                 case STUDY_ADMINISTRATORS:
+                    ParamUtils.checkObj(study, "study");
                     // Get all study administrators
-                    Group adminsGroup = getStudyDBAdaptor(organizationId).getGroup(study.getUid(), StudyManager.ADMINS, null).first();
-                    userIds.addAll(adminsGroup.getUserIds());
+                    if (CollectionUtils.isEmpty(study.getGroups())) {
+                        throw new CatalogParameterException("Internal error: Study " + study.getId() + " does not have any groups.");
+                    }
+                    for (Group group : study.getGroups()) {
+                        if (StudyManager.ADMINS.equals(group.getId())) {
+                            userIds.addAll(group.getUserIds());
+                            break;
+                        }
+                    }
                     break;
                 case STUDY_MEMBERS:
+                    ParamUtils.checkObj(study, "study");
                     // Get all study members
-                    Group membersGroup = getStudyDBAdaptor(organizationId).getGroup(study.getUid(), StudyManager.MEMBERS, null).first();
-                    userIds.addAll(membersGroup.getUserIds());
+                    if (CollectionUtils.isEmpty(study.getGroups())) {
+                        throw new CatalogParameterException("Internal error: Study " + study.getId() + " does not have any groups.");
+                    }
+                    for (Group group : study.getGroups()) {
+                        if (StudyManager.MEMBERS.equals(group.getId())) {
+                            userIds.addAll(group.getUserIds());
+                            break;
+                        }
+                    }
                     break;
                 default:
-                    throw new CatalogParameterException("Unexpected notification target group " + notification.getTarget());
+                    throw new CatalogParameterException("Unexpected notification target group " + notificationCreateInstance.getTarget());
             }
         } else {
-            if (notification.getTarget().startsWith("@")) {
+            if (notificationCreateInstance.getTarget().startsWith("@")) {
+                // Obtain group
+                OpenCGAResult<Group> group = catalogDBAdaptorFactory.getCatalogStudyDBAdaptor(organizationId)
+                        .getGroup(study.getUid(), notificationCreateInstance.getTarget(), null);
+                if (group.getNumResults() == 0) {
+                    throw new CatalogParameterException("Target group " + notificationCreateInstance.getTarget() + " not found.");
+                }
                 // Check group exists
-                Group group = catalogDBAdaptorFactory.getCatalogStudyDBAdaptor(organizationId)
-                        .getGroup(study.getUid(), notification.getTarget(), null).first();
-                userIds.addAll(group.getUserIds());
+                userIds.addAll(group.first().getUserIds());
             } else {
                 // Check user exists
                 try {
-                    catalogDBAdaptorFactory.getCatalogUserDBAdaptor(organizationId).checkId(notification.getTarget());
-                    userIds.add(notification.getTarget());
+                    catalogDBAdaptorFactory.getCatalogUserDBAdaptor(organizationId).checkId(notificationCreateInstance.getTarget());
+                    userIds.add(notificationCreateInstance.getTarget());
                 } catch (CatalogException e) {
-                    throw new CatalogParameterException("Target user " + notification.getTarget() + " not found.", e);
+                    throw new CatalogParameterException("Target user " + notificationCreateInstance.getTarget() + " not found.", e);
                 }
             }
         }
 
-        notification.setOperationId(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.NOTIFICATION));
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.NOTIFICATION);
         // Create all notification instances
         for (String targetUserId : userIds) {
-            Notification notificationCopy = new Notification(notification);
-            notificationCopy.setSubject(StringUtils.isNotEmpty(notification.getSubject())
-                    ? notification.getSubject()
-                    : notification.getType());
-            notificationCopy.setSender(userId);
-            notificationCopy.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.NOTIFICATION));
+            String uuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.NOTIFICATION);
             NotificationInternal notificationInternal = new NotificationInternal(new NotificationStatus(NotificationStatus.PENDING,
                     "Notification yet to be processed."), TimeUtils.getTime(), TimeUtils.getTime(), Collections.emptyList());
-            notificationCopy.setInternal(notificationInternal);
-            notificationCopy.setReceiver(targetUserId);
-
+            Notification notificationCopy = new Notification(notificationCreateInstance, uuid, operationId,
+                    payload.getUserId(organizationId), targetUserId, notificationInternal);
             notificationList.add(notificationCopy);
         }
 
         return notificationList;
     }
 
-    private void validateNotificationParameters(Notification notification, String organizationId, Study study, String userId)
-            throws CatalogParameterException, CatalogDBException {
+    private void validateAndObtainNotification(NotificationCreateParams notification, String organizationId)
+            throws CatalogParameterException {
         ParamUtils.checkParameter(notification.getTarget(), "target");
+        ParamUtils.checkParameter(notification.getSubject(), "subject");
         ParamUtils.checkParameter(notification.getBody(), "body");
-        ParamUtils.checkParameter(notification.getType(), "type");
+        ParamUtils.checkObj(notification.getScope(), "scope");
+        ParamUtils.checkParameter(notification.getFqn(), "fqn");
+        ParamUtils.checkObj(notification.getType(), "type");
 
         boolean validGroup = false;
         for (String notificationGroup : NOTIFICATION_GROUPS) {
             if (notification.getTarget().equalsIgnoreCase(notificationGroup)) {
                 validGroup = true;
+                break;
             }
         }
-        if (!validGroup) {
+        if (validGroup) {
+            switch (notification.getTarget().toUpperCase()) {
+                case STUDY_MEMBERS:
+                case STUDY_ADMINISTRATORS:
+                    if (notification.getScope() != NotificationScope.STUDY) {
+                        throw new CatalogParameterException("Target cannot be addressed to " + notification.getTarget()
+                                + " if the scope of the notification is not " + NotificationScope.STUDY + ".");
+                    }
+                    break;
+                case PROJECT_ADMINISTRATORS:
+                    if (notification.getScope() != NotificationScope.PROJECT) {
+                        throw new CatalogParameterException("Target cannot be addressed to " + notification.getTarget()
+                                + " if the scope of the notification is not " + NotificationScope.PROJECT + ".");
+                    }
+                    break;
+                default:
+                    break;
+            }
+        } else {
             if (notification.getTarget().startsWith("@")) {
-                // Check group exists
-                OpenCGAResult<Group> group = catalogDBAdaptorFactory.getCatalogStudyDBAdaptor(organizationId)
-                        .getGroup(study.getUid(), notification.getTarget(), null);
-                if (group.getNumResults() == 0) {
-                    throw new CatalogParameterException("Target group " + notification.getTarget() + " not found.");
+                if (notification.getScope() != NotificationScope.STUDY) {
+                    throw new CatalogParameterException("Target cannot be addressed to a group if the scope of the notification is not "
+                            + NotificationScope.STUDY + ".");
                 }
             } else {
                 // Check user exists
@@ -232,6 +268,19 @@ public class NotificationManager extends ResourceManager<Notification> {
                 }
             }
         }
+        if (notification.getScope() == NotificationScope.STUDY && !CatalogFqn.isValidStudyFqn(notification.getFqn())) {
+            throw new CatalogParameterException("Expected valid study fqn for scope '" + NotificationScope.STUDY + "'. '"
+                    + notification.getFqn() + "' is not a valid study fqn.");
+        } else if (notification.getScope() == NotificationScope.PROJECT && !CatalogFqn.isValidProjectFqn(notification.getFqn())) {
+            throw new CatalogParameterException("Expected valid project fqn for scope '" + NotificationScope.PROJECT + "'. '"
+                    + notification.getFqn() + "' is not a valid project fqn.");
+        } else if ((notification.getScope() == NotificationScope.ORGANIZATION || notification.getScope() == NotificationScope.GLOBAL)
+                && notification.getFqn().contains("@")) {
+            // Check if the fqn seems valid (organization id)
+            throw new CatalogParameterException("Expected valid organization fqn (organization id) for scope '" + notification.getScope()
+                    + "'. '" + notification.getFqn() + "' is not a valid organization fqn.");
+        }
+
     }
 
     public OpenCGAResult<Notification> update(String studyStr, String notificationUuid, NotificationUpdateParams updateParams,
@@ -257,20 +306,26 @@ public class NotificationManager extends ResourceManager<Notification> {
         return update;
     }
 
-    @Override
-    public DBIterator<Notification> iterator(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
+    private void checkUpdateResult(OpenCGAResult<Notification> result) throws CatalogException {
+        if (result.getNumMatches() == 0) {
+            throw new CatalogException("Could not update " + getEntity() + ". " + getEntity() + " not found.");
+        }
+        if (result.getNumUpdated() == 0) {
+            result.addEvent(new Event(Event.Type.WARNING, getEntity() + " was already updated."));
+        }
+    }
+
+    public DBIterator<Notification> iterator(String organizationId, Query query, QueryOptions options, String token)
+            throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
-        Study study = catalogManager.getStudyManager().resolveId(studyFqn, null, tokenPayload);
-        String organizationId = studyFqn.getOrganizationId();
-        String userId = tokenPayload.getUserId(organizationId);
+        String organizationId = tokenPayload.getOrganization();
+        String userId = tokenPayload.getUserId();
 
         Query finalQuery = new Query(query);
-        fixQueryObject(finalQuery);
-        finalQuery.append(NotificationDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+        fixQueryObject(query, tokenPayload);
 
         return getNotificationDBAdaptor(organizationId).iterator(study.getUid(), finalQuery, options, userId);
     }
@@ -286,7 +341,7 @@ public class NotificationManager extends ResourceManager<Notification> {
 
         Study study = catalogManager.getStudyManager().resolveId(studyFqn, tokenPayload);
 
-        fixQueryObject(query);
+        fixQueryObject(query, tokenPayload);
         query.append(NotificationDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         return getNotificationDBAdaptor(organizationId).facet(study.getUid(), query, facet, userId);
@@ -304,7 +359,7 @@ public class NotificationManager extends ResourceManager<Notification> {
 
         Study study = catalogManager.getStudyManager().resolveId(studyFqn, null, tokenPayload);
         query.append(NotificationDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-        fixQueryObject(query);
+        fixQueryObject(query, tokenPayload);
 
         return getNotificationDBAdaptor(organizationId).get(study.getUid(), query, options, userId);
     }
@@ -319,7 +374,7 @@ public class NotificationManager extends ResourceManager<Notification> {
         String userId = tokenPayload.getUserId(organizationId);
 
         Study study = catalogManager.getStudyManager().resolveId(studyFqn, tokenPayload);
-        fixQueryObject(query);
+        fixQueryObject(query, tokenPayload);
         query.append(NotificationDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
         return getNotificationDBAdaptor(organizationId).distinct(study.getUid(), fields, query, userId);
     }
@@ -333,7 +388,7 @@ public class NotificationManager extends ResourceManager<Notification> {
 
         Study study = catalogManager.getStudyManager().resolveId(studyFqn, tokenPayload);
         query = new Query(ParamUtils.defaultObject(query, Query::new));
-        fixQueryObject(query);
+        fixQueryObject(query, tokenPayload);
         query.append(NotificationDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
         OpenCGAResult<Long> queryResultAux = getNotificationDBAdaptor(organizationId).count(query, userId);
 
@@ -368,6 +423,7 @@ public class NotificationManager extends ResourceManager<Notification> {
         boolean count = true;
         query.append(NotificationDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
         query.append(NotificationDBAdaptor.QueryParams.RECEIVER.key(), userId);
+        fixQueryObject(query, tokenPayload);
         OpenCGAResult queryResult = null;
         if (count) {
             // We do not need to check for permissions when we show the count of files
@@ -392,6 +448,7 @@ public class NotificationManager extends ResourceManager<Notification> {
         String userId = tokenPayload.getUserId(organizationId);
         Study study = catalogManager.getStudyManager().resolveId(studyFqn, tokenPayload);
 
+        fixQueryObject(query, tokenPayload);
         // Fix query if it contains any annotation
         AnnotationUtils.fixQueryOptionAnnotation(options);
 
@@ -401,5 +458,26 @@ public class NotificationManager extends ResourceManager<Notification> {
         OpenCGAResult queryResult = getNotificationDBAdaptor(organizationId).groupBy(query, fields, options, userId);
 
         return ParamUtils.defaultObject(queryResult, OpenCGAResult::new);
+    }
+
+    protected void fixQueryObject(Query query, JwtPayload tokenPayload) {
+        super.fixQueryObject(query);
+        if (query.containsKey(ParamConstants.PROJECT_PARAM)) {
+            // Obtain project uid and add to query object
+            String projectId = query.getString(ParamConstants.PROJECT_PARAM);
+            CatalogFqn projectFqn = CatalogFqn.extractFqnFromProject(projectId, tokenPayload);
+            Project project = catalogManager.getProjectManager().resolveId(projectFqn, ProjectManager.INCLUDE_PROJECT_IDS, tokenPayload)
+                    .first();
+            query.remove(ParamConstants.PROJECT_PARAM);
+            query.put(NotificationDBAdaptor.QueryParams.PROJECT_UID.key(), project.getUid());
+        }
+        if (query.containsKey(ParamConstants.STUDY_PARAM)) {
+            // Obtain study uid and add to query object
+            String studyId = query.getString(ParamConstants.STUDY_PARAM);
+            CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, tokenPayload);
+            Study study = catalogManager.getStudyManager().resolveId(studyFqn, StudyManager.INCLUDE_STUDY_IDS, tokenPayload).first();
+            query.remove(ParamConstants.STUDY_PARAM);
+            query.put(NotificationDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+        }
     }
 }

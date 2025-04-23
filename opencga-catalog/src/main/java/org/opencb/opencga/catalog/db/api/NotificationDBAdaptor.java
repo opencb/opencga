@@ -18,7 +18,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
 public interface NotificationDBAdaptor extends CoreDBAdaptor<Notification> {
 
-    OpenCGAResult<Notification> insert(long studyUid, List<Notification> notificationList, QueryOptions options) throws CatalogException;
+    OpenCGAResult<Notification> insert(List<Notification> notificationList, QueryOptions options) throws CatalogException;
 
     OpenCGAResult<Notification> update(long studyUid, String notificationUuid, ObjectMap parameters, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;

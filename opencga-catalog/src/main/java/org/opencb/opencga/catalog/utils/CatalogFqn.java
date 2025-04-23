@@ -36,23 +36,6 @@ public final class CatalogFqn {
         this.providedId = id;
     }
 
-    public static CatalogFqn fromProjectFqn(String projectFqn) {
-        if (StringUtils.isEmpty(projectFqn)) {
-            throw new IllegalArgumentException("Missing project fqn");
-        }
-
-        if (UuidUtils.isOpenCgaUuid(projectFqn)) {
-            throw new IllegalArgumentException("Project fqn cannot be an OpenCGA uuid");
-        }
-
-        String[] split = projectFqn.split("@", 2);
-        if (split.length == 2) {
-            return new CatalogFqn(split[0], projectFqn).setProjectId(split[1]);
-        } else {
-            throw new IllegalArgumentException("Provided string '" + projectFqn + "' is not a valid project fqn.");
-        }
-    }
-
     public static CatalogFqn extractFqnFromProject(String projectStr, JwtPayload payload) {
         if (StringUtils.isEmpty(projectStr)) {
             return new CatalogFqn(payload.getOrganization(), projectStr);
@@ -71,15 +54,30 @@ public final class CatalogFqn {
         }
     }
 
+    public static CatalogFqn extractFqnFromGenericFqn(String fqn) {
+        if (StringUtils.isEmpty(fqn)) {
+            throw new IllegalArgumentException("Missing fqn");
+        }
+        Matcher matcher = ORGANIZATION_PROJECT_STUDY_PATTERN.matcher(fqn);
+        if (matcher.find()) {
+            return extractFqnFromStudyFqn(fqn);
+        } else if (fqn.contains("@")) {
+            return extractFqnFromProjectFqn(fqn);
+        } else {
+            return new CatalogFqn(fqn, fqn);
+        }
+    }
+
     public static CatalogFqn extractFqnFromProjectFqn(String projectFqn) {
         if (StringUtils.isEmpty(projectFqn)) {
             throw new IllegalArgumentException("Missing project fqn");
         }
-
+        if (UuidUtils.isOpenCgaUuid(projectFqn)) {
+            throw new IllegalArgumentException("Project fqn cannot be an OpenCGA uuid");
+        }
         String[] split = projectFqn.split("@");
         if (split.length == 2) {
-            return new CatalogFqn(split[0], projectFqn)
-                    .setProjectId(split[1]);
+            return new CatalogFqn(split[0], projectFqn).setProjectId(split[1]);
         } else {
             throw new IllegalArgumentException("Provided string '" + projectFqn + "' is not a valid project fqn.");
         }
@@ -146,6 +144,34 @@ public final class CatalogFqn {
                 return new CatalogFqn(payload.getOrganization(), studyStr).setStudyId(studyStr);
             }
         }
+    }
+
+    public static boolean isValidStudyFqn(String studyFqn) {
+        if (StringUtils.isEmpty(studyFqn)) {
+            return false;
+        }
+        Matcher matcher = ORGANIZATION_PROJECT_STUDY_PATTERN.matcher(studyFqn);
+        if (matcher.find()) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public static boolean isValidProjectFqn(String projectFqn) {
+        if (StringUtils.isEmpty(projectFqn)) {
+            return false;
+        }
+        if (UuidUtils.isOpenCgaUuid(projectFqn)) {
+            return false;
+        }
+        if (isValidStudyFqn(projectFqn)) {
+            return false;
+        }
+        if (projectFqn.contains("@")) {
+            return true;
+        }
+        return false;
     }
 
     public String getProvidedId() {

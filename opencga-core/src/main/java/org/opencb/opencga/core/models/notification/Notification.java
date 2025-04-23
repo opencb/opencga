@@ -3,11 +3,11 @@ package org.opencb.opencga.core.models.notification;
 import org.opencb.commons.annotations.DataClass;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
-import org.opencb.opencga.core.models.PrivateStudyUid;
+import org.opencb.opencga.core.models.PrivateFields;
 
 @DataClass(id = "Notification", since = "4.0.0",
         description = "Notification data model hosts information about the notifications the system or other users make.")
-public class Notification extends PrivateStudyUid {
+public class Notification extends PrivateFields {
 
     @DataField(id = "uuid", managed = true, indexed = true, unique = true, immutable = true,
             description = FieldConstants.GENERIC_UUID_DESCRIPTION)
@@ -24,11 +24,13 @@ public class Notification extends PrivateStudyUid {
     private String body;
 
     @DataField(id = "type", immutable = true, description = FieldConstants.NOTIFICATION_TYPE_DESCRIPTION)
-    private String type;
-    /*
-    *  scope: MANUAL, ORGANIZATION, PROJECT, STUDY
-    *
-    * */
+    private NotificationType type;
+
+    @DataField(id = "scope", immutable = true, description = FieldConstants.NOTIFICATION_SCOPE_DESCRIPTION)
+    private NotificationScope scope;
+
+    @DataField(id = "fqn", immutable = true, description = FieldConstants.NOTIFICATION_FQN_DESCRIPTION)
+    private String fqn;
 
     @DataField(id = "internal", description = FieldConstants.NOTIFICATION_INTERNAL_DESCRIPTION)
     private NotificationInternal internal;
@@ -45,28 +47,25 @@ public class Notification extends PrivateStudyUid {
     public Notification() {
     }
 
-    public Notification(String subject, String body, String type, String target) {
-        this.subject = subject;
-        this.body = body;
-        this.type = type;
-        this.target = target;
-    }
-
-    public Notification(String uuid, String operationId, String subject, String body, String type, NotificationInternal internal,
-                        String sender, String target) {
+    public Notification(String uuid, String operationId, String subject, String body, NotificationType type, NotificationScope scope,
+                        String fqn, NotificationInternal internal, String sender, String receiver, String target) {
         this.uuid = uuid;
         this.operationId = operationId;
         this.subject = subject;
         this.body = body;
         this.type = type;
+        this.scope = scope;
+        this.fqn = fqn;
         this.internal = internal;
         this.sender = sender;
+        this.receiver = receiver;
         this.target = target;
     }
 
-    public Notification(Notification notification) {
-        this(notification.getUuid(), notification.getOperationId(), notification.getSubject(), notification.getBody(),
-                notification.getType(), notification.getInternal(), notification.getSender(), notification.getTarget());
+    public Notification(NotificationCreateParams notification, String uuid, String operationId, String sender, String receiver,
+                        NotificationInternal internal) {
+        this(uuid, operationId, notification.getSubject(), notification.getBody(), notification.getType(), notification.getScope(),
+                internal, sender, receiver, notification.getTarget());
     }
 
     @Override
@@ -76,7 +75,8 @@ public class Notification extends PrivateStudyUid {
         sb.append(", operationId='").append(operationId).append('\'');
         sb.append(", subject='").append(subject).append('\'');
         sb.append(", body='").append(body).append('\'');
-        sb.append(", type='").append(type).append('\'');
+        sb.append(", type=").append(type);
+        sb.append(", scope=").append(scope);
         sb.append(", internal=").append(internal);
         sb.append(", sender='").append(sender).append('\'');
         sb.append(", receiver='").append(receiver).append('\'');
@@ -91,13 +91,6 @@ public class Notification extends PrivateStudyUid {
         return this;
     }
 
-    @Override
-    public Notification setStudyUid(long studyUid) {
-        super.setStudyUid(studyUid);
-        return this;
-    }
-
-    @Override
     public String getUuid() {
         return uuid;
     }
@@ -134,12 +127,21 @@ public class Notification extends PrivateStudyUid {
         return this;
     }
 
-    public String getType() {
+    public NotificationType getType() {
         return type;
     }
 
-    public Notification setType(String type) {
+    public Notification setType(NotificationType type) {
         this.type = type;
+        return this;
+    }
+
+    public NotificationScope getScope() {
+        return scope;
+    }
+
+    public Notification setScope(NotificationScope scope) {
+        this.scope = scope;
         return this;
     }
 

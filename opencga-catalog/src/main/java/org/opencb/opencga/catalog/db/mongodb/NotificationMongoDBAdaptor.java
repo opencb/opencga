@@ -45,26 +45,23 @@ public class NotificationMongoDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     @Override
-    public OpenCGAResult<Notification> insert(long studyUid, List<Notification> notificationList, QueryOptions options)
-            throws CatalogException {
+    public OpenCGAResult<Notification> insert(List<Notification> notificationList, QueryOptions options) throws CatalogException {
         return runTransaction(clientSession -> {
             long tmpStartTime = startQuery();
             logger.debug("Starting notification insert transaction");
-            dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyUid);
             for (Notification notification : notificationList) {
-                insert(clientSession, studyUid, notification);
+                insert(clientSession, notification);
             }
 
             return endWrite(tmpStartTime, notificationList.size(), notificationList.size(), 0, 0, null);
         }, e -> logger.error("Could not insert notifications: {}", e.getMessage()));
     }
 
-    Notification insert(ClientSession clientSession, long studyUid, Notification notification)
+    Notification insert(ClientSession clientSession, Notification notification)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
 
         long notificationUid = getNewUid(clientSession);
         notification.setUid(notificationUid);
-        notification.setStudyUid(studyUid);
 
         Document notificationObject = notificationConverter.convertToStorageType(notification);
 
@@ -73,9 +70,8 @@ public class NotificationMongoDBAdaptor extends CatalogMongoDBAdaptor implements
         notificationObject.put(PRIVATE_CREATION_DATE, StringUtils.isNotEmpty(date) ? TimeUtils.toDate(date) : TimeUtils.getDate());
         notificationObject.put(PRIVATE_MODIFICATION_DATE, StringUtils.isNotEmpty(date) ? TimeUtils.toDate(date) : TimeUtils.getDate());
 
-        logger.debug("Inserting notification '{}' ({})...", notification.getId(), notification.getUid());
         notificationCollection.insert(clientSession, notificationObject, null);
-        logger.debug("Notification '{}' successfully inserted", notification.getId());
+        logger.debug("New notification successfully inserted");
 
         return notification;
     }
