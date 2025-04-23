@@ -38,11 +38,12 @@ public class Notification extends PrivateFields {
     @DataField(id = "sender", immutable = true, description = FieldConstants.NOTIFICATION_SENDER_DESCRIPTION)
     private String sender;
 
+    @DataField(id = "target", immutable = true, description = FieldConstants.NOTIFICATION_TARGET_DESCRIPTION)
+    private String target;
+
     @DataField(id = "receiver", immutable = true, description = FieldConstants.NOTIFICATION_RECEIVER_DESCRIPTION)
     private String receiver;
 
-    @DataField(id = "target", immutable = true, description = FieldConstants.NOTIFICATION_TARGET_DESCRIPTION)
-    private String target;
 
     public Notification() {
     }

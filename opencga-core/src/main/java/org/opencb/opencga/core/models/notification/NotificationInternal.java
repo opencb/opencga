@@ -13,7 +13,7 @@ public class NotificationInternal extends Internal {
 
     @DataField(id = "notifications", managed = true, immutable = true,
             description = FieldConstants.NOTIFICATION_INTERNAL_NOTIFICATIONS_DESCRIPTION)
-    private List<NotificationInternalNotificationResult> notifications;
+    private List<NotificationInternalNotificationResult> notificatorStatuses;
 
     public NotificationInternal() {
     }

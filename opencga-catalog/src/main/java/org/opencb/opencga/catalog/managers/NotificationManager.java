@@ -3,7 +3,6 @@ package org.opencb.opencga.catalog.managers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
@@ -12,7 +11,6 @@ import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.NotificationDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
@@ -46,10 +44,10 @@ public class NotificationManager extends AbstractManager {
     public static final String PROJECT_ADMINISTRATORS = "PROJECT_ADMINISTRATORS";
     public static final String STUDY_ADMINISTRATORS = "STUDY_ADMINISTRATORS";
     public static final String STUDY_MEMBERS = "STUDY_MEMBERS";
-    public static final String ANY_USER = "ANY_USER";
+    public static final String ORGANIZATION_MEMBERS = "ORGANIZATION_MEMBERS";
 
     public static final List<String> NOTIFICATION_GROUPS = Arrays.asList(ORGANIZATION_ADMINISTRATORS, PROJECT_ADMINISTRATORS,
-            STUDY_ADMINISTRATORS, STUDY_MEMBERS, ANY_USER);
+            STUDY_ADMINISTRATORS, STUDY_MEMBERS, ORGANIZATION_MEMBERS);
 
     NotificationManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                         DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
@@ -135,7 +133,7 @@ public class NotificationManager extends AbstractManager {
         }
         if (validGroup) {
             switch (notificationCreateInstance.getTarget()) {
-                case ANY_USER:
+                case ORGANIZATION_MEMBERS:
                     // Get all users
                     try (DBIterator<User> iterator = catalogDBAdaptorFactory.getCatalogUserDBAdaptor(organizationId)
                             .iterator(new Query(UserDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), UserStatus.READY),
