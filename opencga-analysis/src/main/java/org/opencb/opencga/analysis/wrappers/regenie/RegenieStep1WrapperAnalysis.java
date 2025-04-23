@@ -140,7 +140,7 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
 
         // Set parameters and execute
         executor.setStudy(study)
-                .setStep1ScriptPath(getOpencgaHome().resolve("cloud/docker/opencga-regenie/regenie_step1.sh"))
+                .setStep1ScriptPath(getOpencgaHome().resolve("analysis/regenie/regenie_step1.sh"))
                 .setInputPath(resourcePath)
                 .setOutputPath(getOutDir())
                 .execute();
@@ -167,9 +167,9 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
         Path pythonDir = dataDir.resolve("python");
         List<String> filenames = Arrays.asList("requirements.txt", "variant_walker.py");
         for (String filename : filenames) {
-            FileUtils.copyFile(getOpencgaHome().resolve("cloud/docker/walker/" + filename).toAbsolutePath(), pythonDir.resolve(filename));
+            FileUtils.copyFile(getOpencgaHome().resolve("analysis/walker/" + filename).toAbsolutePath(), pythonDir.resolve(filename));
         }
-        FileUtils.copyFile(getOpencgaHome().resolve("cloud/docker/opencga-regenie/regenie_walker.py"),
+        FileUtils.copyFile(getOpencgaHome().resolve("analysis/regenie/regenie_walker.py"),
                 pythonDir.resolve("regenie_walker.py"));
         // Copy step1 results (i.e., prediction files) and update the paths within the file step1_pred.list
         Path predDir = dataDir.resolve("pred");

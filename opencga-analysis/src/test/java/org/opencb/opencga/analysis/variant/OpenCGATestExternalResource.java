@@ -304,29 +304,20 @@ public class OpenCGATestExternalResource extends ExternalResource {
             }
         }
 
-        // custom-tool-docker-builder
-        Path dockerPath = Files.createDirectories(opencgaHome.resolve("cloud/docker/custom-tool-docker-builder")).toAbsolutePath();
-        filenames = Arrays.asList("custom-tool-docker-build.py");
-        for (String filename : filenames) {
-            try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/cloud/docker/custom-tool-docker-builder/" + filename)) {
-                Files.copy(inputStream, dockerPath.resolve(filename), StandardCopyOption.REPLACE_EXISTING);
-            }
-        }
-
-        // opencga-regenie
-        dockerPath = Files.createDirectories(opencgaHome.resolve("cloud/docker/opencga-regenie")).toAbsolutePath();
+        // regenie
+        Path dockerPath = Files.createDirectories(opencgaHome.resolve("analysis/regenie")).toAbsolutePath();
         filenames = Arrays.asList("regenie_walker.py", "regenie_step1.sh");
         for (String filename : filenames) {
-            try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/cloud/docker/opencga-regenie/" + filename)) {
+            try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/regenie/" + filename)) {
                 Files.copy(inputStream, dockerPath.resolve(filename), StandardCopyOption.REPLACE_EXISTING);
             }
         }
 
         // walker
-        dockerPath = Files.createDirectories(opencgaHome.resolve("cloud/docker/walker")).toAbsolutePath();
-        filenames = Arrays.asList("requirements.txt", "variant_walker.py");
+        dockerPath = Files.createDirectories(opencgaHome.resolve("analysis/walker")).toAbsolutePath();
+        filenames = Arrays.asList("custom-tool-docker-build.py", "requirements.txt", "variant_walker.py");
         for (String filename : filenames) {
-            try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/cloud/docker/walker/" + filename)) {
+            try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/walker/" + filename)) {
                 Files.copy(inputStream, dockerPath.resolve(filename), StandardCopyOption.REPLACE_EXISTING);
             }
         }

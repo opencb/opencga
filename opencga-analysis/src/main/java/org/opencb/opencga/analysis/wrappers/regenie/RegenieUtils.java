@@ -32,6 +32,8 @@ public final class RegenieUtils {
     public static final String PREDICTION_PATH = "pred/";
     public static final String OPT_APP_PRED_VIRTUAL_DIR = OPT_APP_VIRTUAL_DIR + PREDICTION_PATH;
 
+    public static final String REGENIE_RESULTS_FILENAME = "regenie_results.txt";
+
     public static final String OPENCGA_REGENIE_WALKER_DOCKER_IMAGE_KEY = "OPENCGA_REGENIE_WALKER_DOCKER_IMAGE";
 
     private static Logger logger = LoggerFactory.getLogger(RegenieUtils.class);
@@ -72,7 +74,7 @@ public final class RegenieUtils {
         String dockerRepo = "regenie-walker";
         String dockerRepoVersion = Instant.now().getEpochSecond() + "-" + (new Random().nextInt(9000) + 1000);
 
-        Path dockerBuildScript = opencgaHome.resolve("cloud/docker/custom-tool-docker-builder/custom-tool-docker-build.py");
+        Path dockerBuildScript = opencgaHome.resolve("analysis/walker/custom-tool-docker-build.py");
         Command dockerBuild = new Command(new String[]{"python3", dockerBuildScript.toAbsolutePath().toString(),
                 "--custom-tool-dir", dataDir.toAbsolutePath().toString(),
                 "--base-image", "joaquintarraga/opencga-regenie:" + GitRepositoryState.getInstance().getBuildVersion(),
@@ -121,7 +123,7 @@ public final class RegenieUtils {
         }
 
         String apiUrl = String.format("https://hub.docker.com/v2/repositories/%s/%s/tags/%s/", namespace, imageName, tagName);
-        logger.info("Checking docker image {} at Docker Hub: {}", apiUrl);
+        logger.info("Checking docker image {} at Docker Hub: {}", inputDockerImage, apiUrl);
 
         try {
             URL url = new URL(apiUrl);

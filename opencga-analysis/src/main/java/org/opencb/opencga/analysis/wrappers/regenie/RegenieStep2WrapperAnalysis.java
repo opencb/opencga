@@ -38,6 +38,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.opencb.opencga.analysis.wrappers.regenie.RegenieUtils.OPENCGA_REGENIE_WALKER_DOCKER_IMAGE_KEY;
+import static org.opencb.opencga.analysis.wrappers.regenie.RegenieUtils.REGENIE_RESULTS_FILENAME;
 
 @Tool(id = RegenieStep2WrapperAnalysis.ID, resource = Enums.Resource.VARIANT, description = RegenieStep2WrapperAnalysis.DESCRIPTION)
 public class RegenieStep2WrapperAnalysis extends OpenCgaToolScopeStudy {
@@ -102,7 +103,7 @@ public class RegenieStep2WrapperAnalysis extends OpenCgaToolScopeStudy {
         logger.info("Running regenie step2 with regenie-walker docker image: {} ...", walkerDockerImage);
 
         String regenieCmd = "python3 /opt/app/python/variant_walker.py regenie_walker Regenie";
-        Path regenieResults = getOutDir().resolve("regenie_results.txt");
+        Path regenieResults = getOutDir().resolve(REGENIE_RESULTS_FILENAME);
         VariantQuery variantQuery = new VariantQuery()
                 .study(getStudy())
                 .includeSampleAll()
