@@ -52,6 +52,7 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
     public static final String ERROR_MESSAGE = "ERROR_MESSAGE";
     public static final String OUTPUT_PARAM = "output";
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractHBaseDriver.class);
+    public static final String ARGS_FROM_STDIN = "STDIN";
     protected String table;
 
     public AbstractHBaseDriver() {
@@ -136,6 +137,19 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         Configuration conf = getConf();
         HBaseConfiguration.addHbaseResources(conf);
         getConf().setClassLoader(AbstractHBaseDriver.class.getClassLoader());
+        if (args.length == 1 && args[0].equals(ARGS_FROM_STDIN)) {
+            // Read args from STDIN
+            List<String> argsFromStdin = new LinkedList<>();
+            Scanner scanner = new Scanner(System.in);
+            while (scanner.hasNextLine()) {
+                String arg = scanner.nextLine();
+                LOGGER.debug("Read arg from STDIN: " + arg);
+                argsFromStdin.add(arg);
+            }
+            LOGGER.info("Read " + argsFromStdin.size() + " args from STDIN");
+            scanner.close();
+            args = argsFromStdin.toArray(new String[0]);
+        }
         if (configFromArgs(args)) {
             return 1;
         }

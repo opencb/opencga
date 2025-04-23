@@ -39,7 +39,7 @@ public class SshMRExecutor extends MRExecutor {
     // env-var expected by "sshpass -e"
     private static final String SSHPASS_ENV = "SSHPASS";
     public static final String PID = "PID";
-    private static Logger logger = LoggerFactory.getLogger(SshMRExecutor.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SshMRExecutor.class);
 
     @Override
     public SshMRExecutor init(String dbName, Configuration conf, ObjectMap options) {
@@ -54,33 +54,33 @@ public class SshMRExecutor extends MRExecutor {
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         Thread hook = new Thread(() -> {
-            logger.info("Shutdown hook. Killing MR jobs");
-            logger.info("Read output key-value:");
+            LOGGER.info("Shutdown hook. Killing MR jobs");
+            LOGGER.info("Read output key-value:");
             ObjectMap result = readResult(new String(outputStream.toByteArray(), Charset.defaultCharset()));
             for (Map.Entry<String, Object> entry : result.entrySet()) {
-                logger.info(" - " + entry.getKey() + ": " + entry.getValue());
+                LOGGER.info(" - " + entry.getKey() + ": " + entry.getValue());
             }
             String remotePid = result.getString(PID);
-            logger.info("Remote PID: " + remotePid);
+            LOGGER.info("Remote PID: " + remotePid);
             List<String> mrJobs = result.getAsStringList(AbstractHBaseDriver.MR_APPLICATION_ID);
-            logger.info("MR jobs to kill: " + mrJobs);
+            LOGGER.info("MR jobs to kill: " + mrJobs);
             for (String mrJob : mrJobs) {
-                logger.info("Killing MR job " + mrJob);
+                LOGGER.info("Killing MR job " + mrJob);
                 String commandLineKill = buildCommand("yarn", "application", "-kill", mrJob);
                 Command command = new Command(commandLineKill, env);
                 command.run();
                 int exitValue = command.getExitValue();
                 if (exitValue != 0) {
-                    logger.error("Error killing MR job " + mrJob);
+                    LOGGER.error("Error killing MR job " + mrJob);
                 } else {
-                    logger.info("MR job " + mrJob + " killed!");
+                    LOGGER.info("MR job " + mrJob + " killed!");
                 }
             }
             if (remotePid != null) {
                 int remoteProcessGraceKillPeriod = getOptions()
                         .getInt(MR_EXECUTOR_SSH_HADOOP_TERMINATION_GRACE_PERIOD_SECONDS.key(),
                                 MR_EXECUTOR_SSH_HADOOP_TERMINATION_GRACE_PERIOD_SECONDS.defaultValue());
-                logger.info("Wait up to " + remoteProcessGraceKillPeriod + "s for the remote process to finish");
+                LOGGER.info("Wait up to " + remoteProcessGraceKillPeriod + "s for the remote process to finish");
                 String commandLineWaitPid = buildCommand("bash", "-c", ""
                         + "pid=" + remotePid + "; "
                         + "i=0; "
@@ -95,9 +95,9 @@ public class SshMRExecutor extends MRExecutor {
                 Command command = new Command(commandLineWaitPid, env);
                 command.run();
                 if (command.getExitValue() != 0) {
-                    logger.error("Error waiting for remote process to finish");
+                    LOGGER.error("Error waiting for remote process to finish");
                 } else {
-                    logger.info("Remote process finished!");
+                    LOGGER.info("Remote process finished!");
                 }
             }
         });
@@ -132,9 +132,21 @@ public class SshMRExecutor extends MRExecutor {
 
     protected int runRemote(String executable, String[] args, List<String> env, ByteArrayOutputStream outputStream) {
         String commandLine = buildCommand(executable, args);
-        Command command = new Command(commandLine, env);
-        command.setErrorOutputStream(outputStream);
-        command.run();
+        Command command;
+        if (commandLine.length() > MAX_COMMAND_LINE_ARGS_LENGTH) {
+            LOGGER.info("Command line is too long. Passing args through stdin");
+            commandLine = buildCommand(executable, AbstractHBaseDriver.ARGS_FROM_STDIN);
+            redactSecureString(args, MR_EXECUTOR_SSH_PASSWORD.key());
+            redactSecureString(args, "token");
+
+            command = new Command(commandLine, env);
+            command.setErrorOutputStream(outputStream);
+            runWithArgsToStdin(command, args);
+        } else {
+            command = new Command(commandLine, env);
+            command.setErrorOutputStream(outputStream);
+            command.run();
+        }
         return command.getExitValue();
     }
 
@@ -157,7 +169,7 @@ public class SshMRExecutor extends MRExecutor {
             String output = argsList.get(outputIdx + 1);
             URI outputUri = UriUtils.createUriSafe(output);
             if (MapReduceOutputFile.isLocal(outputUri)) {
-                logger.info("This MapReduce will produce some output. Change output location from file:// to a temporary hdfs:// file"
+                LOGGER.info("This MapReduce will produce some output. Change output location from file:// to a temporary hdfs:// file"
                         + " so it can be copied to the local filesystem after the execution");
                 try {
                     int i = executable.lastIndexOf('.');
@@ -204,7 +216,7 @@ public class SshMRExecutor extends MRExecutor {
     private Path copyOutputFiles(String output, List<String> env) throws StorageEngineException {
         URI targetOutputUri = UriUtils.createUriSafe(output);
         if (!MapReduceOutputFile.isLocal(targetOutputUri)) {
-            logger.info("Output is not a file:// URI. Skipping copy file {}", targetOutputUri);
+            LOGGER.info("Output is not a file:// URI. Skipping copy file {}", targetOutputUri);
             return null;
         }
         String targetOutput = targetOutputUri.getPath();

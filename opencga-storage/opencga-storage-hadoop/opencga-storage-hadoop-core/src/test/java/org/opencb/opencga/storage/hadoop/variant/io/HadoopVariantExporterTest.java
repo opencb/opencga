@@ -314,6 +314,21 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
         copyToLocal(fileName, uri);
     }
 
+    @Test
+    public void exportLargeQuery() throws Exception {
+        String fileName = "large_query.vcf";
+        URI uri = getOutputUri(fileName);
+        StringBuilder sb = new StringBuilder();
+        for (Variant variant : variantStorageEngine) {
+            sb.append(variant.toString()).append(",");
+        }
+        String query = sb.toString();
+        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.VCF,
+                null, new Query(STUDY.key(), study1).append(ANNOT_XREF.key(), query), new QueryOptions("skipSmallQuery", true));
+
+        copyToLocal(fileName, uri);
+    }
+
     protected URI copyToLocal(URI uri) throws IOException {
         return copyToLocal(Paths.get(uri.getPath()).getFileName().toString(), uri);
     }

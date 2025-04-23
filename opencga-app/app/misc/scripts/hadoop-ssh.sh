@@ -41,8 +41,11 @@ for arg in "$@" ; do
 done
 echo ${CMD} 1>&2
 
-${SSHPASS_CMD} ssh ${SSH_OPTS} "${HADOOP_SSH_USER}@${HADOOP_SSH_HOST}" /bin/bash << EOF
-
+# Create a script to be executed on the remote server
+## -d '' : read until EOF
+## -r : do not interpret backslash escapes
+## SSH_SCRIPT variable to store the script
+read -d '' -r SSH_SCRIPT << EOF
 echo "PID=\$\$" >&2
 
 export HADOOP_CLASSPATH=${HADOOP_CLASSPATH}
@@ -62,6 +65,21 @@ fi
 exec ${CMD}
 
 EOF
+
+STDIN_CONCAT=
+## Check if stdin comes from a terminal or a pipe
+if [ -t 0 ]; then
+    # stdin is a terminal.
+    # Interactive mode not supported. Don't concatenate stdin
+    STDIN_CONCAT=""
+else
+    # stdin is a pipe
+    # Concatenate stdin with the script
+    STDIN_CONCAT="-"
+fi
+
+## Concatenate the script with stdin (if any) and execute it on the remote server
+cat <(echo "${SSH_SCRIPT}") ${STDIN_CONCAT} | ${SSHPASS_CMD} ssh ${SSH_OPTS} "${HADOOP_SSH_USER}@${HADOOP_SSH_HOST}" /bin/bash
 
 EXIT_CODE=$?
 
