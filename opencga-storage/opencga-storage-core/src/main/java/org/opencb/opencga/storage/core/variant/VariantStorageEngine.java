@@ -360,7 +360,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     @Override
     public List<StoragePipelineResult> index(List<URI> inputFiles, URI outdirUri, boolean doExtract, boolean doTransform, boolean doLoad)
             throws StorageEngineException {
-        createStudyIfNeeded();
+        if (!doLoad) {
+            options.put(VariantStorageOptions.TRANSFORM_ISOLATE.key(), true);
+        } else {
+            createStudyIfNeeded();
+        }
         List<StoragePipelineResult> results = super.index(inputFiles, outdirUri, doExtract, doTransform, doLoad);
         if (doLoad) {
             annotateLoadedFiles(outdirUri, inputFiles, results, getOptions());
@@ -1539,6 +1543,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     protected void createStudyIfNeeded() throws StorageEngineException {
         String studyName = getOptions().getString(VariantStorageOptions.STUDY.key(), VariantStorageOptions.STUDY.defaultValue());
+        if (studyName == null || studyName.isEmpty()) {
+            throw new StorageEngineException("Missing study");
+        }
         StudyMetadata studyMetadata = getMetadataManager().getStudyMetadata(studyName);
         if (studyMetadata == null) {
             logger.info("Creating a new StudyMetadata '{}'", studyName);

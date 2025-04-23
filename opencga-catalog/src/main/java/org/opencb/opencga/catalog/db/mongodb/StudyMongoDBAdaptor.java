@@ -298,10 +298,12 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
                     Collections.emptyList(), Collections.emptyList());
         }
 
-        try {
-            ioManager.createStudy(organization, Long.toString(project.getUid()), Long.toString(study.getUid()));
-        } catch (CatalogIOException e) {
-            throw new CatalogIOException("Could not create study folder '" + study.getUri() + "' in file system.", e);
+        if (!study.getInternal().isFederated()) {
+            try {
+                ioManager.createStudy(organization, Long.toString(project.getUid()), Long.toString(study.getUid()));
+            } catch (CatalogIOException e) {
+                throw new CatalogIOException("Could not create study folder '" + study.getUri() + "' in file system.", e);
+            }
         }
 
         return study;

@@ -63,7 +63,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
         indexFile(getSmallFile(), new QueryOptions(), outputId);
 
         String dummyStudy = catalogManager.getStudyManager().create(projectId, "s_dummy", "s_dummy", "s_dummy", "", null, null,
-                null, null, null, sessionId).first().getId();
+                null, null, new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first().getId();
         catalogManager.getStudyManager().updateGroup(dummyStudy, ParamConstants.MEMBERS_GROUP, ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList(ParamConstants.ANONYMOUS_USER_ID)), sessionId);
         anonToken = catalogManager.getUserManager().loginAnonymous(ORGANIZATION).first().getToken();

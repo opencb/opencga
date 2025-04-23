@@ -37,6 +37,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.BatchUtils;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
+import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
@@ -559,8 +560,26 @@ public class CatalogStorageMetadataSynchronizer {
         return modified;
     }
 
-    private boolean synchronizeFiles(StudyMetadata study, List<File> files, String token) throws CatalogException {
+    private boolean synchronizeSampleIndexConfiguration(StudyMetadata studyMetadata, String token) throws CatalogException {
+        Study study = catalogManager.getStudyManager().get(studyMetadata.getName(), new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION.key())), token).first();
+        SampleIndexConfiguration sampleIndexFromCatalog = study.getInternal().getConfiguration().getVariantEngine().getSampleIndex();
+        SampleIndexConfiguration sampleIndexFromStorage = studyMetadata.getSampleIndexConfigurationLatest().getConfiguration();
+        if (!sampleIndexFromStorage.equals(sampleIndexFromCatalog)) {
+            logger.info("Update sample index configuration from storage for study {}", studyMetadata.getName());
+            catalogManager.getStudyManager().setVariantEngineConfigurationSampleIndex(studyMetadata.getName(), sampleIndexFromStorage, token);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    protected boolean synchronizeFiles(StudyMetadata study, List<File> files, String token) throws CatalogException {
         boolean modified = false;
+
+        // FIXME: This method call should be relocated
+        modified |= synchronizeSampleIndexConfiguration(study, token);
+
         Map<String, Integer> fileNameMap = new HashMap<>();
         Map<Integer, String> filePathMap = new HashMap<>();
         Set<Integer> virtualFiles = new HashSet<>();
