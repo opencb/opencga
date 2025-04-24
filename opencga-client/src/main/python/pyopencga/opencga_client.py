@@ -26,6 +26,7 @@ from pyopencga.rest_clients.variant_operation_client import VariantOperation
 from pyopencga.rest_clients.user_client import User
 from pyopencga.rest_clients.variant_client import Variant
 from pyopencga.rest_clients.organization_client import Organization
+from pyopencga.rest_clients.workflow_client import Workflow
 
 
 class OpencgaClient(object):
@@ -93,12 +94,13 @@ class OpencgaClient(object):
         self.meta = Meta(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
         self.ga4gh = GA4GH(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
         self.admin = Admin(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
+        self.workflow = Workflow(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
 
         self.clients = [
             self.organizations, self.users, self.projects, self.studies, self.files, self.jobs,
             self.samples, self.individuals, self.families, self.cohorts,
-            self.disease_panels, self.alignments, self.variants, self.clinical,
-            self.variant_operations, self.meta, self.ga4gh, self.admin
+            self.disease_panels, self.alignments, self.variants, self.clinical, self.operations,
+            self.variant_operations, self.meta, self.ga4gh, self.admin, self.workflow
         ]
 
         for client in self.clients:
@@ -313,6 +315,9 @@ class OpencgaClient(object):
     def get_clinical_client(self):
         return self.clinical
 
+    def get_operations_client(self):
+        return self.operations
+
     def get_variant_operation_client(self):
         return self.variant_operations
 
@@ -324,3 +329,6 @@ class OpencgaClient(object):
 
     def get_admin_client(self):
         return self.admin
+
+    def get_workflow_client(self):
+        return self.workflow

@@ -18,11 +18,10 @@ setup(
     description='A REST client for OpenCGA REST web services',
     long_description=long_description,
     long_description_content_type='text/x-rst',
-    url='https://github.com/opencb/opencga/tree/develop/opencga-client/src/main/python/pyopencga',
     packages=['pyopencga', 'pyopencga.rest_clients'],
     license='Apache Software License',
-    author='Pablo Marin-Garcia, Daniel Perez-Gil',
-    author_email='pablo.marin@zettagenomics.com, daniel.perez@zettagenomics.com',
+    author='Daniel Perez-Gil',
+    author_email='daniel.perez@zettagenomics.com',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
@@ -40,10 +39,7 @@ setup(
         'pandas >= 1.1.5'
     ],
     project_urls={
-        'Documentation': 'http://docs.opencb.org/display/opencga/Python',
-        'Source': 'https://github.com/opencb/opencga/tree/develop/opencga-client/src/main/python/pyopencga',
         'OpenCGA': 'https://github.com/opencb/opencga',
-        'OpenCGA Documentation': 'http://docs.opencb.org/display/opencga',
         'Bug Reports': 'https://github.com/opencb/opencga/issues',
     }
 )
