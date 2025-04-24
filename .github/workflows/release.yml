@@ -62,6 +62,19 @@ jobs:
     with:
       artifact_name: emr13-build-folder
 
+  pyp-deploy:
+    name: Deploy Python clients GitHub Release
+    runs-on: ubuntu-22.04
+
+
+  deploy-python:
+    uses: opencb/java-common-libs/.github/workflows/deploy-python-workflow.yml@develop
+    needs: [ build-hdp, deploy-hdp-docker, build-emr, deploy-emr-docker, build-hdi, deploy-hdi-docker, build-emr13, deploy-emr13-docker ]
+    with:
+      cli: ./clients/python/python-build.sh push
+      artifact: build-folder
+    secrets: inherit
+
   release:
     name: Create GitHub Release
     runs-on: ubuntu-22.04
