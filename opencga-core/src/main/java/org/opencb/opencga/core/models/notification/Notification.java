@@ -66,7 +66,7 @@ public class Notification extends PrivateFields {
     public Notification(NotificationCreateParams notification, String uuid, String operationId, String sender, String receiver,
                         NotificationInternal internal) {
         this(uuid, operationId, notification.getSubject(), notification.getBody(), notification.getType(), notification.getScope(),
-                internal, sender, receiver, notification.getTarget());
+                notification.getFqn(), internal, sender, receiver, notification.getTarget());
     }
 
     @Override
@@ -78,10 +78,11 @@ public class Notification extends PrivateFields {
         sb.append(", body='").append(body).append('\'');
         sb.append(", type=").append(type);
         sb.append(", scope=").append(scope);
+        sb.append(", fqn='").append(fqn).append('\'');
         sb.append(", internal=").append(internal);
         sb.append(", sender='").append(sender).append('\'');
-        sb.append(", receiver='").append(receiver).append('\'');
         sb.append(", target='").append(target).append('\'');
+        sb.append(", receiver='").append(receiver).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -143,6 +144,15 @@ public class Notification extends PrivateFields {
 
     public Notification setScope(NotificationScope scope) {
         this.scope = scope;
+        return this;
+    }
+
+    public String getFqn() {
+        return fqn;
+    }
+
+    public Notification setFqn(String fqn) {
+        this.fqn = fqn;
         return this;
     }
 

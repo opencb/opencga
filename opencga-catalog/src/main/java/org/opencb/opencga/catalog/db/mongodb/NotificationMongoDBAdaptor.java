@@ -77,10 +77,10 @@ public class NotificationMongoDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     @Override
-    public OpenCGAResult<Notification> get(long studyUid, Query query, QueryOptions options, String user)
+    public OpenCGAResult<Notification> get(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         long startTime = startQuery();
-        try (DBIterator<Notification> dbIterator = iterator(studyUid, query, options, user)) {
+        try (DBIterator<Notification> dbIterator = iterator(query, options, user)) {
             return endQuery(startTime, dbIterator);
         }
     }
@@ -98,16 +98,15 @@ public class NotificationMongoDBAdaptor extends CatalogMongoDBAdaptor implements
         }
     }
 
-    @Override
-    public OpenCGAResult<Document> nativeGet(long studyUid, Query query, QueryOptions options, String user)
+    public OpenCGAResult<Document> nativeGet(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
-        return nativeGet(null, studyUid, query, options, user);
+        return nativeGet(null, query, options, user);
     }
 
-    public OpenCGAResult<Document> nativeGet(ClientSession clientSession, long studyUid, Query query, QueryOptions options, String user)
+    public OpenCGAResult<Document> nativeGet(ClientSession clientSession, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         long startTime = startQuery();
-        try (DBIterator<Document> dbIterator = nativeIterator(clientSession, studyUid, query, options, user)) {
+        try (DBIterator<Document> dbIterator = nativeIterator(clientSession, query, options, user)) {
             return endQuery(startTime, dbIterator);
         }
     }
@@ -122,9 +121,8 @@ public class NotificationMongoDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     @Override
-    public DBIterator<Notification> iterator(long studyUid, Query query, QueryOptions options, String user)
+    public DBIterator<Notification> iterator(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
-        query.put(PRIVATE_STUDY_UID, studyUid);
         MongoDBIterator<Document> mongoCursor = getMongoCursor(null, query, options, user);
         return new CatalogMongoDBIterator<>(mongoCursor, null, notificationConverter, null);
     }
@@ -155,27 +153,23 @@ public class NotificationMongoDBAdaptor extends CatalogMongoDBAdaptor implements
         return new CatalogMongoDBIterator<>(mongoCursor, clientSession, null, null);
     }
 
-    @Override
-    public DBIterator<Document> nativeIterator(long studyUid, Query query, QueryOptions options, String user)
+    public DBIterator<Document> nativeIterator(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
-        return nativeIterator(null, studyUid, query, options, user);
+        return nativeIterator(null, query, options, user);
     }
 
-    DBIterator<Document> nativeIterator(ClientSession clientSession, long studyUid, Query query, QueryOptions options, String user)
+    DBIterator<Document> nativeIterator(ClientSession clientSession, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
-        query.put(PRIVATE_STUDY_UID, studyUid);
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions, user);
         return new CatalogMongoDBIterator<>(mongoCursor, clientSession, null, null);
     }
 
     @Override
-    public OpenCGAResult<Notification> update(long studyUid, String notificationUuid, ObjectMap parameters, QueryOptions queryOptions)
+    public OpenCGAResult<Notification> update(String notificationUuid, ObjectMap parameters, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        Query query = new Query()
-                .append(QueryParams.STUDY_UID.key(), studyUid)
-                .append(QueryParams.UUID.key(), notificationUuid);
+        Query query = new Query(QueryParams.UUID.key(), notificationUuid);
         return update(query, parameters, queryOptions);
     }
 
@@ -244,20 +238,18 @@ public class NotificationMongoDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     @Override
-    public OpenCGAResult<?> distinct(long studyUid, String field, Query query, String userId)
+    public OpenCGAResult<?> distinct(String field, Query query, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query finalQuery = query != null ? new Query(query) : new Query();
-        finalQuery.put(QueryParams.STUDY_UID.key(), studyUid);
         Bson bson = parseQuery(finalQuery, userId);
         return new OpenCGAResult<>(notificationCollection.distinct(field, bson));
     }
 
     @Override
-    public OpenCGAResult<?> distinct(long studyUid, List<String> fields, Query query, String userId)
+    public OpenCGAResult<?> distinct(List<String> fields, Query query, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         StopWatch stopWatch = StopWatch.createStarted();
         Query finalQuery = query != null ? new Query(query) : new Query();
-        finalQuery.put(QueryParams.STUDY_UID.key(), studyUid);
         Bson bson = parseQuery(finalQuery, userId);
 
         Set<String> results = new LinkedHashSet<>();
@@ -270,7 +262,7 @@ public class NotificationMongoDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     @Override
-    public OpenCGAResult<FacetField> facet(long studyUid, Query query, String facet, String userId)
+    public OpenCGAResult<FacetField> facet(Query query, String facet, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bson = parseQuery(query, userId);
         return facet(notificationCollection, bson, facet);
@@ -382,9 +374,6 @@ public class NotificationMongoDBAdaptor extends CatalogMongoDBAdaptor implements
                 switch (queryParam) {
                     case UID:
                         addAutoOrQuery(PRIVATE_UID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
-                        break;
-                    case STUDY_UID:
-                        addAutoOrQuery(PRIVATE_STUDY_UID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case ID:
                     case UUID:

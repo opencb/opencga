@@ -10,7 +10,7 @@ public class NotificationStatus extends InternalStatus {
     public static final String PENDING = "PENDING";
     public static final String SUCCESS = "SUCCESS";
     public static final String ERROR = "ERROR";
-//    public static final String DISCARDED = "DISCARDED";
+    public static final String DISCARDED = "DISCARDED";
 
     public static final List<String> STATUS_LIST = Arrays.asList(PENDING, SUCCESS, ERROR, DISCARDED);
 

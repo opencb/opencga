@@ -11,23 +11,23 @@ public class NotificationInternal extends Internal {
     @DataField(id = "status", description = FieldConstants.INTERNAL_STATUS_DESCRIPTION)
     protected NotificationStatus status;
 
-    @DataField(id = "notifications", managed = true, immutable = true,
-            description = FieldConstants.NOTIFICATION_INTERNAL_NOTIFICATIONS_DESCRIPTION)
+    @DataField(id = "notificatorStatuses", managed = true, immutable = true,
+            description = FieldConstants.NOTIFICATION_INTERNAL_NOTIFICATOR_STATUSES_DESCRIPTION)
     private List<NotificationInternalNotificationResult> notificatorStatuses;
 
     public NotificationInternal() {
     }
 
     public NotificationInternal(NotificationStatus status, String registrationDate, String lastModified,
-                                List<NotificationInternalNotificationResult> notifications) {
+                                List<NotificationInternalNotificationResult> notificatorStatuses) {
         super(status, registrationDate, lastModified);
-        this.notifications = notifications;
+        this.notificatorStatuses = notificatorStatuses;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("NotificationInternal{");
-        sb.append("notifications=").append(notifications);
+        sb.append("notificatorStatuses=").append(notificatorStatuses);
         sb.append(", status=").append(status);
         sb.append(", registrationDate='").append(registrationDate).append('\'');
         sb.append(", lastModified='").append(lastModified).append('\'');
@@ -57,12 +57,12 @@ public class NotificationInternal extends Internal {
         return this;
     }
 
-    public List<NotificationInternalNotificationResult> getNotifications() {
-        return notifications;
+    public List<NotificationInternalNotificationResult> getNotificatorStatuses() {
+        return notificatorStatuses;
     }
 
-    public NotificationInternal setNotifications(List<NotificationInternalNotificationResult> notifications) {
-        this.notifications = notifications;
+    public NotificationInternal setNotificatorStatuses(List<NotificationInternalNotificationResult> notificatorStatuses) {
+        this.notificatorStatuses = notificatorStatuses;
         return this;
     }
 }

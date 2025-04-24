@@ -9,12 +9,8 @@ import org.opencb.opencga.catalog.db.api.NotificationDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.managers.ProjectManager;
-import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.core.common.MailUtils;
 import org.opencb.opencga.core.models.notification.*;
-import org.opencb.opencga.core.models.project.Project;
-import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.models.user.UserStatus;
 
@@ -58,35 +54,29 @@ public class NotificationService extends MonitorParentDaemon implements Closeabl
             idle = true;
             for (String organizationId : organizationIds) {
                 Query query = new Query(NotificationDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), NotificationStatus.PENDING);
-                for (Project project : catalogManager.getProjectManager().search(organizationId, new Query(),
-                        ProjectManager.INCLUDE_PROJECT_IDS, token).getResults()) {
-                    for (Study study : catalogManager.getStudyManager().search(project.getFqn(), new Query(),
-                            StudyManager.INCLUDE_STUDY_IDS, token).getResults()) {
-                        try (DBIterator<Notification> iterator = catalogManager.getNotificationManager().iterator(study.getFqn(), query,
-                                QueryOptions.empty(), token)) {
-                            while (iterator.hasNext()) {
-                                idle = false;
-                                processNotification(organizationId, study.getFqn(), iterator.next());
-                            }
-                        }
+                try (DBIterator<Notification> iterator = catalogManager.getNotificationManager()
+                        .iterator(query, QueryOptions.empty(), token)) {
+                    while (iterator.hasNext()) {
+                        idle = false;
+                        processNotification(organizationId, iterator.next());
                     }
                 }
             }
         }
     }
 
-    private void processNotification(String organizationId, String studyFqn, Notification notification) {
+    private void processNotification(String organizationId, Notification notification) {
         User user = getUserConfiguration(organizationId, notification);
         if (user == null) {
-            updateNotificationStatus(studyFqn, notification.getUuid(), NotificationStatus.ERROR, ERROR_DESCRIPTION, null);
+            updateNotificationStatus(organizationId, notification.getUuid(), NotificationStatus.ERROR, ERROR_DESCRIPTION, null);
         }
         if (!user.getInternal().getStatus().getId().equals(UserStatus.READY)) {
-            updateNotificationStatus(studyFqn, notification.getUuid(), NotificationStatus.DISCARDED,
+            updateNotificationStatus(organizationId, notification.getUuid(), NotificationStatus.DISCARDED,
                     "User account status is " + user.getInternal().getStatus().getId(), null);
         }
         NotificationConfiguration notificationConfiguration = user.getNotifications();
         if (!notificationConfiguration.isActive()) {
-            updateNotificationStatus(studyFqn, notification.getUuid(), NotificationStatus.SUCCESS, SUCCESS_DESCRIPTION, null);
+            updateNotificationStatus(organizationId, notification.getUuid(), NotificationStatus.SUCCESS, SUCCESS_DESCRIPTION, null);
         }
 
         List<NotificationInternalNotificationResult> notificationInternalList = new ArrayList<>();
@@ -131,7 +121,7 @@ public class NotificationService extends MonitorParentDaemon implements Closeabl
         updateNotificationStatus(status, notification.getUuid(), status, description, notificationInternalList);
     }
 
-    private void updateNotificationStatus(String studyStr, String notificationUuid, String statusId, String description,
+    private void updateNotificationStatus(String organizationId, String notificationUuid, String statusId, String description,
                                           List<NotificationInternalNotificationResult> notificationList) {
         NotificationUpdateParams updateParams = new NotificationUpdateParams()
                 .setInternal(new NotificationInternalUpdateParams()
@@ -140,11 +130,11 @@ public class NotificationService extends MonitorParentDaemon implements Closeabl
             updateParams.getInternal().setNotifications(notificationList);
         }
         try {
-            catalogManager.getNotificationManager().update(studyStr, notificationUuid, updateParams, QueryOptions.empty(), token);
+            catalogManager.getNotificationManager().update(organizationId, notificationUuid, updateParams, QueryOptions.empty(), token);
         } catch (CatalogException e1) {
             // Try again...
             try {
-                catalogManager.getNotificationManager().update(studyStr, notificationUuid, updateParams, QueryOptions.empty(), token);
+                catalogManager.getNotificationManager().update(organizationId, notificationUuid, updateParams, QueryOptions.empty(), token);
             } catch (CatalogException e2) {
                 logger.error("Error updating notification.", e1);
             }

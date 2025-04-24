@@ -1,9 +1,7 @@
 package org.opencb.opencga.catalog.db.api;
 
 import org.apache.commons.collections4.map.LinkedMap;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -16,24 +14,43 @@ import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
-public interface NotificationDBAdaptor extends CoreDBAdaptor<Notification> {
+public interface NotificationDBAdaptor extends DBAdaptor<Notification> {
+
+    OpenCGAResult<Notification> get(Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
+
+    DBIterator<Notification> iterator(Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
 
     OpenCGAResult<Notification> insert(List<Notification> notificationList, QueryOptions options) throws CatalogException;
 
-    OpenCGAResult<Notification> update(long studyUid, String notificationUuid, ObjectMap parameters, QueryOptions queryOptions)
+    OpenCGAResult<Notification> update(String notificationUuid, ObjectMap parameters, QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+
+    OpenCGAResult<Long> count(Query query, String user) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+
+    OpenCGAResult<Notification> groupBy(Query query, List<String> fields, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
+
+    OpenCGAResult<?> distinct(String field, Query query, String userId)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+
+    OpenCGAResult<?> distinct(List<String> fields, Query query, String userId)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+
+    OpenCGAResult<FacetField> facet(Query query, String facet, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     enum QueryParams implements QueryParam {
         ID("id", TEXT, ""),
         UID("uid", LONG, ""),
         UUID("uuid", TEXT, ""),
+        FQN("fqn", TEXT, ""),
         INTERNAL_STATUS("internal.status", TEXT_ARRAY, ""),
         INTERNAL_STATUS_ID("internal.status.id", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         INTERNAL_NOTIFICATIONS("internal.notifications", TEXT_ARRAY, ""),
-        RECEIVER("receiver", TEXT, ""),
-
-        STUDY_UID("studyUid", INTEGER_ARRAY, "");
+        RECEIVER("receiver", TEXT, "");
 
         private static Map<String, QueryParams> map;
 

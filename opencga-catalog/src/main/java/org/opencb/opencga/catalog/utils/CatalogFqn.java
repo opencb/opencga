@@ -151,11 +151,7 @@ public final class CatalogFqn {
             return false;
         }
         Matcher matcher = ORGANIZATION_PROJECT_STUDY_PATTERN.matcher(studyFqn);
-        if (matcher.find()) {
-            return true;
-        } else {
-            return false;
-        }
+        return matcher.find();
     }
 
     public static boolean isValidProjectFqn(String projectFqn) {

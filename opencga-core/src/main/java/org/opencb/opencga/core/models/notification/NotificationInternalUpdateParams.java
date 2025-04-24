@@ -11,7 +11,7 @@ public class NotificationInternalUpdateParams {
     protected NotificationInternalStatusUpdateParams status;
 
     @DataField(id = "notifications", managed = true, immutable = true,
-            description = FieldConstants.NOTIFICATION_INTERNAL_NOTIFICATIONS_DESCRIPTION)
+            description = FieldConstants.NOTIFICATION_INTERNAL_NOTIFICATOR_STATUSES_DESCRIPTION)
     private List<NotificationInternalNotificationResult> notifications;
 
     public NotificationInternalUpdateParams() {

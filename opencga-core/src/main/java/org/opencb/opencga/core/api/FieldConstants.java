@@ -66,8 +66,8 @@ public class FieldConstants {
     public static final String NOTIFICATION_TARGET_DESCRIPTION = "Target of the notification. It may be one of"
             + " (ORGANIZATION_ADMINISTRATORS, PROJECT_ADMINISTRATORS, STUDY_ADMINISTRATORS, STUDY_MEMBERS, ANY_USER) or a specific"
             + " group or user.";
-    public static final String NOTIFICATION_INTERNAL_NOTIFICATIONS_DESCRIPTION = "List containing all the channels by which the user was"
-            + " notified";
+    public static final String NOTIFICATION_INTERNAL_NOTIFICATOR_STATUSES_DESCRIPTION = "List containing all the channels by which the"
+            + " user was notified";
     public static final String NOTIFICATION_INTERNAL_NOTIFICATIONS_ID_DESCRIPTION = "Channel id of the notification (EMAIL, SLACK...).";
     public static final String NOTIFICATION_INTERNAL_NOTIFICATIONS_STATUS_DESCRIPTION = "Status of the notification (SUCCESS, ERROR...).";
     public static final String NOTIFICATION_INTERNAL_NOTIFICATIONS_ERROR_MESSAGE_DESCRIPTION = "Error message in case of error.";
