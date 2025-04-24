@@ -367,7 +367,9 @@ opencgaHelp <- function(opencga, client=NULL, action=NULL){
                "operationClient"=getMethodInfo(opencga, categ="operation", subcat=NULL, action=action),
                "metaClient"=getMethodInfo(opencga, categ="meta", subcat=NULL, action=action),
                "ga4ghClient"=getMethodInfo(opencga, categ="ga4gh", subcat=NULL, action=action),
-               "adminClient"=getMethodInfo(opencga, categ="admin", subcat=NULL, action=action)
+               "adminClient"=getMethodInfo(opencga, categ="admin", subcat=NULL, action=action),
+               "organizationClient"=getMethodInfo(opencga, categ="organizations", subcat=NULL, action=action),
+               "workflowClient"=getMethodInfo(opencga, categ="workflows", subcat=NULL, action=action)
         )
     }
 }
