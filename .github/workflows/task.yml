@@ -22,7 +22,7 @@ jobs:
     secrets: inherit
 
   deploy-docker:
-    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@TASK-7461
     needs: test
     with:
       cli: python3 ./build/cloud/docker/docker-build.py push --images base,workflow --tag ${{ github.ref_name }}
