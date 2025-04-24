@@ -205,7 +205,7 @@ public class NotificationMongoDBAdaptor extends CatalogMongoDBAdaptor implements
     private UpdateDocument parseAndValidateUpdateParams(ObjectMap parameters) throws CatalogDBException {
         UpdateDocument document = new UpdateDocument();
 
-        final String[] acceptedObjectParams = {QueryParams.INTERNAL_STATUS.key(), QueryParams.INTERNAL_NOTIFICATIONS.key()};
+        final String[] acceptedObjectParams = {QueryParams.INTERNAL_STATUS.key(), QueryParams.INTERNAL_NOTIFICATOR_STATUSES.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
 
         if (!document.toFinalUpdateDocument().isEmpty()) {
@@ -375,10 +375,20 @@ public class NotificationMongoDBAdaptor extends CatalogMongoDBAdaptor implements
                     case UID:
                         addAutoOrQuery(PRIVATE_UID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
-                    case ID:
+                    case CREATION_DATE:
+                        addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        break;
+                    case MODIFICATION_DATE:
+                        addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
                     case UUID:
-                    case INTERNAL_STATUS_ID:
+                    case TYPE:
+                    case SCOPE:
+                    case SENDER:
                     case RECEIVER:
+                    case TARGET:
+                    case FQN:
+                    case INTERNAL_STATUS_ID:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     default:

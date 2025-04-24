@@ -152,7 +152,7 @@ public abstract class AbstractManager {
 
 
     protected void fixQueryObject(Query query) {
-        changeQueryId(query, ParamConstants.INTERNAL_STATUS_PARAM, "internal.status");
+        changeQueryId(query, ParamConstants.INTERNAL_STATUS_PARAM, "internal.status.id");
     }
 
     /**

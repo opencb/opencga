@@ -5,10 +5,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.NotificationDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.MailUtils;
 import org.opencb.opencga.core.models.notification.*;
 import org.opencb.opencga.core.models.user.User;
@@ -45,17 +45,15 @@ public class NotificationService extends MonitorParentDaemon implements Closeabl
 
     private void checkNotifications() throws CatalogException {
         userMap = new HashMap<>();
-
-//        List<String> organizationIds = dbAdaptorFactory.getOrganizationIds();
         List<String> organizationIds = catalogManager.getOrganizationManager().getOrganizationIds(token);
 
         boolean idle = false;
         while (!idle) {
             idle = true;
             for (String organizationId : organizationIds) {
-                Query query = new Query(NotificationDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), NotificationStatus.PENDING);
+                Query query = new Query(ParamConstants.INTERNAL_STATUS_PARAM, NotificationStatus.PENDING);
                 try (DBIterator<Notification> iterator = catalogManager.getNotificationManager()
-                        .iterator(query, QueryOptions.empty(), token)) {
+                        .iterator(organizationId, query, QueryOptions.empty(), token)) {
                     while (iterator.hasNext()) {
                         idle = false;
                         processNotification(organizationId, iterator.next());
@@ -127,7 +125,7 @@ public class NotificationService extends MonitorParentDaemon implements Closeabl
                 .setInternal(new NotificationInternalUpdateParams()
                         .setStatus(new NotificationInternalUpdateParams.NotificationInternalStatusUpdateParams(statusId, description)));
         if (CollectionUtils.isNotEmpty(notificationList)) {
-            updateParams.getInternal().setNotifications(notificationList);
+            updateParams.getInternal().setNotificatorStatuses(notificationList);
         }
         try {
             catalogManager.getNotificationManager().update(organizationId, notificationUuid, updateParams, QueryOptions.empty(), token);

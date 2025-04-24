@@ -42,15 +42,20 @@ public interface NotificationDBAdaptor extends DBAdaptor<Notification> {
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     enum QueryParams implements QueryParam {
-        ID("id", TEXT, ""),
         UID("uid", LONG, ""),
         UUID("uuid", TEXT, ""),
+        TYPE("type", TEXT, ""),
+        SCOPE("scope", TEXT, ""),
+        SENDER("sender", TEXT, ""),
+        RECEIVER("receiver", TEXT, ""),
+        TARGET("target", TEXT, ""),
         FQN("fqn", TEXT, ""),
+        CREATION_DATE("creationDate", DATE, ""),
+        MODIFICATION_DATE("modificationDate", DATE, ""),
         INTERNAL_STATUS("internal.status", TEXT_ARRAY, ""),
         INTERNAL_STATUS_ID("internal.status.id", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
-        INTERNAL_NOTIFICATIONS("internal.notifications", TEXT_ARRAY, ""),
-        RECEIVER("receiver", TEXT, "");
+        INTERNAL_NOTIFICATOR_STATUSES("internal.notificatorStatuses", TEXT_ARRAY, "");
 
         private static Map<String, QueryParams> map;
 

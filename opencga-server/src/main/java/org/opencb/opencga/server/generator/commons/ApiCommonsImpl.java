@@ -16,6 +16,7 @@ public class ApiCommonsImpl implements ApiCommons {
     public List<Class<?>> getApiClasses(){
         List<Class<?>> classes = new ArrayList<>();
         classes.add(OrganizationWSServer.class);
+        classes.add(NotificationWSServer.class);
         classes.add(UserWSServer.class);
         classes.add(ProjectWSServer.class);
         classes.add(StudyWSServer.class);

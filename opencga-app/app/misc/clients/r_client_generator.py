@@ -13,6 +13,7 @@ class RClientGenerator(RestClientGenerator):
         self.categories = {
         	'Federations': 'Federation',
         	'Organizations': 'Organization',
+        	'Notifications': 'Notification',
             'Users': 'User',
             'Projects': 'Project',
             'Studies': 'Study',

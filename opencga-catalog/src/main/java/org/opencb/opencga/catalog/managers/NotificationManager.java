@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
@@ -107,6 +108,15 @@ public class NotificationManager extends AbstractManager {
         List<Notification> notificationList = generateNotificationInstances(notification, organizationId, fqn, tokenPayload);
 
         return catalogDBAdaptorFactory.getNotificationDBAdaptor(organizationId).insert(notificationList, options);
+    }
+
+    public OpenCGAResult<Notification> get(String organizationIdStr, String notificationUuid, QueryOptions options, String token)
+            throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        String organizationId = StringUtils.isNotEmpty(organizationIdStr) ? organizationIdStr : tokenPayload.getOrganization();
+        String userId = tokenPayload.getUserId(organizationId);
+        Query query = new Query(NotificationDBAdaptor.QueryParams.UUID.key(), notificationUuid);
+        return getNotificationDBAdaptor(organizationId).get(query, options, userId);
     }
 
     private List<Notification> generateNotificationInstances(NotificationCreateParams notificationCreateInstance, String organizationId,
@@ -266,9 +276,10 @@ public class NotificationManager extends AbstractManager {
 
     }
 
-    public OpenCGAResult<Notification> update(String organizationId, String notificationUuid, NotificationUpdateParams updateParams,
+    public OpenCGAResult<Notification> update(String organizationIdStr, String notificationUuid, NotificationUpdateParams updateParams,
                                               QueryOptions options, String token) throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        String organizationId = StringUtils.isNotEmpty(organizationIdStr) ? organizationIdStr : tokenPayload.getOrganization();
 
         authorizationManager.checkIsOpencgaAdministrator(tokenPayload, "update notifications");
         ParamUtils.checkParameter(notificationUuid, "notificationUuid");
@@ -280,8 +291,7 @@ public class NotificationManager extends AbstractManager {
             throw new CatalogException("Could not parse NotificationUpdateParams object: " + e.getMessage(), e);
         }
 
-        OpenCGAResult<Notification> update = getNotificationDBAdaptor(organizationId).update(notificationUuid, parameters,
-                options);
+        OpenCGAResult<Notification> update = getNotificationDBAdaptor(organizationId).update(notificationUuid, parameters, options);
         checkUpdateResult(update);
         return update;
     }
@@ -295,12 +305,13 @@ public class NotificationManager extends AbstractManager {
         }
     }
 
-    public DBIterator<Notification> iterator(Query query, QueryOptions options, String token) throws CatalogException {
+    public DBIterator<Notification> iterator(String organizationStr, Query query, QueryOptions options, String token)
+            throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        String organizationId = extractOrganizationId(query, tokenPayload);
+        String organizationId = extractOrganizationId(organizationStr, query, tokenPayload);
         String userId = tokenPayload.getUserId(organizationId);
 
         Query finalQuery = new Query(query);
@@ -309,42 +320,43 @@ public class NotificationManager extends AbstractManager {
         return getNotificationDBAdaptor(organizationId).iterator(finalQuery, options, userId);
     }
 
-    public OpenCGAResult<FacetField> facet(Query query, String facet, String token) throws CatalogException {
+    public OpenCGAResult<FacetField> facet(String organizationIdStr, Query query, String facet, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
 
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        String organizationId = extractOrganizationId(query, tokenPayload);
+        String organizationId = extractOrganizationId(organizationIdStr, query, tokenPayload);
         String userId = tokenPayload.getUserId(organizationId);
 
         fixQueryObject(query, tokenPayload);
         return getNotificationDBAdaptor(organizationId).facet(query, facet, userId);
     }
 
-    public OpenCGAResult<Notification> search(Query query, QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<Notification> search(String organizationIdStr, Query query, QueryOptions options, String token)
+            throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        String organizationId = extractOrganizationId(query, tokenPayload);
+        String organizationId = extractOrganizationId(organizationIdStr, query, tokenPayload);
         String userId = tokenPayload.getUserId(organizationId);
         fixQueryObject(query, tokenPayload);
         return getNotificationDBAdaptor(organizationId).get(query, options, userId);
     }
 
-    public OpenCGAResult<?> distinct(List<String> fields, Query query, String token) throws CatalogException {
+    public OpenCGAResult<?> distinct(String organizationIdStr, List<String> fields, Query query, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
 
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        String organizationId = extractOrganizationId(query, tokenPayload);
+        String organizationId = extractOrganizationId(organizationIdStr, query, tokenPayload);
         String userId = tokenPayload.getUserId(organizationId);
 
         fixQueryObject(query, tokenPayload);
         return getNotificationDBAdaptor(organizationId).distinct(fields, query, userId);
     }
 
-    public OpenCGAResult<Notification> count(Query query, String token) throws CatalogException {
+    public OpenCGAResult<Notification> count(String organizationIdStr, Query query, String token) throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        String organizationId = extractOrganizationId(query, tokenPayload);
+        String organizationId = extractOrganizationId(organizationIdStr, query, tokenPayload);
         String userId = tokenPayload.getUserId(organizationId);
 
         query = new Query(ParamUtils.defaultObject(query, Query::new));
@@ -355,14 +367,14 @@ public class NotificationManager extends AbstractManager {
                 queryResultAux.getNumMatches());
     }
 
-    public OpenCGAResult rank(Query query, String field, int numResults, boolean asc, String token) throws CatalogException {
+    public OpenCGAResult rank(String organizationIdStr, Query query, String field, int numResults, boolean asc, String token)
+            throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         ParamUtils.checkObj(field, "field");
         ParamUtils.checkObj(token, "token");
 
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        String organizationId = extractOrganizationId(query, tokenPayload);
-        String userId = tokenPayload.getUserId(organizationId);
+        String organizationId = extractOrganizationId(organizationIdStr, query, tokenPayload);
 
         boolean count = true;
         fixQueryObject(query, tokenPayload);
@@ -375,7 +387,8 @@ public class NotificationManager extends AbstractManager {
         return ParamUtils.defaultObject(queryResult, OpenCGAResult::new);
     }
 
-    public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult groupBy(String organizationIdStr, Query query, List<String> fields, QueryOptions options, String token)
+            throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         if (fields == null || fields.size() == 0) {
@@ -383,7 +396,7 @@ public class NotificationManager extends AbstractManager {
         }
 
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        String organizationId = extractOrganizationId(query, tokenPayload);
+        String organizationId = extractOrganizationId(organizationIdStr, query, tokenPayload);
         String userId = tokenPayload.getUserId(organizationId);
 
         fixQueryObject(query, tokenPayload);
@@ -394,8 +407,10 @@ public class NotificationManager extends AbstractManager {
         return ParamUtils.defaultObject(queryResult, OpenCGAResult::new);
     }
 
-    private String extractOrganizationId(Query query, JwtPayload payload) {
-        if (query.containsKey(NotificationDBAdaptor.QueryParams.FQN.key())) {
+    private String extractOrganizationId(String organizationStr, Query query, JwtPayload payload) {
+        if (StringUtils.isNotEmpty(organizationStr)) {
+            return organizationStr;
+        } else if (query.containsKey(NotificationDBAdaptor.QueryParams.FQN.key())) {
             String fqn = query.getString(NotificationDBAdaptor.QueryParams.FQN.key());
             return CatalogFqn.extractFqnFromGenericFqn(fqn).getOrganizationId();
         } else {
@@ -409,22 +424,5 @@ public class NotificationManager extends AbstractManager {
             // Only OpenCGA administrators can see any notification
             query.put(NotificationDBAdaptor.QueryParams.RECEIVER.key(), tokenPayload.getUserId());
         }
-//        if (query.containsKey(ParamConstants.PROJECT_PARAM)) {
-//            // Obtain project uid and add to query object
-//            String projectId = query.getString(ParamConstants.PROJECT_PARAM);
-//            CatalogFqn projectFqn = CatalogFqn.extractFqnFromProject(projectId, tokenPayload);
-//            Project project = catalogManager.getProjectManager().resolveId(projectFqn, ProjectManager.INCLUDE_PROJECT_IDS, tokenPayload)
-//                    .first();
-//            query.remove(ParamConstants.PROJECT_PARAM);
-//            query.put(NotificationDBAdaptor.QueryParams.PROJECT_UID.key(), project.getUid());
-//        }
-//        if (query.containsKey(ParamConstants.STUDY_PARAM)) {
-//            // Obtain study uid and add to query object
-//            String studyId = query.getString(ParamConstants.STUDY_PARAM);
-//            CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, tokenPayload);
-//            Study study = catalogManager.getStudyManager().resolveId(studyFqn, StudyManager.INCLUDE_STUDY_IDS, tokenPayload).first();
-//            query.remove(ParamConstants.STUDY_PARAM);
-//            query.put(NotificationDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-//        }
     }
 }

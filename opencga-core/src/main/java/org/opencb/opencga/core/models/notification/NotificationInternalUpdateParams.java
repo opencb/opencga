@@ -10,24 +10,24 @@ public class NotificationInternalUpdateParams {
     @DataField(id = "status", description = FieldConstants.INTERNAL_STATUS_DESCRIPTION)
     protected NotificationInternalStatusUpdateParams status;
 
-    @DataField(id = "notifications", managed = true, immutable = true,
+    @DataField(id = "notificatorStatuses", managed = true, immutable = true,
             description = FieldConstants.NOTIFICATION_INTERNAL_NOTIFICATOR_STATUSES_DESCRIPTION)
-    private List<NotificationInternalNotificationResult> notifications;
+    private List<NotificationInternalNotificationResult> notificatorStatuses;
 
     public NotificationInternalUpdateParams() {
     }
 
     public NotificationInternalUpdateParams(NotificationInternalStatusUpdateParams status,
-                                            List<NotificationInternalNotificationResult> notifications) {
+                                            List<NotificationInternalNotificationResult> notificatorStatuses) {
         this.status = status;
-        this.notifications = notifications;
+        this.notificatorStatuses = notificatorStatuses;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("NotificationInternalUpdateParams{");
         sb.append("status=").append(status);
-        sb.append(", notifications=").append(notifications);
+        sb.append(", notificatorStatuses=").append(notificatorStatuses);
         sb.append('}');
         return sb.toString();
     }
@@ -41,12 +41,12 @@ public class NotificationInternalUpdateParams {
         return this;
     }
 
-    public List<NotificationInternalNotificationResult> getNotifications() {
-        return notifications;
+    public List<NotificationInternalNotificationResult> getNotificatorStatuses() {
+        return notificatorStatuses;
     }
 
-    public NotificationInternalUpdateParams setNotifications(List<NotificationInternalNotificationResult> notifications) {
-        this.notifications = notifications;
+    public NotificationInternalUpdateParams setNotificatorStatuses(List<NotificationInternalNotificationResult> notificatorStatuses) {
+        this.notificatorStatuses = notificatorStatuses;
         return this;
     }
 
