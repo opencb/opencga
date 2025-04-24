@@ -73,10 +73,11 @@ public class RegenieStep2WrapperAnalysis extends OpenCgaToolScopeStudy {
             logger.info("Using job ({}) results to perform regenie step2", step1JobId);
 
             Job job = catalogManager.getJobManager().get(study, step1JobId, QueryOptions.empty(), token).first();
-            if (MapUtils.isEmpty(job.getAttributes()) || !job.getAttributes().containsKey(OPENCGA_REGENIE_WALKER_DOCKER_IMAGE_KEY)) {
-                throw new ToolException("Missing regenie-walker docker image in job (" + step1JobId + ") attributes");
+            if (job.getExecution() == null || MapUtils.isEmpty(job.getExecution().getAttributes())
+                    || !job.getExecution().getAttributes().containsKey(OPENCGA_REGENIE_WALKER_DOCKER_IMAGE_KEY)) {
+                throw new ToolException("Missing regenie-walker docker image in job (" + step1JobId + ") execution attributes");
             }
-            walkerDockerImage = (String) job.getAttributes().get(OPENCGA_REGENIE_WALKER_DOCKER_IMAGE_KEY);
+            walkerDockerImage = (String) job.getExecution().getAttributes().get(OPENCGA_REGENIE_WALKER_DOCKER_IMAGE_KEY);
             if (StringUtils.isEmpty(walkerDockerImage)) {
                 throw new ToolException("Empty regenie-walker docker image in job (" + step1JobId + ") attributes");
             }
