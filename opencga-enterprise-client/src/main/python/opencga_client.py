@@ -96,15 +96,15 @@ class OpencgaClient(object):
         self.meta = Meta(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
         self.ga4gh = GA4GH(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
         self.admin = Admin(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
-        self.workflow = Workflow(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
-        self.federation = Federation(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
+        self.workflows = Workflow(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
+        self.federations = Federation(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
         self.cvdb = CVDB(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
 
         self.clients = [
             self.organizations, self.users, self.projects, self.studies, self.files, self.jobs,
             self.samples, self.individuals, self.families, self.cohorts,
             self.disease_panels, self.alignments, self.variants, self.clinical, self.operations,
-            self.variant_operations, self.meta, self.ga4gh, self.admin, self.workflow, self.federation, self.cvdb
+            self.variant_operations, self.meta, self.ga4gh, self.admin, self.workflows, self.federations, self.cvdb
         ]
 
         for client in self.clients:
@@ -334,11 +334,11 @@ class OpencgaClient(object):
     def get_admin_client(self):
         return self.admin
 
-    def get_workflow_client(self):
-        return self.workflow
+    def get_workflows_client(self):
+        return self.workflows
 
-    def get_federation_client(self):
-        return self.federation
+    def get_federations_client(self):
+        return self.federations
 
     def get_cvdb_client(self):
         return self.cvdb
