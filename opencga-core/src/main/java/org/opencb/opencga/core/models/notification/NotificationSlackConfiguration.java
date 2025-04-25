@@ -2,19 +2,18 @@ package org.opencb.opencga.core.models.notification;
 
 import java.util.List;
 
-public class NotificationSlackConfiguration {
+public class NotificationSlackConfiguration extends AbstractNotificationScopeLevel {
 
-    private boolean active;
     private String webhookUrl;
-    private List<String> type;
 
     public NotificationSlackConfiguration() {
     }
 
-    public NotificationSlackConfiguration(boolean active, String webhookUrl, List<String> type) {
+    public NotificationSlackConfiguration(boolean active, String webhookUrl, NotificationLevel minLevel, List<NotificationScope> scopes) {
         this.active = active;
         this.webhookUrl = webhookUrl;
-        this.type = type;
+        this.minLevel = minLevel;
+        this.scopes = scopes;
     }
 
     @Override
@@ -22,18 +21,10 @@ public class NotificationSlackConfiguration {
         final StringBuilder sb = new StringBuilder("NotificationSlackConfiguration{");
         sb.append("active=").append(active);
         sb.append(", webhookUrl='").append(webhookUrl).append('\'');
-        sb.append(", type=").append(type);
+        sb.append(", minLevel='").append(minLevel).append('\'');
+        sb.append(", scopes=").append(scopes);
         sb.append('}');
         return sb.toString();
-    }
-
-    public boolean isActive() {
-        return active;
-    }
-
-    public NotificationSlackConfiguration setActive(boolean active) {
-        this.active = active;
-        return this;
     }
 
     public String getWebhookUrl() {
@@ -45,12 +36,21 @@ public class NotificationSlackConfiguration {
         return this;
     }
 
-    public List<String> getType() {
-        return type;
+    @Override
+    public NotificationSlackConfiguration setActive(boolean active) {
+        super.setActive(active);
+        return this;
     }
 
-    public NotificationSlackConfiguration setType(List<String> type) {
-        this.type = type;
+    @Override
+    public NotificationSlackConfiguration setMinLevel(NotificationLevel minLevel) {
+        super.setMinLevel(minLevel);
+        return this;
+    }
+
+    @Override
+    public NotificationSlackConfiguration setScopes(List<NotificationScope> scopes) {
+        super.setScopes(scopes);
         return this;
     }
 }

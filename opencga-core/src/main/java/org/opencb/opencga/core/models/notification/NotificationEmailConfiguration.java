@@ -2,43 +2,40 @@ package org.opencb.opencga.core.models.notification;
 
 import java.util.List;
 
-public class NotificationEmailConfiguration {
-
-    private boolean active;
-    private List<String> type;
+public class NotificationEmailConfiguration extends AbstractNotificationScopeLevel {
 
     public NotificationEmailConfiguration() {
     }
 
-    public NotificationEmailConfiguration(boolean active, List<String> type) {
-        this.active = active;
-        this.type = type;
+    public NotificationEmailConfiguration(boolean active, NotificationLevel minLevel, List<NotificationScope> scopes) {
+        super(active, minLevel, scopes);
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("NotificationEmailConfiguration{");
         sb.append("active=").append(active);
-        sb.append(", type=").append(type);
+        sb.append(", minLevel='").append(minLevel).append('\'');
+        sb.append(", scopes=").append(scopes);
         sb.append('}');
         return sb.toString();
     }
 
-    public boolean isActive() {
-        return active;
-    }
-
+    @Override
     public NotificationEmailConfiguration setActive(boolean active) {
-        this.active = active;
+        super.setActive(active);
         return this;
     }
 
-    public List<String> getType() {
-        return type;
+    @Override
+    public NotificationEmailConfiguration setMinLevel(NotificationLevel minLevel) {
+        super.setMinLevel(minLevel);
+        return this;
     }
 
-    public NotificationEmailConfiguration setType(List<String> type) {
-        this.type = type;
+    @Override
+    public NotificationEmailConfiguration setScopes(List<NotificationScope> scopes) {
+        super.setScopes(scopes);
         return this;
     }
 }

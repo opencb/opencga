@@ -11,8 +11,8 @@ public class NotificationCreateParams {
     @DataField(id = "body", immutable = true, description = FieldConstants.NOTIFICATION_BODY_DESCRIPTION)
     private String body;
 
-    @DataField(id = "type", immutable = true, description = FieldConstants.NOTIFICATION_TYPE_DESCRIPTION)
-    private NotificationType type;
+    @DataField(id = "level", immutable = true, description = FieldConstants.NOTIFICATION_LEVEL_DESCRIPTION)
+    private NotificationLevel level;
 
     @DataField(id = "scope", immutable = true, description = FieldConstants.NOTIFICATION_SCOPE_DESCRIPTION)
     private NotificationScope scope;
@@ -26,10 +26,11 @@ public class NotificationCreateParams {
     public NotificationCreateParams() {
     }
 
-    public NotificationCreateParams(String subject, String body, NotificationType type, NotificationScope scope, String fqn, String target) {
+    public NotificationCreateParams(String subject, String body, NotificationLevel level, NotificationScope scope, String fqn,
+                                    String target) {
         this.subject = subject;
         this.body = body;
-        this.type = type;
+        this.level = level;
         this.scope = scope;
         this.fqn = fqn;
         this.target = target;
@@ -40,7 +41,7 @@ public class NotificationCreateParams {
         final StringBuilder sb = new StringBuilder("NotificationCreateParams{");
         sb.append("subject='").append(subject).append('\'');
         sb.append(", body='").append(body).append('\'');
-        sb.append(", type=").append(type);
+        sb.append(", level=").append(level);
         sb.append(", scope=").append(scope);
         sb.append(", fqn=").append(fqn);
         sb.append(", target='").append(target).append('\'');
@@ -66,12 +67,12 @@ public class NotificationCreateParams {
         return this;
     }
 
-    public NotificationType getType() {
-        return type;
+    public NotificationLevel getLevel() {
+        return level;
     }
 
-    public NotificationCreateParams setType(NotificationType type) {
-        this.type = type;
+    public NotificationCreateParams setLevel(NotificationLevel level) {
+        this.level = level;
         return this;
     }
 

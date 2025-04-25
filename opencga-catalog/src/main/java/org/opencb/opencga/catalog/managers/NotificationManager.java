@@ -225,7 +225,7 @@ public class NotificationManager extends AbstractManager {
         ParamUtils.checkParameter(notification.getBody(), "body");
         ParamUtils.checkObj(notification.getScope(), "scope");
         ParamUtils.checkParameter(notification.getFqn(), "fqn");
-        ParamUtils.checkObj(notification.getType(), "type");
+        ParamUtils.checkObj(notification.getLevel(), "type");
 
         boolean validGroup = NOTIFICATION_GROUPS.contains(notification.getTarget().toUpperCase());
         if (validGroup) {

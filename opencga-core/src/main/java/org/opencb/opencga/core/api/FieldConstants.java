@@ -57,7 +57,7 @@ public class FieldConstants {
             + "target of a notification is a group of users, this ID is used to group all the notifications related to the same operation.";
     public static final String NOTIFICATION_SUBJECT_DESCRIPTION = "Subject of the notification.";
     public static final String NOTIFICATION_BODY_DESCRIPTION = "Notification message.";
-    public static final String NOTIFICATION_TYPE_DESCRIPTION = "Notification type: INFO, WARNING or CRITICAL.";
+    public static final String NOTIFICATION_LEVEL_DESCRIPTION = "Notification level: INFO, WARNING or CRITICAL.";
     public static final String NOTIFICATION_SCOPE_DESCRIPTION = "Notification scope: GLOBAL, ORGANIZATION, PROJECT or STUDY.";
     public static final String NOTIFICATION_FQN_DESCRIPTION = "Organization, project or study FQN depending on the Notification scope.";
     public static final String NOTIFICATION_INTERNAL_DESCRIPTION = "Notification internal object.";

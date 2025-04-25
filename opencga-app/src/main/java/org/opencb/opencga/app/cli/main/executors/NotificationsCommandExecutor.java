@@ -15,8 +15,8 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.notification.Notification;
 import org.opencb.opencga.core.models.notification.NotificationCreateParams;
+import org.opencb.opencga.core.models.notification.NotificationLevel;
 import org.opencb.opencga.core.models.notification.NotificationScope;
-import org.opencb.opencga.core.models.notification.NotificationType;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.opencga.core.response.RestResponse;
 
@@ -115,7 +115,7 @@ public class NotificationsCommandExecutor extends OpencgaCommandExecutor {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "subject", commandOptions.subject, true);
             putNestedIfNotEmpty(beanParams, "body", commandOptions.bodyBody, true);
-            putNestedIfNotNull(beanParams, "type", commandOptions.type, true);
+            putNestedIfNotNull(beanParams, "level", commandOptions.level, true);
             putNestedIfNotNull(beanParams, "scope", commandOptions.scope, true);
             putNestedIfNotEmpty(beanParams, "fqn", commandOptions.fqn, true);
             putNestedIfNotEmpty(beanParams, "target", commandOptions.target, true);

@@ -23,8 +23,8 @@ public class Notification extends PrivateFields {
     @DataField(id = "body", immutable = true, description = FieldConstants.NOTIFICATION_BODY_DESCRIPTION)
     private String body;
 
-    @DataField(id = "type", immutable = true, description = FieldConstants.NOTIFICATION_TYPE_DESCRIPTION)
-    private NotificationType type;
+    @DataField(id = "level", immutable = true, description = FieldConstants.NOTIFICATION_LEVEL_DESCRIPTION)
+    private NotificationLevel level;
 
     @DataField(id = "scope", immutable = true, description = FieldConstants.NOTIFICATION_SCOPE_DESCRIPTION)
     private NotificationScope scope;
@@ -48,13 +48,13 @@ public class Notification extends PrivateFields {
     public Notification() {
     }
 
-    public Notification(String uuid, String operationId, String subject, String body, NotificationType type, NotificationScope scope,
+    public Notification(String uuid, String operationId, String subject, String body, NotificationLevel level, NotificationScope scope,
                         String fqn, NotificationInternal internal, String sender, String receiver, String target) {
         this.uuid = uuid;
         this.operationId = operationId;
         this.subject = subject;
         this.body = body;
-        this.type = type;
+        this.level = level;
         this.scope = scope;
         this.fqn = fqn;
         this.internal = internal;
@@ -65,7 +65,7 @@ public class Notification extends PrivateFields {
 
     public Notification(NotificationCreateParams notification, String uuid, String operationId, String sender, String receiver,
                         NotificationInternal internal) {
-        this(uuid, operationId, notification.getSubject(), notification.getBody(), notification.getType(), notification.getScope(),
+        this(uuid, operationId, notification.getSubject(), notification.getBody(), notification.getLevel(), notification.getScope(),
                 notification.getFqn(), internal, sender, receiver, notification.getTarget());
     }
 
@@ -76,7 +76,7 @@ public class Notification extends PrivateFields {
         sb.append(", operationId='").append(operationId).append('\'');
         sb.append(", subject='").append(subject).append('\'');
         sb.append(", body='").append(body).append('\'');
-        sb.append(", type=").append(type);
+        sb.append(", level=").append(level);
         sb.append(", scope=").append(scope);
         sb.append(", fqn='").append(fqn).append('\'');
         sb.append(", internal=").append(internal);
@@ -129,12 +129,12 @@ public class Notification extends PrivateFields {
         return this;
     }
 
-    public NotificationType getType() {
-        return type;
+    public NotificationLevel getLevel() {
+        return level;
     }
 
-    public Notification setType(NotificationType type) {
-        this.type = type;
+    public Notification setLevel(NotificationLevel level) {
+        this.level = level;
         return this;
     }
 

@@ -24,7 +24,6 @@ public class NotificationService extends MonitorParentDaemon implements Closeabl
     public static final String ERROR_DESCRIPTION = "At least, one of the notification mechanisms failed.";
 
     private final MailUtils mailUtils;
-//    private final DBAdaptorFactory dbAdaptorFactory;
 
     private Map<String, User> userMap;
     private final QueryOptions userOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
@@ -34,7 +33,6 @@ public class NotificationService extends MonitorParentDaemon implements Closeabl
 
     public NotificationService(int interval, String token, CatalogManager catalogManager) {
         super(interval, token, catalogManager);
-//        this.dbAdaptorFactory = dbAdaptorFactory;
         this.mailUtils = MailUtils.configure(catalogManager.getConfiguration().getEmail());
     }
 
@@ -67,48 +65,60 @@ public class NotificationService extends MonitorParentDaemon implements Closeabl
         User user = getUserConfiguration(organizationId, notification);
         if (user == null) {
             updateNotificationStatus(organizationId, notification.getUuid(), NotificationStatus.ERROR, ERROR_DESCRIPTION, null);
+            return;
         }
         if (!user.getInternal().getStatus().getId().equals(UserStatus.READY)) {
             updateNotificationStatus(organizationId, notification.getUuid(), NotificationStatus.DISCARDED,
                     "User account status is " + user.getInternal().getStatus().getId(), null);
+            return;
         }
         NotificationConfiguration notificationConfiguration = user.getNotifications();
-        if (!notificationConfiguration.isActive()) {
-            updateNotificationStatus(organizationId, notification.getUuid(), NotificationStatus.SUCCESS, SUCCESS_DESCRIPTION, null);
+        if (notificationConfiguration == null) {
+            updateNotificationStatus(organizationId, notification.getUuid(), NotificationStatus.DISCARDED,
+                    "User doesn't have the notifications configured", null);
+            return;
         }
 
         List<NotificationInternalNotificationResult> notificationInternalList = new ArrayList<>();
-        if (notificationConfiguration.getEmail().isActive()
-                && notificationConfiguration.getEmail().getType().contains(notification.getType())) {
-            if (StringUtils.isEmpty(user.getEmail())) {
-                notificationInternalList.add(new NotificationInternalNotificationResult(NotificationInternalNotificationResult.EMAIL,
-                        NotificationInternalNotificationResult.ERROR, "User does not have an email configured."));
-            } else {
-                try {
-                    mailUtils.sendMail(user.getEmail(), notification.getSubject(), notification.getBody());
-                    notificationInternalList.add(new NotificationInternalNotificationResult(NotificationInternalNotificationResult.EMAIL,
-                            NotificationInternalNotificationResult.SUCCESS));
-                } catch (Exception e) {
-                    notificationInternalList.add(new NotificationInternalNotificationResult(NotificationInternalNotificationResult.EMAIL,
-                            NotificationInternalNotificationResult.ERROR, "Could not send email: " + e.getMessage()));
+        try {
+            if (notificationIsExpected(notification, notificationConfiguration.getEmail(), NotificationInternalNotificationResult.EMAIL)) {
+                if (StringUtils.isEmpty(user.getEmail())) {
+                    throw new CatalogException("User does not have an email configured.");
+                } else {
+                    try {
+                        mailUtils.sendMail(user.getEmail(), notification.getSubject(), notification.getBody());
+                        notificationInternalList.add(
+                                new NotificationInternalNotificationResult(NotificationInternalNotificationResult.EMAIL,
+                                        NotificationInternalNotificationResult.SUCCESS));
+                    } catch (Exception e) {
+                        logger.error("Could not send email to user '{}': {}", user.getId(), e.getMessage(), e);
+                        throw new CatalogException("Could not send email: " + e.getMessage());
+                    }
                 }
             }
+        } catch (CatalogException e) {
+            notificationInternalList.add(new NotificationInternalNotificationResult(NotificationInternalNotificationResult.EMAIL,
+                    NotificationInternalNotificationResult.ERROR, e.getMessage()));
         }
-        if (notificationConfiguration.getSlack().isActive()
-                && notificationConfiguration.getSlack().getType().contains(notification.getType())) {
-            if (StringUtils.isEmpty(notificationConfiguration.getSlack().getWebhookUrl())) {
-                notificationInternalList.add(new NotificationInternalNotificationResult(NotificationInternalNotificationResult.SLACK,
-                        NotificationInternalNotificationResult.ERROR, "User does not have a Slack webhook configured."));
-            } else {
-                try {
-                    // TODO: Send Slack notification
-                    notificationInternalList.add(new NotificationInternalNotificationResult(NotificationInternalNotificationResult.SLACK,
-                            NotificationInternalNotificationResult.SUCCESS));
-                } catch (Exception e) {
-                    notificationInternalList.add(new NotificationInternalNotificationResult(NotificationInternalNotificationResult.SLACK,
-                            NotificationInternalNotificationResult.ERROR, "Could not send slack notification: " + e.getMessage()));
+        try {
+            if (notificationIsExpected(notification, notificationConfiguration.getSlack(), NotificationInternalNotificationResult.SLACK)) {
+                if (StringUtils.isEmpty(notificationConfiguration.getSlack().getWebhookUrl())) {
+                    throw new CatalogException("User does not have a Slack webhook configured.");
+                } else {
+                    try {
+                        // TODO: Send Slack notification
+                        notificationInternalList.add(
+                                new NotificationInternalNotificationResult(NotificationInternalNotificationResult.SLACK,
+                                        NotificationInternalNotificationResult.SUCCESS));
+                    } catch (Exception e) {
+                        logger.error("Could not send slack notification to user '{}': {}", user.getId(), e.getMessage(), e);
+                        throw new CatalogException("Could not send slack notification: " + e.getMessage());
+                    }
                 }
             }
+        } catch (CatalogException e) {
+            notificationInternalList.add(new NotificationInternalNotificationResult(NotificationInternalNotificationResult.SLACK,
+                    NotificationInternalNotificationResult.ERROR, e.getMessage()));
         }
 
         boolean success = notificationInternalList
@@ -117,6 +127,22 @@ public class NotificationService extends MonitorParentDaemon implements Closeabl
         String status = success ? NotificationStatus.SUCCESS : NotificationStatus.ERROR;
         String description = success ? SUCCESS_DESCRIPTION : ERROR_DESCRIPTION;
         updateNotificationStatus(status, notification.getUuid(), status, description, notificationInternalList);
+    }
+
+    private boolean notificationIsExpected(Notification notification, AbstractNotificationScopeLevel threshold, String notificator)
+            throws CatalogException {
+        if (threshold == null || !threshold.isActive()) {
+            return false;
+        }
+        if (CollectionUtils.isEmpty(threshold.getScopes())) {
+            throw new CatalogException("The notification scope list is not defined for the " + notificator + " notificator.");
+        }
+        if (threshold.getMinLevel() == null) {
+            throw new CatalogException("The notification min level is not defined for the " + notificator + " notificator.");
+        }
+
+        return threshold.getScopes().contains(notification.getScope())
+                && notification.getLevel().getValue() >= threshold.getMinLevel().getValue();
     }
 
     private void updateNotificationStatus(String organizationId, String notificationUuid, String statusId, String description,

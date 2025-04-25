@@ -112,8 +112,8 @@ public class NotificationsCommandOptions {
         @Parameter(names = {"--body_body"}, description = "Notification message.", required = false, arity = 1)
         public String bodyBody;
     
-        @Parameter(names = {"--type"}, description = "Notification type: INFO, WARNING or CRITICAL.", required = false, arity = 1)
-        public String type;
+        @Parameter(names = {"--level"}, description = "Notification level: INFO, WARNING or CRITICAL.", required = false, arity = 1)
+        public String level;
     
         @Parameter(names = {"--scope"}, description = "Notification scope: GLOBAL, ORGANIZATION, PROJECT or STUDY.", required = false, arity = 1)
         public String scope;
