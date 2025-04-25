@@ -114,11 +114,11 @@ public class NotificationsCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "subject", commandOptions.subject, true);
-            putNestedIfNotEmpty(beanParams, "body", commandOptions.bodyBody, true);
+            putNestedIfNotEmpty(beanParams, "content", commandOptions.content, true);
             putNestedIfNotNull(beanParams, "level", commandOptions.level, true);
             putNestedIfNotNull(beanParams, "scope", commandOptions.scope, true);
             putNestedIfNotEmpty(beanParams, "fqn", commandOptions.fqn, true);
-            putNestedIfNotEmpty(beanParams, "target", commandOptions.target, true);
+            putNestedIfNotNull(beanParams, "targets", commandOptions.targets, true);
 
             notificationCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

@@ -20,8 +20,8 @@ public class Notification extends PrivateFields {
     @DataField(id = "subject", immutable = true, description = FieldConstants.NOTIFICATION_SUBJECT_DESCRIPTION)
     private String subject;
 
-    @DataField(id = "body", immutable = true, description = FieldConstants.NOTIFICATION_BODY_DESCRIPTION)
-    private String body;
+    @DataField(id = "content", immutable = true, description = FieldConstants.NOTIFICATION_CONTENT_DESCRIPTION)
+    private String content;
 
     @DataField(id = "level", immutable = true, description = FieldConstants.NOTIFICATION_LEVEL_DESCRIPTION)
     private NotificationLevel level;
@@ -41,32 +41,27 @@ public class Notification extends PrivateFields {
     @DataField(id = "target", immutable = true, description = FieldConstants.NOTIFICATION_TARGET_DESCRIPTION)
     private String target;
 
-    @DataField(id = "receiver", immutable = true, description = FieldConstants.NOTIFICATION_RECEIVER_DESCRIPTION)
-    private String receiver;
-
-
     public Notification() {
     }
 
-    public Notification(String uuid, String operationId, String subject, String body, NotificationLevel level, NotificationScope scope,
-                        String fqn, NotificationInternal internal, String sender, String receiver, String target) {
+    public Notification(String uuid, String operationId, String subject, String content, NotificationLevel level, NotificationScope scope,
+                        String fqn, NotificationInternal internal, String sender, String target) {
         this.uuid = uuid;
         this.operationId = operationId;
         this.subject = subject;
-        this.body = body;
+        this.content = content;
         this.level = level;
         this.scope = scope;
         this.fqn = fqn;
         this.internal = internal;
         this.sender = sender;
-        this.receiver = receiver;
         this.target = target;
     }
 
-    public Notification(NotificationCreateParams notification, String uuid, String operationId, String sender, String receiver,
+    public Notification(NotificationCreateParams notification, String uuid, String operationId, String sender, String target,
                         NotificationInternal internal) {
-        this(uuid, operationId, notification.getSubject(), notification.getBody(), notification.getLevel(), notification.getScope(),
-                notification.getFqn(), internal, sender, receiver, notification.getTarget());
+        this(uuid, operationId, notification.getSubject(), notification.getContent(), notification.getLevel(), notification.getScope(),
+                notification.getFqn(), internal, sender, target);
     }
 
     @Override
@@ -75,14 +70,13 @@ public class Notification extends PrivateFields {
         sb.append("uuid='").append(uuid).append('\'');
         sb.append(", operationId='").append(operationId).append('\'');
         sb.append(", subject='").append(subject).append('\'');
-        sb.append(", body='").append(body).append('\'');
+        sb.append(", content='").append(content).append('\'');
         sb.append(", level=").append(level);
         sb.append(", scope=").append(scope);
         sb.append(", fqn='").append(fqn).append('\'');
         sb.append(", internal=").append(internal);
         sb.append(", sender='").append(sender).append('\'');
         sb.append(", target='").append(target).append('\'');
-        sb.append(", receiver='").append(receiver).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -120,12 +114,12 @@ public class Notification extends PrivateFields {
         return this;
     }
 
-    public String getBody() {
-        return body;
+    public String getContent() {
+        return content;
     }
 
-    public Notification setBody(String body) {
-        this.body = body;
+    public Notification setContent(String content) {
+        this.content = content;
         return this;
     }
 
@@ -171,15 +165,6 @@ public class Notification extends PrivateFields {
 
     public Notification setSender(String sender) {
         this.sender = sender;
-        return this;
-    }
-
-    public String getReceiver() {
-        return receiver;
-    }
-
-    public Notification setReceiver(String receiver) {
-        this.receiver = receiver;
         return this;
     }
 

@@ -10,6 +10,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.MailUtils;
+import org.opencb.opencga.core.common.WebhookUtils;
 import org.opencb.opencga.core.models.notification.*;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.models.user.UserStatus;
@@ -86,7 +87,7 @@ public class NotificationService extends MonitorParentDaemon implements Closeabl
                     throw new CatalogException("User does not have an email configured.");
                 } else {
                     try {
-                        mailUtils.sendMail(user.getEmail(), notification.getSubject(), notification.getBody());
+                        mailUtils.sendMail(user.getEmail(), notification.getSubject(), notification.getContent());
                         notificationInternalList.add(
                                 new NotificationInternalNotificationResult(NotificationInternalNotificationResult.EMAIL,
                                         NotificationInternalNotificationResult.SUCCESS));
@@ -106,7 +107,8 @@ public class NotificationService extends MonitorParentDaemon implements Closeabl
                     throw new CatalogException("User does not have a Slack webhook configured.");
                 } else {
                     try {
-                        // TODO: Send Slack notification
+                        WebhookUtils.sendWithRetry(notificationConfiguration.getSlack().getWebhookUrl(), "POST", notification.getSubject(),
+                                notification.getContent(), 2);
                         notificationInternalList.add(
                                 new NotificationInternalNotificationResult(NotificationInternalNotificationResult.SLACK,
                                         NotificationInternalNotificationResult.SUCCESS));

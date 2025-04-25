@@ -109,8 +109,8 @@ public class NotificationsCommandOptions {
         @Parameter(names = {"--subject"}, description = "Subject of the notification.", required = false, arity = 1)
         public String subject;
     
-        @Parameter(names = {"--body_body"}, description = "Notification message.", required = false, arity = 1)
-        public String bodyBody;
+        @Parameter(names = {"--content"}, description = "Notification message.", required = false, arity = 1)
+        public String content;
     
         @Parameter(names = {"--level"}, description = "Notification level: INFO, WARNING or CRITICAL.", required = false, arity = 1)
         public String level;
@@ -121,8 +121,8 @@ public class NotificationsCommandOptions {
         @Parameter(names = {"--fqn"}, description = "Organization, project or study FQN depending on the Notification scope.", required = false, arity = 1)
         public String fqn;
     
-        @Parameter(names = {"--target"}, description = "Target of the notification. It may be one of (ORGANIZATION_ADMINISTRATORS, PROJECT_ADMINISTRATORS, STUDY_ADMINISTRATORS, STUDY_MEMBERS, ANY_USER) or a specific group or user.", required = false, arity = 1)
-        public String target;
+        @Parameter(names = {"--targets"}, description = "Target of the notification. It may be any of (ORGANIZATION_ADMINISTRATORS, PROJECT_ADMINISTRATORS, STUDY_ADMINISTRATORS, STUDY_MEMBERS, ANY_USER) or specific groups or users.", required = false, arity = 1)
+        public String targets;
     
     }
 

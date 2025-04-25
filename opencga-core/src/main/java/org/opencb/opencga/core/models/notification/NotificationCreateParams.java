@@ -3,13 +3,15 @@ package org.opencb.opencga.core.models.notification;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 
+import java.util.List;
+
 public class NotificationCreateParams {
 
     @DataField(id = "subject", immutable = true, description = FieldConstants.NOTIFICATION_SUBJECT_DESCRIPTION)
     private String subject;
 
-    @DataField(id = "body", immutable = true, description = FieldConstants.NOTIFICATION_BODY_DESCRIPTION)
-    private String body;
+    @DataField(id = "content", immutable = true, description = FieldConstants.NOTIFICATION_CONTENT_DESCRIPTION)
+    private String content;
 
     @DataField(id = "level", immutable = true, description = FieldConstants.NOTIFICATION_LEVEL_DESCRIPTION)
     private NotificationLevel level;
@@ -20,31 +22,31 @@ public class NotificationCreateParams {
     @DataField(id = "fqn", immutable = true, description = FieldConstants.NOTIFICATION_FQN_DESCRIPTION)
     private String fqn;
 
-    @DataField(id = "target", immutable = true, description = FieldConstants.NOTIFICATION_TARGET_DESCRIPTION)
-    private String target;
+    @DataField(id = "targets", immutable = true, description = FieldConstants.NOTIFICATION_TARGET_DESCRIPTION)
+    private List<String> targets;
 
     public NotificationCreateParams() {
     }
 
-    public NotificationCreateParams(String subject, String body, NotificationLevel level, NotificationScope scope, String fqn,
-                                    String target) {
+    public NotificationCreateParams(String subject, String content, NotificationLevel level, NotificationScope scope, String fqn,
+                                    List<String> targets) {
         this.subject = subject;
-        this.body = body;
+        this.content = content;
         this.level = level;
         this.scope = scope;
         this.fqn = fqn;
-        this.target = target;
+        this.targets = targets;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("NotificationCreateParams{");
         sb.append("subject='").append(subject).append('\'');
-        sb.append(", body='").append(body).append('\'');
+        sb.append(", content='").append(content).append('\'');
         sb.append(", level=").append(level);
         sb.append(", scope=").append(scope);
         sb.append(", fqn=").append(fqn);
-        sb.append(", target='").append(target).append('\'');
+        sb.append(", targets='").append(targets).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -58,12 +60,12 @@ public class NotificationCreateParams {
         return this;
     }
 
-    public String getBody() {
-        return body;
+    public String getContent() {
+        return content;
     }
 
-    public NotificationCreateParams setBody(String body) {
-        this.body = body;
+    public NotificationCreateParams setContent(String content) {
+        this.content = content;
         return this;
     }
 
@@ -94,12 +96,12 @@ public class NotificationCreateParams {
         return this;
     }
 
-    public String getTarget() {
-        return target;
+    public List<String> getTargets() {
+        return targets;
     }
 
-    public NotificationCreateParams setTarget(String target) {
-        this.target = target;
+    public NotificationCreateParams setTargets(List<String> targets) {
+        this.targets = targets;
         return this;
     }
 }
