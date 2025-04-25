@@ -19,7 +19,6 @@ jobs:
     needs: build
     with:
       test_profile: runShortTests
-      hadoop_flavour: ${{ vars.TASK_HADOOP_FLAVOUR }}
     secrets: inherit
 
 
