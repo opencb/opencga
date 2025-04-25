@@ -173,11 +173,11 @@ def _fetch(config, sid, category, resource, method, subcategory=None, query_id=N
         time_out_counter = 0
 
         if r.status_code == 401:
-            raise OpencgaInvalidToken(r.text)
+            raise OpencgaInvalidToken(r.content)
         elif r.status_code == 403:
-            raise OpencgaAuthorisationError(r.text)
+            raise OpencgaAuthorisationError(r.content)
         elif r.status_code != 200:
-            raise Exception(r.text)
+            raise Exception(r.content)
 
         try:
             response = r.json()
@@ -190,7 +190,7 @@ def _fetch(config, sid, category, resource, method, subcategory=None, query_id=N
                     query_result['results'] = query_result['result']
 
         except ValueError:
-            return r.text
+            return r.content
 
         # Setting up final_response
         if final_response is None:

@@ -71,7 +71,7 @@ class _ParentRestClient(object):
 
         if isinstance(response, dict):
             return RestResponse(response)
-        else:  # (e.g. /{apiVersion}/files/{file}/download)
+        else:  # Not a JSON (e.g. /{apiVersion}/files/{file}/download)
             return response
 
     def _get(self, category, resource, query_id=None, subcategory=None,
