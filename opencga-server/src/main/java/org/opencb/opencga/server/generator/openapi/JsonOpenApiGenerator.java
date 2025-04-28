@@ -1,11 +1,12 @@
 package org.opencb.opencga.server.generator.openapi;
+
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.tools.annotations.*;
 import org.opencb.opencga.server.generator.commons.ApiCommons;
-import org.opencb.opencga.server.generator.openapi.models.*;
 import org.opencb.opencga.server.generator.openapi.common.SwaggerDefinitionGenerator;
+import org.opencb.opencga.server.generator.openapi.models.*;
 
 import javax.ws.rs.*;
 import java.io.DataInputStream;
@@ -15,7 +16,7 @@ import java.util.*;
 
 public class JsonOpenApiGenerator {
 
-    private final List<Class<?>> beansDefinitions= new ArrayList<>();
+    private final Set<Class<?>> beansDefinitions = new LinkedHashSet<>();
 
     public Swagger generateJsonOpenApi(ApiCommons apiCommons, String token, String environment, String host) {
 
@@ -134,8 +135,8 @@ public class JsonOpenApiGenerator {
                 schema.set$ref("#/definitions/" + apiOperation.response().getSimpleName());
 
                 response.setSchema(schema);
-                if (!beansDefinitions.contains((Class) apiOperation.response()) && SwaggerDefinitionGenerator.isOpencbBean((Class) apiOperation.response())) {
-                    beansDefinitions.add((Class) apiOperation.response());
+                if (SwaggerDefinitionGenerator.isOpencbBean(apiOperation.response())) {
+                    beansDefinitions.add(apiOperation.response());
                 }
             }
         }
@@ -155,8 +156,9 @@ public class JsonOpenApiGenerator {
             return "put";
         } else if (method.isAnnotationPresent(DELETE.class)) {
             return "delete";
+        } else {
+            throw new IllegalArgumentException("Unsupported HTTP method for method: " + method.getName());
         }
-        return null;
     }
 
     private List<Parameter> extractParameters(java.lang.reflect.Method method, String token) {
@@ -187,45 +189,41 @@ public class JsonOpenApiGenerator {
             if (apiParam == null || apiParam.hidden()) {
                 continue;
             }
-            if(apiParam.value().equals("body") || apiParam.name().equals("body") || isBody(methodParam)){
+            if (apiParam.value().equals("body") || apiParam.name().equals("body") || isBody(methodParam)) {
                 parameter.setName("body");
                 parameter.setIn("body");
-                parameter.setDescription(StringUtils.isNotEmpty(apiParam.value()) ? apiParam.value() : "body");
                 parameter.setRequired(apiParam.required());
-                if("java.util.Map".equals(methodParam.getType().getTypeName())){
+                if (Map.class.isAssignableFrom(methodParam.getType())) {
+                    // Why type=array instead of type=object?
                     parameter.setType("array");
                     parameter.setSchema(getMapSchema(methodParam));
-                }else {
+                } else {
                     parameter.setType(methodParam.getType().getTypeName());
                     parameter.setSchema(new Schema().set$ref("#/definitions/" + methodParam.getType().getSimpleName()));
-                    if (!beansDefinitions.contains((Class) methodParam.getType())) {
+                    if (SwaggerDefinitionGenerator.isOpencbBean(methodParam.getType())) {
                         beansDefinitions.add(methodParam.getType());
                     }
                 }
-            }else {
-                // Procesar PathParam
-                PathParam pathParam = methodParam.getAnnotation(PathParam.class);
-                if (pathParam != null) {
-                    parameter.setName(pathParam.value());
-                    parameter.setDescription(StringUtils.isEmpty(apiParam.value())?pathParam.value():apiParam.value());
-                    parameter.setRequired(true);
+            } else {
+                if (method.isAnnotationPresent(PathParam.class)) {
+                    PathParam pathParam = methodParam.getAnnotation(PathParam.class);
+                    if (pathParam != null) {
+                        parameter.setName(pathParam.value());
+                        parameter.setRequired(true);
+                    }
+                } else if (method.isAnnotationPresent(QueryParam.class)) {
+                    QueryParam queryParam = methodParam.getAnnotation(QueryParam.class);
+                    if (queryParam != null) {
+                        parameter.setName(queryParam.value());
+                        parameter.setRequired(apiParam.required());
+                    }
+                } else if (method.isAnnotationPresent(FormDataParam.class)) {
+                    FormDataParam formDataParam = methodParam.getAnnotation(FormDataParam.class);
+                    if (formDataParam != null) {
+                        parameter.setName(formDataParam.value());
+                        parameter.setRequired(apiParam.required());
+                    }
                 }
-
-                // Procesar QueryParam
-                QueryParam queryParam = methodParam.getAnnotation(QueryParam.class);
-                if (queryParam != null) {
-                    parameter.setName(queryParam.value());
-                    parameter.setDescription(StringUtils.isEmpty(apiParam.value())?queryParam.value():apiParam.value());
-                    parameter.setRequired(apiParam.required());
-                }
-
-                FormDataParam formDataParam = methodParam.getAnnotation(FormDataParam.class);
-                if (formDataParam != null) {
-                    parameter.setName(formDataParam.value());
-                    parameter.setDescription(StringUtils.isEmpty(apiParam.value())?formDataParam.value():apiParam.value());
-                    parameter.setRequired(apiParam.required());
-                }
-                parameter.setDescription(formatParameterDescription(apiParam, parameter));
                 if(SwaggerDefinitionGenerator.isPrimitive(methodParam.getType())){
                     parameter.setType(SwaggerDefinitionGenerator.mapJavaTypeToSwaggerType(methodParam.getType()));
                 }else {
@@ -233,7 +231,7 @@ public class JsonOpenApiGenerator {
                 }
                 parameter.setIn(getIn(methodParam));
                 parameter.setDefaultValue(apiParam.defaultValue());
-                parameter.setDescription(StringUtils.isEmpty(parameter.getDescription()) ? apiParam.value() : parameter.getDescription());
+                parameter.setDescription(formatParameterDescription(apiParam, parameter));
             }
             if(parameter.getName()!=null){
                 parameters.add(parameter);
@@ -246,7 +244,7 @@ public class JsonOpenApiGenerator {
     public String formatParameterDescription(ApiParam apiParam, Parameter parameter) {
         String allowable = apiParam.allowableValues();
         String defaultValue = apiParam.defaultValue();
-        String description = StringUtils.defaultString(parameter.getDescription());
+        String description = StringUtils.isEmpty(apiParam.value()) ? parameter.getName() : apiParam.value();
 
         StringBuilder descriptionBuilder = new StringBuilder(description);
 

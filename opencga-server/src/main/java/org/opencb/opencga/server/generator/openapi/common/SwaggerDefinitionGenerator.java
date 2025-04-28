@@ -1,21 +1,33 @@
 package org.opencb.opencga.server.generator.openapi.common;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.BeanDescription;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
 import org.opencb.opencga.server.generator.openapi.models.Definition;
 import org.opencb.opencga.server.generator.openapi.models.FieldDefinition;
 import org.opencb.opencga.server.generator.openapi.models.ListDefinition;
 import org.opencb.opencga.server.generator.openapi.models.MapDefinition;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.*;
 
 public class SwaggerDefinitionGenerator {
 
-
     private final static Map<String, Definition> definitions = new HashMap<>();
     private final static Set<String> processedFields = new HashSet<>();
-    public static Map<String, Definition> getDefinitions(List<Class<?>> classes) {
+    private final static ObjectMapper objectMapper;
+
+    static {
+        objectMapper = new ObjectMapper();
+        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    }
+
+    public static Map<String, Definition> getDefinitions(Collection<Class<?>> classes) {
         for (Class<?> clazz : classes) {
             if (!definitions.containsKey(clazz.getSimpleName()) && isOpencbBean(clazz)) {
                 definitions.put(clazz.getSimpleName(), generateDefinition(clazz));
@@ -24,28 +36,29 @@ public class SwaggerDefinitionGenerator {
         return definitions;
     }
 
+
     private static Definition generateDefinition(Class<?> clazz) {
         processedFields.add(clazz.getName());
         Definition definition = new Definition();
         Map<String, FieldDefinition> properties = new LinkedHashMap<>();
-        Field[] fields = clazz.getDeclaredFields();
+        BeanDescription beanDescription = objectMapper.getSerializationConfig().introspect(objectMapper.constructType(clazz));
 
-        for (Field field : fields) {
+        for (BeanPropertyDefinition field : beanDescription.findProperties()) {
             if(field.getName().equals("serialVersionUID") || field.getName().contains("$")){
                 continue;
             }
             try {
                 FieldDefinition fieldDefinition;
-                if(isCollection(field.getType())){
+                if(isCollection(field.getRawPrimaryType())){
                     fieldDefinition = manageCollectionType(field);
-                }else{
-                    Class<?> fieldType = field.getType();
+                } else{
+                    Class<?> fieldType = field.getRawPrimaryType();
                     fieldDefinition = manageField(fieldType);
                 }
                 properties.put(field.getName(), fieldDefinition);
             } catch (Exception e) {
-                System.err.println("Error processing field: " + field.getType().getSimpleName() + " in class " + field.getType().getName());
-                e.printStackTrace();
+                throw new IllegalStateException(
+                        "Error processing field: " + field.getRawPrimaryType().getSimpleName() + " in class " + field.getRawPrimaryType().getName(), e);
             }
         }
 
@@ -143,34 +156,29 @@ public class SwaggerDefinitionGenerator {
 
 
     private static boolean isCollection(Class<?> fieldType) {
-        return List.class.isAssignableFrom(fieldType) || Map.class.isAssignableFrom(fieldType);
+        return Collection.class.isAssignableFrom(fieldType) || Map.class.isAssignableFrom(fieldType);
     }
 
-    public static FieldDefinition manageCollectionType(Field field) {
-        Type genericType = field.getGenericType();
-        if (genericType instanceof ParameterizedType) {
-            ParameterizedType paramType = (ParameterizedType) genericType;
-            Type[] typeArguments = paramType.getActualTypeArguments();
+    public static FieldDefinition manageCollectionType(BeanPropertyDefinition field) {
+        if (Collection.class.isAssignableFrom(field.getRawPrimaryType())) {
+            ListDefinition listDefinition = new ListDefinition();
+            listDefinition.setType("array");
+            // Get the item type of the list
+            Type listItemType = field.getPrimaryType().getContentType();
+            listDefinition.setItems(manageGenericType(listItemType));
+            return listDefinition;
 
-            if (List.class.isAssignableFrom(field.getType())) {
-                FieldDefinition listDefinition = new ListDefinition();
-                listDefinition.setType("array");
-                // Get the item type of the list
-                Type listItemType = typeArguments[0];
-                ((ListDefinition) listDefinition).setItems(manageGenericType(listItemType));
-                return listDefinition;
-
-            } else if (Map.class.isAssignableFrom(field.getType())) {
-                FieldDefinition mapDefinition = new MapDefinition();
-                mapDefinition.setType("array");
-                Type keyType = typeArguments[0];
-                Type valueType = typeArguments[1];
-                ((MapDefinition) mapDefinition).setKey(manageGenericType(keyType));
-                ((MapDefinition) mapDefinition).setValue(manageGenericType(valueType));
-                return mapDefinition;
-            }
+        } else if (Map.class.isAssignableFrom(field.getRawPrimaryType())) {
+            MapDefinition mapDefinition = new MapDefinition();
+            mapDefinition.setType("array");
+            Type keyType = field.getPrimaryType().getKeyType();
+            Type valueType = field.getPrimaryType().getContentType();
+            mapDefinition.setKey(manageGenericType(keyType));
+            mapDefinition.setValue(manageGenericType(valueType));
+            return mapDefinition;
+        } else {
+            return null;
         }
-        return null;
     }
 
     /**
