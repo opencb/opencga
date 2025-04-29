@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.models.variant;
+package org.opencb.opencga.core.models.variant.regenie;
 
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
 public class RegenieStep2WrapperParams extends ToolParams {
-
-    public static final String DESCRIPTION = "Regenie step2 parameters";
 
     @DataField(id = "step1JobId", description = FieldConstants.REGENIE_STEP1_JOB_ID_DESCRIPTION)
     private String step1JobId;

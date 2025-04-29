@@ -41,7 +41,8 @@ fi
 
 # 3. plink --indep-pairwise
 echo "3. Running plink --indep-pairwise..."
-plink1.9 --bfile "${input_dir}/${basename}.annotated" --indep-pairwise 50 5 0.2 --maf 0.05 --out "${input_dir}/variants" --memory 30600
+#plink1.9 --bfile "${input_dir}/${basename}.annotated" --indep-pairwise 50 5 0.2 --maf 0.05 --out "${input_dir}/variants" --memory 30600
+plink1.9 --bfile "${input_dir}/${basename}.annotated" --indep-pairwise 50 5 0.2 --out "${input_dir}/variants" --memory 30600
 if [ $? -ne 0 ]; then
   echo "Error: plink --indep-pairwise failed!"
   exit 1

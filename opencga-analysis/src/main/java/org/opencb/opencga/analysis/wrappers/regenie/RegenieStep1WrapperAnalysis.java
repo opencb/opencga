@@ -17,6 +17,8 @@
 package org.opencb.opencga.analysis.wrappers.regenie;
 
 
+import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
@@ -24,7 +26,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.variant.RegenieStep1WrapperParams;
+import org.opencb.opencga.core.models.variant.regenie.RegenieStep1WrapperParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -41,7 +43,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.opencb.opencga.analysis.AnalysisUtils.XXXXXX;
 import static org.opencb.opencga.analysis.wrappers.regenie.RegenieUtils.*;
 import static org.opencb.opencga.core.tools.ResourceManager.RESOURCES_DIRNAME;
 
@@ -54,11 +55,14 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
 
     private static final String PREPARE_RESOURCES_STEP = "prepare-resources";
     private static final String CLEAN_RESOURCES_STEP = "clean-resources";
-    private static final String BUILD_AND_PUSH_WALKER_DOCKER_STEP = "build-and-push-walker-docker";
+    private static final String PREPARE_WALKER_DOCKER_STEP = "build-and-push-walker-docker";
 
-    private Path vcfFile;
     private Path phenoFile;
     private Path covarFile;
+
+    private String dockerOrganisation;
+    private String dockerUsername;
+    private String dockerToken;
 
     private Path resourcePath;
 
@@ -77,14 +81,23 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
         covarFile = checkRegenieInputFile(analysisParams.getCovarFile(), false, "Covariate", getStudy(), getCatalogManager(), getToken());
 
         // Check username and password
-        checkRegenieInputParameter(analysisParams.getDockerNamespace(), true, "Docker namespace");
-        checkRegenieInputParameter(analysisParams.getDockerUsername(), true, "Docker username");
-        checkRegenieInputParameter(analysisParams.getDockerPassword(), true, "Docker password");
+        if (analysisParams.getDocker() != null) {
+            checkRegenieInputParameter(analysisParams.getDocker().getOrganisation(), false, "Docker Hub organisation or namespace");
+            dockerOrganisation = analysisParams.getDocker().getOrganisation();
+            checkRegenieInputParameter(analysisParams.getDocker().getUsername(), false, "Docker Hub username");
+            dockerUsername = analysisParams.getDocker().getUsername();
+            checkRegenieInputParameter(analysisParams.getDocker().getToken(), false, "Docker token");
+            dockerToken = analysisParams.getDocker().getToken();
+
+            if (StringUtils.isEmpty(dockerOrganisation)) {
+                dockerOrganisation = dockerUsername;
+            }
+        }
     }
 
     @Override
     protected List<String> getSteps() {
-        return Arrays.asList(PREPARE_RESOURCES_STEP, ID, BUILD_AND_PUSH_WALKER_DOCKER_STEP, CLEAN_RESOURCES_STEP);
+        return Arrays.asList(PREPARE_RESOURCES_STEP, ID, PREPARE_WALKER_DOCKER_STEP, CLEAN_RESOURCES_STEP);
     }
 
     protected void run() throws ToolException, IOException {
@@ -95,7 +108,7 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
         step(ID, this::runRegenieStep1);
 
         // Do we have to clean the regenie resource folder
-        step(BUILD_AND_PUSH_WALKER_DOCKER_STEP, this::buildAndPushWalkerDocker);
+        step(PREPARE_WALKER_DOCKER_STEP, this::prepareWalkerDocker);
 
         // Do we have to clean the regenie resource folder
         step(CLEAN_RESOURCES_STEP, this::cleanResources);
@@ -113,19 +126,25 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
             }
 
             // Export variants
-            vcfFile = resourcePath.resolve(VCF_FILENAME);
+            Path vcfFile = resourcePath.resolve(VCF_FILENAME);
             VariantQuery variantQuery = new VariantQuery()
                     .study(getStudy())
                     .includeSampleAll()
                     .includeSampleData("GT,FT")
-                    .unknownGenotype("./.");
+                    .unknownGenotype("0/0");
+            if (MapUtils.isNotEmpty(analysisParams.getVariantExportQuery())) {
+                variantQuery.putAll(analysisParams.getVariantExportQuery());
+            }
             QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id,studies.samples");
+            logger.info("Variant export query: {}", MapUtils.isEmpty(variantQuery) ? null : variantQuery.toJson());
             getVariantStorageManager().exportData(vcfFile.toString(), VariantWriterFactory.VariantOutputFormat.VCF_GZ, null, variantQuery,
                     queryOptions, getToken());
             if (!Files.exists(vcfFile)) {
                 throw new ToolException("Exported VCF file not found");
             }
-        } catch (IOException | CatalogException | StorageEngineException e) {
+        } catch (ToolException | IOException | CatalogException | StorageEngineException e) {
+            logger.error("Error preparing regenie resources: {}", e.getMessage(), e);
+            clean();
             throw new ToolException(e);
         }
     }
@@ -135,74 +154,106 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
     }
 
     protected void runRegenieStep1() throws ToolException {
-        // Get executor
-        RegenieStep1WrapperAnalysisExecutor executor = getToolExecutor(RegenieStep1WrapperAnalysisExecutor.class);
+        try {
+            // Get executor
+            RegenieStep1WrapperAnalysisExecutor executor = getToolExecutor(RegenieStep1WrapperAnalysisExecutor.class);
 
-        // Set parameters and execute
-        executor.setStudy(study)
-                .setStep1ScriptPath(getOpencgaHome().resolve("analysis/regenie/regenie_step1.sh"))
-                .setInputPath(resourcePath)
-                .setOutputPath(getOutDir())
-                .execute();
+            // Set parameters and execute
+            executor.setStudy(study)
+                    .setStep1ScriptPath(getOpencgaHome().resolve("analysis/regenie/regenie_step1.sh"))
+                    .setInputPath(resourcePath)
+                    .setOutputPath(getOutDir())
+                    .execute();
 
-        logger.info("Regenie step1 done!");
+            logger.info("Regenie step1 done!");
+        } catch (ToolException e) {
+            logger.error("Error running regenie step1: {}", e.getMessage(), e);
+            clean();
+            throw e;
+        }
     }
 
-    private void buildAndPushWalkerDocker() throws IOException, ToolException {
+    private void prepareWalkerDocker() throws ToolException {
         Map<String, Object> params = new HashMap<>(analysisParams.toParams());
-        params.put("dockerPassword", XXXXXX);
         logger.info("Building and pushing regenie-walker docker with parameters {} ...", params);
 
-        // Prepare regenie-step1 results to be included in the docker image
-        Path dataDir = getOutDir().resolve(ID);
-        if (!Files.exists(Files.createDirectories(dataDir))) {
-            throw new ToolException("Could not create directory " + dataDir);
-        }
-        // Copy pheno and covar files
-        FileUtils.copyFile(phenoFile.toFile(), dataDir.resolve(PHENO_FILENAME).toFile());
-        if (covarFile != null) {
-            FileUtils.copyFile(covarFile.toFile(), dataDir.resolve(COVAR_FILENAME).toFile());
-        }
-        // Copy Python scripts and files
-        Path pythonDir = dataDir.resolve("python");
-        List<String> filenames = Arrays.asList("requirements.txt", "variant_walker.py");
-        for (String filename : filenames) {
-            FileUtils.copyFile(getOpencgaHome().resolve("analysis/walker/" + filename).toAbsolutePath(), pythonDir.resolve(filename));
-        }
-        FileUtils.copyFile(getOpencgaHome().resolve("analysis/regenie/regenie_walker.py"),
-                pythonDir.resolve("regenie_walker.py"));
-        // Copy step1 results (i.e., prediction files) and update the paths within the file step1_pred.list
-        Path predDir = dataDir.resolve("pred");
-        if (!Files.exists(Files.createDirectories(predDir))) {
-            throw new ToolException("Could not create directory " + predDir);
-        }
-        Path step1PredPath = getOutDir().resolve(STEP1_PRED_LIST_FILNEMANE);
-        if (!Files.exists(step1PredPath)) {
-            throw new ToolException("Could not find the regenie-step1 predictions file: " + STEP1_PRED_LIST_FILNEMANE);
-        }
-        FileUtils.copyFile(getOutDir().resolve(STEP1_PRED_LIST_FILNEMANE), predDir.resolve(STEP1_PRED_LIST_FILNEMANE));
-        List<String> lines = Files.readAllLines(step1PredPath);
-        try (BufferedWriter bw = FileUtils.newBufferedWriter(predDir.resolve(STEP1_PRED_LIST_FILNEMANE))) {
-            for (String line : lines) {
-                String[] split = line.split(" ");
-                String locoFilename = Paths.get(split[1]).getFileName().toString();
-                Path locoPath = getOutDir().resolve(locoFilename);
-                if (!Files.exists(locoPath)) {
-                    throw new ToolExecutorException("Could not find the regenie-step1 loco file: " + locoPath.getFileName());
+        try {
+            // Prepare regenie-step1 results to be included in the docker image
+            Path dataDir = getOutDir().resolve(ID);
+            if (!Files.exists(Files.createDirectories(dataDir))) {
+                throw new ToolException("Could not create directory " + dataDir);
+            }
+            // Copy pheno and covar files
+            FileUtils.copyFile(phenoFile.toFile(), dataDir.resolve(PHENO_FILENAME).toFile());
+            if (covarFile != null) {
+                FileUtils.copyFile(covarFile.toFile(), dataDir.resolve(COVAR_FILENAME).toFile());
+            }
+            // Copy Python scripts and files
+            Path pythonDir = dataDir.resolve("python");
+            List<String> filenames = Arrays.asList("requirements.txt", "variant_walker.py");
+            for (String filename : filenames) {
+                FileUtils.copyFile(getOpencgaHome().resolve("analysis/resources/walker/" + filename).toAbsolutePath(),
+                        pythonDir.resolve(filename));
+            }
+            FileUtils.copyFile(getOpencgaHome().resolve("analysis/regenie/regenie_walker.py"),
+                    pythonDir.resolve("regenie_walker.py"));
+            // Copy step1 results (i.e., prediction files) and update the paths within the file step1_pred.list
+            Path predDir = dataDir.resolve("pred");
+            if (!Files.exists(Files.createDirectories(predDir))) {
+                throw new ToolException("Could not create directory " + predDir);
+            }
+            Path step1PredPath = getOutDir().resolve(STEP1_PRED_LIST_FILNEMANE);
+            if (!Files.exists(step1PredPath)) {
+                throw new ToolException("Could not find the regenie-step1 predictions file: " + STEP1_PRED_LIST_FILNEMANE);
+            }
+            FileUtils.copyFile(getOutDir().resolve(STEP1_PRED_LIST_FILNEMANE), predDir.resolve(STEP1_PRED_LIST_FILNEMANE));
+            List<String> lines = Files.readAllLines(step1PredPath);
+            try (BufferedWriter bw = FileUtils.newBufferedWriter(predDir.resolve(STEP1_PRED_LIST_FILNEMANE))) {
+                for (String line : lines) {
+                    String[] split = line.split(" ");
+                    String locoFilename = Paths.get(split[1]).getFileName().toString();
+                    Path locoPath = getOutDir().resolve(locoFilename);
+                    if (!Files.exists(locoPath)) {
+                        throw new ToolExecutorException("Could not find the regenie-step1 loco file: " + locoPath.getFileName());
+                    }
+                    FileUtils.copyFile(locoPath, predDir.resolve(locoFilename));
+                    bw.write(split[0] + " " + OPT_APP_PRED_VIRTUAL_DIR + "/" + locoFilename + "\n");
                 }
-                FileUtils.copyFile(locoPath, predDir.resolve(locoFilename));
-                bw.write(split[0] + " " + OPT_APP_PRED_VIRTUAL_DIR + "/" + locoFilename + "\n");
+            }
+
+            if (StringUtils.isEmpty(dockerUsername) && StringUtils.isEmpty(dockerToken)) {
+                logger.info("Creating regenie-walker Dockerfile ...");
+                Path dockerfile = createDockerfile(dataDir, getOpencgaHome());
+                logger.info("Dockerfile for regenie-walker: {}", dockerfile);
+            } else {
+                logger.info("Building and pushing regenie-walker ...");
+                String walkerDocker = buildAndPushDocker(dataDir, dockerOrganisation, dockerUsername, dockerToken, getOpencgaHome());
+
+                logger.info("Regenie-walker docker image: {}", walkerDocker);
+                addAttribute(OPENCGA_REGENIE_WALKER_DOCKER_IMAGE_KEY, walkerDocker);
+                logger.info("Building and pushing regenie-walker docker done!");
+
+                // Clean up
+                FileUtils.deleteDirectory(dataDir);
+            }
+        } catch (ToolException | IOException e) {
+            logger.error("Error preparing walker-regenie docker: {}", e.getMessage(), e);
+            clean();
+            throw new ToolException(e);
+        }
+    }
+
+    private void clean() {
+        List<Path> paths = Arrays.asList(getOutDir().resolve(ID), getOutDir().resolve(RESOURCES_DIRNAME));
+        for (Path path : paths) {
+            if (Files.exists(path)) {
+                try {
+                    logger.info("Cleaning after error: deleting directory {}", path);
+                    FileUtils.deleteDirectory(path);
+                } catch (IOException e) {
+                    logger.error("Error deleting directory {}: {}", path, e.getMessage(), e);
+                }
             }
         }
-
-        String walkerDocker = buildAndPushDocker(dataDir, analysisParams.getDockerNamespace(), analysisParams.getDockerUsername(),
-                analysisParams.getDockerPassword(), getOpencgaHome());
-
-        logger.info("Regenie-walker docker image: {}", walkerDocker);
-        addAttribute(OPENCGA_REGENIE_WALKER_DOCKER_IMAGE_KEY, walkerDocker);
-        logger.info("Building and pushing regenie-walker docker done!");
-
-        // Clean up
-        FileUtils.deleteDirectory(dataDir);
     }
 }

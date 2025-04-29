@@ -32,6 +32,7 @@ public final class RegenieUtils {
     public static final String PREDICTION_PATH = "pred/";
     public static final String OPT_APP_PRED_VIRTUAL_DIR = OPT_APP_VIRTUAL_DIR + PREDICTION_PATH;
 
+    public static final String REGENIE_WALKER_REPO = "regenie-walker";
     public static final String REGENIE_RESULTS_FILENAME = "regenie_results.txt";
 
     public static final String OPENCGA_REGENIE_WALKER_DOCKER_IMAGE_KEY = "OPENCGA_REGENIE_WALKER_DOCKER_IMAGE";
@@ -69,30 +70,51 @@ public final class RegenieUtils {
         }
     }
 
-    public static String buildAndPushDocker(Path dataDir, String dockerNamespace, String username, String password, Path opencgaHome)
+    public static Path createDockerfile(Path dataDir, Path opencgaHome)
             throws ToolException {
-        String dockerRepo = "regenie-walker";
+        Path dockerBuildScript = opencgaHome.resolve("analysis/resources/walker/custom-tool-docker-build.py");
+        Command dockerBuild = new Command(new String[]{"python3", dockerBuildScript.toAbsolutePath().toString(),
+                "--custom-tool-dir", dataDir.toAbsolutePath().toString(),
+                "--base-image", "joaquintarraga/opencga-regenie:" + GitRepositoryState.getInstance().getBuildVersion(),
+                "dockerfile"
+        }, Collections.emptyMap());
+
+        logger.info("Executing command: {}", dockerBuild.getCommandLine());
+        dockerBuild.run();
+        if (dockerBuild.getExitValue() != 0) {
+            throw new ToolException("Error creating regenie-walker Dockerfile");
+        }
+
+        Path dockerfile = dataDir.resolve("Dockerfile");
+        if (!Files.exists(dockerfile)) {
+            throw new ToolException("Dockerfile for regenie-walker not found: " + dockerfile);
+        }
+        return dockerfile;
+    }
+
+    public static String buildAndPushDocker(Path dataDir, String dockerNamespace, String dockerUsername, String dockerToken,
+                                            Path opencgaHome) throws ToolException {
         String dockerRepoVersion = Instant.now().getEpochSecond() + "-" + (new Random().nextInt(9000) + 1000);
 
-        Path dockerBuildScript = opencgaHome.resolve("analysis/walker/custom-tool-docker-build.py");
+        Path dockerBuildScript = opencgaHome.resolve("analysis/resources/walker/custom-tool-docker-build.py");
         Command dockerBuild = new Command(new String[]{"python3", dockerBuildScript.toAbsolutePath().toString(),
                 "--custom-tool-dir", dataDir.toAbsolutePath().toString(),
                 "--base-image", "joaquintarraga/opencga-regenie:" + GitRepositoryState.getInstance().getBuildVersion(),
                 "--organisation", dockerNamespace,
-                "--name", dockerRepo,
+                "--name", REGENIE_WALKER_REPO,
                 "--version", dockerRepoVersion,
-                "--username", username,
-                "--password", password,
+                "--username", dockerUsername,
+                "--token", dockerToken,
                 "push"
         }, Collections.emptyMap());
 
-        logger.info("Executing command: {}", dockerBuild.getCommandLine().replace(password, "XXXXX"));
+        logger.info("Executing command: {}", dockerBuild.getCommandLine());
         dockerBuild.run();
         if (dockerBuild.getExitValue() != 0) {
             throw new ToolException("Error building and pushing the regenie-walker docker image");
         }
 
-        String dockerImage = dockerNamespace + "/" + dockerRepo + ":" + dockerRepoVersion;
+        String dockerImage = dockerNamespace + "/" + REGENIE_WALKER_REPO + ":" + dockerRepoVersion;
         return dockerImage;
     }
 

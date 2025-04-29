@@ -19,7 +19,7 @@ parser.add_argument("-n", "--name", help="Name of the docker image, e.g. my-tool
 parser.add_argument("-v", "--version", help="Tag of the docker image, e.g. v1.0.0", default="1.0.0")
 parser.add_argument("-l", "--latest", help="Make the docker image latest, e.g. v1.0.0", default="False")
 parser.add_argument("-u", "--username", help="Username to login to the docker registry")
-parser.add_argument("-p", "--password", help="Password to login to the docker registry",)
+parser.add_argument("-p", "--token", help="Token to login to the docker registry",)
 # parser.add_argument('--server', help="Docker registry server", default="docker.io")
 
 ## Some ANSI colors to print shell output
@@ -48,13 +48,13 @@ def run(command):
         error("Error executing: " + command)
 
 def login(loginRequired=False):
-    if args.username is None or args.password is None:
+    if args.username is None or args.token is None:
         if loginRequired:
-            error("Username and password are required")
+            error("Username and token are required")
         else:
             return
 
-    code = os.system(f"docker login -u \"{args.username}\" --password \"{args.password}\"")
+    code = os.system(f"docker login -u \"{args.username}\" --password \"{args.token}\"")
     if code != 0:
         error("Error executing: '" + "docker login -u " + args.username + " --password xxxxxxx'")
 

@@ -634,9 +634,13 @@ public class FieldConstants {
     public static final String REGENIE_STEP1_JOB_ID_DESCRIPTION = "Job ID that performed the regenie step1 analysis.";
     public static final String REGENIE_WALKER_DOCKER_IMAGE_NAME_DESCRIPTION = "Walker docker image name that contains the phenotype, covariates"
             + " and prediction files.";
-    public static final String REGENIE_WALKER_DOCKER_NAMESPACE_DESCRIPTION = "Docker Hub namespace.";
-    public static final String REGENIE_WALKER_DOCKER_USERNAME_DESCRIPTION = "Docker Hub username.";
-    public static final String REGENIE_WALKER_DOCKER_PASSWORD_DESCRIPTION = "Docker Hub password.";
+    public static final String REGENIE_VARIANT_EXPORT_QUERY_DESCRIPTION = "Query to export a subset of variants for the regenie step1 (as"
+            + " performing regenie step1 on a subset is recommended over the entire dataset). Key-values examples:"
+        + " \"cohortStatsMaf\"=\"ALL<0.05\", \"sampleLimit\"=5000";
+    public static final String REGENIE_WALKER_DOCKER_ORGANISATION_DESCRIPTION = "Docker Hub organisation (or namespace) where to push the"
+            + " regenie-walker docker image.";
+    public static final String REGENIE_WALKER_DOCKER_USERNAME_DESCRIPTION = "Docker Hub username to push the regenie-walker docker image.";
+    public static final String REGENIE_WALKER_DOCKER_TOKEN_DESCRIPTION = "Docker Hub token to push the regenie-walker docker image.";
 
     // Fetch resources
     public static final String FETCH_RESOURCES_DESCRIPTION = "List of resource IDs, separated by commas, to fetch (available resources are"

@@ -33,8 +33,6 @@ public class AnalysisUtils {
     public static String REFERENCE_GENOME_GRCH37_FAI = "REFERENCE_GENOME_GRCH37_FAI";
     public static String REFERENCE_GENOME_GRCH37_GZI= "REFERENCE_GENOME_GRCH37_GZI";
 
-    public static String XXXXXX = "xxxxxx";
-
     public static boolean isSupportedCommand(String commands) {
         Set<String> commandSet = new HashSet<>(Arrays.asList(commands.replace(" ", "").split(",")));
         if (!commandSet.contains(commands)) {

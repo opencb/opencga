@@ -571,7 +571,7 @@ setMethod("variantClient", "OpencgaR", function(OpencgaR, endpointName, params=N
         #' @param jobScheduledStartTime Time when the job is scheduled to start.
         #' @param jobPriority Priority of the job.
         #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
-        #' @param data Regenie step1 parameters.
+        #' @param data Params of regenie-step1 analysis.
         runRegenieStep1=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="variant/regenie/step1", subcategoryId=NULL, action="run", params=params,
                 httpMethod="POST", as.queryParam=NULL, ...),
@@ -586,7 +586,7 @@ setMethod("variantClient", "OpencgaR", function(OpencgaR, endpointName, params=N
         #' @param jobScheduledStartTime Time when the job is scheduled to start.
         #' @param jobPriority Priority of the job.
         #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
-        #' @param data Regenie step2 parameters.
+        #' @param data Params of regenie-step2 analysis.
         runRegenieStep2=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="variant/regenie/step2", subcategoryId=NULL, action="run", params=params,
                 httpMethod="POST", as.queryParam=NULL, ...),

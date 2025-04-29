@@ -45,8 +45,6 @@ import org.opencb.opencga.core.models.variant.LiftoverWrapperParams;
 import org.opencb.opencga.core.models.variant.MendelianErrorAnalysisParams;
 import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
 import org.opencb.opencga.core.models.variant.PlinkWrapperParams;
-import org.opencb.opencga.core.models.variant.RegenieStep1WrapperParams;
-import org.opencb.opencga.core.models.variant.RegenieStep2WrapperParams;
 import org.opencb.opencga.core.models.variant.RelatednessAnalysisParams;
 import org.opencb.opencga.core.models.variant.RvtestsWrapperParams;
 import org.opencb.opencga.core.models.variant.SampleEligibilityAnalysisParams;
@@ -56,6 +54,9 @@ import org.opencb.opencga.core.models.variant.SampleVariantStatsAnalysisParams;
 import org.opencb.opencga.core.models.variant.VariantExportParams;
 import org.opencb.opencga.core.models.variant.VariantStatsAnalysisParams;
 import org.opencb.opencga.core.models.variant.VariantWalkerParams;
+import org.opencb.opencga.core.models.variant.regenie.RegenieDockerParams;
+import org.opencb.opencga.core.models.variant.regenie.RegenieStep1WrapperParams;
+import org.opencb.opencga.core.models.variant.regenie.RegenieStep2WrapperParams;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
@@ -1443,9 +1444,10 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "phenoFile", commandOptions.phenoFile, true);
             putNestedIfNotEmpty(beanParams, "covarFile", commandOptions.covarFile, true);
-            putNestedIfNotEmpty(beanParams, "dockerNamespace", commandOptions.dockerNamespace, true);
-            putNestedIfNotEmpty(beanParams, "dockerUsername", commandOptions.dockerUsername, true);
-            putNestedIfNotEmpty(beanParams, "dockerPassword", commandOptions.dockerPassword, true);
+            putNestedMapIfNotEmpty(beanParams, "variantExportQuery", commandOptions.variantExportQuery, true);
+            putNestedIfNotEmpty(beanParams, "docker.organisation", commandOptions.dockerOrganisation, true);
+            putNestedIfNotEmpty(beanParams, "docker.username", commandOptions.dockerUsername, true);
+            putNestedIfNotEmpty(beanParams, "docker.token", commandOptions.dockerToken, true);
 
             regenieStep1WrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

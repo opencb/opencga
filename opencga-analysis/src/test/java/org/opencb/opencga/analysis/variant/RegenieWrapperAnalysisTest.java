@@ -43,8 +43,9 @@ import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
 import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
-import org.opencb.opencga.core.models.variant.RegenieStep1WrapperParams;
-import org.opencb.opencga.core.models.variant.RegenieStep2WrapperParams;
+import org.opencb.opencga.core.models.variant.regenie.RegenieDockerParams;
+import org.opencb.opencga.core.models.variant.regenie.RegenieStep1WrapperParams;
+import org.opencb.opencga.core.models.variant.regenie.RegenieStep2WrapperParams;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -61,7 +62,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.opencb.opencga.analysis.wrappers.regenie.RegenieUtils.REGENIE_RESULTS_FILENAME;
 
@@ -238,11 +241,12 @@ public class RegenieWrapperAnalysisTest {
         List<String> lines = Files.readAllLines(credentialsPath);
         Assert.assertEquals(1, lines.size());
         String[] split = lines.get(0).split(" ");
-        String namespace = split[0];
-        String username = split[1];
-        String password = split[2];
+        String dockerOrganisation = split[0];
+        String dockerUsername = split[1];
+        String dockerToken = split[2];
 
         Path regenieOutdir = Paths.get(opencga.createTmpOutdir("_regenie_step1_phenofile_outdir"));
+        System.out.println("Regenie step1 outdir = " + regenieOutdir);
 
         Path customPath = Paths.get("custom");
         File opencgaCustomFolder = catalogManager.getFileManager().createFolder(STUDY, customPath.toString(), true, null,
@@ -262,9 +266,12 @@ public class RegenieWrapperAnalysisTest {
 
         RegenieStep1WrapperParams params = new RegenieStep1WrapperParams()
                 .setPhenoFile(opencgaPhenoFile.getId())
-                .setDockerNamespace(namespace)
-                .setDockerUsername(username)
-                .setDockerPassword(password);
+                .setDocker(new RegenieDockerParams(dockerOrganisation, dockerUsername, dockerToken));
+
+        ObjectMap variantExportQuery = new ObjectMap();
+//        variantExportQuery.put("cohortStatsMaf", "ALL<0.05");
+        variantExportQuery.put("sampleLimit", 3000);
+        params.setVariantExportQuery(variantExportQuery);
 
         ExecutionResult executeResult = toolRunner.execute(RegenieStep1WrapperAnalysis.class, params,
                 new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), regenieOutdir, null, false, token);
@@ -272,14 +279,14 @@ public class RegenieWrapperAnalysisTest {
         System.out.println("Regenie step1 outdir = " + regenieOutdir);
         Assert.assertTrue(executeResult.getAttributes().containsKey(RegenieUtils.OPENCGA_REGENIE_WALKER_DOCKER_IMAGE_KEY));
         String walkerDockerImage = executeResult.getAttributes().getString(RegenieUtils.OPENCGA_REGENIE_WALKER_DOCKER_IMAGE_KEY);
-        Assert.assertTrue(walkerDockerImage.startsWith(namespace));
+        Assert.assertTrue(walkerDockerImage.startsWith(dockerOrganisation));
         // Need to wait for a while to allow the docker image to be available
         Thread.sleep(5000);
         Assert.assertTrue(RegenieUtils.isDockerImageAvailable(walkerDockerImage));
     }
 
     @Test
-    public void testRegenieStep2WithDockerImage() throws IOException, ToolException, CatalogException {
+    public void testRegenieStep2WithDockerImage() throws IOException, ToolException {
         String dockerImage = "joaquintarraga/regenie-walker:1745393096-1650";
         Assume.assumeTrue(RegenieUtils.isDockerImageAvailable(dockerImage));
 

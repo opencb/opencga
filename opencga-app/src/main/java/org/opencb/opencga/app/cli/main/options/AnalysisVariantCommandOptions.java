@@ -2067,14 +2067,17 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--covar-file"}, description = "Covariate file, used to adjust the analysis for confounding variables (e.g., sex, age, PCs).", required = false, arity = 1)
         public String covarFile;
     
-        @Parameter(names = {"--docker-namespace"}, description = "Docker Hub namespace.", required = false, arity = 1)
-        public String dockerNamespace;
+        @DynamicParameter(names = {"--variant-export-query"}, description = "Query to export a subset of variants for the regenie step1 (as performing regenie step1 on a subset is recommended over the entire dataset). Key-values examples: 'cohortStatsMaf'='ALL<0.05', 'sampleLimit'=5000. Use: --variant-export-query key=value", required = false)
+        public Map<String, ?> variantExportQuery = new HashMap<>(); //Dynamic parameters must be initialized;
     
-        @Parameter(names = {"--docker-username"}, description = "Docker Hub username.", required = false, arity = 1)
+        @Parameter(names = {"--docker-organisation"}, description = "Docker Hub organisation (or namespace) where to push the regenie-walker docker image.", required = false, arity = 1)
+        public String dockerOrganisation;
+    
+        @Parameter(names = {"--docker-username"}, description = "Docker Hub username to push the regenie-walker docker image.", required = false, arity = 1)
         public String dockerUsername;
     
-        @Parameter(names = {"--docker-password"}, description = "Docker Hub password.", required = false, arity = 1)
-        public String dockerPassword;
+        @Parameter(names = {"--docker-token"}, description = "Docker Hub token to push the regenie-walker docker image.", required = false, arity = 1)
+        public String dockerToken;
     
     }
 

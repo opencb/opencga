@@ -314,10 +314,10 @@ public class OpenCGATestExternalResource extends ExternalResource {
         }
 
         // walker
-        dockerPath = Files.createDirectories(opencgaHome.resolve("analysis/walker")).toAbsolutePath();
+        dockerPath = Files.createDirectories(opencgaHome.resolve("analysis/resources/walker")).toAbsolutePath();
         filenames = Arrays.asList("custom-tool-docker-build.py", "requirements.txt", "variant_walker.py");
         for (String filename : filenames) {
-            try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/walker/" + filename)) {
+            try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/resources/walker/" + filename)) {
                 Files.copy(inputStream, dockerPath.resolve(filename), StandardCopyOption.REPLACE_EXISTING);
             }
         }
