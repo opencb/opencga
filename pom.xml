@@ -20,7 +20,7 @@
 
     <properties>
         <opencga.version>4.1.0-SNAPSHOT</opencga.version>
-        <pyopencga.version>4.1.0-SNAPSHOT</pyopencga.version>
+        <pyopencga.version>4.1.0-dev</pyopencga.version>
         <opencgar.version>4.1.0-SNAPSHOT</opencgar.version>
         <cellbase.version>7.1.0-SNAPSHOT</cellbase.version>
         <biodata.version>4.1.0-SNAPSHOT</biodata.version>

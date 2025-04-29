@@ -358,25 +358,20 @@
                                     <arg value='find ${build.dir}/clients/python/pyopencga/rest_clients -type f -name "*.py" -exec sed -i.bak "s/from pyopencga/from pyopencga-enterprise/g" {} \; &amp;&amp; find ${build.dir}/clients/python/pyopencga/rest_clients -name "*.bak" -delete'/>
                                 </exec>
 
+                                <echo>Calculating Python version</echo>
+                                <exec executable="python3" outputproperty="calculated.version" failonerror="true">
+                                    <arg value="${app.dir}/scripts/calculate_pypi_version.py"/>
+                                    <arg value="${project.version}"/>
+                                </exec>
 
+                                <echo message="Calculated Python Version: ${calculated.version}"/>
 
-                                <!--                                <echo>Updating imports in python files of folder pyopencga to pyopencga-enterprise</echo>-->
-<!--                                <exec executable="find" failonerror="true">-->
-<!--                                    <arg value="${build.dir}/clients/python/pyopencga/rest_clients"/>-->
-<!--                                    <arg value="-type"/>-->
-<!--                                    <arg value="f"/>-->
-<!--                                    <arg value="-name"/>-->
-<!--                                    <arg value="*.py"/>-->
-<!--                                    <arg value="-exec"/>-->
-<!--                                    <arg value="sed"/>-->
-<!--                                    <arg value="-i"/>-->
-<!--                                    <arg value="''"/>-->
-<!--                                    <arg value="-e"/>-->
-<!--                                    <arg value="s/from pyopencga/from pyopencga-enterprise/g"/>-->
-<!--                                    <arg value="{}"/>-->
-<!--                                    <arg value=";"/>-->
-<!--                                </exec>-->
-
+                                <echo>Updating setup.py with version ${calculated.version}</echo>
+                                <exec executable="sed" failonerror="true">
+                                    <arg value="-i"/>
+                                    <arg value="s/PYOPENCGA_ENTERPRISE_VERSION/${calculated.version}/"/>
+                                    <arg value="${build.dir}/clients/python/setup.py"/>
+                                </exec>
 
                                 <echo>Renaming folder pyopencga to pyopencga-enterprise</echo>
                                 <exec executable="mv" failonerror="true">
