@@ -304,7 +304,7 @@ public class UserManager extends AbstractManager {
 
     public void syncAllUsersOfExternalGroup(String organizationId, String study, String authOrigin, String token) throws CatalogException {
         JwtPayload payload = validateToken(token);
-        authorizationManager.checkIsOpencgaAdministrator(payload);
+        authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, payload.getUserId());
 
         OpenCGAResult<Group> allGroups = catalogManager.getStudyManager().getGroup(study, null, token);
 
@@ -391,7 +391,7 @@ public class UserManager extends AbstractManager {
                 .append("sync", sync)
                 .append("token", token);
         try {
-            authorizationManager.checkIsOpencgaAdministrator(payload);
+            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
 
             ParamUtils.checkParameter(authOrigin, "Authentication origin");
             ParamUtils.checkParameter(remoteGroup, "Remote group");
@@ -919,8 +919,9 @@ public class UserManager extends AbstractManager {
                 User user = authenticationFactory.getRemoteUserInformation(organizationId, authId, Collections.singletonList(userId))
                         .get(0);
                 user.setOrganization(organizationId);
-                // Generate a root token to be able to create the user even if the installation is private
-                String rootToken = authenticationFactory.createToken(organizationId, CatalogAuthenticationManager.OPENCGA, OPENCGA);
+                // Generate a super admin token to be able to create the user even if the installation is private
+                String rootToken = authenticationFactory.createToken(ParamConstants.ADMIN_ORGANIZATION,
+                        CatalogAuthenticationManager.OPENCGA, OPENCGA);
                 create(user, null, rootToken);
             }
 
