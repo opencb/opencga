@@ -181,6 +181,7 @@ public class RegenieWrapperAnalysisTest {
 //                    token);
 
             ObjectMap objectMap = new ObjectMap()
+                    .append(VariantStorageOptions.STATS_CALCULATE.key(), true)
                     .append(VariantStorageOptions.ANNOTATE.key(), true)
                     .append(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), "GT,FT");
 
@@ -269,7 +270,7 @@ public class RegenieWrapperAnalysisTest {
                 .setDocker(new RegenieDockerParams(dockerOrganisation, dockerUsername, dockerToken));
 
         ObjectMap variantExportQuery = new ObjectMap();
-//        variantExportQuery.put("cohortStatsMaf", "ALL<0.05");
+        variantExportQuery.put("cohortStatsMaf", "ALL<0.05");
         variantExportQuery.put("sampleLimit", 3000);
         params.setVariantExportQuery(variantExportQuery);
 
