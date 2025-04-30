@@ -303,6 +303,28 @@ public class ProjectManager extends AbstractManager {
         return new ArrayList<>(projectAdmins);
     }
 
+    List<String> getProjectMembers(Project project) throws CatalogParameterException {
+        ParamUtils.checkObj(project, "project");
+        if (CollectionUtils.isEmpty(project.getStudies())) {
+            throw new CatalogParameterException("Internal error: Project " + project.getId() + " does not have any studies.");
+        }
+
+        Set<String> studyMembers = new HashSet<>();
+        for (Study tmpStudy : project.getStudies()) {
+            if (CollectionUtils.isEmpty(tmpStudy.getGroups())) {
+                throw new CatalogParameterException("Internal error: Study " + tmpStudy.getId() + " does not have any groups.");
+            }
+            for (Group group : tmpStudy.getGroups()) {
+                if (StudyManager.MEMBERS.equals(group.getId())) {
+                    studyMembers.addAll(group.getUserIds());
+                    break;
+                }
+            }
+        }
+
+        return new ArrayList<>(studyMembers);
+    }
+
     /**
      * Reads a project from Catalog given a project id or alias.
      *

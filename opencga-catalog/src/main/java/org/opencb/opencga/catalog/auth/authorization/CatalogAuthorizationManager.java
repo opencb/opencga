@@ -26,7 +26,9 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.OrganizationManager;
+import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.Acl;
@@ -41,6 +43,7 @@ import org.opencb.opencga.core.models.individual.IndividualPermissions;
 import org.opencb.opencga.core.models.job.JobPermissions;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.panel.PanelPermissions;
+import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.SamplePermissions;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.PermissionRule;
@@ -66,12 +69,14 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     private final Logger logger;
 
+    private final CatalogManager catalogManager;
     private final DBAdaptorFactory dbAdaptorFactory;
     private final AuthorizationDBAdaptorFactory authorizationDBAdaptorFactory;
 
-    public CatalogAuthorizationManager(DBAdaptorFactory dbFactory, AuthorizationDBAdaptorFactory authorizationDBAdaptorFactory)
-            throws CatalogDBException {
+    public CatalogAuthorizationManager(CatalogManager catalogManager, DBAdaptorFactory dbFactory,
+                                       AuthorizationDBAdaptorFactory authorizationDBAdaptorFactory) throws CatalogDBException {
         this.logger = LoggerFactory.getLogger(CatalogAuthorizationManager.class);
+        this.catalogManager = catalogManager;
         this.dbAdaptorFactory = dbFactory;
         this.authorizationDBAdaptorFactory = authorizationDBAdaptorFactory;
     }
@@ -298,8 +303,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void checkIsAtLeastStudyAdministrator(String organizationId, long studyId, String userId) throws CatalogException {
-        if (!isAtLeastStudyAdministrator(organizationId, studyId, userId)) {
+    public void checkIsAtLeastStudyAdministrator(String organizationId, long studyUid, String userId) throws CatalogException {
+        if (!isAtLeastStudyAdministrator(organizationId, studyUid, userId)) {
             throw CatalogAuthorizationException.notStudyAdmin("perform this action");
         }
     }
@@ -316,6 +321,22 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             }
         }
         return false;
+    }
+
+    @Override
+    public void checkIsAtLeastProjectAdministrator(String organizationId, long projectUid, String userId) throws CatalogException {
+        if (!isAtLeastProjectAdministrator(organizationId, projectUid, userId)) {
+            throw CatalogAuthorizationException.notProjectAdmin("perform this action");
+        }
+    }
+
+    @Override
+    public boolean isAtLeastProjectAdministrator(String organizationId, long projectUid, String userId) throws CatalogException {
+        if (isAtLeastOrganizationOwnerOrAdmin(organizationId, userId)) {
+            return true;
+        }
+        List<String> projectAdmins = getProjectAdmins(organizationId, projectUid);
+        return projectAdmins.contains(userId);
     }
 
     @Override
@@ -1086,6 +1107,42 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     Auxiliar methods
     ====================================
      */
+
+    private List<String> getProjectAdmins(String organizationId, long projectUid) throws CatalogDBException, CatalogParameterException {
+        OpenCGAResult<Project> result = dbAdaptorFactory.getCatalogProjectDbAdaptor(organizationId).get(projectUid, QueryOptions.empty());
+        if (result.getNumResults() == 0) {
+            throw new CatalogDBException("Project '" + projectUid + "' not found");
+        }
+        Project project = result.first();
+        if (CollectionUtils.isEmpty(project.getStudies())) {
+            logger.warn("Project '{} ({})' doesn't have any studies. Cannot get project admins.", project.getFqn(), project.getUid());
+            return Collections.emptyList();
+        }
+
+        List<List<String>> studyAdmins = new ArrayList<>(project.getStudies().size());
+        for (Study tmpStudy : project.getStudies()) {
+            if (CollectionUtils.isEmpty(tmpStudy.getGroups())) {
+                throw new CatalogParameterException("Internal error: Study " + tmpStudy.getId() + " does not have any groups.");
+            }
+            for (Group group : tmpStudy.getGroups()) {
+                if (StudyManager.ADMINS.equals(group.getId())) {
+                    studyAdmins.add(group.getUserIds());
+                    break;
+                }
+            }
+        }
+
+        // A project admin is a user that is admin in all the studies
+        Set<String> projectAdmins = new HashSet<>(studyAdmins.get(0));
+        if (studyAdmins.size() > 1) {
+            for (int i = 1; i < studyAdmins.size(); i++) {
+                // Remove from the projectAdmins object those users that are not admin in the current study
+                projectAdmins.retainAll(studyAdmins.get(i));
+            }
+        }
+
+        return new ArrayList<>(projectAdmins);
+    }
 
     private void checkUserExists(String organizationId, String userId) throws CatalogAuthorizationException {
         try {

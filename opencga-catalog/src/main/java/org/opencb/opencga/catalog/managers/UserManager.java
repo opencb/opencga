@@ -1135,6 +1135,12 @@ public class UserManager extends AbstractManager {
                 : authManager.createToken(organizationId, userId, attributes);
     }
 
+    String getOpencgaToken() throws CatalogException {
+        AuthenticationManager authManager = getAuthenticationManagerForUser(ParamConstants.ADMIN_ORGANIZATION,
+                ParamConstants.OPENCGA_USER_ID);
+        return authManager.createToken(ParamConstants.ADMIN_ORGANIZATION, ParamConstants.OPENCGA_USER_ID);
+    }
+
     /**
      * This method will be only callable by the system. It generates a new session id for the user.
      *
