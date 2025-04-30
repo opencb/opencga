@@ -339,11 +339,12 @@
                                 </exec>
 
                                  <!--Building python library  -->
-
+                                <echo>Building python library</echo>
+                                <echo>=============================</echo>
                                 <echo>Copying OpenCGA python client files ${build.dir}/clients</echo>
                                 <exec executable="cp" failonerror="true">
                                     <arg value="-r"/>
-                                    <arg value="${opencga.build.dir}/clients/*"/>
+                                    <arg value="${opencga.build.dir}/clients/python"/>
                                     <arg value="${build.dir}/clients"/>
                                 </exec>
 
