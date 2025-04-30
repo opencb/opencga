@@ -338,14 +338,16 @@
                                     <arg value="${build.dir}/misc/git"/>
                                 </exec>
 
+                                 <!--Building python library  -->
+
                                 <echo>Copying OpenCGA python client files ${build.dir}/clients</echo>
                                 <exec executable="cp" failonerror="true">
                                     <arg value="-r"/>
-                                    <arg value="${opencga.build.dir}/clients/python"/>
+                                    <arg value="${opencga.build.dir}/clients/*"/>
                                     <arg value="${build.dir}/clients"/>
                                 </exec>
 
-                                <echo>Copying Python, R and JavaScript to ${build.dir}/clients</echo>
+                                <echo>Copying Python to ${build.dir}/clients</echo>
                                 <exec executable="cp" failonerror="true">
                                     <arg value="-r"/>
                                     <arg value="${project.basedir}/../opencga-enterprise-client/src/main/python"/>
@@ -379,6 +381,10 @@
                                     <arg value="${build.dir}/clients/python/pyopencga-enterprise"/>
                                 </exec>
 
+                                <!--END Building python library  -->
+
+                                <!--Building R library  -->
+                                <echo>Copying OpenCGA R client files ${build.dir}/clients</echo>
                                 <exec executable="cp" failonerror="true">
                                     <arg value="-r"/>
                                     <arg value="${project.basedir}/../opencga-enterprise-client/src/main/R"/>

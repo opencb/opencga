@@ -17,12 +17,12 @@ def fetch_existing_versions():
         return []
 
 def calculate_version(maven_version):
-    existing_versions = fetch_existing_versions()
 
     if not maven_version.endswith("-SNAPSHOT"):
         # Production version
         return maven_version
 
+    existing_versions = fetch_existing_versions()
     base_version = maven_version.replace("-SNAPSHOT", "")
     dev_versions = []
     pattern = re.compile(re.escape(base_version) + r"\.dev(\d+)")
