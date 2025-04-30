@@ -106,3 +106,14 @@ class Notification(_ParentRestClient):
 
         return self._get(category='notifications', resource='info', query_id=notification, **options)
 
+    def visit(self, notification, **options):
+        """
+        Mark a notification as visited.
+        PATH: /{apiVersion}/notifications/{notification}/visit
+
+        :param str notification: Notification UUID. (REQUIRED)
+        :param str organization: Organization id.
+        """
+
+        return self._post(category='notifications', resource='visit', query_id=notification, **options)
+

@@ -405,6 +405,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         notificationsSubCommands.addCommand("create", notificationsCommandOptions.createCommandOptions);
         notificationsSubCommands.addCommand("search", notificationsCommandOptions.searchCommandOptions);
         notificationsSubCommands.addCommand("info", notificationsCommandOptions.infoCommandOptions);
+        notificationsSubCommands.addCommand("visit", notificationsCommandOptions.visitCommandOptions);
 
         cohortsCommandOptions = new CohortsCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("cohorts", cohortsCommandOptions);

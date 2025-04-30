@@ -23,6 +23,7 @@
 #' | create | /{apiVersion}/notifications/create | body[*] |
 #' | search | /{apiVersion}/notifications/search | include, exclude, limit, skip, count, organization, uuid, type, scope, fqn, sender, target, receiver, internalStatus, creationDate, modificationDate |
 #' | info | /{apiVersion}/notifications/{notification}/info | include, exclude, notification[*], organization |
+#' | visit | /{apiVersion}/notifications/{notification}/visit | notification[*], organization |
 #'
 #' @md
 #' @seealso \url{http://docs.opencb.org/display/opencga/Using+OpenCGA} and the RESTful API documentation
@@ -86,5 +87,12 @@ setMethod("notificationClient", "OpencgaR", function(OpencgaR, notification, end
         #' @param organization Organization id.
         info=fetchOpenCGA(object=OpencgaR, category="notifications", categoryId=notification, subcategory=NULL,
                 subcategoryId=NULL, action="info", params=params, httpMethod="GET", as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/notifications/{notification}/visit:
+        #' Mark a notification as visited.
+        #' @param notification Notification UUID.
+        #' @param organization Organization id.
+        visit=fetchOpenCGA(object=OpencgaR, category="notifications", categoryId=notification, subcategory=NULL,
+                subcategoryId=NULL, action="visit", params=params, httpMethod="POST", as.queryParam=NULL, ...),
     )
 })

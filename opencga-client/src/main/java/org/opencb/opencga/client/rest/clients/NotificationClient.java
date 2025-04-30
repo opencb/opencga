@@ -124,4 +124,17 @@ public class NotificationClient extends ParentClient {
         params = params != null ? params : new ObjectMap();
         return execute("notifications", notification, null, null, "info", params, GET, Notification.class);
     }
+
+    /**
+     * Mark a notification as visited.
+     * @param notification Notification UUID.
+     * @param params Map containing any of the following optional parameters.
+     *       organization: Organization id.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Notification> visit(String notification, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("notifications", notification, null, null, "visit", params, POST, Notification.class);
+    }
 }

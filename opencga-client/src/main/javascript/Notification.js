@@ -100,4 +100,14 @@ export default class Notification extends OpenCGAParentClass {
         return this._get("notifications", notification, null, null, "info", params);
     }
 
+    /** Mark a notification as visited
+    * @param {String} notification - Notification UUID.
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.organization] - Organization id.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    visit(notification, params) {
+        return this._post("notifications", notification, null, null, "visit", null, params);
+    }
+
 }

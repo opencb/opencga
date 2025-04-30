@@ -55,7 +55,8 @@ public interface NotificationDBAdaptor extends DBAdaptor<Notification> {
         INTERNAL_STATUS("internal.status", TEXT_ARRAY, ""),
         INTERNAL_STATUS_ID("internal.status.id", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
-        INTERNAL_NOTIFICATOR_STATUSES("internal.notificatorStatuses", TEXT_ARRAY, "");
+        INTERNAL_NOTIFICATOR_STATUSES("internal.notificatorStatuses", TEXT_ARRAY, ""),
+        INTERNAL_VISITED("internal.visited", BOOLEAN, "");
 
         private static Map<String, QueryParams> map;
 

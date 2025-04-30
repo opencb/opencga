@@ -31,6 +31,15 @@ public class NotificationWSServer extends OpenCGAWSServer {
         return run(() -> catalogManager.getNotificationManager().create(params, queryOptions, token));
     }
 
+    @POST
+    @Path("/{notification}/visit")
+    @ApiOperation(value = "Mark a notification as visited", response = Notification.class)
+    public Response visit(
+            @ApiParam(value = ParamConstants.NOTIFICATION_DESCRIPTION, required = true) @PathParam(ParamConstants.NOTIFICATION) String uuid,
+            @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION) @QueryParam(ParamConstants.ORGANIZATION) String organizationId) {
+        return run(() -> catalogManager.getNotificationManager().visit(organizationId, uuid, token));
+    }
+
     @GET
     @Path("/{notification}/info")
     @ApiOperation(value = "Return the notification information", response = Notification.class)

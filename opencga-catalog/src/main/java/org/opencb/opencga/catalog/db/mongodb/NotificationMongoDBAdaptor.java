@@ -28,6 +28,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.filterBooleanParams;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.filterObjectParams;
 
 public class NotificationMongoDBAdaptor extends CatalogMongoDBAdaptor implements NotificationDBAdaptor {
@@ -207,6 +208,9 @@ public class NotificationMongoDBAdaptor extends CatalogMongoDBAdaptor implements
 
         final String[] acceptedObjectParams = {QueryParams.INTERNAL_STATUS.key(), QueryParams.INTERNAL_NOTIFICATOR_STATUSES.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
+
+        final String[] acceptedBooleanParams = {QueryParams.INTERNAL_VISITED.key()};
+        filterBooleanParams(parameters, document.getSet(), acceptedBooleanParams);
 
         if (!document.toFinalUpdateDocument().isEmpty()) {
             String time = TimeUtils.getTime();

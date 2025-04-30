@@ -37,6 +37,7 @@ public class NotificationsCommandOptions {
         public CreateCommandOptions createCommandOptions;
         public SearchCommandOptions searchCommandOptions;
         public InfoCommandOptions infoCommandOptions;
+        public VisitCommandOptions visitCommandOptions;
 
 
     public NotificationsCommandOptions(CommonCommandOptions commonCommandOptions, JCommander jCommander) {
@@ -47,6 +48,7 @@ public class NotificationsCommandOptions {
         this.createCommandOptions = new CreateCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
+        this.visitCommandOptions = new VisitCommandOptions();
     
     }
     
@@ -193,6 +195,26 @@ public class NotificationsCommandOptions {
     
         @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
         public String exclude; 
+    
+        @Parameter(names = {"--notification"}, description = "Notification UUID", required = true, arity = 1)
+        public String notification; 
+    
+        @Parameter(names = {"--organization"}, description = "Organization id", required = false, arity = 1)
+        public String organization; 
+    
+    }
+
+    @Parameters(commandNames = {"visit"}, commandDescription ="Mark a notification as visited")
+    public class VisitCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
     
         @Parameter(names = {"--notification"}, description = "Notification UUID", required = true, arity = 1)
         public String notification; 

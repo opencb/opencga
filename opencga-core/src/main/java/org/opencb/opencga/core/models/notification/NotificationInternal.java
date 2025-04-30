@@ -15,6 +15,9 @@ public class NotificationInternal extends Internal {
             description = FieldConstants.NOTIFICATION_INTERNAL_NOTIFICATOR_STATUSES_DESCRIPTION)
     private List<NotificationInternalNotificationResult> notificatorStatuses;
 
+    @DataField(id = "visited", description = FieldConstants.NOTIFICATION_INTERNAL_VISITED_DESCRIPTION)
+    private boolean visited;
+
     public NotificationInternal() {
     }
 
@@ -22,6 +25,7 @@ public class NotificationInternal extends Internal {
                                 List<NotificationInternalNotificationResult> notificatorStatuses) {
         super(status, registrationDate, lastModified);
         this.notificatorStatuses = notificatorStatuses;
+        this.visited = false;
     }
 
     @Override
@@ -31,6 +35,7 @@ public class NotificationInternal extends Internal {
         sb.append(", status=").append(status);
         sb.append(", registrationDate='").append(registrationDate).append('\'');
         sb.append(", lastModified='").append(lastModified).append('\'');
+        sb.append(", visited='").append(visited).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -63,6 +68,15 @@ public class NotificationInternal extends Internal {
 
     public NotificationInternal setNotificatorStatuses(List<NotificationInternalNotificationResult> notificatorStatuses) {
         this.notificatorStatuses = notificatorStatuses;
+        return this;
+    }
+
+    public boolean isVisited() {
+        return visited;
+    }
+
+    public NotificationInternal setVisited(boolean visited) {
+        this.visited = visited;
         return this;
     }
 }

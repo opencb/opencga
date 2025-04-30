@@ -149,6 +149,24 @@ public class NotificationManager extends AbstractManager {
         return catalogDBAdaptorFactory.getNotificationDBAdaptor(organizationId).insert(notificationList, options);
     }
 
+    public OpenCGAResult<Notification> visit(String organizationIdStr, String notificationUuid, String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        String organizationId = StringUtils.isNotEmpty(organizationIdStr) ? organizationIdStr : tokenPayload.getOrganization();
+        String userId = tokenPayload.getUserId(organizationId);
+        Query query = new Query(NotificationDBAdaptor.QueryParams.UUID.key(), notificationUuid);
+        OpenCGAResult<Notification> result = getNotificationDBAdaptor(organizationId).get(query, QueryOptions.empty(), userId);
+        if (result.getNumResults() == 0) {
+            throw new CatalogException("Could not find notification " + notificationUuid + " in organization " + organizationId);
+        }
+        Notification notification = result.first();
+        if (notification.getInternal().isVisited()) {
+            return result;
+        }
+        // Mark as visited
+        ObjectMap parameters = new ObjectMap(NotificationDBAdaptor.QueryParams.INTERNAL_VISITED.key(), true);
+        return getNotificationDBAdaptor(organizationId).update(notification.getUid(), parameters, QueryOptions.empty());
+    }
+
     public OpenCGAResult<Notification> get(String organizationIdStr, String notificationUuid, QueryOptions options, String token)
             throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);

@@ -70,6 +70,7 @@ public class FieldConstants {
     public static final String NOTIFICATION_INTERNAL_NOTIFICATIONS_ID_DESCRIPTION = "Channel id of the notification (EMAIL, SLACK...).";
     public static final String NOTIFICATION_INTERNAL_NOTIFICATIONS_STATUS_DESCRIPTION = "Status of the notification (SUCCESS, ERROR...).";
     public static final String NOTIFICATION_INTERNAL_NOTIFICATIONS_ERROR_MESSAGE_DESCRIPTION = "Error message in case of error.";
+    public static final String NOTIFICATION_INTERNAL_VISITED_DESCRIPTION = "Flag to indicate if the notification has been visited.";
 
     // Notes
     public static final String NOTES_ID_DESCRIPTION = "Note unique identifier.";

@@ -114,7 +114,7 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> notificationsList = asList( "aggregationstats","create","search","info")
+    private List<Candidate> notificationsList = asList( "aggregationstats","create","search","info","visit")
             .stream()
             .map(Candidate::new)
             .collect(toList());

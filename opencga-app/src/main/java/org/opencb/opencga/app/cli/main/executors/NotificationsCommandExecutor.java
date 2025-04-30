@@ -66,6 +66,9 @@ public class NotificationsCommandExecutor extends OpencgaCommandExecutor {
             case "info":
                 queryResponse = info();
                 break;
+            case "visit":
+                queryResponse = visit();
+                break;
             default:
                 logger.error("Subcommand not valid");
                 break;
@@ -164,5 +167,16 @@ public class NotificationsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("organization", commandOptions.organization);
 
         return openCGAClient.getNotificationClient().info(commandOptions.notification, queryParams);
+    }
+
+    private RestResponse<Notification> visit() throws Exception {
+        logger.debug("Executing visit in Notifications command line");
+
+        NotificationsCommandOptions.VisitCommandOptions commandOptions = notificationsCommandOptions.visitCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("organization", commandOptions.organization);
+
+        return openCGAClient.getNotificationClient().visit(commandOptions.notification, queryParams);
     }
 }
