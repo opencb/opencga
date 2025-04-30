@@ -14,8 +14,15 @@ public class NotificationStatus extends InternalStatus {
 
     public static final List<String> STATUS_LIST = Arrays.asList(PENDING, SUCCESS, ERROR, DISCARDED);
 
+    public NotificationStatus() {
+    }
+
     public NotificationStatus(String id, String description) {
-        super(id, description);
+        if (isValid(id)) {
+            init(id, description);
+        } else {
+            throw new IllegalArgumentException("Unknown status id '" + id + "'");
+        }
     }
 
     public static boolean isValid(String statusId) {

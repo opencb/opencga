@@ -23,7 +23,8 @@ public class NotificationInternal extends Internal {
 
     public NotificationInternal(NotificationStatus status, String registrationDate, String lastModified,
                                 List<NotificationInternalNotificationResult> notificatorStatuses) {
-        super(status, registrationDate, lastModified);
+        super(null, registrationDate, lastModified);
+        this.status = status;
         this.notificatorStatuses = notificatorStatuses;
         this.visited = false;
     }

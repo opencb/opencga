@@ -99,7 +99,6 @@ public class NotificationManager extends AbstractManager {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
 
         ParamUtils.checkObj(notification, "notification");
-        ParamUtils.checkObj(notification.getScope(), "scope");
         ParamUtils.checkParameter(notification.getFqn(), "fqn");
 
         CatalogFqn fqn = CatalogFqn.extractFqnFromGenericFqn(notification.getFqn());
@@ -178,13 +177,6 @@ public class NotificationManager extends AbstractManager {
 
     private List<String> validateNewNotificationAndExtractTargetUsers(NotificationCreateParams notification, String organizationId,
                                                                       CatalogFqn fqn, JwtPayload tokenPayload) throws CatalogException {
-        ParamUtils.checkNotEmptyArray(notification.getTargets(), "target");
-        ParamUtils.checkParameter(notification.getSubject(), "subject");
-        ParamUtils.checkParameter(notification.getContent(), "body");
-        ParamUtils.checkObj(notification.getScope(), "scope");
-        ParamUtils.checkParameter(notification.getFqn(), "fqn");
-        ParamUtils.checkObj(notification.getLevel(), "type");
-
         String userId = tokenPayload.getUserId(organizationId);
 
         Project project = null;
@@ -207,11 +199,19 @@ public class NotificationManager extends AbstractManager {
                 authorizationManager.checkIsAtLeastProjectAdministrator(organizationId, project.getUid(), userId);
                 break;
             case STUDY:
-                authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
+                authorizationManager.checkCanViewStudy(organizationId, study.getUid(), userId);
                 break;
             default:
                 throw new CatalogParameterException("Unexpected notification scope " + notification.getScope());
         }
+
+        // Check mandatory params
+        ParamUtils.checkNotEmptyArray(notification.getTargets(), "targets");
+        ParamUtils.checkParameter(notification.getSubject(), "subject");
+        ParamUtils.checkParameter(notification.getContent(), "content");
+        ParamUtils.checkObj(notification.getScope(), "scope");
+        ParamUtils.checkParameter(notification.getFqn(), "fqn");
+        ParamUtils.checkObj(notification.getLevel(), "level");
 
         Set<String> userIds = new HashSet<>();
         for (String target : notification.getTargets()) {
@@ -322,7 +322,8 @@ public class NotificationManager extends AbstractManager {
             // Validate all users belong to the @members group in study
             for (Group group : study.getGroups()) {
                 if (StudyManager.MEMBERS.equals(group.getId())) {
-                    String nonStudyUsers = group.getUserIds().stream().filter(u -> !userIds.contains(u)).collect(Collectors.joining(", "));
+                    Set<String> groupUsers = new HashSet<>(group.getUserIds());
+                    String nonStudyUsers = userIds.stream().filter(u -> !groupUsers.contains(u)).collect(Collectors.joining(", "));
                     if (StringUtils.isNotEmpty(nonStudyUsers)) {
                         throw new CatalogParameterException("All target users must belong to the study '" + study.getFqn()
                                 + "'. The following users do not belong: " + nonStudyUsers);
@@ -333,7 +334,8 @@ public class NotificationManager extends AbstractManager {
         } else if (notification.getScope() == NotificationScope.PROJECT) {
             // Validate all users belong to the project (member in at least one of the studies)
             List<String> projectMembers = catalogManager.getProjectManager().getProjectMembers(project);
-            String nonProjectUsers = projectMembers.stream().filter(u -> !userIds.contains(u)).collect(Collectors.joining(", "));
+            Set<String> projectMembersSet = new HashSet<>(projectMembers);
+            String nonProjectUsers = userIds.stream().filter(u -> !projectMembersSet.contains(u)).collect(Collectors.joining(", "));
             if (StringUtils.isNotEmpty(nonProjectUsers)) {
                 throw new CatalogParameterException("All target users must belong to the project '" + project.getFqn()
                         + "'. The following users do not belong: " + nonProjectUsers);
@@ -489,7 +491,7 @@ public class NotificationManager extends AbstractManager {
         super.fixQueryObject(query);
         if (!authorizationManager.isOpencgaAdministrator(tokenPayload)) {
             // Only OpenCGA administrators can see any notification
-            query.put(NotificationDBAdaptor.QueryParams.RECEIVER.key(), tokenPayload.getUserId());
+            query.put(NotificationDBAdaptor.QueryParams.TARGET.key(), tokenPayload.getUserId());
         }
     }
 }

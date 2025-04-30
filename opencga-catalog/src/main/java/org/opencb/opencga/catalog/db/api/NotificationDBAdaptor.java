@@ -47,7 +47,6 @@ public interface NotificationDBAdaptor extends DBAdaptor<Notification> {
         TYPE("type", TEXT, ""),
         SCOPE("scope", TEXT, ""),
         SENDER("sender", TEXT, ""),
-        RECEIVER("receiver", TEXT, ""),
         TARGET("target", TEXT, ""),
         FQN("fqn", TEXT, ""),
         CREATION_DATE("creationDate", DATE, ""),
