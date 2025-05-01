@@ -10,6 +10,9 @@ import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileLinkParams;
+import org.opencb.opencga.core.models.operations.variant.VariantAnnotationExtensionConfigureParams;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.cosmic.CosmicVariantAnnotatorExtensionTask;
@@ -19,7 +22,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+
+import static org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.cosmic.CosmicVariantAnnotatorExtensionTask.COSMIC_ANNOTATOR_INDEX_NAME;
 
 @Category(ShortTests.class)
 public class CosmicVariantAnnotatorExtensionTaskTest {
@@ -39,20 +45,18 @@ public class CosmicVariantAnnotatorExtensionTaskTest {
         Path cosmicFile = initCosmicPath();
         System.out.println("cosmicFile = " + cosmicFile.toAbsolutePath());
 
-        ObjectMap options = new ObjectMap();
-        options.put(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key(), cosmicFile);
-        options.put(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key(), COSMIC_VERSION);
-        options.put(VariantStorageOptions.ASSEMBLY.key(), COSMIC_ASSEMBLY);
-
-        CosmicVariantAnnotatorExtensionTask task = new CosmicVariantAnnotatorExtensionTask(options);
-
+        CosmicVariantAnnotatorExtensionTask task = new CosmicVariantAnnotatorExtensionTask(null);
         Assert.assertEquals(false, task.isAvailable());
 
-        // Set-up COSMIC variant annotator extension task, once
-        task.setup(outPath.toUri());
+        VariantAnnotationExtensionConfigureParams params = new VariantAnnotationExtensionConfigureParams();
+        params.setExtension(CosmicVariantAnnotatorExtensionTask.ID);
+        params.setResources(Collections.singletonList(cosmicFile.toAbsolutePath().toString()));
+        ObjectMap configuration = new ObjectMap();
+        configuration.put(CosmicVariantAnnotatorExtensionTask.COSMIC_VERSION_KEY, COSMIC_VERSION);
+        configuration.put(CosmicVariantAnnotatorExtensionTask.COSMIC_ASSEMBLY_KEY, COSMIC_ASSEMBLY);
+        params.setConfiguration(configuration);
 
-        // Set-up COSMIC variant annotator extension task, twice
-        task.setup(outPath.toUri());
+        task.setup(params);
 
         ObjectMap metadata = task.getMetadata();
         Assert.assertEquals(COSMIC_VERSION, metadata.get("version"));
@@ -82,17 +86,27 @@ public class CosmicVariantAnnotatorExtensionTaskTest {
         System.out.println("cosmicFile = " + cosmicFile.toAbsolutePath());
 
         ObjectMap options = new ObjectMap();
-        options.put(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key(), cosmicFile);
-        options.put(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key(), COSMIC_VERSION);
-        options.put(VariantStorageOptions.ASSEMBLY.key(), COSMIC_ASSEMBLY);
         options.put(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key(), CosmicVariantAnnotatorExtensionTask.ID);
 
         CosmicVariantAnnotatorExtensionTask task = (CosmicVariantAnnotatorExtensionTask) new VariantAnnotatorExtensionsFactory().getVariantAnnotatorExtensions(options).get(0);
-
         Assert.assertEquals(false, task.isAvailable());
 
-        // Set-up COSMIC variant annotator extension task, once
-        task.setup(outPath.toUri());
+        VariantAnnotationExtensionConfigureParams params = new VariantAnnotationExtensionConfigureParams();
+        params.setExtension(CosmicVariantAnnotatorExtensionTask.ID);
+        params.setResources(Collections.singletonList(cosmicFile.toAbsolutePath().toString()));
+        ObjectMap configuration = new ObjectMap();
+        configuration.put(CosmicVariantAnnotatorExtensionTask.COSMIC_VERSION_KEY, COSMIC_VERSION);
+        configuration.put(CosmicVariantAnnotatorExtensionTask.COSMIC_ASSEMBLY_KEY, COSMIC_ASSEMBLY);
+        params.setConfiguration(configuration);
+
+        task.setup(params);
+
+        Assert.assertEquals(true, task.isAvailable());
+
+        options.put(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key(), cosmicFile.getParent().resolve(COSMIC_ANNOTATOR_INDEX_NAME));
+
+        task = (CosmicVariantAnnotatorExtensionTask) new VariantAnnotatorExtensionsFactory().getVariantAnnotatorExtensions(options).get(0);
+        task.pre();
 
         List<VariantAnnotation> inputVariantAnnotations = new ArrayList<>();
         VariantAnnotation variantAnnotation1 = new VariantAnnotation();

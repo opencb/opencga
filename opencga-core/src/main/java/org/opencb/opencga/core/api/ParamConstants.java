@@ -1591,4 +1591,12 @@ public class ParamConstants {
     public static final String STUDIES_DESCRIPTION = "Comma separated list of Studies [[organization@]project:]study where study "
             + "and project can be either the ID or UUID" + UP_TO_100;
     public static final String PANELS_DESCRIPTION = "Comma separated list of panel IDs" + UP_TO_100;
+
+
+    // Parameter descriptions for variant annotation extension configure operation
+    public static final String VARIANT_ANNOTATION_EXTENSION_NAME_DESCRIPTION = "Name of the variant annotation extension.";
+    public static final String VARIANT_ANNOTATION_EXTENSION_RESOURCE_LIST_DESCRIPTION = "List of resources of the variant annotation"
+            + " extension.";
+    public static final String VARIANT_ANNOTATION_EXTENSION_CONFIGURATION_DESCRIPTION = "Configuration of the variant annotation"
+            +" extension.";
 }

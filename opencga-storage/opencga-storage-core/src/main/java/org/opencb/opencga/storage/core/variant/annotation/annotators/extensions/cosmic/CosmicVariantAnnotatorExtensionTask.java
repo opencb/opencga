@@ -2,9 +2,9 @@ package org.opencb.opencga.storage.core.variant.annotation.annotators.extensions
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectReader;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.variant.cosmic.CosmicParser101;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.EvidenceEntry;
@@ -13,6 +13,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.operations.variant.VariantAnnotationExtensionConfigureParams;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.VariantAnnotatorExtensionTask;
 import org.rocksdb.Options;
@@ -36,11 +37,11 @@ import java.util.zip.GZIPInputStream;
 public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExtensionTask {
 
     public static final String ID = "cosmic";
-
-    private ObjectMap options;
+    public static final String COSMIC_VERSION_KEY = "version";
+    public static final String COSMIC_ASSEMBLY_KEY = "assembly";
 
     private String cosmicVersion;
-    private String assembly;
+    private String cosmicAssembly;
 
     private ObjectReader objectReader;
 
@@ -55,19 +56,44 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
     private static Logger logger = LoggerFactory.getLogger(CosmicVariantAnnotatorExtensionTask.class);
 
     public CosmicVariantAnnotatorExtensionTask(ObjectMap options) {
-        this.options = options;
+        if (MapUtils.isNotEmpty(options) && options.containsKey(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key())) {
+            this.dbLocation = Paths.get(options.getString(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key()));
+        }
+
         this.objectReader = JacksonUtils.getDefaultObjectMapper().readerFor(new TypeReference<List<EvidenceEntry>>() {});
     }
 
     @Override
     public List<URI> setup(URI output) throws Exception {
+        throw new ToolException("Not supported anymore");
+    }
+
+    public List<URI> setup(VariantAnnotationExtensionConfigureParams configureParams) throws Exception {
         // Sanity check
-        Path cosmicFile = Paths.get(options.getString(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key()));
+        if (!ID.equals(configureParams.getExtension())) {
+            throw new ToolException("Invalid COSMIC extension: " + configureParams.getExtension());
+        }
+
+        // Check COSMIC file
+        Path cosmicFile = Paths.get(configureParams.getResources().get(0));
         logger.info("COSMIC file {}", cosmicFile.toAbsolutePath());
         FileUtils.checkFile(cosmicFile);
+        if (!cosmicFile.getFileName().toString().endsWith(".tar.gz")) {
+            throw new ToolException("Invalid COSMIC file format '" + cosmicFile.getFileName() + "': it must be a .tar.gz file");
+        }
 
         Path parentPath = cosmicFile.getParent();
         FileUtils.checkDirectory(parentPath, true);
+
+        // Check COSMIC version and assembly
+        if (!configureParams.getConfiguration().containsKey(COSMIC_VERSION_KEY)) {
+            throw new ToolException("Missing COSMIC version");
+        }
+        this.cosmicVersion = configureParams.getConfiguration().getString(COSMIC_VERSION_KEY);
+        if (!configureParams.getConfiguration().containsKey(COSMIC_ASSEMBLY_KEY)) {
+            throw new ToolException("Missing COSMIC assembly");
+        }
+        this.cosmicAssembly = configureParams.getConfiguration().getString(COSMIC_ASSEMBLY_KEY);
 
         // Clean and init RocksDB
         dbLocation = parentPath.resolve(COSMIC_ANNOTATOR_INDEX_NAME);
@@ -79,9 +105,7 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
             // Check and decompress tarball, checking the COSMIC files: GenomeScreensMutant and Classification
             Path genomeScreensMutantFile = null;
             Path classificationFile = null;
-            if (!cosmicFile.getFileName().toString().endsWith(".tar.gz")) {
-                throw new ToolException("Invalid COSMIC file format '" + cosmicFile.getFileName() + "': it must be a .tar.gz file");
-            }
+
             Path tmpPath = parentPath.resolve("tmp");
             decompressTarBall(cosmicFile, tmpPath);
             for (File file : tmpPath.toFile().listFiles()) {
@@ -98,16 +122,7 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
                 throw new ToolException("Missing the Classification file in the COSMIC tarball '" + cosmicFile.getFileName() + "'");
             }
 
-            cosmicVersion = (String) options.getOrDefault(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key(), null);
-            if (StringUtils.isEmpty(cosmicVersion)) {
-                throw new IllegalArgumentException("Missing COSMIC version");
-            }
-            assembly = (String) options.getOrDefault(VariantStorageOptions.ASSEMBLY.key(), null);
-            if (StringUtils.isEmpty(assembly)) {
-                throw new IllegalArgumentException("Missing assembly");
-            }
-
-            logger.info("Setup and populate RocksDB by parsing COSMIC files (version {}, assembly {})", cosmicVersion, assembly);
+            logger.info("Setup and populate RocksDB by parsing COSMIC files (version {}, assembly {})", cosmicVersion, cosmicAssembly);
 
             // Init RocksDB
             initRockDB(true);
@@ -115,23 +130,29 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
             // Call COSMIC parser
             try {
                 CosmicExtensionTaskCallback callback = new CosmicExtensionTaskCallback(rdb);
-                CosmicParser101.parse(genomeScreensMutantFile, classificationFile, cosmicVersion, ID, assembly, callback);
+                CosmicParser101.parse(genomeScreensMutantFile, classificationFile, cosmicVersion, ID, cosmicAssembly, callback);
             } catch (IOException e) {
                 throw new ToolException(e);
             }
         }
+
         return Collections.singletonList(dbLocation.toUri());
     }
 
     @Override
     public void checkAvailable() throws IllegalArgumentException {
-        if (dbLocation == null || !Files.exists(dbLocation)) {
-            throw new IllegalArgumentException("COSMIC annotator extension is not available");
+        if (dbLocation == null || !Files.exists(dbLocation)
+                || !dbLocation.toAbsolutePath().toString().endsWith(COSMIC_ANNOTATOR_INDEX_NAME)) {
+            throw new IllegalArgumentException("COSMIC annotator extension is not available (dbLocation = " + dbLocation + ")");
         }
     }
 
     @Override
     public ObjectMap getOptions() {
+        ObjectMap options = new ObjectMap();
+        if (dbLocation != null) {
+            options.put(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key(), dbLocation.toAbsolutePath().toString());
+        }
         return options;
     }
 
@@ -139,7 +160,7 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
     public ObjectMap getMetadata() {
         return new ObjectMap("data", ID)
                 .append("version", cosmicVersion)
-                .append("assembly", assembly);
+                .append("assembly", cosmicAssembly);
     }
 
     @Override
@@ -174,6 +195,13 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
             }
         }
         return list;
+    }
+
+    @Override
+    public void pre() throws Exception {
+        if (rdb == null) {
+            initRockDB(false);
+        }
     }
 
     @Override

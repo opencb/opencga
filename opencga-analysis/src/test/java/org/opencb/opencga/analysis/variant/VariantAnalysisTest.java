@@ -50,6 +50,7 @@ import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantOperationsTest;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
+import org.opencb.opencga.analysis.variant.operations.VariantAnnotationExtensionConfigureOperationTool;
 import org.opencb.opencga.analysis.variant.operations.VariantAnnotationIndexOperationTool;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
 import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
@@ -80,9 +81,11 @@ import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualInternal;
 import org.opencb.opencga.core.models.individual.Location;
+import org.opencb.opencga.core.models.operations.variant.VariantAnnotationExtensionConfigureParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAnnotationIndexParams;
 import org.opencb.opencga.core.models.operations.variant.VariantIndexParams;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
@@ -106,7 +109,6 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.CosmicVariantAnnotatorExtensionTaskTest;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.cosmic.CosmicVariantAnnotatorExtensionTask;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
@@ -1311,21 +1313,35 @@ public class VariantAnalysisTest {
         }
     }
 
+    @Test
     public void testCosmicAnnotationExtension() throws StorageEngineException, CatalogException, IOException, ToolException {
         variantStorageManager.getStorageConfiguration().setMode(StorageConfiguration.Mode.READ_WRITE);
 
-        Path cosmicFile = CosmicVariantAnnotatorExtensionTaskTest.initCosmicPath();
-        System.out.println("cosmicFile = " + cosmicFile.toAbsolutePath());
+        VariantOperationsTest.removeCosmicAnnotationExtensionOptions(PROJECT, variantStorageManager, token);
+        Path cosmicPath = VariantOperationsTest.initCosmicPath(Paths.get(opencga.createTmpOutdir()));
+        File cosmicFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams().setUri(cosmicPath.toAbsolutePath().toString()),
+                false, token).first();
 
-        ObjectMap options = new ObjectMap();
-        options.put(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key(), cosmicFile.toAbsolutePath().toString());
-        options.put(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key(), COSMIC_VERSION);
-        options.put(VariantStorageOptions.ASSEMBLY.key(), COSMIC_ASSEMBLY);
-        options.put(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key(), CosmicVariantAnnotatorExtensionTask.ID);
+        VariantAnnotationExtensionConfigureParams params = new VariantAnnotationExtensionConfigureParams();
+        params.setExtension(CosmicVariantAnnotatorExtensionTask.ID);
+        params.setResources(Collections.singletonList(cosmicFile.getId()));
+        ObjectMap configuration = new ObjectMap();
+        configuration.put(CosmicVariantAnnotatorExtensionTask.COSMIC_VERSION_KEY, COSMIC_VERSION);
+        configuration.put(CosmicVariantAnnotatorExtensionTask.COSMIC_ASSEMBLY_KEY, COSMIC_ASSEMBLY);
+        params.setConfiguration(configuration);
 
-        ObjectMap objectMap = variantStorageManager.configureProject(PROJECT, options, token);
-        System.out.println("objectMap = " + objectMap.toJson());
+        String jobId = "annotation-extension-configure";
+        toolRunner.execute(VariantAnnotationExtensionConfigureOperationTool.class, STUDY, params,
+                Paths.get(opencga.createTmpOutdir("_" + jobId)), jobId, false, token);
+
+
         Project project = catalogManager.getProjectManager().get(PROJECT, QueryOptions.empty(), token).first();
+        ObjectMap options = project.getInternal().getDatastores().getVariant().getOptions();
+        System.out.println("project.getInternal().getDatastores().getVariant().getOptions() = " + options.toJson());
+        Assert.assertTrue(options.containsKey(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key()));
+        Assert.assertTrue(options.getAsStringList(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key()).contains(CosmicVariantAnnotatorExtensionTask.ID));
+        Assert.assertTrue(options.containsKey(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key()));
+        Assert.assertTrue(options.getString(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key()).endsWith(CosmicVariantAnnotatorExtensionTask.COSMIC_ANNOTATOR_INDEX_NAME));
 
         VariantAnnotationIndexParams variantAnnotationIndexParams = new VariantAnnotationIndexParams();
         variantAnnotationIndexParams.setOverwriteAnnotations(true);
