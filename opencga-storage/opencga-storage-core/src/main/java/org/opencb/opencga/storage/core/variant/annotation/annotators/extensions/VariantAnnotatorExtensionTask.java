@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.core.variant.annotation.annotators.extensions
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.run.Task;
+import org.opencb.opencga.core.models.operations.variant.VariantAnnotationExtensionConfigureParams;
 
 import java.net.URI;
 import java.util.List;
@@ -25,6 +26,15 @@ public interface VariantAnnotatorExtensionTask extends Task<VariantAnnotation, V
      * @throws Exception if the annotator extension set up fails
      */
     List<URI> setup(URI output) throws Exception;
+
+    /**
+     * Set up the variant annotator extension.
+     *
+     * @param configureParams Parameters to configure the variant annotation extension
+     * @return List of URIs of generated files (if any)
+     * @throws Exception if the annotator extension set up fails
+     */
+    List<URI> setup(VariantAnnotationExtensionConfigureParams configureParams) throws Exception;
 
     /**
      * Check if the annotator extension is available for the given options.
