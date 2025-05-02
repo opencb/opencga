@@ -62,12 +62,10 @@ fi
 
 if [ $ACTION = "push-test" ]; then
   build
-
   echo "******************************"
   echo "Pushing to test PyPI..."
   echo "******************************"
   ## Get HTTP response code, if already exists then response is 200
   python3 -m pip install --user --upgrade twine
   python3 -m twine upload --repository-url https://test.pypi.org/legacy/ dist/*
-
 fi
