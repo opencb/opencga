@@ -36,6 +36,8 @@ class Notification(_ParentRestClient):
         :param str receiver: User ID receiver of the notification.
         :param str internal_status: Notification status: PENDING, SUCCESS,
             ERROR or DISCARDED.
+        :param bool visited: Boolean parameter indicating whether the
+            notification has been visited or not.
         :param str creation_date: Creation date. Format: yyyyMMddHHmmss.
             Examples: >2018, 2017-2018, <201805.
         :param str modification_date: Modification date. Format:
@@ -83,6 +85,8 @@ class Notification(_ParentRestClient):
         :param str receiver: User ID receiver of the notification.
         :param str internal_status: Notification status: PENDING, SUCCESS,
             ERROR or DISCARDED.
+        :param bool visited: Boolean parameter indicating whether the
+            notification has been visited or not.
         :param str creation_date: Creation date. Format: yyyyMMddHHmmss.
             Examples: >2018, 2017-2018, <201805.
         :param str modification_date: Modification date. Format:

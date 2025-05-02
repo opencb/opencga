@@ -391,6 +391,7 @@ public class NotificationMongoDBAdaptor extends CatalogMongoDBAdaptor implements
                     case SENDER:
                     case TARGET:
                     case FQN:
+                    case INTERNAL_VISITED:
                     case INTERNAL_STATUS_ID:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;

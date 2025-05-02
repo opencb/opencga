@@ -15,6 +15,7 @@ import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.JwtPayload;
@@ -492,6 +493,10 @@ public class NotificationManager extends AbstractManager {
         if (!authorizationManager.isOpencgaAdministrator(tokenPayload)) {
             // Only OpenCGA administrators can see any notification
             query.put(NotificationDBAdaptor.QueryParams.TARGET.key(), tokenPayload.getUserId());
+        }
+        if (query.containsKey(ParamConstants.NOTIFICATION_VISITED_PARAM)) {
+            query.put(NotificationDBAdaptor.QueryParams.INTERNAL_VISITED.key(), query.get(ParamConstants.NOTIFICATION_VISITED_PARAM));
+            query.remove(ParamConstants.NOTIFICATION_VISITED_PARAM);
         }
     }
 }

@@ -59,6 +59,7 @@ public class NotificationClient extends ParentClient {
      *       target: Target of the notification.
      *       receiver: User ID receiver of the notification.
      *       internalStatus: Notification status: PENDING, SUCCESS, ERROR or DISCARDED.
+     *       visited: Boolean parameter indicating whether the notification has been visited or not.
      *       creationDate: Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
      *       modificationDate: Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
      *       field: Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.:
@@ -100,6 +101,7 @@ public class NotificationClient extends ParentClient {
      *       target: Target of the notification.
      *       receiver: User ID receiver of the notification.
      *       internalStatus: Notification status: PENDING, SUCCESS, ERROR or DISCARDED.
+     *       visited: Boolean parameter indicating whether the notification has been visited or not.
      *       creationDate: Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
      *       modificationDate: Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
      * @return a RestResponse object.

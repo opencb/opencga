@@ -293,5 +293,6 @@
 {"collections": ["notification"], "fields": {"sender": 1}, "options": {}}
 {"collections": ["notification"], "fields": {"target": 1}, "options": {}}
 {"collections": ["notification"], "fields": {"internal.status.id": 1}, "options": {}}
+{"collections": ["notification"], "fields": {"internal.visited": 1}, "options": {}}
 {"collections": ["notification"], "fields": {"_creationDate": 1}, "options": {}}
 {"collections": ["notification"], "fields": {"_modificationDate": 1}, "options": {}}

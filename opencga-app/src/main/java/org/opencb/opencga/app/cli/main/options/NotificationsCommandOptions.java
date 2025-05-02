@@ -85,6 +85,9 @@ public class NotificationsCommandOptions {
         @Parameter(names = {"--internal-status"}, description = "Notification status: PENDING, SUCCESS, ERROR or DISCARDED", required = false, arity = 1)
         public String internalStatus; 
     
+        @Parameter(names = {"--visited"}, description = "Boolean parameter indicating whether the notification has been visited or not.", required = false, arity = 1)
+        public Boolean visited; 
+    
         @Parameter(names = {"--creation-date", "--cd"}, description = "Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
         public String creationDate; 
     
@@ -175,6 +178,9 @@ public class NotificationsCommandOptions {
     
         @Parameter(names = {"--internal-status"}, description = "Notification status: PENDING, SUCCESS, ERROR or DISCARDED", required = false, arity = 1)
         public String internalStatus; 
+    
+        @Parameter(names = {"--visited"}, description = "Boolean parameter indicating whether the notification has been visited or not.", required = false, arity = 1)
+        public Boolean visited; 
     
         @Parameter(names = {"--creation-date", "--cd"}, description = "Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
         public String creationDate; 

@@ -19,9 +19,9 @@
 #'
 #' | endpointName | Endpoint WS | parameters accepted |
 #' | -- | :-- | --: |
-#' | aggregationStats | /{apiVersion}/notifications/aggregationStats | organization, uuid, type, scope, fqn, sender, target, receiver, internalStatus, creationDate, modificationDate, field |
+#' | aggregationStats | /{apiVersion}/notifications/aggregationStats | organization, uuid, type, scope, fqn, sender, target, receiver, internalStatus, visited, creationDate, modificationDate, field |
 #' | create | /{apiVersion}/notifications/create | body[*] |
-#' | search | /{apiVersion}/notifications/search | include, exclude, limit, skip, count, organization, uuid, type, scope, fqn, sender, target, receiver, internalStatus, creationDate, modificationDate |
+#' | search | /{apiVersion}/notifications/search | include, exclude, limit, skip, count, organization, uuid, type, scope, fqn, sender, target, receiver, internalStatus, visited, creationDate, modificationDate |
 #' | info | /{apiVersion}/notifications/{notification}/info | include, exclude, notification[*], organization |
 #' | visit | /{apiVersion}/notifications/{notification}/visit | notification[*], organization |
 #'
@@ -45,6 +45,7 @@ setMethod("notificationClient", "OpencgaR", function(OpencgaR, notification, end
         #' @param target Target of the notification.
         #' @param receiver User ID receiver of the notification.
         #' @param internalStatus Notification status: PENDING, SUCCESS, ERROR or DISCARDED.
+        #' @param visited Boolean parameter indicating whether the notification has been visited or not.
         #' @param creationDate Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         #' @param modificationDate Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         #' @param field Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.: studies;type;numSamples[0..10]:1;format:sum(size).
@@ -74,6 +75,7 @@ setMethod("notificationClient", "OpencgaR", function(OpencgaR, notification, end
         #' @param target Target of the notification.
         #' @param receiver User ID receiver of the notification.
         #' @param internalStatus Notification status: PENDING, SUCCESS, ERROR or DISCARDED.
+        #' @param visited Boolean parameter indicating whether the notification has been visited or not.
         #' @param creationDate Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         #' @param modificationDate Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         search=fetchOpenCGA(object=OpencgaR, category="notifications", categoryId=NULL, subcategory=NULL,

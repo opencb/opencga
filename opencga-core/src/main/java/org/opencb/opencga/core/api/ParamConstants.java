@@ -178,6 +178,9 @@ public class ParamConstants {
     public static final String NOTIFICATION_TARGET_DESCRIPTION = "Target of the notification.";
     public static final String NOTIFICATION_RECEIVER_PARAM = "receiver";
     public static final String NOTIFICATION_RECEIVER_DESCRIPTION = "User ID receiver of the notification";
+    public static final String NOTIFICATION_VISITED_PARAM = "visited";
+    public static final String NOTIFICATION_VISITED_DESCRIPTION = "Boolean parameter indicating whether the notification has been visited"
+            + " or not.";
     public static final String NOTIFICATION_STATUS_DESCRIPTION = "Notification status: PENDING, SUCCESS, ERROR or DISCARDED";
 
     // ---------------------------------------------

@@ -93,6 +93,7 @@ public class NotificationsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("target", commandOptions.target);
         queryParams.putIfNotEmpty("receiver", commandOptions.receiver);
         queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
+        queryParams.putIfNotNull("visited", commandOptions.visited);
         queryParams.putIfNotEmpty("creationDate", commandOptions.creationDate);
         queryParams.putIfNotEmpty("modificationDate", commandOptions.modificationDate);
         queryParams.putIfNotEmpty("field", commandOptions.field);
@@ -150,6 +151,7 @@ public class NotificationsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("target", commandOptions.target);
         queryParams.putIfNotEmpty("receiver", commandOptions.receiver);
         queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
+        queryParams.putIfNotNull("visited", commandOptions.visited);
         queryParams.putIfNotEmpty("creationDate", commandOptions.creationDate);
         queryParams.putIfNotEmpty("modificationDate", commandOptions.modificationDate);
 

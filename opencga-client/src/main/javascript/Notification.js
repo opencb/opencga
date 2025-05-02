@@ -45,6 +45,7 @@ export default class Notification extends OpenCGAParentClass {
     * @param {String} [params.target] - Target of the notification.
     * @param {String} [params.receiver] - User ID receiver of the notification.
     * @param {String} [params.internalStatus] - Notification status: PENDING, SUCCESS, ERROR or DISCARDED.
+    * @param {Boolean} [params.visited] - Boolean parameter indicating whether the notification has been visited or not.
     * @param {String} [params.creationDate] - Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
     * @param {String} [params.modificationDate] - Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
     * @param {String} [params.field] - Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.:
@@ -80,6 +81,7 @@ export default class Notification extends OpenCGAParentClass {
     * @param {String} [params.target] - Target of the notification.
     * @param {String} [params.receiver] - User ID receiver of the notification.
     * @param {String} [params.internalStatus] - Notification status: PENDING, SUCCESS, ERROR or DISCARDED.
+    * @param {Boolean} [params.visited] - Boolean parameter indicating whether the notification has been visited or not.
     * @param {String} [params.creationDate] - Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
     * @param {String} [params.modificationDate] - Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
     * @returns {Promise} Promise object in the form of RestResponse instance.

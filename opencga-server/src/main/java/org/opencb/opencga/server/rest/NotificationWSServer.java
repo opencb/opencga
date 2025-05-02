@@ -79,6 +79,7 @@ public class NotificationWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.NOTIFICATION_TARGET_DESCRIPTION) @QueryParam(ParamConstants.NOTIFICATION_TARGET_PARAM) String target,
             @ApiParam(value = ParamConstants.NOTIFICATION_RECEIVER_DESCRIPTION) @QueryParam(ParamConstants.NOTIFICATION_RECEIVER_PARAM) String receiver,
             @ApiParam(value = ParamConstants.NOTIFICATION_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String status,
+            @ApiParam(value = ParamConstants.NOTIFICATION_VISITED_DESCRIPTION) @QueryParam(ParamConstants.NOTIFICATION_VISITED_PARAM) Boolean visited,
             @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.CREATION_DATE_PARAM) String creationDate,
             @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.MODIFICATION_DATE_PARAM) String modificationDate) {
         return run(() -> {
@@ -100,6 +101,7 @@ public class NotificationWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.NOTIFICATION_TARGET_DESCRIPTION) @QueryParam(ParamConstants.NOTIFICATION_TARGET_PARAM) String target,
             @ApiParam(value = ParamConstants.NOTIFICATION_RECEIVER_DESCRIPTION) @QueryParam(ParamConstants.NOTIFICATION_RECEIVER_PARAM) String receiver,
             @ApiParam(value = ParamConstants.NOTIFICATION_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String status,
+            @ApiParam(value = ParamConstants.NOTIFICATION_VISITED_DESCRIPTION) @QueryParam(ParamConstants.NOTIFICATION_VISITED_PARAM) Boolean visited,
             @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.CREATION_DATE_PARAM) String creationDate,
             @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.MODIFICATION_DATE_PARAM) String modificationDate,
 
