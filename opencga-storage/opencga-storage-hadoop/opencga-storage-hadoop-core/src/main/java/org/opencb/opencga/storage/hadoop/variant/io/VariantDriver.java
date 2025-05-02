@@ -19,7 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Map;
+import java.util.List;
 
 import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.getQueryFromConfig;
 import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.getQueryOptionsFromConfig;
@@ -62,8 +62,15 @@ public abstract class VariantDriver extends AbstractVariantsTableDriver {
         }
 
         logger.info(" * Query:");
-        for (Map.Entry<String, Object> entry : query.entrySet()) {
-            logger.info("   * " + entry.getKey() + " : " + entry.getValue());
+        for (String key : query.keySet()) {
+            String value = query.getString(key);
+            if (value.length() > 100) {
+                List<String> valuesList = query.getAsStringList(key);
+                if (valuesList.size() > 10) {
+                    value = StringUtils.join(valuesList.subList(0, 10), ",") + "... (" + (valuesList.size() - 10) + " more)";
+                }
+            }
+            logger.info("   - {}: {}", key, value);
         }
     }
 
