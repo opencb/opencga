@@ -19,6 +19,14 @@ public class WebhookUtils {
     private static final Logger logger = LoggerFactory.getLogger(WebhookUtils.class);
     private static final int DEFAULT_TIMEOUT_SECONDS = 30;
 
+    private static String subjectKey = "subject";
+    private static String contentKey = "text";
+
+    public static void configure(String newSubjectKey, String newContentKey) {
+        subjectKey = newSubjectKey;
+        contentKey = newContentKey;
+    }
+
     /**
      * Send a message to a webhook.
      *
@@ -142,9 +150,15 @@ public class WebhookUtils {
     }
 
     private static String createJsonPayload(String subject, String content) {
-        return String.format("{\"subject\":\"%s\",\"text\":\"%s\"}",
-                escapeJsonString(subject),
-                escapeJsonString(content));
+        if (StringUtils.isEmpty(subjectKey)) {
+            return String.format("{\"" + contentKey + "\":\"%s: %s\"}",
+                    escapeJsonString(subject),
+                    escapeJsonString(content));
+        } else {
+            return String.format("{\"" + subjectKey + "\":\"%s\",\"" + contentKey + "\":\"%s\"}",
+                    escapeJsonString(subject),
+                    escapeJsonString(content));
+        }
     }
 
     private static String escapeJsonString(String input) {
