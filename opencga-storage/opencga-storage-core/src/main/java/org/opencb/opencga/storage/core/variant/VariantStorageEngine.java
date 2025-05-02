@@ -56,7 +56,6 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnno
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
-import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
@@ -110,8 +109,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         ADVANCED;
 
         public static MergeMode from(ObjectMap options) {
-            String mergeModeStr = options.getString(VariantStorageOptions.MERGE_MODE.key(),
-                    VariantStorageOptions.MERGE_MODE.defaultValue().toString());
+            String mergeModeStr = options.getString(MERGE_MODE.key(),
+                    MERGE_MODE.defaultValue().toString());
             return MergeMode.valueOf(mergeModeStr.toUpperCase());
         }
     }
@@ -276,19 +275,33 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             metadataFactory = new VariantMetadataFactory(getMetadataManager());
         }
         VariantExporter exporter = newVariantExporter(metadataFactory);
-        if (outputFormat == VariantOutputFormat.VCF || outputFormat == VariantOutputFormat.VCF_GZ) {
-            if (!isValidParam(query, VariantQueryParam.UNKNOWN_GENOTYPE)) {
-                query.put(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.");
-            }
+        switch (outputFormat.inPlain()) {
+            case VCF:
+                if (!isValidParam(query, VariantQueryParam.UNKNOWN_GENOTYPE)) {
+                    query.put(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.");
+                }
+                break;
+            case JSON_SPARSE:
+                query.put(SPARSE_SAMPLES.key(), true);
+                query.put(VariantQueryParam.INCLUDE_SAMPLE_ID.key(), true);
+                break;
+            default:
+                break;
         }
         ParsedVariantQuery parsedVariantQuery = parseQuery(query, queryOptions);
+        if (!outputFormat.isMultiStudyOutput()) {
+            if (parsedVariantQuery.getProjection().getStudies().size() > 1) {
+                throw new IllegalArgumentException("Cannot export more than one study at a time with output format " + outputFormat
+                        + ". Please use the '" + VariantQueryParam.INCLUDE_STUDY.key() + "' query parameter to select a single study.");
+            }
+        }
         return exporter.export(outputFile, outputFormat, variantsFile, parsedVariantQuery);
     }
 
-    public List<URI> walkData(URI outputFile, VariantWriterFactory.VariantOutputFormat format, Query query, QueryOptions queryOptions,
+    public List<URI> walkData(URI outputFile, VariantOutputFormat format, Query query, QueryOptions queryOptions,
                               String dockerImage, String commandLine)
             throws IOException, StorageEngineException {
-        if (format == VariantWriterFactory.VariantOutputFormat.VCF || format == VariantWriterFactory.VariantOutputFormat.VCF_GZ) {
+        if (format == VariantOutputFormat.VCF || format == VariantOutputFormat.VCF_GZ) {
             if (!isValidParam(query, VariantQueryParam.UNKNOWN_GENOTYPE)) {
                 query.put(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.");
             }
@@ -361,7 +374,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     public List<StoragePipelineResult> index(List<URI> inputFiles, URI outdirUri, boolean doExtract, boolean doTransform, boolean doLoad)
             throws StorageEngineException {
         if (!doLoad) {
-            options.put(VariantStorageOptions.TRANSFORM_ISOLATE.key(), true);
+            options.put(TRANSFORM_ISOLATE.key(), true);
         } else {
             createStudyIfNeeded();
         }
@@ -439,11 +452,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     protected void annotateLoadedFiles(URI outdirUri, List<URI> files, List<StoragePipelineResult> results, ObjectMap options)
             throws StoragePipelineException {
-        if (files != null && !files.isEmpty() && options.getBoolean(VariantStorageOptions.ANNOTATE.key(),
-                VariantStorageOptions.ANNOTATE.defaultValue())) {
+        if (files != null && !files.isEmpty() && options.getBoolean(ANNOTATE.key(),
+                ANNOTATE.defaultValue())) {
             try {
 
-                String studyName = options.getString(VariantStorageOptions.STUDY.key());
+                String studyName = options.getString(STUDY.key());
                 VariantStorageMetadataManager metadataManager = getMetadataManager();
                 int studyId = metadataManager.getStudyId(studyName);
 
@@ -489,7 +502,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         ProjectMetadata projectMetadata = getMetadataManager().getProjectMetadata();
         ProjectMetadata.VariantAnnotationSets annotation = projectMetadata.getAnnotation();
         List<ProjectMetadata.VariantAnnotationMetadata> list;
-        if (StringUtils.isEmpty(name) || VariantQueryUtils.ALL.equals(name)) {
+        if (StringUtils.isEmpty(name) || ALL.equals(name)) {
             list = new ArrayList<>(annotation.getSaved().size() + 1);
             if (annotation.getCurrent() != null) {
                 list.add(annotation.getCurrent());
@@ -578,13 +591,13 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     protected void calculateStatsForLoadedFiles(URI output, List<URI> files, List<StoragePipelineResult> results, ObjectMap options)
             throws StoragePipelineException {
         if (files != null && !files.isEmpty() && options != null
-                && options.getBoolean(VariantStorageOptions.STATS_CALCULATE.key(), VariantStorageOptions.STATS_CALCULATE.defaultValue())) {
+                && options.getBoolean(STATS_CALCULATE.key(), STATS_CALCULATE.defaultValue())) {
             // TODO add filters
             try {
                 VariantDBAdaptor dbAdaptor = getDBAdaptor();
                 logger.debug("Calculating stats for files: '{}'...", files.toString());
 
-                String studyName = options.getString(VariantStorageOptions.STUDY.key());
+                String studyName = options.getString(STUDY.key());
                 QueryOptions statsOptions = new QueryOptions(options);
                 VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
                 StudyMetadata studyMetadata = metadataManager.getStudyMetadata(studyName);
@@ -732,8 +745,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     public VariantSearchLoadResult secondaryIndex(Query inputQuery, QueryOptions inputQueryOptions, boolean overwrite)
             throws StorageEngineException, IOException, VariantSearchException {
-        Query query = VariantQueryUtils.copy(inputQuery);
-        QueryOptions queryOptions = VariantQueryUtils.copy(inputQueryOptions);
+        Query query = copy(inputQuery);
+        QueryOptions queryOptions = copy(inputQueryOptions);
 
         VariantDBAdaptor dbAdaptor = getDBAdaptor();
 
@@ -829,7 +842,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                                                             VariantDBAdaptor dbAdaptor)
             throws StorageEngineException {
         if (!overwrite) {
-            query.put(VariantQueryUtils.VARIANTS_TO_INDEX.key(), true);
+            query.put(VARIANTS_TO_INDEX.key(), true);
         }
         VariantSecondaryIndexFilter filter = new VariantSecondaryIndexFilter(getMetadataManager().getStudies());
         return dbAdaptor.iterator(query, queryOptions).mapBuffered(filter, 10);
@@ -1213,7 +1226,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     public abstract void testConnection() throws StorageEngineException;
 
     public void validateNewConfiguration(ObjectMap params) throws StorageEngineException {
-        for (VariantStorageOptions option : VariantStorageOptions.values()) {
+        for (VariantStorageOptions option : values()) {
             if (option.isProtected() && params.get(option.key()) != null) {
                 throw new StorageEngineException("Unable to update protected option '" + option.key() + "'");
             }
@@ -1298,7 +1311,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         father = StringUtils.isEmpty(father) ? CompoundHeterozygousQueryExecutor.MISSING_SAMPLE : father;
         mother = StringUtils.isEmpty(mother) ? CompoundHeterozygousQueryExecutor.MISSING_SAMPLE : mother;
         query = new Query(query)
-                .append(VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS.key(), new Trio(father, mother, child))
+                .append(SAMPLE_COMPOUND_HETEROZYGOUS.key(), new Trio(father, mother, child))
                 .append(VariantQueryParam.STUDY.key(), study);
 
         return get(query, options);
@@ -1311,9 +1324,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     public Variant getVariant(String variantStr) {
         final Variant variant;
-        if (VariantQueryUtils.isVariantId(variantStr)) {
-            variant = VariantQueryUtils.toVariant(variantStr, true);
-        } else if (VariantQueryUtils.isVariantAccession(variantStr)) {
+        if (isVariantId(variantStr)) {
+            variant = toVariant(variantStr, true);
+        } else if (isVariantAccession(variantStr)) {
             VariantQueryResult<Variant> result = get(new Query(VariantQueryParam.ANNOT_XREF.key(), variantStr),
                     new QueryOptions(QueryOptions.INCLUDE, VariantField.ID).append(QueryOptions.LIMIT, 1).append(QueryOptions.COUNT, true));
             if (result.getNumMatches() > 1) {
@@ -1361,8 +1374,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     @Override
     public VariantDBIterator iterator(Query query, QueryOptions options) {
-        query = VariantQueryUtils.copy(query);
-        options = VariantQueryUtils.copy(options);
+        query = copy(query);
+        options = copy(options);
         ParsedVariantQuery variantQuery = parseQuery(query, options);
         return getVariantQueryExecutor(variantQuery).iterator(variantQuery);
     }
@@ -1419,7 +1432,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             for (VariantQueryExecutor executor : getVariantQueryExecutors()) {
                 if (executor.acceptsQuery(variantQuery)) {
                     logger.info("Using VariantQueryExecutor : " + executor.getClass().getName());
-                    logger.info("  Query : " + VariantQueryUtils.printQuery(variantQuery.getInputQuery()));
+                    logger.info("  Query : " + printQuery(variantQuery.getInputQuery()));
                     logger.info("  Options : " + variantQuery.getInputOptions().toJson());
                     return executor;
                 }
@@ -1486,7 +1499,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     public DataResult<Long> count(Query query) throws StorageEngineException {
-        VariantQueryResult<Variant> result = get(VariantQueryUtils.copy(query),
+        VariantQueryResult<Variant> result = get(copy(query),
                 new QueryOptions(QueryOptions.INCLUDE, VariantField.ID)
                         .append(QueryOptions.LIMIT, 1)
                         .append(QueryOptions.COUNT, true));
@@ -1545,7 +1558,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     protected void createStudyIfNeeded() throws StorageEngineException {
-        String studyName = getOptions().getString(VariantStorageOptions.STUDY.key(), VariantStorageOptions.STUDY.defaultValue());
+        String studyName = getOptions().getString(STUDY.key(), STUDY.defaultValue());
         if (studyName == null || studyName.isEmpty()) {
             throw new StorageEngineException("Missing study");
         }
@@ -1578,7 +1591,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
         String facet = options == null ? null : options.getString(QueryOptions.FACET);
         // This should rarely happen
-        logger.warn("Unable to run aggregation facet '" + facet + "' with query " + VariantQueryUtils.printQuery(query));
+        logger.warn("Unable to run aggregation facet '" + facet + "' with query " + printQuery(query));
         for (String message : messages) {
             logger.warn(message);
         }

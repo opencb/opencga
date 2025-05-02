@@ -366,7 +366,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         if (isValidParam(query, UNKNOWN_GENOTYPE)) {
             unknownGenotype = query.getString(UNKNOWN_GENOTYPE.key());
         }
-        List<String> formats = getIncludeSampleData(query);
 
         HBaseVariantConverterConfiguration converterConfiguration = HBaseVariantConverterConfiguration.builder()
                 .setMutableSamplesPosition(false)
@@ -374,9 +373,10 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 .setSimpleGenotypes(options.getBoolean(HBaseVariantConverterConfiguration.SIMPLE_GENOTYPES, true))
                 .setUnknownGenotype(unknownGenotype)
                 .setProjection(variantQuery.getProjection())
-                .setSampleDataKeys(formats)
+                .setSampleDataKeys(getIncludeSampleData(query))
                 .setIncludeSampleId(query.getBoolean(INCLUDE_SAMPLE_ID.key(), false))
                 .setIncludeIndexStatus(query.getBoolean(VariantQueryUtils.VARIANTS_TO_INDEX.key(), false))
+                .setSparse(query.getBoolean(SPARSE_SAMPLES.key(), false))
                 .build();
 
         if (hbaseIterator) {

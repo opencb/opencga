@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.hadoop.variant.io;
 
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.junit.*;
@@ -10,6 +11,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.opencb.biodata.models.metadata.Individual;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -24,8 +26,10 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.io.avro.VariantAvroReader;
+import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
 import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
 import org.opencb.opencga.storage.hadoop.HBaseCompat;
+import org.opencb.opencga.storage.hadoop.utils.MapReduceOutputFile;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
@@ -40,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static org.junit.Assert.assertNotNull;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
 /**
@@ -215,6 +220,30 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
     }
 
     @Test
+    public void exportJsonSparse() throws Exception {
+        String fileName = "variants.sparse.json";
+        URI uri = getOutputUri(fileName);
+        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.JSON_SPARSE, null,
+                new VariantQuery().study(study1).includeSampleAll(), new QueryOptions());
+
+        URI file = copyToLocal(fileName, uri);
+
+        new VariantJsonReader(null, file.getPath()).forEach(variant -> {
+            assertNotNull(variant.getStudies());
+            assertNotNull(variant.getStudies().get(0).getSamples());
+            for (SampleEntry sample : variant.getStudies().get(0).getSamples()) {
+                assertNotNull(sample.getSampleId());
+                assertNotNull(sample.getFileIndex());
+                assertNotNull(variant.getStudies().get(0).getFile(sample.getFileIndex()));
+                assertNotNull(sample.getData());
+                assertNotNull(sample.getData().get(0));
+//                System.out.println(variant + " " + sample.getSampleId() + " = " + sample.getData().get(0));
+//                assertTrue(GenotypeClass.MAIN_ALT.test(sample.getData().get(0)));
+            }
+        });
+    }
+
+    @Test
     public void exportParquet() throws Exception {
         String fileName = "variants.parquet";
         URI uri = getOutputUri(fileName);
@@ -329,30 +358,32 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
         copyToLocal(fileName, uri);
     }
 
-    protected URI copyToLocal(URI uri) throws IOException {
+    protected URI copyToLocal(URI uri) throws Exception {
         return copyToLocal(Paths.get(uri.getPath()).getFileName().toString(), uri);
     }
 
-    protected URI copyToLocal(String fileName, URI uri) throws IOException {
+    protected URI copyToLocal(String fileName, URI uri) throws Exception {
         if (!exportToLocal) {
-            System.out.println("Copy file " + uri);
-            FileSystem.get(externalResource.getConf()).copyToLocalFile(true,
-                    new Path(uri),
-                    new Path(outputUri.resolve(fileName)));
+            URI localOutdir = newOutputUri();
+            Configuration conf = externalResource.getVariantStorageEngine().getConf();
+            URI target = localOutdir.resolve(fileName);
+            URI metaUri;
+            URI metaUriTarget;
+
+            System.out.println("Copy file " + uri + " to " + target);
 
             if (fileName.endsWith(VariantExporter.TPED_FILE_EXTENSION)) {
-                Path dst = new Path(outputUri.resolve(fileName.replace(VariantExporter.TPED_FILE_EXTENSION, VariantExporter.TFAM_FILE_EXTENSION)));
-                FileSystem.get(externalResource.getConf()).copyToLocalFile(true,
-                        new Path(uri.toString().replace(VariantExporter.TPED_FILE_EXTENSION, VariantExporter.TFAM_FILE_EXTENSION)),
-                        dst);
-                return dst.toUri();
+                metaUri = new URI(uri.toString().replace(VariantExporter.TPED_FILE_EXTENSION, VariantExporter.TFAM_FILE_EXTENSION));
+                metaUriTarget = localOutdir.resolve(fileName.replace(VariantExporter.TPED_FILE_EXTENSION, VariantExporter.METADATA_FILE_EXTENSION));
             } else {
-                Path dst = new Path(outputUri.resolve(fileName + VariantExporter.METADATA_FILE_EXTENSION));
-                FileSystem.get(externalResource.getConf()).copyToLocalFile(true,
-                        new Path(uri.toString() + VariantExporter.METADATA_FILE_EXTENSION),
-                        dst);
-                return dst.toUri();
+                metaUri = new URI(uri.toString() + VariantExporter.METADATA_FILE_EXTENSION);
+                metaUriTarget = localOutdir.resolve(fileName + VariantExporter.METADATA_FILE_EXTENSION);
             }
+            new MapReduceOutputFile(new Path(uri), new Path(target), conf).postExecute(true);
+            FileSystem.get(externalResource.getConf()).copyToLocalFile(false,
+                    new Path(metaUri),
+                    new Path(metaUriTarget));
+            return target.toURL().toURI();
         } else {
             return uri;
         }

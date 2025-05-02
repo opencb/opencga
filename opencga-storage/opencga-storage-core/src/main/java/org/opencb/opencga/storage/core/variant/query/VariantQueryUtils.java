@@ -98,6 +98,7 @@ public final class VariantQueryUtils {
             "", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam NUM_SAMPLES = QueryParam.create("numSamples", "", QueryParam.Type.INTEGER);
     public static final QueryParam NUM_TOTAL_SAMPLES = QueryParam.create("numTotalSamples", "", QueryParam.Type.INTEGER);
+    public static final QueryParam SPARSE_SAMPLES = QueryParam.create("sparseSamples", "", Type.BOOLEAN);
 
     public static final String NON_EXISTING_REGION = "non_existing_region";
     public static final List<QueryParam> INTERNAL_VARIANT_QUERY_PARAMS = Arrays.asList(
@@ -113,7 +114,8 @@ public final class VariantQueryUtils {
             SAMPLE_DE_NOVO_STRICT,
             SAMPLE_COMPOUND_HETEROZYGOUS,
             NUM_SAMPLES,
-            NUM_TOTAL_SAMPLES);
+            NUM_TOTAL_SAMPLES,
+            SPARSE_SAMPLES);
 
     public static final String LOF = "lof";
     public static final String LOSS_OF_FUNCTION = "loss_of_function";
@@ -168,6 +170,10 @@ public final class VariantQueryUtils {
             SAMPLE_LIMIT,
             SAMPLE_SKIP,
             SOURCE
+    )));
+
+    public static final Set<QueryParam> MODIFIER_INTERNAL_QUERY_PARAMS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            SPARSE_SAMPLES
     )));
 
     public static final String SKIP_MISSING_GENES = "skipMissingGenes";

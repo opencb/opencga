@@ -16,6 +16,7 @@ import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.LazyOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
@@ -203,8 +204,14 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         } else {
             LOGGER.info("   * Reducer       : (no reducer)");
         }
-        LOGGER.info("   * OutputFormat  : " + job.getOutputFormatClass().getName());
-        if (job.getOutputFormatClass().equals(TableOutputFormat.class)
+        Class<? extends OutputFormat<?, ?>> outputFormatClass = job.getOutputFormatClass();
+        LOGGER.info("   * OutputFormat  : " + outputFormatClass.getName());
+        if (outputFormatClass.equals(LazyOutputFormat.class)) {
+            outputFormatClass = (Class<? extends OutputFormat<?, ?>>) job.getConfiguration()
+                    .getClass(LazyOutputFormat.OUTPUT_FORMAT, null, OutputFormat.class);
+            LOGGER.info("     - BaseOutputFormat  : " + outputFormatClass.getName());
+        }
+        if (outputFormatClass.equals(TableOutputFormat.class)
                 && StringUtils.isNotEmpty(job.getConfiguration().get(TableOutputFormat.OUTPUT_TABLE))) {
             LOGGER.info("     - OutputTable : " + job.getConfiguration().get(TableOutputFormat.OUTPUT_TABLE));
         } else if (StringUtils.isNotEmpty(job.getConfiguration().get(FileOutputFormat.OUTDIR))) {
@@ -217,6 +224,7 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         }
         LOGGER.info("=================================================");
         LOGGER.info("tmpjars=" + Arrays.toString(job.getConfiguration().getStrings("tmpjars")));
+        LOGGER.info("tmpfiles=" + Arrays.toString(job.getConfiguration().getStrings("tmpfiles")));
         reportRunningJobs();
         boolean succeed = executeJob(job);
         if (!succeed) {
