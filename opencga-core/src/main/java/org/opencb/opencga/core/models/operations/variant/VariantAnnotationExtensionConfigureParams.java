@@ -25,6 +25,9 @@ import org.opencb.opencga.core.tools.ToolParams;
 import java.util.List;
 
 public class VariantAnnotationExtensionConfigureParams extends ToolParams {
+
+    public static final String DESCRIPTION = "Parameters to configure a variant annotation extension";
+
     @DataField(id = "extension", description = ParamConstants.VARIANT_ANNOTATION_EXTENSION_NAME_DESCRIPTION, required = true)
     private String extension;
 
