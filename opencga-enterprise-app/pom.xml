@@ -355,7 +355,7 @@
                                     <arg value="${build.dir}/clients"/>
                                 </exec>
 
-
+                                <echo>Updating imports from pyopencga to pyopencga-enterprise </echo>
                                 <exec executable="bash" failonerror="true">
                                     <arg value="-c"/>
                                     <arg value='find ${build.dir}/clients/python/pyopencga/rest_clients -type f -name "*.py" -exec sed -i.bak "s/from pyopencga/from pyopencga-enterprise/g" {} \; &amp;&amp; find ${build.dir}/clients/python/pyopencga/rest_clients -name "*.bak" -delete'/>
