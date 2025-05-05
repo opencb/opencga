@@ -194,13 +194,11 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
             FileUtils.copyFile(phenoFile.toFile(), dataDir.resolve(PHENO_FILENAME).toFile());
             // Copy Python scripts and files
             Path pythonDir = dataDir.resolve("python");
-            List<String> filenames = Arrays.asList("requirements.txt", "variant_walker.py");
+            List<String> filenames = Arrays.asList("requirements.txt", "variant_walker.py", "regenie_walker.py");
             for (String filename : filenames) {
                 FileUtils.copyFile(getOpencgaHome().resolve("analysis/regenie/" + filename).toAbsolutePath(),
                         pythonDir.resolve(filename));
             }
-            FileUtils.copyFile(getOpencgaHome().resolve("analysis/regenie/regenie_walker.py"),
-                    pythonDir.resolve("regenie_walker.py"));
             // Copy step1 results (i.e., prediction files) and update the paths within the file step1_pred.list
             Path predDir = dataDir.resolve("pred");
             if (!Files.exists(Files.createDirectories(predDir))) {

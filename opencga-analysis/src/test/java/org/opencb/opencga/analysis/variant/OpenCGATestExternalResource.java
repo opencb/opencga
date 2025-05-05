@@ -304,20 +304,20 @@ public class OpenCGATestExternalResource extends ExternalResource {
             }
         }
 
-        // regenie
+        // Regenie analysis
         Path dockerPath = Files.createDirectories(opencgaHome.resolve("analysis/regenie")).toAbsolutePath();
-        filenames = Arrays.asList("regenie_walker.py", "regenie_step1.sh");
+        filenames = Arrays.asList("regenie_walker.py", "regenie_step1.sh", "requirements.txt", "variant_walker.py");
         for (String filename : filenames) {
             try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/regenie/" + filename)) {
                 Files.copy(inputStream, dockerPath.resolve(filename), StandardCopyOption.REPLACE_EXISTING);
             }
         }
 
-        // walker
-        dockerPath = Files.createDirectories(opencgaHome.resolve("analysis/resources/walker")).toAbsolutePath();
-        filenames = Arrays.asList("custom-tool-docker-build.py", "requirements.txt", "variant_walker.py");
+        // common
+        dockerPath = Files.createDirectories(opencgaHome.resolve("analysis/resources/common")).toAbsolutePath();
+        filenames = Arrays.asList("tool-docker-builder.py");
         for (String filename : filenames) {
-            try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/resources/walker/" + filename)) {
+            try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/resources/common/" + filename)) {
                 Files.copy(inputStream, dockerPath.resolve(filename), StandardCopyOption.REPLACE_EXISTING);
             }
         }

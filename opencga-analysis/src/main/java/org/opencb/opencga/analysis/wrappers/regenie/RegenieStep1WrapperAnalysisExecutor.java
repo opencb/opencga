@@ -85,7 +85,7 @@ public class RegenieStep1WrapperAnalysisExecutor extends DockerWrapperAnalysisEx
 
     @Override
     public String getDockerImageVersion() {
-        return GitRepositoryState.getInstance().getBuildVersion();
+        return "4.0.0-SNAPSHOT"; //GitRepositoryState.getInstance().getBuildVersion();
     }
 
     public String getStudy() {

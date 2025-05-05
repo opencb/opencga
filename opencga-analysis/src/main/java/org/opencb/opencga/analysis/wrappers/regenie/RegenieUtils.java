@@ -119,7 +119,7 @@ public final class RegenieUtils {
             dockerRepoVersion = Instant.now().getEpochSecond() + "-" + (random.nextInt(9000) + 1000);
         }
 
-        Path dockerBuildScript = opencgaHome.resolve("analysis/resources/walker/custom-tool-docker-build.py");
+        Path dockerBuildScript = opencgaHome.resolve("analysis/resources/common/tool-docker-builder.py");
         Command dockerBuild = new Command(new String[]{"python3", dockerBuildScript.toAbsolutePath().toString(),
                 "--custom-tool-dir", dataDir.toAbsolutePath().toString(),
                 "--base-image", "joaquintarraga/opencga-regenie:" + GitRepositoryState.getInstance().getBuildVersion(),
