@@ -21,28 +21,22 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
-import java.util.Map;
-
 public class RegenieStep1WrapperParams extends ToolParams {
 
     @DataField(id = "phenoFile", description = FieldConstants.REGENIE_PHENO_FILE_DESCRIPTION)
     private String phenoFile;
 
-    @DataField(id = "covarFile", description = FieldConstants.REGENIE_COVAR_FILE_DESCRIPTION)
-    private String covarFile;
-
     @DataField(id = "variantExportQuery", description = FieldConstants.REGENIE_VARIANT_EXPORT_QUERY_DESCRIPTION)
     private ObjectMap variantExportQuery;
 
-    @DataField(id = "dockerParams", description = FieldConstants.REGENIE_WALKER_DOCKER_ORGANISATION_DESCRIPTION)
+    @DataField(id = "dockerParams", description = FieldConstants.REGENIE_WALKER_DOCKER_NAME_DESCRIPTION)
     private RegenieDockerParams docker;
 
     public RegenieStep1WrapperParams() {
     }
 
-    public RegenieStep1WrapperParams(String phenoFile, String covarFile, ObjectMap variantExportQuery, RegenieDockerParams docker) {
+    public RegenieStep1WrapperParams(String phenoFile, ObjectMap variantExportQuery, RegenieDockerParams docker) {
         this.phenoFile = phenoFile;
-        this.covarFile = covarFile;
         this.variantExportQuery = variantExportQuery;
         this.docker = docker;
     }
@@ -51,7 +45,6 @@ public class RegenieStep1WrapperParams extends ToolParams {
     public String toString() {
         final StringBuilder sb = new StringBuilder("RegenieStep1WrapperParams{");
         sb.append("phenoFile='").append(phenoFile).append('\'');
-        sb.append(", covarFile='").append(covarFile).append('\'');
         sb.append(", variantExportQuery=").append(variantExportQuery);
         sb.append(", docker=").append(docker);
         sb.append('}');
@@ -64,15 +57,6 @@ public class RegenieStep1WrapperParams extends ToolParams {
 
     public RegenieStep1WrapperParams setPhenoFile(String phenoFile) {
         this.phenoFile = phenoFile;
-        return this;
-    }
-
-    public String getCovarFile() {
-        return covarFile;
-    }
-
-    public RegenieStep1WrapperParams setCovarFile(String covarFile) {
-        this.covarFile = covarFile;
         return this;
     }
 

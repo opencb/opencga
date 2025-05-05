@@ -1443,11 +1443,11 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "phenoFile", commandOptions.phenoFile, true);
-            putNestedIfNotEmpty(beanParams, "covarFile", commandOptions.covarFile, true);
             putNestedMapIfNotEmpty(beanParams, "variantExportQuery", commandOptions.variantExportQuery, true);
-            putNestedIfNotEmpty(beanParams, "docker.organisation", commandOptions.dockerOrganisation, true);
+            putNestedIfNotEmpty(beanParams, "docker.name", commandOptions.dockerName, true);
+            putNestedIfNotEmpty(beanParams, "docker.tag", commandOptions.dockerTag, true);
             putNestedIfNotEmpty(beanParams, "docker.username", commandOptions.dockerUsername, true);
-            putNestedIfNotEmpty(beanParams, "docker.token", commandOptions.dockerToken, true);
+            putNestedIfNotEmpty(beanParams, "docker.password", commandOptions.dockerPassword, true);
 
             regenieStep1WrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -1487,7 +1487,10 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "step1JobId", commandOptions.step1JobId, true);
-            putNestedIfNotEmpty(beanParams, "walkerDockerImage", commandOptions.walkerDockerImage, true);
+            putNestedIfNotEmpty(beanParams, "docker.name", commandOptions.dockerName, true);
+            putNestedIfNotEmpty(beanParams, "docker.tag", commandOptions.dockerTag, true);
+            putNestedIfNotEmpty(beanParams, "docker.username", commandOptions.dockerUsername, true);
+            putNestedIfNotEmpty(beanParams, "docker.password", commandOptions.dockerPassword, true);
 
             regenieStep2WrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

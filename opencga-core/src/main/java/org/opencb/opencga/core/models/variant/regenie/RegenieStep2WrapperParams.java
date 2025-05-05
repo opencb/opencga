@@ -25,22 +25,22 @@ public class RegenieStep2WrapperParams extends ToolParams {
     @DataField(id = "step1JobId", description = FieldConstants.REGENIE_STEP1_JOB_ID_DESCRIPTION)
     private String step1JobId;
 
-    @DataField(id = "walkerDockerImage", description = FieldConstants.REGENIE_WALKER_DOCKER_IMAGE_NAME_DESCRIPTION)
-    private String walkerDockerImage;
+    @DataField(id = "dockerParams", description = FieldConstants.REGENIE_WALKER_DOCKER_NAME_DESCRIPTION)
+    private RegenieDockerParams docker;
 
     public RegenieStep2WrapperParams() {
     }
 
-    public RegenieStep2WrapperParams(String step1JobId, String walkerDockerImage) {
+    public RegenieStep2WrapperParams(String step1JobId, RegenieDockerParams docker) {
         this.step1JobId = step1JobId;
-        this.walkerDockerImage = walkerDockerImage;
+        this.docker = docker;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("RegenieStep2WrapperParams{");
         sb.append("step1JobId='").append(step1JobId).append('\'');
-        sb.append(", walkerDockerImage='").append(walkerDockerImage).append('\'');
+        sb.append(", docker=").append(docker);
         sb.append('}');
         return sb.toString();
     }
@@ -54,12 +54,12 @@ public class RegenieStep2WrapperParams extends ToolParams {
         return this;
     }
 
-    public String getWalkerDockerImage() {
-        return walkerDockerImage;
+    public RegenieDockerParams getDocker() {
+        return docker;
     }
 
-    public RegenieStep2WrapperParams setWalkerDockerImage(String walkerDockerImage) {
-        this.walkerDockerImage = walkerDockerImage;
+    public RegenieStep2WrapperParams setDocker(RegenieDockerParams docker) {
+        this.docker = docker;
         return this;
     }
 }

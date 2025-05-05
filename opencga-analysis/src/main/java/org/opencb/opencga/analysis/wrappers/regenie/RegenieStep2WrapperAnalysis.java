@@ -37,8 +37,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.opencb.opencga.analysis.wrappers.regenie.RegenieUtils.OPENCGA_REGENIE_WALKER_DOCKER_IMAGE_KEY;
-import static org.opencb.opencga.analysis.wrappers.regenie.RegenieUtils.REGENIE_RESULTS_FILENAME;
+import static org.opencb.opencga.analysis.wrappers.regenie.RegenieUtils.*;
 
 @Tool(id = RegenieStep2WrapperAnalysis.ID, resource = Enums.Resource.VARIANT, description = RegenieStep2WrapperAnalysis.DESCRIPTION)
 public class RegenieStep2WrapperAnalysis extends OpenCgaToolScopeStudy {
@@ -48,6 +47,12 @@ public class RegenieStep2WrapperAnalysis extends OpenCgaToolScopeStudy {
             + " studies. This performs the step2 of the regenie analysis.";
 
     private String step1JobId;
+
+    private String dockerName;
+    private String dockerTag;
+    private String dockerUsername;
+    private String dockerPassword;
+
     private String walkerDockerImage;
 
     @ToolParams
@@ -61,15 +66,17 @@ public class RegenieStep2WrapperAnalysis extends OpenCgaToolScopeStudy {
         setUpStorageEngineExecutor(study);
 
         // Check input parameters
-        if (StringUtils.isEmpty(analysisParams.getStep1JobId()) && StringUtils.isEmpty(analysisParams.getWalkerDockerImage())) {
-            throw new ToolException("Missing regenine-walker docker image or job ID that performed the regenie-step1 analysis.");
-        }
+        step1JobId = checkRegenieInputParameter(analysisParams.getStep1JobId(), false, "Job ID");
+        dockerName = checkRegenieInputParameter(analysisParams.getDocker().getName(), false, "Docker name");
+        dockerTag = checkRegenieInputParameter(analysisParams.getDocker().getTag(), false, "Docker tag");
+        dockerUsername = checkRegenieInputParameter(analysisParams.getDocker().getUsername(), true, "Docker Hub username");
+        dockerPassword = checkRegenieInputParameter(analysisParams.getDocker().getPassword(), true, "Docker Hub password (or personal"
+                + " access token)");
 
-        if (StringUtils.isNotEmpty(analysisParams.getWalkerDockerImage())) {
-            walkerDockerImage = analysisParams.getWalkerDockerImage();
+        if (StringUtils.isNotEmpty(dockerName) && StringUtils.isNotEmpty(dockerTag)) {
+            walkerDockerImage = dockerName + ":" + dockerTag;
             logger.info("Using regenie-walker image {} to perform regenie step2", walkerDockerImage);
-        } else {
-            step1JobId = analysisParams.getStep1JobId();
+        } else if (StringUtils.isNotEmpty(step1JobId)) {
             logger.info("Using job ({}) results to perform regenie step2", step1JobId);
 
             Job job = catalogManager.getJobManager().get(study, step1JobId, QueryOptions.empty(), token).first();
@@ -81,10 +88,13 @@ public class RegenieStep2WrapperAnalysis extends OpenCgaToolScopeStudy {
             if (StringUtils.isEmpty(walkerDockerImage)) {
                 throw new ToolException("Empty regenie-walker docker image in job (" + step1JobId + ") attributes");
             }
+        } else {
+            throw new ToolException("Missing regenine-walker docker parameters (name, tag) or job ID that performed the regenie-step1"
+                    + " analysis.");
         }
 
         // Check docker image
-        boolean dockerImageAvailable = RegenieUtils.isDockerImageAvailable(walkerDockerImage);
+        boolean dockerImageAvailable = RegenieUtils.isDockerImageAvailable(walkerDockerImage, dockerName, dockerPassword);
         if (!dockerImageAvailable) {
             throw new ToolException("Regenie-walker docker image name " + walkerDockerImage + " not available.");
         }

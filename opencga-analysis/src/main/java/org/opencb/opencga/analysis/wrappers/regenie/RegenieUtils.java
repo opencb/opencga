@@ -32,10 +32,11 @@ public final class RegenieUtils {
     public static final String PREDICTION_PATH = "pred/";
     public static final String OPT_APP_PRED_VIRTUAL_DIR = OPT_APP_VIRTUAL_DIR + PREDICTION_PATH;
 
-    public static final String REGENIE_WALKER_REPO = "regenie-walker";
     public static final String REGENIE_RESULTS_FILENAME = "regenie_results.txt";
 
     public static final String OPENCGA_REGENIE_WALKER_DOCKER_IMAGE_KEY = "OPENCGA_REGENIE_WALKER_DOCKER_IMAGE";
+
+    private static Random random = new Random();
 
     private static Logger logger = LoggerFactory.getLogger(RegenieUtils.class);
 
@@ -64,10 +65,11 @@ public final class RegenieUtils {
         }
     }
 
-    public static void checkRegenieInputParameter(String value, boolean mandatory, String msg) throws ToolException {
+    public static String checkRegenieInputParameter(String value, boolean mandatory, String msg) throws ToolException {
         if (mandatory && StringUtils.isEmpty(value)) {
             throw new ToolException(msg + " is missing.");
         }
+        return value;
     }
 
     public static Path createDockerfile(Path dataDir, Path opencgaHome)
@@ -92,19 +94,40 @@ public final class RegenieUtils {
         return dockerfile;
     }
 
-    public static String buildAndPushDocker(Path dataDir, String dockerNamespace, String dockerUsername, String dockerToken,
+    public static String buildAndPushDocker(Path dataDir, String dockerName, String dockerTag, String dockerUsername, String dockerPassword,
                                             Path opencgaHome) throws ToolException {
-        String dockerRepoVersion = Instant.now().getEpochSecond() + "-" + (new Random().nextInt(9000) + 1000);
+        // Sanity check
+        if (StringUtils.isEmpty(dockerName)) {
+            throw new ToolException("Missing docker name");
+        }
+        if (!dockerName.contains("/")) {
+            throw new ToolException("Invalid docker name " + dockerName + ", please, provide: namespace/repository");
+        }
+        if (StringUtils.isEmpty(dockerUsername)) {
+            throw new ToolException("Missing docker username");
+        }
+        if (StringUtils.isEmpty(dockerPassword)) {
+            throw new ToolException("Missing docker password");
+        }
+
+        String[] split = dockerName.split("/");
+        String organisation = split[0];
+        String name = split[1];
+
+        String dockerRepoVersion = dockerTag;
+        if (StringUtils.isEmpty(dockerRepoVersion)) {
+            dockerRepoVersion = Instant.now().getEpochSecond() + "-" + (random.nextInt(9000) + 1000);
+        }
 
         Path dockerBuildScript = opencgaHome.resolve("analysis/resources/walker/custom-tool-docker-build.py");
         Command dockerBuild = new Command(new String[]{"python3", dockerBuildScript.toAbsolutePath().toString(),
                 "--custom-tool-dir", dataDir.toAbsolutePath().toString(),
                 "--base-image", "joaquintarraga/opencga-regenie:" + GitRepositoryState.getInstance().getBuildVersion(),
-                "--organisation", dockerNamespace,
-                "--name", REGENIE_WALKER_REPO,
+                "--organisation", organisation,
+                "--name", name,
                 "--version", dockerRepoVersion,
                 "--username", dockerUsername,
-                "--token", dockerToken,
+                "--password", dockerPassword,
                 "push"
         }, Collections.emptyMap());
 
@@ -114,11 +137,10 @@ public final class RegenieUtils {
             throw new ToolException("Error building and pushing the regenie-walker docker image");
         }
 
-        String dockerImage = dockerNamespace + "/" + REGENIE_WALKER_REPO + ":" + dockerRepoVersion;
-        return dockerImage;
+        return dockerName + ":" + dockerRepoVersion;
     }
 
-    public static boolean isDockerImageAvailable(String inputDockerImage) {
+    public static boolean isDockerImageAvailable(String inputDockerImage, String dockerUsername, String dockerPassword) {
         String namespace;
         String imageName;
         String tagName;

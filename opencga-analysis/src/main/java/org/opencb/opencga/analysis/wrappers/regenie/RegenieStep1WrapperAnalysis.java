@@ -58,11 +58,11 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
     private static final String PREPARE_WALKER_DOCKER_STEP = "build-and-push-walker-docker";
 
     private Path phenoFile;
-    private Path covarFile;
 
-    private String dockerOrganisation;
+    private String dockerName;
+    private String dockerTag;
     private String dockerUsername;
-    private String dockerToken;
+    private String dockerPassword;
 
     private Path resourcePath;
 
@@ -78,19 +78,29 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
 
         // Check pheno and covar files
         phenoFile = checkRegenieInputFile(analysisParams.getPhenoFile(), true, "Phenotype", getStudy(), getCatalogManager(), getToken());
-        covarFile = checkRegenieInputFile(analysisParams.getCovarFile(), false, "Covariate", getStudy(), getCatalogManager(), getToken());
 
-        // Check username and password
+        // Check doker parameters (name, username and password)
         if (analysisParams.getDocker() != null) {
-            checkRegenieInputParameter(analysisParams.getDocker().getOrganisation(), false, "Docker Hub organisation or namespace");
-            dockerOrganisation = analysisParams.getDocker().getOrganisation();
-            checkRegenieInputParameter(analysisParams.getDocker().getUsername(), false, "Docker Hub username");
-            dockerUsername = analysisParams.getDocker().getUsername();
-            checkRegenieInputParameter(analysisParams.getDocker().getToken(), false, "Docker token");
-            dockerToken = analysisParams.getDocker().getToken();
+            dockerName = checkRegenieInputParameter(analysisParams.getDocker().getName(), false, "Docker name");
+            dockerTag = checkRegenieInputParameter(analysisParams.getDocker().getTag(), false, "Docker tag");
+            dockerUsername = checkRegenieInputParameter(analysisParams.getDocker().getUsername(), false, "Docker Hub username");
+            dockerPassword = checkRegenieInputParameter(analysisParams.getDocker().getPassword(), false, "Docker Hub password (or personal"
+                    + " access token)");
 
-            if (StringUtils.isEmpty(dockerOrganisation)) {
-                dockerOrganisation = dockerUsername;
+            if (StringUtils.isNotEmpty(dockerName) && !dockerName.contains("/")) {
+                throw new ToolException("Invalid docker name " + dockerName + ", please, provide: namespace/repository");
+            }
+
+            if (StringUtils.isNotEmpty(dockerName) && (StringUtils.isEmpty(dockerUsername) || StringUtils.isEmpty(dockerPassword))) {
+                throw new ToolException("Docker username and password (or personal access token) are required if docker name is provided");
+            }
+
+            if (StringUtils.isNotEmpty(dockerUsername) && (StringUtils.isEmpty(dockerName) || StringUtils.isEmpty(dockerPassword))) {
+                throw new ToolException("Docker name and password (or personal access token) are required if docker username is provided");
+            }
+
+            if (StringUtils.isNotEmpty(dockerPassword) && (StringUtils.isEmpty(dockerName) || StringUtils.isEmpty(dockerUsername))) {
+                throw new ToolException("Docker name and username are required if docker password (or personal access token) is provided");
             }
         }
     }
@@ -121,9 +131,6 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
 
             // Copy files
             FileUtils.copyFile(phenoFile, resourcePath.resolve(PHENO_FILENAME));
-            if (covarFile != null) {
-                FileUtils.copyFile(covarFile, resourcePath.resolve(COVAR_FILENAME));
-            }
 
             // Export variants
             Path vcfFile = resourcePath.resolve(VCF_FILENAME);
@@ -185,9 +192,6 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
             }
             // Copy pheno and covar files
             FileUtils.copyFile(phenoFile.toFile(), dataDir.resolve(PHENO_FILENAME).toFile());
-            if (covarFile != null) {
-                FileUtils.copyFile(covarFile.toFile(), dataDir.resolve(COVAR_FILENAME).toFile());
-            }
             // Copy Python scripts and files
             Path pythonDir = dataDir.resolve("python");
             List<String> filenames = Arrays.asList("requirements.txt", "variant_walker.py");
@@ -221,13 +225,13 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
                 }
             }
 
-            if (StringUtils.isEmpty(dockerUsername) && StringUtils.isEmpty(dockerToken)) {
+            if (StringUtils.isEmpty(dockerName) && StringUtils.isEmpty(dockerUsername) && StringUtils.isEmpty(dockerPassword)) {
                 logger.info("Creating regenie-walker Dockerfile ...");
                 Path dockerfile = createDockerfile(dataDir, getOpencgaHome());
                 logger.info("Dockerfile for regenie-walker: {}", dockerfile);
             } else {
                 logger.info("Building and pushing regenie-walker ...");
-                String walkerDocker = buildAndPushDocker(dataDir, dockerOrganisation, dockerUsername, dockerToken, getOpencgaHome());
+                String walkerDocker = buildAndPushDocker(dataDir, dockerName, dockerTag, dockerUsername, dockerPassword, getOpencgaHome());
 
                 logger.info("Regenie-walker docker image: {}", walkerDocker);
                 addAttribute(OPENCGA_REGENIE_WALKER_DOCKER_IMAGE_KEY, walkerDocker);

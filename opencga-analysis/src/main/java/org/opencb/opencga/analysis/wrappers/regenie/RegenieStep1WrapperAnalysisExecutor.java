@@ -2,6 +2,7 @@ package org.opencb.opencga.analysis.wrappers.regenie;
 
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
@@ -84,7 +85,7 @@ public class RegenieStep1WrapperAnalysisExecutor extends DockerWrapperAnalysisEx
 
     @Override
     public String getDockerImageVersion() {
-        return "4.0.0-SNAPSHOT";
+        return GitRepositoryState.getInstance().getBuildVersion();
     }
 
     public String getStudy() {

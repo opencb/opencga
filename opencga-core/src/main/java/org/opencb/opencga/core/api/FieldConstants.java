@@ -625,22 +625,22 @@ public class FieldConstants {
     // Regenie
     public static final String REGENIE_STEP1 = "step1";
     public static final String REGENIE_STEP2 = "step2";
-    public static final String REGENIE_STEP_DESCRIPTION = "Regenie step. Valid values: " + REGENIE_STEP2;
     public static final String REGENIE_PHENO_FILE_DESCRIPTION = "Phenotype file, which contains one or more traits to be analyzed.";
     public static final String REGENIE_COVAR_FILE_DESCRIPTION = "Covariate file, used to adjust the analysis for confounding variables"
             + " (e.g., sex, age, PCs).";
-    public static final String REGENIE_PRED_PATH_DESCRIPTION = "Path to the prediction generated in " + REGENIE_STEP1 + " (it is used in "
-            + REGENIE_STEP2 + ")";
     public static final String REGENIE_STEP1_JOB_ID_DESCRIPTION = "Job ID that performed the regenie step1 analysis.";
-    public static final String REGENIE_WALKER_DOCKER_IMAGE_NAME_DESCRIPTION = "Walker docker image name that contains the phenotype, covariates"
-            + " and prediction files.";
+    public static final String REGENIE_WALKER_DOCKER_IMAGE_NAME_DESCRIPTION = "Walker docker image name that contains the phenotype,"
+            + " covariates and prediction files. The name must include the organization (or namespace) and the tag, e.g.:"
+            + " myorganization/1000g-regenie:v2";
     public static final String REGENIE_VARIANT_EXPORT_QUERY_DESCRIPTION = "Query to export a subset of variants for the regenie step1 (as"
             + " performing regenie step1 on a subset is recommended over the entire dataset). Key-values examples:"
-        + " \"cohortStatsMaf\"=\"ALL<0.05\", \"sampleLimit\"=5000";
-    public static final String REGENIE_WALKER_DOCKER_ORGANISATION_DESCRIPTION = "Docker Hub organisation (or namespace) where to push the"
-            + " regenie-walker docker image.";
+            + " \"cohortStatsMaf\"=\"ALL<0.05\", \"sampleLimit\"=5000";
+    public static final String REGENIE_WALKER_DOCKER_NAME_DESCRIPTION = "Docker image name of the regenie-walker, it must include the"
+            + " organization (or namespace), e.g.: myorganization/1000g-regenie.";
+    public static final String REGENIE_WALKER_DOCKER_TAG_DESCRIPTION = "Docker image tag of the regenie-walker, e.g.: v2";
     public static final String REGENIE_WALKER_DOCKER_USERNAME_DESCRIPTION = "Docker Hub username to push the regenie-walker docker image.";
-    public static final String REGENIE_WALKER_DOCKER_TOKEN_DESCRIPTION = "Docker Hub token to push the regenie-walker docker image.";
+    public static final String REGENIE_WALKER_DOCKER_PASSWORD_DESCRIPTION = "Docker Hub password (or personal access token) to push the"
+            + " regenie-walker docker image.";
 
     // Fetch resources
     public static final String FETCH_RESOURCES_DESCRIPTION = "List of resource IDs, separated by commas, to fetch (available resources are"

@@ -22,40 +22,54 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 public class RegenieDockerParams extends ToolParams {
 
-    @DataField(id = "organisation", description = FieldConstants.REGENIE_WALKER_DOCKER_ORGANISATION_DESCRIPTION)
-    private String organisation;
+    @DataField(id = "name", description = FieldConstants.REGENIE_WALKER_DOCKER_NAME_DESCRIPTION)
+    private String name;
+
+    @DataField(id = "tag", description = FieldConstants.REGENIE_WALKER_DOCKER_TAG_DESCRIPTION)
+    private String tag;
 
     @DataField(id = "username", description = FieldConstants.REGENIE_WALKER_DOCKER_USERNAME_DESCRIPTION)
     private String username;
 
-    @DataField(id = "token", description = FieldConstants.REGENIE_WALKER_DOCKER_TOKEN_DESCRIPTION)
-    private String token;
+    @DataField(id = "password", description = FieldConstants.REGENIE_WALKER_DOCKER_PASSWORD_DESCRIPTION)
+    private String password;
 
     public RegenieDockerParams() {
     }
 
-    public RegenieDockerParams(String organisation, String username, String token) {
-        this.organisation = organisation;
+    public RegenieDockerParams(String name, String tag, String username, String password) {
+        this.name = name;
+        this.tag = tag;
         this.username = username;
-        this.token = token;
+        this.password = password;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("RegenieDockerParams{");
-        sb.append("organisation='").append(organisation).append('\'');
+        sb.append("name='").append(name).append('\'');
+        sb.append(", tag='").append(tag).append('\'');
         sb.append(", username='").append(username).append('\'');
-        sb.append(", token='").append(token).append('\'');
+        sb.append(", password='").append(password).append('\'');
         sb.append('}');
         return sb.toString();
     }
 
-    public String getOrganisation() {
-        return organisation;
+    public String getName() {
+        return name;
     }
 
-    public RegenieDockerParams setOrganisation(String organisation) {
-        this.organisation = organisation;
+    public RegenieDockerParams setName(String name) {
+        this.name = name;
+        return this;
+    }
+
+    public String getTag() {
+        return tag;
+    }
+
+    public RegenieDockerParams setTag(String tag) {
+        this.tag = tag;
         return this;
     }
 
@@ -68,12 +82,12 @@ public class RegenieDockerParams extends ToolParams {
         return this;
     }
 
-    public String getToken() {
-        return token;
+    public String getPassword() {
+        return password;
     }
 
-    public RegenieDockerParams setToken(String token) {
-        this.token = token;
+    public RegenieDockerParams setPassword(String password) {
+        this.password = password;
         return this;
     }
 }
