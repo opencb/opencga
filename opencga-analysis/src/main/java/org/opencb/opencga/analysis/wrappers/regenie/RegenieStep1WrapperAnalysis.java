@@ -196,7 +196,7 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
             Path pythonDir = dataDir.resolve("python");
             List<String> filenames = Arrays.asList("requirements.txt", "variant_walker.py");
             for (String filename : filenames) {
-                FileUtils.copyFile(getOpencgaHome().resolve("analysis/resources/walker/" + filename).toAbsolutePath(),
+                FileUtils.copyFile(getOpencgaHome().resolve("analysis/regenie/" + filename).toAbsolutePath(),
                         pythonDir.resolve(filename));
             }
             FileUtils.copyFile(getOpencgaHome().resolve("analysis/regenie/regenie_walker.py"),

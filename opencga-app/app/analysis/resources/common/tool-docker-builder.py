@@ -4,12 +4,10 @@ import argparse
 import os
 import sys
 
-BASE_IMAGE = "ubuntu:24.04"
-
 ## Configure command-line options
 parser = argparse.ArgumentParser()
 parser.add_argument("action", help="Action to execute", choices=["dockerfile", "build", "push"], default="dockerfile")
-parser.add_argument("-b", "--base-image", help="Dockerfile FROM image", default=BASE_IMAGE)
+parser.add_argument("-b", "--base-image", help="Dockerfile FROM image", default="ubuntu:24.04")
 parser.add_argument("-t", "--custom-tool-dir", help="Path to the tool folder, this can contain a requirement.txt and/or install.r files", required=True)
 parser.add_argument("--update-os", help="Update OS using 'apt update'", action='store_true')
 parser.add_argument("--install-r", help="Install R", action='store_true')
@@ -19,7 +17,7 @@ parser.add_argument("-n", "--name", help="Name of the docker image, e.g. my-tool
 parser.add_argument("-v", "--version", help="Tag of the docker image, e.g. v1.0.0", default="1.0.0")
 parser.add_argument("-l", "--latest", help="Make the docker image latest, e.g. v1.0.0", default="False")
 parser.add_argument("-u", "--username", help="Username to login to the docker registry")
-parser.add_argument("-p", "--token", help="Token to login to the docker registry",)
+parser.add_argument("-p", "--password", help="Password or Personal Access Token (PAT) to login to the docker registry",)
 # parser.add_argument('--server', help="Docker registry server", default="docker.io")
 
 ## Some ANSI colors to print shell output
@@ -48,13 +46,13 @@ def run(command):
         error("Error executing: " + command)
 
 def login(loginRequired=False):
-    if args.username is None or args.token is None:
+    if args.username is None or args.password is None:
         if loginRequired:
-            error("Username and token are required")
+            error("Username and password are required")
         else:
             return
 
-    code = os.system(f"docker login -u \"{args.username}\" --password \"{args.token}\"")
+    code = os.system(f"docker login -u \"{args.username}\" --password \"{args.password}\"")
     if code != 0:
         error("Error executing: '" + "docker login -u " + args.username + " --password xxxxxxx'")
 
@@ -71,7 +69,7 @@ def get_docker_image_id():
 def dockerfile():
     print(shell_colors['blue'] + "Creating Dockerfile  ..." + shell_colors['reset'])
 
-    with open(custom_build_folder + "/Dockerfile", "w") as f:
+    with open(tool_builder_folder + "/Dockerfile", "w") as f:
         ## Set base image and copy the custom tool folder
         f.write(f"FROM {args.base_image}\n\n")
         f.write("COPY . /opt/app\n\n")
@@ -91,7 +89,7 @@ def dockerfile():
             run = ""
 
         # 3. Install R
-        if args.install_r is True:
+        if args.install_r is True or os.path.isfile(tool_builder_folder + "/install.r"):
             f.write(f"{run} apt install -y r-base && \\ \n")
             run = ""
 
@@ -101,19 +99,19 @@ def dockerfile():
             run = ""
 
         # 5. Check and build C/C++ tools
-        if os.path.isfile(custom_build_folder + "/makefile") or os.path.isfile(custom_build_folder + "/Makefile"):
+        if os.path.isfile(tool_builder_folder + "/makefile") or os.path.isfile(tool_builder_folder + "/Makefile"):
             f.write(f"{run}apt install -y build-essential && \\ \n")
             f.write("make -C /opt/app && \\ \n")
             run = ""
 
         ## Install application dependencies, only Python and R supported
         # 1. Install Python dependencies
-        if os.path.isfile(custom_build_folder + "/requirements.txt"):
+        if os.path.isfile(tool_builder_folder + "/requirements.txt"):
             f.write(f"{run} pip3 install -r /opt/app/requirements.txt --break-system-packages && \\ \n")
             run = ""
 
         # 2. Install R dependencies
-        if args.install_r is True and os.path.isfile(custom_build_folder + "/install.r"):
+        if args.install_r is True and os.path.isfile(tool_builder_folder + "/install.r"):
             f.write(f"{run} Rscript /opt/app/install.r && \\ \n")
             run = ""
 
@@ -129,16 +127,16 @@ def build():
     if os.path.isfile("/var/run/docker.sock"):
         command = ("docker build"
                    + " -t " + image
-                   + " -f " + custom_build_folder +  "/Dockerfile"
+                   + " -f " + tool_builder_folder +  "/Dockerfile"
                    + " -v /var/run/docker.sock:/var/run/docker.sock"
                    + " --env DOCKER_HOST='tcp://localhost:2375'"
                    + " --network host"
-                   + " " + custom_build_folder)
+                   + " " + tool_builder_folder)
     else:
         command = ("docker build"
                    + " -t " + image
-                   + " -f " + custom_build_folder +  "/Dockerfile"
-                   + " " + custom_build_folder)
+                   + " -f " + tool_builder_folder +  "/Dockerfile"
+                   + " " + tool_builder_folder)
     print(f"Build command: {command}")
     run(command)
 
@@ -172,14 +170,14 @@ args = parser.parse_args()
 # 1. Set build folder to default value if not set
 if args.custom_tool_dir is not None and not args.custom_tool_dir == "":
     if args.custom_tool_dir.startswith("git@") or args.custom_tool_dir.startswith("https://"):
-        custom_build_folder = "/tmp/opencga-custom-tool"
-        os.system("rm -rf " + custom_build_folder)
-        os.system("git clone " + args.custom_tool_dir + " " + custom_build_folder)
+        tool_builder_folder = "/tmp/tool-docker-builder"
+        os.system("rm -rf " + tool_builder_folder)
+        os.system("git clone " + args.custom_tool_dir + " " + tool_builder_folder)
     else:
-        custom_build_folder = args.custom_tool_dir
+        tool_builder_folder = args.custom_tool_dir
 
-    if not os.path.isdir(custom_build_folder):
-        error("Custom tool folder does not exist: " + custom_build_folder)
+    if not os.path.isdir(tool_builder_folder):
+        error("Custom tool folder does not exist: " + tool_builder_folder)
 else:
     error("Custom tool folder is required")
 
