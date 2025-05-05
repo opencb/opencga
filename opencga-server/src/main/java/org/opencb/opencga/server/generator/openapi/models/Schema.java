@@ -1,7 +1,14 @@
 package org.opencb.opencga.server.generator.openapi.models;
+
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * OpenAPI Schema class.
+ *
+ * v2.0.
+ * @see <a href=https://swagger.io/specification/v2/#schemaObject>SchemaObject</a>
+ */
 public class Schema {
 
     private FieldDefinition updateParams;
@@ -10,7 +17,20 @@ public class Schema {
     private String format;
     private Schema additionalProperties;
     private Schema items;
-    private Map<String, Schema> properties = new HashMap<>();
+    private Map<String, Schema> properties;
+
+//    private String type;
+//    private String $ref;
+//    private String format;
+//    private Boolean nullable;
+//    private Boolean readOnly;
+//    private Boolean writeOnly;
+//    private Boolean deprecated;
+//    private Object default;
+//    private Object example;
+
+    public Schema() {
+    }
 
     public String getType() {
         return type;
@@ -38,10 +58,10 @@ public class Schema {
     }
 
     public void addProperty(String name, Schema schema) {
+        if (this.properties == null) {
+            this.properties = new HashMap<>();
+        }
         this.properties.put(name, schema);
-    }
-    public Schema() {
-
     }
 
     public String get$ref() {
