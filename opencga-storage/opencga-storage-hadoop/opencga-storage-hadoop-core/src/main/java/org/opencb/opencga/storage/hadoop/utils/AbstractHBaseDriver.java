@@ -319,7 +319,6 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
     private boolean configFromArgs(String[] args) {
         int fixedSizeArgs = getFixedSizeArgs();
 
-        LOGGER.info(Arrays.toString(args));
         boolean help = ArrayUtils.contains(args, "-h") || ArrayUtils.contains(args, "--help");
         if (args.length < fixedSizeArgs || (args.length - fixedSizeArgs) % 2 != 0 || help) {
             System.err.println(getUsage());
@@ -331,9 +330,26 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
             return true;
         }
 
+        for (int i = 0; i < fixedSizeArgs; i++) {
+            LOGGER.info("Fixed arg " + i + ": " + args[i]);
+        }
         // Get first other args to avoid overwrite the fixed position args.
         for (int i = fixedSizeArgs; i < args.length; i = i + 2) {
-            getConf().set(args[i], args[i + 1]);
+            String key = args[i];
+            String value = args[i + 1];
+            getConf().set(key, value);
+            float maxLineLength = 300.0;
+            for (int batch = 0; batch < Math.ceil(value.length() / maxLineLength); batch++) {
+                String prefix;
+                if (batch == 0) {
+                    prefix = "- " + key + ": ";
+                } else {
+                    prefix = StringUtils.repeat(' ', 6 + key.length());
+                }
+                int start = (int) (batch * maxLineLength);
+                int end = (int) Math.min(value.length(), (batch + 1) * maxLineLength);
+                LOGGER.info(prefix + value.substring(start, end));
+            }
         }
 
         parseFixedParams(args);
