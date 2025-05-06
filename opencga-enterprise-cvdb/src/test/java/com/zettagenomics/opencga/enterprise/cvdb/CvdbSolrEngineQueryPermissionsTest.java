@@ -18,6 +18,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FamilyManager;
+import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.models.ClinicalAnalysisLoadResult;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -29,6 +30,7 @@ import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
+import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -107,6 +109,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
         catalogManager.getUserManager().create(new User().setId("user2").setName("User Name2").setOrganization(organizationId), PASSWORD, opencgaToken);
 
         catalogManager.getUserManager().create(new User().setId("user4").setName("User Name4").setOrganization(organizationId), PASSWORD, opencgaToken);
+        catalogManager.getUserManager().create(new User().setId("user5").setName("User Name5").setOrganization(organizationId), PASSWORD, opencgaToken);
 
         catalogManager.getOrganizationManager().update(organizationId,
                 new OrganizationUpdateParams()
@@ -304,7 +307,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
     }
 
     @Test
-    public void testUpdateUsers() throws IOException, CvdbException, CatalogException, SolrServerException {
+    public void testUpdateViewers() throws IOException, CvdbException, CatalogException, SolrServerException {
         // CVDB query
         Query query;
 
@@ -342,6 +345,50 @@ public class CvdbSolrEngineQueryPermissionsTest {
         }
 
         token = catalogManager.getUserManager().login(organizationId, "user4", PASSWORD).first().getToken();
+        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, token);
+        assertEquals(1, result.getNumResults());
+    }
+
+    @Test
+    public void testUpdateViewersWhenUserAddedAsAdmin() throws IOException, CvdbException, CatalogException, SolrServerException {
+        // CVDB query
+        Query query;
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(LIMIT, 100);
+
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CA_TYPE_NAME, "FAMILY");
+
+        // "user4" can not access to these clinical analyses
+        String token = catalogManager.getUserManager().login(organizationId, "user5", PASSWORD).first().getToken();
+
+        DataResult<ClinicalAnalysis> result = null;
+        try {
+            result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, token);
+            fail();
+        } catch (Exception e) {
+            // Expected
+            Assert.assertTrue(e instanceof CatalogAuthorizationException);
+            Assert.assertEquals(null, result);
+        }
+
+        // Add user4 as admin
+        catalogManager.getStudyManager().updateGroup(study.getFqn(), StudyManager.ADMINS, ParamUtils.BasicUpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList("user5")), opencgaToken);
+
+        OpenCGAResult<ClinicalAnalysis> results = catalogManager.getClinicalAnalysisManager().search(study.getFqn(), new Query(),
+                QueryOptions.empty(), opencgaToken);
+        for (ClinicalAnalysis clinicalAnalysis : results.getResults()) {
+            OpenCGAResult<Acl> aclResult = catalogManager.getAdminManager().getEffectivePermissions(study.getFqn(), Collections.singletonList(clinicalAnalysis.getId()),
+                    Collections.singletonList(ClinicalAnalysisPermissions.VIEW.name()), Enums.Resource.CLINICAL_ANALYSIS.name(), opencgaToken);
+
+            cvdbEngine.indexViewers(aclResult.first().getId(), aclResult.first().getPermissions().get(0).getUserIds(), organizationId, projectId);
+            // Only one clinical analysis is updated
+            break;
+        }
+
+        token = catalogManager.getUserManager().login(organizationId, "user5", PASSWORD).first().getToken();
         result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, token);
         assertEquals(1, result.getNumResults());
     }
