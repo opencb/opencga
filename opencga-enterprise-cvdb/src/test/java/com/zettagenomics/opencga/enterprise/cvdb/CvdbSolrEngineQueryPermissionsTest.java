@@ -4,6 +4,8 @@ import com.zettagenomics.opencga.enterprise.cvdb.dummy.DummyVariantStorageMetada
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import com.zettagenomics.opencga.enterprise.cvdb.models.CvdbIndexResult;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
@@ -12,15 +14,19 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.catalog.models.ClinicalAnalysisLoadResult;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.models.Acl;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclUpdateParams;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysisPermissions;
 import org.opencb.opencga.core.models.clinical.Interpretation;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
@@ -38,8 +44,7 @@ import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.*;
 import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.ADMIN_PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.opencb.commons.datastore.core.QueryOptions.LIMIT;
 
 public class CvdbSolrEngineQueryPermissionsTest {
@@ -100,6 +105,8 @@ public class CvdbSolrEngineQueryPermissionsTest {
         catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId(organizationId).setName("Test"), QueryOptions.empty(), opencgaToken);
         catalogManager.getUserManager().create(new User().setId("user").setName("User Name").setOrganization(organizationId), PASSWORD, opencgaToken);
         catalogManager.getUserManager().create(new User().setId("user2").setName("User Name2").setOrganization(organizationId), PASSWORD, opencgaToken);
+
+        catalogManager.getUserManager().create(new User().setId("user4").setName("User Name4").setOrganization(organizationId), PASSWORD, opencgaToken);
 
         catalogManager.getOrganizationManager().update(organizationId,
                 new OrganizationUpdateParams()
@@ -294,6 +301,49 @@ public class CvdbSolrEngineQueryPermissionsTest {
         // No token provided
         // expected = CatalogException.class
         cvdbEngine.searchClinicalAnalyses(query, queryOptions, null);
+    }
+
+    @Test
+    public void testUpdateUsers() throws IOException, CvdbException, CatalogException, SolrServerException {
+        // CVDB query
+        Query query;
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(LIMIT, 100);
+
+        query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(CA_TYPE_NAME, "FAMILY");
+
+        // "user4" can not access to these clinical analyses
+        String token = catalogManager.getUserManager().login(organizationId, "user4", PASSWORD).first().getToken();
+
+        DataResult<ClinicalAnalysis> result = null;
+        try {
+            result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, token);
+            fail();
+        } catch (Exception e) {
+            // Expected
+            Assert.assertTrue(e instanceof CatalogAuthorizationException);
+            Assert.assertEquals(null, result);
+        }
+
+        OpenCGAResult<ClinicalAnalysis> results = catalogManager.getClinicalAnalysisManager().search(study.getFqn(), new Query(),
+                QueryOptions.empty(), opencgaToken);
+        for (ClinicalAnalysis clinicalAnalysis : results.getResults()) {
+            catalogManager.getClinicalAnalysisManager().updateAcl(study.getFqn(),
+                    Collections.singletonList(clinicalAnalysis.getId()), "user4", new ClinicalAnalysisAclUpdateParams(null, "VIEW"),
+                    ParamUtils.AclAction.SET, false, opencgaToken);
+
+            OpenCGAResult<Acl> aclResult = catalogManager.getAdminManager().getEffectivePermissions(study.getFqn(), Collections.singletonList(clinicalAnalysis.getId()),
+                    Collections.singletonList(ClinicalAnalysisPermissions.VIEW.name()), Enums.Resource.CLINICAL_ANALYSIS.name(), opencgaToken);
+            cvdbEngine.indexViewers(aclResult.first().getId(), aclResult.first().getPermissions().get(0).getUserIds(), organizationId, projectId);
+            // Only one clinical analysis is updated
+            break;
+        }
+
+        token = catalogManager.getUserManager().login(organizationId, "user4", PASSWORD).first().getToken();
+        result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, token);
+        assertEquals(1, result.getNumResults());
     }
 
     //-----------------------------------------------------------------------
