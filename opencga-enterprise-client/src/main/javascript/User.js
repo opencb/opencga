@@ -167,7 +167,7 @@ export default class User extends OpenCGAParentClass {
         return this._post("users", user, "filters", filterId, "update", data);
     }
 
-    /** Reset password
+    /** [DEPRECATED]
     * @param {String} user - User ID.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
