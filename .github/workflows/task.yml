@@ -27,3 +27,11 @@ jobs:
     with:
       cli: python3 ./build/cloud/docker/docker-build.py push --images base,workflow --tag ${{ github.ref_name }}
     secrets: inherit
+
+  deploy-python:
+    uses: opencb/java-common-libs/.github/workflows/deploy-python-workflow.yml@develop
+    needs: build
+    with:
+      cli: ./clients/python/python-build.sh push
+      artifact: build-folder
+    secrets: inherit

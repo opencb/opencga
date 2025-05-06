@@ -43,7 +43,6 @@
     </modules>
 
     <properties>
-        <pyopencga.version>4.1.0_dev</pyopencga.version>
         <opencgar.version>4.1.0_dev</opencgar.version>
         <cellbase.version>7.1.0-SNAPSHOT</cellbase.version>
         <biodata.version>4.1.0-SNAPSHOT</biodata.version>

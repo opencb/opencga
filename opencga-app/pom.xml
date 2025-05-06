@@ -463,11 +463,26 @@
                                     <arg value="${build.dir}/clients"/>
                                 </exec>
 
+<!--                                <exec executable="sed" failonerror="true">-->
+<!--                                    <arg value="-i"/>-->
+<!--                                    <arg value="s/PYOPENCGA_VERSION/${pyopencga.version}/"/>-->
+<!--                                    <arg value="${build.dir}/clients/python/setup.py"/>-->
+<!--                                </exec>-->
+                                <echo>Calculating Python version</echo>
+                                <exec executable="python3" outputproperty="calculated.version" failonerror="true">
+                                    <arg value="${app.dir}/scripts/calculate_pypi_version.py"/>
+                                    <arg value="${project.version}"/>
+                                </exec>
+
+                                <echo message="Calculated Python Version: ${calculated.version}"/>
+
+                                <echo>Updating setup.py with version ${calculated.version}</echo>
                                 <exec executable="sed" failonerror="true">
                                     <arg value="-i"/>
-                                    <arg value="s/PYOPENCGA_VERSION/${pyopencga.version}/"/>
+                                    <arg value="s/PYOPENCGA_VERSION/${calculated.version}/"/>
                                     <arg value="${build.dir}/clients/python/setup.py"/>
                                 </exec>
+
                                 <exec executable="cp" failonerror="true">
                                     <arg value="-r"/>
                                     <arg value="${project.basedir}/../opencga-client/src/main/R"/>
