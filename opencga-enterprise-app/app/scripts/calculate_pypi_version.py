@@ -3,7 +3,7 @@ import sys
 import re
 
 PACKAGE_NAME = "pyopencga-enterprise"
-TESTPYPI_URL = f"https://test.pypi.org/pypi/{PACKAGE_NAME}/json"
+TESTPYPI_URL = f"https://pypi.org/pypi/{PACKAGE_NAME}/json"
 
 def fetch_existing_versions():
     try:
@@ -19,7 +19,7 @@ def fetch_existing_versions():
 def calculate_version(maven_version):
 
     if not maven_version.endswith("-SNAPSHOT"):
-        # Production version
+        # Release version
         return maven_version
 
     existing_versions = fetch_existing_versions()
