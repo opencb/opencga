@@ -85,6 +85,9 @@ apiConfig:
       executorExtended: True
       optionExtended: True
       commands:
+        - name: download
+          executorExtended: True
+          optionExtended: True
         - name: upload
           executorExtended: True
           optionExtended: True
