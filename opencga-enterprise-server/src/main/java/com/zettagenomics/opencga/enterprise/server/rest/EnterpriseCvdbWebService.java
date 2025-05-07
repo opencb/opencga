@@ -100,7 +100,8 @@ public class EnterpriseCvdbWebService extends OpenCGAWSServer {
             @ApiParam(value = CvdbIndexTaskParams.DESCRIPTION, required = true) CvdbIndexTaskParams params) {
         try {
             // Execute CVDB index as a job
-            return submitJob(study, JobType.NATIVE, CvdbIndexTask.ID, params, jobId, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+            return submitJob(study, JobType.NATIVE, CvdbIndexTask.ID, params, jobId, jobDescription, dependsOn, jobTags, scheduledStartTime,
+                    jobPriority, dryRun);
 
         } catch (Exception e) {
             return createErrorResponse(CvdbIndexTask.DESCRIPTION, e.getMessage());
@@ -124,12 +125,12 @@ public class EnterpriseCvdbWebService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = CvdbUpdateUsersTaskParams.DESCRIPTION, required = true) CvdbUpdateUsersTaskParams params) {
         try {
-            // Execute CVDB index as a job
+            // Execute the CVDB update users as a job
             return submitJob(study, JobType.NATIVE, CvdbUpdateUsersTask.ID, params, jobId, jobDescription, dependsOn, jobTags,
                     scheduledStartTime, jobPriority, dryRun);
 
         } catch (Exception e) {
-            return createErrorResponse(CvdbIndexTask.DESCRIPTION, e.getMessage());
+            return createErrorResponse(CvdbUpdateUsersTask.DESCRIPTION, e.getMessage());
         }
     }
 
@@ -1452,7 +1453,7 @@ public class EnterpriseCvdbWebService extends OpenCGAWSServer {
     public Response getClinicalVariantSummaryStats(
             @ApiParam(value = "Variant ID (or comma separated list of variant IDs)") @PathParam(value = "variantId") String variantId,
             @ApiParam(value = PROJECT_PARAM_DESCRIPTION + "(or command separated list of project IDs)") @QueryParam(PROJECT_PARAM_NAME)
-                    String projectId) {
+            String projectId) {
         return run(() -> {
             return getCvdbEngine().getClinicalVariantSummaryStats(variantId, projectId, token);
         });
