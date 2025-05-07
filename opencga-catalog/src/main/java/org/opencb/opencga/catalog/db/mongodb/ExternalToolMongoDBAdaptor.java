@@ -331,15 +331,14 @@ public class ExternalToolMongoDBAdaptor extends CatalogMongoDBAdaptor implements
         final String[] acceptedBooleanParams = {QueryParams.DRAFT.key()};
         filterBooleanParams(parameters, document.getSet(), acceptedBooleanParams);
 
-        final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.DESCRIPTION.key(), QueryParams.COMMAND_LINE.key(),
-            QueryParams.SCOPE.key()};
+        final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.DESCRIPTION.key(), QueryParams.SCOPE.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        final String[] acceptedListParams = {QueryParams.MANAGER.key(), QueryParams.SCRIPTS.key(), QueryParams.TAGS.key(),
-                QueryParams.REPOSITORY.key(), QueryParams.VARIABLES.key(), QueryParams.MINIMUM_REQUIREMENTS.key()};
+        final String[] acceptedListParams = {QueryParams.DOCKER.key(), QueryParams.WORKFLOW_SCRIPTS.key(), QueryParams.TAGS.key(),
+                QueryParams.WORKFLOW_REPOSITORY.key(), QueryParams.VARIABLES.key(), QueryParams.MINIMUM_REQUIREMENTS.key()};
         filterObjectParams(parameters, document.getSet(), acceptedListParams);
 
 //        // Check if the scripts exist.
@@ -573,7 +572,6 @@ public class ExternalToolMongoDBAdaptor extends CatalogMongoDBAdaptor implements
                     case RELEASE:
                     case VERSION:
                     case INTERNAL_REGISTRATION_USER_ID:
-                    case MANAGER_ID:
                     case SCOPE:
                     case DRAFT:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);

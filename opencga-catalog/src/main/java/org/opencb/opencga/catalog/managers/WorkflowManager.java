@@ -59,7 +59,7 @@ import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 public class WorkflowManager extends ResourceManager<ExternalTool> {
 
     public static final QueryOptions INCLUDE_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(ID.key(), UID.key(),
-            UUID.key(), VERSION.key(), DESCRIPTION.key(), STUDY_UID.key(), MANAGER.key()));
+            UUID.key(), VERSION.key(), DESCRIPTION.key(), STUDY_UID.key(), WORKFLOW.key()));
 
     private final CatalogIOManager catalogIOManager;
     private final IOManagerFactory ioManagerFactory;
@@ -89,19 +89,18 @@ public class WorkflowManager extends ResourceManager<ExternalTool> {
     }
 
     @Override
-    InternalGetDataResult<ExternalTool> internalGet(String organizationId, long studyUid, List<String> workflowIdList,
+    InternalGetDataResult<ExternalTool> internalGet(String organizationId, long studyUid, List<String> externalToolIdList,
                                                     @Nullable Query query, QueryOptions options, String user, boolean ignoreException)
             throws CatalogException {
-        if (ListUtils.isEmpty(workflowIdList)) {
-            throw new CatalogException("Missing workflow entries.");
+        if (ListUtils.isEmpty(externalToolIdList)) {
+            throw new CatalogException("Missing external tool entries.");
         }
-        List<String> uniqueList = ListUtils.unique(workflowIdList);
+        List<String> uniqueList = ListUtils.unique(externalToolIdList);
 
         QueryOptions queryOptions = new QueryOptions(ParamUtils.defaultObject(options, QueryOptions::new));
 
         Query queryCopy = query == null ? new Query() : new Query(query);
         queryCopy.put(STUDY_UID.key(), studyUid);
-        queryCopy.put(TYPE.key(), ExternalToolType.WORKFLOW);
 
         boolean versioned = queryCopy.getBoolean(Constants.ALL_VERSIONS)
                 || queryCopy.containsKey(VERSION.key());
@@ -942,8 +941,8 @@ public class WorkflowManager extends ResourceManager<ExternalTool> {
                 : Collections.emptyList());
         boolean main = false;
         for (WorkflowScript script : externalTool.getWorkflow().getScripts()) {
-            ParamUtils.checkIdentifier(script.getName(), SCRIPTS.key() + ".id");
-            ParamUtils.checkParameter(script.getContent(), SCRIPTS.key() + ".content");
+            ParamUtils.checkIdentifier(script.getName(), WORKFLOW_SCRIPTS.key() + ".id");
+            ParamUtils.checkParameter(script.getContent(), WORKFLOW_SCRIPTS.key() + ".content");
             if (script.isMain()) {
                 if (main) {
                     throw new CatalogParameterException("More than one main script found.");
