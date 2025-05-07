@@ -12,7 +12,7 @@ from pyopencga.rest_clients._parent_rest_clients import _ParentRestClient
 
 class CVDB(_ParentRestClient):
     """
-    This class contains methods for the 'CVDB' webservices
+    This class contains methods for the 'Analysis - CVDB' webservices
     PATH: /{apiVersion}/analysis/cvdb
     """
 
