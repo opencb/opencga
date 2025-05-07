@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor;
 import com.zettagenomics.opencga.enterprise.app.cli.main.options.AnalysisCVDBCommandOptions;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbIndexTaskParams;
+import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbUpdateAclTaskParams;
 import java.util.HashMap;
 import java.util.List;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
@@ -57,6 +58,9 @@ public class AnalysisCVDBCommandExecutor extends com.zettagenomics.opencga.enter
         RestResponse queryResponse = null;
 
         switch (subCommandString) {
+            case "acl-update":
+                queryResponse = updateAcl();
+                break;
             case "analysis-aggregate":
                 queryResponse = aggregateAnalysis();
                 break;
@@ -94,6 +98,46 @@ public class AnalysisCVDBCommandExecutor extends com.zettagenomics.opencga.enter
 
         createOutput(queryResponse);
 
+    }
+
+    private RestResponse<Job> updateAcl() throws Exception {
+        logger.debug("Executing updateAcl in Analysis - CVDB command line");
+
+        AnalysisCVDBCommandOptions.UpdateAclCommandOptions commandOptions = analysisCVDBCommandOptions.updateAclCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
+        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
+        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
+        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        CvdbUpdateAclTaskParams cvdbUpdateAclTaskParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/cvdb/acl/update"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            cvdbUpdateAclTaskParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), CvdbUpdateAclTaskParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotNull(beanParams, "clinicalAnalysisIds", commandOptions.clinicalAnalysisIds, true);
+            putNestedIfNotNull(beanParams, "allProject", commandOptions.allProject, true);
+
+            cvdbUpdateAclTaskParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), CvdbUpdateAclTaskParams.class);
+        }
+        return enterpriseOpenCGAClient.getEnterpriseCVDBClient().updateAcl(cvdbUpdateAclTaskParams, queryParams);
     }
 
     private RestResponse<FacetField> aggregateAnalysis() throws Exception {

@@ -1,31 +1,31 @@
 package com.zettagenomics.opencga.enterprise.cvdb.tasks.params;
 
-import com.zettagenomics.opencga.enterprise.cvdb.tasks.CvdbUpdateUsersTask;
+import com.zettagenomics.opencga.enterprise.cvdb.tasks.CvdbUpdateAclTask;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
-public class CvdbUpdateUsersTaskParams extends ToolParams {
-    public static final String DESCRIPTION = "Parameters: " + CvdbUpdateUsersTask.DESCRIPTION;
+public class CvdbUpdateAclTaskParams extends ToolParams {
+    public static final String DESCRIPTION = "Parameters for the ACL updating task (" + CvdbUpdateAclTask.ID + ").";
 
-    @DataField(id = "clinicalAnalysisIds", description = "List of clinical analyses to update users")
+    @DataField(id = "clinicalAnalysisIds", description = "List of clinical analyses to update ACLs.")
     private List<String> clinicalAnalysisIds;
 
-    @DataField(id = "allProject", description = "Update users for all the clinical analyses of the given project")
+    @DataField(id = "allProject", description = "Updates ACLs from all clinical analyses within the project.")
     private boolean allProject;
 
-    public CvdbUpdateUsersTaskParams() {
+    public CvdbUpdateAclTaskParams() {
     }
 
-    public CvdbUpdateUsersTaskParams(List<String> clinicalAnalysisIds, boolean allProject) {
+    public CvdbUpdateAclTaskParams(List<String> clinicalAnalysisIds, boolean allProject) {
         this.clinicalAnalysisIds = clinicalAnalysisIds;
         this.allProject = allProject;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("CvdbUpdateUsersTaskParams{");
+        final StringBuilder sb = new StringBuilder("CvdbUpdateAclTaskParams{");
         sb.append("clinicalAnalysisIds=").append(clinicalAnalysisIds);
         sb.append(", allProject=").append(allProject);
         sb.append('}');
@@ -36,7 +36,7 @@ public class CvdbUpdateUsersTaskParams extends ToolParams {
         return clinicalAnalysisIds;
     }
 
-    public CvdbUpdateUsersTaskParams setClinicalAnalysisIds(List<String> clinicalAnalysisIds) {
+    public CvdbUpdateAclTaskParams setClinicalAnalysisIds(List<String> clinicalAnalysisIds) {
         this.clinicalAnalysisIds = clinicalAnalysisIds;
         return this;
     }
@@ -45,7 +45,7 @@ public class CvdbUpdateUsersTaskParams extends ToolParams {
         return allProject;
     }
 
-    public CvdbUpdateUsersTaskParams setAllProject(boolean allProject) {
+    public CvdbUpdateAclTaskParams setAllProject(boolean allProject) {
         this.allProject = allProject;
         return this;
     }

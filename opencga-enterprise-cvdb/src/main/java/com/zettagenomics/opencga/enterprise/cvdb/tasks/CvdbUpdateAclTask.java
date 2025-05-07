@@ -3,7 +3,7 @@ package com.zettagenomics.opencga.enterprise.cvdb.tasks;
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
-import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbUpdateUsersTaskParams;
+import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbUpdateAclTaskParams;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -33,11 +33,11 @@ import java.util.stream.Collectors;
 
 import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
 
-@Tool(id = CvdbUpdateUsersTask.ID, resource = Enums.Resource.CLINICAL_ANALYSIS, description = CvdbUpdateUsersTask.DESCRIPTION)
-public class CvdbUpdateUsersTask extends OpenCgaToolScopeStudy {
-    public static final String ID = "cvdb-users-update";
-    public static final String DESCRIPTION = "Update users in CVDB for a list clinical analyses, or for all clinical analyses in a"
-            + " study or in a project";
+@Tool(id = CvdbUpdateAclTask.ID, resource = Enums.Resource.CLINICAL_ANALYSIS, description = CvdbUpdateAclTask.DESCRIPTION)
+public class CvdbUpdateAclTask extends OpenCgaToolScopeStudy {
+    public static final String ID = "cvdb-acl-update";
+    public static final String DESCRIPTION = "Update the set of permissions granted in CVDB for the OpenCGA users that have access" +
+            " to the clinical analyses.";
 
     public static final String NUM_UPDATED_ATTR = "Num. clinical analyses updated";
     public static final String NUM_NOT_UPDATED_ATTR = "Num. clinical analyses not updated";
@@ -51,7 +51,7 @@ public class CvdbUpdateUsersTask extends OpenCgaToolScopeStudy {
     private CvdbSolrEngine cvdbEngine;
 
     @ToolParams
-    protected CvdbUpdateUsersTaskParams taskParams = new CvdbUpdateUsersTaskParams();
+    protected CvdbUpdateAclTaskParams taskParams = new CvdbUpdateAclTaskParams();
 
     @Override
     protected void check() throws Exception {
@@ -82,7 +82,7 @@ public class CvdbUpdateUsersTask extends OpenCgaToolScopeStudy {
                 cvdbEngine.createCollections(organizationId, project.getId());
             }
         } catch (CvdbException e) {
-            String msg = "Could not perform update users for organization '" + organizationId + "' and project '" + project.getId() + "'";
+            String msg = "Could not perform update ACLs for organization '" + organizationId + "' and project '" + project.getId() + "'";
             logger.error(msg);
             throw new CvdbException(msg);
         }
@@ -116,7 +116,7 @@ public class CvdbUpdateUsersTask extends OpenCgaToolScopeStudy {
             // Add results as attributes
             addAttribute(NUM_UPDATED_ATTR, numUpdated);
             addAttribute(NUM_NOT_UPDATED_ATTR, numTotal - numUpdated);
-            addAttribute("Updated time (in sec.)", (int) stopWatch.getTime(TimeUnit.SECONDS));
+            addAttribute("ACL updating time (in sec.)", (int) stopWatch.getTime(TimeUnit.SECONDS));
         });
     }
 
@@ -141,7 +141,7 @@ public class CvdbUpdateUsersTask extends OpenCgaToolScopeStudy {
 
         // Sanity check
         if (aclResult.getNumResults() != clinicalAnalysisIds.size()) {
-            throw new CvdbException("Something wrong happened, could not get all clinical analyses from the input list to update users");
+            throw new CvdbException("Something wrong happened, could not get all clinical analyses from the input list to update ACLs");
         }
 
         for (Acl acl : aclResult.getResults()) {
@@ -150,7 +150,7 @@ public class CvdbUpdateUsersTask extends OpenCgaToolScopeStudy {
                 cvdbEngine.indexViewers(acl.getId(), acl.getPermissions().get(0).getUserIds(), organizationId, project.getId());
                 numUpdated++;
             } catch (CvdbException | SolrServerException | IOException e) {
-                logger.warn("Could not update users for clinical analysis '{}': {}", acl.getId(), e.getMessage());
+                logger.warn("Could not update ACLs for clinical analysis '{}': {}", acl.getId(), e.getMessage());
             }
         }
     }

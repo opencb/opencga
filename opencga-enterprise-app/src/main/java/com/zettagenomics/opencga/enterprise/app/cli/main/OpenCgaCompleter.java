@@ -79,7 +79,7 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> cvdbList = asList( "analysis-aggregate","analysis-query","evidence-aggregate","evidence-query","index-run","interpretation-aggregate","interpretation-query","variant-aggregate","variant-query","variant-stats")
+    private List<Candidate> cvdbList = asList( "acl-update","analysis-aggregate","analysis-query","evidence-aggregate","evidence-query","index-run","interpretation-aggregate","interpretation-query","variant-aggregate","variant-query","variant-stats")
             .stream()
             .map(Candidate::new)
             .collect(toList());

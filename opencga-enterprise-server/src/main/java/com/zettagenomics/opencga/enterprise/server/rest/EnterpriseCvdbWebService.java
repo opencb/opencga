@@ -5,9 +5,9 @@ import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfigu
 import com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine;
 import com.zettagenomics.opencga.enterprise.cvdb.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.CvdbIndexTask;
-import com.zettagenomics.opencga.enterprise.cvdb.tasks.CvdbUpdateUsersTask;
+import com.zettagenomics.opencga.enterprise.cvdb.tasks.CvdbUpdateAclTask;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbIndexTaskParams;
-import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbUpdateUsersTaskParams;
+import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbUpdateAclTaskParams;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.biodata.models.clinical.interpretation.stats.ClinicalVariantSummaryStats;
@@ -111,9 +111,9 @@ public class EnterpriseCvdbWebService extends OpenCGAWSServer {
     //-------------------------------------------------------------------------
 
     @POST
-    @Path("/user/update")
-    @ApiOperation(value = CvdbIndexTask.DESCRIPTION, response = Job.class)
-    public Response updateUsers(
+    @Path("/acl/update")
+    @ApiOperation(value = CvdbUpdateAclTask.DESCRIPTION, response = Job.class)
+    public Response updateAcl(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobId,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
@@ -123,14 +123,14 @@ public class EnterpriseCvdbWebService extends OpenCGAWSServer {
             String scheduledStartTime,
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
-            @ApiParam(value = CvdbUpdateUsersTaskParams.DESCRIPTION, required = true) CvdbUpdateUsersTaskParams params) {
+            @ApiParam(value = CvdbUpdateAclTaskParams.DESCRIPTION, required = true) CvdbUpdateAclTaskParams params) {
         try {
             // Execute the CVDB update users as a job
-            return submitJob(study, JobType.NATIVE, CvdbUpdateUsersTask.ID, params, jobId, jobDescription, dependsOn, jobTags,
+            return submitJob(study, JobType.NATIVE, CvdbUpdateAclTask.ID, params, jobId, jobDescription, dependsOn, jobTags,
                     scheduledStartTime, jobPriority, dryRun);
 
         } catch (Exception e) {
-            return createErrorResponse(CvdbUpdateUsersTask.DESCRIPTION, e.getMessage());
+            return createErrorResponse(CvdbUpdateAclTask.DESCRIPTION, e.getMessage());
         }
     }
 
