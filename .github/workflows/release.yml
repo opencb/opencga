@@ -64,11 +64,13 @@ jobs:
 
   deploy-python:
     uses: opencb/java-common-libs/.github/workflows/deploy-python-workflow.yml@develop
-    needs: [ build-hdp, deploy-hdp-docker, build-emr, deploy-emr-docker, build-hdi, deploy-hdi-docker, build-emr13, deploy-emr13-docker ]
+    needs: build
     with:
       cli: ./clients/python/python-build.sh push
       artifact: build-folder
-    secrets: inherit
+    secrets:
+      PYPI_TWINE_USER: ${{ secrets.PYPI_TWINE_USER }}
+      PYPI_TWINE_PASSWORD: ${{ secrets.PYPI_TWINE_PASSWORD }}
 
   release:
     name: Create GitHub Release
