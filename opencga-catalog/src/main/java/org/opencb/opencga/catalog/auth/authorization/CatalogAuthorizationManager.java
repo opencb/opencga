@@ -17,17 +17,21 @@
 package org.opencb.opencga.catalog.auth.authorization;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
-import org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.managers.OrganizationManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.Acl;
 import org.opencb.opencga.core.models.AclEntryList;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisPermissions;
 import org.opencb.opencga.core.models.cohort.CohortPermissions;
 import org.opencb.opencga.core.models.common.Enums;
@@ -35,6 +39,7 @@ import org.opencb.opencga.core.models.family.FamilyPermissions;
 import org.opencb.opencga.core.models.file.FilePermissions;
 import org.opencb.opencga.core.models.individual.IndividualPermissions;
 import org.opencb.opencga.core.models.job.JobPermissions;
+import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.panel.PanelPermissions;
 import org.opencb.opencga.core.models.sample.SamplePermissions;
 import org.opencb.opencga.core.models.study.Group;
@@ -57,57 +62,65 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     public static final String MEMBERS_GROUP = ParamConstants.MEMBERS_GROUP;
     public static final String ADMINS_GROUP = ParamConstants.ADMINS_GROUP;
-    private static final String OPENCGA = ParamConstants.OPENCGA_USER_ID;
 
     private final Logger logger;
 
-    private final ProjectDBAdaptor projectDBAdaptor;
-    private final StudyDBAdaptor studyDBAdaptor;
-    private final FileDBAdaptor fileDBAdaptor;
-    private final JobDBAdaptor jobDBAdaptor;
-    private final SampleDBAdaptor sampleDBAdaptor;
-    private final IndividualDBAdaptor individualDBAdaptor;
-    private final CohortDBAdaptor cohortDBAdaptor;
-    private final PanelDBAdaptor panelDBAdaptor;
-    private final FamilyDBAdaptor familyDBAdaptor;
-    private final ClinicalAnalysisDBAdaptor clinicalAnalysisDBAdaptor;
+    private final DBAdaptorFactory dbAdaptorFactory;
+    private final AuthorizationDBAdaptorFactory authorizationDBAdaptorFactory;
 
-    private final AuthorizationDBAdaptor aclDBAdaptor;
-
-    public CatalogAuthorizationManager(DBAdaptorFactory dbFactory, Configuration configuration)
+    public CatalogAuthorizationManager(DBAdaptorFactory dbFactory, AuthorizationDBAdaptorFactory authorizationDBAdaptorFactory)
             throws CatalogDBException {
         this.logger = LoggerFactory.getLogger(CatalogAuthorizationManager.class);
-        this.aclDBAdaptor = new AuthorizationMongoDBAdaptor(dbFactory, configuration);
-
-        projectDBAdaptor = dbFactory.getCatalogProjectDbAdaptor();
-        studyDBAdaptor = dbFactory.getCatalogStudyDBAdaptor();
-        fileDBAdaptor = dbFactory.getCatalogFileDBAdaptor();
-        jobDBAdaptor = dbFactory.getCatalogJobDBAdaptor();
-        sampleDBAdaptor = dbFactory.getCatalogSampleDBAdaptor();
-        individualDBAdaptor = dbFactory.getCatalogIndividualDBAdaptor();
-        cohortDBAdaptor = dbFactory.getCatalogCohortDBAdaptor();
-        panelDBAdaptor = dbFactory.getCatalogPanelDBAdaptor();
-        familyDBAdaptor = dbFactory.getCatalogFamilyDBAdaptor();
-        clinicalAnalysisDBAdaptor = dbFactory.getClinicalAnalysisDBAdaptor();
+        this.dbAdaptorFactory = dbFactory;
+        this.authorizationDBAdaptorFactory = authorizationDBAdaptorFactory;
     }
 
     @Override
-    public void checkCanEditProject(long projectId, String userId) throws CatalogException {
-        if (isInstallationAdministrator(userId)) {
+    public void checkCanEditProject(String organizationId, long projectId, String userId) throws CatalogException {
+        if (isAtLeastOrganizationOwnerOrAdmin(organizationId, userId)) {
             return;
         }
-        if (projectDBAdaptor.getOwnerId(projectId).equals(userId)) {
-            return;
+        try {
+            checkUserIsStudyAdminInAllStudiesOfProject(organizationId, projectId, userId);
+        } catch (CatalogException e) {
+            throw new CatalogAuthorizationException("Permission denied: Only the organization owner, administrators, or users who are "
+                    + "study administrators in all studies within the project can update the project.", e);
         }
-        throw new CatalogAuthorizationException("Permission denied: Only the owner of the project can update it.");
+    }
+
+    private void checkUserIsStudyAdminInAllStudiesOfProject(String organizationId, long projectUid, String userId) throws CatalogException {
+        Query query = new Query(StudyDBAdaptor.QueryParams.PROJECT_UID.key(), projectUid);
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(StudyDBAdaptor.QueryParams.GROUPS.key(), StudyDBAdaptor.QueryParams.FQN.key()));
+        OpenCGAResult<Study> studyResult = dbAdaptorFactory.getCatalogStudyDBAdaptor(organizationId).get(query, options);
+        List<String> nonAdminStudyIds = new ArrayList<>();
+        for (Study study : studyResult.getResults()) {
+            for (Group group : study.getGroups()) {
+                if (group.getId().equals(ADMINS_GROUP)) {
+                    if (!group.getUserIds().contains(userId)) {
+                        nonAdminStudyIds.add(study.getFqn());
+                    }
+                    break;
+                }
+            }
+        }
+        if (!nonAdminStudyIds.isEmpty()) {
+            throw new CatalogAuthorizationException("Permission denied: User " + userId + " is not an administrator of the following"
+                    + " studies: " + String.join(", ", nonAdminStudyIds));
+        }
     }
 
     @Override
-    public void checkCanViewProject(long projectId, String userId) throws CatalogException {
-        if (isInstallationAdministrator(userId)) {
+    public void checkCanViewOrganization(String organizationId, String userId) throws CatalogAuthorizationException {
+        if (isOpencgaAdministrator(organizationId, userId)) {
             return;
         }
-        if (projectDBAdaptor.getOwnerId(projectId).equals(userId)) {
+        checkUserExists(organizationId, userId);
+    }
+
+    @Override
+    public void checkCanViewProject(String organizationId, long projectId, String userId) throws CatalogException {
+        if (isAtLeastOrganizationOwnerOrAdmin(organizationId, userId)) {
             return;
         }
 
@@ -116,7 +129,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 .append(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId)
                 .append(StudyDBAdaptor.QueryParams.GROUP_USER_IDS.key(), userId);
 
-        if (studyDBAdaptor.count(query).getNumMatches() > 0) {
+        if (dbAdaptorFactory.getCatalogStudyDBAdaptor(organizationId).count(query).getNumMatches() > 0) {
             return;
         }
 
@@ -124,110 +137,87 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void checkStudyPermission(long studyId, String userId, StudyPermissions.Permissions permission) throws CatalogException {
-        checkStudyPermission(studyId, userId, permission, permission.toString());
-    }
-
-    @Override
-    public void checkStudyPermission(long studyId, String userId, StudyPermissions.Permissions permission, String message)
+    public void checkStudyPermission(String organizationId, long studyUid, JwtPayload payload, StudyPermissions.Permissions permission)
             throws CatalogException {
-        if (isInstallationAdministrator(userId)) {
+        String userId = payload.getUserId(organizationId);
+        if (isOpencgaAdministrator(organizationId, userId)) {
             return;
         } else {
-            if (studyDBAdaptor.hasStudyPermission(studyId, userId, permission)) {
+            if (dbAdaptorFactory.getCatalogStudyDBAdaptor(organizationId).hasStudyPermission(studyUid, userId, permission)) {
                 return;
             }
         }
-        throw CatalogAuthorizationException.deny(userId, message, "Study", studyId, null);
+        throw CatalogAuthorizationException.deny(userId, permission.name(), "Study", studyUid, null);
     }
 
     @Override
-    public void checkCanEditStudy(long studyId, String userId) throws CatalogException {
-        if (isInstallationAdministrator(userId)) {
+    public void checkStudyPermission(String organizationId, long studyId, String userId, StudyPermissions.Permissions permission)
+            throws CatalogException {
+        if (isAtLeastOrganizationOwnerOrAdmin(organizationId, userId)) {
             return;
+        } else {
+            if (dbAdaptorFactory.getCatalogStudyDBAdaptor(organizationId).hasStudyPermission(studyId, userId, permission)) {
+                return;
+            }
         }
+        throw CatalogAuthorizationException.deny(userId, permission.name(), "Study", studyId, null);
+    }
 
-        String ownerId = studyDBAdaptor.getOwnerId(studyId);
-        if (!ownerId.equals(userId) && !isAdministrativeUser(studyId, userId)) {
-            throw new CatalogAuthorizationException("Only owners or administrative users are allowed to modify a study");
+    @Override
+    public void checkCanEditStudy(String organizationId, long studyId, String userId) throws CatalogException {
+        if (!this.isAtLeastStudyAdministrator(organizationId, studyId, userId)) {
+            throw CatalogAuthorizationException.notStudyAdmin("modify a study");
         }
     }
 
     @Override
-    public void checkCanViewStudy(long studyId, String userId) throws CatalogException {
-        if (isInstallationAdministrator(userId)) {
+    public void checkCanViewStudy(String organizationId, long studyId, String userId) throws CatalogException {
+        if (isOpencgaAdministrator(organizationId, userId)) {
             return;
         }
 
-        String ownerId = studyDBAdaptor.getOwnerId(studyId);
-        if (ownerId.equals(userId)) {
-            return;
-        }
-
-        OpenCGAResult<Group> groupBelonging = getGroupBelonging(studyId, userId);
+        OpenCGAResult<Group> groupBelonging = getGroupBelonging(organizationId, studyId, userId);
         if (groupBelonging.getNumResults() == 0) {
-            throw new CatalogAuthorizationException("Only the members of the study are allowed to see it");
+            throw CatalogAuthorizationException.notStudyMember("see it");
         }
     }
 
     @Override
-    public void checkCanUpdatePermissionRules(long studyId, String userId) throws CatalogException {
-        if (isInstallationAdministrator(userId)) {
-            return;
-        }
-
-        String ownerId = studyDBAdaptor.getOwnerId(studyId);
-        if (!ownerId.equals(userId) && !isAdministrativeUser(studyId, userId)) {
-            throw new CatalogAuthorizationException("Only owners or administrative users are allowed to modify a update permission rules");
+    public void checkCanUpdatePermissionRules(String organizationId, long studyId, String userId) throws CatalogException {
+        if (!isAtLeastStudyAdministrator(organizationId, studyId, userId)) {
+            throw CatalogAuthorizationException.notStudyAdmin("update the permission rules");
         }
     }
 
     @Override
-    public void checkCreateDeleteGroupPermissions(long studyId, String userId, String group) throws CatalogException {
+    public void checkCreateDeleteGroupPermissions(String organizationId, long studyId, String userId, String group)
+            throws CatalogException {
         if (group.equals(MEMBERS_GROUP) || group.equals(ADMINS_GROUP)) {
             throw new CatalogAuthorizationException(group + " is a protected group that cannot be created or deleted.");
         }
 
-        if (isInstallationAdministrator(userId)) {
-            return;
-        }
-
-        String ownerId = studyDBAdaptor.getOwnerId(studyId);
-        if (!userId.equals(ownerId) && !isAdministrativeUser(studyId, userId)) {
-            throw new CatalogAuthorizationException("Only administrative users are allowed to create/remove groups.");
+        if (!isAtLeastStudyAdministrator(organizationId, studyId, userId)) {
+            throw CatalogAuthorizationException.notStudyAdmin("create or remove groups.");
         }
     }
 
     @Override
-    public void checkSyncGroupPermissions(long studyId, String userId, String group) throws CatalogException {
-        checkCreateDeleteGroupPermissions(studyId, userId, group);
+    public void checkSyncGroupPermissions(String organizationId, long studyUid, String userId, String group) throws CatalogException {
+        checkCreateDeleteGroupPermissions(organizationId, studyUid, userId, group);
     }
 
     @Override
-    public void checkUpdateGroupPermissions(long studyId, String userId, String group, ParamUtils.BasicUpdateAction action)
-            throws CatalogException {
-        String ownerId = studyDBAdaptor.getOwnerId(studyId);
-
-        if (userId.equals(ownerId)) {
-            // Granted permission but check it is a valid action
-            if (group.equals(MEMBERS_GROUP)
-                    && (action != ParamUtils.BasicUpdateAction.ADD && action != ParamUtils.BasicUpdateAction.REMOVE)) {
-                throw new CatalogAuthorizationException("Only ADD or REMOVE actions are accepted for @members group.");
-            }
-            return;
+    public void checkUpdateGroupPermissions(String organizationId, long studyId, String userId, String group,
+                                            ParamUtils.BasicUpdateAction action) throws CatalogException {
+        if (MEMBERS_GROUP.equals(group)
+                && (action != ParamUtils.BasicUpdateAction.ADD && action != ParamUtils.BasicUpdateAction.REMOVE)) {
+            throw new CatalogAuthorizationException("Only ADD or REMOVE actions are accepted for " + MEMBERS_GROUP + " group.");
         }
-
-        if (group.equals(ADMINS_GROUP)) {
-            throw new CatalogAuthorizationException("Only the owner of the study can assign/remove users to the administrative group.");
+        if (ADMINS_GROUP.equals(group) && !isAtLeastOrganizationOwnerOrAdmin(organizationId, userId)) {
+            throw CatalogAuthorizationException.notOrganizationOwnerOrAdmin("assign or remove users to the " + ADMINS_GROUP + " group.");
         }
-
-        if (!isInstallationAdministrator(userId) && !isAdministrativeUser(studyId, userId)) {
-            throw new CatalogAuthorizationException("Only administrative users are allowed to assign/remove users to groups.");
-        }
-
-        // Check it is a valid action
-        if (group.equals(MEMBERS_GROUP) && (action != ParamUtils.BasicUpdateAction.ADD && action != ParamUtils.BasicUpdateAction.REMOVE)) {
-            throw new CatalogAuthorizationException("Only ADD or REMOVE actions are accepted for @members group.");
+        if (!isAtLeastStudyAdministrator(organizationId, studyId, userId)) {
+            throw CatalogAuthorizationException.notStudyAdmin("assign or remove users to groups.");
         }
     }
 
@@ -241,67 +231,84 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void checkCanAssignOrSeePermissions(long studyId, String userId) throws CatalogException {
-        if (isInstallationAdministrator(userId)) {
-            return;
-        }
-
-        String ownerId = studyDBAdaptor.getOwnerId(studyId);
-        if (!ownerId.equals(userId) && !isAdministrativeUser(studyId, userId)) {
-            throw new CatalogAuthorizationException("Only owners or administrative users are allowed to assign or see all permissions");
+    public void checkCanAssignOrSeePermissions(String organizationId, long studyId, String userId) throws CatalogException {
+        if (!isAtLeastStudyAdministrator(organizationId, studyId, userId)) {
+            throw CatalogAuthorizationException.notStudyAdmin("assign or see all permissions");
         }
     }
 
     @Override
-    public void checkCanCreateUpdateDeleteVariableSets(long studyId, String userId) throws CatalogException {
-        if (isInstallationAdministrator(userId)) {
-            return;
-        }
-
-        String ownerId = studyDBAdaptor.getOwnerId(studyId);
-
-        if (!ownerId.equals(userId) && !isAdministrativeUser(studyId, userId)) {
-            throw new CatalogAuthorizationException("Only owners or administrative users are allowed to create/update/delete variable "
-                    + "sets");
+    public void checkCanCreateUpdateDeleteVariableSets(String organizationId, long studyId, String userId) throws CatalogException {
+        if (!isAtLeastStudyAdministrator(organizationId, studyId, userId)) {
+            throw CatalogAuthorizationException.notStudyAdmin("create, update or delete variable sets.");
         }
     }
 
     @Override
-    public Boolean isInstallationAdministrator(String user) {
-        return OPENCGA.equals(user);
+    public boolean isOpencgaAdministrator(String organization, String userId) throws CatalogAuthorizationException {
+        if (ParamConstants.ADMIN_ORGANIZATION.equals(organization) || userId.startsWith(ParamConstants.ADMIN_ORGANIZATION + ":")) {
+            // Check user exists in ADMIN ORGANIZATION
+            String user = userId.replace(ParamConstants.ADMIN_ORGANIZATION + ":", "");
+            checkUserExists(ParamConstants.ADMIN_ORGANIZATION, user);
+            return true;
+        }
+        return false;
     }
 
     @Override
-    public void checkIsInstallationAdministrator(String user) throws CatalogException {
-        if (!isInstallationAdministrator(user)) {
-            throw new CatalogAuthorizationException("Only ADMINISTRATOR users are allowed to perform this action");
-        }
-    }
-
-    @Override
-    public void checkIsOwnerOrAdmin(long studyId, String userId) throws CatalogException {
-        if (isInstallationAdministrator(userId)) {
-            return;
-        }
-
-        if (!isOwnerOrAdmin(studyId, userId)) {
-            throw new CatalogAuthorizationException("Only owners or administrative users are allowed to perform this action");
+    public void checkIsOpencgaAdministrator(String organizationId, String userId, String action) throws CatalogException {
+        if (!isOpencgaAdministrator(organizationId, userId)) {
+            throw CatalogAuthorizationException.opencgaAdminOnlySupportedOperation(action);
         }
     }
 
     @Override
-    public Boolean isOwnerOrAdmin(long studyId, String userId) throws CatalogException {
-        String ownerId = studyDBAdaptor.getOwnerId(studyId);
-
-        if (!ownerId.equals(userId) && !isAdministrativeUser(studyId, userId)) {
-            return false;
+    public void checkIsAtLeastOrganizationOwner(String organizationId, String userId) throws CatalogException {
+        if (!isAtLeastOrganizationOwner(organizationId, userId)) {
+            throw CatalogAuthorizationException.notOrganizationOwner();
         }
-        return true;
     }
 
+    @Override
+    public void checkIsAtLeastOrganizationOwnerOrAdmin(String organizationId, String userId) throws CatalogException {
+        if (!isAtLeastOrganizationOwnerOrAdmin(organizationId, userId)) {
+            throw CatalogAuthorizationException.notOrganizationOwnerOrAdmin();
+        }
+    }
 
-    private boolean isAdministrativeUser(long studyId, String user) throws CatalogException {
-        OpenCGAResult<Group> groupBelonging = getGroupBelonging(studyId, user);
+    @Override
+    public boolean isAtLeastOrganizationOwner(String organizationId, String userId) throws CatalogException {
+        if (isOpencgaAdministrator(organizationId, userId)) {
+            return true;
+        }
+        OrganizationDBAdaptor organizationDBAdaptor = dbAdaptorFactory.getCatalogOrganizationDBAdaptor(organizationId);
+        Organization organization = organizationDBAdaptor.get(OrganizationManager.INCLUDE_ORGANIZATION_ADMINS).first();
+        return organization.getOwner().equals(userId);
+    }
+
+    @Override
+    public boolean isAtLeastOrganizationOwnerOrAdmin(String organizationId, String userId) throws CatalogException {
+        if (isOpencgaAdministrator(organizationId, userId)) {
+            return true;
+        }
+        OrganizationDBAdaptor organizationDBAdaptor = dbAdaptorFactory.getCatalogOrganizationDBAdaptor(organizationId);
+        Organization organization = organizationDBAdaptor.get(OrganizationManager.INCLUDE_ORGANIZATION_ADMINS).first();
+        return userId.equals(organization.getOwner()) || organization.getAdmins().contains(userId);
+    }
+
+    @Override
+    public void checkIsAtLeastStudyAdministrator(String organizationId, long studyId, String userId) throws CatalogException {
+        if (!isAtLeastStudyAdministrator(organizationId, studyId, userId)) {
+            throw CatalogAuthorizationException.notStudyAdmin("perform this action");
+        }
+    }
+
+    @Override
+    public boolean isAtLeastStudyAdministrator(String organizationId, long studyId, String user) throws CatalogException {
+        if (isAtLeastOrganizationOwnerOrAdmin(organizationId, user)) {
+            return true;
+        }
+        OpenCGAResult<Group> groupBelonging = getGroupBelonging(organizationId, studyId, user);
         for (Group group : groupBelonging.getResults()) {
             if (group.getId().equals(ADMINS_GROUP)) {
                 return true;
@@ -311,21 +318,22 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void checkFilePermission(long studyId, long fileId, String userId, FilePermissions permission)
+    public void checkFilePermission(String organizationId, long studyId, long fileId, String userId, FilePermissions permission)
             throws CatalogException {
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.UID.key(), fileId)
                 .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(ParamConstants.ACL_PARAM, userId + ":" + permission.name());
 
-        if (checkUserPermission(userId, query, fileDBAdaptor)) {
+        if (checkUserPermission(organizationId, userId, query, dbAdaptorFactory.getCatalogFileDBAdaptor(organizationId))) {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "File", fileId, null);
     }
 
-    private boolean checkUserPermission(String userId, Query query, CoreDBAdaptor dbAdaptor) throws CatalogException {
-        if (isInstallationAdministrator(userId)) {
+    private boolean checkUserPermission(String organizationId, String userId, Query query, CoreDBAdaptor dbAdaptor)
+            throws CatalogException {
+        if (isAtLeastOrganizationOwnerOrAdmin(organizationId, userId)) {
             return true;
         } else {
             if (dbAdaptor.count(query, userId).getNumMatches() == 1) {
@@ -336,55 +344,56 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void checkSamplePermission(long studyId, long sampleId, String userId, SamplePermissions permission)
+    public void checkSamplePermission(String organizationId, long studyId, long sampleId, String userId, SamplePermissions permission)
             throws CatalogException {
         Query query = new Query()
                 .append(SampleDBAdaptor.QueryParams.UID.key(), sampleId)
                 .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(ParamConstants.ACL_PARAM, userId + ":" + permission.name());
 
-        if (checkUserPermission(userId, query, sampleDBAdaptor)) {
+        if (checkUserPermission(organizationId, userId, query, dbAdaptorFactory.getCatalogSampleDBAdaptor(organizationId))) {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "Sample", sampleId, null);
     }
 
     @Override
-    public void checkIndividualPermission(long studyId, long individualId, String userId,
+    public void checkIndividualPermission(String organizationId, long studyId, long individualId, String userId,
                                           IndividualPermissions permission) throws CatalogException {
         Query query = new Query()
                 .append(IndividualDBAdaptor.QueryParams.UID.key(), individualId)
                 .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(ParamConstants.ACL_PARAM, userId + ":" + permission.name());
 
-        if (checkUserPermission(userId, query, individualDBAdaptor)) {
+        if (checkUserPermission(organizationId, userId, query, dbAdaptorFactory.getCatalogIndividualDBAdaptor(organizationId))) {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "Individual", individualId, null);
     }
 
     @Override
-    public void checkJobPermission(long studyId, long jobId, String userId, JobPermissions permission) throws CatalogException {
+    public void checkJobPermission(String organizationId, long studyId, long jobId, String userId, JobPermissions permission)
+            throws CatalogException {
         Query query = new Query()
                 .append(JobDBAdaptor.QueryParams.UID.key(), jobId)
                 .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(ParamConstants.ACL_PARAM, userId + ":" + permission.name());
 
-        if (checkUserPermission(userId, query, jobDBAdaptor)) {
+        if (checkUserPermission(organizationId, userId, query, dbAdaptorFactory.getCatalogJobDBAdaptor(organizationId))) {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "Job", jobId, null);
     }
 
     @Override
-    public void checkCohortPermission(long studyId, long cohortId, String userId, CohortPermissions permission)
+    public void checkCohortPermission(String organizationId, long studyId, long cohortId, String userId, CohortPermissions permission)
             throws CatalogException {
         Query query = new Query()
                 .append(CohortDBAdaptor.QueryParams.UID.key(), cohortId)
                 .append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(ParamConstants.ACL_PARAM, userId + ":" + permission.name());
 
-        if (checkUserPermission(userId, query, cohortDBAdaptor)) {
+        if (checkUserPermission(organizationId, userId, query, dbAdaptorFactory.getCatalogCohortDBAdaptor(organizationId))) {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "Cohort", cohortId, null);
@@ -392,28 +401,28 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void checkPanelPermission(long studyId, long panelId, String userId, PanelPermissions permission)
+    public void checkPanelPermission(String organizationId, long studyId, long panelId, String userId, PanelPermissions permission)
             throws CatalogException {
         Query query = new Query()
                 .append(PanelDBAdaptor.QueryParams.UID.key(), panelId)
                 .append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(ParamConstants.ACL_PARAM, userId + ":" + permission.name());
 
-        if (checkUserPermission(userId, query, panelDBAdaptor)) {
+        if (checkUserPermission(organizationId, userId, query, dbAdaptorFactory.getCatalogPanelDBAdaptor(organizationId))) {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "Panel", panelId, null);
     }
 
     @Override
-    public void checkFamilyPermission(long studyId, long familyId, String userId, FamilyPermissions permission)
+    public void checkFamilyPermission(String organizationId, long studyId, long familyId, String userId, FamilyPermissions permission)
             throws CatalogException {
         Query query = new Query()
                 .append(FamilyDBAdaptor.QueryParams.UID.key(), familyId)
                 .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(ParamConstants.ACL_PARAM, userId + ":" + permission.name());
 
-        if (checkUserPermission(userId, query, familyDBAdaptor)) {
+        if (checkUserPermission(organizationId, userId, query, dbAdaptorFactory.getCatalogFamilyDBAdaptor(organizationId))) {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "Family", familyId, null);
@@ -421,91 +430,128 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void checkClinicalAnalysisPermission(long studyId, long analysisId, String userId,
+    public void checkClinicalAnalysisPermission(String organizationId, long studyId, long analysisId, String userId,
                                                 ClinicalAnalysisPermissions permission) throws CatalogException {
         Query query = new Query()
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.UID.key(), analysisId)
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(ParamConstants.ACL_PARAM, userId + ":" + permission.name());
 
-        if (checkUserPermission(userId, query, clinicalAnalysisDBAdaptor)) {
+        if (checkUserPermission(organizationId, userId, query, dbAdaptorFactory.getClinicalAnalysisDBAdaptor(organizationId))) {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "ClinicalAnalysis", analysisId, null);
     }
 
     @Override
-    public OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> getAllStudyAcls(String userId, long studyId)
-            throws CatalogException {
-        checkCanAssignOrSeePermissions(studyId, userId);
-        return aclDBAdaptor.get(studyId, null, null, Enums.Resource.STUDY, StudyPermissions.Permissions.class);
+    public List<Acl> getEffectivePermissions(String organizationId, long studyUid, List<String> resourceIdList, List<String> permissions,
+                                             Enums.Resource resource) throws CatalogException {
+        HashSet<String> resourcePermissions = new HashSet<>(resource.getFullPermissionList());
+        for (String permission : permissions) {
+            if (!resourcePermissions.contains(permission)) {
+                throw new CatalogParameterException("Permission '" + permission + "' does not correspond with any of the available"
+                        + " permissions. This is the full list of possible permissions: " + StringUtils.join(resourcePermissions, ", "));
+            }
+        }
+
+        List<Acl> acls = authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId)
+                .effectivePermissions(studyUid, resourceIdList, resource);
+        if (CollectionUtils.isNotEmpty(permissions)) {
+            // Filter out other permissions
+            for (Acl acl : acls) {
+                List<Acl.Permission> permissionList = new ArrayList<>(permissions.size());
+                for (Acl.Permission aclPermission : acl.getPermissions()) {
+                    if (permissions.contains(aclPermission.getId())) {
+                        permissionList.add(aclPermission);
+                    }
+                }
+                acl.setPermissions(permissionList);
+            }
+        }
+        return acls;
     }
 
     @Override
-    public OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> getStudyAcl(String userId, long studyUid, List<String> members)
+    public OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> getAllStudyAcls(String organizationId, long studyId, String userId)
             throws CatalogException {
-        checkCanSeePermissions(userId, studyUid, members);
-        Map<String, List<String>> userGroups = extractUserGroups(studyUid, members);
-        return aclDBAdaptor.get(studyUid, members, userGroups, Enums.Resource.STUDY, StudyPermissions.Permissions.class);
+        checkCanAssignOrSeePermissions(organizationId, studyId, userId);
+        return authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId)
+                .get(studyId, null, null, Enums.Resource.STUDY, StudyPermissions.Permissions.class);
     }
 
     @Override
-    public OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> getStudyAcl(List<Long> studyUids, List<String> members)
-            throws CatalogException {
+    public OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> getStudyAcl(String organizationId, long studyUid, List<String> members,
+                                                                                 String userId) throws CatalogException {
+        checkCanSeePermissions(organizationId, studyUid, members, userId);
+        Map<String, List<String>> userGroups = extractUserGroups(organizationId, studyUid, members);
+        return authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId)
+                .get(studyUid, members, userGroups, Enums.Resource.STUDY, StudyPermissions.Permissions.class);
+    }
+
+    @Override
+    public OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> getStudyAcl(String organizationId, List<Long> studyUids,
+                                                                                 List<String> members) throws CatalogException {
         OpenCGAResult<AclEntryList<StudyPermissions.Permissions>> result = OpenCGAResult.empty();
         for (Long studyUid : studyUids) {
-            Map<String, List<String>> userGroups = extractUserGroups(studyUid, members);
-            result.append(aclDBAdaptor.get(studyUid, members, userGroups, Enums.Resource.STUDY, StudyPermissions.Permissions.class));
+            Map<String, List<String>> userGroups = extractUserGroups(organizationId, studyUid, members);
+            result.append(authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId)
+                    .get(studyUid, members, userGroups, Enums.Resource.STUDY, StudyPermissions.Permissions.class));
         }
         return result;
     }
 
     @Override
-    public <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> getAcl(String userId, long studyUid, List<Long> resourceUids,
-                                                                     List<String> members, Enums.Resource resource, Class<T> clazz)
+    public <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> getAcl(String organizationId, long studyUid, List<Long> resourceUids,
+                                                                     List<String> members, Enums.Resource resource, Class<T> clazz,
+                                                                     String userId) throws CatalogException {
+        checkCanSeePermissions(organizationId, studyUid, members, userId);
+        Map<String, List<String>> userGroups = extractUserGroups(organizationId, studyUid, members);
+        return authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId)
+                .get(resourceUids, members, userGroups, resource, clazz);
+    }
+
+    @Override
+    public <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> getAcl(String organizationId, long studyUid, List<Long> resourceUids,
+                                                                     Enums.Resource resource, Class<T> clazz, String userId)
             throws CatalogException {
-        checkCanSeePermissions(userId, studyUid, members);
-        Map<String, List<String>> userGroups = extractUserGroups(studyUid, members);
-        return aclDBAdaptor.get(resourceUids, members, userGroups, resource, clazz);
+        checkCanAssignOrSeePermissions(organizationId, studyUid, userId);
+        return authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId)
+                .get(resourceUids, null, null, resource, clazz);
     }
 
     @Override
-    public <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> getAcl(String userId, long studyUid, List<Long> resourceUids,
-                                                                     Enums.Resource resource, Class<T> clazz) throws CatalogException {
-        checkCanAssignOrSeePermissions(studyUid, userId);
-        return aclDBAdaptor.get(resourceUids, null, null, resource, clazz);
-    }
-
-    @Override
-    public <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> getAcls(long studyUid, List<Long> resourceUids, Enums.Resource resource,
-                                                                      Class<T> clazz) throws CatalogException {
-        return aclDBAdaptor.get(resourceUids, null, null, resource, clazz);
-    }
-
-    @Override
-    public <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> getAcls(long studyUid, List<Long> resourceUids, List<String> members,
+    public <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> getAcls(String organizationId, long studyUid, List<Long> resourceUids,
                                                                       Enums.Resource resource, Class<T> clazz) throws CatalogException {
-        Map<String, List<String>> userGroups = extractUserGroups(studyUid, members);
-        return aclDBAdaptor.get(resourceUids, members, userGroups, resource, clazz);
+        return authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId)
+                .get(resourceUids, null, null, resource, clazz);
     }
 
-    private void checkCanSeePermissions(String userId, long studyId, List<String> members) throws CatalogException {
+    @Override
+    public <T extends Enum<T>> OpenCGAResult<AclEntryList<T>> getAcls(String organizationId, long studyUid, List<Long> resourceUids,
+                                                                      List<String> members, Enums.Resource resource, Class<T> clazz)
+            throws CatalogException {
+        Map<String, List<String>> userGroups = extractUserGroups(organizationId, studyUid, members);
+        return authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId)
+                .get(resourceUids, members, userGroups, resource, clazz);
+    }
+
+    private void checkCanSeePermissions(String organizationId, long studyId, List<String> members, String userId) throws CatalogException {
         try {
-            checkCanAssignOrSeePermissions(studyId, userId);
+            checkCanAssignOrSeePermissions(organizationId, studyId, userId);
         } catch (CatalogException e) {
             // It will be OK if the userId asking for the ACLs wants to see its own permissions
             for (String member : members) {
-                checkAskingOwnPermissions(userId, member, studyId);
+                checkAskingOwnPermissions(organizationId, studyId, member, userId);
             }
         }
     }
 
-    private Map<String, List<String>> extractUserGroups(long studyId, List<String> members) throws CatalogException {
+    private Map<String, List<String>> extractUserGroups(String organizationId, long studyId, List<String> members) throws CatalogException {
         Map<String, List<String>> userGroups = new HashMap<>();
         List<String> userList = members.stream().filter(m -> !m.startsWith("@")).collect(Collectors.toList());
         if (!userList.isEmpty()) {
             // If member is a user, we will also store the groups the user might belong to fetch those permissions as well
-            OpenCGAResult<Group> groups = getGroupBelonging(studyId, userList);
+            OpenCGAResult<Group> groups = getGroupBelonging(organizationId, studyId, userList);
 
             // Fill in map with the results
             for (String user : userList) {
@@ -523,14 +569,15 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void resetPermissionsFromAllEntities(long studyId, List<String> members) throws CatalogException {
-        aclDBAdaptor.resetMembersFromAllEntries(studyId, members);
+    public void resetPermissionsFromAllEntities(String organizationId, long studyId, List<String> members) throws CatalogException {
+        authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId)
+                .resetMembersFromAllEntries(studyId, members);
     }
 
-    private void checkAskingOwnPermissions(String userId, String member, long studyId) throws CatalogException {
+    private void checkAskingOwnPermissions(String organizationId, long studyId, String member, String userId) throws CatalogException {
         if (member.startsWith("@")) { //group
             // If the userId does not belong to the group...
-            OpenCGAResult<Group> groupsBelonging = getGroupBelonging(studyId, userId);
+            OpenCGAResult<Group> groupsBelonging = getGroupBelonging(organizationId, studyId, userId);
             for (Group group : groupsBelonging.getResults()) {
                 if (group.getId().equals(member)) {
                     return;
@@ -548,36 +595,44 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void setStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions) throws CatalogException {
-        aclDBAdaptor.setToMembers(studyIds, members, getImplicitPermissions(permissions, Enums.Resource.STUDY));
+    public void setStudyAcls(String organizationId, List<Long> studyIds, List<String> members, List<String> permissions)
+            throws CatalogException {
+        authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId)
+                .setToMembers(studyIds, members, getImplicitPermissions(permissions, Enums.Resource.STUDY));
     }
 
     @Override
-    public void addStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions) throws CatalogException {
-        aclDBAdaptor.addToMembers(studyIds, members, getImplicitPermissions(permissions, Enums.Resource.STUDY));
+    public void addStudyAcls(String organizationId, List<Long> studyIds, List<String> members, List<String> permissions)
+            throws CatalogException {
+        authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId)
+                .addToMembers(studyIds, members, getImplicitPermissions(permissions, Enums.Resource.STUDY));
     }
 
     @Override
-    public void removeStudyAcls(List<Long> studyIds, List<String> members, @Nullable List<String> permissions) throws CatalogException {
-        removeAcls(members, new CatalogAclParams(studyIds, permissions, Enums.Resource.STUDY));
+    public void removeStudyAcls(String organizationId, List<Long> studyIds, List<String> members, @Nullable List<String> permissions)
+            throws CatalogException {
+        removeAcls(organizationId, members, new CatalogAclParams(studyIds, permissions, Enums.Resource.STUDY));
     }
 
     @Override
-    public void setAcls(long studyUid, List<String> members, List<CatalogAclParams> aclParams) throws CatalogException {
+    public void setAcls(String organizationId, long studyUid, List<String> members, List<CatalogAclParams> aclParams)
+            throws CatalogException {
         setImplicitPermissions(aclParams);
-        aclDBAdaptor.setToMembers(studyUid, members, aclParams);
+        authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId)
+                .setToMembers(studyUid, members, aclParams);
     }
 
     @Override
-    public void addAcls(long studyId, List<String> members, List<CatalogAclParams> aclParams) throws CatalogException {
+    public void addAcls(String organizationId, long studyId, List<String> members, List<CatalogAclParams> aclParams)
+            throws CatalogException {
         setImplicitPermissions(aclParams);
-        aclDBAdaptor.addToMembers(studyId, members, aclParams);
+        authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId).addToMembers(studyId, members, aclParams);
     }
 
     @Override
-    public void removeAcls(List<String> members, List<CatalogAclParams> aclParams) throws CatalogException {
+    public void removeAcls(String organizationId, List<String> members, List<CatalogAclParams> aclParams) throws CatalogException {
         setDependentPermissions(aclParams);
-        aclDBAdaptor.removeFromMembers(members, aclParams);
+        authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId).removeFromMembers(members, aclParams);
     }
 
     private void setDependentPermissions(List<CatalogAclParams> aclParams) throws CatalogAuthorizationException {
@@ -920,55 +975,62 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void replicateAcls(List<Long> uids, AclEntryList<?> aclEntryList, Enums.Resource resource) throws CatalogException {
+    public void replicateAcls(String organizationId, List<Long> uids, AclEntryList<?> aclEntryList, Enums.Resource resource)
+            throws CatalogException {
         if (CollectionUtils.isEmpty(uids)) {
             throw new CatalogDBException("Missing identifiers to set acls");
         }
         if (CollectionUtils.isEmpty(aclEntryList.getAcl())) {
             return;
         }
-        aclDBAdaptor.setAcls(uids, aclEntryList, resource);
+        authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId).setAcls(uids, aclEntryList, resource);
     }
 
     @Override
-    public void applyPermissionRule(long studyId, PermissionRule permissionRule, Enums.Entity entry) throws CatalogException {
+    public void applyPermissionRule(String organizationId, long studyId, PermissionRule permissionRule, Enums.Entity entry)
+            throws CatalogException {
         // 1. We obtain which of those members are actually users to add them to the @members group automatically
         List<String> userList = permissionRule.getMembers().stream()
                 .filter(member -> !member.startsWith("@"))
                 .collect(Collectors.toList());
         if (CollectionUtils.isNotEmpty(userList)) {
             // We first add the member to the @members group in case they didn't belong already
-            studyDBAdaptor.addUsersToGroup(studyId, MEMBERS_GROUP, userList);
+            dbAdaptorFactory.getCatalogStudyDBAdaptor(organizationId).addUsersToGroup(studyId, MEMBERS_GROUP, userList);
         }
 
         // 2. We can apply the permission rules
-        aclDBAdaptor.applyPermissionRules(studyId, permissionRule, entry);
+        authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId)
+                .applyPermissionRules(studyId, permissionRule, entry);
     }
 
     @Override
-    public void removePermissionRuleAndRemovePermissions(Study study, String permissionRuleId, Enums.Entity entry)
+    public void removePermissionRuleAndRemovePermissions(String organizationId, Study study, String permissionRuleId, Enums.Entity entry)
             throws CatalogException {
         ParamUtils.checkObj(permissionRuleId, "PermissionRule id");
         ParamUtils.checkObj(entry, "Entity");
 
-        aclDBAdaptor.removePermissionRuleAndRemovePermissions(study, permissionRuleId, entry);
+        authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId)
+                .removePermissionRuleAndRemovePermissions(study, permissionRuleId, entry);
     }
 
     @Override
-    public void removePermissionRuleAndRestorePermissions(Study study, String permissionRuleId, Enums.Entity entry)
+    public void removePermissionRuleAndRestorePermissions(String organizationId, Study study, String permissionRuleId, Enums.Entity entry)
             throws CatalogException {
         ParamUtils.checkObj(permissionRuleId, "PermissionRule id");
         ParamUtils.checkObj(entry, "Entity");
 
-        aclDBAdaptor.removePermissionRuleAndRestorePermissions(study, permissionRuleId, entry);
+        authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId)
+                .removePermissionRuleAndRestorePermissions(study, permissionRuleId, entry);
     }
 
     @Override
-    public void removePermissionRule(long studyId, String permissionRuleId, Enums.Entity entry) throws CatalogException {
+    public void removePermissionRule(String organizationId, long studyId, String permissionRuleId, Enums.Entity entry)
+            throws CatalogException {
         ParamUtils.checkObj(permissionRuleId, "PermissionRule id");
         ParamUtils.checkObj(entry, "Entity");
 
-        aclDBAdaptor.removePermissionRule(studyId, permissionRuleId, entry);
+        authorizationDBAdaptorFactory.getAuthorizationDBAdaptor(organizationId)
+                .removePermissionRule(studyId, permissionRuleId, entry);
     }
 
     /*
@@ -977,20 +1039,29 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     ====================================
      */
 
+    private void checkUserExists(String organizationId, String userId) throws CatalogAuthorizationException {
+        try {
+            dbAdaptorFactory.getCatalogUserDBAdaptor(organizationId).checkId(userId);
+        } catch (CatalogException e) {
+            throw new CatalogAuthorizationException("User '" + userId + "' not authorized to see Org '" + organizationId + "'.", e);
+        }
+    }
+
     /**
      * Retrieves the groupId where the members belongs to.
      *
-     * @param studyId study id.
-     * @param members List of user ids.
+     * @param organizationId Organization id.
+     * @param studyId        study id.
+     * @param members        List of user ids.
      * @return the group id of the user. Null if the user does not take part of any group.
      * @throws CatalogException when there is any database error.
      */
-    OpenCGAResult<Group> getGroupBelonging(long studyId, List<String> members) throws CatalogException {
-        return studyDBAdaptor.getGroup(studyId, null, members);
+    OpenCGAResult<Group> getGroupBelonging(String organizationId, long studyId, List<String> members) throws CatalogException {
+        return dbAdaptorFactory.getCatalogStudyDBAdaptor(organizationId).getGroup(studyId, null, members);
     }
 
-    OpenCGAResult<Group> getGroupBelonging(long studyId, String members) throws CatalogException {
-        return getGroupBelonging(studyId, Arrays.asList(members.split(",")));
+    OpenCGAResult<Group> getGroupBelonging(String organizationId, long studyId, String members) throws CatalogException {
+        return getGroupBelonging(organizationId, studyId, Arrays.asList(members.split(",")));
     }
 
     public static void checkPermissions(List<String> permissions, Function<String, Enum> getValue) throws CatalogException {

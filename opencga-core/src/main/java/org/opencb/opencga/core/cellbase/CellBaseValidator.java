@@ -12,17 +12,16 @@ import org.opencb.cellbase.core.result.CellBaseDataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.VersionUtils;
-
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 
@@ -147,24 +146,24 @@ public class CellBaseValidator {
     private CellBaseConfiguration validate(boolean autoComplete) throws IOException {
         CellBaseConfiguration cellBaseConfiguration = getCellBaseConfiguration();
         String inputVersion = getVersion();
-        CellBaseDataResponse<SpeciesProperties> species;
+        SpeciesProperties species;
         try {
-            species = cellBaseClient.getMetaClient().species();
+            species = retryMetaSpecies();
         } catch (RuntimeException e) {
             throw new IllegalArgumentException("Unable to access cellbase url '" + getURL() + "', version '" + inputVersion + "'", e);
         }
-        if (species == null || species.firstResult() == null) {
+        if (species == null) {
             if (autoComplete && !cellBaseConfiguration.getVersion().startsWith("v")) {
                 // Version might be missing the starting "v"
                 cellBaseConfiguration.setVersion("v" + cellBaseConfiguration.getVersion());
                 cellBaseClient = newCellBaseClient(cellBaseConfiguration, getSpecies(), getAssembly());
-                species = cellBaseClient.getMetaClient().species();
+                species = retryMetaSpecies();
             }
         }
-        if (species == null || species.firstResult() == null) {
+        if (species == null) {
             throw new IllegalArgumentException("Unable to access cellbase url '" + getURL() + "', version '" + inputVersion + "'");
         }
-        validateSpeciesAssembly(species.firstResult());
+        validateSpeciesAssembly(species);
 
         String serverVersion = getVersionFromServer();
         if (!supportsDataRelease(serverVersion)) {
@@ -308,7 +307,7 @@ public class CellBaseValidator {
     public String getVersionFromServer() throws IOException {
         if (serverVersion == null) {
             synchronized (this) {
-                ObjectMap result = retryMetaAbout(3);
+                ObjectMap result = retryMetaAbout();
                 if (result == null) {
                     throw new IOException("Unable to get version from server for cellbase " + toString());
                 }
@@ -322,12 +321,46 @@ public class CellBaseValidator {
         return serverVersion;
     }
 
-    private ObjectMap retryMetaAbout(int retries) throws IOException {
-        ObjectMap result = cellBaseClient.getMetaClient().about().firstResult();
-        if (result == null && retries > 0) {
-            // Retry
-            logger.warn("Unable to get version from server for cellbase " + toString() + ". Retrying...");
-            result = retryMetaAbout(retries - 1);
+    private ObjectMap retryMetaAbout() throws IOException {
+        return retry("meta/about", () -> cellBaseClient.getMetaClient().about().firstResult());
+    }
+
+    private SpeciesProperties retryMetaSpecies() throws IOException {
+        return retry("meta/species", () -> cellBaseClient.getMetaClient().species().firstResult());
+    }
+
+    private <T> T retry(String name, Callable<T> function) throws IOException {
+        return retry(name, function, 3);
+    }
+
+    private <T> T retry(String name, Callable<T> function, int retries) throws IOException {
+        if (retries <= 0) {
+            return null;
+        }
+        T result = null;
+        Exception e = null;
+        try {
+            result = function.call();
+        } catch (Exception e1) {
+            e = e1;
+        }
+        if (result == null) {
+            try {
+                // Retry
+                logger.warn("Unable to get '{}' from cellbase " + toString() + ". Retrying...", name);
+                result = retry(name, function, retries - 1);
+            } catch (Exception e1) {
+                if (e == null) {
+                    e = e1;
+                } else {
+                    e.addSuppressed(e1);
+                }
+                if (e instanceof IOException) {
+                    throw (IOException) e;
+                } else {
+                    throw new IOException("Error reading from cellbase " + toString(), e);
+                }
+            }
         }
         return result;
     }

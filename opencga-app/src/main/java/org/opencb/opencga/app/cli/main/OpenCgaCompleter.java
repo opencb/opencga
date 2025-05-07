@@ -1,19 +1,3 @@
-/*
-* Copyright 2015-2024-04-25 OpenCB
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-
 package org.opencb.opencga.app.cli.main;
 
 import org.jline.reader.Candidate;
@@ -40,17 +24,17 @@ import static java.util.stream.Collectors.toList;
 
 public abstract class OpenCgaCompleter implements Completer {
 
-    protected List<Candidate> commands = asList("login","logout","help","use","variant","projects","panels","clinical","jobs","admin","individuals","families","users","samples","alignments","meta","studies","files","operations","cohorts")
+    protected List<Candidate> commands = asList("login","logout","help","use","variant","projects","panels","clinical","jobs","admin","individuals","families","users","samples","alignments","meta","organizations","studies","files","operations","cohorts")
             .stream()
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> variantList = asList( "aggregationstats","annotation-metadata","annotation-query","circos-run","cohort-stats-delete","cohort-stats-info","cohort-stats-run","exomiser-run","export-run","family-genotypes","family-qc-run","file-delete","gatk-run","genome-plot-run","gwas-run","hr-detect-run","index-run","individual-qc-run","inferred-sex-run","knockout-gene-query","knockout-individual-query","knockout-run","mendelian-error-run","metadata","mutational-signature-query","mutational-signature-run","plink-run","query","relatedness-run","rvtests-run","sample-aggregation-stats","sample-eligibility-run","sample-qc-run","sample-query","sample-run","sample-stats-query","sample-stats-run","stats-export-run","stats-run")
+    private List<Candidate> variantList = asList( "aggregationstats","annotation-metadata","annotation-query","circos-run","cohort-stats-delete","cohort-stats-info","cohort-stats-run","exomiser-run","export-run","family-genotypes","family-qc-run","file-delete","gatk-run","genome-plot-run","gwas-run","hr-detect-run","index-run","individual-qc-run","inferred-sex-run","knockout-gene-query","knockout-individual-query","knockout-run","mendelian-error-run","metadata","mutational-signature-query","mutational-signature-run","plink-run","query","relatedness-run","rvtests-run","sample-aggregation-stats","sample-eligibility-run","sample-qc-run","sample-query","sample-run","sample-stats-query","sample-stats-run","stats-export-run","stats-run","walker-run")
             .stream()
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> projectsList = asList( "create","search","aggregationstats","info","increlease","studies","update")
+    private List<Candidate> projectsList = asList( "create","search","info","increlease","studies","update")
             .stream()
             .map(Candidate::new)
             .collect(toList());
@@ -60,37 +44,37 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> clinicalList = asList( "acl-update","annotation-sets-load","clinical-configuration-update","create","distinct","interpretation-distinct","interpretation-search","interpretation-info","interpreter-cancer-tiering-run","interpreter-exomiser-run","interpreter-team-run","interpreter-tiering-run","interpreter-zetta-run","rga-aggregation-stats","rga-gene-query","rga-gene-summary","rga-index-run","rga-individual-query","rga-individual-summary","rga-variant-query","rga-variant-summary","search","variant-query","acl","delete","update","annotation-sets-annotations-update","info","interpretation-create","interpretation-clear","interpretation-delete","interpretation-revert","interpretation-update","report-update")
+    private List<Candidate> clinicalList = asList( "acl-update","annotation-sets-load","clinical-configuration-update","create","distinct","interpretation-distinct","interpretation-search","interpretation-info","interpreter-cancer-tiering-run","interpreter-exomiser-run","interpreter-team-run","interpreter-tiering-run","interpreter-zetta-run","load","rga-aggregation-stats","rga-gene-query","rga-gene-summary","rga-index-run","rga-individual-query","rga-individual-summary","rga-variant-query","rga-variant-summary","search","variant-query","acl","delete","update","annotation-sets-annotations-update","info","interpretation-create","interpretation-clear","interpretation-delete","interpretation-revert","interpretation-update","report-update")
             .stream()
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> jobsList = asList( "acl-update","aggregationstats","create","distinct","retry","search","top","acl","delete","info","update","log-head","log-tail")
+    private List<Candidate> jobsList = asList( "acl-update","create","distinct","retry","search","top","acl","delete","info","update","kill","log-head","log-tail")
             .stream()
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> adminList = asList( "audit-group-by","catalog-index-stats","catalog-install","catalog-jwt","users-create","users-import","users-search","users-sync","update-groups-users")
+    private List<Candidate> adminList = asList( "audit-group-by","catalog-install","catalog-jwt","users-create","users-import","users-permissions","users-search","users-sync","update-groups-users")
             .stream()
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> individualsList = asList( "acl-update","aggregationstats","annotation-sets-load","create","distinct","search","acl","delete","info","update","annotation-sets-annotations-update","relatives")
+    private List<Candidate> individualsList = asList( "acl-update","annotation-sets-load","create","distinct","search","acl","delete","info","update","annotation-sets-annotations-update","relatives")
             .stream()
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> familiesList = asList( "acl-update","aggregationstats","annotation-sets-load","create","distinct","search","acl","delete","info","update","annotation-sets-annotations-update")
+    private List<Candidate> familiesList = asList( "acl-update","annotation-sets-load","create","distinct","search","acl","delete","info","update","annotation-sets-annotations-update")
             .stream()
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> usersList = asList( "login","password","info","configs","configs-update","filters","password-reset","projects","update")
+    private List<Candidate> usersList = asList( "anonymous","create","login","password","search","info","configs","configs-update","filters","password-reset","update")
             .stream()
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> samplesList = asList( "acl-update","aggregationstats","annotation-sets-load","create","distinct","load","search","acl","delete","info","update","annotation-sets-annotations-update")
+    private List<Candidate> samplesList = asList( "acl-update","annotation-sets-load","create","distinct","load","search","acl","delete","info","update","annotation-sets-annotations-update")
             .stream()
             .map(Candidate::new)
             .collect(toList());
@@ -105,22 +89,27 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> studiesList = asList( "acl-update","create","search","acl","aggregationstats","info","audit-search","groups","groups-update","groups-users-update","permissionrules","permission-rules-update","templates-run","templates-upload","templates-delete","update","variablesets","variable-sets-update","variable-sets-variables-update")
+    private List<Candidate> organizationsList = asList( "create","notes-create","notes-search","notes-delete","notes-update","update-status-user","user-update","configuration-update","info","update")
             .stream()
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> filesList = asList( "acl-update","aggregationstats","annotation-sets-load","bioformats","create","distinct","fetch","formats","link","link-run","postlink-run","search","upload","acl","delete","info","unlink","update","annotation-sets-annotations-update","download","grep","head","image","move","refresh","tail","list","tree")
+    private List<Candidate> studiesList = asList( "acl-update","create","search","acl","info","audit-search","groups","groups-update","groups-users-update","notes-create","notes-search","notes-delete","notes-update","permissionrules","permission-rules-update","templates-run","templates-upload","templates-delete","update","variablesets","variable-sets-update","variable-sets-variables-update")
             .stream()
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> operationsList = asList( "cellbase-configure","variant-aggregate","variant-annotation-delete","variant-annotation-index","variant-annotation-save","variant-configure","variant-delete","variant-family-aggregate","variant-family-index","variant-index","variant-index-launcher","variant-julie-run","variant-metadata-repair","variant-metadata-synchronize","variant-prune","variant-sample-delete","variant-sample-index","variant-sample-index-configure","variant-score-delete","variant-score-index","variant-secondary-annotation-index","variant-secondary-sample-index","configure-variant-secondary-sample-index","variant-secondary-index","variant-secondary-index-delete","variant-stats-delete","variant-stats-index","variant-study-delete")
+    private List<Candidate> filesList = asList( "acl-update","annotation-sets-load","bioformats","create","distinct","fetch","formats","link","link-run","postlink-run","search","upload","acl","delete","info","unlink","update","annotation-sets-annotations-update","download","grep","head","image","move","refresh","tail","list","tree")
             .stream()
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> cohortsList = asList( "acl-update","aggregationstats","annotation-sets-load","create","distinct","generate","search","acl","delete","info","update","annotation-sets-annotations-update")
+    private List<Candidate> operationsList = asList( "cellbase-configure","variant-aggregate","variant-annotation-delete","variant-annotation-index","variant-annotation-save","variant-configure","variant-delete","variant-family-aggregate","variant-family-index","variant-index","variant-index-launcher","variant-julie-run","variant-metadata-repair","variant-metadata-synchronize","variant-prune","variant-sample-delete","variant-sample-index","variant-sample-index-configure","variant-score-delete","variant-score-index","variant-secondary-annotation-index","variant-secondary-sample-index","configure-variant-secondary-sample-index","variant-secondary-index","variant-secondary-index-delete","variant-setup","variant-stats-delete","variant-stats-index","variant-study-delete")
+            .stream()
+            .map(Candidate::new)
+            .collect(toList());
+
+    private List<Candidate> cohortsList = asList( "acl-update","annotation-sets-load","create","distinct","generate","search","acl","delete","info","update","annotation-sets-annotations-update")
             .stream()
             .map(Candidate::new)
             .collect(toList());
@@ -145,6 +134,7 @@ public abstract class OpenCgaCompleter implements Completer {
         mapCandidates.put( "samples", samplesList);
         mapCandidates.put( "alignments", alignmentsList);
         mapCandidates.put( "meta", metaList);
+        mapCandidates.put( "organizations", organizationsList);
         mapCandidates.put( "studies", studiesList);
         mapCandidates.put( "files", filesList);
         mapCandidates.put( "operations", operationsList);

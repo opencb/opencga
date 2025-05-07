@@ -17,12 +17,15 @@
 package org.opencb.opencga.analysis.variant.manager;
 
 import org.apache.commons.lang3.RandomStringUtils;
+import org.hamcrest.CoreMatchers;
+import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.manager.operations.AbstractVariantOperationManagerTest;
+import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.file.File;
@@ -32,6 +35,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -64,6 +68,18 @@ public class VariantStorageManagerTest extends AbstractVariantOperationManagerTe
         variantManager.configureStudy(studyFqn, expectedStudyConfiguration1, sessionId);
         variantManager.configureStudy(studyId2, expectedStudyConfiguration2, sessionId);
 
+
+        try {
+            Study study = catalogManager.getStudyManager().create(projectId, "s_no_setup", "s_no_setup", "s_no_setup",
+                            "Study 1", null, null, null, Collections.singletonMap(VariantStatsAnalysis.STATS_AGGREGATION_CATALOG, getAggregation()), null, sessionId)
+                    .first();
+            // Variant setup mandatory for configuring study
+            variantManager.configureStudy(study.getFqn(), expectedStudyConfiguration1, sessionId);
+            fail("Expect exception. Study not setup");
+        } catch (Exception e) {
+            MatcherAssert.assertThat(e.getMessage(), CoreMatchers.containsString("The variant storage has not been setup for study"));
+        }
+
         ObjectMap configuration = variantManager.getDataStoreByProjectId(projectId, sessionId).getOptions();
         assertEquals(expectedConfiguration, configuration);
 
@@ -84,6 +100,21 @@ public class VariantStorageManagerTest extends AbstractVariantOperationManagerTe
         assertNull(vse.getOptions().get("KeyFromTheSecondStudy"));
         assertNull(vse1.getOptions().get("KeyFromTheSecondStudy"));
         assertNotNull(vse2.getOptions().get("KeyFromTheSecondStudy"));
+    }
+
+    @Test
+    public void testConfigureProtectedValues() throws Exception {
+        VariantStorageOptions key = VariantStorageOptions.WALKER_DOCKER_MEMORY;
+        assertTrue(key.isProtected());
+        ObjectMap conf = new ObjectMap(key.key(), "30g");
+
+        String fqn = catalogManager.getProjectManager().get(projectId, null, sessionId).first().getFqn();
+
+        variantManager.configureProject(fqn, new ObjectMap(conf), opencga.getAdminToken());
+
+        thrown.expect(StorageEngineException.class);
+        thrown.expectMessage("Unable to update protected option '" + key.key() + "'");
+        variantManager.configureProject(projectId, new ObjectMap(conf), sessionId);
     }
 
     @Test

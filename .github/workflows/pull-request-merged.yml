@@ -1,0 +1,17 @@
+name: "Pull Request Merge Workflow"
+
+on:
+  pull_request:
+    branches:
+      - "develop"
+      - "release-*"
+    types:
+      - closed
+
+jobs:
+  call-delete-docker:
+    name: Call Reusable Delete Docker Workflow
+    uses: opencb/opencga/.github/workflows/reusable-delete-docker.yml@develop
+    with:
+      task: ${{ github.head_ref }}
+    secrets: inherit

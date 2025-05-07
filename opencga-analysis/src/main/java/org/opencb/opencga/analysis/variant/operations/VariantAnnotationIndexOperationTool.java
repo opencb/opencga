@@ -32,7 +32,8 @@ import java.util.List;
 @Tool(id = VariantAnnotationIndexOperationTool.ID, description = VariantAnnotationIndexOperationTool.DESCRIPTION,
         type = Tool.Type.OPERATION,
         scope = Tool.Scope.PROJECT,
-        resource = Enums.Resource.VARIANT)
+        resource = Enums.Resource.VARIANT,
+        priority = Enums.Priority.HIGH)
 public class VariantAnnotationIndexOperationTool extends OperationTool {
     public static final String ID = "variant-annotation-index";
     public static final String DESCRIPTION = "Create and load variant annotations into the database";

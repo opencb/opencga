@@ -42,6 +42,9 @@ import org.apache.hadoop.hbase.regionserver.snapshot.RegionServerSnapshotManager
 import org.apache.hadoop.hbase.regionserver.wal.FSHLog;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.FSTableDescriptors;
+import org.apache.hadoop.hbase.util.VersionInfo;
+import org.apache.hadoop.hbase.wal.FSHLogProvider;
+import org.apache.hadoop.hbase.wal.WALFactory;
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeDescriptor;
 import org.apache.hadoop.hdfs.server.common.Storage;
 import org.apache.hadoop.hdfs.server.datanode.DataNode;
@@ -69,6 +72,7 @@ import org.apache.zookeeper.server.NIOServerCnxnFactory;
 import org.apache.zookeeper.server.PrepRequestProcessor;
 import org.apache.zookeeper.server.ZooKeeperServer;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantType;
@@ -82,17 +86,21 @@ import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageTest;
+import org.opencb.opencga.storage.hadoop.HBaseCompat;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchemaManager;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
+import org.opencb.opencga.storage.hadoop.variant.executors.SshMRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
+import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintStream;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -111,6 +119,18 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
     AtomicReference<Configuration> configuration = new AtomicReference<>(null);
 //    Set<HadoopVariantStorageEngine> managers = new ConcurrentHashSet<>();
     AtomicReference<HadoopVariantStorageEngine> manager = new AtomicReference<>();
+
+    class HadoopSolrSupport extends ExternalResource {
+        @Override
+        protected void before() throws Throwable {
+            super.before();
+            Assume.assumeTrue(isSolrTestingAvailable());
+        }
+
+        public static boolean isSolrTestingAvailable() {
+            return HBaseCompat.getInstance().isSolrTestingAvailable();
+        }
+    }
 
     class HadoopExternalResource extends ExternalResource implements HadoopVariantStorageTest {
 
@@ -215,8 +235,8 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 Configurator.setLevel(MapTask.class.getName(), Level.WARN);
                 Configurator.setLevel(TableInputFormatBase.class.getName(), Level.WARN);
 
-                utility.set(new HBaseTestingUtility());
-                Configuration conf = utility.get().getConfiguration();
+                HBaseTestingUtility testingUtility = new HBaseTestingUtility();
+                Configuration conf = testingUtility.getConfiguration();
                 HadoopVariantStorageTest.configuration.set(conf);
 
 
@@ -250,8 +270,18 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 // Do not put up web UI
                 conf.setInt("hbase.regionserver.info.port", -1);
                 conf.setInt("hbase.master.info.port", -1);
+
+                if (VersionInfo.getVersion().startsWith("2.4") && org.apache.hadoop.util.VersionInfo.getVersion().startsWith("3.3")) {
+                    // Disable async wal provider, not supported in HBase 2.4 and HDFS 3.3
+                    System.out.println("Disabling async wal provider");
+                    conf.set(WALFactory.WAL_PROVIDER, FSHLogProvider.class.getName());
+                    conf.set(WALFactory.META_WAL_PROVIDER, FSHLogProvider.class.getName());
+//                    conf.setBoolean(WALFactory.WAL_ENABLED, false);
+                }
+
                 //org.apache.commons.configuration2.Configuration
-                utility.get().startMiniCluster(1);
+                testingUtility.startMiniCluster(1);
+                utility.set(testingUtility);
 
     //            MiniMRCluster miniMRCluster = utility.startMiniMapReduceCluster();
     //            MiniMRClientCluster miniMRClientCluster = MiniMRClientClusterFactory.create(HadoopVariantStorageManagerTestUtils.class, 1, configuration);
@@ -367,13 +397,13 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         }
 
         engine.setConfiguration(storageConfiguration, HadoopVariantStorageEngine.STORAGE_ENGINE_ID, VariantStorageBaseTest.DB_NAME);
-        engine.mrExecutor = new TestMRExecutor(configuration.get());
+        engine.mrExecutor = null;
         engine.conf = conf;
         return engine;
     }
 
-    default TestMRExecutor getMrExecutor() {
-        return new TestMRExecutor(configuration.get());
+    default MRExecutor getMrExecutor() throws StorageEngineException {
+        return HadoopVariantStorageTest.manager.get().getMRExecutor();
     }
 
     static StorageConfiguration getStorageConfiguration(Configuration conf) throws IOException {
@@ -389,10 +419,12 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         StorageEngineConfiguration variantConfiguration = storageConfiguration.getVariantEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID);
         ObjectMap options = variantConfiguration.getOptions();
 
-        options.put(HadoopVariantStorageOptions.MR_EXECUTOR.key(), TestMRExecutor.class.getName());
+        options.put(HadoopVariantStorageOptions.MR_JAR_WITH_DEPENDENCIES.key(), "dummy-test-jar-with-depepdencies.jar");
+        options.put(HadoopVariantStorageOptions.MR_EXECUTOR.key(), TestSshMrExecutor.class.getName());
         TestMRExecutor.setStaticConfiguration(conf);
 
         options.put(HadoopVariantStorageOptions.MR_ADD_DEPENDENCY_JARS.key(), false);
+        options.put("storage.hadoop.mr.skipReportRunningJobs", true);
         EnumSet<Compression.Algorithm> supportedAlgorithms = EnumSet.of(Compression.Algorithm.NONE, HBaseTestingUtility.getSupportedCompressionAlgorithms());
 
         options.put(HadoopVariantStorageOptions.ARCHIVE_TABLE_COMPRESSION.key(), supportedAlgorithms.contains(Compression.Algorithm.GZ)
@@ -466,10 +498,9 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
     default void deleteTable(String tableName) throws Exception {
         LoggerFactory.getLogger(HadoopVariantStorageTest.class).info("Drop table " + tableName);
-        PhoenixHelper phoenixHelper = new PhoenixHelper(configuration.get());
-        try (java.sql.Connection con = phoenixHelper.openJdbcConnection()) {
-            if (phoenixHelper.tableExists(con, tableName)) {
-                phoenixHelper.dropTable(con, tableName, VariantPhoenixSchema.DEFAULT_TABLE_TYPE, true, true);
+        if (HBaseVariantTableNameGenerator.isValidVariantsTable(tableName)) {
+            try (HBaseManager hbaseManager = new HBaseManager(configuration.get(), utility.get().getConnection())) {
+                VariantPhoenixSchemaManager.dropView(hbaseManager, tableName, true);
             }
         }
         utility.get().deleteTableIfAny(TableName.valueOf(tableName));
@@ -488,6 +519,29 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
             numRecords += fileMetadata.getStats().getTypeCount().getOrDefault(variantType.name(), 0L).intValue();
         }
         return numRecords;
+    }
+
+    class TestSshMrExecutor extends SshMRExecutor {
+        private final Configuration configuration;
+
+        public TestSshMrExecutor() {
+            this.configuration = new Configuration(TestMRExecutor.staticConfiguration);
+        }
+
+        @Override
+        protected int runRemote(String executable, String[] args, List<String> env, ByteArrayOutputStream outputStream) {
+            PrintStream out = System.out;
+            try {
+                return new TestMRExecutor(conf).run(executable, args).getExitValue();
+            } finally {
+                System.setOut(out);
+            }
+        }
+
+        @Override
+        protected List<String> buildEnv() {
+            return new LinkedList<>();
+        }
     }
 
     class TestMRExecutor extends MRExecutor {
@@ -509,7 +563,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
 
         @Override
-        public <T extends Tool> int run(Class<T> clazz, String[] args) throws StorageEngineException {
+        public <T extends Tool> Result run(Class<T> clazz, String[] args) throws StorageEngineException {
             try {
                 // Copy configuration
                 Configuration conf = new Configuration(false);
@@ -522,14 +576,14 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 if (((Number) o).intValue() != 0) {
                     throw new StorageEngineException("Error executing MapReduce. Exit code: " + o);
                 }
-                return ((Number) o).intValue();
+                return new Result(((Number) o).intValue(), new ObjectMap());
             } catch (Exception e) {
                 throw new StorageEngineException("Error executing MapReduce.", e);
             }
         }
 
         @Override
-        public int run(String executable, String[] args) {
+        public Result run(String executable, String[] args) {
             try {
                 // Copy configuration
                 Configuration conf = new Configuration(false);
@@ -544,7 +598,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 if (((Number) o).intValue() != 0) {
                     throw new RuntimeException("Exit code = " + o);
                 }
-                return ((Number) o).intValue();
+                return new Result(((Number) o).intValue(), new ObjectMap());
 
             } catch (Exception e) {
 //                e.printStackTrace();

@@ -31,6 +31,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.DatabaseCredentials;
@@ -38,10 +39,12 @@ import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.config.storage.StorageEngineConfiguration;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
+import org.opencb.opencga.core.models.variant.VariantSetupParams;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
+import org.opencb.opencga.storage.core.io.managers.IOConnector;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -57,6 +60,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleData
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
+import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.executors.*;
@@ -77,6 +81,7 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenix
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchemaManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.sample.HBaseVariantSampleDataManager;
 import org.opencb.opencga.storage.hadoop.variant.annotation.HadoopDefaultVariantAnnotationManager;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDeleteHBaseColumnTask;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutorFactory;
@@ -91,6 +96,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexBuilder
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDeleteHBaseColumnTask;
 import org.opencb.opencga.storage.hadoop.variant.io.HadoopVariantExporter;
+import org.opencb.opencga.storage.hadoop.variant.mr.StreamVariantDriver;
 import org.opencb.opencga.storage.hadoop.variant.prune.VariantPruneManager;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreLoader;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreRemover;
@@ -309,6 +315,57 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     @Override
     protected VariantExporter newVariantExporter(VariantMetadataFactory metadataFactory) throws StorageEngineException {
         return new HadoopVariantExporter(this, metadataFactory, getMRExecutor(), ioConnectorProvider);
+    }
+
+    @Override
+    public List<URI> walkData(URI outputFile, VariantWriterFactory.VariantOutputFormat format,
+                              Query query, QueryOptions queryOptions, String commandLine) throws StorageEngineException {
+        ParsedVariantQuery variantQuery = parseQuery(query, queryOptions);
+        int studyId;
+        if (variantQuery.getStudyQuery().getDefaultStudy() == null) {
+            studyId = -1;
+        } else {
+            studyId = variantQuery.getStudyQuery().getDefaultStudy().getId();
+        }
+        ObjectMap params = new ObjectMap(getOptions()).appendAll(variantQuery.getQuery()).appendAll(variantQuery.getInputOptions());
+        params.remove(StreamVariantDriver.COMMAND_LINE_PARAM);
+
+        String dockerMemory = getOptions().getString(WALKER_DOCKER_MEMORY.key(), WALKER_DOCKER_MEMORY.defaultValue());
+        long dockerMemoryBytes = IOUtils.fromHumanReadableToByte(dockerMemory, true);
+
+        String dockerHost = getOptions().getString(MR_STREAM_DOCKER_HOST.key(), MR_STREAM_DOCKER_HOST.defaultValue());
+        if (StringUtils.isNotEmpty(dockerHost)) {
+            params.put(StreamVariantDriver.ENVIRONMENT_VARIABLES, "DOCKER_HOST=" + dockerHost);
+        }
+
+        getMRExecutor().run(StreamVariantDriver.class, StreamVariantDriver.buildArgs(
+                null,
+                getVariantTableName(), studyId, null,
+                params
+                        .append(MR_HEAP_MAP_OTHER_MB.key(), dockerMemoryBytes / 1024 / 1204)
+                        .append(StreamVariantDriver.MAX_BYTES_PER_MAP_PARAM, dockerMemoryBytes / 2)
+                        .append(StreamVariantDriver.COMMAND_LINE_BASE64_PARAM, Base64.getEncoder().encodeToString(commandLine.getBytes()))
+                        .append(StreamVariantDriver.INPUT_FORMAT_PARAM, format.toString())
+                        .append(StreamVariantDriver.OUTPUT_PARAM, outputFile)
+        ), "Walk data");
+        List<URI> uris = new ArrayList<>();
+        URI stderrFile = UriUtils.createUriSafe(outputFile.toString() + StreamVariantDriver.STDERR_TXT_GZ);
+        try {
+            IOConnector ioConnector = ioConnectorProvider.get(outputFile);
+            if (ioConnector.exists(outputFile)) {
+                uris.add(outputFile);
+            } else {
+                logger.warn("Output file not found: {}", outputFile);
+            }
+            if (ioConnector.exists(stderrFile)) {
+                uris.add(stderrFile);
+            } else {
+                logger.warn("Stderr file not found: {}", stderrFile);
+            }
+        } catch (IOException e) {
+            throw new StorageEngineException("Error checking output file", e);
+        }
+        return uris;
     }
 
     @Override
@@ -826,7 +883,10 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                         archiveColumns.add(family + ':' + ArchiveTableHelper.getRefColumnName(fileId));
                         archiveColumns.add(family + ':' + ArchiveTableHelper.getNonRefColumnName(fileId));
                     }
-                    String[] deleteFromArchiveArgs = DeleteHBaseColumnDriver.buildArgs(archiveTable, archiveColumns, options);
+                    ObjectMap thisOptions = new ObjectMap(options);
+                    ArchiveDeleteHBaseColumnTask.configureTask(thisOptions, fileIds);
+
+                    String[] deleteFromArchiveArgs = DeleteHBaseColumnDriver.buildArgs(archiveTable, archiveColumns, thisOptions);
                     getMRExecutor().run(DeleteHBaseColumnDriver.class, deleteFromArchiveArgs, "Delete from archive table");
                     return stopWatch.now(TimeUnit.MILLISECONDS);
                 });
@@ -1083,6 +1143,49 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     @Override
+    public ObjectMap inferConfigurationParams(VariantSetupParams params) {
+        ObjectMap options = super.inferConfigurationParams(params);
+        ObjectMap configuredOptions = getOptions();
+
+        long expectedHBaseRegionSize = IOUtils.fromHumanReadableToByte("7.5GiB");
+
+        options.put(EXPECTED_SAMPLES_NUMBER.key(), params.getExpectedSamples());
+        options.put(EXPECTED_FILES_NUMBER.key(), params.getExpectedFiles());
+
+        // Variant pre-split
+        int defaultVariantPreSplit = configuredOptions
+                .getInt(VARIANT_TABLE_PRESPLIT_SIZE.key(), VARIANT_TABLE_PRESPLIT_SIZE.defaultValue());
+        float variantsFileToHBaseMultiplier = 1.3f;
+        Long averageFileSize = IOUtils.fromHumanReadableToByte(params.getAverageFileSize(), true);
+        float variantsTableSize = params.getExpectedFiles() * averageFileSize * variantsFileToHBaseMultiplier;
+        int variantPreSplit = (int) (variantsTableSize / expectedHBaseRegionSize);
+        options.put(VARIANT_TABLE_PRESPLIT_SIZE.key(), Math.max(defaultVariantPreSplit, variantPreSplit));
+
+        // Archive pre-split
+        int filesPerBatch = configuredOptions
+                .getInt(ARCHIVE_FILE_BATCH_SIZE.key(), ARCHIVE_FILE_BATCH_SIZE.defaultValue());
+        float archiveFileToHBaseMultiplier = 1.2f;
+        float archiveTableSize = filesPerBatch * averageFileSize.floatValue() * archiveFileToHBaseMultiplier;
+        int archiveTablePreSplit = (int) (archiveTableSize / expectedHBaseRegionSize);
+        options.put(ARCHIVE_TABLE_PRESPLIT_SIZE.key(), Math.max(1, archiveTablePreSplit));
+
+        // SampleIndex pre-split
+        long averageSizePerVariant;
+        if (params.getVariantsPerSample() > 3500000) {
+            // With this many variants per sample, most of them won't have much data
+            averageSizePerVariant = IOUtils.fromHumanReadableToByte("13B");
+        } else {
+            // With a small number of variants per sample, most of them will have a lot of data
+            averageSizePerVariant = IOUtils.fromHumanReadableToByte("25B");
+        }
+        long sampleIndexSize = params.getVariantsPerSample() * averageSizePerVariant;
+        int samplesPerSplit = (int) (expectedHBaseRegionSize / sampleIndexSize);
+        options.put(SAMPLE_INDEX_TABLE_PRESPLIT_SIZE.key(), samplesPerSplit);
+
+        return options;
+    }
+
+    @Override
     public void close() throws IOException {
         super.close();
         if (hBaseManager != null) {
@@ -1229,7 +1332,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
 
     public MRExecutor getMRExecutor() throws StorageEngineException {
         if (mrExecutor == null) {
-            mrExecutor = MRExecutorFactory.getMRExecutor(getOptions());
+            mrExecutor = MRExecutorFactory.getMRExecutor(getDBName(), getOptions(), getConf());
         }
         return mrExecutor;
     }
@@ -1259,19 +1362,22 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     public void testConnection() throws StorageEngineException {
         try {
             Configuration conf = getHadoopConfiguration();
-            try {
-                // HBase 2.x
-//                HBaseAdmin.available(conf);
-                HBaseAdmin.class.getMethod("available", Configuration.class).invoke(null, conf);
-            } catch (NoSuchMethodException e) {
-                // HBase 1.x
-//                HBaseAdmin.checkHBaseAvailable(conf);
-                HBaseAdmin.class.getMethod("checkHBaseAvailable", Configuration.class).invoke(null, conf);
-            }
+            HBaseAdmin.available(conf);
 //            new PhoenixHelper(conf).newJdbcConnection().getMetaData().getTables(null, null, null, null);
         } catch (Exception e) {
             logger.error("Connection to database '" + dbName + "' failed", e);
             throw new StorageEngineException("HBase Database connection test failed", e);
+        }
+    }
+
+    @Override
+    public void validateNewConfiguration(ObjectMap params) throws StorageEngineException {
+        super.validateNewConfiguration(params);
+
+        for (HadoopVariantStorageOptions option : HadoopVariantStorageOptions.values()) {
+            if (option.isProtected() && params.get(option.key()) != null) {
+                throw new StorageEngineException("Unable to update protected option '" + option.key() + "'");
+            }
         }
     }
 

@@ -17,7 +17,11 @@
 package org.opencb.opencga.storage.hadoop.variant.executors;
 
 import org.apache.tools.ant.types.Commandline;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.exec.Command;
+
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.Charset;
 
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.MR_EXECUTOR_SSH_PASSWORD;
 
@@ -29,14 +33,13 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOpti
 public class SystemMRExecutor extends MRExecutor {
 
     @Override
-    public int run(String executable, String[] args) {
-        return run(buildCommandLine(executable, args));
-    }
-
-    public int run(String commandLine) {
-        Command command = new Command(commandLine, getEnv());
+    public Result run(String executable, String[] args) {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        Command command = new Command(buildCommandLine(executable, args), getEnv());
+        command.setErrorOutputStream(outputStream);
         command.run();
-        return command.getExitValue();
+        ObjectMap result = readResult(new String(outputStream.toByteArray(), Charset.defaultCharset()));
+        return new Result(command.getExitValue(), result);
     }
 
     private String buildCommandLine(String executable, String[] args) {

@@ -67,6 +67,7 @@ public abstract class OpenCgaTool {
 
     private String jobId;
     private String opencgaHome;
+    private boolean dryRun;
     protected String token;
 
     protected final ObjectMap params;
@@ -92,19 +93,20 @@ public abstract class OpenCgaTool {
     }
 
     public final OpenCgaTool setUp(String opencgaHome, CatalogManager catalogManager, StorageEngineFactory engineFactory,
-                                   ObjectMap params, Path outDir, String jobId, String token) {
+                                   ObjectMap params, Path outDir, String jobId, boolean dryRun, String token) {
         VariantStorageManager manager = new VariantStorageManager(catalogManager, engineFactory);
-        return setUp(opencgaHome, catalogManager, manager, params, outDir, jobId, token);
+        return setUp(opencgaHome, catalogManager, manager, params, outDir, jobId, dryRun, token);
     }
 
     public final OpenCgaTool setUp(String opencgaHome, CatalogManager catalogManager, VariantStorageManager variantStorageManager,
-                                   ObjectMap params, Path outDir, String jobId, String token) {
+                                   ObjectMap params, Path outDir, String jobId, boolean dryRun, String token) {
         this.opencgaHome = opencgaHome;
         this.catalogManager = catalogManager;
         this.configuration = catalogManager.getConfiguration();
         this.variantStorageManager = variantStorageManager;
         this.storageConfiguration = variantStorageManager.getStorageConfiguration();
         this.jobId = jobId;
+        this.dryRun = dryRun;
         this.token = token;
         if (params != null) {
             this.params.putAll(params);
@@ -188,18 +190,13 @@ public abstract class OpenCgaTool {
                 exception = e;
             }
             if (!erm.isClosed()) {
-                privateLogger.error("Unexpected system shutdown!");
+                String message = "Unexpected system shutdown. Job killed by the system.";
+                privateLogger.error(message);
+                if (exception == null) {
+                    exception = new RuntimeException(message);
+                }
                 try {
-                    if (scratchDir != null) {
-                        deleteScratchDirectory();
-                    }
-                    if (exception == null) {
-                        exception = new RuntimeException("Unexpected system shutdown");
-                    }
-                    logException(exception);
-                    ExecutionResult result = erm.close(exception);
-                    privateLogger.info("------- Tool '" + getId() + "' executed in "
-                            + TimeUtils.durationToString(result.getEnd().getTime() - result.getStart().getTime()) + " -------");
+                    close(exception);
                 } catch (ToolException e) {
                     privateLogger.error("Error closing ExecutionResult", e);
                 }
@@ -243,27 +240,50 @@ public abstract class OpenCgaTool {
             try {
                 currentStep = "check";
                 privateCheck();
-                check();
-                currentStep = null;
-                erm.setSteps(getSteps());
-                run();
+                if (dryRun) {
+                    logger.info("Dry run enabled. Sleep for 5 seconds and skip execution.");
+                    Thread.sleep(5000);
+                } else {
+                    currentStep = null;
+                    erm.setSteps(getSteps());
+                    run();
+                }
             } catch (ToolException e) {
                 throw e;
             } catch (Exception e) {
                 throw new ToolException(e);
             }
+            Runtime.getRuntime().removeShutdownHook(hook);
         } catch (Throwable e) {
             exception = e;
+            // Do not use a finally block to remove shutdownHook, as finally blocks will be executed even if the JVM is killed,
+            // and this would throw IllegalStateException("Shutdown in progress");
+            try {
+                Runtime.getRuntime().removeShutdownHook(hook);
+            } catch (Exception e1) {
+                e.addSuppressed(e1);
+            }
             throw e;
         } finally {
-            deleteScratchDirectory();
-            Runtime.getRuntime().removeShutdownHook(hook);
-            stopMemoryMonitor();
-            result = erm.close(exception);
-            logException(exception);
-            privateLogger.info("------- Tool '" + getId() + "' executed in "
-                    + TimeUtils.durationToString(result.getEnd().getTime() - result.getStart().getTime()) + " -------");
+            // If the shutdown hook has been executed, the ExecutionResultManager is already closed
+            if (!erm.isClosed()) {
+                result = close(exception);
+            } else {
+                result = erm.read();
+            }
         }
+        return result;
+    }
+
+    private ExecutionResult close(Throwable exception) throws ToolException {
+        if (scratchDir != null) {
+            deleteScratchDirectory();
+        }
+        logException(exception);
+        stopMemoryMonitor();
+        ExecutionResult result = erm.close(exception);
+        privateLogger.info("------- Tool '" + getId() + "' executed in "
+                + TimeUtils.durationToString(result.getEnd().getTime() - result.getStart().getTime()) + " -------");
         return result;
     }
 
@@ -308,6 +328,7 @@ public abstract class OpenCgaTool {
         if (toolParams != null) {
             toolParams.updateParams(getParams());
         }
+        check();
     }
 
     /**
@@ -537,7 +558,7 @@ public abstract class OpenCgaTool {
                 toolExecutor.getSource(),
                 toolExecutor.getFramework()));
 
-        toolExecutor.setUp(erm, executorParams, outDir);
+        toolExecutor.setUp(erm, executorParams, outDir, configuration);
         return toolExecutor;
     }
 

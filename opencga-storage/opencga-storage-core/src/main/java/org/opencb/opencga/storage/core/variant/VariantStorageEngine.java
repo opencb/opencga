@@ -24,14 +24,16 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
+import org.opencb.biodata.tools.variant.normalizer.extensions.VariantNormalizerExtensionFactory;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
+import org.opencb.opencga.core.models.variant.VariantSetupParams;
 import org.opencb.opencga.storage.core.StorageEngine;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -54,9 +56,11 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnno
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
+import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.executors.*;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
@@ -153,7 +157,12 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             String loadSplitDataStr = options.getString(LOAD_SPLIT_DATA.key());
             boolean multiFile = options.getBoolean(LOAD_MULTI_FILE_DATA.key());
             if (StringUtils.isNotEmpty(loadSplitDataStr) && multiFile) {
-                throw new IllegalArgumentException("Unable to mix loadSplitFile and loadMultiFile");
+                if (loadSplitDataStr.equalsIgnoreCase("multi")) {
+                    return MULTI;
+                } else {
+                    throw new IllegalArgumentException("Unable to mix " + LOAD_MULTI_FILE_DATA.key() + "=true and "
+                            + LOAD_SPLIT_DATA.key() + "='" + loadSplitDataStr + "'");
+                }
             }
             if (StringUtils.isEmpty(loadSplitDataStr) && !multiFile) {
                 return null;
@@ -274,6 +283,53 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
         ParsedVariantQuery parsedVariantQuery = parseQuery(query, queryOptions);
         return exporter.export(outputFile, outputFormat, variantsFile, parsedVariantQuery);
+    }
+
+    public List<URI> walkData(URI outputFile, VariantWriterFactory.VariantOutputFormat format, Query query, QueryOptions queryOptions,
+                              String dockerImage, String commandLine)
+            throws IOException, StorageEngineException {
+        if (format == VariantWriterFactory.VariantOutputFormat.VCF || format == VariantWriterFactory.VariantOutputFormat.VCF_GZ) {
+            if (!isValidParam(query, VariantQueryParam.UNKNOWN_GENOTYPE)) {
+                query.put(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.");
+            }
+        }
+        commandLine = commandLine.replace("'", "'\"'\"'");
+
+        String memory = getOptions().getString(WALKER_DOCKER_MEMORY.key(), WALKER_DOCKER_MEMORY.defaultValue());
+        String cpu = getOptions().getString(WALKER_DOCKER_CPU.key(), WALKER_DOCKER_CPU.defaultValue());
+        String user = getOptions().getString(WALKER_DOCKER_USER.key(), WALKER_DOCKER_USER.defaultValue());
+        String envs = getOptions().getString(WALKER_DOCKER_ENV.key(), WALKER_DOCKER_ENV.defaultValue());
+        String volume = getOptions().getString(WALKER_DOCKER_MOUNT.key(), WALKER_DOCKER_MOUNT.defaultValue());
+        String opts = getOptions().getString(WALKER_DOCKER_OPTS.key(), WALKER_DOCKER_OPTS.defaultValue());
+
+        String dockerCommandLine = "docker run --rm -i "
+                + "--memory " + memory + " "
+                + "--cpus " + cpu + " ";
+
+        if (StringUtils.isNotEmpty(user)) {
+            dockerCommandLine += "--user " + user + " ";
+        }
+
+        if (StringUtils.isNotEmpty(volume)) {
+            dockerCommandLine += "-v " + volume + ":/data ";
+        }
+
+        if (StringUtils.isNotEmpty(envs)) {
+            for (String s : envs.split(",")) {
+                dockerCommandLine += "--env " + s + " ";
+            }
+        }
+        dockerCommandLine = dockerCommandLine
+                + opts
+                + dockerImage + " bash -ce '" + commandLine + "'";
+        return walkData(outputFile, format, query, queryOptions, dockerCommandLine);
+    }
+
+
+    public List<URI> walkData(URI outputFile, VariantOutputFormat format, Query query, QueryOptions queryOptions,
+                                       String commandLine)
+            throws StorageEngineException {
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -1151,6 +1207,14 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     @Override
     public abstract void testConnection() throws StorageEngineException;
 
+    public void validateNewConfiguration(ObjectMap params) throws StorageEngineException {
+        for (VariantStorageOptions option : VariantStorageOptions.values()) {
+            if (option.isProtected() && params.get(option.key()) != null) {
+                throw new StorageEngineException("Unable to update protected option '" + option.key() + "'");
+            }
+        }
+    }
+
     public void reloadCellbaseConfiguration() {
         cellBaseUtils = null;
     }
@@ -1362,6 +1426,19 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         throw new VariantQueryException("No VariantQueryExecutor found to run the query!");
     }
 
+    public final VariantQueryExecutor getVariantQueryExecutor(Class<? extends VariantQueryExecutor> clazz)
+            throws StorageEngineException {
+        Optional<VariantQueryExecutor> first = getVariantQueryExecutors()
+                .stream()
+                .filter(e -> e instanceof SearchIndexVariantQueryExecutor)
+                .findFirst();
+        if (first.isPresent()) {
+            return first.get();
+        } else {
+            throw new StorageEngineException("VariantQueryExecutor " + clazz + " not found");
+        }
+    }
+
     public Query preProcessQuery(Query originalQuery, QueryOptions options) {
         try {
             return getVariantQueryParser().preProcessQuery(originalQuery, options);
@@ -1483,6 +1560,45 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             logger.warn(message);
         }
         throw new VariantQueryException("No VariantAggregationExecutor found to run the query. " + messages).setQuery(query);
+    }
+
+    public ObjectMap inferConfigurationParams(VariantSetupParams params) {
+        ObjectMap options = new ObjectMap();
+
+        List<String> normalizeExtensions = params.getNormalizeExtensions();
+        if (normalizeExtensions != null && !normalizeExtensions.isEmpty()) {
+            if (!normalizeExtensions.equals(Collections.singletonList(ParamConstants.ALL))) {
+                List<String> unsupportedExtensions = new ArrayList<>();
+                for (String normalizeExtension : normalizeExtensions) {
+                    if (!VariantNormalizerExtensionFactory.ALL_EXTENSIONS.contains(normalizeExtension)) {
+                        unsupportedExtensions.add(normalizeExtension);
+                    }
+                }
+                if (!unsupportedExtensions.isEmpty()) {
+                    throw new IllegalArgumentException("Unsupported normalize extensions: " + unsupportedExtensions + ". Supported "
+                            + "extensions are: " + VariantNormalizerExtensionFactory.ALL_EXTENSIONS);
+                }
+            }
+            options.put(NORMALIZATION_EXTENSIONS.key(), normalizeExtensions);
+        }
+        if (params.getDataDistribution() != null) {
+            switch (params.getDataDistribution()) {
+                case FILES_SPLIT_BY_CHROMOSOME:
+                    options.put(LOAD_SPLIT_DATA.key(), SplitData.CHROMOSOME);
+                    break;
+                case FILES_SPLIT_BY_REGION:
+                    options.put(LOAD_SPLIT_DATA.key(), SplitData.REGION);
+                    break;
+                case MULTIPLE_FILES_PER_SAMPLE:
+                    options.put(LOAD_MULTI_FILE_DATA.key(), true);
+                    options.put(LOAD_SPLIT_DATA.key(), SplitData.MULTI);
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        return options;
     }
 
     @Override

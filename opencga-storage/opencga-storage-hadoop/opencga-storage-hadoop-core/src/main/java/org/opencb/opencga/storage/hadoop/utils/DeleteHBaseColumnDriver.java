@@ -81,10 +81,15 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
 
         List<Scan> scans;
         if (!regions.isEmpty()) {
-            scans = new ArrayList<>(regions.size() / 2);
+            LOGGER.info("Delete rows from {} table ranges (start - end)", regions.size());
+            scans = new ArrayList<>(regions.size());
             for (Pair<byte[], byte[]> region : regions) {
                 Scan scan = new Scan(templateScan);
                 scans.add(scan);
+                LOGGER.info(" - [ '"
+                        + Bytes.toStringBinary(region.getFirst()) + "' , '"
+                        + Bytes.toStringBinary(region.getSecond())
+                        + "' )");
                 if (region.getFirst() != null && region.getFirst().length != 0) {
                     scan.setStartRow(region.getFirst());
                 }
@@ -104,7 +109,7 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
             VariantMapReduceUtil.setNoneReduce(job);
         } else {
             VariantMapReduceUtil.initTableMapperJob(job, table, scans, DeleteHBaseColumnToProtoMapper.class);
-            outdir = getTempOutdir("opencga_delete", table, true);
+            outdir = MapReduceOutputFile.getTempOutdir("opencga_delete", table, true, getConf());
             outdir.getFileSystem(getConf()).deleteOnExit(outdir);
 
             LOGGER.info(" * Temporary outdir file: " + outdir.toUri());

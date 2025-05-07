@@ -23,6 +23,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.NamespaceDescriptor;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
@@ -30,26 +31,23 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.jdbc.PhoenixDatabaseMetaData;
 import org.apache.phoenix.jdbc.PhoenixDriver;
 import org.apache.phoenix.monitoring.GlobalClientMetrics;
+import org.apache.phoenix.monitoring.GlobalMetric;
 import org.apache.phoenix.schema.ConcurrentTableMutationException;
 import org.apache.phoenix.schema.PTable;
 import org.apache.phoenix.schema.PTableType;
 import org.apache.phoenix.schema.TableNotFoundException;
-import org.apache.phoenix.schema.types.PArrayDataType;
-import org.apache.phoenix.schema.types.PDataType;
-import org.apache.phoenix.schema.types.PInteger;
-import org.apache.phoenix.schema.types.PhoenixArray;
+import org.apache.phoenix.schema.types.*;
 import org.apache.phoenix.util.*;
 import org.opencb.opencga.core.common.BatchUtils;
 import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.storage.hadoop.HBaseCompat;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -72,37 +70,14 @@ public class PhoenixHelper {
 
     private final Configuration conf;
     private static Logger logger = LoggerFactory.getLogger(PhoenixHelper.class);
-    private static Method positionAtArrayElement;
     private TableName systemCatalog;
 
     public PhoenixHelper(Configuration conf) {
         this.conf = conf;
     }
 
-    static {
-        Class<?> decoder;
-        try {
-            decoder = Class.forName("org.apache.phoenix.schema.types.PArrayDataTypeDecoder");
-        } catch (ClassNotFoundException e) {
-            decoder = PArrayDataType.class;
-        }
-        try {
-            positionAtArrayElement = decoder.getMethod("positionAtArrayElement",
-                    ImmutableBytesWritable.class, Integer.TYPE, PDataType.class, Integer.class);
-        } catch (NoSuchMethodException e) {
-            // This should never happen!
-            throw new RuntimeException(e);
-        }
-    }
-
     public static boolean positionAtArrayElement(ImmutableBytesWritable ptr, int arrayIndex, PDataType pDataType, Integer byteSize) {
-//        return PArrayDataTypeDecoder.positionAtArrayElement(ptr, arrayIndex, instance, byteSize);
-        try {
-            Object o = positionAtArrayElement.invoke(null, ptr, arrayIndex, pDataType, byteSize);
-            return o == null || (boolean) o;
-        } catch (IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException(e);
-        }
+        return PArrayDataTypeDecoder.positionAtArrayElement(ptr, arrayIndex, pDataType, byteSize);
     }
 
     public boolean execute(Connection con, String sql) throws SQLException {
@@ -124,8 +99,15 @@ public class PhoenixHelper {
                 Thread.sleep(millis);
             } catch (InterruptedException interruption) {
                 Thread.currentThread().interrupt();
+                // Sleep interrupted. Stop retrying
+                throw e;
             }
-            return execute(con, sql, retry - 1);
+            try {
+                return execute(con, sql, retry - 1);
+            } catch (Exception e1) {
+                e.addSuppressed(e1);
+                throw e;
+            }
         } catch (SQLException | RuntimeException e) {
             logger.error("Error executing '{}'", sql);
             throw e;
@@ -201,8 +183,31 @@ public class PhoenixHelper {
         return sb.toString();
     }
 
-    public void dropTable(Connection con, String tableName, PTableType tableType, boolean ifExists, boolean cascade) throws SQLException {
-        execute(con, buildDropTable(tableName, tableType, ifExists, cascade));
+    public void dropTable(org.apache.hadoop.hbase.client.Connection hbaseCon, Connection con, String tableName, PTableType tableType,
+                          boolean ifExists, boolean cascade) throws SQLException, IOException {
+        String sql = buildDropTable(tableName, tableType, ifExists, cascade);
+        logger.info("Dropping phoenix {}: {}", tableType, tableName);
+        logger.info(sql);
+        execute(con, sql);
+
+        try (Admin admin = hbaseCon.getAdmin()) {
+            // Flush the SYSTEM.CATALOG table to avoid "unexpected errors" when creating a new table with the same name
+            // This was first observed when running tests in with Phoenix 5.1
+            TableName systemCatalog;
+            if (PhoenixHelper.isNamespaceMappingEnabled(PTableType.SYSTEM, conf)) {
+                systemCatalog = TableName.valueOf(PhoenixDatabaseMetaData.SYSTEM_SCHEMA_NAME,
+                        PhoenixDatabaseMetaData.SYSTEM_CATALOG_TABLE);
+            } else {
+                systemCatalog = TableName.valueOf(PhoenixDatabaseMetaData.SYSTEM_SCHEMA_NAME
+                        + "." + PhoenixDatabaseMetaData.SYSTEM_CATALOG_TABLE);
+            }
+            if (admin.tableExists(systemCatalog)) {
+                logger.info("Flushing phoenix system catalog table '" + systemCatalog + "'");
+                admin.flush(systemCatalog);
+            } else {
+                logger.info("System catalog table '" + systemCatalog + "' does not exist, unable to flush it.");
+            }
+        }
     }
 
     public void addMissingColumns(Connection con, String tableName, Collection<Column> newColumns, PTableType tableType)
@@ -254,6 +259,12 @@ public class PhoenixHelper {
     public void dropColumns(Connection con, String tableName, Collection<CharSequence> columns, PTableType tableType)
             throws SQLException {
 
+        if (!HBaseCompat.getInstance().getPhoenixCompat().isDropColumnFromViewSupported()) {
+            logger.info("Dropping columns is not supported for Phoenix version {}.{} . Skipping drop columns.",
+                    PhoenixDriver.INSTANCE.getMajorVersion(), PhoenixDriver.INSTANCE.getMinorVersion());
+            return;
+        }
+
         Set<String> existingColumns = getColumns(con, tableName, tableType)
                 .stream()
                 .map(Column::column)
@@ -292,8 +303,9 @@ public class PhoenixHelper {
 //        logger.info("Opening connection to PhoenixDriver");
         Connection connection = QueryUtil.getConnection(conf);
         List<StackTraceElement> stackTrace = ExceptionUtils.getOpencbStackTrace();
+        GlobalMetric metric = GlobalClientMetrics.GLOBAL_OPEN_PHOENIX_CONNECTIONS.getMetric();
         logger.info("Open Phoenix DB connection #{} {} called from {}",
-                GlobalClientMetrics.GLOBAL_OPEN_PHOENIX_CONNECTIONS.getMetric().getTotalSum(),
+                metric.getValue(),
                 connection, stackTrace);
         return connection;
     }
@@ -303,7 +315,7 @@ public class PhoenixHelper {
             logger.info("Close Phoenix connection {} called from {}", connection, ExceptionUtils.getOpencbStackTrace());
             connection.close();
             logger.info("Global Phoenix Connections opened: #{}",
-                    GlobalClientMetrics.GLOBAL_OPEN_PHOENIX_CONNECTIONS.getMetric().getTotalSum());
+                    GlobalClientMetrics.GLOBAL_OPEN_PHOENIX_CONNECTIONS.getMetric().getValue());
         }
     }
 

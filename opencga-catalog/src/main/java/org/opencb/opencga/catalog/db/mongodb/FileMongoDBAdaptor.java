@@ -105,7 +105,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
      * @param ioManagerFactory IOManagerFactory.
      */
     public FileMongoDBAdaptor(MongoDBCollection fileCollection, MongoDBCollection deletedFileCollection, Configuration configuration,
-                              MongoDBAdaptorFactory dbAdaptorFactory, IOManagerFactory ioManagerFactory) {
+                              OrganizationMongoDBAdaptorFactory dbAdaptorFactory, IOManagerFactory ioManagerFactory) {
         super(configuration, LoggerFactory.getLogger(FileMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.fileCollection = fileCollection;
@@ -127,8 +127,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
     @Override
     public OpenCGAResult insert(long studyId, File file, List<Sample> existingSamples, List<Sample> nonExistingSamples,
-                                List<VariableSet> variableSetList, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+                                List<VariableSet> variableSetList, QueryOptions options) throws CatalogException {
         return runTransaction(
                 (clientSession) -> {
                     long tmpStartTime = startQuery();
@@ -144,7 +143,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     @Override
     public OpenCGAResult insertWithVirtualFile(long studyId, File file, File virtualFile, List<Sample> existingSamples,
                                                List<Sample> nonExistingSamples, List<VariableSet> variableSetList, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+            throws CatalogException {
         return runTransaction(
                 (clientSession) -> {
                     long tmpStartTime = startQuery();
@@ -247,7 +246,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         }
 
         //new file uid
-        long fileUid = getNewUid();
+        long fileUid = getNewUid(clientSession);
         file.setUid(fileUid);
         file.setStudyUid(studyId);
         if (StringUtils.isEmpty(file.getUuid())) {
@@ -344,7 +343,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         try {
             return runTransaction(clientSession -> transactionalUpdate(clientSession, fileDataResult.first(), parameters,
                     variableSetList, queryOptions));
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             logger.error("Could not update file {}: {}", fileDataResult.first().getPath(), e.getMessage(), e);
             throw new CatalogDBException("Could not update file " + fileDataResult.first().getPath() + ": " + e.getMessage(), e.getCause());
         }
@@ -370,7 +369,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             try {
                 result.append(runTransaction(clientSession -> transactionalUpdate(clientSession, file, parameters, variableSetList,
                         queryOptions)));
-            } catch (CatalogDBException e) {
+            } catch (CatalogException e) {
                 logger.error("Could not update file {}: {}", file.getPath(), e.getMessage(), e);
                 result.getEvents().add(new Event(Event.Type.ERROR, file.getPath(), e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);
@@ -381,7 +380,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
     @Override
     OpenCGAResult<File> transactionalUpdate(ClientSession clientSession, File file, ObjectMap parameters,
-                                            List<VariableSet> variableSetList, QueryOptions queryOptions)
+                                            List<VariableSet> variableSetList, QueryOptions queryOptions, boolean incrementVersion)
             throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
         long tmpStartTime = startQuery();
         long studyUid = file.getStudyUid();
@@ -439,8 +438,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     }
 
     @Override
-    OpenCGAResult<File> transactionalUpdate(ClientSession clientSession, long studyUid, Bson query, UpdateDocument updateDocument)
-            throws CatalogDBException {
+    OpenCGAResult<File> transactionalUpdate(ClientSession clientSession, long studyUid, Bson query, UpdateDocument updateDocument,
+                                            boolean incrementVersion) throws CatalogDBException {
         long tmpStartTime = startQuery();
 
         Document fileUpdate = updateDocument.toFinalUpdateDocument();
@@ -931,7 +930,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
         try {
             return runTransaction(clientSession -> privateDelete(clientSession, fileDocument, status));
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             logger.error("Could not delete file {}: {}", file.getPath(), e.getMessage(), e);
             throw new CatalogDBException("Could not delete file " + file.getPath() + ": " + e.getMessage(), e.getCause());
         }
@@ -962,7 +961,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             Document fileDocument = iterator.next();
             try {
                 result.append(runTransaction(clientSession -> privateDelete(clientSession, fileDocument, status)));
-            } catch (CatalogDBException e) {
+            } catch (CatalogException e) {
                 logger.error("Could not delete file {}: {}", fileDocument.getString(QueryParams.PATH.key()), e.getMessage(), e);
                 result.getEvents().add(new Event(Event.Type.ERROR, fileDocument.getString(QueryParams.ID.key()), e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);
@@ -1253,7 +1252,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         MongoDBIterator<Document> mongoCursor = getMongoCursor(null, query, options, user);
 
         Document studyDocument = getStudyDocument(null, studyUid);
-        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
+        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(dbAdaptorFactory.getOrganizationId(), studyDocument, d, user,
                 StudyPermissions.Permissions.VIEW_FILE_ANNOTATIONS.name(),
                 FilePermissions.VIEW_ANNOTATIONS.name());
 
@@ -1276,7 +1275,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions, user);
 
         Document studyDocument = getStudyDocument(clientSession, studyUid);
-        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
+        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(dbAdaptorFactory.getOrganizationId(), studyDocument, d, user,
                 StudyPermissions.Permissions.VIEW_FILE_ANNOTATIONS.name(),
                 FilePermissions.VIEW_ANNOTATIONS.name());
 
@@ -1315,7 +1314,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         fixAclProjection(options);
 
         // type must always be there when relatedFiles is included
-        options = filterQueryOptions(options, Collections.singletonList(QueryParams.TYPE.key()));
+        options = filterQueryOptionsToIncludeKeys(options, Collections.singletonList(QueryParams.TYPE.key()));
 
         return options;
     }
@@ -1409,16 +1408,18 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         if (query.containsKey(QueryParams.STUDY_UID.key())
                 && (StringUtils.isNotEmpty(user) || query.containsKey(ParamConstants.ACL_PARAM))) {
             Document studyDocument = getStudyDocument(null, query.getLong(QueryParams.STUDY_UID.key()));
+            boolean simplifyPermissions = simplifyPermissions();
 
             if (query.containsKey(ParamConstants.ACL_PARAM)) {
-                andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.FILE, user, configuration));
+                andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.FILE, user,
+                        simplifyPermissions));
             } else {
                 if (containsAnnotationQuery(query)) {
                     andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, FilePermissions.VIEW_ANNOTATIONS.name(),
-                            Enums.Resource.FILE, configuration));
+                            Enums.Resource.FILE, simplifyPermissions));
                 } else {
                     andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, FilePermissions.VIEW.name(),
-                            Enums.Resource.FILE, configuration));
+                            Enums.Resource.FILE, simplifyPermissions));
                 }
             }
 

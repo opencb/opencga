@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.opencb.opencga</groupId>
+        <artifactId>opencga-storage-hadoop-lib</artifactId>
+        <version>3.5.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>opencga-storage-hadoop-lib-emr6.1</artifactId>
+
+    <properties>
+        <opencga-hadoop-shaded.id>emr6.1</opencga-hadoop-shaded.id>
+        <opencga-storage-hadoop-compat.id>hbase2.2</opencga-storage-hadoop-compat.id>
+        <!--  AWS changes the version of Jetty in their custom jar -->
+        <jetty-for-hadoop-test.version>9.4.20.v20190813</jetty-for-hadoop-test.version>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>

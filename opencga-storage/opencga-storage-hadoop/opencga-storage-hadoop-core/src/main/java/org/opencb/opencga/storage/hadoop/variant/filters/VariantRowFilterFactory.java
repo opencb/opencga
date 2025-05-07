@@ -145,6 +145,9 @@ public class VariantRowFilterFactory {
                 final Predicate<VariantRow.SampleColumn> predicate;
 
                 int idx = fixedFormat.indexOf(filter.getKey());
+                if (idx < 0) {
+                    throw new IllegalArgumentException("Unknown key '" + filter.getKey() + "'. Supported keys are: " + fixedFormat);
+                }
                 String filterValue = filter.getValue();
                 if (StringUtils.isNumeric(filterValue)) {
                     // Numeric value

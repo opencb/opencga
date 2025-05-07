@@ -127,6 +127,21 @@ public class TimeUtils {
         return new Date(cal.getTimeInMillis());
     }
 
+    public static Date add1YeartoDate(Date date) {
+        Calendar cal = new GregorianCalendar();
+        cal.setTime(date);
+        cal.setTimeInMillis(date.getTime());
+        cal.add(Calendar.YEAR, 1);
+        return new Date(cal.getTimeInMillis());
+    }
+
+    public static Date addDaysToCurrentDate(int days) {
+        Calendar cal = new GregorianCalendar();
+        cal.setTime(new Date());
+        cal.add(Calendar.DAY_OF_YEAR, days);
+        return new Date(cal.getTimeInMillis());
+    }
+
     public static Date toDate(String dateStr) {
         Date date = null;
         try {

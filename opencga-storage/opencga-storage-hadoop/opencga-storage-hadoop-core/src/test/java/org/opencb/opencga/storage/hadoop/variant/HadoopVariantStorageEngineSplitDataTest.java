@@ -501,9 +501,10 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
             for (Boolean nativeQuery : Arrays.asList(true, false)) {
                 String name = fileMetadata.getName();
                 Query query = new Query(VariantQueryParam.FILE.key(), name);
+                QueryOptions options = new QueryOptions(NATIVE, nativeQuery);
                 System.out.println("-----------------------");
-                System.out.println("FILE-QUERY = " + query.toJson());
-                for (Variant variant : variantStorageEngine.get(query, new QueryOptions(NATIVE, nativeQuery)).getResults()) {
+                System.out.println("FILE-QUERY = " + query.toJson() + " " + options.toJson());
+                for (Variant variant : variantStorageEngine.get(query, new QueryOptions(options)).getResults()) {
                     StudyEntry studyEntry = variant.getStudies().get(0);
                     assertEquals(0, studyEntry.getIssues().size());
                     assertEquals(name, studyEntry.getFiles().get(0).getFileId());
@@ -511,8 +512,8 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
                 for (Integer sample : fileMetadata.getSamples()) {
                     String sampleName = metadataManager.getSampleName(studyId, sample);
                     query = new Query(VariantQueryParam.FILE.key(), name).append(VariantQueryParam.SAMPLE.key(), sampleName);
-                    System.out.println("SAMPLE-QUERY = " + query.toJson());
-                    for (Variant variant : variantStorageEngine.get(query, new QueryOptions(NATIVE, nativeQuery)).getResults()) {
+                    System.out.println("SAMPLE-QUERY = " + query.toJson() + " " + options.toJson());
+                    for (Variant variant : variantStorageEngine.get(query, new QueryOptions(options)).getResults()) {
                         StudyEntry studyEntry = variant.getStudies().get(0);
                         assertEquals(0, studyEntry.getIssues().size());
                         assertEquals(name, studyEntry.getFiles().get(0).getFileId());

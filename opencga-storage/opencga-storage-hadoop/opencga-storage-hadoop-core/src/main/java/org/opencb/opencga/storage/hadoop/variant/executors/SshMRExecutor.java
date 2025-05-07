@@ -1,19 +1,28 @@
 package org.opencb.opencga.storage.hadoop.variant.executors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.util.RunJar;
 import org.apache.tools.ant.types.Commandline;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.exec.Command;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDriver;
+import org.opencb.opencga.storage.hadoop.utils.MapReduceOutputFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.*;
 
@@ -29,52 +38,199 @@ public class SshMRExecutor extends MRExecutor {
     private static final String HADOOP_SSH_KEY_ENV  = "HADOOP_SSH_KEY";
     // env-var expected by "sshpass -e"
     private static final String SSHPASS_ENV = "SSHPASS";
+    public static final String PID = "PID";
     private static Logger logger = LoggerFactory.getLogger(SshMRExecutor.class);
 
     @Override
-    public int run(String executable, String[] args) throws StorageEngineException {
-        String commandLine = buildCommand(executable, args);
-        List<String> env = buildEnv();
-
-        Command command = new Command(commandLine, env);
-        command.run();
-        int exitValue = command.getExitValue();
-
-        if (exitValue == 0) {
-            copyOutputFiles(args, env);
-        }
-        return exitValue;
+    public SshMRExecutor init(String dbName, Configuration conf, ObjectMap options) {
+        super.init(dbName, conf, options);
+        return this;
     }
 
-    private Path copyOutputFiles(String[] args, List<String> env) throws StorageEngineException {
-        List<String> argsList = Arrays.asList(args);
-        int outputIdx = argsList.indexOf("output");
-        if (outputIdx > 0 && argsList.size() > outputIdx + 1) {
-            String targetOutput = UriUtils.createUriSafe(argsList.get(outputIdx + 1)).getPath();
-            if (StringUtils.isNotEmpty(targetOutput)) {
-                String remoteOpencgaHome = getOptions().getString(MR_EXECUTOR_SSH_REMOTE_OPENCGA_HOME.key());
-                String srcOutput;
-                if (StringUtils.isNoneEmpty(remoteOpencgaHome, getOpencgaHome())) {
-                    srcOutput = targetOutput.replaceAll(getOpencgaHome(), remoteOpencgaHome);
-                } else {
-                    srcOutput = targetOutput;
-                }
+    @Override
+    public Result run(String executable, String[] args) throws StorageEngineException {
+        MapReduceOutputFile mrOutput = initMrOutput(executable, args);
+        List<String> env = buildEnv();
 
-                String hadoopScpBin = getOptions()
-                        .getString(MR_EXECUTOR_SSH_HADOOP_SCP_BIN.key(), MR_EXECUTOR_SSH_HADOOP_SCP_BIN.defaultValue());
-                String commandLine = getBinPath(hadoopScpBin) + " " + srcOutput + " " + targetOutput;
-
-                Command command = new Command(commandLine, env);
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        Thread hook = new Thread(() -> {
+            logger.info("Shutdown hook. Killing MR jobs");
+            logger.info("Read output key-value:");
+            ObjectMap result = readResult(new String(outputStream.toByteArray(), Charset.defaultCharset()));
+            for (Map.Entry<String, Object> entry : result.entrySet()) {
+                logger.info(" - " + entry.getKey() + ": " + entry.getValue());
+            }
+            String remotePid = result.getString(PID);
+            logger.info("Remote PID: " + remotePid);
+            List<String> mrJobs = result.getAsStringList(AbstractHBaseDriver.MR_APPLICATION_ID);
+            logger.info("MR jobs to kill: " + mrJobs);
+            for (String mrJob : mrJobs) {
+                logger.info("Killing MR job " + mrJob);
+                String commandLineKill = buildCommand("yarn", "application", "-kill", mrJob);
+                Command command = new Command(commandLineKill, env);
                 command.run();
                 int exitValue = command.getExitValue();
                 if (exitValue != 0) {
-                    String sshHost = getOptions().getString(MR_EXECUTOR_SSH_HOST.key());
-                    String sshUser = getOptions().getString(MR_EXECUTOR_SSH_USER.key());
-                    throw new StorageEngineException("There was an issue copying files from "
-                            + sshUser + "@" + sshHost + ":" + srcOutput + " to " + targetOutput);
+                    logger.error("Error killing MR job " + mrJob);
+                } else {
+                    logger.info("MR job " + mrJob + " killed!");
                 }
-                return Paths.get(targetOutput);
             }
+            if (remotePid != null) {
+                int remoteProcessGraceKillPeriod = getOptions()
+                        .getInt(MR_EXECUTOR_SSH_HADOOP_TERMINATION_GRACE_PERIOD_SECONDS.key(),
+                                MR_EXECUTOR_SSH_HADOOP_TERMINATION_GRACE_PERIOD_SECONDS.defaultValue());
+                logger.info("Wait up to " + remoteProcessGraceKillPeriod + "s for the remote process to finish");
+                String commandLineWaitPid = buildCommand("bash", "-c", ""
+                        + "pid=" + remotePid + "; "
+                        + "i=0; "
+                        + "while [ $(( i++ )) -lt " + remoteProcessGraceKillPeriod + " ] && ps -p $pid > /dev/null; do sleep 1; done; "
+                        + "if ps -p $pid > /dev/null; then "
+                        + "   echo \"Kill remote ssh process $pid\"; "
+                        + "   ps -p $pid; "
+                        + "   kill -15 $pid; "
+                        + "else "
+                        + "   echo \"Process $pid finished\"; "
+                        + " fi");
+                Command command = new Command(commandLineWaitPid, env);
+                command.run();
+                if (command.getExitValue() != 0) {
+                    logger.error("Error waiting for remote process to finish");
+                } else {
+                    logger.info("Remote process finished!");
+                }
+            }
+        });
+        Runtime.getRuntime().addShutdownHook(hook);
+        int exitValue = runRemote(executable, args, env, outputStream);
+        boolean succeed = exitValue == 0;
+        Runtime.getRuntime().removeShutdownHook(hook);
+        ObjectMap result = readResult(new String(outputStream.toByteArray(), Charset.defaultCharset()));
+        try {
+            if (succeed) {
+                if (mrOutput != null) {
+                    mrOutput.postExecute(result, succeed);
+                } else {
+                    copyOutputFiles(args, env);
+                }
+                // Copy extra output files
+                for (String key : result.keySet()) {
+                    if (key.startsWith(MapReduceOutputFile.EXTRA_OUTPUT_PREFIX)) {
+                        copyOutputFiles(result.getString(key), env);
+                    }
+                }
+            } else {
+                if (mrOutput != null) {
+                    mrOutput.postExecute(result, succeed);
+                } // else // should delete remote output files?
+            }
+        } catch (IOException e) {
+            throw new StorageEngineException(e.getMessage(), e);
+        }
+        return new Result(exitValue, result);
+    }
+
+    protected int runRemote(String executable, String[] args, List<String> env, ByteArrayOutputStream outputStream) {
+        String commandLine = buildCommand(executable, args);
+        Command command = new Command(commandLine, env);
+        command.setErrorOutputStream(outputStream);
+        command.run();
+        return command.getExitValue();
+    }
+
+    /**
+     * If the MapReduce to be executed is writing to a local filesystem, change the output to a temporary HDFS path.
+     * The output will be copied to the local filesystem after the execution.
+     * <p>
+     *     This method will look for the ${@link AbstractHBaseDriver#OUTPUT_PARAM} argument in the args array.
+     *
+     * @param executable    Executable
+     * @param args          Arguments passed to the executable. Might be modified
+     * @return              MapReduceOutputFile if any
+     * @throws StorageEngineException if there is an issue creating the temporary output path
+     */
+    private MapReduceOutputFile initMrOutput(String executable, String[] args) throws StorageEngineException {
+        MapReduceOutputFile mrOutput = null;
+        List<String> argsList = Arrays.asList(args);
+        int outputIdx = argsList.indexOf(AbstractHBaseDriver.OUTPUT_PARAM);
+        if (outputIdx > 0 && argsList.size() > outputIdx + 1) {
+            String output = argsList.get(outputIdx + 1);
+            URI outputUri = UriUtils.createUriSafe(output);
+            if (MapReduceOutputFile.isLocal(outputUri)) {
+                logger.info("This MapReduce will produce some output. Change output location from file:// to a temporary hdfs:// file"
+                        + " so it can be copied to the local filesystem after the execution");
+                try {
+                    int i = executable.lastIndexOf('.');
+                    String tempFilePrefix;
+                    if (i > 0) {
+                        String className = executable.substring(i);
+                        tempFilePrefix = dbName + className;
+                    } else {
+                        tempFilePrefix = dbName;
+                    }
+                    mrOutput = new MapReduceOutputFile(outputUri.toString(), null,
+                            tempFilePrefix, true, conf);
+                } catch (IOException e) {
+                    throw new StorageEngineException(e.getMessage(), e);
+                }
+                // Replace output path with the temporary path
+                argsList.set(outputIdx + 1, mrOutput.getOutdir().toString());
+            }
+        }
+        return mrOutput;
+    }
+
+    /**
+     * Copy output files from remote server to local filesystem.
+     * <p>
+     * This method will look for the "output" argument in the args array.
+     * The value of the argument is expected to be a path.
+     *
+     * @param args Arguments passed to the executable
+     * @param env  Environment variables
+     * @return Path to the output file
+     * @throws StorageEngineException if there is an issue copying the files
+     */
+    private Path copyOutputFiles(String[] args, List<String> env) throws StorageEngineException {
+        List<String> argsList = Arrays.asList(args);
+        int outputIdx = argsList.indexOf(AbstractHBaseDriver.OUTPUT_PARAM);
+        if (outputIdx > 0 && argsList.size() > outputIdx + 1) {
+            return copyOutputFiles(argsList.get(outputIdx + 1), env);
+        }
+        // Nothing to copy
+        return null;
+    }
+
+    private Path copyOutputFiles(String output, List<String> env) throws StorageEngineException {
+        URI targetOutputUri = UriUtils.createUriSafe(output);
+        if (!MapReduceOutputFile.isLocal(targetOutputUri)) {
+            logger.info("Output is not a file:// URI. Skipping copy file {}", targetOutputUri);
+            return null;
+        }
+        String targetOutput = targetOutputUri.getPath();
+        if (StringUtils.isNotEmpty(targetOutput)) {
+            String remoteOpencgaHome = getOptions().getString(MR_EXECUTOR_SSH_REMOTE_OPENCGA_HOME.key());
+            String srcOutput;
+            if (StringUtils.isNoneEmpty(remoteOpencgaHome, getOpencgaHome())) {
+                srcOutput = targetOutput.replaceAll(getOpencgaHome(), remoteOpencgaHome);
+            } else {
+                srcOutput = targetOutput;
+            }
+
+            String hadoopScpBin = getOptions()
+                    .getString(MR_EXECUTOR_SSH_HADOOP_SCP_BIN.key(), MR_EXECUTOR_SSH_HADOOP_SCP_BIN.defaultValue());
+            String commandLine = getBinPath(hadoopScpBin) + " " + srcOutput + " " + targetOutput;
+
+            Command command = new Command(commandLine, env);
+            command.run();
+            int exitValue = command.getExitValue();
+            if (exitValue != 0) {
+                String sshHost = getOptions().getString(MR_EXECUTOR_SSH_HOST.key());
+                String sshUser = getOptions().getString(MR_EXECUTOR_SSH_USER.key());
+                throw new StorageEngineException("There was an issue copying files from "
+                        + sshUser + "@" + sshHost + ":" + srcOutput + " to " + targetOutput);
+            }
+            return Paths.get(targetOutput);
         }
         return null;
     }

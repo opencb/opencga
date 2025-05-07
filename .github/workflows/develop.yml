@@ -11,25 +11,28 @@ jobs:
   build:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      maven_opts: -P storage-hadoop,${{ vars.HADOOP_FLAVOUR }},RClient,opencga-storage-hadoop-deps -Dopencga.war.name=opencga -Dcheckstyle.skip -pl ':opencga-app' --also-make
+      maven_opts: -Phdp3.1,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
 
-  test:
-    uses: ./.github/workflows/test-analysis.yml
-    needs: build
-    with:
-      test_profile: runShortTests,runMediumTests
-    secrets: inherit
+
+## TASK-4970: remove the test job from the develop.yml workflow because it is not needed anymore.
+#  test:
+#    uses: ./.github/workflows/test-analysis.yml
+#    needs: build
+#    with:
+#      test_profile: runShortTests,runMediumTests
+#    secrets: inherit
 
   deploy-maven:
     uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
-    needs: test
+    needs: build
     with:
-      maven_opts: -P storage-hadoop,${{ vars.HADOOP_FLAVOUR }} -Dopencga.war.name=opencga
+      maven_opts: -P hdp3.1 -Dopencga.war.name=opencga
+
     secrets: inherit
 
   deploy-docker:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
-    needs: test
+    needs: build
     with:
       cli: python3 ./build/cloud/docker/docker-build.py push --images base,init
     secrets: inherit

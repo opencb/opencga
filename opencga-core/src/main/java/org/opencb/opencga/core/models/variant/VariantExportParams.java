@@ -16,12 +16,13 @@
 
 package org.opencb.opencga.core.models.variant;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import org.opencb.commons.datastore.core.Query;
 
 public class VariantExportParams extends VariantQueryParams {
     public static final String DESCRIPTION = "Variant export params";
-    private String outdir;
+
     private String outputFileName;
     private String outputFileFormat;
     private String variantsFile;
@@ -35,21 +36,23 @@ public class VariantExportParams extends VariantQueryParams {
     public VariantExportParams() {
     }
 
-    public VariantExportParams(Query query, String outdir, String outputFileName, String outputFileFormat,
+    public VariantExportParams(Query query, String outputFileName, String outputFileFormat,
                                String variantsFile) {
         super(query);
-        this.outdir = outdir;
         this.outputFileName = outputFileName;
         this.outputFileFormat = outputFileFormat;
         this.variantsFile = variantsFile;
     }
 
+    @Deprecated
+    @JsonIgnore
     public String getOutdir() {
-        return outdir;
+        return null;
     }
 
-    public VariantExportParams setOutdir(String outdir) {
-        this.outdir = outdir;
+    @Deprecated
+    @JsonIgnore
+    public VariantExportParams setOutdir(String unused) {
         return this;
     }
 

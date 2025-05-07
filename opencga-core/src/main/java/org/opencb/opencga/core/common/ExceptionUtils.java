@@ -58,7 +58,30 @@ public class ExceptionUtils {
             if (includeClassName) {
                 message.append("[").append(exception.getClass().getSimpleName()).append("] ");
             }
-            message.append(exMessage);
+            String[] exMessageSubLines;
+            if (exMessage != null) {
+                exMessageSubLines = exMessage.split("\n");
+            } else {
+                exMessageSubLines = new String[]{"null"};
+            }
+            if (multiline) {
+                for (int i = 0; i < exMessageSubLines.length; i++) {
+                    String exMessageSubLine = exMessageSubLines[i];
+                    if (i == 0) {
+                        message.append(exMessageSubLine);
+                    } else {
+                        message.append(separator);
+                        if (includeClassName) {
+                            message.append(StringUtils.repeat(" ", exception.getClass().getSimpleName().length() + 3));
+                        }
+                        message.append(exMessageSubLine);
+                    }
+                }
+            } else {
+                for (String exMessageSubLine : exMessageSubLines) {
+                    message.append(exMessageSubLine).append(" ; ");
+                }
+            }
             if (exception.getSuppressed().length > 0) {
                 StringBuilder sb = new StringBuilder();
                 String intraSeparator = multiline ? separator + "  " : separator;

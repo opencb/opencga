@@ -470,7 +470,7 @@ public class AlignmentCommandOptions {
         @ParametersDelegate
         public Object internalJobOptions = internalJobOptionsObject;
 
-        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study.", arity = 1)
+        @Parameter(names = {"-s", "--study"}, description = "Study [[organization@]project:]study.", arity = 1)
         public String study;
 
         @Parameter(names = {"--command"}, description = BWA_COMMAND_DESCRIPTION)
@@ -538,7 +538,7 @@ public class AlignmentCommandOptions {
         @ParametersDelegate
         public Object internalJobOptions = internalJobOptionsObject;
 
-        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study.", arity = 1)
+        @Parameter(names = {"-s", "--study"}, description = "Study [[organization@]project:]study.", arity = 1)
         public String study;
 
         @Parameter(names = {"--command"}, description = DEEPTOOLS_COMMAND_DESCRIPTION)

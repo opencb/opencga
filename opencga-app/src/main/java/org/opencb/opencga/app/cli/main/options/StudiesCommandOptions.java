@@ -37,12 +37,15 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
         public CreateCommandOptions createCommandOptions;
         public SearchCommandOptions searchCommandOptions;
         public AclCommandOptions aclCommandOptions;
-        public AggregationStatsCommandOptions aggregationStatsCommandOptions;
         public InfoCommandOptions infoCommandOptions;
         public SearchAuditCommandOptions searchAuditCommandOptions;
         public GroupsCommandOptions groupsCommandOptions;
         public UpdateGroupsCommandOptions updateGroupsCommandOptions;
         public UpdateGroupsUsersCommandOptions updateGroupsUsersCommandOptions;
+        public CreateNotesCommandOptions createNotesCommandOptions;
+        public SearchNotesCommandOptions searchNotesCommandOptions;
+        public DeleteNotesCommandOptions deleteNotesCommandOptions;
+        public UpdateNotesCommandOptions updateNotesCommandOptions;
         public PermissionRulesCommandOptions permissionRulesCommandOptions;
         public UpdatePermissionRulesCommandOptions updatePermissionRulesCommandOptions;
         public RunTemplatesCommandOptions runTemplatesCommandOptions;
@@ -61,12 +64,15 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
         this.createCommandOptions = new CreateCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
         this.aclCommandOptions = new AclCommandOptions();
-        this.aggregationStatsCommandOptions = new AggregationStatsCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
         this.searchAuditCommandOptions = new SearchAuditCommandOptions();
         this.groupsCommandOptions = new GroupsCommandOptions();
         this.updateGroupsCommandOptions = new UpdateGroupsCommandOptions();
         this.updateGroupsUsersCommandOptions = new UpdateGroupsUsersCommandOptions();
+        this.createNotesCommandOptions = new CreateNotesCommandOptions();
+        this.searchNotesCommandOptions = new SearchNotesCommandOptions();
+        this.deleteNotesCommandOptions = new DeleteNotesCommandOptions();
+        this.updateNotesCommandOptions = new UpdateNotesCommandOptions();
         this.permissionRulesCommandOptions = new PermissionRulesCommandOptions();
         this.updatePermissionRulesCommandOptions = new UpdatePermissionRulesCommandOptions();
         this.runTemplatesCommandOptions = new RunTemplatesCommandOptions();
@@ -126,7 +132,7 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
         @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
         public String exclude; 
     
-        @Parameter(names = {"--project", "-p"}, description = "Project [user@]project where project can be either the ID or the alias", required = false, arity = 1)
+        @Parameter(names = {"--project", "-p"}, description = "Project [organization@]project where project can be either the ID or the alias", required = false, arity = 1)
         public String project; 
     
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
@@ -191,7 +197,7 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
         @Parameter(names = {"--count"}, description = "Get the total number of results matching the query. Deactivated by default.", required = false, help = true, arity = 0)
         public boolean count = false; 
     
-        @Parameter(names = {"--project", "-p"}, description = "Project [user@]project where project can be either the ID or the alias", required = true, arity = 1)
+        @Parameter(names = {"--project", "-p"}, description = "Project [organization@]project where project can be either the ID or the alias", required = true, arity = 1)
         public String project; 
     
         @Parameter(names = {"--name", "-n"}, description = "Study name", required = false, arity = 1)
@@ -232,7 +238,7 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--studies"}, description = "Comma separated list of Studies [[user@]project:]study where study and project can be either the ID or UUID up to a maximum of 100", required = true, arity = 1)
+        @Parameter(names = {"--studies"}, description = "Comma separated list of Studies [[organization@]project:]study where study and project can be either the ID or UUID up to a maximum of 100", required = true, arity = 1)
         public String studies; 
     
         @Parameter(names = {"--member"}, description = "User or group id", required = false, arity = 1)
@@ -240,38 +246,6 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
     
         @Parameter(names = {"--silent"}, description = "Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries looked for cannot be shown for whichever reason", required = false, help = true, arity = 0)
         public boolean silent = false; 
-    
-    }
-
-    @Parameters(commandNames = {"aggregationstats"}, commandDescription ="Fetch catalog study stats")
-    public class AggregationStatsCommandOptions {
-    
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
-    
-        @Parameter(names = {"--studies"}, description = "Comma separated list of studies [[user@]project:]study up to a maximum of 100", required = true, arity = 1)
-        public String studies; 
-    
-        @Parameter(names = {"--default"}, description = "Calculate default stats", required = false, arity = 1)
-        public Boolean default_values = true; 
-    
-        @Parameter(names = {"--file-fields"}, description = "List of file fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type", required = false, arity = 1)
-        public String fileFields; 
-    
-        @Parameter(names = {"--individual-fields"}, description = "List of individual fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type", required = false, arity = 1)
-        public String individualFields; 
-    
-        @Parameter(names = {"--family-fields"}, description = "List of family fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type", required = false, arity = 1)
-        public String familyFields; 
-    
-        @Parameter(names = {"--sample-fields"}, description = "List of sample fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type", required = false, arity = 1)
-        public String sampleFields; 
-    
-        @Parameter(names = {"--cohort-fields"}, description = "List of cohort fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type", required = false, arity = 1)
-        public String cohortFields; 
-    
-        @Parameter(names = {"--job-fields"}, description = "List of job fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type", required = false, arity = 1)
-        public String jobFields; 
     
     }
 
@@ -287,7 +261,7 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
         @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
         public String exclude; 
     
-        @Parameter(names = {"--studies"}, description = "Comma separated list of Studies [[user@]project:]study where study and project can be either the ID or UUID up to a maximum of 100", required = true, arity = 1)
+        @Parameter(names = {"--studies"}, description = "Comma separated list of Studies [[organization@]project:]study where study and project can be either the ID or UUID up to a maximum of 100", required = true, arity = 1)
         public String studies; 
     
     }
@@ -348,7 +322,7 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = true, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = true, arity = 1)
         public String study; 
     
         @Parameter(names = {"--id"}, description = "Group id. If provided, it will only fetch information for the provided group.", required = false, arity = 1)
@@ -371,7 +345,7 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
         @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
         public Boolean jsonDataModel = false;
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = true, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = true, arity = 1)
         public String study; 
     
         @Parameter(names = {"--action"}, description = "Action to be performed: ADD or REMOVE a group", required = false, arity = 1)
@@ -397,7 +371,7 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
         @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
         public Boolean jsonDataModel = false;
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = true, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = true, arity = 1)
         public String study; 
     
         @Parameter(names = {"--group"}, description = "Group name", required = true, arity = 1)
@@ -411,13 +385,147 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
     
     }
 
+    @Parameters(commandNames = {"notes-create"}, commandDescription ="Create a new note")
+    public class CreateNotesCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String include; 
+    
+        @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String exclude; 
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = true, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
+        public boolean includeResult = false; 
+    
+        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = false, arity = 1)
+        public String id;
+    
+        @Parameter(names = {"--tags"}, description = "The body web service tags parameter", required = false, arity = 1)
+        public String tags;
+    
+        @Parameter(names = {"--visibility"}, description = "Enum param allowed values: PUBLIC, PRIVATE", required = false, arity = 1)
+        public String visibility;
+    
+        @Parameter(names = {"--value-type"}, description = "Enum param allowed values: OBJECT, ARRAY, STRING, INTEGER, DOUBLE", required = false, arity = 1)
+        public String valueType;
+    
+    }
+
+    @Parameters(commandNames = {"notes-search"}, commandDescription ="Search for notes of scope STUDY")
+    public class SearchNotesCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String include; 
+    
+        @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String exclude; 
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = true, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--creation-date", "--cd"}, description = "Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
+        public String creationDate; 
+    
+        @Parameter(names = {"--modification-date", "--md"}, description = "Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
+        public String modificationDate; 
+    
+        @Parameter(names = {"--id"}, description = "Note unique identifier.", required = false, arity = 1)
+        public String id; 
+    
+        @Parameter(names = {"--uuid"}, description = "Unique 32-character identifier assigned automatically by OpenCGA.", required = false, arity = 1)
+        public String uuid; 
+    
+        @Parameter(names = {"--user-id"}, description = "User that wrote that Note.", required = false, arity = 1)
+        public String userId; 
+    
+        @Parameter(names = {"--tags"}, description = "Note tags.", required = false, arity = 1)
+        public String tags; 
+    
+        @Parameter(names = {"--visibility"}, description = "Visibility of the Note.", required = false, arity = 1)
+        public String visibility; 
+    
+        @Parameter(names = {"--version"}, description = "Autoincremental version assigned to the registered entry. By default, updates does not create new versions. To enable versioning, users must set the `incVersion` flag from the /update web service when updating the document.", required = false, arity = 1)
+        public String version; 
+    
+    }
+
+    @Parameters(commandNames = {"notes-delete"}, commandDescription ="Delete note")
+    public class DeleteNotesCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = true, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--id"}, description = "Note unique identifier.", required = true, arity = 1)
+        public String id; 
+    
+        @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
+        public boolean includeResult = false; 
+    
+    }
+
+    @Parameters(commandNames = {"notes-update"}, commandDescription ="Update a note")
+    public class UpdateNotesCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String include; 
+    
+        @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String exclude; 
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = true, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--id"}, description = "Note unique identifier.", required = true, arity = 1)
+        public String id; 
+    
+        @Parameter(names = {"--tags-action"}, description = "Action to be performed if the array of tags is being updated.", required = false, arity = 1)
+        public String tagsAction = "ADD"; 
+    
+        @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
+        public boolean includeResult = false; 
+    
+        @Parameter(names = {"--tags"}, description = "The body web service tags parameter", required = false, arity = 1)
+        public String tags;
+    
+        @Parameter(names = {"--visibility"}, description = "Enum param allowed values: PUBLIC, PRIVATE", required = false, arity = 1)
+        public String visibility;
+    
+    }
+
     @Parameters(commandNames = {"permissionrules"}, commandDescription ="Fetch permission rules")
     public class PermissionRulesCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = true, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = true, arity = 1)
         public String study; 
     
         @Parameter(names = {"--entity"}, description = "Entity where the permission rules should be applied to", required = true, arity = 1)
@@ -437,7 +545,7 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
         @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
         public Boolean jsonDataModel = false;
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = true, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = true, arity = 1)
         public String study; 
     
         @Parameter(names = {"--entity"}, description = "Entity where the permission rules should be applied to", required = true, arity = 1)
@@ -466,7 +574,7 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = true, arity = 1)
         public String study; 
     
         @Parameter(names = {"--template-id"}, description = "Template id", required = true, arity = 1)
@@ -492,7 +600,7 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
         @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
         public String exclude; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = true, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = true, arity = 1)
         public String study; 
     
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
@@ -539,7 +647,7 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = true, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = true, arity = 1)
         public String study; 
     
         @Parameter(names = {"--id"}, description = "Id of the variableSet to be retrieved. If no id is passed, it will show all the variableSets of the study", required = false, arity = 1)
@@ -559,7 +667,7 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
         @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
         public Boolean jsonDataModel = false;
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = true, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = true, arity = 1)
         public String study; 
     
         @Parameter(names = {"--action"}, description = "Action to be performed: ADD, REMOVE or FORCE_REMOVE a variableSet", required = false, arity = 1)
@@ -594,7 +702,7 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
         @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
         public Boolean jsonDataModel = false;
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = true, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = true, arity = 1)
         public String study; 
     
         @Parameter(names = {"--variable-set"}, description = "VariableSet id of the VariableSet to be updated", required = true, arity = 1)
@@ -612,7 +720,7 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
         @Parameter(names = {"--category"}, description = "The body web service category parameter", required = false, arity = 1)
         public String category;
     
-        @Parameter(names = {"--type"}, description = "Enum param allowed values: BOOLEAN, CATEGORICAL, INTEGER, DOUBLE, TEXT, STRING, OBJECT, MAP_BOOLEAN, MAP_INTEGER, MAP_DOUBLE, MAP_STRING", required = false, arity = 1)
+        @Parameter(names = {"--type"}, description = "Enum param allowed values: BOOLEAN, CATEGORICAL, INTEGER, DOUBLE, STRING, OBJECT, MAP_BOOLEAN, MAP_INTEGER, MAP_DOUBLE, MAP_STRING", required = false, arity = 1)
         public String type;
     
         @Parameter(names = {"--required"}, description = "The body web service required parameter", required = false, help = true, arity = 0)

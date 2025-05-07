@@ -19,15 +19,18 @@ import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.analysis.rga.exceptions.RgaException;
 import org.opencb.opencga.analysis.rga.iterators.RgaIterator;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.managers.SampleManager;
+import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.analysis.knockout.*;
 import org.opencb.opencga.core.models.common.RgaIndex;
 import org.opencb.opencga.core.models.file.File;
@@ -142,10 +145,16 @@ public class RgaManager implements AutoCloseable {
      */
     public void index(String study, Path file, String token) throws CatalogException, IOException, RgaException {
         checkStorageReadMode();
-        String userId = catalogManager.getUserManager().getUserId(token);
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(study, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+
         Study studyObject = catalogManager.getStudyManager().get(study, QueryOptions.empty(), token).first();
         try {
-            catalogManager.getAuthorizationManager().isOwnerOrAdmin(studyObject.getUid(), userId);
+            AuthorizationManager authorizationManager = catalogManager.getAuthorizationManager();
+            long studyId = studyObject.getUid();
+            authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, studyId, userId);
         } catch (CatalogException e) {
             logger.error(e.getMessage(), e);
             throw new CatalogException("Only owners or admins can index", e.getCause());
@@ -225,10 +234,17 @@ public class RgaManager implements AutoCloseable {
 
     public void generateAuxiliarCollection(String studyStr, String token) throws CatalogException, RgaException, IOException {
         checkStorageReadMode();
-        String userId = catalogManager.getUserManager().getUserId(token);
+
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
+
         try {
-            catalogManager.getAuthorizationManager().isOwnerOrAdmin(study.getUid(), userId);
+            AuthorizationManager authorizationManager = catalogManager.getAuthorizationManager();
+            long studyId = study.getUid();
+            authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, studyId, userId);
         } catch (CatalogException e) {
             logger.error(e.getMessage(), e);
             throw new CatalogException("Only owners or admins can generate the auxiliary RGA collection", e.getCause());
@@ -432,11 +448,15 @@ public class RgaManager implements AutoCloseable {
 
     private OpenCGAResult<Long> updateRgaInternalIndexStatus(String studyStr, List<String> sampleIds, RgaIndex.Status status,
                                                             String token) throws CatalogException, RgaException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
-        String userId = catalogManager.getUserManager().getUserId(token);
+
         String collection = getMainCollectionName(study.getFqn());
 
-        catalogManager.getAuthorizationManager().checkIsOwnerOrAdmin(study.getUid(), userId);
+        catalogManager.getAuthorizationManager().checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
 
         if (!rgaEngine.isAlive(collection)) {
             throw new RgaException("Missing RGA indexes for study '" + study.getFqn() + "' or solr server not alive");
@@ -475,11 +495,15 @@ public class RgaManager implements AutoCloseable {
 
     private OpenCGAResult<Long> updateRgaInternalIndexStatus(String studyStr, String token)
             throws CatalogException, IOException, RgaException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
-        String userId = catalogManager.getUserManager().getUserId(token);
+
         String collection = getMainCollectionName(study.getFqn());
 
-        catalogManager.getAuthorizationManager().checkIsOwnerOrAdmin(study.getUid(), userId);
+        catalogManager.getAuthorizationManager().checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
 
         if (!rgaEngine.isAlive(collection)) {
             throw new RgaException("Missing RGA indexes for study '" + study.getFqn() + "' or solr server not alive");
@@ -535,12 +559,17 @@ public class RgaManager implements AutoCloseable {
             return cacheResults;
         }
 
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
+
         String collection = getMainCollectionName(study.getFqn());
 
         Preprocess preprocess;
         try {
-            preprocess = individualQueryPreprocess(study, query, options, token);
+            preprocess = individualQueryPreprocess(organizationId, study, query, options, userId, token);
         } catch (RgaException e) {
             if (RgaException.NO_RESULTS_FOUND.equals(e.getMessage())) {
                 stopWatch.stop();
@@ -577,7 +606,8 @@ public class RgaManager implements AutoCloseable {
                 }
             }
             // Check parent permissions...
-            Set<String> authorisedSamples = getAuthorisedSamples(study.getFqn(), parentSampleIds, null, preprocess.getUserId(), token);
+            Set<String> authorisedSamples = getAuthorisedSamples(organizationId, study.getFqn(), parentSampleIds, null,
+                    preprocess.getUserId(), token);
             if (authorisedSamples.size() < parentSampleIds.size()) {
                 // Filter out parent sample ids
                 for (KnockoutByIndividual knockoutByIndividual : knockoutByIndividuals) {
@@ -618,8 +648,12 @@ public class RgaManager implements AutoCloseable {
             return cacheResults;
         }
 
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
-        String userId = catalogManager.getUserManager().getUserId(token);
+
         String collection = getMainCollectionName(study.getFqn());
         if (!rgaEngine.isAlive(collection)) {
             throw new RgaException("Missing RGA indexes for study '" + study.getFqn() + "' or solr server not alive");
@@ -630,7 +664,9 @@ public class RgaManager implements AutoCloseable {
         QueryOptions queryOptions = setDefaultLimit(options);
         List<String> includeIndividuals = queryOptions.getAsStringList(RgaQueryParams.INCLUDE_INDIVIDUAL);
 
-        Boolean isOwnerOrAdmin = catalogManager.getAuthorizationManager().isOwnerOrAdmin(study.getUid(), userId);
+        AuthorizationManager authorizationManager = catalogManager.getAuthorizationManager();
+        long studyId = study.getUid();
+        boolean isOwnerOrAdmin = authorizationManager.isAtLeastStudyAdministrator(organizationId, studyId, userId);
         Query auxQuery = query != null ? new Query(query) : new Query();
 
         // Get number of matches
@@ -668,7 +704,7 @@ public class RgaManager implements AutoCloseable {
                         .append(ACL_PARAM, userId + ":" + SamplePermissions.VIEW_VARIANTS)
                         .append(SampleDBAdaptor.QueryParams.INTERNAL_RGA_STATUS.key(), RgaIndex.Status.INDEXED)
                         .append(SampleDBAdaptor.QueryParams.ID.key(), includeIndividuals);
-                OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(study.getFqn(),
+                OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(organizationId, study.getFqn(),
                         SampleDBAdaptor.QueryParams.ID.key(), sampleQuery, token);
                 includeSampleIds = new HashSet<>((List<String>) authorisedSampleIdResult.getResults());
             } else {
@@ -684,7 +720,7 @@ public class RgaManager implements AutoCloseable {
                 // 3. Get list of sample ids for which the user has permissions
                 Query sampleQuery = new Query(ACL_PARAM, userId + ":" + SamplePermissions.VIEW_VARIANTS)
                         .append(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
-                OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(study.getFqn(),
+                OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(organizationId, study.getFqn(),
                         SampleDBAdaptor.QueryParams.ID.key(), sampleQuery, token);
                 // TODO: The number of samples to include could be really high
                 includeSampleIds = new HashSet<>((List<String>) authorisedSampleIdResult.getResults());
@@ -701,7 +737,7 @@ public class RgaManager implements AutoCloseable {
                 logger.warn("Include only the samples that are actually necessary");
             }
 
-            OpenCGAResult<?> sampleResult = catalogManager.getSampleManager().distinct(study.getFqn(),
+            OpenCGAResult<?> sampleResult = catalogManager.getSampleManager().distinct(organizationId, study.getFqn(),
                     SampleDBAdaptor.QueryParams.ID.key(), sampleQuery, token);
             includeSampleIds = new HashSet<>((List<String>) sampleResult.getResults());
         }
@@ -752,8 +788,12 @@ public class RgaManager implements AutoCloseable {
             return cacheResults;
         }
 
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
-        String userId = catalogManager.getUserManager().getUserId(token);
+
         String collection = getMainCollectionName(study.getFqn());
         String auxCollection = getAuxCollectionName(study.getFqn());
         if (!rgaEngine.isAlive(collection)) {
@@ -767,7 +807,9 @@ public class RgaManager implements AutoCloseable {
         QueryOptions queryOptions = setDefaultLimit(options);
         List<String> includeIndividuals = queryOptions.getAsStringList(RgaQueryParams.INCLUDE_INDIVIDUAL);
 
-        Boolean isOwnerOrAdmin = catalogManager.getAuthorizationManager().isOwnerOrAdmin(study.getUid(), userId);
+        AuthorizationManager authorizationManager = catalogManager.getAuthorizationManager();
+        long studyId = study.getUid();
+        boolean isOwnerOrAdmin = authorizationManager.isAtLeastStudyAdministrator(organizationId, studyId, userId);
         Query auxQuery = query != null ? new Query(query) : new Query();
 
         ResourceIds resourceIds;
@@ -789,7 +831,7 @@ public class RgaManager implements AutoCloseable {
                         .append(ACL_PARAM, userId + ":" + SamplePermissions.VIEW_VARIANTS)
                         .append(SampleDBAdaptor.QueryParams.INTERNAL_RGA_STATUS.key(), RgaIndex.Status.INDEXED)
                         .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), includeIndividuals);
-                OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(study.getFqn(),
+                OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(organizationId, study.getFqn(),
                         SampleDBAdaptor.QueryParams.ID.key(), sampleQuery, token);
                 includeSampleIds = new HashSet<>((List<String>) authorisedSampleIdResult.getResults());
             } else {
@@ -808,7 +850,7 @@ public class RgaManager implements AutoCloseable {
                 Query sampleQuery = new Query()
                         .append(ACL_PARAM, userId + ":" + SamplePermissions.VIEW_VARIANTS)
                         .append(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
-                OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(study.getFqn(),
+                OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(organizationId, study.getFqn(),
                         SampleDBAdaptor.QueryParams.ID.key(), sampleQuery, token);
                 includeSampleIds = new HashSet<>((List<String>) authorisedSampleIdResult.getResults());
             }
@@ -823,7 +865,7 @@ public class RgaManager implements AutoCloseable {
                 logger.warn("Include only the samples that are actually necessary");
             }
 
-            OpenCGAResult<?> sampleResult = catalogManager.getSampleManager().distinct(study.getFqn(),
+            OpenCGAResult<?> sampleResult = catalogManager.getSampleManager().distinct(organizationId, study.getFqn(),
                     SampleDBAdaptor.QueryParams.ID.key(), sampleQuery, token);
             includeSampleIds = new HashSet<>((List<String>) sampleResult.getResults());
         }
@@ -920,7 +962,12 @@ public class RgaManager implements AutoCloseable {
             return cacheResults;
         }
 
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
+
         String collection = getMainCollectionName(study.getFqn());
 
         ExecutorService executor = Executors.newFixedThreadPool(4);
@@ -943,7 +990,7 @@ public class RgaManager implements AutoCloseable {
 
         Preprocess preprocess;
         try {
-            preprocess = individualQueryPreprocess(study, query, options, token);
+            preprocess = individualQueryPreprocess(organizationId, study, query, options, userId, token);
         } catch (RgaException e) {
             if (RgaException.NO_RESULTS_FOUND.equals(e.getMessage())) {
                 stopWatch.stop();
@@ -954,7 +1001,7 @@ public class RgaManager implements AutoCloseable {
             throw e;
         }
 
-        catalogManager.getAuthorizationManager().checkStudyPermission(study.getUid(), preprocess.getUserId(),
+        catalogManager.getAuthorizationManager().checkStudyPermission(organizationId, study.getUid(), preprocess.getUserId(),
                 StudyPermissions.Permissions.VIEW_AGGREGATED_VARIANTS);
 
         List<String> sampleIds = preprocess.getQuery().getAsStringList(RgaQueryParams.SAMPLE_ID.key());
@@ -995,7 +1042,8 @@ public class RgaManager implements AutoCloseable {
 
         if (!parentSampleIds.isEmpty()) {
             // Check parent permissions...
-            Set<String> authorisedSamples = getAuthorisedSamples(study.getFqn(), parentSampleIds, null, preprocess.getUserId(), token);
+            Set<String> authorisedSamples = getAuthorisedSamples(organizationId, study.getFqn(), parentSampleIds, null,
+                    preprocess.getUserId(), token);
             // Filter out parent sample ids
             if (authorisedSamples.size() < parentSampleIds.size()) {
                 for (KnockoutByIndividualSummary knockoutByIndividualSummary : knockoutByIndividualSummaryList) {
@@ -1047,14 +1095,18 @@ public class RgaManager implements AutoCloseable {
             return cacheResults;
         }
 
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
-        String userId = catalogManager.getUserManager().getUserId(token);
+
         String collection = getMainCollectionName(study.getFqn());
         if (!rgaEngine.isAlive(collection)) {
             throw new RgaException("Missing RGA indexes for study '" + study.getFqn() + "' or solr server not alive");
         }
 
-        catalogManager.getAuthorizationManager().checkStudyPermission(study.getUid(), userId,
+        catalogManager.getAuthorizationManager().checkStudyPermission(organizationId, study.getUid(), userId,
                 StudyPermissions.Permissions.VIEW_AGGREGATED_VARIANTS);
 
         ExecutorService executor = Executors.newFixedThreadPool(4);
@@ -1131,8 +1183,12 @@ public class RgaManager implements AutoCloseable {
             return cacheResults;
         }
 
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
-        String userId = catalogManager.getUserManager().getUserId(token);
+
         String collection = getMainCollectionName(study.getFqn());
         String auxCollection = getAuxCollectionName(study.getFqn());
         if (!rgaEngine.isAlive(collection)) {
@@ -1142,7 +1198,7 @@ public class RgaManager implements AutoCloseable {
             throw new RgaException("Missing auxiliar RGA collection for study '" + study.getFqn() + "'");
         }
 
-        catalogManager.getAuthorizationManager().checkStudyPermission(study.getUid(), userId,
+        catalogManager.getAuthorizationManager().checkStudyPermission(organizationId, study.getUid(), userId,
                 StudyPermissions.Permissions.VIEW_AGGREGATED_VARIANTS);
 
         ExecutorService executor = Executors.newFixedThreadPool(4);
@@ -1237,10 +1293,13 @@ public class RgaManager implements AutoCloseable {
 
     public OpenCGAResult<FacetField> aggregationStats(String studyStr, Query query, QueryOptions options, String fields, String token)
             throws CatalogException, IOException, RgaException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
         Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
-        String userId = catalogManager.getUserManager().getUserId(token);
 
-        catalogManager.getAuthorizationManager().checkCanViewStudy(study.getUid(), userId);
+        catalogManager.getAuthorizationManager().checkCanViewStudy(organizationId, study.getUid(), userId);
 
         String collection = getMainCollectionName(study.getFqn());
         if (!rgaEngine.isAlive(collection)) {
@@ -1706,27 +1765,29 @@ public class RgaManager implements AutoCloseable {
         return knockoutByIndividualSummary;
     }
 
-    private Set<String> getAuthorisedSamples(String study, Set<String> sampleIds, List<SamplePermissions> otherPermissions,
-                                             String userId, String token) throws CatalogException {
+    private Set<String> getAuthorisedSamples(String organizationId, String study, Set<String> sampleIds,
+                                             List<SamplePermissions> otherPermissions, String userId, String token)
+            throws CatalogException {
         Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
         if (org.apache.commons.collections4.CollectionUtils.isNotEmpty(otherPermissions)) {
             query.put(ACL_PARAM, userId + ":" + StringUtils.join(otherPermissions, ","));
         }
 
-        OpenCGAResult<?> distinct = catalogManager.getSampleManager().distinct(study, SampleDBAdaptor.QueryParams.ID.key(), query, token);
+        OpenCGAResult<?> distinct = catalogManager.getSampleManager().distinct(organizationId, study, SampleDBAdaptor.QueryParams.ID.key(),
+                query, token);
         return distinct.getResults().stream().map(String::valueOf).collect(Collectors.toSet());
     }
 
-    private Preprocess individualQueryPreprocess(Study study, Query query, QueryOptions options, String token)
-            throws RgaException, CatalogException, IOException {
-
-        String userId = catalogManager.getUserManager().getUserId(token);
+    private Preprocess individualQueryPreprocess(String organizationId, Study study, Query query, QueryOptions options, String userId,
+                                                 String token) throws RgaException, CatalogException, IOException {
         String collection = getMainCollectionName(study.getFqn());
         if (!rgaEngine.isAlive(collection)) {
             throw new RgaException("Missing RGA indexes for study '" + study.getFqn() + "' or solr server not alive");
         }
 
-        Boolean isOwnerOrAdmin = catalogManager.getAuthorizationManager().isOwnerOrAdmin(study.getUid(), userId);
+        AuthorizationManager authorizationManager = catalogManager.getAuthorizationManager();
+        long studyId = study.getUid();
+        boolean isOwnerOrAdmin = authorizationManager.isAtLeastStudyAdministrator(organizationId, studyId, userId);
 
         Preprocess preprocessResult = new Preprocess();
         preprocessResult.setUserId(userId);
@@ -1813,7 +1874,7 @@ public class RgaManager implements AutoCloseable {
                     List<String> tmpValues = values.subList(currentBatch, Math.min(values.size(), batchSize + currentBatch));
 
                     sampleQuery.put(sampleQueryField, tmpValues);
-                    OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(study.getFqn(),
+                    OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(organizationId, study.getFqn(),
                             SampleDBAdaptor.QueryParams.ID.key(), sampleQuery, token);
                     authorisedSamples.addAll((Collection<? extends String>) authorisedSampleIdResult.getResults());
 
@@ -1866,11 +1927,15 @@ public class RgaManager implements AutoCloseable {
     }
 
     private String getMainCollectionName(String study) {
-        return catalogManager.getConfiguration().getDatabasePrefix() + "-rga-" + study.replace("@", "_").replace(":", "_");
+        CatalogFqn fqn = CatalogFqn.extractFqnFromStudyFqn(study);
+        return catalogManager.getConfiguration().getDatabasePrefix() + "-rga-"
+                + fqn.getOrganizationId() + "_" + fqn.getProjectId() + "_" + fqn.getStudyId();
     }
 
     private String getAuxCollectionName(String study) {
-        return catalogManager.getConfiguration().getDatabasePrefix() + "-rga-aux-" + study.replace("@", "_").replace(":", "_");
+        CatalogFqn fqn = CatalogFqn.extractFqnFromStudyFqn(study);
+        return catalogManager.getConfiguration().getDatabasePrefix() + "-rga-aux-"
+                + fqn.getOrganizationId() + "_" + fqn.getProjectId() + "_" + fqn.getStudyId();
     }
 
     @Override

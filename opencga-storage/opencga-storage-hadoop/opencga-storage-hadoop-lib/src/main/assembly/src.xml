@@ -1,0 +1,39 @@
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.0.0 http://maven.apache.org/xsd/assembly-2.0.0.xsd">
+    <id>jar-with-dependencies</id>
+    <formats>
+        <format>jar</format>
+    </formats>
+    <includeBaseDirectory>false</includeBaseDirectory>
+    <dependencySets>
+        <dependencySet>
+            <outputDirectory>/</outputDirectory>
+            <useProjectArtifact>true</useProjectArtifact>
+<!--            <unpack>false</unpack>-->
+            <unpack>true</unpack>
+            <scope>runtime</scope>
+            <excludes>
+                <exclude>com.sun.jersey:*</exclude>
+                <exclude>org.eclipse.jetty:*</exclude>
+                <exclude>org.eclipse.jetty.http2:*</exclude>
+                <exclude>org.eclipse.jetty.websocket:*</exclude>
+                <exclude>org.apache.logging.log4j:log4j-slf4j-impl</exclude>
+                <exclude>org.apache.commons:commons-lang3</exclude>
+                <exclude>org.apache.curator:*</exclude>
+                <exclude>org.apache.tephra:*</exclude>
+                <exclude>org.apache.zookeeper:*</exclude>
+                <exclude>commons-io:commons-io</exclude>
+                <exclude>com.microsoft.azure:*</exclude>
+                <exclude>com.google.inject.extensions:*</exclude>
+                <exclude>com.google.inject:*</exclude>
+                <exclude>com.lmax:disruptor</exclude>
+                <exclude>com.google.errorprone:*</exclude>
+                <exclude>com.google.code.findbugs:*</exclude>
+                <exclude>com.github.stephenc.findbugs:*</exclude>
+                <exclude>io.netty:*</exclude>
+            </excludes>
+        </dependencySet>
+    </dependencySets>
+</assembly>
+
