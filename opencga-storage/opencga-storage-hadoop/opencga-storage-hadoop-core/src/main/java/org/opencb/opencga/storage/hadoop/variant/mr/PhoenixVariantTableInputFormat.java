@@ -17,6 +17,7 @@ import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProj
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseVariantConverterConfiguration;
+import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 
 import java.io.Closeable;
@@ -25,8 +26,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.getQueryFromConfig;
-import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.getQueryOptionsFromConfig;
+import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.*;
 
 /**
  * Created on 27/10/17.
@@ -59,7 +59,7 @@ public class PhoenixVariantTableInputFormat
 
     public static class VariantDBWritable implements DBWritable, Configurable, Closeable {
         private Configuration conf;
-        private HBaseToVariantConverter<ResultSet> converter;
+        private HBaseToVariantConverter<VariantRow> converter;
         private Variant variant;
         private VariantStorageMetadataManager metadataManager;
 
@@ -70,7 +70,7 @@ public class PhoenixVariantTableInputFormat
 
         @Override
         public void readFields(ResultSet resultSet) throws SQLException {
-            variant = converter.convert(resultSet);
+            variant = converter.convert(new VariantRow(resultSet));
         }
 
         public Variant getVariant() {
@@ -93,7 +93,7 @@ public class PhoenixVariantTableInputFormat
                     .parseVariantQueryProjection(query, queryOptions);
 
 
-            converter = HBaseToVariantConverter.fromResultSet(metadataManager)
+            converter = HBaseToVariantConverter.fromVariantRow(metadataManager, getScanColumns(conf))
                     .configure(HBaseVariantConverterConfiguration.builder(conf)
                             .setProjection(projection)
                             .build());

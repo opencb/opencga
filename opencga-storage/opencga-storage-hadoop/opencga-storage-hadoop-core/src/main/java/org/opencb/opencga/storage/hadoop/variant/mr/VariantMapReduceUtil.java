@@ -56,9 +56,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Pattern;
 
 /**
@@ -72,6 +70,7 @@ public class VariantMapReduceUtil {
     private static final Pattern JAVA_OPTS_XMX_PATTERN =
             Pattern.compile(".*(?:^|\\s)-Xmx(\\d+)([gGmMkK]?)(?:$|\\s).*");
 
+    public static final String SCAN_COLUMNS = "VariantMapReduceUtil.scan.columns";
 
     public static void initTableMapperJob(Job job, String inTable, String outTable, Scan scan, Class<? extends TableMapper> mapperClass)
             throws IOException {
@@ -187,7 +186,7 @@ public class VariantMapReduceUtil {
 
             VariantHBaseQueryParser parser = new VariantHBaseQueryParser(metadataManager);
             List<Scan> scans = parser.parseQueryMultiRegion(variantQuery, queryOptions);
-            configureMapReduceScans(scans, job.getConfiguration());
+            configureMapReduceScans(scans, job);
 
             initVariantMapperJobFromHBase(job, variantTable, scans, mapperClass, useSampleIndex, sampleIndexTable);
 
@@ -294,7 +293,7 @@ public class VariantMapReduceUtil {
 
             VariantHBaseQueryParser parser = new VariantHBaseQueryParser(metadataManager);
             List<Scan> scans = parser.parseQueryMultiRegion(query, queryOptions);
-            configureMapReduceScans(scans, job.getConfiguration());
+            configureMapReduceScans(scans, job);
 
             initVariantRowMapperJobFromHBase(job, variantTable, scans, mapperClass, useSampleIndex, sampleIndexTable);
 
@@ -563,12 +562,13 @@ public class VariantMapReduceUtil {
         }
     }
 
-    public static Scan configureMapReduceScan(Scan scan, Configuration conf) {
-        configureMapReduceScans(Collections.singletonList(scan), conf);
-        return scan;
+    public static Scan configureMapReduceScan(Scan scan, Job job) {
+        return configureMapReduceScans(Collections.singletonList(scan), job).get(0);
     }
 
-    public static List<Scan> configureMapReduceScans(List<Scan> scans, Configuration conf) {
+
+    public static List<Scan> configureMapReduceScans(List<Scan> scans, Job job) {
+        Configuration conf = job.getConfiguration();
         int caching = Integer.parseInt(getParam(conf, HadoopVariantStorageOptions.MR_HBASE_SCAN_CACHING));
         int maxColumns = Integer.parseInt(getParam(conf, HadoopVariantStorageOptions.MR_HBASE_SCAN_MAX_COLUMNS));
         int maxFilters = Integer.parseInt(getParam(conf, HadoopVariantStorageOptions.MR_HBASE_SCAN_MAX_FILTERS));
@@ -581,6 +581,7 @@ public class VariantMapReduceUtil {
             LOGGER.info("Scan with {} columns exceeds the max threshold of {} columns. Returning all columns",
                     scans.get(0).getFamilyMap().get(GenomeHelper.COLUMN_FAMILY_BYTES).size(),
                     maxColumns);
+            setScanColumns(conf, scans.get(0));
         }
         Filter f = scans.get(0).getFilter();
         int numFilters = getNumFilters(f);
@@ -602,6 +603,25 @@ public class VariantMapReduceUtil {
         }
 
         return scans;
+    }
+
+    public static void setScanColumns(Configuration conf, Scan scan) {
+        // Keep an unmodified copy of the columns
+        StringBuilder sb = new StringBuilder();
+        for (byte[] column : scan.getFamilyMap().get(GenomeHelper.COLUMN_FAMILY_BYTES)) {
+            sb.append(Bytes.toString(column)).append(",");
+        }
+        sb.deleteCharAt(sb.length() - 1);
+        conf.set(SCAN_COLUMNS, sb.toString());
+    }
+
+    public static Set<String> getScanColumns(Configuration conf) {
+        HashSet<String> columns = new HashSet<>(conf.getStringCollection(VariantMapReduceUtil.SCAN_COLUMNS));
+        if (columns == null || columns.isEmpty()) {
+            return null;
+        } else {
+            return columns;
+        }
     }
 
     private static int getNumFilters(Filter f) {

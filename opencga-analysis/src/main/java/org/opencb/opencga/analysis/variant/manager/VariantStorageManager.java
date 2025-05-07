@@ -63,6 +63,7 @@ import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.VariantIndexStatus;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobType;
 import org.opencb.opencga.core.models.operations.variant.*;
@@ -1517,7 +1518,8 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                     DBIterator<Sample> iterator = catalogManager.getSampleManager().iterator(
                             study,
                             new Query()
-                                    .append(ACL_PARAM, userId + ":" + SamplePermissions.VIEW_VARIANTS),
+                                    .append(ACL_PARAM, userId + ":" + SamplePermissions.VIEW_VARIANTS)
+                                    .append(SampleDBAdaptor.QueryParams.INTERNAL_VARIANT_INDEX_STATUS_ID.key(), VariantIndexStatus.READY),
                             new QueryOptions()
                                     .append(INCLUDE, SampleDBAdaptor.QueryParams.ID.key())
 //                                    .append(SORT, "id")
@@ -1528,11 +1530,12 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                     int studyId = mm.getStudyId(study);
                     while (iterator.hasNext()) {
                         Sample sample = iterator.next();
-                        if (mm.getSampleId(studyId, sample.getId(), true) != null) {
+                        if (mm.getSampleId(studyId, sample.getId()) != null) {
                             includeSamples.add(sample.getId());
                             includeSamplesAll.add(sample.getId());
                         }
                     }
+                    iterator.close();
                     samplesMap.put(study, includeSamples);
                 }
                 if (includeSamplesAll.isEmpty()) {

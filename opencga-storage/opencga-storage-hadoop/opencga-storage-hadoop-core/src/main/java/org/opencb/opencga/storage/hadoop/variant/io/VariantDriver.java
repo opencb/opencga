@@ -67,7 +67,7 @@ public abstract class VariantDriver extends AbstractVariantsTableDriver {
             if (value.length() > 100) {
                 List<String> valuesList = query.getAsStringList(key);
                 if (valuesList.size() > 10) {
-                    value = StringUtils.join(valuesList.subList(0, 10), ",") + "... (" + (valuesList.size() - 10) + " more)";
+                    value = "(" + (valuesList.size()) + " elements) " + StringUtils.join(valuesList.subList(0, 10), ",") + "...";
                 }
             }
             logger.info("   - {}: {}", key, value);

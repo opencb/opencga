@@ -40,7 +40,7 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
      */
     MR_HBASE_KEYVALUE_SIZE_MAX("storage.hadoop.mr.hbase.client.keyvalue.maxsize", 10 * 1024 * 1024), // 10MB
     MR_HBASE_SCAN_CACHING("storage.hadoop.mr.scan.caching", 50),
-    MR_HBASE_SCAN_MAX_COLUMNS("storage.hadoop.mr.scan.maxColumns", 25000),
+    MR_HBASE_SCAN_MAX_COLUMNS("storage.hadoop.mr.scan.maxColumns", 50000),
     MR_HBASE_SCAN_MAX_FILTERS("storage.hadoop.mr.scan.maxFilters", 2000),
     MR_HBASE_PHOENIX_SCAN_SPLIT("storage.hadoop.mr.phoenix.scanSplit", 5),
 

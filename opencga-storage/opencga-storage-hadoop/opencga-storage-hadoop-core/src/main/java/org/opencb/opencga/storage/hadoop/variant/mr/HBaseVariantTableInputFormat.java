@@ -10,13 +10,13 @@ import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProj
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseVariantConverterConfiguration;
+import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 
 import java.io.IOException;
 import java.util.function.Function;
 
-import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.getQueryFromConfig;
-import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.getQueryOptionsFromConfig;
+import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.*;
 
 /**
  * Created on 27/10/17.
@@ -30,17 +30,17 @@ public class HBaseVariantTableInputFormat extends AbstractHBaseVariantTableInput
         VariantQueryProjection projection;
 
         HBaseVariantStorageMetadataDBAdaptorFactory dbAdaptorFactory = new HBaseVariantStorageMetadataDBAdaptorFactory(helper);
-        VariantStorageMetadataManager scm = new VariantStorageMetadataManager(dbAdaptorFactory);
+        VariantStorageMetadataManager vsmm = new VariantStorageMetadataManager(dbAdaptorFactory);
         Query query = getQueryFromConfig(configuration);
         QueryOptions queryOptions = getQueryOptionsFromConfig(configuration);
-        projection = VariantQueryProjectionParser.parseVariantQueryFields(query, queryOptions, scm);
+        projection = new VariantQueryProjectionParser(vsmm).parseVariantQueryProjection(query, queryOptions);
 
-        HBaseToVariantConverter<Result> converter = HBaseToVariantConverter.fromResult(scm)
+        HBaseToVariantConverter<VariantRow> converter = HBaseToVariantConverter.fromVariantRow(vsmm, getScanColumns(configuration))
                 .configure(HBaseVariantConverterConfiguration
                         .builder(configuration)
                         .setProjection(projection)
                         .build());
-        return converter::convert;
+        return from -> converter.convert(new VariantRow(from));
     }
 
 }
