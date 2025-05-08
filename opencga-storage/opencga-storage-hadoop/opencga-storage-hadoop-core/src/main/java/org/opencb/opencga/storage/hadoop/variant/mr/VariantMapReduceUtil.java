@@ -29,6 +29,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.ConfigurationOption;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
@@ -56,8 +57,14 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Created on 27/10/17.
@@ -71,6 +78,7 @@ public class VariantMapReduceUtil {
             Pattern.compile(".*(?:^|\\s)-Xmx(\\d+)([gGmMkK]?)(?:$|\\s).*");
 
     public static final String SCAN_COLUMNS = "VariantMapReduceUtil.scan.columns";
+    public static final String METADATA_MANAGER_LOCAL = "VariantMapReduceUtil.metadataManager.local";
 
     public static void initTableMapperJob(Job job, String inTable, String outTable, Scan scan, Class<? extends TableMapper> mapperClass)
             throws IOException {
@@ -768,4 +776,18 @@ public class VariantMapReduceUtil {
         }
     }
 
+    public static void configureLocalMetadataManager(Job job, URI dir) throws IOException {
+        Stream<Path> listStream = Files.list(Paths.get(dir));
+        List<Path> files = listStream.collect(Collectors.toList());
+        long size = 0;
+        for (Path file : files) {
+            size += Files.size(file);
+        }
+        LOGGER.info("Configuring local metadata manager with {} files and {}", files.size(), IOUtils.humanReadableByteCount(size, false));
+        listStream.close();
+        job.getConfiguration().set("tmpfiles", files.stream()
+                .map(path -> path.toUri().toString())
+                .collect(Collectors.joining(",")));
+        job.getConfiguration().setBoolean(METADATA_MANAGER_LOCAL, true);
+    }
 }

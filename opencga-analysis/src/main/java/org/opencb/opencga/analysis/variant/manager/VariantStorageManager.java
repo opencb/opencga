@@ -53,6 +53,7 @@ import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.cellbase.CellBaseValidator;
 import org.opencb.opencga.core.common.ExceptionUtils;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
@@ -1442,6 +1443,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     Map<String, List<String>> checkSamplesPermissions(Query query, QueryOptions queryOptions, VariantStorageMetadataManager mm,
                                                       Enums.Action auditAction, String token)
             throws CatalogException {
+        StopWatch stopWatch = StopWatch.createStarted();
         final Map<String, List<String>> samplesMap = new HashMap<>();
         String userId = catalogManager.getUserManager().validateToken(token).getUserId();
         Set<VariantField> returnedFields = VariantField.getIncludeFields(queryOptions);
@@ -1544,6 +1546,10 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                     query.append(VariantQueryParam.INCLUDE_SAMPLE.key(), includeSamplesAll);
                 }
             }
+        }
+        if (stopWatch.getTime(TimeUnit.SECONDS) > 10) {
+            logger.warn("Slow checkSamplesPermissions: {}", TimeUtils.durationToString(stopWatch));
+            logger.info("Query with {} samples", samplesMap.values().stream().mapToInt(List::size).sum());
         }
         return samplesMap;
     }

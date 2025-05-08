@@ -224,7 +224,7 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
         String fileName = "variants.sparse.json";
         URI uri = getOutputUri(fileName);
         variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.JSON_SPARSE, null,
-                new VariantQuery().study(study1).includeSampleAll(), new QueryOptions());
+                new VariantQuery().study(study1).includeSampleAll(), new QueryOptions(HadoopVariantExporter.SKIP_SMALL_QUERY, true));
 
         URI file = copyToLocal(fileName, uri);
 
@@ -279,7 +279,7 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
         URI uri = getOutputUri(fileName);
         variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.AVRO,
                 null, new Query(STUDY.key(), study1).append(GENOTYPE.key(), "NA12877:0/1;NA12878:1/1"),
-                new QueryOptions("skipSmallQuery", true));
+                new QueryOptions(HadoopVariantExporter.SKIP_SMALL_QUERY, true));
 
         copyToLocal(fileName, uri);
     }

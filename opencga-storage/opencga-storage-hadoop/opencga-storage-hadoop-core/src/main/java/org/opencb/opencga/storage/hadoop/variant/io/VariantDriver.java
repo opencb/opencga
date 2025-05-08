@@ -9,7 +9,10 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.metadata.adaptors.VariantStorageMetadataDBAdaptorFactory;
+import org.opencb.opencga.storage.core.metadata.local.LocalVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.utils.MapReduceOutputFile;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
@@ -19,6 +22,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.getQueryFromConfig;
@@ -44,6 +50,7 @@ public abstract class VariantDriver extends AbstractVariantsTableDriver {
     private final QueryOptions options = new QueryOptions();
     private static Logger logger = LoggerFactory.getLogger(VariantDriver.class);
     protected boolean useReduceStep;
+    private LocalVariantStorageMetadataDBAdaptorFactory recordMetadataDBAdaptor;
 
     @Override
     protected void parseAndValidateParameters() throws IOException {
@@ -72,6 +79,13 @@ public abstract class VariantDriver extends AbstractVariantsTableDriver {
             }
             logger.info("   - {}: {}", key, value);
         }
+    }
+
+    @Override
+    protected VariantStorageMetadataDBAdaptorFactory newMetadataDbAdaptorFactory() {
+        VariantStorageMetadataDBAdaptorFactory dbAdaptorFactory = super.newMetadataDbAdaptorFactory();
+        recordMetadataDBAdaptor = new LocalVariantStorageMetadataDBAdaptorFactory(dbAdaptorFactory);
+        return recordMetadataDBAdaptor;
     }
 
     @Override
@@ -121,6 +135,15 @@ public abstract class VariantDriver extends AbstractVariantsTableDriver {
         VariantMapReduceUtil.configureVariantConverter(job.getConfiguration(), false, true, true,
                 query.getString(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./."));
 
+        Path recordMetadataOutput;
+        if (output.getLocalOutput() != null) {
+            recordMetadataOutput = Paths.get(output.getLocalOutput().getParent().toUri()).resolve("recordMetadata");
+        } else {
+            recordMetadataOutput = Paths.get(System.getProperty("java.io.tmpdir")).resolve(TimeUtils.getTime() + "_recordMetadata");
+        }
+        Files.createDirectories(recordMetadataOutput);
+        recordMetadataDBAdaptor.writeToFile(recordMetadataOutput);
+        VariantMapReduceUtil.configureLocalMetadataManager(job, recordMetadataOutput.toUri());
 
         return job;
     }

@@ -338,7 +338,7 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
             String key = args[i];
             String value = args[i + 1];
             getConf().set(key, value);
-            float maxLineLength = 300.0;
+            float maxLineLength = 300f;
             for (int batch = 0; batch < Math.ceil(value.length() / maxLineLength); batch++) {
                 String prefix;
                 if (batch == 0) {
