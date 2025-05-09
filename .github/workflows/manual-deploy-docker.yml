@@ -55,5 +55,13 @@ jobs:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
     needs: build
     with:
-      cli: python3 ./build/cloud/docker/docker-build.py push --images base,workflow,init --tag ${{ inputs.tag }} --org zettagenomics
+      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag ${{ inputs.tag }} --org zettagenomics
+    secrets: inherit
+
+
+  deploy-docker-workflow:
+    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+    needs: test
+    with:
+      cli: python3 ./build/cloud/docker/docker-build.py push --images workflow --tag ${{ github.ref_name }} --org opencb
     secrets: inherit
