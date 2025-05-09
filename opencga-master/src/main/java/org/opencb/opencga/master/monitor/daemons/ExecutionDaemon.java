@@ -363,25 +363,12 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
     protected int checkRunningJob(Job job) {
         Enums.ExecutionStatus jobStatus = getCurrentStatus(job);
 
-        if (killSignalSent(job)) {
-            logger.info("[{}] - Kill signal request received for job with status='{}'. Attempting to abort execution.", job.getId(),
-                    job.getInternal().getStatus().getId());
-            try {
-                if (batchExecutor.kill(job.getId())) {
-                    return abortKillJob(job, "Job was already in execution. Job killed by the user.");
-                } else {
-                    logger.info("[{}] - Kill signal send. Waiting for job to finish.", job.getId());
-                    return 0;
-                }
-            } catch (Exception e) {
-                // Skip this job. Will be retried next loop iteration
-                logger.error("[{}] - Error trying to kill the job: {}", job.getId(), e.getMessage(), e);
-                return 0;
-            }
-        }
-
         switch (jobStatus.getId()) {
             case Enums.ExecutionStatus.RUNNING:
+                if (killSignalSent(job)) {
+                    return processKillJob(job);
+                }
+
                 ExecutionResult result = readExecutionResult(job);
                 if (result != null) {
                     if (result.getExecutor() != null
@@ -406,15 +393,40 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
                 // Register job results
                 return processFinishedJob(job, jobStatus);
             case Enums.ExecutionStatus.QUEUED:
+                if (killSignalSent(job)) {
+                    return processKillJob(job);
+                }
+
                 // Running job went back to Queued?
                 logger.info("Running job '{}' went back to '{}' status", job.getId(), jobStatus.getId());
                 return setStatus(job, new Enums.ExecutionStatus(Enums.ExecutionStatus.QUEUED));
             case Enums.ExecutionStatus.PENDING:
             case Enums.ExecutionStatus.UNKNOWN:
             default:
+                if (killSignalSent(job)) {
+                    return processKillJob(job);
+                }
+
                 logger.info("Unexpected status '{}' for job '{}'", jobStatus.getId(), job.getId());
                 return 0;
 
+        }
+    }
+
+    private int processKillJob(Job job) {
+        logger.info("[{}] - Kill signal request received for job with status='{}'. Attempting to abort execution.", job.getId(),
+                job.getInternal().getStatus().getId());
+        try {
+            if (batchExecutor.kill(job.getId())) {
+                return abortKillJob(job, "Job was already in execution. Job killed by the user.");
+            } else {
+                logger.info("[{}] - Kill signal sent. Waiting for job to finish.", job.getId());
+                return 0;
+            }
+        } catch (Exception e) {
+            // Skip this job. Will be retried next loop iteration
+            logger.error("[{}] - Error trying to kill the job: {}", job.getId(), e.getMessage(), e);
+            return 0;
         }
     }
 
