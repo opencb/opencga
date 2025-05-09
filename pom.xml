@@ -60,7 +60,6 @@
         <opencga-hadoop-shaded.id>${opencga-hadoop-shaded.id-default}</opencga-hadoop-shaded.id>
         <opencga-storage-hadoop-lib.artifactId>opencga-storage-hadoop-lib-${opencga-hadoop-shaded.id}</opencga-storage-hadoop-lib.artifactId>
 
-
         <sonar.organization>opencb</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
 
