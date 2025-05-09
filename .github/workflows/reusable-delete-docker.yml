@@ -29,4 +29,4 @@ jobs:
         if: ${{ startsWith(inputs.task, 'TASK') }}
         run: |
           echo "Deleting docker image ${{ inputs.task }}"
-          python3 ./opencga-app/app/cloud/docker/docker-build.py delete --images base,workflow --tag ${{ inputs.task }} --username ${{ secrets.DOCKER_HUB_USER }} --password ${{ secrets.DOCKER_HUB_PASSWORD }}
+          python3 ./opencga-app/app/cloud/docker/docker-build.py delete --images base,workflow --tag ${{ inputs.task }} --username ${{ secrets.DOCKER_HUB_USER }} --password ${{ secrets.DOCKER_HUB_PASSWORD }} --org zettagenomics
