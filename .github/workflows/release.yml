@@ -25,7 +25,7 @@ jobs:
     needs: hdp-build-hdp
     secrets: inherit
     with:
-      artifact_name: build-folder
+      artifact_name: hdp-build-folder
 
   deploy-emr-docker:
     uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
