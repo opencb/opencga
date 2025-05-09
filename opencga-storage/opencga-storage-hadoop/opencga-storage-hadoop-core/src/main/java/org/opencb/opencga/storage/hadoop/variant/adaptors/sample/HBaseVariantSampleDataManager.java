@@ -188,7 +188,6 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
             converter.configure(HBaseVariantConverterConfiguration.builder()
                     .setStudyNameAsStudyId(true)
                     .setIncludeSampleId(true)
-                    .setSparse(true)
                     .setProjection(
                             new VariantQueryProjection(
                                     metadataManager.getStudyMetadata(studyId),
