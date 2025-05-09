@@ -285,7 +285,6 @@
                 <version>${project.version}</version>
                 <type>test-jar</type>
                 <scope>test</scope>
-<<<<<<< HEAD
                 <exclusions>
                     <exclusion>
                         <groupId>org.opencb.opencga</groupId>
@@ -298,8 +297,6 @@
                 <artifactId>opencga-storage-hadoop-deps-emr6.1</artifactId>
                 <version>${project.version}</version>
                 <classifier>shaded</classifier>
-=======
->>>>>>> release-3.x.x
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
