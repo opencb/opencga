@@ -664,7 +664,6 @@ SAVE_REPORTS="false"
 VERSION_SUMMARY=""
 PARAM_SUMMARY=""
 
-
 ###################################
 
 ## 2. Read and parse CLI options
@@ -750,9 +749,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-
 ## 3. Ensure where is the opencga-enterprise root directory and set it to a variable
-
 cd "$(dirname "$0")" || exit 2
 OPENCGA_ENTERPRISE_HOME_DIR=$PWD
 
@@ -761,7 +758,6 @@ if [ -f "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt" ]; then
     rm "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
 fi
 touch "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
-
 
 ## 4. Print parameters if is needed by debug
 if [ "$DEBUG" == "true" ];then
@@ -800,4 +796,3 @@ print_log
 
 # Publish test reports as last step because we need finished log file with all information
 publish_reports
-
