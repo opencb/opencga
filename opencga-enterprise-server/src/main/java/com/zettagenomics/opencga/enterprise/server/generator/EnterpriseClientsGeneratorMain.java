@@ -18,19 +18,21 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class EnterpriseClientsGeneratorMain {
 
     private static Logger logger;
 
     public static void main(String[] args) throws URISyntaxException {
-        logger = LoggerFactory.getLogger(ClientsGenerator.class);
+        logger = LoggerFactory.getLogger(EnterpriseClientsGeneratorMain.class);
         System.setProperty("opencga.log.file.enabled", "false");
         System.setProperty("opencga.log.level", "info");
         Configurator.reconfigure();
 
         // Add classes to be generated
         List<Class<?>> classes = new ArrayList<>(EnterpriseResourceConfig.enterpriseApiClasses.values());
+        logger.info("Classes: {}", classes.stream().map(Class::getName).collect(Collectors.joining(", ")));
 
         try {
             // Create CommandLineConfiguration and ClientsGenerator

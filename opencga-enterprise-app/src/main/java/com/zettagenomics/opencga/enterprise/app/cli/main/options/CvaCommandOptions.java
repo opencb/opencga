@@ -65,7 +65,7 @@ public class CvaCommandOptions {
         @Parameter(names = {"--case-id"}, description = "Comma separated list sample IDs or UUIDs up to a maximum of 100", required = true, arity = 1)
         public String caseId; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
         @Parameter(names = {"--version"}, description = "Comma separated list of sample versions. 'all' to get all the sample versions. Not supported if multiple sample ids are provided", required = false, arity = 1)

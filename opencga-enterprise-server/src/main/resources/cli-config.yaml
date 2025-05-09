@@ -44,6 +44,9 @@ apiConfig:
     - name: name
       shortcut: n
   categoryConfigList:
+    - name: organizations
+      ignore: False
+      key: Organization
     - name: users
       ignore: False
       key: User
@@ -82,6 +85,9 @@ apiConfig:
       executorExtended: True
       optionExtended: True
       commands:
+        - name: download
+          executorExtended: True
+          optionExtended: True
         - name: upload
           executorExtended: True
           optionExtended: True
@@ -200,10 +206,10 @@ apiConfig:
       commandName: meta
       ignore: False
       key: Meta
-    - name: cva
-      commandName: cva
+    - name: cvdb
+      commandName: cvdb
       ignore: False
-      key: Cva
+      key: Cvdb
 #      analysis: True
     - name: ga4gh
       ignore: True

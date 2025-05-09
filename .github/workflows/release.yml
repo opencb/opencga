@@ -1,17 +1,17 @@
 name: Release new opencga-enterprise version
 
 on:
-  push:
+  push: # Push events to all push tags
     tags:
       - '*'
 
 jobs:
-#  build-hdp:
-#    uses: ./.github/workflows/build-java-enterprise-workflow.yml
-#    with:
-#      storage_hadoop: hdp3.1
-#      artifact_name: hdp-build-folder
-#      release: true
+  build-hdp:
+    uses: ./.github/workflows/build-java-enterprise-workflow.yml
+    with:
+      storage_hadoop: hdp3.1
+      artifact_name: hdp-build-folder
+      release: true
 
   build-emr:
     uses: ./.github/workflows/build-java-enterprise-workflow.yml
@@ -20,12 +20,12 @@ jobs:
       artifact_name: emr-build-folder
       release: true
 
-#  deploy-hdp-docker:
-#    uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
-#    needs: hdp-build-hdp
-#    secrets: inherit
-#    with:
-#      artifact_name: build-folder
+  deploy-hdp-docker:
+    uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
+    needs: hdp-build-hdp
+    secrets: inherit
+    with:
+      artifact_name: build-folder
 
   deploy-emr-docker:
     uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
@@ -34,10 +34,38 @@ jobs:
     with:
       artifact_name: emr-build-folder
 
+  build-hdi:
+    uses: ./.github/workflows/build-java-enterprise-workflow.yml
+    with:
+      storage_hadoop: hdi5.1
+      artifact_name: build-hdi-folder
+      release: true
+
+  deploy-hdi-docker:
+    uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
+    needs: build-hdi
+    secrets: inherit
+    with:
+      artifact_name: build-hdi-folder
+
+  build-emr13:
+    uses: ./.github/workflows/build-java-enterprise-workflow.yml
+    with:
+      storage_hadoop: emr6.13
+      artifact_name: emr13-build-folder
+      release: true
+
+  deploy-emr13-docker:
+    uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
+    needs:  build-emr13
+    secrets: inherit
+    with:
+      artifact_name: emr13-build-folder
+
   release:
     name: Create GitHub Release
     runs-on: ubuntu-22.04
-    needs: [ build-emr, deploy-emr-docker ]
+    needs: [ build-hdp, deploy-hdp-docker, build-emr, deploy-emr-docker, build-hdi, deploy-hdi-docker, build-emr13, deploy-emr13-docker ]
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -53,4 +81,5 @@ jobs:
       - id: echo_result
         name: Results
         run: |
-          echo "### The release of __Xetabase ${{ needs.build-emr.outputs.version }}__ has been successful!!!! :heavy_check_mark: " | tee -a ${GITHUB_STEP_SUMMARY}
+          echo "### The release of __Xetabase ${{ needs.build-hdp.outputs.version }}__ has been successful!!!! :heavy_check_mark: " | tee -a ${GITHUB_STEP_SUMMARY}
+

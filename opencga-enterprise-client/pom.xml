@@ -45,6 +45,10 @@
         </dependency>
         <dependency>
             <groupId>com.zettagenomics.opencga-enterprise</groupId>
+            <artifactId>opencga-enterprise-cvdb</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.zettagenomics.opencga-enterprise</groupId>
             <artifactId>opencga-enterprise-core</artifactId>
         </dependency>
     </dependencies>

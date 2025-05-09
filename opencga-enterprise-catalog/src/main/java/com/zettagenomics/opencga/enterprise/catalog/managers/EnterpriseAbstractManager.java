@@ -1,6 +1,7 @@
 package com.zettagenomics.opencga.enterprise.catalog.managers;
 
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
+import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 
 public class EnterpriseAbstractManager {
