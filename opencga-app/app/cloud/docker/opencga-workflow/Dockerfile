@@ -1,7 +1,7 @@
 ### Multi Stage building
 
 ## 1. Based on Ubuntu 22.04 (jammy)
-FROM eclipse-temurin:11.0.24_8-jre-jammy AS base
+FROM eclipse-temurin:17.0.15_6-jre-jammy AS base
 
 ARG BUILD_PATH="."
 
