@@ -23,6 +23,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.models.common.Enums;
@@ -64,6 +65,8 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
     private String dockerUsername;
     private String dockerPassword;
 
+    private String dockerBasename;
+
     private Path resourcePath;
 
     @ToolParams
@@ -102,6 +105,15 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
             if (StringUtils.isNotEmpty(dockerPassword) && (StringUtils.isEmpty(dockerName) || StringUtils.isEmpty(dockerUsername))) {
                 throw new ToolException("Docker name and username are required if docker password (or personal access token) is provided");
             }
+        }
+
+        // Get docker base name
+        dockerBasename = configuration.getAnalysis().getOpencgaExtTools();
+        if (StringUtils.isEmpty(dockerBasename)) {
+            throw new ToolException("Docker base name is not set, please, check your configuration file");
+        }
+        if (!dockerBasename.contains(":")) {
+            dockerBasename += ":" + GitRepositoryState.getInstance().getBuildVersion();
         }
     }
 
@@ -225,11 +237,12 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
 
             if (StringUtils.isEmpty(dockerName) && StringUtils.isEmpty(dockerUsername) && StringUtils.isEmpty(dockerPassword)) {
                 logger.info("Creating regenie-walker Dockerfile ...");
-                Path dockerfile = createDockerfile(dataDir, getOpencgaHome());
+                Path dockerfile = createDockerfile(dataDir, dockerBasename, getOpencgaHome());
                 logger.info("Dockerfile for regenie-walker: {}", dockerfile);
             } else {
                 logger.info("Building and pushing regenie-walker ...");
-                String walkerDocker = buildAndPushDocker(dataDir, dockerName, dockerTag, dockerUsername, dockerPassword, getOpencgaHome());
+                String walkerDocker = buildAndPushDocker(dataDir, dockerBasename, dockerName, dockerTag, dockerUsername, dockerPassword,
+                        getOpencgaHome());
 
                 logger.info("Regenie-walker docker image: {}", walkerDocker);
                 addAttribute(OPENCGA_REGENIE_WALKER_DOCKER_IMAGE_KEY, walkerDocker);

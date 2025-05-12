@@ -6,6 +6,7 @@ import org.opencb.commons.exec.Command;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.file.File;
 import org.slf4j.Logger;
@@ -72,12 +73,12 @@ public final class RegenieUtils {
         return value;
     }
 
-    public static Path createDockerfile(Path dataDir, Path opencgaHome)
+    public static Path createDockerfile(Path dataDir, String dockerBasename, Path opencgaHome)
             throws ToolException {
         Path dockerBuildScript = opencgaHome.resolve("analysis/resources/walker/custom-tool-docker-build.py");
         Command dockerBuild = new Command(new String[]{"python3", dockerBuildScript.toAbsolutePath().toString(),
                 "--custom-tool-dir", dataDir.toAbsolutePath().toString(),
-                "--base-image", "joaquintarraga/opencga-regenie:" + GitRepositoryState.getInstance().getBuildVersion(),
+                "--base-image", dockerBasename,
                 "dockerfile"
         }, Collections.emptyMap());
 
@@ -94,7 +95,7 @@ public final class RegenieUtils {
         return dockerfile;
     }
 
-    public static String buildAndPushDocker(Path dataDir, String dockerName, String dockerTag, String dockerUsername, String dockerPassword,
+    public static String buildAndPushDocker(Path dataDir, String dockerBasename, String dockerName, String dockerTag, String dockerUsername, String dockerPassword,
                                             Path opencgaHome) throws ToolException {
         // Sanity check
         if (StringUtils.isEmpty(dockerName)) {
@@ -122,7 +123,7 @@ public final class RegenieUtils {
         Path dockerBuildScript = opencgaHome.resolve("analysis/resources/common/tool-docker-builder.py");
         Command dockerBuild = new Command(new String[]{"python3", dockerBuildScript.toAbsolutePath().toString(),
                 "--custom-tool-dir", dataDir.toAbsolutePath().toString(),
-                "--base-image", "joaquintarraga/opencga-regenie:" + GitRepositoryState.getInstance().getBuildVersion(),
+                "--base-image", dockerBasename,
                 "--organisation", organisation,
                 "--name", name,
                 "--version", dockerRepoVersion,

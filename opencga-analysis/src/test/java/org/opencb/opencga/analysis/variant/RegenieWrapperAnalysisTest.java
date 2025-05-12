@@ -296,7 +296,7 @@ public class RegenieWrapperAnalysisTest {
         String dockerPassword = split[2];
 
         String dockerName = "joaquintarraga/regenie-walker";
-        String dockerTag = "1745393096-1650";
+        String dockerTag = "1747037847-5883";
         String walkerDockerImage = dockerName + ":" + dockerTag;
         Assume.assumeTrue(RegenieUtils.isDockerImageAvailable(walkerDockerImage, dockerUsername, dockerPassword));
 
