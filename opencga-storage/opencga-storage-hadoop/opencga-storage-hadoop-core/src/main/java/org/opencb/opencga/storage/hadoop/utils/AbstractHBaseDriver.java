@@ -121,6 +121,14 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
 
     }
 
+    /**
+     * Called after the job is submitted, but before it starts.
+     * @param job The job that was submitted.
+     * @throws       IOException on error
+     */
+    protected void postSubmit(Job job) throws IOException {
+    }
+
     protected void postExecution(Job job) throws IOException, StorageEngineException {
         postExecution(job.isSuccessful());
     }
@@ -380,6 +388,7 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         });
         try {
             job.submit();
+            postSubmit(job);
             // Add shutdown hook after successfully submitting the job.
             Runtime.getRuntime().addShutdownHook(hook);
             JobID jobID = job.getJobID();

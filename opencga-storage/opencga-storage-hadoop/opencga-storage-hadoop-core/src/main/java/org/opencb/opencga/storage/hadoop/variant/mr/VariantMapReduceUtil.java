@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lmax.disruptor.EventFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.filter.Filter;
@@ -58,13 +59,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Created on 27/10/17.
@@ -776,17 +773,15 @@ public class VariantMapReduceUtil {
         }
     }
 
-    public static void configureLocalMetadataManager(Job job, URI dir) throws IOException {
-        Stream<Path> listStream = Files.list(Paths.get(dir));
-        List<Path> files = listStream.collect(Collectors.toList());
+    public static void configureLocalMetadataManager(Job job, List<URI> uris) throws IOException {
+        FileSystem fs = FileSystem.get(uris.get(0), job.getConfiguration());
         long size = 0;
-        for (Path file : files) {
-            size += Files.size(file);
+        for (URI uri : uris) {
+            size += fs.getFileStatus(new org.apache.hadoop.fs.Path(uri)).getLen();
         }
-        LOGGER.info("Configuring local metadata manager with {} files and {}", files.size(), IOUtils.humanReadableByteCount(size, false));
-        listStream.close();
-        job.getConfiguration().set("tmpfiles", files.stream()
-                .map(path -> path.toUri().toString())
+        LOGGER.info("Configuring local metadata manager with {} files and {}", uris.size(), IOUtils.humanReadableByteCount(size, false));
+        job.getConfiguration().set("tmpfiles", uris.stream()
+                .map(URI::toString)
                 .collect(Collectors.joining(",")));
         job.getConfiguration().setBoolean(METADATA_MANAGER_LOCAL, true);
     }

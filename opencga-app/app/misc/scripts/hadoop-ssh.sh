@@ -25,6 +25,9 @@ if [ -n "${HADOOP_SSH_KEY}" ] && [ -f "${HADOOP_SSH_KEY}" ] ; then
   SSH_OPTS="${SSH_OPTS} -i ${HADOOP_SSH_KEY}"
 fi
 
+# Directory to store temporary files on the remote server
+HADOOP_SSH_REMOTE_TMP_DIR=${HADOOP_SSH_REMOTE_TMP_DIR:-/tmp}
+
 trap 'echo "SSH Process interrupted! Run time : ${SECONDS}s" && exit 1 1>&2 ' INT TERM
 
 echo "Connect to Hadoop edge node ${HADOOP_SSH_USER}@${HADOOP_SSH_HOST}" 1>&2
@@ -46,10 +49,18 @@ echo ${CMD} 1>&2
 ## -r : do not interpret backslash escapes
 ## SSH_SCRIPT variable to store the script
 read -d '' -r SSH_SCRIPT << EOF
-echo "PID=\$\$" >&2
+export PID=\$\$ # Store the PID of the script
+echo "PID=\$PID" >&2
+
+CUSTOM_TMPDIR=\$(mktemp --directory --tmpdir=${HADOOP_SSH_REMOTE_TMP_DIR} "opencga-hadoop-jar-$(date +%Y%m%d%H%M%S)-XXXXXXX")
+if [ ! -d "\${CUSTOM_TMPDIR}" ]; then
+    echo "Error creating temporary directory \${CUSTOM_TMPDIR}" 1>&2
+    exit 1
+fi
 
 export HADOOP_CLASSPATH=${HADOOP_CLASSPATH}
 export HADOOP_USER_CLASSPATH_FIRST=${HADOOP_USER_CLASSPATH_FIRST}
+export HADOOP_OPTS="\${HADOOP_OPTS} -Djava.io.tmpdir=\${CUSTOM_TMPDIR}"
 
 if \$(command -v hbase >/dev/null 2>&1) ; then
     hbase_conf=\$(hbase classpath | tr ":" "\n" | grep "/conf" | tr "\n" ":")
@@ -61,6 +72,14 @@ if \$(command -v hbase >/dev/null 2>&1) ; then
     fi
 fi
 
+# Watch the process. Ensure that the temporary directory is removed when the process ends
+nohup bash -c "
+  while ps -p "\$PID"; do
+    sleep 1
+  done
+  echo \"Cleaning up temporary directory \${CUSTOM_TMPDIR}\"
+  rm -rf \${CUSTOM_TMPDIR}
+" > /dev/null 2>&1 &
 
 exec ${CMD}
 

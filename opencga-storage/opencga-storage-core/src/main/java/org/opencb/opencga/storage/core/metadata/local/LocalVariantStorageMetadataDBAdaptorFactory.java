@@ -18,16 +18,18 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.adaptors.*;
 import org.opencb.opencga.storage.core.metadata.models.*;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
-import java.nio.file.Path;
 import java.util.*;
 
 public class LocalVariantStorageMetadataDBAdaptorFactory implements VariantStorageMetadataDBAdaptorFactory {
 
-    public static final String METADATA_JSON = "metadata.json";
+    public static final String METADATA_JSON = "metadata.json.gz";
 
     private final ObjectMap configuration;
     private final LocalMetadataStorage store;
@@ -37,6 +39,7 @@ public class LocalVariantStorageMetadataDBAdaptorFactory implements VariantStora
     private final DelegatedCohortMetadataDBAdaptor cohortMetadataDBAdaptor;
     private final DelegatedTaskMetadataDBAdaptor taskMetadataDBAdaptor;
     private final DelegatedFileMetadataDBAdaptor fileMetadataDBAdaptor;
+    private static Logger logger = LoggerFactory.getLogger(LocalVariantStorageMetadataDBAdaptorFactory.class);
 
     public LocalVariantStorageMetadataDBAdaptorFactory(VariantStorageMetadataDBAdaptorFactory delegated) {
         projectMetadataAdaptor = new DelegatedProjectMetadataAdaptor();
@@ -67,25 +70,20 @@ public class LocalVariantStorageMetadataDBAdaptorFactory implements VariantStora
         configuration = new ObjectMap();
     }
 
-    public void writeToFile(Path outdir) throws IOException {
-        Path file = outdir.resolve(LocalVariantStorageMetadataDBAdaptorFactory.METADATA_JSON).toAbsolutePath();
-        System.out.println("Writing metadata to " + file);
-//        ObjectMapper objectMapper = JacksonUtils.getDefaultNonNullObjectMapper();
-        ObjectMapper objectMapper = new ObjectMapper();
-//        objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        objectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
-        objectMapper.addMixIn(SampleVariantStats.class, SampleVariantStatsMixin.class);
-        objectMapper.writeValue(file.toFile(), store);
+    public List<URI> writeToFile(URI outdir, IOConnector connector) throws IOException {
+        URI file = outdir.resolve(LocalVariantStorageMetadataDBAdaptorFactory.METADATA_JSON);
+        logger.info("Writing metadata to " + file);
+        ObjectMapper objectMapper = getObjectMapper();
+        try (OutputStream outputStream = connector.newOutputStream(file)) {
+            objectMapper.writeValue(outputStream, store);
+        }
+        List<URI> files = new ArrayList<>();
+        files.add(file);
+        return files;
     }
 
     private static LocalMetadataStorage readLocalMetadataStore(URI[] files, IOConnector connector) throws IOException {
-        //        ObjectMapper objectMapper = JacksonUtils.getDefaultNonNullObjectMapper();
-        ObjectMapper objectMapper = new ObjectMapper();
-//        objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        objectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
-        objectMapper.addMixIn(SampleVariantStats.class, SampleVariantStatsMixin.class);
+        ObjectMapper objectMapper = getObjectMapper();
         URI metadataFile = null;
         for (URI file : files) {
             if (UriUtils.fileName(file).equals(METADATA_JSON)) {
@@ -94,7 +92,7 @@ public class LocalVariantStorageMetadataDBAdaptorFactory implements VariantStora
         }
         LocalMetadataStorage store;
         if (metadataFile != null) {
-            System.out.println("Loading metadata from " + metadataFile);
+            logger.info("Loading metadata from " + metadataFile);
             try (InputStream is = connector.newInputStream(metadataFile)) {
                 store = objectMapper.readValue(is, LocalMetadataStorage.class);
             }
@@ -102,6 +100,16 @@ public class LocalVariantStorageMetadataDBAdaptorFactory implements VariantStora
             throw new IllegalArgumentException("No metadata.json file found in " + Arrays.toString(files));
         }
         return store;
+    }
+
+    private static ObjectMapper getObjectMapper() {
+//        ObjectMapper objectMapper = JacksonUtils.getDefaultNonNullObjectMapper();
+        ObjectMapper objectMapper = new ObjectMapper();
+//        objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        objectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
+        objectMapper.addMixIn(SampleVariantStats.class, SampleVariantStatsMixin.class);
+        return objectMapper;
     }
 
     @Override

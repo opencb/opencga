@@ -36,6 +36,7 @@ public class SshMRExecutor extends MRExecutor {
     private static final String HADOOP_SSH_USER_ENV = "HADOOP_SSH_USER";
     private static final String HADOOP_SSH_HOST_ENV = "HADOOP_SSH_HOST";
     private static final String HADOOP_SSH_KEY_ENV  = "HADOOP_SSH_KEY";
+    private static final String HADOOP_SSH_REMOTE_TMP  = "HADOOP_SSH_REMOTE_TMP";
     // env-var expected by "sshpass -e"
     private static final String SSHPASS_ENV = "SSHPASS";
     public static final String PID = "PID";
@@ -284,6 +285,7 @@ public class SshMRExecutor extends MRExecutor {
         String sshPassword = getOptions().getString(MR_EXECUTOR_SSH_PASSWORD.key());
         String sshKey = getOptions().getString(MR_EXECUTOR_SSH_KEY.key());
         String remoteOpencgaHome = getOptions().getString(MR_EXECUTOR_SSH_REMOTE_OPENCGA_HOME.key());
+        String remoteTmp = getOptions().getString(MR_EXECUTOR_SSH_REMOTE_TMP.key(), MR_EXECUTOR_SSH_REMOTE_TMP.defaultValue());
 
         if (StringUtils.isEmpty(sshHost)) {
             throw new IllegalArgumentException("Missing ssh credentials to run MapReduce job. Missing " + MR_EXECUTOR_SSH_HOST.key());
@@ -295,6 +297,7 @@ public class SshMRExecutor extends MRExecutor {
         List<String> env = new ArrayList<>(getEnv());
         env.add(HADOOP_SSH_USER_ENV + '=' + sshUser);
         env.add(HADOOP_SSH_HOST_ENV + '=' + sshHost);
+        env.add(HADOOP_SSH_REMOTE_TMP + '=' + remoteTmp);
 
         // Use sshpass to connect to the edge node. Otherwise, assume that there is a ssh-key in the system
         if (StringUtils.isNotEmpty(sshPassword)) {
