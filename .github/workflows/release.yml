@@ -104,7 +104,7 @@ jobs:
 
   deploy-docker-workflow:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
-    needs: test
+    needs: build-hdp
     with:
       cli: python3 ./build/cloud/docker/docker-build.py push --images workflow --tag ${{ github.ref_name }} --org opencb
     secrets: inherit
