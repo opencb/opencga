@@ -1036,6 +1036,9 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
         // Check if analysis result file is there
         ExecutionResult execution = readExecutionResult(job, EXECUTION_RESULT_FILE_EXPIRATION_SECONDS);
         if (execution != null) {
+            if (execution.getStatus().getName() == Status.Type.ERROR && job.getInternal().isKillJobRequested()) {
+                return new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED);
+            }
             return new Enums.ExecutionStatus(execution.getStatus().getName().name());
         }
 
