@@ -32,18 +32,22 @@ on:
           - "opencga-storage"
           - "opencga-test"
       short_tests:
+        description: 'Run short tests.'
         type: boolean
         required: false
         default: true
       medium_tests:
+        description: 'Run medium tests.'
         type: boolean
         required: false
         default: false
       long_tests:
+        description: 'Run long tests.'
         type: boolean
         required: false
         default: false
       mvn_opts:
+        description: 'Maven options.'
         type: string
         required: false
         default: ""

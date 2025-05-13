@@ -13,7 +13,7 @@ on:
         required: true
 
 jobs:
-  delete-docker:
+  delete-zetta-docker:
     name: Execute delete docker image
     runs-on: ubuntu-22.04
     steps:
@@ -23,11 +23,31 @@ jobs:
       - name: Validate task name
         if: ${{ !startsWith(inputs.task, 'TASK') }}
         run: |
-          echo "Error: Can't delete ${{ inputs.task }}. Only Docker images related to TASK branches can be deleted"
-          exit 1
+          echo "Warning: Zettagenomics DockerHub Can't delete ${{ inputs.task }}. Only Docker images related to TASK branches can be deleted"  
+          echo "Warning: Zettagenomics DockerHub Can't delete ${{ inputs.task }}. Only Docker images related to TASK branches can be deleted"  | tee -a $GITHUB_STEP_SUMMARY
+          exit 0
       - name: Delete in Docker Hub
         if: ${{ startsWith(inputs.task, 'TASK') }}
         run: |
           echo "Deleting docker image ${{ inputs.task }}"
-          python3 ./opencga-app/app/cloud/docker/docker-build.py delete --images base --tag ${{ inputs.task }} --username ${{ secrets.DOCKER_HUB_USER }} --password ${{ secrets.DOCKER_HUB_PASSWORD }} --org zettagenomics
+          python3 ./opencga-app/app/cloud/docker/docker-build.py delete --images base --tag ${{ inputs.task }} --username ${{ secrets.ZETTA_DOCKER_HUB_USER }} --password ${{ secrets.ZETTA_DOCKER_HUB_PASSWORD }} --org zettagenomics
+          
+
+  delete-opencb-docker:
+    name: Execute delete docker image
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: '10'
+      - name: Validate task name
+        if: ${{ !startsWith(inputs.task, 'TASK') }}
+        run: |
+          echo "Warning: Opencb DockerHub Can't delete ${{ inputs.task }}. Only Docker images related to TASK branches can be deleted" 
+          echo "Warning: Opencb DockerHub Can't delete ${{ inputs.task }}. Only Docker images related to TASK branches can be deleted"  | tee -a $GITHUB_STEP_SUMMARY
+          exit 0
+      - name: Delete in Docker Hub
+        if: ${{ startsWith(inputs.task, 'TASK') }}
+        run: |
+          echo "Deleting docker image ${{ inputs.task }}"
           python3 ./opencga-app/app/cloud/docker/docker-build.py delete --images workflow --tag ${{ inputs.task }} --username ${{ secrets.DOCKER_HUB_USER }} --password ${{ secrets.DOCKER_HUB_PASSWORD }} --org opencb
