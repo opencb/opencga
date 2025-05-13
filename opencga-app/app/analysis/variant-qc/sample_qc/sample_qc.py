@@ -6,6 +6,7 @@ import logging
 import json
 
 from utils import create_output_dir, execute_bash_command
+from sample_qc.mutational_catalogue import MutationalCatalogueAnalysis
 
 LOGGER = logging.getLogger('variant_qc_logger')
 
@@ -40,22 +41,29 @@ class SampleQCExecutor:
 
     def run(self):
 
+        # TODO check if sample is somatic
+
         # Genome plot
         if 'skip' not in self.config_json or 'genomePlot' not in self.config_json['skip']:
             self.create_genome_plot()
 
+        # Mutational signatures
+        if 'skip' not in self.config_json or 'mutationalCatalog' not in self.config_json['skip']:
+            self.create_mutational_catalogue()
 
-
-        # self.bcftools_stats(vcf_file=self.vcf_file)
-
-        # missingness()
-        # heterozygosity ()
-        # roh()
-        # upd()
 
         # Return results
         # ...  # TODO return results
         pass
+
+    def create_mutational_catalogue(self):
+        # Create output dir for this analysis
+        output_dir = create_output_dir([self.output_parent_dir, 'mutational_catalogue'])
+
+        # Execute analysis
+        mca = MutationalCatalogueAnalysis(self.vcf_file, self.resource_dir, self.config_json, output_dir, self.id_)
+        mca.run()
+
 
     def get_genome_plot_vcfs(self, output_dir, gp_config_json):
 
@@ -111,39 +119,3 @@ class SampleQCExecutor:
         )
 
         return_code, stdout, stderr = execute_bash_command(cmd)
-
-
-    def bcftools_stats(self, vcf_file):
-        """
-        Calculates VCF stats using BCFTools
-        :param str vcf_file: VCF file to get stats from
-        :return:
-        """
-        # Creating output dir for bcftools
-        output_dir = create_output_dir([self.output_parent_dir, 'bcftools'])
-
-        # Running bcftools
-        cmd_bcftools = 'bcftools stats -v ' + vcf_file + ' > ' + os.path.join(output_dir, 'bcftools_stats.txt')
-        execute_bash_command(cmd=cmd_bcftools)
-        LOGGER.info("BCFTools stats calculated successfully for {file}".format(file=vcf_file))
-
-        # Plot stats using plot-vcfstats
-        cmd_vcfstats = 'plot-vcfstats -p ' + output_dir + '/bcftools_stats_plots ' + output_dir + '/bcftools_stats.txt'
-        execute_bash_command(cmd=cmd_vcfstats)
-        LOGGER.info("Plot stats using plot-vcfstats executed successfully for {file}".format(file=vcf_file))
-
-        # TODO: Future implementation for vcf stats plots
-        #plot_bcftools_stats(file=output_dir + '/bcftools_stats.txt', prefix="stats", output=output_dir)
-
-
-if __name__ == '__main__':
-    vcf_file = "/home/mbleda/Downloads/KFSHRC/CGMQ2022-02850.vcf.gz"
-    info_file = ""
-    bam_file = ""
-    config = ""
-    output_parent_dir = "/tmp/qc_tests/"
-    sample_ids = []
-    id_ = ""
-    se = SampleQCExecutor(vcf_file=vcf_file, info_file=info_file, bam_file=bam_file, config=config,
-                          output_parent_dir=output_parent_dir, sample_ids=sample_ids, id_=id_)
-    sys.exit(se.run())
