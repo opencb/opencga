@@ -77,8 +77,12 @@ nohup bash -c "
   while ps -p "\$PID"; do
     sleep 1
   done
-  echo \"Cleaning up temporary directory \${CUSTOM_TMPDIR}\"
-  rm -rf \${CUSTOM_TMPDIR}
+  if [ -d \"\${CUSTOM_TMPDIR}\" ]; then
+    echo \"Cleaning up temporary directory '\${CUSTOM_TMPDIR}'\"
+    rm -rf \${CUSTOM_TMPDIR:?}
+  else
+    echo \"Temporary directory '\${CUSTOM_TMPDIR}' already removed\"
+  fi
 " > /dev/null 2>&1 &
 
 exec ${CMD}
