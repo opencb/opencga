@@ -237,22 +237,6 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                         .index(study, files, UriUtils.createDirectoryUriSafe(outDir), params, token));
     }
 
-    public void secondaryIndexSamples(String study, List<String> samples, ObjectMap params, String token)
-            throws CatalogException, StorageEngineException {
-        secureOperation(VariantSecondaryIndexSamplesOperationTool.ID, study, params, token, engine -> {
-            engine.secondaryIndexSamples(study, samples);
-            return null;
-        });
-    }
-
-    public void removeSearchIndexSamples(String study, List<String> samples, ObjectMap params, String token)
-            throws CatalogException, StorageEngineException {
-        secureOperation("removeSecondaryIndexSamples", study, params, token, engine -> {
-            engine.removeSecondaryIndexSamples(study, samples);
-            return null;
-        });
-    }
-
     public VariantSearchLoadResult secondaryAnnotationIndex(String project, String region, boolean overwrite, ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
         return secureOperationByProject(VariantSecondaryAnnotationIndexOperationTool.ID, project, params, token, engine -> {

@@ -65,7 +65,6 @@ import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.executors.*;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
-import org.opencb.opencga.storage.core.variant.search.SamplesSearchIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantAggregationExecutor;
 import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
@@ -1281,8 +1280,6 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         executors.add(new BreakendVariantQueryExecutor(
                 getStorageEngineId(), getOptions(), new SampleIndexVariantQueryExecutor(
                 getDBAdaptor(), getSampleIndexDBAdaptor(), getStorageEngineId(), getOptions()), getDBAdaptor()));
-        executors.add(new SamplesSearchIndexVariantQueryExecutor(
-                getDBAdaptor(), getVariantSearchManager(), getStorageEngineId(), dbName, getConfiguration(), getOptions()));
         executors.add(new SampleIndexMendelianErrorQueryExecutor(
                 getDBAdaptor(), getSampleIndexDBAdaptor(), getStorageEngineId(), getOptions()));
         executors.add(new SampleIndexOnlyVariantQueryExecutor(

@@ -125,24 +125,6 @@ public class VariantSearchModel {
     @Field("popFreq_*")
     private Map<String, Float> popFreq;
 
-    @Field("gt_*")
-    private Map<String, String> gt;
-
-    @Field("dp_*")
-    private Map<String, Integer> dp;
-
-    @Field("sampleFormat_*")
-    private Map<String, String> sampleFormat;
-
-    @Field("qual_*")
-    private Map<String, Float> qual;
-
-    @Field("filter_*")
-    private Map<String, String> filter;
-
-    @Field("fileInfo_*")
-    private Map<String, String> fileInfo;
-
     @Field("attr_*")
     private Map<String, Object> attr;
 
@@ -171,12 +153,6 @@ public class VariantSearchModel {
         this.score = new HashMap<>();
         this.scorePValue = new HashMap<>();
         this.popFreq = new HashMap<>();
-        this.gt = new HashMap<>();
-        this.dp = new HashMap<>();
-        this.sampleFormat = new HashMap<>();
-        this.qual = new HashMap<>();
-        this.filter = new HashMap<>();
-        this.fileInfo = new HashMap<>();
         this.attr = new HashMap<>();
     }
 
@@ -211,12 +187,6 @@ public class VariantSearchModel {
         this.score = init.getScore();
         this.scorePValue = init.getScorePValue();
         this.popFreq = init.getPopFreq();
-        this.gt = init.getGt();
-        this.dp = init.getDp();
-        this.sampleFormat = init.getSampleFormat();
-        this.qual = init.getQual();
-        this.filter = init.getFilter();
-        this.fileInfo = init.getFileInfo();
         this.attr = init.getAttr();
     }
 
@@ -253,12 +223,6 @@ public class VariantSearchModel {
         sb.append(", score=").append(score);
         sb.append(", scorePValue=").append(scorePValue);
         sb.append(", popFreq=").append(popFreq);
-        sb.append(", gt=").append(gt);
-        sb.append(", dp=").append(dp);
-        sb.append(", sampleFormat=").append(sampleFormat);
-        sb.append(", qual=").append(qual);
-        sb.append(", filter=").append(filter);
-        sb.append(", fileInfo=").append(fileInfo);
         sb.append(", attr=").append(attr);
         sb.append('}');
         return sb.toString();
@@ -542,60 +506,6 @@ public class VariantSearchModel {
 
     public VariantSearchModel setPopFreq(Map<String, Float> popFreq) {
         this.popFreq = popFreq;
-        return this;
-    }
-
-    public Map<String, String> getGt() {
-        return gt;
-    }
-
-    public VariantSearchModel setGt(Map<String, String> gt) {
-        this.gt = gt;
-        return this;
-    }
-
-    public Map<String, Integer> getDp() {
-        return dp;
-    }
-
-    public VariantSearchModel setDp(Map<String, Integer> dp) {
-        this.dp = dp;
-        return this;
-    }
-
-    public Map<String, String> getSampleFormat() {
-        return sampleFormat;
-    }
-
-    public VariantSearchModel setSampleFormat(Map<String, String> sampleFormat) {
-        this.sampleFormat = sampleFormat;
-        return this;
-    }
-
-    public Map<String, Float> getQual() {
-        return qual;
-    }
-
-    public VariantSearchModel setQual(Map<String, Float> qual) {
-        this.qual = qual;
-        return this;
-    }
-
-    public Map<String, String> getFilter() {
-        return filter;
-    }
-
-    public VariantSearchModel setFilter(Map<String, String> filter) {
-        this.filter = filter;
-        return this;
-    }
-
-    public Map<String, String> getFileInfo() {
-        return fileInfo;
-    }
-
-    public VariantSearchModel setFileInfo(Map<String, String> fileInfo) {
-        this.fileInfo = fileInfo;
         return this;
     }
 

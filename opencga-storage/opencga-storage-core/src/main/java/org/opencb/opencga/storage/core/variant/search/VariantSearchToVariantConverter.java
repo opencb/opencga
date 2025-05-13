@@ -18,7 +18,6 @@ package org.opencb.opencga.storage.core.variant.search;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.collections4.CollectionUtils;
@@ -40,7 +39,6 @@ import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.*;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
@@ -100,79 +98,6 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 studyEntryMap.put(studyId, entry);
             });
             variant.setStudies(studies);
-        }
-
-        // Genotypes and sample data and format
-        if (MapUtils.isNotEmpty(variantSearchModel.getSampleFormat())) {
-            for (String studyId: studyEntryMap.keySet()) {
-                String stringToList;
-                String suffix = FIELD_SEPARATOR + studyId + FIELD_SEPARATOR;
-                StudyEntry studyEntry = studyEntryMap.get(studyId);
-
-                // Format
-                stringToList = variantSearchModel.getSampleFormat().get("sampleFormat" + suffix + "format");
-                if (StringUtils.isNotEmpty(stringToList)) {
-                    studyEntry.setSampleDataKeys(Arrays.asList(StringUtils.splitByWholeSeparatorPreserveAllTokens(stringToList, LIST_SEP)));
-                }
-
-                // Sample Data management
-                stringToList = variantSearchModel.getSampleFormat().get("sampleFormat" + suffix + "sampleName");
-                if (StringUtils.isNotEmpty(stringToList)) {
-                    String[] sampleNames = StringUtils.splitByWholeSeparatorPreserveAllTokens(stringToList, LIST_SEP);
-                    List<SampleEntry> sampleEntries = new ArrayList<>();
-                    Map<String, Integer> samplePosition = new HashMap<>();
-                    int pos = 0;
-                    for (String sampleName: sampleNames) {
-                        suffix = FIELD_SEPARATOR + studyId + FIELD_SEPARATOR + sampleName;
-                        stringToList = variantSearchModel.getSampleFormat().get("sampleFormat" + suffix);
-                        if (StringUtils.isNotEmpty(stringToList)) {
-                            List<String> data = Arrays.asList(StringUtils.splitByWholeSeparatorPreserveAllTokens(stringToList, LIST_SEP));
-                            sampleEntries.add(new SampleEntry(null, null, data));
-                            samplePosition.put(sampleName, pos++);
-                        }
-//                        else {
-//                            logger.error("Error converting samplesFormat, sample '{}' is missing or empty, value: '{}'",
-//                                    sampleName, stringToList);
-//                        }
-                    }
-
-                    if (CollectionUtils.isNotEmpty(sampleEntries)) {
-                        studyEntry.setSamples(sampleEntries);
-                        studyEntry.setSamplesPosition(samplePosition);
-                    }
-                }
-            }
-        }
-
-        // File info management
-        if (MapUtils.isNotEmpty(variantSearchModel.getFileInfo())) {
-            ObjectReader reader = new ObjectMapper().reader(HashMap.class);
-            for (String key: variantSearchModel.getFileInfo().keySet()) {
-                // key consists of 'fileInfo' + "__" + studyId + "__" + fileId
-                String[] fields = StringUtils.splitByWholeSeparator(key, FIELD_SEPARATOR);
-                FileEntry fileEntry = new FileEntry(fields[2], null, new HashMap<>());
-                try {
-                    // We obtain the original call
-                    Map<String, String> fileData = reader.readValue(variantSearchModel.getFileInfo().get(key));
-                    if (MapUtils.isNotEmpty(fileData)) {
-                        String fileCall = fileData.get("fileCall");
-                        if (fileCall != null && !fileCall.isEmpty()) {
-                            int i = fileCall.lastIndexOf(':');
-                            OriginalCall call = new OriginalCall(
-                                    fileCall.substring(0, i),
-                                    Integer.valueOf(fileCall.substring(i + 1)));
-                            fileEntry.setCall(call);
-                        }
-
-                        fileData.remove("fileCall");
-                        fileEntry.setData(fileData);
-                    }
-                } catch (IOException e) {
-                    logger.error("Error converting fileInfo from variant search model: {}", e.getMessage());
-                } finally {
-                    variant.getStudy(fields[1]).getFiles().add(fileEntry);
-                }
-            }
         }
 
         // Allele stats management
@@ -1084,61 +1009,6 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 }
             }
 
-            if (MapUtils.isNotEmpty(studyEntry.getSamplesPosition()) && ListUtils.isNotEmpty(studyEntry.getOrderedSamplesName())) {
-                List<String> sampleNames = studyEntry.getOrderedSamplesName();
-                // sanity check, the number od sample names and sample data must be the same
-                if (CollectionUtils.isNotEmpty(studyEntry.getSamples()) && sampleNames.size() == studyEntry.getSamples().size()) {
-                    String suffix = FIELD_SEPARATOR + studyId + FIELD_SEPARATOR;
-                    // Save sample formats in a map (after, to JSON string), including sample names and GT
-                    variantSearchModel.getSampleFormat().put("sampleFormat" + suffix + "sampleName",
-                            StringUtils.join(sampleNames, LIST_SEP));
-
-                    // find the index position of DP in the FORMAT
-                    int dpIndexPos = -1;
-                    if (CollectionUtils.isNotEmpty(studyEntry.getSampleDataKeys())) {
-                        variantSearchModel.getSampleFormat().put("sampleFormat" + suffix + "format",
-                                StringUtils.join(studyEntry.getSampleDataKeys(), LIST_SEP));
-
-                        // find the index position of DP in the FORMAT
-                        for (int i = 0; i < studyEntry.getSampleDataKeys().size(); i++) {
-                            if ("DP".equalsIgnoreCase(studyEntry.getSampleDataKeys().get(i))) {
-                                dpIndexPos = i;
-                                break;
-                            }
-                        }
-                    }
-
-                    for (int i = 0; i < sampleNames.size(); i++) {
-                        suffix = FIELD_SEPARATOR + studyId
-                                + FIELD_SEPARATOR + sampleNames.get(i);
-
-                        // Save genotype (gt) and depth (dp) where study and sample name as key
-                        variantSearchModel.getGt().put("gt" + suffix, studyEntry.getSampleData(i).get(0));
-
-                        if (dpIndexPos != -1) {
-                            String dpValue = studyEntry.getSampleData(i).get(dpIndexPos);
-                            // Skip if empty
-                            if (!StringUtils.isEmpty(dpValue) && !dpValue.equals(VCFConstants.EMPTY_INFO_FIELD)) {
-                                try {
-                                    variantSearchModel.getDp().put("dp" + suffix, Integer.valueOf(dpValue));
-                                } catch (NumberFormatException e) {
-                                    logger.error("Problem converting from variant to variant search when getting DP"
-                                            + " value from sample {}: {}", sampleNames.get(i), e.getMessage());
-                                }
-                            }
-                        }
-
-                        // Save formats for each sample (after, to JSON string)
-                        if (studyEntry.getSamples().get(i) != null) {
-                            variantSearchModel.getSampleFormat().put("sampleFormat" + suffix,
-                                    StringUtils.join(studyEntry.getSamples().get(i).getData(), LIST_SEP));
-                        }
-                    }
-                } else {
-                    logger.error("Mismatch sizes: please, check your sample names, sample data and format array");
-                }
-            }
-
             // VariantScore: score and p-value are stored and indexed in two different maps:
             //   - score__STUDY_ID__SCORE_ID
             //   - scorePValue__STUDY_ID__SCORE_ID
@@ -1156,43 +1026,6 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     other.add("SC" + FIELD_SEP + studyId + FIELD_SEP + score.getId() + FIELD_SEP + score.getScore() + FIELD_SEP
                             + score.getPValue() + FIELD_SEP + score.getCohort1()
                             + (StringUtils.isNotEmpty(score.getCohort2()) ? (FIELD_SEP + score.getCohort2()) : ""));
-                }
-            }
-
-            // QUAL, FILTER and file info fields management
-            if (ListUtils.isNotEmpty(studyEntry.getFiles())) {
-                for (FileEntry fileEntry : studyEntry.getFiles()) {
-                    // Call is stored in Solr fileInfo with key "fileCall"
-                    Map<String, String> fileInfoMap = new LinkedHashMap<>();
-                    if (fileEntry.getCall() != null) {
-                        fileInfoMap.put("fileCall", fileEntry.getCall().getVariantId() + ":" + fileEntry.getCall().getAlleleIndex());
-                    }
-                    // Info fields are stored in Solr fileInfo
-                    if (MapUtils.isNotEmpty(fileEntry.getData())) {
-                        fileInfoMap.putAll(fileEntry.getData());
-
-                        // In addition, store QUAL and FILTER separately
-                        String qual = fileEntry.getData().get(StudyEntry.QUAL);
-                        if (StringUtils.isNotEmpty(qual)) {
-                            variantSearchModel.getQual().put("qual" + FIELD_SEPARATOR + studyId
-                                    + FIELD_SEPARATOR + fileEntry.getFileId(), Float.parseFloat(qual));
-                        }
-
-                        String filter = fileEntry.getData().get(StudyEntry.FILTER);
-                        if (StringUtils.isNotEmpty(filter)) {
-                            variantSearchModel.getFilter().put("filter" + FIELD_SEPARATOR + studyId
-                                    + FIELD_SEPARATOR + fileEntry.getFileId(), filter);
-                        }
-                    }
-                    if (MapUtils.isNotEmpty(fileInfoMap)) {
-                        try {
-                            variantSearchModel.getFileInfo().put("fileInfo" + FIELD_SEPARATOR + studyId
-                                            + FIELD_SEPARATOR + fileEntry.getFileId(),
-                                    writer.writeValueAsString(fileInfoMap));
-                        } catch (JsonProcessingException e) {
-                            logger.info("Error converting fileInfo for study {} and file {}", studyId, fileEntry.getFileId());
-                        }
-                    }
                 }
             }
         }
