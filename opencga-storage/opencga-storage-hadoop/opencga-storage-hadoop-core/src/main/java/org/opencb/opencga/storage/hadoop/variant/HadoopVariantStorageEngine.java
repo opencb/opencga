@@ -49,6 +49,7 @@ import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.*;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
@@ -474,7 +475,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     @Override
-    public VariantSearchLoadResult secondaryIndex(Query query, QueryOptions queryOptions, boolean overwrite)
+    public VariantSearchLoadResult secondaryIndex(Query query, QueryOptions queryOptions, boolean overwrite,
+                                                  SearchIndexMetadata indexMetadata)
             throws StorageEngineException, IOException, VariantSearchException {
         queryOptions = queryOptions == null ? new QueryOptions() : new QueryOptions(queryOptions);
 
@@ -485,7 +487,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                     .discoverPending(getMRExecutor(), overwrite, getMergedOptions(queryOptions));
         }
 
-        return super.secondaryIndex(query, queryOptions, overwrite);
+        return super.secondaryIndex(query, queryOptions, overwrite, indexMetadata);
     }
 
     @Override
@@ -498,9 +500,12 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     @Override
-    protected HadoopVariantSearchDataWriter newVariantSearchDataWriter(String collection) throws StorageEngineException {
+    protected HadoopVariantSearchDataWriter newVariantSearchDataWriter(SearchIndexMetadata indexMetadata)
+            throws StorageEngineException {
         return new HadoopVariantSearchDataWriter(
-                collection, getVariantSearchManager().getSolrClient(), getVariantSearchManager().getInsertBatchSize(),
+                getVariantSearchManager().buildCollectionName(indexMetadata),
+                getVariantSearchManager().getSolrClient(),
+                getVariantSearchManager().getInsertBatchSize(),
                 getDBAdaptor());
     }
 
@@ -1133,7 +1138,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     protected List<VariantAggregationExecutor> initVariantAggregationExecutors() {
         List<VariantAggregationExecutor> executors = new ArrayList<>(3);
         try {
-            executors.add(new SearchIndexVariantAggregationExecutor(getVariantSearchManager(), getDBName()));
+            executors.add(new SearchIndexVariantAggregationExecutor(getVariantSearchManager()));
             executors.add(new SampleIndexVariantAggregationExecutor(getMetadataManager(), getSampleIndexDBAdaptor()));
             executors.add(new ChromDensityVariantAggregationExecutor(this, getMetadataManager()));
         } catch (Exception e) {
@@ -1287,7 +1292,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         executors.add(new SampleIndexVariantQueryExecutor(
                 getDBAdaptor(), getSampleIndexDBAdaptor(), getStorageEngineId(), getOptions()));
         executors.add(new SearchIndexVariantQueryExecutor(
-                getDBAdaptor(), getVariantSearchManager(), getStorageEngineId(), dbName, getConfiguration(), getOptions())
+                getDBAdaptor(), getVariantSearchManager(), getStorageEngineId(), getConfiguration(), getOptions())
                 .setIntersectParamsThreshold(1));
         executors.add(new HBaseColumnIntersectVariantQueryExecutor(
                 getDBAdaptor(), getStorageEngineId(), getOptions()));

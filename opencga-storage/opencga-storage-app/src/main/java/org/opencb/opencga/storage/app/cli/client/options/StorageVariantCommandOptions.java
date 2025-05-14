@@ -987,13 +987,13 @@ public class StorageVariantCommandOptions {
 //        @Parameter(names = {"--mode"}, description = "Search mode. Valid values: core, collection.", arity = 1)
 //        public String mode = "core";
 
-        @Parameter(names = {"--create"}, description = "Create a new core/collection.", arity = 0)
-        public boolean create;
+//        @Parameter(names = {"--create"}, description = "Create a new core/collection.", arity = 0)
+//        public boolean create;
 
-        @Parameter(names = {"--solr-url"}, description = "Url to Solr server, e.g.: http://localhost:8983/solr/", arity = 1)
-        public String solrUrl;
+//        @Parameter(names = {"--solr-url"}, description = "Url to Solr server, e.g.: http://localhost:8983/solr/", arity = 1)
+//        public String solrUrl;
 
-        @Parameter(names = {"--solr-config"}, description = "Solr configuration name.", arity = 1)
+        @Parameter(names = {"--solr-configset"}, description = "Solr configuration name.", arity = 1)
         public String solrConfig;
 
 //        @Parameter(names = {"--solr-num-shards"}, description = "Number of Solr collection shards (only for a Solr cluster mode).", arity = 1)

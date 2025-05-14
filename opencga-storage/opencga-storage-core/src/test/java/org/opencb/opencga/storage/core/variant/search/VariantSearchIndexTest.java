@@ -11,6 +11,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -212,14 +213,17 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
         QueryOptions queryOptions = new QueryOptions(QueryOptions.LIMIT, 1000);
         Query query = new Query();
 
+        SearchIndexMetadata indexMetadata = metadataManager.getProjectMetadata().getSecondaryAnnotationIndex()
+                .getLastStagingOrActiveIndex();
+
         TreeSet<Variant> variantsFromSearch = new TreeSet<>(Comparator.comparing(Variant::toString));
         TreeSet<Variant> variantsFromDB = new TreeSet<>(Comparator.comparing(Variant::toString));
 
-        variantsFromSearch.addAll(variantStorageEngine.getVariantSearchManager().query(DB_NAME, variantStorageEngine.parseQuery(query, queryOptions)).getResults());
+        variantsFromSearch.addAll(variantStorageEngine.getVariantSearchManager().query(indexMetadata, variantStorageEngine.parseQuery(query, queryOptions)).getResults());
         variantsFromDB.addAll(dbAdaptor.get(query, queryOptions).getResults());
 
         assertEquals(variantsFromDB.size(), variantsFromSearch.size());
-        assertEquals(variantsFromDB.size(), variantStorageEngine.getVariantSearchManager().count(DB_NAME, query));
+        assertEquals(variantsFromDB.size(), variantStorageEngine.getVariantSearchManager().count(indexMetadata, query));
 
         Iterator<Variant> variantsFromSearchIterator = variantsFromSearch.iterator();
         Iterator<Variant> variantsFromDBIterator = variantsFromDB.iterator();

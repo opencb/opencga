@@ -136,6 +136,7 @@ public enum VariantStorageOptions implements ConfigurationOption {
     RELEASE("release", 1),
 
     MERGE_MODE("merge.mode", VariantStorageEngine.MergeMode.ADVANCED),
+    @Deprecated // Use modificationDate from SearchIndexMetadata
     SEARCH_INDEX_LAST_TIMESTAMP("search.index.last.timestamp", 0);
 
     private final String key;

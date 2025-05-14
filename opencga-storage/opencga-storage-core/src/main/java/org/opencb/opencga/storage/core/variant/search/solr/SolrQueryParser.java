@@ -1402,7 +1402,7 @@ public class SolrQueryParser {
     }
 
     /**
-     * Get the Solr fields to be included in the Solr query (fl parameter) from the variant query,
+     * Get the Solr fields to be included in the Solr query (fl parameter) from the variant query.
      *
      * @param query Variant query
      * @return      List of Solr fields to be included in the Solr query

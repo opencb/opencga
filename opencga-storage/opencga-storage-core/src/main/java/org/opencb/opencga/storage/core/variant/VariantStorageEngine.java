@@ -43,6 +43,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.*;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.MultiVariantDBIterator;
@@ -723,11 +724,29 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         throw new UnsupportedOperationException();
     }
 
-    public VariantSearchLoadResult secondaryIndex() throws StorageEngineException, IOException, VariantSearchException {
+    public final VariantSearchLoadResult secondaryIndex() throws StorageEngineException, IOException, VariantSearchException {
         return secondaryIndex(new Query(), new QueryOptions(), false);
     }
 
-    public VariantSearchLoadResult secondaryIndex(Query inputQuery, QueryOptions inputQueryOptions, boolean overwrite)
+    public final VariantSearchLoadResult secondaryIndex(Query inputQuery, QueryOptions inputQueryOptions, boolean overwrite)
+            throws StorageEngineException, IOException, VariantSearchException {
+        if (!configuration.getSearch().isActive()) {
+            throw new StorageEngineException("Search is not active!");
+        }
+
+        SearchIndexMetadata indexMetadata = getMetadataManager().getProjectMetadata().getSecondaryAnnotationIndex()
+                .getLastStagingOrActiveIndex();
+
+        if (indexMetadata == null) {
+            // Create if it does not exist
+            indexMetadata = getVariantSearchManager().newIndexMetadata(configuration.getSearch().getConfigSet(), true);
+        }
+
+        return secondaryIndex(inputQuery, inputQueryOptions, overwrite, indexMetadata);
+    }
+
+    protected VariantSearchLoadResult secondaryIndex(Query inputQuery, QueryOptions inputQueryOptions, boolean overwrite,
+                                                     SearchIndexMetadata indexMetadata)
             throws StorageEngineException, IOException, VariantSearchException {
         Query query = VariantQueryUtils.copy(inputQuery);
         QueryOptions queryOptions = VariantQueryUtils.copy(inputQueryOptions);
@@ -735,11 +754,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         VariantDBAdaptor dbAdaptor = getDBAdaptor();
 
         VariantSearchManager variantSearchManager = getVariantSearchManager();
-        // first, create the collection if it does not exist
-        variantSearchManager.create(dbName);
-        if (!secondaryAnnotationIndexActiveAndAlive(variantSearchManager, dbName)) {
-            throw new StorageEngineException("Solr is not alive!");
-        }
 
         // check files and samples that will be affected
         boolean partialLoad = isValidParam(query, VariantQueryParam.REGION);
@@ -782,7 +796,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         queryOptions.put(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_SAMPLES, VariantField.STUDIES_FILES));
         VariantSearchLoadResult load;
         try (VariantDBIterator iterator = getVariantsToSecondaryIndex(overwrite, query, queryOptions, dbAdaptor)) {
-            load = variantSearchManager.load(dbName, iterator, newVariantSearchDataWriter(dbName));
+            load = variantSearchManager.load(indexMetadata, iterator, newVariantSearchDataWriter(indexMetadata));
         } catch (StorageEngineException e) {
             throw e;
         } catch (Exception e) {
@@ -790,13 +804,20 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
 
         if (partialLoad) {
-            logger.info("Partial secondary annotation index. Do not update {} timestamp", SEARCH_INDEX_LAST_TIMESTAMP.key());
+            logger.info("Partial secondary annotation index. Do not update modificationDate nor status");
         } else {
             logger.info("Update secondary annotation index status for {} new files and {} new samples",
                     filesToBeUpdated.values().stream().mapToInt(Collection::size).sum(),
                     samplesToBeUpdated.values().stream().mapToInt(Collection::size).sum());
+            if (indexMetadata.getStatus() != SearchIndexMetadata.Status.ACTIVE) {
+                logger.info("Updating secondary annotation index status from {} to {}",
+                        indexMetadata.getStatus(), SearchIndexMetadata.Status.ACTIVE);
+            }
             mm.updateProjectMetadata(projectMetadata -> {
                 projectMetadata.getAttributes().put(SEARCH_INDEX_LAST_TIMESTAMP.key(), newTimestamp);
+                projectMetadata.getSecondaryAnnotationIndex().getIndexMetadata(indexMetadata.getVersion())
+                        .setStatus(SearchIndexMetadata.Status.ACTIVE)
+                        .setModificationDate(new Date(newTimestamp));
                 return projectMetadata;
             });
 
@@ -842,18 +863,31 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
     }
 
-    protected SolrInputDocumentDataWriter newVariantSearchDataWriter(String collection) throws StorageEngineException {
-        return new SolrInputDocumentDataWriter(collection,
+    protected SolrInputDocumentDataWriter newVariantSearchDataWriter(SearchIndexMetadata indexMetadata)
+            throws StorageEngineException {
+        return new SolrInputDocumentDataWriter(getVariantSearchManager().buildCollectionName(indexMetadata),
                 getVariantSearchManager().getSolrClient(),
                 getVariantSearchManager().getInsertBatchSize());
     }
 
     public boolean secondaryAnnotationIndexActiveAndAlive() throws StorageEngineException {
-        return secondaryAnnotationIndexActiveAndAlive(getVariantSearchManager(), dbName);
-    }
-
-    public boolean secondaryAnnotationIndexActiveAndAlive(VariantSearchManager variantSearchManager, String collectionName) {
-        return variantSearchManager != null && configuration.getSearch().isActive() && variantSearchManager.isAlive(collectionName);
+        if (!configuration.getSearch().isActive()) {
+            // Search is not active
+            return false;
+        }
+        SearchIndexMetadata indexMetadata = getMetadataManager().getProjectMetadata().getSecondaryAnnotationIndex()
+                .getLastStagingOrActiveIndex();
+        if (indexMetadata == null) {
+            // No index metadata
+            // TODO: Add a migration step to create the index metadata if it does not exist
+            return false;
+        }
+        VariantSearchManager variantSearchManager = getVariantSearchManager();
+        if (variantSearchManager == null) {
+            // No search manager
+            return false;
+        }
+        return variantSearchManager.isAlive(indexMetadata);
     }
 
     /**
@@ -1174,7 +1208,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 if (variantSearchManager.get() == null) {
                     // TODO One day we should use reflection here reading from storage-configuration.yml
                     variantSearchManager.set(
-                            new VariantSearchManager(getMetadataManager(), getCellBaseUtils(), configuration, getOptions()));
+                            new VariantSearchManager(dbName, getMetadataManager(), getCellBaseUtils(), configuration, getOptions()));
                 }
             }
         }
@@ -1283,7 +1317,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 getStorageEngineId(), getOptions(), new DBAdaptorVariantQueryExecutor(
                 getDBAdaptor(), getStorageEngineId(), getOptions()), getDBAdaptor()));
         executors.add(new SearchIndexVariantQueryExecutor(
-                getDBAdaptor(), getVariantSearchManager(), getStorageEngineId(), dbName, configuration, getOptions()));
+                getDBAdaptor(), getVariantSearchManager(), getStorageEngineId(), configuration, getOptions()));
         executors.add(new DBAdaptorVariantQueryExecutor(
                 getDBAdaptor(), getStorageEngineId(), getOptions()));
         return executors;
@@ -1428,7 +1462,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         List<VariantAggregationExecutor> executors = new ArrayList<>(3);
 
         try {
-            executors.add(new SearchIndexVariantAggregationExecutor(getVariantSearchManager(), getDBName()));
+            executors.add(new SearchIndexVariantAggregationExecutor(getVariantSearchManager()));
             executors.add(new ChromDensityVariantAggregationExecutor(this, getMetadataManager()));
         } catch (Exception e) {
             throw VariantQueryException.internalException(e);

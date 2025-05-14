@@ -42,15 +42,18 @@ import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
-import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchModel;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
 import org.opencb.opencga.storage.core.variant.search.VariantToSolrBeanConverterTask;
@@ -69,9 +72,11 @@ import java.util.stream.Collectors;
  */
 public class VariantSearchManager {
 
+    private final VariantStorageMetadataManager metadataManager;
     private SolrManager solrManager;
     private CellBaseClient cellBaseClient;
     private final ObjectMap options;
+    private final String dbName;
     private SolrQueryParser solrQueryParser;
     private VariantSearchToVariantConverter variantSearchToVariantConverter;
     private final int insertBatchSize;
@@ -79,15 +84,15 @@ public class VariantSearchManager {
 
     private Logger logger;
 
-//    public static final String CONF_SET = "OpenCGAConfSet-1.4.0";
     public static final String SEARCH_ENGINE_ID = "solr";
     public static final String USE_SEARCH_INDEX = "useSearchIndex";
     public static final int DEFAULT_INSERT_BATCH_SIZE = 10000;
 
-    public VariantSearchManager(VariantStorageMetadataManager variantStorageMetadataManager,
+    public VariantSearchManager(String dbName, VariantStorageMetadataManager variantStorageMetadataManager,
                                 CellBaseUtils cellBaseUtils, StorageConfiguration storageConfiguration, ObjectMap options) {
-
-        this.solrQueryParser = new SolrQueryParser(variantStorageMetadataManager);
+        this.dbName = dbName;
+        metadataManager = variantStorageMetadataManager;
+        this.solrQueryParser = new SolrQueryParser(metadataManager);
         this.cellBaseClient = cellBaseUtils.getCellBaseClient();
         this.options = options;
         this.variantSearchToVariantConverter = new VariantSearchToVariantConverter();
@@ -108,19 +113,17 @@ public class VariantSearchManager {
         return solrManager.isAlive(collection);
     }
 
-    public void create(String dbName) throws VariantSearchException {
-        try {
-            solrManager.create(dbName, configSet);
-        } catch (SolrException e) {
-            throw new VariantSearchException("Error creating Solr collection '" + dbName + "'", e);
-        }
+    public boolean isAlive(SearchIndexMetadata indexMetadata) {
+        return solrManager.isAlive(buildCollectionName(indexMetadata));
     }
 
-    public void create(String dbName, String configSet) throws VariantSearchException {
+    public String create(SearchIndexMetadata indexMetadata) throws VariantSearchException {
+        String collection = buildCollectionName(indexMetadata);
         try {
-            solrManager.create(dbName, configSet);
+            solrManager.create(collection, indexMetadata.getConfigSetId());
+            return collection;
         } catch (SolrException e) {
-            throw new VariantSearchException("Error creating Solr collection '" + dbName + "'", e);
+            throw new VariantSearchException("Error creating Solr collection '" + collection + "'", e);
         }
     }
 
@@ -140,11 +143,12 @@ public class VariantSearchManager {
 //        }
 //    }
 
-    public boolean exists(String dbName) throws VariantSearchException {
+    public boolean exists(SearchIndexMetadata indexMetadata) throws VariantSearchException {
+        String collectionName = buildCollectionName(indexMetadata);
         try {
-            return solrManager.exists(dbName);
+            return solrManager.exists(collectionName);
         } catch (SolrException e) {
-            throw new VariantSearchException("Error asking if Solr collection '" + dbName + "' exists", e);
+            throw new VariantSearchException("Error asking if Solr collection '" + collectionName + "' exists", e);
         }
     }
 
@@ -164,15 +168,28 @@ public class VariantSearchManager {
         }
     }
 
+    public String buildCollectionName(SearchIndexMetadata indexMetadata) {
+        if (indexMetadata == null) {
+            throw new NullPointerException("Missing index metadata");
+        }
+        if (indexMetadata.getCollectionNameSuffix() == null || indexMetadata.getCollectionNameSuffix().isEmpty()) {
+            // Backward compatibility
+            return dbName;
+        } else {
+            return dbName + "_" + indexMetadata.getCollectionNameSuffix();
+        }
+    }
+
     /**
      * Insert a list of variants into the given Solr collection.
      *
-     * @param collection Solr collection where to insert
+     * @param indexMetadata solr collection metadata
      * @param variants List of variants to insert
      * @throws IOException   IOException
      * @throws SolrServerException SolrServerException
      */
-    public void insert(String collection, List<Variant> variants) throws IOException, SolrServerException {
+    public void insert(SearchIndexMetadata indexMetadata, List<Variant> variants) throws IOException, SolrServerException {
+        String collection = buildCollectionName(indexMetadata);
         if (CollectionUtils.isNotEmpty(variants)) {
             List<VariantSearchModel> variantSearchModels = variantSearchToVariantConverter.convertListToStorageType(variants);
 
@@ -189,19 +206,23 @@ public class VariantSearchManager {
     /**
      * Load a Solr core/collection from a variant DB iterator.
      *
-     * @param collection        Collection name
+     * @param indexMetadata     solr collection metadata
      * @param variantDBIterator Iterator to retrieve the variants to load
      * @param writer Data Writer
      * @return VariantSearchLoadResult
      * @throws VariantSearchException VariantSearchException
      */
-    public VariantSearchLoadResult load(String collection,
+    public VariantSearchLoadResult load(SearchIndexMetadata indexMetadata,
                                         VariantDBIterator variantDBIterator,
                                         SolrInputDocumentDataWriter writer)
             throws VariantSearchException {
         if (variantDBIterator == null) {
             throw new VariantSearchException("Missing variant DB iterator when loading Solr variant collection");
         }
+
+        // first, create the collection if it does not exist
+        String collection = create(indexMetadata);
+
         getSolrManager().checkExists(collection);
 
         int batchSize = options.getInt(
@@ -241,18 +262,19 @@ public class VariantSearchManager {
     /**
      * Delete variants a Solr core/collection from a variant DB iterator.
      *
-     * @param collection        Collection name
+     * @param indexMetadata    solr collection metadata
      * @param variantDBIterator Iterator to retrieve the variants to remove
      * @param progressLogger    Progress logger
      * @return VariantSearchLoadResult
      * @throws VariantSearchException VariantSearchException
      * @throws IOException IOException
      */
-    public int delete(String collection, VariantDBIterator variantDBIterator, ProgressLogger progressLogger)
+    public int delete(SearchIndexMetadata indexMetadata, VariantDBIterator variantDBIterator, ProgressLogger progressLogger)
             throws VariantSearchException, IOException {
         if (variantDBIterator == null) {
             throw new VariantSearchException("Missing variant DB iterator when deleting variants");
         }
+        String collection = buildCollectionName(indexMetadata);
 
         int count = 0;
         List<String> variantList = new ArrayList<>(insertBatchSize);
@@ -278,14 +300,15 @@ public class VariantSearchManager {
      * Return the list of Variant objects from a Solr core/collection
      * according a given query.
      *
-     * @param collection   Collection name
+     * @param indexMetadata solr collection metadata
      * @param variantQuery Parsed variant query
      * @return List of Variant objects
      * @throws VariantSearchException VariantSearchException
      * @throws IOException   IOException
      */
-    public VariantQueryResult<Variant> query(String collection, ParsedVariantQuery variantQuery)
+    public VariantQueryResult<Variant> query(SearchIndexMetadata indexMetadata, ParsedVariantQuery variantQuery)
             throws VariantSearchException, IOException {
+        String collection = buildCollectionName(indexMetadata);
         SolrQuery solrQuery = solrQueryParser.parse(variantQuery.getQuery(), variantQuery.getInputOptions());
         SolrCollection solrCollection = solrManager.getCollection(collection);
         DataResult<Variant> queryResult;
@@ -303,15 +326,16 @@ public class VariantSearchManager {
      * Return the list of VariantSearchModel objects from a Solr core/collection
      * according a given query.
      *
-     * @param collection   Collection name
+     * @param indexMetadata solr collection metadata
      * @param query        Query
      * @param queryOptions Query options
      * @return List of VariantSearchModel objects
      * @throws VariantSearchException VariantSearchException
      * @throws IOException   IOException
      */
-    public DataResult<VariantSearchModel> nativeQuery(String collection, Query query, QueryOptions queryOptions)
+    public DataResult<VariantSearchModel> nativeQuery(SearchIndexMetadata indexMetadata, Query query, QueryOptions queryOptions)
             throws VariantSearchException, IOException {
+        String collection = buildCollectionName(indexMetadata);
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         SolrCollection solrCollection = solrManager.getCollection(collection);
         DataResult<VariantSearchModel> queryResult;
@@ -328,15 +352,16 @@ public class VariantSearchManager {
      * Return a Solr variant iterator to retrieve Variant objects from a Solr core/collection
      * according a given query.
      *
-     * @param collection   Collection name
+     * @param indexMetadata solr collection metadata
      * @param query        Query
      * @param queryOptions Query options
      * @return Solr VariantSearch iterator
      * @throws VariantSearchException VariantSearchException
      * @throws IOException   IOException
      */
-    public SolrVariantDBIterator iterator(String collection, Query query, QueryOptions queryOptions)
+    public SolrVariantDBIterator iterator(SearchIndexMetadata indexMetadata, Query query, QueryOptions queryOptions)
             throws VariantSearchException, IOException {
+        String collection = buildCollectionName(indexMetadata);
         try {
             SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
             return new SolrVariantDBIterator(solrManager.getSolrClient(), collection, solrQuery,
@@ -350,14 +375,15 @@ public class VariantSearchManager {
      * Return a Solr variant iterator to retrieve VariantSearchModel objects from a Solr core/collection
      * according a given query.
      *
-     * @param collection   Collection name
+     * @param indexMetadata solr collection metadata
      * @param query        Query
      * @param queryOptions Query options
      * @return Solr VariantSearch iterator
      * @throws VariantSearchException VariantSearchException
      */
-    public SolrNativeIterator nativeIterator(String collection, Query query, QueryOptions queryOptions)
+    public SolrNativeIterator nativeIterator(SearchIndexMetadata indexMetadata, Query query, QueryOptions queryOptions)
             throws VariantSearchException {
+        String collection = buildCollectionName(indexMetadata);
         try {
             SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
             return new SolrNativeIterator(solrManager.getSolrClient(), collection, solrQuery);
@@ -368,13 +394,14 @@ public class VariantSearchManager {
 
     /**
      *
-     * @param collection Collection name
+     * @param indexMetadata solr collection metadata
      * @param query      Query
      * @return Number of results
      * @throws VariantSearchException VariantSearchException
      * @throws IOException IOException
      */
-    public long count(String collection, Query query) throws VariantSearchException, IOException {
+    public long count(SearchIndexMetadata indexMetadata, Query query) throws VariantSearchException, IOException {
+        String collection = buildCollectionName(indexMetadata);
         SolrQuery solrQuery = solrQueryParser.parse(query, QueryOptions.empty());
         SolrCollection solrCollection = solrManager.getCollection(collection);
 
@@ -389,14 +416,14 @@ public class VariantSearchManager {
      * Return faceted data from a Solr core/collection
      * according a given query.
      *
-     * @param collection   Collection name
+     * @param indexMetadata solr collection metadata
      * @param query        Query
      * @param queryOptions Query options (contains the facet and facetRange options)
      * @return List of Variant objects
      * @throws VariantSearchException VariantSearchException
      * @throws IOException IOException
      */
-    public DataResult<FacetField> facetedQuery(String collection, Query query, QueryOptions queryOptions)
+    public DataResult<FacetField> facetedQuery(SearchIndexMetadata indexMetadata, Query query, QueryOptions queryOptions)
             throws VariantSearchException, IOException {
         // Pre-processing
         //   - As "genes" contains, for each gene: gene names, Ensembl gene ID and all its Ensembl transcript IDs,
@@ -481,7 +508,7 @@ public class VariantSearchManager {
         if (StringUtils.isNotEmpty(jsonFacet) && jsonFacet.contains(SolrQueryParser.CHROM_DENSITY)) {
             postprocessing = new Postprocessing().setFacet(jsonFacet);
         }
-        SolrCollection solrCollection = solrManager.getCollection(collection);
+        SolrCollection solrCollection = solrManager.getCollection(buildCollectionName(indexMetadata));
 
         DataResult<FacetField> facetResult;
         try {
@@ -511,7 +538,8 @@ public class VariantSearchManager {
         solrManager.close();
     }
 
-    public DataWriter<Variant> getVariantDeleter(String collection) {
+    public DataWriter<Variant> getVariantDeleter(SearchIndexMetadata indexMetadata) {
+        String collection = buildCollectionName(indexMetadata);
         return list -> {
             try {
                 if (list != null) {
@@ -624,6 +652,50 @@ public class VariantSearchManager {
             }
 
         }
+    }
+
+    public SearchIndexMetadata newIndexMetadata(String configSetId, boolean ifNotExists) throws StorageEngineException {
+        // Create if it does not exist
+        return metadataManager.updateProjectMetadata(projectMetadata -> {
+            SearchIndexMetadata indexMetadata = projectMetadata.getSecondaryAnnotationIndex().getLastStagingOrActiveIndex();
+            if (ifNotExists) {
+                // Create a new index metadata only if it does not exist
+                if (indexMetadata == null) {
+                    newIndexMetadata(projectMetadata, configSetId);
+                }
+            } else {
+                // Create a new index metadata
+                newIndexMetadata(projectMetadata, configSetId);
+            }
+            return projectMetadata;
+        }).getSecondaryAnnotationIndex().getLastStagingOrActiveIndex();
+    }
+
+    public SearchIndexMetadata getSearchIndexMetadata() {
+        return metadataManager.getProjectMetadata().getSecondaryAnnotationIndex().getLastStagingOrActiveIndex();
+    }
+
+    public SearchIndexMetadata newIndexMetadata(ProjectMetadata projectMetadata, String configSetId) {
+        List<SearchIndexMetadata> values = projectMetadata.getSecondaryAnnotationIndex().getValues();
+        int maxVersion = 0;
+        for (SearchIndexMetadata value : values) {
+            maxVersion = Math.max(maxVersion, value.getVersion());
+        }
+
+        int newVersion = maxVersion + 1;
+        // Do not add suffix to the collection name if it is the first version for backwards compatibility
+        String collectionNameSuffix = newVersion == 1 ? "" : String.valueOf(newVersion);
+        SearchIndexMetadata indexMetadata = new SearchIndexMetadata(
+                newVersion,
+                new Date(),
+                new Date(),
+                SearchIndexMetadata.Status.STAGING,
+                configSetId,
+                collectionNameSuffix,
+                new ObjectMap()
+        );
+        values.add(indexMetadata);
+        return indexMetadata;
     }
 
     private class Postprocessing implements SolrCollection.FacetPostprocessing {

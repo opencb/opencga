@@ -4,6 +4,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import org.opencb.cellbase.core.models.DataRelease;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.storage.core.metadata.models.project.VariantSecondaryAnnotationIndexSets;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 
 import java.util.*;
@@ -22,6 +23,7 @@ public class ProjectMetadata {
     private int release;
 
     private VariantAnnotationSets annotation;
+    private VariantSecondaryAnnotationIndexSets secondaryAnnotationIndex;
 
     private Map<String, Integer> counters;
 
@@ -274,28 +276,32 @@ public class ProjectMetadata {
         release = 1;
         dataRelease = "";
         annotation = new VariantAnnotationSets();
+        secondaryAnnotationIndex = new VariantSecondaryAnnotationIndexSets();
         counters = new HashMap<>();
         attributes = new ObjectMap();
     }
 
     public ProjectMetadata(String species, String assembly, int release) {
-        this(species, assembly, null, release, null, null, null);
+        this(species, assembly, null, release, null, null, null, null);
     }
 
     public ProjectMetadata(String species, String assembly, String dataRelease, int release, ObjectMap attributes,
-                           Map<String, Integer> counters, VariantAnnotationSets annotation) {
+                           Map<String, Integer> counters, VariantAnnotationSets annotation,
+                           VariantSecondaryAnnotationIndexSets secondaryAnnotationIndex) {
         this.species = species;
         this.assembly = assembly;
         this.dataRelease = dataRelease;
         this.release = release;
         this.attributes = attributes != null ? attributes : new ObjectMap();
         this.annotation = annotation != null ? annotation : new VariantAnnotationSets();
+        this.secondaryAnnotationIndex = secondaryAnnotationIndex != null ? secondaryAnnotationIndex
+                : new VariantSecondaryAnnotationIndexSets();
         this.counters = counters != null ? counters : new HashMap<>();
     }
 
     public ProjectMetadata copy() {
         return new ProjectMetadata(species, assembly, dataRelease, release, new ObjectMap(attributes), new HashMap<>(counters),
-                annotation);
+                annotation, secondaryAnnotationIndex);
     }
 
     public String getSpecies() {
@@ -340,6 +346,15 @@ public class ProjectMetadata {
 
     public ProjectMetadata setAnnotation(VariantAnnotationSets annotation) {
         this.annotation = annotation;
+        return this;
+    }
+
+    public VariantSecondaryAnnotationIndexSets getSecondaryAnnotationIndex() {
+        return secondaryAnnotationIndex;
+    }
+
+    public ProjectMetadata setSecondaryAnnotationIndex(VariantSecondaryAnnotationIndexSets secondaryAnnotationIndex) {
+        this.secondaryAnnotationIndex = secondaryAnnotationIndex;
         return this;
     }
 

@@ -5,6 +5,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -22,13 +23,14 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageTest;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
 
@@ -45,12 +47,16 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
 
     @Rule
     public VariantSolrExternalResource solr = new VariantSolrExternalResource();
+    private String configSet;
+
+    @Before
+    public void setUp() throws Exception {
+        configSet = variantStorageEngine.getConfiguration().getSearch().getConfigSet();
+    }
 
     @Test
     public void testTranscriptInfo() throws Exception {
         int limit = 500;
-
-        VariantStorageMetadataManager scm = variantStorageEngine.getMetadataManager();
 
         solr.configure(variantStorageEngine);
         VariantSearchManager variantSearchManager = variantStorageEngine.getVariantSearchManager();
@@ -63,12 +69,12 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
         List<Variant> annotatedVariants = annotatedVariants(variants, studyMetadata.getName());
 
 
-        String collection = solr.coreName;
-        variantSearchManager.create(collection);
+        SearchIndexMetadata indexMetadata = variantSearchManager.newIndexMetadata(configSet, true);
+        variantSearchManager.create(indexMetadata);
 
-        variantSearchManager.insert(collection, annotatedVariants);
+        variantSearchManager.insert(indexMetadata, annotatedVariants);
 
-        VariantQueryResult<Variant> results = variantSearchManager.query(collection, variantStorageEngine.parseQuery(new Query(),
+        VariantQueryResult<Variant> results = variantSearchManager.query(indexMetadata, variantStorageEngine.parseQuery(new Query(),
                 new QueryOptions(QueryOptions.LIMIT, limit)));
 
         for (int i = 0; i < limit; i++) {
@@ -198,8 +204,8 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
         int studyId = scm.createStudy(study).getId();
         int fileId = scm.registerFile(studyId, file, Arrays.asList("A-A", "B", "C", "D"));
         scm.addIndexedFiles(studyId, Collections.singletonList(fileId));
-        String collection = solr.coreName;
-        variantSearchManager.create(collection);
+        SearchIndexMetadata indexMetadata = variantSearchManager.newIndexMetadata(configSet, true);
+        variantSearchManager.create(indexMetadata);
 
         LinkedHashMap<String, Integer> samplePosition = new LinkedHashMap<>();
         samplePosition.put("A-A", 0);
@@ -207,7 +213,7 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
         samplePosition.put("C", 2);
         samplePosition.put("D", 3);
         annotatedVariants.get(0).getStudies().get(0).setStudyId(study).setSortedSamplesPosition(samplePosition);
-        variantSearchManager.insert(collection, annotatedVariants);
+        variantSearchManager.insert(indexMetadata, annotatedVariants);
 
         Query query = new Query();
         query.put(VariantQueryParam.STUDY.key(), study);
@@ -215,7 +221,7 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
         query.put(VariantQueryParam.FILE.key(), file);
         query.put(VariantQueryParam.FILTER.key(), "PASS");
         query.put(VariantQueryParam.ANNOT_CLINICAL_SIGNIFICANCE.key(), "benign");
-        VariantQueryResult<Variant> results = variantSearchManager.query(collection, variantStorageEngine.parseQuery(query,
+        VariantQueryResult<Variant> results = variantSearchManager.query(indexMetadata, variantStorageEngine.parseQuery(query,
                 new QueryOptions(QueryOptions.LIMIT, limit)));
 
         if (results.getResults().size() > 0) {
@@ -229,8 +235,6 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
     public void testTypeFacet() throws Exception {
         int limit = 500;
 
-        VariantStorageMetadataManager scm = variantStorageEngine.getMetadataManager();
-
         solr.configure(variantStorageEngine);
         VariantSearchManager variantSearchManager = variantStorageEngine.getVariantSearchManager();
 
@@ -241,15 +245,15 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
 
         metadataManager.createStudy("s1");
 
-        String collection = solr.coreName;
-        variantSearchManager.create(collection);
+        SearchIndexMetadata indexMetadata = variantSearchManager.newIndexMetadata(configSet, true);
+        variantSearchManager.create(indexMetadata);
 
-        variantSearchManager.insert(collection, annotatedVariants);
+        variantSearchManager.insert(indexMetadata, annotatedVariants);
 
         QueryOptions queryOptions = new QueryOptions();
         String facet = "type[INDEL,SNV]";
         queryOptions.put(QueryOptions.FACET, facet);
-        DataResult<FacetField> facetQueryResult = variantSearchManager.facetedQuery(collection, new Query(), queryOptions);
+        DataResult<FacetField> facetQueryResult = variantSearchManager.facetedQuery(indexMetadata, new Query(), queryOptions);
         String s = JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(facetQueryResult);
         System.out.println(s);
 
@@ -283,16 +287,16 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
 
         metadataManager.createStudy("s1");
 
-        String collection = solr.coreName;
-        variantSearchManager.create(collection);
+        SearchIndexMetadata indexMetadata = variantSearchManager.newIndexMetadata(configSet, true);
+        variantSearchManager.create(indexMetadata);
 
-        variantSearchManager.insert(collection, annotatedVariants);
+        variantSearchManager.insert(indexMetadata, annotatedVariants);
 
         QueryOptions queryOptions = new QueryOptions();
         //String facet = "type[SNV,TOTO]>>biotypes";
         String facet = "genes[CDK11A,WDR78,ENSG00000115183,TOTO]>>type[INDEL,DELETION,SNV]";
         queryOptions.put(QueryOptions.FACET, facet);
-        DataResult<FacetField> facetQueryResult = variantSearchManager.facetedQuery(collection, new Query(), queryOptions);
+        DataResult<FacetField> facetQueryResult = variantSearchManager.facetedQuery(indexMetadata, new Query(), queryOptions);
         String s = JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(facetQueryResult);
         System.out.println(s);
         //        System.out.println(facetQueryResult.toString());
