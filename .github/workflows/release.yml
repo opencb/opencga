@@ -11,7 +11,7 @@ jobs:
   build-hdp:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      maven_opts: -P hdp3.1,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
+      maven_opts: -P storage-hadoop,${{ vars.HADOOP_FLAVOUR }},RClient,opencga-storage-hadoop-deps -Dopencga.war.name=opencga -Dcheckstyle.skip -pl ':opencga-app' --also-make
       build_folder: build-folder
 
   # Add the deploy-docker-hdp job that depends on the build-hdp job
@@ -19,7 +19,7 @@ jobs:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
     needs: build-hdp
     with:
-      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag "${{ needs.build-hdp.outputs.version }}-hdp3.1"
+      maven_opts: -P storage-hadoop,${{ vars.HADOOP_FLAVOUR }} -Dopencga.war.name=opencga
       build_folder: build-folder
     secrets: inherit
 

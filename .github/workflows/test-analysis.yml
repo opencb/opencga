@@ -57,7 +57,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -T 2 clean install -P ${{ inputs.hadoop }},${{ inputs.test_profile }} -DskipTests -Dcheckstyle.skip org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=opencb_opencga
+        run: mvn -T 2 clean install -P storage-hadoop,${{ inputs.hadoop }},${{ inputs.test_profile }} -DskipTests -Dcheckstyle.skip org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=opencb_opencga
+
 
   test:
     name: Execute JUnit and Jacoco tests
@@ -90,8 +91,8 @@ jobs:
       - name: Maven build
         run: mvn -B clean install -DskipTests -P ${{ inputs.hadoop }} -Dcheckstyle.skip ${{ inputs.mvn_opts }}
       - name: Run Junit tests
-        run: mvn -B verify surefire-report:report --fail-never -Dsurefire.testFailureIgnore=true -f ${{ (inputs.module == '' || inputs.module == 'all') && '.' || inputs.module }} -P ${{ inputs.hadoop }},${{ inputs.test_profile }} -Dcheckstyle.skip ${{ inputs.mvn_opts }}
-      - name: Publish Test Report on GitHub
+        run: mvn -B verify surefire-report:report --fail-never -P storage-hadoop,${{ inputs.hadoop }},${{ inputs.test_profile }} -Dcheckstyle.skip -Popencga-storage-hadoop-deps -pl ':opencga-app' --also-make ${{ inputs.mvn_opts }}
+      - name: Publish Test Report
         uses: scacap/action-surefire-report@v1
         env:
           NODE_OPTIONS: '--max_old_space_size=4096'

@@ -73,7 +73,7 @@ public class CellBaseValidatorTest {
     @Test
     public void testNoActiveReleases() throws IOException {
         thrown.expectMessage("No active data releases found on cellbase");
-        CellBaseValidator.validate(new CellBaseConfiguration(ParamConstants.CELLBASE_URL, "v5.2", null, null), "mmusculus", "GRCm38", true);
+        CellBaseValidator.validate(new CellBaseConfiguration(ParamConstants.CELLBASE_URL, "v5.2", null, null), "mmusculus", "GRCm39", true);
     }
 
     @Test

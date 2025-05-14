@@ -11,7 +11,7 @@ jobs:
   build:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      maven_opts: -Phdp3.1,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
+      maven_opts: -P storage-hadoop,${{ vars.HADOOP_FLAVOUR }},RClient,opencga-storage-hadoop-deps -Dopencga.war.name=opencga -Dcheckstyle.skip -pl ':opencga-app' --also-make
 
 ## TASK-4970: remove the test job from the develop.yml workflow because it is not needed anymore.
 #  test:
@@ -25,7 +25,8 @@ jobs:
     uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
     needs: build
     with:
-      maven_opts: -P hdp3.1 -Dopencga.war.name=opencga
+      maven_opts: -P storage-hadoop,${{ vars.HADOOP_FLAVOUR }} -Dopencga.war.name=opencga
+
     secrets: inherit
 
   deploy-docker:
