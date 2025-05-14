@@ -568,6 +568,8 @@
     <fieldType name="float" class="solr.TrieFloatField" positionIncrementGap="0" docValues="true" precisionStep="0"/>
     <fieldType name="long" class="solr.TrieLongField" positionIncrementGap="0" docValues="true" precisionStep="0"/>
 
+	<!-- Study ID -->
+    <field name="studyId" type="text_en" indexed="true" stored="true" multiValued="false"/>
 	<!-- List of viewers (i.e., user IDs) -->
     <field name="viewers" type="string" indexed="true" stored="true" multiValued="true"/>
 

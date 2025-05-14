@@ -28,6 +28,10 @@ public class ClinicalViewersSearch {
     @Field("id")
     private String id;
 
+    // Study ID
+    @Field("studyId")
+    private String studyId;
+
     // List of viewers (i.e., user IDs) that have access to the clinical analysis
     @Field("viewers")
     private List<String> viewers;
@@ -37,8 +41,9 @@ public class ClinicalViewersSearch {
         viewers = new ArrayList<>();
     }
 
-    public ClinicalViewersSearch(String id, List<String> viewers) {
+    public ClinicalViewersSearch(String id, String studyId, List<String> viewers) {
         this.id = id;
+        this.studyId = studyId;
         this.viewers = viewers;
     }
 
@@ -46,6 +51,7 @@ public class ClinicalViewersSearch {
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClinicalViewersSearch{");
         sb.append("id='").append(id).append('\'');
+        sb.append(", studyId=").append(studyId);
         sb.append(", viewers=").append(viewers);
         sb.append('}');
         return sb.toString();
@@ -57,6 +63,15 @@ public class ClinicalViewersSearch {
 
     public ClinicalViewersSearch setId(String id) {
         this.id = id;
+        return this;
+    }
+
+    public String getStudyId() {
+        return studyId;
+    }
+
+    public ClinicalViewersSearch setStudyId(String studyId) {
+        this.studyId = studyId;
         return this;
     }
 

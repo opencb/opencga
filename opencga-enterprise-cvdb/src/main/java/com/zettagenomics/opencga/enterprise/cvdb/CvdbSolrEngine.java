@@ -344,7 +344,7 @@ public class CvdbSolrEngine {
                         List<String> viewers = caIdUserIdsMap.get(caId);
                         if (CollectionUtils.isNotEmpty(viewers)) {
                             // Add the user IDs to the clinical viewers collection
-                            indexViewers(clinicalAnalysis.getId(), viewers, organizationId, projectId);
+                            indexViewers(clinicalAnalysis.getId(), study.getId(), viewers, organizationId, projectId);
                         }
                         numIndexed++;
                         updateClinicalAnalysisCvdbIndexStatus(study.getFqn(), clinicalAnalysis, new CvdbIndexStatus(READY), token);
@@ -373,14 +373,14 @@ public class CvdbSolrEngine {
         return new CvdbIndexResult(numIndexed, failures, (int) stopWatch.getTime(TimeUnit.SECONDS));
     }
 
-    public void indexViewers(String caId, List<String> viewers, String organizationId, String projectId)
+    public void indexViewers(String caId, String studyId, List<String> viewers, String organizationId, String projectId)
             throws CvdbException, SolrServerException, IOException {
         SolrClient solrClient = getSolrClient();
 
         String viewerCollectionName = getCollectionName(organizationId, projectId, CLINICAL_VIEWERS_COLLECTION_SUFFIX);
 
         // Index viewers for that clinical analysis ID
-        UpdateResponse updateResponse = solrClient.addBean(viewerCollectionName, new ClinicalViewersSearch(caId, viewers));
+        UpdateResponse updateResponse = solrClient.addBean(viewerCollectionName, new ClinicalViewersSearch(caId, studyId, viewers));
         if (updateResponse.getStatus() != 0) {
             rollback(solrClient, updateResponse.getStatus());
         }

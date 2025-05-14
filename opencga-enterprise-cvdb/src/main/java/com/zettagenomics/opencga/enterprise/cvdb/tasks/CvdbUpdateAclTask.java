@@ -14,6 +14,7 @@ import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
+import org.opencb.opencga.catalog.utils.FqnUtils;
 import org.opencb.opencga.core.models.Acl;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
@@ -136,6 +137,7 @@ public class CvdbUpdateAclTask extends OpenCgaToolScopeStudy {
     private void updateUsersForClinicalAnalyses(List<String> clinicalAnalysisIds, String studyFqn) throws CatalogException, CvdbException {
         numTotal += clinicalAnalysisIds.size();
 
+        String studyId = FqnUtils.getStudy(studyFqn);
         OpenCGAResult<Acl> aclResult = catalogManager.getAdminManager().getEffectivePermissions(studyFqn, clinicalAnalysisIds,
                 Collections.singletonList(ClinicalAnalysisPermissions.VIEW.name()), Enums.Resource.CLINICAL_ANALYSIS.name(), token);
 
@@ -147,7 +149,7 @@ public class CvdbUpdateAclTask extends OpenCgaToolScopeStudy {
         for (Acl acl : aclResult.getResults()) {
             try {
                 // Only one permission (VIEW) has been queried, so the first item has to be taken
-                cvdbEngine.indexViewers(acl.getId(), acl.getPermissions().get(0).getUserIds(), organizationId, project.getId());
+                cvdbEngine.indexViewers(acl.getId(), studyId, acl.getPermissions().get(0).getUserIds(), organizationId, project.getId());
                 numUpdated++;
             } catch (CvdbException | SolrServerException | IOException e) {
                 logger.warn("Could not update ACLs for clinical analysis '{}': {}", acl.getId(), e.getMessage());

@@ -880,6 +880,7 @@ public class ClinicalQueryParser {
     protected void addViewerFilter(Query query, String toValue, String projectId, SolrQuery solrQuery) {
         List<String> filters = new ArrayList<>();
         addStringFilters("viewers", query.getString(ClinicalQueryParam.VIEWER_NAME), filters);
+        addStringFilters("studyId", query.getString(ClinicalQueryParam.STUDY_ID.key()), filters);
         String join = "{!join from=id to=" + toValue + " fromIndex=" + CvdbUtils.getCollectionName(collectionPrefix, projectId,
                 CLINICAL_VIEWERS_COLLECTION_SUFFIX) + "}";
         addStringFilters(filters, join, solrQuery);

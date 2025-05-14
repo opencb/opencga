@@ -32,6 +32,7 @@ import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.StudyAclParams;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -315,6 +316,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
         queryOptions.put(LIMIT, 100);
 
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, study.getId());
         query.put(CA_TYPE_NAME, "FAMILY");
 
         // "user4" can not access to these clinical analyses
@@ -339,7 +341,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
 
             OpenCGAResult<Acl> aclResult = catalogManager.getAdminManager().getEffectivePermissions(study.getFqn(), Collections.singletonList(clinicalAnalysis.getId()),
                     Collections.singletonList(ClinicalAnalysisPermissions.VIEW.name()), Enums.Resource.CLINICAL_ANALYSIS.name(), opencgaToken);
-            cvdbEngine.indexViewers(aclResult.first().getId(), aclResult.first().getPermissions().get(0).getUserIds(), organizationId, projectId);
+            cvdbEngine.indexViewers(aclResult.first().getId(), study.getId(), aclResult.first().getPermissions().get(0).getUserIds(), organizationId, projectId);
             // Only one clinical analysis is updated
             break;
         }
@@ -358,6 +360,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
         queryOptions.put(LIMIT, 100);
 
         query = new Query(PROJECT_PARAM_NAME, projectId);
+        query.put(STUDY_PARAM_NAME, study.getId());
         query.put(CA_TYPE_NAME, "FAMILY");
 
         // "user4" can not access to these clinical analyses
@@ -383,7 +386,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
             OpenCGAResult<Acl> aclResult = catalogManager.getAdminManager().getEffectivePermissions(study.getFqn(), Collections.singletonList(clinicalAnalysis.getId()),
                     Collections.singletonList(ClinicalAnalysisPermissions.VIEW.name()), Enums.Resource.CLINICAL_ANALYSIS.name(), opencgaToken);
 
-            cvdbEngine.indexViewers(aclResult.first().getId(), aclResult.first().getPermissions().get(0).getUserIds(), organizationId, projectId);
+            cvdbEngine.indexViewers(aclResult.first().getId(), study.getId(), aclResult.first().getPermissions().get(0).getUserIds(), organizationId, projectId);
             // Only one clinical analysis is updated
             break;
         }
