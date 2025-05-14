@@ -34,7 +34,8 @@
         <app.dir>${project.basedir}/app</app.dir>
         <sonar.skip>true</sonar.skip>
         <opencga.client.dir>opencga-client-${project.parent.version}</opencga.client.dir>
-
+        <pyopencga.version></pyopencga.version>
+        <R.version></R.version>
     </properties>
 
     <dependencies>
@@ -474,12 +475,12 @@
                                     <arg value="${project.version}"/>
                                 </exec>
 
-                                <echo message="Calculated Python Version: ${calculated.version}"/>
+                                <echo message="Calculated Python Version: ${pyopencga.version}"/>
 
-                                <echo>Updating setup.py with version ${calculated.version}</echo>
+                                <echo>Updating setup.py with version ${pyopencga.version}</echo>
                                 <exec executable="sed" failonerror="true">
                                     <arg value="-i"/>
-                                    <arg value="s/PYOPENCGA_VERSION/${calculated.version}/"/>
+                                    <arg value="s/PYOPENCGA_VERSION/${pyopencga.version}/"/>
                                     <arg value="${build.dir}/clients/python/setup.py"/>
                                 </exec>
 
