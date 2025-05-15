@@ -7,6 +7,7 @@ jobs:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
       maven_opts: -Phdp3.1,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
+      build_folder: build-folder
 
 
   build-and-push-docker:
@@ -18,7 +19,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: ${{ inputs.build_folder }}
+          name: build-folder
           path: build
 
       - name: Set up Docker Buildx
@@ -34,6 +35,8 @@ jobs:
       - name: Extract Docker image tag from project version
         id: version
         run: |
+          pwd
+          ls -la 
           TAG=$(grep 'Version:' build/clients/R/DESCRIPTION | cut -d' ' -f2)
           echo "version=$TAG" >> $GITHUB_OUTPUT
 
