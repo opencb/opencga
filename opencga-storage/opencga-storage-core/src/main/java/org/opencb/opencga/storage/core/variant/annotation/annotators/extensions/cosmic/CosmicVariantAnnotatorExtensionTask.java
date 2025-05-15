@@ -86,14 +86,14 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
         FileUtils.checkDirectory(parentPath, true);
 
         // Check COSMIC version and assembly
-        if (!configureParams.getConfiguration().containsKey(COSMIC_VERSION_KEY)) {
+        if (!configureParams.getParams().containsKey(COSMIC_VERSION_KEY)) {
             throw new ToolException("Missing COSMIC version");
         }
-        this.cosmicVersion = configureParams.getConfiguration().getString(COSMIC_VERSION_KEY);
-        if (!configureParams.getConfiguration().containsKey(COSMIC_ASSEMBLY_KEY)) {
+        this.cosmicVersion = configureParams.getParams().getString(COSMIC_VERSION_KEY);
+        if (!configureParams.getParams().containsKey(COSMIC_ASSEMBLY_KEY)) {
             throw new ToolException("Missing COSMIC assembly");
         }
-        this.cosmicAssembly = configureParams.getConfiguration().getString(COSMIC_ASSEMBLY_KEY);
+        this.cosmicAssembly = configureParams.getParams().getString(COSMIC_ASSEMBLY_KEY);
 
         // Clean and init RocksDB
         dbLocation = parentPath.resolve(COSMIC_ANNOTATOR_INDEX_NAME);
@@ -108,11 +108,13 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
 
             Path tmpPath = parentPath.resolve("tmp");
             decompressTarBall(cosmicFile, tmpPath);
-            for (File file : tmpPath.toFile().listFiles()) {
-                if (file.getName().contains("Classification")) {
-                    classificationFile = file.toPath();
-                } else if (file.getName().contains("GenomeScreensMutant")) {
-                    genomeScreensMutantFile = file.toPath();
+            if (tmpPath.toFile().listFiles() != null) {
+                for (File file : tmpPath.toFile().listFiles()) {
+                    if (file.getName().contains("Classification")) {
+                        classificationFile = file.toPath();
+                    } else if (file.getName().contains("GenomeScreensMutant")) {
+                        genomeScreensMutantFile = file.toPath();
+                    }
                 }
             }
             if (genomeScreensMutantFile == null) {
@@ -150,17 +152,24 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
     @Override
     public ObjectMap getOptions() {
         ObjectMap options = new ObjectMap();
-        if (dbLocation != null) {
-            options.put(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key(), dbLocation.toAbsolutePath().toString());
+        if (isAvailable()) {
+            options.append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key(), dbLocation.toAbsolutePath().toString())
+                    .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key(), cosmicVersion)
+                    .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_ASSEMBLY.key(), cosmicAssembly);
         }
         return options;
     }
 
     @Override
     public ObjectMap getMetadata() {
-        return new ObjectMap("data", ID)
-                .append("version", cosmicVersion)
-                .append("assembly", cosmicAssembly);
+        ObjectMap metadata = new ObjectMap();
+        if (isAvailable()) {
+            metadata.append("name", ID)
+                    .append("version", cosmicVersion)
+                    .append("assembly", cosmicAssembly)
+                    .append("date", dbLocation.toFile().lastModified());
+        }
+        return metadata;
     }
 
     @Override

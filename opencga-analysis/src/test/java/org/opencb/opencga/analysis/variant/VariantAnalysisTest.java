@@ -1325,10 +1325,10 @@ public class VariantAnalysisTest {
         VariantAnnotationExtensionConfigureParams params = new VariantAnnotationExtensionConfigureParams();
         params.setExtension(CosmicVariantAnnotatorExtensionTask.ID);
         params.setResources(Collections.singletonList(cosmicFile.getId()));
-        ObjectMap configuration = new ObjectMap();
-        configuration.put(CosmicVariantAnnotatorExtensionTask.COSMIC_VERSION_KEY, COSMIC_VERSION);
-        configuration.put(CosmicVariantAnnotatorExtensionTask.COSMIC_ASSEMBLY_KEY, COSMIC_ASSEMBLY);
-        params.setConfiguration(configuration);
+        ObjectMap cosmicParams = new ObjectMap();
+        cosmicParams.put(CosmicVariantAnnotatorExtensionTask.COSMIC_VERSION_KEY, COSMIC_VERSION);
+        cosmicParams.put(CosmicVariantAnnotatorExtensionTask.COSMIC_ASSEMBLY_KEY, COSMIC_ASSEMBLY);
+        params.setParams(cosmicParams);
 
         String jobId = "annotation-extension-configure";
         toolRunner.execute(VariantAnnotationExtensionConfigureOperationTool.class, STUDY, params,

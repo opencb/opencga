@@ -51,10 +51,10 @@ public class CosmicVariantAnnotatorExtensionTaskTest {
         VariantAnnotationExtensionConfigureParams params = new VariantAnnotationExtensionConfigureParams();
         params.setExtension(CosmicVariantAnnotatorExtensionTask.ID);
         params.setResources(Collections.singletonList(cosmicFile.toAbsolutePath().toString()));
-        ObjectMap configuration = new ObjectMap();
-        configuration.put(CosmicVariantAnnotatorExtensionTask.COSMIC_VERSION_KEY, COSMIC_VERSION);
-        configuration.put(CosmicVariantAnnotatorExtensionTask.COSMIC_ASSEMBLY_KEY, COSMIC_ASSEMBLY);
-        params.setConfiguration(configuration);
+        ObjectMap cosmicParams = new ObjectMap();
+        cosmicParams.put(CosmicVariantAnnotatorExtensionTask.COSMIC_VERSION_KEY, COSMIC_VERSION);
+        cosmicParams.put(CosmicVariantAnnotatorExtensionTask.COSMIC_ASSEMBLY_KEY, COSMIC_ASSEMBLY);
+        params.setParams(cosmicParams);
 
         task.setup(params);
 
@@ -94,10 +94,10 @@ public class CosmicVariantAnnotatorExtensionTaskTest {
         VariantAnnotationExtensionConfigureParams params = new VariantAnnotationExtensionConfigureParams();
         params.setExtension(CosmicVariantAnnotatorExtensionTask.ID);
         params.setResources(Collections.singletonList(cosmicFile.toAbsolutePath().toString()));
-        ObjectMap configuration = new ObjectMap();
-        configuration.put(CosmicVariantAnnotatorExtensionTask.COSMIC_VERSION_KEY, COSMIC_VERSION);
-        configuration.put(CosmicVariantAnnotatorExtensionTask.COSMIC_ASSEMBLY_KEY, COSMIC_ASSEMBLY);
-        params.setConfiguration(configuration);
+        ObjectMap cosmicParams = new ObjectMap();
+        cosmicParams.put(CosmicVariantAnnotatorExtensionTask.COSMIC_VERSION_KEY, COSMIC_VERSION);
+        cosmicParams.put(CosmicVariantAnnotatorExtensionTask.COSMIC_ASSEMBLY_KEY, COSMIC_ASSEMBLY);
+        params.setParams(cosmicParams);
 
         task.setup(params);
 

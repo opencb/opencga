@@ -1597,6 +1597,6 @@ public class ParamConstants {
     public static final String VARIANT_ANNOTATION_EXTENSION_NAME_DESCRIPTION = "Name of the variant annotation extension.";
     public static final String VARIANT_ANNOTATION_EXTENSION_RESOURCE_LIST_DESCRIPTION = "List of resources of the variant annotation"
             + " extension.";
-    public static final String VARIANT_ANNOTATION_EXTENSION_CONFIGURATION_DESCRIPTION = "Configuration of the variant annotation"
+    public static final String VARIANT_ANNOTATION_EXTENSION_PARAMS_DESCRIPTION = "Parameters of the variant annotation"
             +" extension based on a key-value map, example of key-value: \"version\"=\"v101\"";
 }
