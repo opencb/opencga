@@ -1,0 +1,9 @@
+name: Manual deploy R builder
+on:
+  workflow_dispatch:
+
+jobs:
+  call-delete-docker:
+    name: Call Reusable Delete Docker Workflow
+    uses: opencb/opencga/.github/workflows/reusable-build-r@develop
+    secrets: inherit
