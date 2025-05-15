@@ -66,7 +66,7 @@ public class Datastores {
     public String toString() {
         final StringBuilder sb = new StringBuilder("DataStores{");
         sb.append("variant=").append(variant);
-        sb.append("cvdb=").append(cvdb);
+        sb.append(", cvdb=").append(cvdb);
         sb.append('}');
         return sb.toString();
     }
