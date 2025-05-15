@@ -1,4 +1,4 @@
-package org.opencb.opencga.app.migrations.v4.v4_0_0.catalog;
+package org.opencb.opencga.app.migrations.v5.catalog;
 
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.UpdateOneModel;
@@ -12,7 +12,7 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
 import java.util.Arrays;
 
 @Migration(id = "externaltool__task_7610",
-        description = "Extend Workflow data model for new ExternalTool, #TASK-7610", version = "4.0.0",
+        description = "Extend Workflow data model for new ExternalTool, #TASK-7610", version = "5.0.0",
         language = Migration.MigrationLanguage.JAVA, domain = Migration.MigrationDomain.CATALOG, date = 20250506)
 public class ExternalToolTask7610Migration extends MigrationTool {
 
