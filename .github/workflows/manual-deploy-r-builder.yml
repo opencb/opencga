@@ -43,7 +43,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: "{{defaultContext}}:opencga-app/app/cloud/docker/opencga-r-builder/"
           push: true
           tags: |
             opencb/opencga-r-builder:latest
