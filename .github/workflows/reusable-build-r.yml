@@ -12,7 +12,7 @@ jobs:
   build:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      maven_opts: -Phdp3.1,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
+      maven_opts: -Phdp3.1 -Dopencga.war.name=opencga -Dcheckstyle.skip
       build_folder: build-folder
 
   build-test-publish:
@@ -50,7 +50,14 @@ jobs:
             opencb/opencga-r-builder:dev \
             R CMD build /opt/opencga/R
 
-      - uses: actions/upload-artifact@v4
+      - name: Extract version from DESCRIPTION
+        id: version
+        run: |
+          VERSION=$(grep '^Version:' build/clients/R/DESCRIPTION | cut -d' ' -f2)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Upload built R package as artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: r-build
-          path: build
+          name: opencgaR_${{ steps.version.outputs.version }}.tar.gz
+          path: build/opencgaR_${{ steps.version.outputs.version }}.tar.gz
