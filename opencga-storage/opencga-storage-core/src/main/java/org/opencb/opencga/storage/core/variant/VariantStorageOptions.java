@@ -85,6 +85,7 @@ public enum VariantStorageOptions implements ConfigurationOption {
     ANNOTATOR_EXTENSION_LIST("annotator.extension.list"),
     ANNOTATOR_EXTENSION_COSMIC_FILE("annotator.extension.cosmic.file"),
     ANNOTATOR_EXTENSION_COSMIC_VERSION("annotator.extension.cosmic.version"),
+    ANNOTATOR_EXTENSION_COSMIC_ASSEMBLY("annotator.extension.cosmic.assembly"),
 
     INDEX_SEARCH("indexSearch", false), // Build secondary indexes using search engine.
 

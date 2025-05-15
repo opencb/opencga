@@ -261,8 +261,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--resources"}, description = "List of resources of the variant annotation extension.", required = false, arity = 1)
         public String resources;
     
-        @DynamicParameter(names = {"--configuration"}, description = "Configuration of the variant annotation extension based on a key-value map, example of key-value: 'version'='v101'. Use: --configuration key=value", required = false)
-        public Map<String, ?> configuration = new HashMap<>(); //Dynamic parameters must be initialized;
+        @DynamicParameter(names = {"--params"}, description = "Parameters of the variant annotation extension based on a key-value map, example of key-value: 'version'='v101'. Use: --params key=value", required = false)
+        public Map<String, ?> params = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 

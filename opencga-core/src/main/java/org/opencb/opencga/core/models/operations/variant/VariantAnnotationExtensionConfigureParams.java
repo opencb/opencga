@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.core.models.operations.variant;
 
-import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -34,16 +33,16 @@ public class VariantAnnotationExtensionConfigureParams extends ToolParams {
     @DataField(id = "resources", description = ParamConstants.VARIANT_ANNOTATION_EXTENSION_RESOURCE_LIST_DESCRIPTION, required = true)
     private List<String> resources;
 
-    @DataField(id = "configuration", description = ParamConstants.VARIANT_ANNOTATION_EXTENSION_CONFIGURATION_DESCRIPTION)
-    private ObjectMap configuration;
+    @DataField(id = "params", description = ParamConstants.VARIANT_ANNOTATION_EXTENSION_PARAMS_DESCRIPTION)
+    private ObjectMap params;
 
     public VariantAnnotationExtensionConfigureParams() {
     }
 
-    public VariantAnnotationExtensionConfigureParams(String extension, List<String> resources, ObjectMap configuration) {
+    public VariantAnnotationExtensionConfigureParams(String extension, List<String> resources, ObjectMap params) {
         this.extension = extension;
         this.resources = resources;
-        this.configuration = configuration;
+        this.params = params;
     }
 
     @Override
@@ -51,7 +50,7 @@ public class VariantAnnotationExtensionConfigureParams extends ToolParams {
         final StringBuilder sb = new StringBuilder("VariantAnnotationExtensionConfigureParams{");
         sb.append("extension='").append(extension).append('\'');
         sb.append(", resources=").append(resources);
-        sb.append(", configuration=").append(configuration);
+        sb.append(", params=").append(params);
         sb.append('}');
         return sb.toString();
     }
@@ -74,12 +73,12 @@ public class VariantAnnotationExtensionConfigureParams extends ToolParams {
         return this;
     }
 
-    public ObjectMap getConfiguration() {
-        return configuration;
+    public ObjectMap getParams() {
+        return params;
     }
 
-    public VariantAnnotationExtensionConfigureParams setConfiguration(ObjectMap configuration) {
-        this.configuration = configuration;
+    public VariantAnnotationExtensionConfigureParams setParams(ObjectMap params) {
+        this.params = params;
         return this;
     }
 }

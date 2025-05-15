@@ -12,6 +12,7 @@ import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -65,7 +66,7 @@ public class DummyTestAnnotator extends VariantAnnotator {
     @Override
     public ProjectMetadata.VariantAnnotationMetadata getVariantAnnotationMetadata() throws VariantAnnotatorException {
         return new ProjectMetadata.VariantAnnotationMetadata(-1, null, null,
-                new ProjectMetadata.VariantAnnotatorProgram("MyAnnotator", key, null),
+                new ProjectMetadata.VariantAnnotatorProgram("MyAnnotator", key, null), new HashMap<>(),
                 Collections.singletonList(new ObjectMap("data", "genes")), null,null);
     }
 

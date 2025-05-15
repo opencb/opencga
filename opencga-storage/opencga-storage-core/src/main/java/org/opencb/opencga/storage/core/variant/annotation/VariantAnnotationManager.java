@@ -240,7 +240,7 @@ public abstract class VariantAnnotationManager {
     }
 
     protected final VariantAnnotationMetadata registerNewAnnotationSnapshot(String name, VariantAnnotator annotator,
-                                                                                            ProjectMetadata projectMetadata)
+                                                                            ProjectMetadata projectMetadata)
             throws VariantAnnotatorException {
         VariantAnnotationMetadata current = projectMetadata.getAnnotation().getCurrent();
         if (current == null) {
@@ -263,6 +263,7 @@ public abstract class VariantAnnotationManager {
                 name,
                 Date.from(Instant.now()),
                 current.getAnnotator(),
+                current.getExtensions(),
                 current.getSourceVersion(),
                 current.getDataRelease(),
                 current.getPrivateSources());
