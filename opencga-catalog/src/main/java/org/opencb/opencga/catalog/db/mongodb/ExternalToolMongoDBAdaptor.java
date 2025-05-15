@@ -337,33 +337,10 @@ public class ExternalToolMongoDBAdaptor extends CatalogMongoDBAdaptor implements
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        final String[] acceptedListParams = {QueryParams.DOCKER.key(), QueryParams.WORKFLOW_SCRIPTS.key(), QueryParams.TAGS.key(),
-                QueryParams.WORKFLOW_REPOSITORY.key(), QueryParams.VARIABLES.key(), QueryParams.MINIMUM_REQUIREMENTS.key()};
+        final String[] acceptedListParams = {QueryParams.DOCKER.key(), QueryParams.WORKFLOW_MANAGER.key(),
+                QueryParams.WORKFLOW_SCRIPTS.key(), QueryParams.WORKFLOW_REPOSITORY.key(), QueryParams.TAGS.key(),
+                QueryParams.VARIABLES.key(), QueryParams.MINIMUM_REQUIREMENTS.key()};
         filterObjectParams(parameters, document.getSet(), acceptedListParams);
-
-//        // Check if the scripts exist.
-//        if (parameters.containsKey(QueryParams.SCRIPTS.key())) {
-//            List<WorkflowScript> scriptList = parameters.getAsList(QueryParams.SCRIPTS.key(), WorkflowScript.class);
-//
-//            if (!scriptList.isEmpty()) {
-//                Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
-//                ParamUtils.BasicUpdateAction operation =
-//                        ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.SCRIPTS.key(), ParamUtils.BasicUpdateAction.ADD);
-//                switch (operation) {
-//                    case SET:
-//                        document.getSet().put(QueryParams.SCRIPTS.key(), scriptList);
-//                        break;
-//                    case REMOVE:
-//                        document.getPullAll().put(QueryParams.SCRIPTS.key(), scriptList);
-//                        break;
-//                    case ADD:
-//                        document.getAddToSet().put(QueryParams.SCRIPTS.key(), scriptList);
-//                        break;
-//                    default:
-//                        throw new IllegalArgumentException("Unknown update action " + operation);
-//                }
-//            }
-//        }
 
         if (!document.toFinalUpdateDocument().isEmpty()) {
             String time = TimeUtils.getTime();
@@ -552,26 +529,16 @@ public class ExternalToolMongoDBAdaptor extends CatalogMongoDBAdaptor implements
                     case STUDY_UID:
                         addAutoOrQuery(PRIVATE_STUDY_UID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
-//                    case STATUS:
-//                    case STATUS_ID:
-//                        addAutoOrQuery(WorkflowDBAdaptor.QueryParams.STATUS_ID.key(), queryParam.key(), query,
-//                        WorkflowDBAdaptor.QueryParams.STATUS_ID.type(), andBsonList);
-//                        break;
-//                    case INTERNAL_STATUS:
-//                    case INTERNAL_STATUS_ID:
-//                        // Convert the status to a positive status
-//                        query.put(queryParam.key(), InternalStatus.getPositiveStatus(InternalStatus.STATUS_LIST,
-//                                query.getString(queryParam.key())));
-//                        addAutoOrQuery(WorkflowDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), queryParam.key(), query,
-//                                WorkflowDBAdaptor.QueryParams.INTERNAL_STATUS_ID.type(), andBsonList);
-//                        break;
                     case ID:
                     case UUID:
                     case NAME:
+                    case WORKFLOW_REPOSITORY_NAME:
+                    case DOCKER_NAME:
                     case TAGS:
                     case RELEASE:
                     case VERSION:
                     case INTERNAL_REGISTRATION_USER_ID:
+                    case TYPE:
                     case SCOPE:
                     case DRAFT:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);

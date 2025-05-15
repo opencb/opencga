@@ -422,6 +422,12 @@ public class WorkflowsCommandOptions {
         @Parameter(names = {"--repository-description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String repositoryDescription;
     
+        @Parameter(names = {"--repository-user"}, description = "The body web service user parameter", required = false, arity = 1)
+        public String repositoryUser;
+    
+        @Parameter(names = {"--repository-password"}, description = "The body web service password parameter", required = false, arity = 1)
+        public String repositoryPassword;
+    
         @Parameter(names = {"--minimum-requirements-cpu"}, description = "Minimum number of cpu cores required to execute the process.", required = false, arity = 1)
         public String minimumRequirementsCpu;
     

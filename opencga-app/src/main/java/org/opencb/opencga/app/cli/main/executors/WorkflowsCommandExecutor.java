@@ -18,13 +18,13 @@ import org.opencb.opencga.core.models.externalTool.ExternalTool;
 import org.opencb.opencga.core.models.externalTool.ExternalToolAclEntryList;
 import org.opencb.opencga.core.models.externalTool.ExternalToolAclUpdateParams;
 import org.opencb.opencga.core.models.externalTool.ExternalToolInternal;
+import org.opencb.opencga.core.models.externalTool.ExternalToolRunParams;
 import org.opencb.opencga.core.models.externalTool.ExternalToolScope;
-import org.opencb.opencga.core.models.externalTool.ExternalToolUpdateParams;
-import org.opencb.opencga.core.models.externalTool.NextFlowRunParams;
 import org.opencb.opencga.core.models.externalTool.Workflow;
 import org.opencb.opencga.core.models.externalTool.WorkflowRepository;
 import org.opencb.opencga.core.models.externalTool.WorkflowRepositoryParams;
 import org.opencb.opencga.core.models.externalTool.WorkflowSystem;
+import org.opencb.opencga.core.models.externalTool.workflow.DeprecatedWorkflowUpdateParams;
 import org.opencb.opencga.core.models.externalTool.workflow.WorkflowCreateParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.MinimumRequirements;
@@ -268,26 +268,26 @@ public class WorkflowsCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        NextFlowRunParams nextFlowRunParams = null;
+        ExternalToolRunParams externalToolRunParams = null;
         if (commandOptions.jsonDataModel) {
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/workflows/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            nextFlowRunParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), NextFlowRunParams.class);
+            externalToolRunParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), ExternalToolRunParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
             putNestedIfNotNull(beanParams, "version", commandOptions.version, true);
             putNestedMapIfNotEmpty(beanParams, "params", commandOptions.params, true);
 
-            nextFlowRunParams = JacksonUtils.getDefaultObjectMapper().copy()
+            externalToolRunParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), NextFlowRunParams.class);
+                    .readValue(beanParams.toJson(), ExternalToolRunParams.class);
         }
-        return openCGAClient.getWorkflowClient().run(nextFlowRunParams, queryParams);
+        return openCGAClient.getWorkflowClient().run(externalToolRunParams, queryParams);
     }
 
     private RestResponse<ExternalTool> search() throws Exception {
@@ -338,15 +338,15 @@ public class WorkflowsCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        ExternalToolUpdateParams externalToolUpdateParams = null;
+        DeprecatedWorkflowUpdateParams deprecatedWorkflowUpdateParams = null;
         if (commandOptions.jsonDataModel) {
             RestResponse<ExternalTool> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/workflows/{workflowId}/update"));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            externalToolUpdateParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), ExternalToolUpdateParams.class);
+            deprecatedWorkflowUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), DeprecatedWorkflowUpdateParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
@@ -360,6 +360,8 @@ public class WorkflowsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "repository.tag", commandOptions.repositoryTag, true);
             putNestedIfNotEmpty(beanParams, "repository.author", commandOptions.repositoryAuthor, true);
             putNestedIfNotEmpty(beanParams, "repository.description", commandOptions.repositoryDescription, true);
+            putNestedIfNotEmpty(beanParams, "repository.user", commandOptions.repositoryUser, true);
+            putNestedIfNotEmpty(beanParams, "repository.password", commandOptions.repositoryPassword, true);
             putNestedIfNotEmpty(beanParams, "minimumRequirements.cpu", commandOptions.minimumRequirementsCpu, true);
             putNestedIfNotEmpty(beanParams, "minimumRequirements.memory", commandOptions.minimumRequirementsMemory, true);
             putNestedIfNotEmpty(beanParams, "minimumRequirements.disk", commandOptions.minimumRequirementsDisk, true);
@@ -367,11 +369,11 @@ public class WorkflowsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "modificationDate", commandOptions.modificationDate, true);
             putNestedMapIfNotEmpty(beanParams, "attributes", commandOptions.attributes, true);
 
-            externalToolUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
+            deprecatedWorkflowUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), ExternalToolUpdateParams.class);
+                    .readValue(beanParams.toJson(), DeprecatedWorkflowUpdateParams.class);
         }
-        return openCGAClient.getWorkflowClient().update(commandOptions.workflowId, externalToolUpdateParams, queryParams);
+        return openCGAClient.getWorkflowClient().update(commandOptions.workflowId, deprecatedWorkflowUpdateParams, queryParams);
     }
 
     private RestResponse<ExternalToolAclEntryList> acl() throws Exception {

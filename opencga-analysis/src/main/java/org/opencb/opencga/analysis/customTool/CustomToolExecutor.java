@@ -3,11 +3,11 @@ package org.opencb.opencga.analysis.customTool;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.opencga.analysis.tools.OpenCgaDockerToolScopeStudy;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.job.JobRunDockerParams;
-import org.opencb.opencga.core.models.job.JobRunParams;
+import org.opencb.opencga.core.models.externalTool.Docker;
 import org.opencb.opencga.core.models.job.ToolInfoExecutor;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
@@ -23,7 +23,7 @@ public class CustomToolExecutor extends OpenCgaDockerToolScopeStudy {
     public static final String DESCRIPTION = "Execute an analysis from a custom binary.";
 
     @ToolParams
-    protected JobRunParams runParams = new JobRunParams();
+    protected Docker runParams = new Docker();
 
     private String cliParams;
     private String dockerImage;
@@ -41,19 +41,20 @@ public class CustomToolExecutor extends OpenCgaDockerToolScopeStudy {
         if (StringUtils.isEmpty(runParams.getCommandLine())) {
             throw new ToolException("Missing commandLine");
         }
-        if (runParams.getDocker() == null || StringUtils.isEmpty(runParams.getDocker().getId())) {
-            runParams.setDocker(new JobRunDockerParams("opencb/opencga-ext-tools", "3.2.1", null));
+        if (StringUtils.isEmpty(runParams.getName())) {
+            runParams.setName("opencb/opencga-ext-tools");
+            runParams.setTag(GitRepositoryState.getInstance().getBuildVersion());
         }
-        if (!runParams.getDocker().getId().contains("/")) {
+        if (!runParams.getName().contains("/")) {
             throw new ToolException("Missing repository organization. Format for the docker image should be 'organization/image'");
         }
-        this.dockerImage = runParams.getDocker().getId();
-        if (StringUtils.isNotEmpty(runParams.getDocker().getTag())) {
-            this.dockerImage += ":" + runParams.getDocker().getTag();
+        this.dockerImage = runParams.getName();
+        if (StringUtils.isNotEmpty(runParams.getTag())) {
+            this.dockerImage += ":" + runParams.getTag();
         }
 
         // Update job tags and attributes
-        ToolInfoExecutor toolInfoExecutor = new ToolInfoExecutor(runParams.getDocker().getId(), runParams.getDocker().getTag());
+        ToolInfoExecutor toolInfoExecutor = new ToolInfoExecutor(runParams.getName(), runParams.getTag());
         List<String> tags = new LinkedList<>();
         tags.add(ID);
         tags.add(this.dockerImage);
@@ -70,10 +71,11 @@ public class CustomToolExecutor extends OpenCgaDockerToolScopeStudy {
 
         Map<String, String> dockerParams = new HashMap<>();
         dockerParams.put("-e", "OPENCGA_TOKEN=" + getExpiringToken());
-        String cmdline = runDocker(dockerImage, Collections.emptyList(), cliParams, dockerParams);
+        String cmdline = runDocker(dockerImage, Collections.emptyList(), cliParams, dockerParams, null,
+                runParams.getUser(), runParams.getPassword());
 
-        logger.info("Docker command line: " + cmdline);
-        logger.info("Execution time: " + TimeUtils.durationToString(stopWatch));
+        logger.info("Docker command line: {}", cmdline);
+        logger.info("Execution time: {}", TimeUtils.durationToString(stopWatch));
     }
 
 }

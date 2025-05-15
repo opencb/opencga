@@ -38,13 +38,13 @@ public class ExternalToolExecutorTest extends AbstractManagerTest {
         StorageConfiguration storageConfiguration = StorageConfiguration.load(inputStream, "yml");
 
         WorkflowCreateParams workflow = createDummyWorkflow();
-        catalogManager.getWorkflowManager().create(studyFqn, workflow, QueryOptions.empty(), ownerToken);
+        catalogManager.getExternalToolManager().createWorkflow(studyFqn, workflow, QueryOptions.empty(), ownerToken);
 
         Path outDir = Paths.get(catalogManagerResource.createTmpOutdir("_nextflow"));
 
         StopWatch stopWatch = StopWatch.createStarted();
         NextFlowExecutor nextFlowExecutorTest = new NextFlowExecutor();
-        NextFlowRunParams runParams = new NextFlowRunParams(workflow.getId(), 1, Collections.emptyMap());
+        ExternalToolRunParams runParams = new ExternalToolRunParams(workflow.getId(), 1, Collections.emptyMap());
         ObjectMap params = runParams.toObjectMap();
         params.put(ParamConstants.STUDY_PARAM, studyFqn);
         nextFlowExecutorTest.setUp(catalogManagerResource.getOpencgaHome().toString(), catalogManager,
@@ -63,7 +63,7 @@ public class ExternalToolExecutorTest extends AbstractManagerTest {
         catalogManager.getFileManager().create(studyFqn, new FileCreateParams().setPath("myfile.txt").setContent("hello world").setType(File.Type.FILE), false, ownerToken);
 
         WorkflowCreateParams workflow = createDummyWorkflow("pipeline_cat_file.nf");
-        catalogManager.getWorkflowManager().create(studyFqn, workflow, QueryOptions.empty(), ownerToken);
+        catalogManager.getExternalToolManager().createWorkflow(studyFqn, workflow, QueryOptions.empty(), ownerToken);
 
         Path outDir = Paths.get(catalogManagerResource.createTmpOutdir("_nextflow"));
 
@@ -71,7 +71,7 @@ public class ExternalToolExecutorTest extends AbstractManagerTest {
         NextFlowExecutor nextFlowExecutorTest = new NextFlowExecutor();
         Map<String, String> workflowParams = new HashMap<>();
         workflowParams.put("in", "ocga://myfile.txt");
-        NextFlowRunParams runParams = new NextFlowRunParams(workflow.getId(), 1, workflowParams);
+        ExternalToolRunParams runParams = new ExternalToolRunParams(workflow.getId(), 1, workflowParams);
         ObjectMap params = runParams.toObjectMap();
         params.put(ParamConstants.STUDY_PARAM, studyFqn);
         nextFlowExecutorTest.setUp(catalogManagerResource.getOpencgaHome().toString(), catalogManager,
@@ -111,7 +111,7 @@ public class ExternalToolExecutorTest extends AbstractManagerTest {
 //                                .setType(WorkflowVariable.WorkflowVariableType.FLAG)
                 ))
                 .setWorkflow(new Workflow().setRepository(new WorkflowRepository("nf-core/demo")));
-        catalogManager.getWorkflowManager().create(studyFqn, workflow, QueryOptions.empty(), ownerToken);
+        catalogManager.getExternalToolManager().createWorkflow(studyFqn, workflow, QueryOptions.empty(), ownerToken);
 
         catalogManager.getFileManager().create(studyFqn, new FileCreateParams()
                 .setPath("samplesheet.csv")
@@ -130,7 +130,7 @@ public class ExternalToolExecutorTest extends AbstractManagerTest {
 //        cliParams.put("outdir", "$OUTPUT");
 //        cliParams.put("genome", "GRCh37");
 //        cliParams.put("-profile", "docker");
-        NextFlowRunParams runParams = new NextFlowRunParams(workflow.getId(), 1, cliParams);
+        ExternalToolRunParams runParams = new ExternalToolRunParams(workflow.getId(), 1, cliParams);
         ObjectMap params = runParams.toObjectMap();
         params.put(ParamConstants.STUDY_PARAM, studyFqn);
         nextFlowExecutorTest.setUp(catalogManagerResource.getOpencgaHome().toString(), catalogManager,

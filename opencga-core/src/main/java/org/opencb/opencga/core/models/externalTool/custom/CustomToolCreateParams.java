@@ -1,13 +1,21 @@
-package org.opencb.opencga.core.models.externalTool;
+package org.opencb.opencga.core.models.externalTool.custom;
 
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
+import org.opencb.opencga.core.models.externalTool.Docker;
+import org.opencb.opencga.core.models.externalTool.ExternalToolInternal;
+import org.opencb.opencga.core.models.externalTool.ExternalToolScope;
+import org.opencb.opencga.core.models.externalTool.ExternalToolVariable;
 import org.opencb.opencga.core.models.job.MinimumRequirements;
 
 import java.util.List;
 import java.util.Map;
 
-public abstract class ExternalToolUpdateParams {
+public class CustomToolCreateParams {
+
+    @DataField(id = "id", required = true, indexed = true, unique = true, immutable = true,
+            description = FieldConstants.EXTERNAL_TOOL_ID_DESCRIPTION)
+    private String id;
 
     @DataField(id = "name", description = FieldConstants.GENERIC_UUID_DESCRIPTION)
     private String name;
@@ -17,6 +25,9 @@ public abstract class ExternalToolUpdateParams {
 
     @DataField(id = "scope", description = FieldConstants.EXTERNAL_TOOL_SCOPE_DESCRIPTION)
     private ExternalToolScope scope;
+
+    @DataField(id = "docker", description = FieldConstants.EXTERNAL_TOOL_DOCKER_DESCRIPTION)
+    private Docker docker;
 
     @DataField(id = "tags", description = FieldConstants.EXTERNAL_TOOL_TAGS_DESCRIPTION)
     private List<String> tags;
@@ -30,6 +41,9 @@ public abstract class ExternalToolUpdateParams {
     @DataField(id = "draft", description = FieldConstants.EXTERNAL_TOOL_DRAFT_DESCRIPTION)
     private boolean draft;
 
+    @DataField(id = "internal", description = FieldConstants.EXTERNAL_TOOL_INTERNAL_DESCRIPTION)
+    private ExternalToolInternal internal;
+
     @DataField(id = "creationDate", indexed = true, description = FieldConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
 
@@ -39,19 +53,23 @@ public abstract class ExternalToolUpdateParams {
     @DataField(id = "attributes", description = FieldConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
-    public ExternalToolUpdateParams() {
+    public CustomToolCreateParams() {
     }
 
-    public ExternalToolUpdateParams(String name, String description, ExternalToolScope scope, List<String> tags,
-                                    List<ExternalToolVariable> variables, MinimumRequirements minimumRequirements, boolean draft,
-                                    String creationDate, String modificationDate, Map<String, Object> attributes) {
+    public CustomToolCreateParams(String id, String name, String description, ExternalToolScope scope, Docker docker, List<String> tags,
+                                  List<ExternalToolVariable> variables, MinimumRequirements minimumRequirements, boolean draft,
+                                  ExternalToolInternal internal, String creationDate, String modificationDate,
+                                  Map<String, Object> attributes) {
+        this.id = id;
         this.name = name;
         this.description = description;
         this.scope = scope;
+        this.docker = docker;
         this.tags = tags;
         this.variables = variables;
         this.minimumRequirements = minimumRequirements;
         this.draft = draft;
+        this.internal = internal;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
         this.attributes = attributes;
@@ -59,25 +77,38 @@ public abstract class ExternalToolUpdateParams {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder();
-        sb.append("name='").append(name).append('\'');
+        final StringBuilder sb = new StringBuilder("CustomToolCreateParams{");
+        sb.append("id='").append(id).append('\'');
+        sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", scope=").append(scope);
+        sb.append(", docker=").append(docker);
         sb.append(", tags=").append(tags);
         sb.append(", variables=").append(variables);
         sb.append(", minimumRequirements=").append(minimumRequirements);
         sb.append(", draft=").append(draft);
+        sb.append(", internal=").append(internal);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
-        sb.append(", attributes=").append(attributes).append('\'');
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
         return sb.toString();
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public CustomToolCreateParams setId(String id) {
+        this.id = id;
+        return this;
     }
 
     public String getName() {
         return name;
     }
 
-    public ExternalToolUpdateParams setName(String name) {
+    public CustomToolCreateParams setName(String name) {
         this.name = name;
         return this;
     }
@@ -86,7 +117,7 @@ public abstract class ExternalToolUpdateParams {
         return description;
     }
 
-    public ExternalToolUpdateParams setDescription(String description) {
+    public CustomToolCreateParams setDescription(String description) {
         this.description = description;
         return this;
     }
@@ -95,8 +126,17 @@ public abstract class ExternalToolUpdateParams {
         return scope;
     }
 
-    public ExternalToolUpdateParams setScope(ExternalToolScope scope) {
+    public CustomToolCreateParams setScope(ExternalToolScope scope) {
         this.scope = scope;
+        return this;
+    }
+
+    public Docker getDocker() {
+        return docker;
+    }
+
+    public CustomToolCreateParams setDocker(Docker docker) {
+        this.docker = docker;
         return this;
     }
 
@@ -104,7 +144,7 @@ public abstract class ExternalToolUpdateParams {
         return tags;
     }
 
-    public ExternalToolUpdateParams setTags(List<String> tags) {
+    public CustomToolCreateParams setTags(List<String> tags) {
         this.tags = tags;
         return this;
     }
@@ -113,7 +153,7 @@ public abstract class ExternalToolUpdateParams {
         return variables;
     }
 
-    public ExternalToolUpdateParams setVariables(List<ExternalToolVariable> variables) {
+    public CustomToolCreateParams setVariables(List<ExternalToolVariable> variables) {
         this.variables = variables;
         return this;
     }
@@ -122,7 +162,7 @@ public abstract class ExternalToolUpdateParams {
         return minimumRequirements;
     }
 
-    public ExternalToolUpdateParams setMinimumRequirements(MinimumRequirements minimumRequirements) {
+    public CustomToolCreateParams setMinimumRequirements(MinimumRequirements minimumRequirements) {
         this.minimumRequirements = minimumRequirements;
         return this;
     }
@@ -131,8 +171,17 @@ public abstract class ExternalToolUpdateParams {
         return draft;
     }
 
-    public ExternalToolUpdateParams setDraft(boolean draft) {
+    public CustomToolCreateParams setDraft(boolean draft) {
         this.draft = draft;
+        return this;
+    }
+
+    public ExternalToolInternal getInternal() {
+        return internal;
+    }
+
+    public CustomToolCreateParams setInternal(ExternalToolInternal internal) {
+        this.internal = internal;
         return this;
     }
 
@@ -140,7 +189,7 @@ public abstract class ExternalToolUpdateParams {
         return creationDate;
     }
 
-    public ExternalToolUpdateParams setCreationDate(String creationDate) {
+    public CustomToolCreateParams setCreationDate(String creationDate) {
         this.creationDate = creationDate;
         return this;
     }
@@ -149,7 +198,7 @@ public abstract class ExternalToolUpdateParams {
         return modificationDate;
     }
 
-    public ExternalToolUpdateParams setModificationDate(String modificationDate) {
+    public CustomToolCreateParams setModificationDate(String modificationDate) {
         this.modificationDate = modificationDate;
         return this;
     }
@@ -158,7 +207,7 @@ public abstract class ExternalToolUpdateParams {
         return attributes;
     }
 
-    public ExternalToolUpdateParams setAttributes(Map<String, Object> attributes) {
+    public CustomToolCreateParams setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
         return this;
     }

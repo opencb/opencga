@@ -73,4 +73,22 @@ public class WorkflowRepository {
         this.description = description;
         return this;
     }
+
+    public String getUser() {
+        return user;
+    }
+
+    public WorkflowRepository setUser(String user) {
+        this.user = user;
+        return this;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public WorkflowRepository setPassword(String password) {
+        this.password = password;
+        return this;
+    }
 }

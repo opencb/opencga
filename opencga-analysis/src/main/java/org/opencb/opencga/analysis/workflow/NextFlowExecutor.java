@@ -48,7 +48,7 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
     public static final String DESCRIPTION = "Execute a Nextflow analysis.";
 
     @ToolParams
-    protected NextFlowRunParams nextflowParams = new NextFlowRunParams();
+    protected ExternalToolRunParams externalToolRunParams = new ExternalToolRunParams();
 
     private ExternalTool externalTool;
     private String cliParams;
@@ -65,27 +65,27 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
     protected void check() throws Exception {
         super.check();
 
-        if (nextflowParams.getId() == null) {
+        if (externalToolRunParams.getId() == null) {
             throw new IllegalArgumentException("Missing Nextflow ID");
         }
 
         InputFileUtils inputFileUtils = new InputFileUtils(catalogManager);
 
         OpenCGAResult<ExternalTool> result;
-        if (nextflowParams.getVersion() != null) {
-            Query query = new Query(ExternalToolDBAdaptor.QueryParams.VERSION.key(), nextflowParams.getVersion());
-            result = catalogManager.getWorkflowManager().get(study, Collections.singletonList(nextflowParams.getId()), query,
+        if (externalToolRunParams.getVersion() != null) {
+            Query query = new Query(ExternalToolDBAdaptor.QueryParams.VERSION.key(), externalToolRunParams.getVersion());
+            result = catalogManager.getExternalToolManager().get(study, Collections.singletonList(externalToolRunParams.getId()), query,
                     QueryOptions.empty(), false, token);
         } else {
-            result = catalogManager.getWorkflowManager().get(study, nextflowParams.getId(), QueryOptions.empty(), token);
+            result = catalogManager.getExternalToolManager().get(study, externalToolRunParams.getId(), QueryOptions.empty(), token);
         }
         if (result.getNumResults() == 0) {
-            throw new ToolException("Workflow '" + nextflowParams.getId() + "' not found");
+            throw new ToolException("Workflow '" + externalToolRunParams.getId() + "' not found");
         }
         externalTool = result.first();
 
         if (externalTool == null) {
-            throw new ToolException("Workflow '" + nextflowParams.getId() + "' is null");
+            throw new ToolException("Workflow '" + externalToolRunParams.getId() + "' is null");
         }
 
         outDirPath = getOutDir().toAbsolutePath().toString();
@@ -130,8 +130,8 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
         updateJobInformation(new ArrayList<>(tags), toolInfoExecutor);
 
         StringBuilder cliParamsBuilder = new StringBuilder();
-        if (MapUtils.isNotEmpty(nextflowParams.getParams())) {
-            for (Map.Entry<String, String> entry : nextflowParams.getParams().entrySet()) {
+        if (MapUtils.isNotEmpty(externalToolRunParams.getParams())) {
+            for (Map.Entry<String, String> entry : externalToolRunParams.getParams().entrySet()) {
                 String variableId = removePrefix(entry.getKey());
                 // Remove from the mandatoryParams set
                 mandatoryParams.remove(variableId);
