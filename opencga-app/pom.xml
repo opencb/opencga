@@ -489,7 +489,7 @@
                                 <!-- If the version ends with -SNAPSHOT, replace it with -dev -->
                                 <exec executable="bash" outputproperty="R.version" failonerror="true">
                                     <arg value="-c"/>
-                                    <arg value="echo ${project.version} | sed 's/-SNAPSHOT/-dev/g'"/>
+                                    <arg value="echo ${project.version} | sed 's/-SNAPSHOT/.9000/g'"/>
                                 </exec>
 
                                 <echo message="Calculated R Version: ${R.version}"/>
