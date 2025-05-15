@@ -1824,15 +1824,15 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     public static DataStore defaultCvdbDataStore(String databasePrefix, String projectFqnStr) {
         CatalogFqn projectFqn = CatalogFqn.extractFqnFromProjectFqn(projectFqnStr);
 
-        String dbName = buildDatabaseName(databasePrefix, projectFqn.getOrganizationId(), projectFqn.getProjectId(), true);
-        return new DataStore(StorageEngineFactory.get().getDefaultStorageEngineId(), dbName);
+        String dbName = buildDatabaseName(databasePrefix, "cvdb", projectFqn.getOrganizationId(), projectFqn.getProjectId());
+        return new DataStore("solr", dbName);
     }
 
     public static String buildDatabaseName(String databasePrefix, String organizationId, String projectId) {
-        return buildDatabaseName(databasePrefix, organizationId, projectId, false);
+        return buildDatabaseName(databasePrefix, null, organizationId, projectId);
     }
 
-    public static String buildDatabaseName(String databasePrefix, String organizationId, String projectId, boolean cvdb) {
+    public static String buildDatabaseName(String databasePrefix, String suffix, String organizationId, String projectId) {
         // Replace possible dots at the organization. Usually a special character in almost all databases. See #532
         organizationId = organizationId.replace('.', '_');
 
@@ -1852,8 +1852,8 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             projectId = projectId.substring(idx + 1);
         }
 
-        if (cvdb) {
-            return prefix + "cvdb_" + organizationId + '_' + projectId;
+        if (StringUtils.isNotEmpty(suffix)) {
+            return prefix + suffix + "_" + organizationId + '_' + projectId;
         } else {
             return prefix + organizationId + '_' + projectId;
         }

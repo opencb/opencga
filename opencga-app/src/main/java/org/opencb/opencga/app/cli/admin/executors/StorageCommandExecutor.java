@@ -167,47 +167,74 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
                     continue;
                 }
 
-                DataStore currentDataStore;
-                if (project.getInternal() != null && project.getInternal().getDatastores() != null) {
-                    currentDataStore = project.getInternal().getDatastores().getVariant();
-                } else {
-                    currentDataStore = null;
-                }
-                if (commandOptions.projectsWithUndefinedDBName) {
-                    // Only accept projects with UNDEFINED dbname. so discard projects with DEFINED (without undefined) dbname
-                    boolean undefinedDBName = currentDataStore == null || StringUtils.isEmpty(currentDataStore.getDbName());
-                    if (!undefinedDBName) {
-                        logger.info("Skip project '{}' as its dbName is already defined. dbName : '{}'",
-                                project.getFqn(),
-                                currentDataStore.getDbName());
-                        continue;
-                    }
-                }
+                // Update variant datastore
+                updateVariantDataStore(commandOptions.dbPrefix, commandOptions.projectsWithUndefinedDBName, project, catalogManager);
 
-                // Variant datastore
-                DataStore newDataStore = createNewDataStore(commandOptions.dbPrefix, currentDataStore, project, catalogManager);
-                catalogManager.getProjectManager().setDatastoreVariant(project.getFqn(), newDataStore, token);
-
-                // CVDB datastore
-                String cvdbPrefix = commandOptions.cvdbPrefix;
-                if (StringUtils.isEmpty(cvdbPrefix)) {
-                    cvdbPrefix = catalogManager.getConfiguration().getDatabasePrefix() + "_cvdb";
-                }
-                newDataStore = createNewDataStore(cvdbPrefix, currentDataStore, project, catalogManager);
-                newDataStore.setStorageEngine("solr");
-                catalogManager.getProjectManager().setDatastoreCvdb(project.getFqn(), newDataStore, token);
+                // Update CVDB datastore
+                updateCvdbDataStore(commandOptions.cvdbPrefix, commandOptions.projectsWithUndefinedDBName, project, catalogManager);
             }
         }
     }
 
-    private DataStore createNewDataStore(String dbPrefix, DataStore currentDataStore, Project project, CatalogManager catalogManager) {
-        final DataStore defaultDataStore;
+    private void updateVariantDataStore(String dbPrefix, boolean projectsWithUndefinedDBName, Project project,
+                                        CatalogManager catalogManager) throws CatalogException {
+        DataStore currentDataStore;
+        if (project.getInternal() != null && project.getInternal().getDatastores() != null) {
+            currentDataStore = project.getInternal().getDatastores().getVariant();
+        } else {
+            currentDataStore = null;
+        }
+        if (projectsWithUndefinedDBName) {
+            // Only accept projects with UNDEFINED dbname. so discard projects with DEFINED (without undefined) dbname
+            boolean undefinedDBName = currentDataStore == null || StringUtils.isEmpty(currentDataStore.getDbName());
+            if (!undefinedDBName) {
+                logger.info("Skip project '{}' as its variant dbName is already defined. Variant dbName : '{}'", project.getFqn(),
+                        currentDataStore.getDbName());
+                return;
+            }
+        }
+
+        // Variant datastore
+        DataStore defaultDataStore;
         if (StringUtils.isEmpty(dbPrefix)) {
             defaultDataStore = VariantStorageManager.defaultDataStore(catalogManager, project);
         } else {
             defaultDataStore = VariantStorageManager.defaultDataStore(dbPrefix, project.getFqn());
         }
+        DataStore newDataStore = createNewDataStore(currentDataStore, defaultDataStore, project);
+        catalogManager.getProjectManager().setDatastoreVariant(project.getFqn(), newDataStore, token);
+    }
 
+    private void updateCvdbDataStore(String dbPrefix, boolean projectsWithUndefinedDBName, Project project,
+                                     CatalogManager catalogManager) throws CatalogException {
+        DataStore currentDataStore;
+        if (project.getInternal() != null && project.getInternal().getDatastores() != null) {
+            currentDataStore = project.getInternal().getDatastores().getCvdb();
+        } else {
+            currentDataStore = null;
+        }
+        if (projectsWithUndefinedDBName) {
+            // Only accept projects with UNDEFINED dbname. so discard projects with DEFINED (without undefined) dbname
+            boolean undefinedDBName = currentDataStore == null || StringUtils.isEmpty(currentDataStore.getDbName());
+            if (!undefinedDBName) {
+                logger.info("Skip project '{}' as its CVDB dbName is already defined. CVDB dbName : '{}'", project.getFqn(),
+                        currentDataStore.getDbName());
+                return;
+            }
+        }
+
+        // CVDB datastore
+        DataStore defaultDataStore;
+        if (StringUtils.isEmpty(dbPrefix)) {
+            defaultDataStore = VariantStorageManager.defaultCvdbDataStore(catalogManager, project);
+        } else {
+            defaultDataStore = VariantStorageManager.defaultCvdbDataStore(dbPrefix, project.getFqn());
+        }
+        DataStore newDataStore = createNewDataStore(currentDataStore, defaultDataStore, project);
+        catalogManager.getProjectManager().setDatastoreCvdb(project.getFqn(), newDataStore, token);
+    }
+
+    private DataStore createNewDataStore(DataStore currentDataStore, DataStore defaultDataStore, Project project) {
         final DataStore newDataStore;
         logger.info("------");
         logger.info("Project '{}'", project.getFqn());
