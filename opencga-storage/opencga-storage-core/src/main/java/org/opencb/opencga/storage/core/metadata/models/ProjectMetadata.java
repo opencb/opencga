@@ -163,6 +163,10 @@ public class ProjectMetadata {
             return this;
         }
 
+        public void addExtension(String id, ObjectMap metadata) {
+            this.extensions.put(id, metadata);
+        }
+
         public List<ObjectMap> getSourceVersion() {
             return sourceVersion;
         }

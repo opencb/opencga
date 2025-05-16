@@ -89,6 +89,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
         Files.createDirectories(opencgaHome);
         configuration = Configuration.load(getClass().getResource("/configuration-test.yml").openStream());
         configuration.setWorkspace(opencgaHome.resolve("sessions").toAbsolutePath().toString());
+        configuration.getAnalysis().setScratchDir(opencgaHome.resolve("scratch").toAbsolutePath().toString());
         configuration.setJobDir(opencgaHome.resolve("JOBS").toAbsolutePath().toString());
 
         // Pedigree graph analysis

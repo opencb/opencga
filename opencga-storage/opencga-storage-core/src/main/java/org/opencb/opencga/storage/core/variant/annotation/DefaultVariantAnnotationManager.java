@@ -52,8 +52,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
-import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.VariantAnnotatorExtensionTask;
-import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.VariantAnnotatorExtensionsFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.db.VariantAnnotationDBWriter;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
@@ -253,29 +251,18 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                     }
                 }, 200);
             }
-            Task<Variant, VariantAnnotation> annotationTask = variantList -> {
-                List<VariantAnnotation> variantAnnotationList;
-                long start = System.currentTimeMillis();
-                logger.debug("Annotating batch of {} genomic variants.", variantList.size());
-                variantAnnotationList = variantAnnotator.annotate(variantList);
-                progressLogger.increment(variantList.size(),
-                        () -> ", up to position " + variantList.get(variantList.size() - 1).toString());
-                numAnnotationsToLoad.addAndGet(variantList.size());
-
-                logger.debug("Annotated batch of {} genomic variants. Time: {}s", variantList.size(),
-                        (System.currentTimeMillis() - start) / 1000.0);
-                return variantAnnotationList;
-            };
-
-            logger.info("Getting annotator extension tasks from params: {}", params.toJson());
-            List<VariantAnnotatorExtensionTask> extensions = new VariantAnnotatorExtensionsFactory().getVariantAnnotatorExtensions(params);
-            for (VariantAnnotatorExtensionTask extension : extensions) {
-//                logger.info("Setting up the annotator extension task {} in directory {}", extension.getId(), outDir);
-//                extension.setup(outDir);
-                logger.info("Checking annotator extension task {} availability", extension.getId());
-                extension.checkAvailable();
-                annotationTask = annotationTask.then(extension);
-            }
+            Task<Variant, VariantAnnotation> annotationTask = variantAnnotator.then((List<VariantAnnotation> variantAnnotations) -> {
+                progressLogger.increment(variantAnnotations.size(),
+                        () -> {
+                            VariantAnnotation variantAnnotation = variantAnnotations.get(variantAnnotations.size() - 1);
+                            return ", up to position " + variantAnnotation.getChromosome() + ":"
+                                    + variantAnnotation.getStart() + ":"
+                                    + variantAnnotation.getReference() + ":"
+                                    + variantAnnotation.getAlternate();
+                        });
+                numAnnotationsToLoad.addAndGet(variantAnnotations.size());
+                return variantAnnotations;
+            });
 
             final DataWriter<VariantAnnotation> variantAnnotationDataWriter;
             if (avro) {

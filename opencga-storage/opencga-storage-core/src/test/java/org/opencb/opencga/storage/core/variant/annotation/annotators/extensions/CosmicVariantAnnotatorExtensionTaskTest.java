@@ -10,8 +10,6 @@ import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAnnotationExtensionConfigureParams;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -56,7 +54,7 @@ public class CosmicVariantAnnotatorExtensionTaskTest {
         cosmicParams.put(CosmicVariantAnnotatorExtensionTask.COSMIC_ASSEMBLY_KEY, COSMIC_ASSEMBLY);
         params.setParams(cosmicParams);
 
-        task.setup(params);
+        task.setup(params, outPath.toUri());
 
         ObjectMap metadata = task.getMetadata();
         Assert.assertEquals(COSMIC_VERSION, metadata.get("version"));
@@ -99,7 +97,7 @@ public class CosmicVariantAnnotatorExtensionTaskTest {
         cosmicParams.put(CosmicVariantAnnotatorExtensionTask.COSMIC_ASSEMBLY_KEY, COSMIC_ASSEMBLY);
         params.setParams(cosmicParams);
 
-        task.setup(params);
+        task.setup(params, outPath.toUri());
 
         Assert.assertEquals(true, task.isAvailable());
 

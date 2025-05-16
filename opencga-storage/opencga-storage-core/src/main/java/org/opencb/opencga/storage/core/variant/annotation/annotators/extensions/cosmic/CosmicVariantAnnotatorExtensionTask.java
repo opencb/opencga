@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.apache.solr.common.StringUtils;
 import org.opencb.biodata.formats.variant.cosmic.CosmicParser101;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.EvidenceEntry;
@@ -30,6 +31,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
@@ -42,6 +44,7 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
 
     private String cosmicVersion;
     private String cosmicAssembly;
+    private String cosmicIndexCreationDate;
 
     private ObjectReader objectReader;
 
@@ -56,19 +59,26 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
     private static Logger logger = LoggerFactory.getLogger(CosmicVariantAnnotatorExtensionTask.class);
 
     public CosmicVariantAnnotatorExtensionTask(ObjectMap options) {
-        if (MapUtils.isNotEmpty(options) && options.containsKey(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key())) {
-            this.dbLocation = Paths.get(options.getString(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key()));
+        if (MapUtils.isNotEmpty(options)) {
+            if (options.containsKey(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key())) {
+                this.dbLocation = Paths.get(options.getString(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key()));
+            }
+            if (options.containsKey(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key())) {
+                this.cosmicVersion = options.getString(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key());
+            }
+            if (options.containsKey(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_ASSEMBLY.key())) {
+                this.cosmicAssembly = options.getString(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_ASSEMBLY.key());
+            }
+            if (options.containsKey(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_INDEX_CREATION_DATE.key())) {
+                this.cosmicIndexCreationDate =
+                        options.getString(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_INDEX_CREATION_DATE.key());
+            }
         }
 
         this.objectReader = JacksonUtils.getDefaultObjectMapper().readerFor(new TypeReference<List<EvidenceEntry>>() {});
     }
 
-    @Override
-    public List<URI> setup(URI output) throws Exception {
-        throw new ToolException("Not supported anymore");
-    }
-
-    public List<URI> setup(VariantAnnotationExtensionConfigureParams configureParams) throws Exception {
+    public List<URI> setup(VariantAnnotationExtensionConfigureParams configureParams, URI outDir) throws Exception {
         // Sanity check
         if (!ID.equals(configureParams.getExtension())) {
             throw new ToolException("Invalid COSMIC extension: " + configureParams.getExtension());
@@ -82,21 +92,22 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
             throw new ToolException("Invalid COSMIC file format '" + cosmicFile.getFileName() + "': it must be a .tar.gz file");
         }
 
-        Path parentPath = cosmicFile.getParent();
-        FileUtils.checkDirectory(parentPath, true);
+        Path outDirPath = Paths.get(outDir);
+        FileUtils.checkDirectory(outDirPath, true);
 
         // Check COSMIC version and assembly
-        if (!configureParams.getParams().containsKey(COSMIC_VERSION_KEY)) {
+        this.cosmicVersion = configureParams.getParams().getString(COSMIC_VERSION_KEY);
+        if (StringUtils.isEmpty(cosmicVersion)) {
             throw new ToolException("Missing COSMIC version");
         }
-        this.cosmicVersion = configureParams.getParams().getString(COSMIC_VERSION_KEY);
-        if (!configureParams.getParams().containsKey(COSMIC_ASSEMBLY_KEY)) {
+        this.cosmicAssembly = configureParams.getParams().getString(COSMIC_ASSEMBLY_KEY);
+        if (StringUtils.isEmpty(cosmicAssembly)) {
             throw new ToolException("Missing COSMIC assembly");
         }
-        this.cosmicAssembly = configureParams.getParams().getString(COSMIC_ASSEMBLY_KEY);
+        this.cosmicIndexCreationDate = Instant.now().toString();
 
         // Clean and init RocksDB
-        dbLocation = parentPath.resolve(COSMIC_ANNOTATOR_INDEX_NAME);
+        dbLocation = outDirPath.resolve(COSMIC_ANNOTATOR_INDEX_NAME);
         if (Files.exists(dbLocation)) {
             // Skipping setup but init RocksDB
             logger.info("Skipping setup, it was already done");
@@ -106,7 +117,7 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
             Path genomeScreensMutantFile = null;
             Path classificationFile = null;
 
-            Path tmpPath = parentPath.resolve("tmp");
+            Path tmpPath = outDirPath.resolve("tmp");
             decompressTarBall(cosmicFile, tmpPath);
             if (tmpPath.toFile().listFiles() != null) {
                 for (File file : tmpPath.toFile().listFiles()) {
@@ -151,24 +162,22 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
 
     @Override
     public ObjectMap getOptions() {
-        ObjectMap options = new ObjectMap();
-        if (isAvailable()) {
-            options.append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key(), dbLocation.toAbsolutePath().toString())
-                    .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key(), cosmicVersion)
-                    .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_ASSEMBLY.key(), cosmicAssembly);
-        }
+        checkAvailable();
+        ObjectMap options = new ObjectMap()
+                .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key(), dbLocation.toAbsolutePath().toString())
+                .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key(), cosmicVersion)
+                .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_ASSEMBLY.key(), cosmicAssembly)
+                .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_INDEX_CREATION_DATE.key(), cosmicIndexCreationDate);
         return options;
     }
 
     @Override
     public ObjectMap getMetadata() {
-        ObjectMap metadata = new ObjectMap();
-        if (isAvailable()) {
-            metadata.append("name", ID)
-                    .append("version", cosmicVersion)
-                    .append("assembly", cosmicAssembly)
-                    .append("date", dbLocation.toFile().lastModified());
-        }
+        checkAvailable();
+        ObjectMap metadata = new ObjectMap().append("name", ID)
+                .append("version", cosmicVersion)
+                .append("assembly", cosmicAssembly)
+                .append("indexCreationDate", cosmicIndexCreationDate);
         return metadata;
     }
 
