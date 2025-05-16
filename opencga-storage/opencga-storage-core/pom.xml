@@ -29,6 +29,11 @@
     <artifactId>opencga-storage-core</artifactId>
     <packaging>jar</packaging>
 
+    <properties>
+        <opencga.storage.configset.version>v1</opencga.storage.configset.version>
+        <OPENCGA.STORAGE.SEARCH.CONFIG_SET>opencga-variant-configset-${opencga.storage.configset.version}</OPENCGA.STORAGE.SEARCH.CONFIG_SET>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
@@ -226,9 +231,15 @@
                 <filtering>true</filtering>
                 <includes>
                     <include>${storage.configuration.file}</include>
-                    <include>managed-schema</include>
-                    <include>rga/managed-schema</include>
                 </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <includes>
+                    <include>managed-schema</include>
+                </includes>
+                <targetPath>${project.build.directory}/solr/${OPENCGA.STORAGE.SEARCH.CONFIG_SET}</targetPath>
             </resource>
         </resources>
         <testResources>

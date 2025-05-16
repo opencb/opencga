@@ -79,6 +79,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -734,12 +735,19 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             throw new StorageEngineException("Search is not active!");
         }
 
-        SearchIndexMetadata indexMetadata = getMetadataManager().getProjectMetadata().getSecondaryAnnotationIndex()
-                .getLastStagingOrActiveIndex();
+        SearchIndexMetadata indexMetadata = getVariantSearchManager().getSearchIndexMetadata();
 
         if (indexMetadata == null) {
             // Create if it does not exist
-            indexMetadata = getVariantSearchManager().newIndexMetadata(configuration.getSearch().getConfigSet(), true);
+            indexMetadata = getVariantSearchManager().createIndexMetadataIfEmpty(configuration.getSearch().getConfigSet());
+        } else if (overwrite) {
+            boolean shouldCreateNewIndex = false;
+            if (!indexMetadata.getConfigSetId().equals(configuration.getSearch().getConfigSet())) {
+                shouldCreateNewIndex = true;
+            }
+            if (shouldCreateNewIndex) {
+                indexMetadata = getVariantSearchManager().newIndexMetadata(configuration.getSearch().getConfigSet());
+            }
         }
 
         return secondaryIndex(inputQuery, inputQueryOptions, overwrite, indexMetadata);
@@ -817,7 +825,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 projectMetadata.getAttributes().put(SEARCH_INDEX_LAST_TIMESTAMP.key(), newTimestamp);
                 projectMetadata.getSecondaryAnnotationIndex().getIndexMetadata(indexMetadata.getVersion())
                         .setStatus(SearchIndexMetadata.Status.ACTIVE)
-                        .setModificationDate(new Date(newTimestamp));
+                        .setModificationDate(Instant.ofEpochMilli(newTimestamp));
                 return projectMetadata;
             });
 

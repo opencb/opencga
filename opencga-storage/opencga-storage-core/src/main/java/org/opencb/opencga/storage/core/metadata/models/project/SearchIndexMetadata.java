@@ -2,7 +2,7 @@ package org.opencb.opencga.storage.core.metadata.models.project;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 
-import java.util.Date;
+import java.time.Instant;
 
 public class SearchIndexMetadata {
 
@@ -14,12 +14,12 @@ public class SearchIndexMetadata {
     /**
      * Date when the index was created.
      */
-    private Date creationDate;
+    private Instant creationDate;
     /**
      * Date when the index was last modified. Because the modification process takes
      * some time, this date will record the date when the update process started.
      */
-    private Date modificationDate;
+    private Instant modificationDate;
     /**
      * Status of the index.
      * <ul>
@@ -58,7 +58,7 @@ public class SearchIndexMetadata {
     protected SearchIndexMetadata() {
     }
 
-    public SearchIndexMetadata(int version, Date creationDate, Date modificationDate, Status status, String configSetId,
+    public SearchIndexMetadata(int version, Instant creationDate, Instant modificationDate, Status status, String configSetId,
                                String collectionNameSuffix, ObjectMap attributes) {
         this.version = version;
         this.creationDate = creationDate;
@@ -78,20 +78,20 @@ public class SearchIndexMetadata {
         return this;
     }
 
-    public Date getCreationDate() {
+    public Instant getCreationDate() {
         return creationDate;
     }
 
-    public SearchIndexMetadata setCreationDate(Date creationDate) {
+    public SearchIndexMetadata setCreationDate(Instant creationDate) {
         this.creationDate = creationDate;
         return this;
     }
 
-    public Date getModificationDate() {
+    public Instant getModificationDate() {
         return modificationDate;
     }
 
-    public SearchIndexMetadata setModificationDate(Date modificationDate) {
+    public SearchIndexMetadata setModificationDate(Instant modificationDate) {
         this.modificationDate = modificationDate;
         return this;
     }

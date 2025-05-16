@@ -61,6 +61,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
@@ -654,28 +655,36 @@ public class VariantSearchManager {
         }
     }
 
-    public SearchIndexMetadata newIndexMetadata(String configSetId, boolean ifNotExists) throws StorageEngineException {
+    public SearchIndexMetadata createIndexMetadataIfEmpty(String configSetId) throws StorageEngineException {
+        return newIndexMetadata(configSetId, true);
+    }
+
+    public SearchIndexMetadata newIndexMetadata(String configSetId) throws StorageEngineException {
+        return newIndexMetadata(configSetId, false);
+    }
+
+    private SearchIndexMetadata newIndexMetadata(String configSetId, boolean ifNotExists) throws StorageEngineException {
         // Create if it does not exist
         return metadataManager.updateProjectMetadata(projectMetadata -> {
             SearchIndexMetadata indexMetadata = projectMetadata.getSecondaryAnnotationIndex().getLastStagingOrActiveIndex();
+            boolean createNewIndexMetadata = false;
             if (ifNotExists) {
                 // Create a new index metadata only if it does not exist
                 if (indexMetadata == null) {
-                    newIndexMetadata(projectMetadata, configSetId);
+                    createNewIndexMetadata = true;
                 }
             } else {
                 // Create a new index metadata
+                createNewIndexMetadata = true;
+            }
+            if (createNewIndexMetadata) {
                 newIndexMetadata(projectMetadata, configSetId);
             }
             return projectMetadata;
         }).getSecondaryAnnotationIndex().getLastStagingOrActiveIndex();
     }
 
-    public SearchIndexMetadata getSearchIndexMetadata() {
-        return metadataManager.getProjectMetadata().getSecondaryAnnotationIndex().getLastStagingOrActiveIndex();
-    }
-
-    public SearchIndexMetadata newIndexMetadata(ProjectMetadata projectMetadata, String configSetId) {
+    private void newIndexMetadata(ProjectMetadata projectMetadata, String configSetId) {
         List<SearchIndexMetadata> values = projectMetadata.getSecondaryAnnotationIndex().getValues();
         int maxVersion = 0;
         for (SearchIndexMetadata value : values) {
@@ -687,15 +696,18 @@ public class VariantSearchManager {
         String collectionNameSuffix = newVersion == 1 ? "" : String.valueOf(newVersion);
         SearchIndexMetadata indexMetadata = new SearchIndexMetadata(
                 newVersion,
-                new Date(),
-                new Date(),
+                Instant.now(),
+                Instant.now(),
                 SearchIndexMetadata.Status.STAGING,
                 configSetId,
                 collectionNameSuffix,
                 new ObjectMap()
         );
         values.add(indexMetadata);
-        return indexMetadata;
+    }
+
+    public SearchIndexMetadata getSearchIndexMetadata() {
+        return metadataManager.getProjectMetadata().getSecondaryAnnotationIndex().getLastStagingOrActiveIndex();
     }
 
     private class Postprocessing implements SolrCollection.FacetPostprocessing {
