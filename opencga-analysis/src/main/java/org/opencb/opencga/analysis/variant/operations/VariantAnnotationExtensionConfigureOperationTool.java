@@ -110,7 +110,7 @@ public class VariantAnnotationExtensionConfigureOperationTool extends OperationT
     protected void run() throws Exception {
         // Configure the variant annotator extension using resource physical paths
         variantAnnotatorExtensionTask.setup(new VariantAnnotationExtensionConfigureParams(
-                configureParams.getExtension(), resources, configureParams.getParams()));
+                configureParams.getExtension(), resources, configureParams.getParams()), getOutDir().toUri());
         variantAnnotatorExtensionTask.checkAvailable();
 
         // Update project configuration with annotator extension options

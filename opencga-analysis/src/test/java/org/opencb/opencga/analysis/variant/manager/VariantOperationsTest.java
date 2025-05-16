@@ -26,6 +26,8 @@ import org.junit.runners.Parameterized;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -34,7 +36,6 @@ import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.operations.*;
-import org.opencb.opencga.analysis.variant.operations.VariantAnnotationExtensionConfigureOperationTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -72,6 +73,7 @@ import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.CosmicVariantAnnotatorExtensionTaskTest;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.cosmic.CosmicVariantAnnotatorExtensionTask;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
@@ -785,6 +787,78 @@ public class VariantOperationsTest {
         assertEquals(newCellbaseDataRelease, cellbaseConfiguration.getDataRelease());
 
 //        assertTrue(family.getPedigreeGraph() != null);
+    }
+
+    @Test
+    public void testCosmicAnnotationExtension() throws StorageEngineException, CatalogException, IOException, ToolException {
+        // Cosmic extensions are only supported in Hadoop
+        Assume.assumeThat(storageEngine, CoreMatchers.is(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
+
+        VariantOperationsTest.removeCosmicAnnotationExtensionOptions(PROJECT, variantStorageManager, token);
+        Path cosmicPath = VariantOperationsTest.initCosmicPath(Paths.get(opencga.createTmpOutdir()));
+        File cosmicFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams().setUri(cosmicPath.toAbsolutePath().toString()),
+                false, token).first();
+
+        VariantAnnotationExtensionConfigureParams params = new VariantAnnotationExtensionConfigureParams();
+        params.setExtension(CosmicVariantAnnotatorExtensionTask.ID);
+        params.setResources(Collections.singletonList(cosmicFile.getId()));
+        ObjectMap cosmicParams = new ObjectMap();
+        cosmicParams.put(CosmicVariantAnnotatorExtensionTask.COSMIC_VERSION_KEY, COSMIC_VERSION);
+        cosmicParams.put(CosmicVariantAnnotatorExtensionTask.COSMIC_ASSEMBLY_KEY, COSMIC_ASSEMBLY);
+        params.setParams(cosmicParams);
+
+        String jobId = "annotation-extension-configure";
+        toolRunner.execute(VariantAnnotationExtensionConfigureOperationTool.class, STUDY, params,
+                Paths.get(opencga.createTmpOutdir("_" + jobId)), jobId, false, token);
+
+
+        Project project = catalogManager.getProjectManager().get(PROJECT, QueryOptions.empty(), token).first();
+        ObjectMap options = project.getInternal().getDatastores().getVariant().getOptions();
+        Assert.assertTrue(options.containsKey(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key()));
+        Assert.assertTrue(options.getAsStringList(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key()).contains(CosmicVariantAnnotatorExtensionTask.ID));
+        Assert.assertTrue(options.containsKey(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key()));
+        Assert.assertTrue(options.getString(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key()).endsWith(CosmicVariantAnnotatorExtensionTask.COSMIC_ANNOTATOR_INDEX_NAME));
+
+        try {
+            toolRunner.execute(VariantAnnotationIndexOperationTool.class, STUDY,
+                    new VariantAnnotationIndexParams(),
+                    Paths.get(opencga.createTmpOutdir("_annotation-index-no-overwrite")), "annotation-index-no-overwrite", false, token);
+            fail("Should have thrown an exception");
+        } catch (Exception e) {
+            e.printStackTrace();
+            assertEquals(ToolException.class, e.getClass());
+            assertEquals(StorageEngineException.class, e.getCause().getClass());
+            assertEquals(VariantAnnotatorException.class, e.getCause().getCause().getClass());
+            MatcherAssert.assertThat(e.getCause().getCause().getMessage(), CoreMatchers.containsString("Annotator extensions has changed"));
+        }
+
+        toolRunner.execute(VariantAnnotationIndexOperationTool.class, STUDY,
+                new VariantAnnotationIndexParams()
+                        .setOverwriteAnnotations(true),
+                Paths.get(opencga.createTmpOutdir("_annotation-index")), "annotation-index", false, token);
+
+        Query query = new Query(VariantQueryParam.STUDY.key(), ORGANIZATION + "@" + PROJECT + ":" + STUDY);
+        query.put(VariantQueryParam.ID.key(), "8:67154047:C:T,20:17605163:A:G");
+        DataResult<Variant> result = variantStorageManager.get(query, new QueryOptions(), token);
+        Assert.assertEquals(2, result.getNumResults());
+        for (Variant variant : result.getResults()) {
+            Assert.assertTrue(variant.getChromosome().equalsIgnoreCase("8") || variant.getChromosome().equals("20"));
+            Assert.assertEquals("v101", variant.getAnnotation().getTraitAssociation().get(0).getSource().getVersion());
+            Assert.assertEquals("cosmic", variant.getAnnotation().getTraitAssociation().get(0).getSource().getName());
+            Assert.assertEquals(1, variant.getAnnotation().getTraitAssociation().size());
+            if (variant.getChromosome().equals("8")) {
+                Assert.assertEquals("COSV51588246", variant.getAnnotation().getTraitAssociation().get(0).getId());
+            } else if (variant.getChromosome().equals("20")) {
+                Assert.assertEquals("COSV55713044", variant.getAnnotation().getTraitAssociation().get(0).getId());
+            }
+        }
+
+        Map<String, ObjectMap> extensions = variantStorageManager.getAnnotationMetadata("", PROJECT, token).first().getExtensions();
+        assertTrue(extensions.containsKey(CosmicVariantAnnotatorExtensionTask.ID));
+        assertTrue(extensions.get(CosmicVariantAnnotatorExtensionTask.ID).containsKey("name"));
+        assertTrue(extensions.get(CosmicVariantAnnotatorExtensionTask.ID).containsKey("version"));
+        assertTrue(extensions.get(CosmicVariantAnnotatorExtensionTask.ID).containsKey("assembly"));
+        assertTrue(extensions.get(CosmicVariantAnnotatorExtensionTask.ID).containsKey("indexCreationDate"));
     }
 
     @Test

@@ -18,23 +18,15 @@ public interface VariantAnnotatorExtensionTask extends Task<VariantAnnotation, V
     String getId();
 
     /**
-     * Set up the annotator extension.
+     * Set up the variant annotator extension.
      * This method will be called before any other method. It might generate extra files or data needed for the annotation.
      *
-     * @param output  Output directory where the annotator extension should write the files
-     * @return List of URIs of generated files (if any)
-     * @throws Exception if the annotator extension set up fails
-     */
-    List<URI> setup(URI output) throws Exception;
-
-    /**
-     * Set up the variant annotator extension.
-     *
      * @param configureParams Parameters to configure the variant annotation extension
-     * @return List of URIs of generated files (if any)
+     * @param outDir  Output directory where the annotator extension should write the files
+     * @return ObjectMap with the configuration options of the annotator extension
      * @throws Exception if the annotator extension set up fails
      */
-    List<URI> setup(VariantAnnotationExtensionConfigureParams configureParams) throws Exception;
+    List<URI> setup(VariantAnnotationExtensionConfigureParams configureParams, URI outDir) throws Exception;
 
     /**
      * Check if the annotator extension is available for the given options.

@@ -33,10 +33,8 @@ import org.opencb.biodata.models.clinical.qc.Signature;
 import org.opencb.biodata.models.clinical.qc.SignatureFitting;
 import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.variant.StudyEntry;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -50,8 +48,6 @@ import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantOperationsTest;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
-import org.opencb.opencga.analysis.variant.operations.VariantAnnotationExtensionConfigureOperationTool;
-import org.opencb.opencga.analysis.variant.operations.VariantAnnotationIndexOperationTool;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
 import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
@@ -81,16 +77,12 @@ import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualInternal;
 import org.opencb.opencga.core.models.individual.Location;
-import org.opencb.opencga.core.models.operations.variant.VariantAnnotationExtensionConfigureParams;
-import org.opencb.opencga.core.models.operations.variant.VariantAnnotationIndexParams;
 import org.opencb.opencga.core.models.operations.variant.VariantIndexParams;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
-import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
 import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.resource.ResourceFetcherToolParams;
@@ -109,7 +101,6 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.cosmic.CosmicVariantAnnotatorExtensionTask;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
@@ -127,8 +118,6 @@ import static org.hamcrest.CoreMatchers.hasItem;
 import static org.junit.Assert.*;
 import static org.opencb.opencga.core.api.FieldConstants.SAME_AS_INPUT_VCF;
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
-import static org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.CosmicVariantAnnotatorExtensionTaskTest.COSMIC_ASSEMBLY;
-import static org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.CosmicVariantAnnotatorExtensionTaskTest.COSMIC_VERSION;
 
 @RunWith(Parameterized.class)
 @Category(LongTests.class)
@@ -1310,62 +1299,6 @@ public class VariantAnalysisTest {
             e.printStackTrace();
             System.out.println("Error downloading Liftover resources via ResourceFetcherTool, so JUnit tests won't be executed");
             return false;
-        }
-    }
-
-    @Test
-    public void testCosmicAnnotationExtension() throws StorageEngineException, CatalogException, IOException, ToolException {
-        variantStorageManager.getStorageConfiguration().setMode(StorageConfiguration.Mode.READ_WRITE);
-
-        VariantOperationsTest.removeCosmicAnnotationExtensionOptions(PROJECT, variantStorageManager, token);
-        Path cosmicPath = VariantOperationsTest.initCosmicPath(Paths.get(opencga.createTmpOutdir()));
-        File cosmicFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams().setUri(cosmicPath.toAbsolutePath().toString()),
-                false, token).first();
-
-        VariantAnnotationExtensionConfigureParams params = new VariantAnnotationExtensionConfigureParams();
-        params.setExtension(CosmicVariantAnnotatorExtensionTask.ID);
-        params.setResources(Collections.singletonList(cosmicFile.getId()));
-        ObjectMap cosmicParams = new ObjectMap();
-        cosmicParams.put(CosmicVariantAnnotatorExtensionTask.COSMIC_VERSION_KEY, COSMIC_VERSION);
-        cosmicParams.put(CosmicVariantAnnotatorExtensionTask.COSMIC_ASSEMBLY_KEY, COSMIC_ASSEMBLY);
-        params.setParams(cosmicParams);
-
-        String jobId = "annotation-extension-configure";
-        toolRunner.execute(VariantAnnotationExtensionConfigureOperationTool.class, STUDY, params,
-                Paths.get(opencga.createTmpOutdir("_" + jobId)), jobId, false, token);
-
-
-        Project project = catalogManager.getProjectManager().get(PROJECT, QueryOptions.empty(), token).first();
-        ObjectMap options = project.getInternal().getDatastores().getVariant().getOptions();
-        System.out.println("project.getInternal().getDatastores().getVariant().getOptions() = " + options.toJson());
-        Assert.assertTrue(options.containsKey(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key()));
-        Assert.assertTrue(options.getAsStringList(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key()).contains(CosmicVariantAnnotatorExtensionTask.ID));
-        Assert.assertTrue(options.containsKey(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key()));
-        Assert.assertTrue(options.getString(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key()).endsWith(CosmicVariantAnnotatorExtensionTask.COSMIC_ANNOTATOR_INDEX_NAME));
-
-        VariantAnnotationIndexParams variantAnnotationIndexParams = new VariantAnnotationIndexParams();
-        variantAnnotationIndexParams.setOverwriteAnnotations(true);
-
-        toolRunner.execute(VariantAnnotationIndexOperationTool.class, STUDY,
-                variantAnnotationIndexParams,
-                Paths.get(opencga.createTmpOutdir("_annotation-index")), "annotation-index", false, token);
-
-        variantStorageManager.getStorageConfiguration().setMode(StorageConfiguration.Mode.READ_ONLY);
-
-        Query query = new Query(VariantQueryParam.STUDY.key(), ORGANIZATION + "@" + PROJECT + ":" + STUDY);
-        query.put(VariantQueryParam.ID.key(), "8:67154047:C:T,20:17605163:A:G");
-        DataResult<Variant> result = variantStorageManager.get(query, new QueryOptions(), token);
-        Assert.assertEquals(2, result.getNumResults());
-        for (Variant variant : result.getResults()) {
-            Assert.assertTrue(variant.getChromosome().equalsIgnoreCase("8") || variant.getChromosome().equals("20"));
-            Assert.assertEquals("v101", variant.getAnnotation().getTraitAssociation().get(0).getSource().getVersion());
-            Assert.assertEquals("cosmic", variant.getAnnotation().getTraitAssociation().get(0).getSource().getName());
-            Assert.assertEquals(1, variant.getAnnotation().getTraitAssociation().size());
-            if (variant.getChromosome().equals("8")) {
-                Assert.assertEquals("COSV51588246", variant.getAnnotation().getTraitAssociation().get(0).getId());
-            } else if (variant.getChromosome().equals("20")) {
-                Assert.assertEquals("COSV55713044", variant.getAnnotation().getTraitAssociation().get(0).getId());
-            }
         }
     }
 
