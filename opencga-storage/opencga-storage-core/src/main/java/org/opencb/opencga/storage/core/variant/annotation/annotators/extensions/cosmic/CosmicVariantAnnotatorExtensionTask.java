@@ -119,8 +119,9 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
 
             Path tmpPath = outDirPath.resolve("tmp");
             decompressTarBall(cosmicFile, tmpPath);
-            if (tmpPath.toFile().listFiles() != null) {
-                for (File file : tmpPath.toFile().listFiles()) {
+            File[] files = tmpPath.toFile().listFiles();
+            if (files != null) {
+                for (File file : files) {
                     if (file.getName().contains("Classification")) {
                         classificationFile = file.toPath();
                     } else if (file.getName().contains("GenomeScreensMutant")) {
@@ -146,6 +147,17 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
                 CosmicParser101.parse(genomeScreensMutantFile, classificationFile, cosmicVersion, ID, cosmicAssembly, callback);
             } catch (IOException e) {
                 throw new ToolException(e);
+            }
+
+            // Remove temporary files
+            try {
+                logger.info("Removing temporary files");
+                for (File file : files) {
+                    Files.deleteIfExists(file.toPath());
+                }
+                Files.delete(tmpPath);
+            } catch (IOException e) {
+                logger.warn("Error deleting temporary files", e);
             }
         }
 
