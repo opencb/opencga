@@ -1,7 +1,7 @@
 Package: opencgaR
 Type: Package
 Title: Querying Opencga Data
-Version: OPENCGA_R_VERSION
+Version: 3.1.0
 Author: Zetta Genomics
 Maintainer: Zetta Genomics <support@zettagenomics.com>
 Description: R client that contains classes and methods for working with
