@@ -76,4 +76,3 @@ jobs:
         with:
           name: opencga_enterprise_R_client${{ steps.version.outputs.version }}.tar.gz
           path: build/opencga_enterprise_R_client${{ steps.version.outputs.version }}.tar.gz
-
