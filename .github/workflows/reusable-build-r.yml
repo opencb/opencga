@@ -74,5 +74,5 @@ jobs:
       - name: Upload built R package as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: opencga_enterpriseR_${{ steps.version.outputs.version }}.tar.gz
-          path: build/opencgaR_${{ steps.version.outputs.version }}.tar.gz
+          name: opencga_enterprise_R_client${{ steps.version.outputs.version }}.tar.gz
+          path: build/opencga_enterprise_R_client${{ steps.version.outputs.version }}.tar.gz
