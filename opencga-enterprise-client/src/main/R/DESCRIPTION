@@ -1,4 +1,4 @@
-Package: opencgaR
+Package: opencgaEnterpriseR
 Type: Package
 Title: Querying Opencga Data
 Version: OPENCGA_R_VERSION
