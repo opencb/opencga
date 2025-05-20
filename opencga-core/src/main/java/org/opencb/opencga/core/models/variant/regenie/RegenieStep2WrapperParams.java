@@ -17,10 +17,14 @@
 package org.opencb.opencga.core.models.variant.regenie;
 
 import org.opencb.commons.annotations.DataField;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
 public class RegenieStep2WrapperParams extends ToolParams {
+
+    @DataField(id = "regenieParams", description = FieldConstants.REGENIE_OPTIONS_DESCRIPTION)
+    private ObjectMap regenieParams;
 
     @DataField(id = "step1JobId", description = FieldConstants.REGENIE_STEP1_JOB_ID_DESCRIPTION)
     private String step1JobId;

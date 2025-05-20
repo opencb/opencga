@@ -1,6 +1,8 @@
 package org.opencb.opencga.analysis.wrappers.regenie;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -13,7 +15,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-import static org.opencb.opencga.analysis.wrappers.regenie.RegenieUtils.STEP1_PRED_LIST_FILNEMANE;
+import static org.opencb.opencga.analysis.wrappers.regenie.RegenieUtils.*;
 
 @ToolExecutor(id = RegenieStep1WrapperAnalysisExecutor.ID,
         tool = RegenieStep1WrapperAnalysis.ID,
@@ -24,38 +26,81 @@ public class RegenieStep1WrapperAnalysisExecutor extends DockerWrapperAnalysisEx
     public static final String ID = RegenieStep1WrapperAnalysis.ID + "-local";
 
     private String study;
-    private Path step1ScriptPath;
-    private Path inputPath;
+    private ObjectMap options;
     private Path outputPath;
 
     @Override
     protected void run() throws Exception {
         try {
+            // Add regenie parameters
+            addParameters(options);
+
+            // Main command line and params
+            Path inputPath = null;
+            StringBuilder params = new StringBuilder("regenie --step 1");
+            params.append(" --out ").append(OUTPUT_VIRTUAL_PATH).append("/step1");
+            if (options != null) {
+                logger.info("Regenie options: {}", options.toJson());
+                for (String key : options.keySet()) {
+                    if (SKIP_OPTIONS.contains(key)) {
+                        continue;
+                    }
+                    if (ALL_FILE_OPTIONS.contains(key)) {
+                        // Sanity check
+                        if (StringUtils.isEmpty(options.getString(key))) {
+                            throw new ToolExecutorException("Missing value for file option: " + key);
+                        }
+                        Path path = Paths.get(options.getString(key));
+                        if (!Files.exists(path)) {
+                            throw new ToolExecutorException("File not found: " + path);
+                        }
+                        // Add to input bindings
+                        if (inputPath == null) {
+                            inputPath = path.getParent();
+                        } else if (!inputPath.toAbsolutePath().toString().equals(path.getParent().toAbsolutePath().toString())) {
+                            throw new ToolExecutorException("All input files are expected to be in the same directory: " + inputPath
+                                    + " vs " + path);
+                        }
+
+                        // Remove extension
+                        String filename = path.getFileName().toString();
+                        if (filename.endsWith(".bed")) {
+                            filename = filename.substring(0, filename.length() - 4);
+                        } else if (filename.endsWith(".bgen") || filename.endsWith(".pgen")) {
+                            filename = filename.substring(0, filename.length() - 5);
+                        }
+                        params.append(" ").append(key).append(" ").append(INPUT_VIRTUAL_PATH).append("/").append(filename);
+                    } else {
+                        if (options.get(key) instanceof String) {
+                            String value = options.getString(key);
+                            if ("TRUE".equalsIgnoreCase(value)) {
+                                params.append(" ").append(key);    // Sanity check
+                            } else if (!"FALSE".equalsIgnoreCase(value)) {
+                                params.append(" ").append(key).append(" ").append(value);
+                            }
+                        } else {
+                            params.append(" ").append(key).append(" ").append(options.get(key));
+                        }
+                    }
+                }
+            }
+
             // Input bindings
             List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
-            Path virtualScriptPath = Paths.get(SCRIPT_VIRTUAL_PATH).resolve(step1ScriptPath.getFileName());
-            inputBindings.add(new AbstractMap.SimpleEntry<>(step1ScriptPath.toAbsolutePath().toString(), virtualScriptPath.toString()));
             inputBindings.add(new AbstractMap.SimpleEntry<>(inputPath.toAbsolutePath().toString(), INPUT_VIRTUAL_PATH));
 
             // Read only input bindings
             Set<String> readOnlyInputBindings = new HashSet<>();
-            readOnlyInputBindings.add(virtualScriptPath.toString());
+            readOnlyInputBindings.add(inputPath.toAbsolutePath().toString());
 
             // Output binding
             AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(outputPath.toAbsolutePath().toString(),
                     OUTPUT_VIRTUAL_PATH);
 
-            // Main command line and params
-            String params = "bash " + virtualScriptPath
-                    + " " + INPUT_VIRTUAL_PATH
-                    + " " + RegenieUtils.VCF_BASENAME
-                    + " " + RegenieUtils.PHENO_FILENAME
-                    + " " + OUTPUT_VIRTUAL_PATH;
-
             // Execute Pythong script in docker
             String dockerImage = getDockerImageName() + ":" + getDockerImageVersion();
 
-            String dockerCli = buildCommandLine(dockerImage, inputBindings, readOnlyInputBindings, outputBinding, params, null);
+            String dockerCli = buildCommandLine(dockerImage, inputBindings, readOnlyInputBindings, outputBinding, params.toString(), null);
             addEvent(Event.Type.INFO, "Docker command line: " + dockerCli);
             logger.info("Docker command line: {}", dockerCli);
             runCommandLine(dockerCli);
@@ -78,16 +123,6 @@ public class RegenieStep1WrapperAnalysisExecutor extends DockerWrapperAnalysisEx
         }
     }
 
-    @Override
-    public String getDockerImageName() throws ToolException {
-        return "opencb/opencga-regenie";
-    }
-
-    @Override
-    public String getDockerImageVersion() {
-        return "4.0.0-SNAPSHOT"; //GitRepositoryState.getInstance().getBuildVersion();
-    }
-
     public String getStudy() {
         return study;
     }
@@ -97,21 +132,12 @@ public class RegenieStep1WrapperAnalysisExecutor extends DockerWrapperAnalysisEx
         return this;
     }
 
-    public Path getStep1ScriptPath() {
-        return step1ScriptPath;
+    public ObjectMap getOptions() {
+        return options;
     }
 
-    public RegenieStep1WrapperAnalysisExecutor setStep1ScriptPath(Path step1ScriptPath) {
-        this.step1ScriptPath = step1ScriptPath;
-        return this;
-    }
-
-    public Path getInputPath() {
-        return inputPath;
-    }
-
-    public RegenieStep1WrapperAnalysisExecutor setInputPath(Path inputPath) {
-        this.inputPath = inputPath;
+    public RegenieStep1WrapperAnalysisExecutor setOptions(ObjectMap options) {
+        this.options = options;
         return this;
     }
 

@@ -31,9 +31,9 @@ public abstract class DockerWrapperAnalysisExecutor extends OpenCgaToolExecutor 
     public static final String DOCKER_INPUT_PATH = "/data/input";
     public static final String DOCKER_OUTPUT_PATH = "/data/output";
 
-    protected static final String SCRIPT_VIRTUAL_PATH = "/script";
-    protected static final String INPUT_VIRTUAL_PATH = "/input";
-    protected static final String OUTPUT_VIRTUAL_PATH = "/output";
+    public static final String SCRIPT_VIRTUAL_PATH = "/script";
+    public static final String INPUT_VIRTUAL_PATH = "/input";
+    public static final String OUTPUT_VIRTUAL_PATH = "/output";
     protected static final String RESOURCES_VIRTUAL_PATH = "/" + RESOURCES_DIRNAME;
 
     protected static final String RESOURCES_ATTR_KEY = "resources";
@@ -200,9 +200,9 @@ public abstract class DockerWrapperAnalysisExecutor extends OpenCgaToolExecutor 
         return buildCommandLine(image, inputBindings, null, outputBinding, cmdParams, dockerParams);
     }
 
-    protected String buildCommandLine(String image, List<AbstractMap.SimpleEntry<String, String>> inputBindings,
-                                      Set<String> readOnlyInputBindings, AbstractMap.SimpleEntry<String, String> outputBinding,
-                                      String cmdParams, Map<String, String> dockerParams) throws IOException {
+    public String buildCommandLine(String image, List<AbstractMap.SimpleEntry<String, String>> inputBindings,
+                                   Set<String> readOnlyInputBindings, AbstractMap.SimpleEntry<String, String> outputBinding,
+                                   String cmdParams, Map<String, String> dockerParams) throws IOException {
         // Sanity check
         if (outputBinding == null) {
             throw new IllegalArgumentException("Missing output binding");
@@ -250,7 +250,7 @@ public abstract class DockerWrapperAnalysisExecutor extends OpenCgaToolExecutor 
         return commandLine.toString();
     }
 
-    protected void runCommandLine(String cmdline) throws ToolException {
+    public void runCommandLine(String cmdline) throws ToolException {
         checkDockerDaemonAlive();
         try {
             new Command(cmdline)

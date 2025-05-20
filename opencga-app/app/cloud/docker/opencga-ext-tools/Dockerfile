@@ -48,26 +48,27 @@ RUN apt-get update && \
     wget -qO- https://github.com/rgcgithub/regenie/releases/download/v4.0/regenie_v4.0.gz_x86_64_Linux.zip | gunzip > /usr/local/bin/regenie && \
     chmod +x /usr/local/bin/regenie && \
 
-    ## 5. Installation dependencies using R install.packages() is slower than apt-get but final size is 400MB smaller.
-    R -e "install.packages(c('BiocManager', 'RCircos', 'nnls', 'ggplot2', 'jsonlite', 'optparse', 'knitr', 'configr', 'dplyr', 'rmarkdown', 'tidyr', 'httr', 'kinship2', 'limSolve'))" && \
-    R -e "BiocManager::install('BiocStyle')" && \
-    R -e "BiocManager::install('BSgenome.Hsapiens.UCSC.hg38')" && \
-
-    ## 6. Install signature.tools.lib installation \
-    R -e "install.packages(c('devtools', 'getopt'), repos=c('http://cran.rstudio.com/', 'https://www.stats.bris.ac.uk/R/'))" && \
-    git clone https://github.com/Nik-Zainal-Group/signature.tools.lib.git /opt/opencga/signature.tools.lib && \
-    cd /opt/opencga/signature.tools.lib && \
-    git fetch origin --tags && \
-    git checkout tags/v2.4.4 && \
-    sed -i '/Mmusculus/d' DESCRIPTION && \
-    sed -i '/Cfamiliaris/d' DESCRIPTION && \
-    sed -i '/1000genomes/d' DESCRIPTION && \
-    R -e "options(timeout = 3600);devtools::install(repos='https://www.stats.bris.ac.uk/R/')" && \
-    cd .. && \
+#    ## 5. Installation dependencies using R install.packages() is slower than apt-get but final size is 400MB smaller.
+#    R -e "install.packages(c('BiocManager', 'RCircos', 'nnls', 'ggplot2', 'jsonlite', 'optparse', 'knitr', 'configr', 'dplyr', 'rmarkdown', 'tidyr', 'httr', 'kinship2', 'limSolve'))" && \
+#    R -e "BiocManager::install('BiocStyle')" && \
+#    R -e "BiocManager::install('BSgenome.Hsapiens.UCSC.hg38')" && \
+#
+#    ## 6. Install signature.tools.lib installation \
+#    R -e "install.packages(c('devtools', 'getopt'), repos=c('http://cran.rstudio.com/', 'https://www.stats.bris.ac.uk/R/'))" && \
+#    git clone https://github.com/Nik-Zainal-Group/signature.tools.lib.git /opt/opencga/signature.tools.lib && \
+#    cd /opt/opencga/signature.tools.lib && \
+#    git fetch origin --tags && \
+#    git checkout tags/v2.4.4 && \
+#    sed -i '/Mmusculus/d' DESCRIPTION && \
+#    sed -i '/Cfamiliaris/d' DESCRIPTION && \
+#    sed -i '/1000genomes/d' DESCRIPTION && \
+#    R -e "options(timeout = 3600);devtools::install(repos='https://www.stats.bris.ac.uk/R/')" && \
+#    cd .. && \
 
     ## 7. Clean up
     apt-get clean && \
-    rm -rf samtools-1.21 bcftools-1.21 /var/lib/apt/lists/* /tmp/* /opt/opencga/signature.tools.lib/.git && \
+    rm -rf samtools-1.21 bcftools-1.21 /var/lib/apt/lists/* /tmp/* && \
+#    rm -rf /opt/opencga/signature.tools.lib/.git && \
     strip --remove-section=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so.5
 
 # Set the working directory

@@ -1442,8 +1442,12 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), RegenieStep1WrapperParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "phenoFile", commandOptions.phenoFile, true);
+            putNestedMapIfNotEmpty(beanParams, "regenieParams", commandOptions.regenieParams, true);
+            putNestedIfNotEmpty(beanParams, "vcfFile", commandOptions.vcfFile, true);
             putNestedMapIfNotEmpty(beanParams, "variantExportQuery", commandOptions.variantExportQuery, true);
+            putNestedIfNotEmpty(beanParams, "controlCohort", commandOptions.controlCohort, true);
+            putNestedIfNotEmpty(beanParams, "caseCohort", commandOptions.caseCohort, true);
+            putNestedIfNotEmpty(beanParams, "phenotype", commandOptions.phenotype, true);
             putNestedIfNotEmpty(beanParams, "docker.name", commandOptions.dockerName, true);
             putNestedIfNotEmpty(beanParams, "docker.tag", commandOptions.dockerTag, true);
             putNestedIfNotEmpty(beanParams, "docker.username", commandOptions.dockerUsername, true);

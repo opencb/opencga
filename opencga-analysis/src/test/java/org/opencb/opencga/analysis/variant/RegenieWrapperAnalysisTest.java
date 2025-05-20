@@ -62,8 +62,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import static org.opencb.opencga.analysis.wrappers.regenie.RegenieUtils.FILE_PREFIX;
 import static org.opencb.opencga.analysis.wrappers.regenie.RegenieUtils.REGENIE_RESULTS_FILENAME;
 
 @RunWith(Parameterized.class)
@@ -263,8 +266,13 @@ public class RegenieWrapperAnalysisTest {
         File opencgaPhenoFile = catalogManager.getFileManager().link(STUDY, linkParams, true, token).first();
         System.out.println("opencgaPhenoFile.getUri() = " + opencgaPhenoFile.getUri());
 
+        ObjectMap options = new ObjectMap()
+                .append("--phenoFile", FILE_PREFIX + opencgaPhenoFile.getPath())
+                .append("--bsize", 1000)
+                .append("--bt", "TRUE");
+
         RegenieStep1WrapperParams params = new RegenieStep1WrapperParams()
-                .setPhenoFile(opencgaPhenoFile.getId())
+                .setRegenieParams(options)
                 .setDocker(new RegenieDockerParams(dockerName, null, dockerUsername, dockerPassword));
 
         ObjectMap variantExportQuery = new ObjectMap();
@@ -296,7 +304,7 @@ public class RegenieWrapperAnalysisTest {
         String dockerPassword = split[2];
 
         String dockerName = "joaquintarraga/regenie-walker";
-        String dockerTag = "1747037847-5883";
+        String dockerTag = "1747666518-6905";
         String walkerDockerImage = dockerName + ":" + dockerTag;
         Assume.assumeTrue(RegenieUtils.isDockerImageAvailable(walkerDockerImage, dockerUsername, dockerPassword));
 
