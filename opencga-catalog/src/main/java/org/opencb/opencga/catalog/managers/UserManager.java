@@ -909,7 +909,8 @@ public class UserManager extends AbstractManager {
                         .get(0);
                 user.setOrganization(organizationId);
                 // Generate a root token to be able to create the user even if the installation is private
-                String rootToken = authenticationFactory.createToken(organizationId, CatalogAuthenticationManager.OPENCGA, OPENCGA);
+                String rootToken = authenticationFactory.createToken(ParamConstants.ADMIN_ORGANIZATION,
+                        CatalogAuthenticationManager.OPENCGA, OPENCGA);
                 create(user, null, rootToken);
             }
         }
