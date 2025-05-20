@@ -10,10 +10,10 @@ on:
 
 jobs:
   build:
-    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
+    uses: ./.github/workflows/build-java-enterprise-workflow.yml
     with:
-      maven_opts: -Phdp3.1 -Dopencga.war.name=opencga -Dcheckstyle.skip
-      build_folder: build-folder
+      storage_hadoop: hdp3.1
+      artifact_name: build-folder
 
   build-test-publish:
     runs-on: ubuntu-latest
