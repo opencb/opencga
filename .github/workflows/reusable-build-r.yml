@@ -39,8 +39,8 @@ jobs:
       - name: Build Docker image
         run: |
           docker build -t opencb/opencga-r-builder:dev \
-            -f opencga-app/app/cloud/docker/opencga-r-builder/Dockerfile \
-            opencga-app/app/cloud/docker/opencga-r-builder
+            -f opencga-home/opencga-app/app/cloud/docker/opencga-r-builder/Dockerfile \
+            opencga-home/opencga-app/app/cloud/docker/opencga-r-builder
 
       - name: Test R CMD build inside container
         run: |
