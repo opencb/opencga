@@ -26,14 +26,14 @@ Suggests:
     miniUI,
     shiny
 Collate: 
+    'AllClasses.R'
+    'commons.R'
+    'AllGenerics.R'
     'Admin-methods.R'
     'Alignment-methods.R'
-    'AllClasses.R'
-    'AllGenerics.R'
+    'CVDB-methods.R'
     'Clinical-methods.R'
     'Cohort-methods.R'
-    'commons.R'
-    'CVDB-methods.R'
     'Family-methods.R'
     'Federation-methods.R'
     'File-methods.R'
