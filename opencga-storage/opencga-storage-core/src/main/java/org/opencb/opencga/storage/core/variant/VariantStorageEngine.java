@@ -735,18 +735,29 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             throw new StorageEngineException("Search is not active!");
         }
 
-        SearchIndexMetadata indexMetadata = getVariantSearchManager().getSearchIndexMetadata();
+        VariantSearchManager variantSearchManager = getVariantSearchManager();
+        SearchIndexMetadata indexMetadata = variantSearchManager.getSearchIndexMetadata();
 
         if (indexMetadata == null) {
-            // Create if it does not exist
-            indexMetadata = getVariantSearchManager().createIndexMetadataIfEmpty(configuration.getSearch().getConfigSet());
+            if (variantSearchManager.existsCollection(dbName)) {
+                // Check if a default collection exists
+                indexMetadata = variantSearchManager.createMissingIndexMetadata();
+            } else {
+                // Create if it does not exist
+                indexMetadata = variantSearchManager.createIndexMetadataIfEmpty(configuration.getSearch().getConfigSet());
+            }
         } else if (overwrite) {
             boolean shouldCreateNewIndex = false;
             if (!indexMetadata.getConfigSetId().equals(configuration.getSearch().getConfigSet())) {
+                logger.info("ConfigSetId changed from '{}' to '{}'. Creating new secondary annotation index to match new configSetId",
+                        indexMetadata.getConfigSetId(), configuration.getSearch().getConfigSet());
                 shouldCreateNewIndex = true;
             }
             if (shouldCreateNewIndex) {
-                indexMetadata = getVariantSearchManager().newIndexMetadata(configuration.getSearch().getConfigSet());
+                indexMetadata = variantSearchManager.newIndexMetadata(configuration.getSearch().getConfigSet());
+                logger.info("Creating new secondary annotation index collection:'{}' , configSetId:'{}'",
+                        variantSearchManager.buildCollectionName(indexMetadata),
+                        indexMetadata.getConfigSetId());
             }
         }
 
@@ -825,7 +836,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 projectMetadata.getAttributes().put(SEARCH_INDEX_LAST_TIMESTAMP.key(), newTimestamp);
                 projectMetadata.getSecondaryAnnotationIndex().getIndexMetadata(indexMetadata.getVersion())
                         .setStatus(SearchIndexMetadata.Status.ACTIVE)
-                        .setModificationDate(Instant.ofEpochMilli(newTimestamp));
+                        .setModificationDate(Date.from(Instant.ofEpochMilli(newTimestamp)));
                 return projectMetadata;
             });
 

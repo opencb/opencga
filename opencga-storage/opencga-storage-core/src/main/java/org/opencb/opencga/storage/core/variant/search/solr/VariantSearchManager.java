@@ -23,9 +23,12 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.variant.Variant;
@@ -655,6 +658,28 @@ public class VariantSearchManager {
         }
     }
 
+    public SearchIndexMetadata createMissingIndexMetadata() throws VariantSearchException, IOException,
+            StorageEngineException {
+        String collectionName = dbName;
+        if (existsCollection(collectionName)) {
+            CollectionAdminResponse response;
+            try {
+                response = CollectionAdminRequest.getClusterStatus().setCollectionName(collectionName)
+                        .process(getSolrClient());
+            } catch (SolrServerException e) {
+                throw new VariantSearchException("Error getting cluster status", e);
+            }
+            NamedList<Object> cluster = (NamedList<Object>) response.getResponse().get("cluster");
+            NamedList<Object> collections = (NamedList<Object>) cluster.get("collections");
+            Map<String, Object>  collection = (Map<String, Object>) collections.get(collectionName);
+            String configName = collection.get("configName").toString();
+            logger.info("Collection {} exists. Missing index metadata. Create index metadata for configSet {}",
+                    collectionName, configName);
+            return createIndexMetadataIfEmpty(configName);
+        }
+        return null;
+    }
+
     public SearchIndexMetadata createIndexMetadataIfEmpty(String configSetId) throws StorageEngineException {
         return newIndexMetadata(configSetId, true);
     }
@@ -696,8 +721,8 @@ public class VariantSearchManager {
         String collectionNameSuffix = newVersion == 1 ? "" : String.valueOf(newVersion);
         SearchIndexMetadata indexMetadata = new SearchIndexMetadata(
                 newVersion,
-                Instant.now(),
-                Instant.now(),
+                Date.from(Instant.now()),
+                Date.from(Instant.now()),
                 SearchIndexMetadata.Status.STAGING,
                 configSetId,
                 collectionNameSuffix,

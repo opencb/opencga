@@ -18,6 +18,7 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenix
 import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsDBCleaner;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 
@@ -40,7 +41,8 @@ public class HadoopVariantSearchDataWriter extends SolrInputDocumentDataWriter {
             @Override
             protected BufferedMutatorParams buildBufferedMutatorParams() {
                 // Set write buffer size to 10GB to ensure that will only be triggered manually on flush
-                return super.buildBufferedMutatorParams().writeBufferSize(10L * 1024L * 1024L * 1024L);
+                return super.buildBufferedMutatorParams().writeBufferSize(10L * 1024L * 1024L * 1024L)
+                        .setWriteBufferPeriodicFlushTimeoutMs(TimeUnit.DAYS.toMillis(365)); // 1 year
             }
         };
         this.cleaner = new SecondaryIndexPendingVariantsManager(dbAdaptor).cleaner();

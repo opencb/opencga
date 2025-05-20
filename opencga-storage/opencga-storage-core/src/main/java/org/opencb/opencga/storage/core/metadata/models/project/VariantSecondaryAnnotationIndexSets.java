@@ -37,7 +37,7 @@ public class VariantSecondaryAnnotationIndexSets {
         SearchIndexMetadata stagingIndex = null;
         for (SearchIndexMetadata indexSet : values) {
             if (indexSet.getStatus() == SearchIndexMetadata.Status.STAGING) {
-                if (stagingIndex == null || stagingIndex.getCreationDate().isBefore(indexSet.getCreationDate())) {
+                if (stagingIndex == null || stagingIndex.getCreationDate().before(indexSet.getCreationDate())) {
                     stagingIndex = indexSet;
                 }
             }

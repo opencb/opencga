@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.core.variant.search.solr;
 
 import com.google.common.base.Throwables;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.opencb.commons.io.DataWriter;
@@ -9,10 +10,12 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class SolrInputDocumentDataWriter implements DataWriter<SolrInputDocument> {
 
+    public static final int MAX_RETRIES = 5;
     private final String collection;
     private final SolrClient solrClient;
     private final int insertBatchSize;
@@ -55,24 +58,58 @@ public class SolrInputDocumentDataWriter implements DataWriter<SolrInputDocument
     }
 
     protected void add(List<SolrInputDocument> batch) throws Exception {
-        UpdateResponse response = solrClient.add(collection, batch);
+        UpdateResponse response = retry(() -> solrClient.add(collection, batch));
         addTimeMs += response.getElapsedTime();
-        if (response.getException() != null) {
-            // FIXME: Is this even possible?
-            throw response.getException();
-        }
         serverBufferSize += batch.size();
     }
 
     protected void commit() throws Exception {
-        UpdateResponse response = solrClient.commit(collection, true, true, false);
+        UpdateResponse response = retry(() -> new UpdateRequest()
+                .setAction(UpdateRequest.ACTION.COMMIT, true, false, 1, false, false, false)
+//                .setAction(UpdateRequest.ACTION.COMMIT, true, true)
+                .process(solrClient, collection));
         commitTimeMs += response.getElapsedTime();
-        if (response.getException() != null) {
-            // FIXME: Is this even possible?
-            throw response.getException();
-        }
         insertedDocuments += serverBufferSize;
         serverBufferSize = 0;
+    }
+
+    @FunctionalInterface
+    public interface SolrClientFunction<T, E extends Exception> {
+        T apply() throws E;
+    }
+
+    private <E extends Exception> UpdateResponse retry(SolrClientFunction<UpdateResponse, E> f) throws Exception {
+        int retry = 0;
+        List<Exception> suppressed = null;
+        while (true) {
+            try {
+                UpdateResponse apply = f.apply();
+                if (apply.getException() != null) {
+                    // FIXME: Is this even possible?
+                    throw apply.getException();
+                }
+                return apply;
+            } catch (Exception e) {
+                logger.warn("Error while writing to Solr: {}. Retrying... (attempt {}/{})", e.getMessage(), retry, MAX_RETRIES);
+                if (retry++ > MAX_RETRIES) {
+                    for (Exception s : suppressed) {
+                        e.addSuppressed(s);
+                    }
+                    throw e;
+                } else {
+                    if (suppressed == null) {
+                        suppressed = new ArrayList<>(MAX_RETRIES);
+                    }
+                    suppressed.add(e);
+                }
+                try {
+                    Thread.sleep(1000 * retry);
+                } catch (InterruptedException ex) {
+                    // Stop retrying.
+                    throw e;
+                }
+            }
+        }
     }
 
 }
