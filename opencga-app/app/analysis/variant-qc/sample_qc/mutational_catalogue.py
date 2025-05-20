@@ -13,8 +13,18 @@ from utils import create_output_dir, execute_bash_command, bgzip_vcf, get_revers
 
 LOGGER = logging.getLogger('variant_qc_logger')
 
+ASSEMBLY = 'GRCh38'
 REFERENCE_GENOME_FASTA_FNAME = 'Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz'
-
+TYPE_DEL = "del"
+TYPE_TDS = "tds"
+TYPE_INV = "inv"
+TYPE_TRANS = "trans"
+LENGTH_NA = "na"
+LENGTH_1_10Kb = "1-10Kb"
+LENGTH_10Kb_100Kb = "10-100Kb"
+LENGTH_100Kb_1Mb = "100Kb-1Mb"
+LENGTH_1Mb_10Mb = "1Mb-10Mb"
+LENGTH_10Mb = ">10Mb"
 
 class MutationalCatalogueAnalysis:
     def __init__(self, vcf_file, resource_dir, config_json, output_dir, sample_id):
@@ -27,7 +37,7 @@ class MutationalCatalogueAnalysis:
         :param str sample_id: Sample ID
         """
         self.vcf_file = vcf_file
-        self.resource_dir = resource_dir
+        self.resource_dir = os.path.realpath(os.path.expanduser(resource_dir))
         self.config_json = config_json
         self.output_dir = output_dir
         self.sample_id = sample_id
@@ -38,13 +48,18 @@ class MutationalCatalogueAnalysis:
         # Getting variant type from query
         self.ms_type = self.get_ms_type()
 
-        # Intermediate files
-        self.snv_vcf_fpath = os.path.join(self.output_dir,
-                                          'SNV-' + re.sub('\.gz$', '', os.path.basename(self.vcf_file)) + '.bgz')
-        self.sv_vcf_fpath = os.path.join(self.output_dir,
-                                         'SV-' + re.sub('\.gz$', '', os.path.basename(self.vcf_file)) + '.bgz')
-        self.snv_genome_context_fpath = os.path.join(self.output_dir,
-                                                     'OPENCGA_{}_GRCh38_genome_context.csv'.format(self.sample_id))
+        # Expected input files in resource directory
+        self.snv_all_vcf_fpath = os.path.join(self.resource_dir, 'SNV_all.vcf.gz')
+        self.sv_all_vcf_fpath = os.path.join(self.resource_dir, 'SV_all.vcf.gz')
+        self.snv_filtered_vcf_fpath = os.path.join(self.resource_dir, 'SNV_filtered.vcf.gz')\
+            if os.path.isfile(os.path.join(self.resource_dir, 'SNV_filtered.vcf.gz')) else self.snv_all_vcf_fpath
+        self.sv_filtered_vcf_fpath = os.path.join(self.resource_dir, 'SV_filtered.vcf.gz')\
+            if os.path.isfile(os.path.join(self.resource_dir, 'SV_filtered.vcf.gz')) else self.sv_all_vcf_fpath
+
+        # Expected output files
+        self.snv_genome_context_fpath = os.path.join(
+            self.output_dir, 'OPENCGA_{}_{}_genome_context.csv'.format(self.sample_id, ASSEMBLY)
+        )
 
         # CONFIG
         #     "msId": "",
@@ -70,45 +85,6 @@ class MutationalCatalogueAnalysis:
             ms_type = self.config_json['signatures']['msQuery']['type']
         return ms_type
 
-    @staticmethod
-    def vcf_filter_iterator(vcf_fpath, opencga_query, header=True):
-        """Filter a VCF given an opencga query
-
-        :param str vcf_fpath: VCF input file path
-        :param dict opencga_query: Output directory path for resources
-        :param bool header: Include VCF header if true
-        :returns: VCF variants
-        """
-        # BGZIPping VCF (pysam requirement)
-        vcf_fpath = bgzip_vcf(vcf_fpath)
-
-        # Translating variant types
-        type_ = []
-        if 'type' in opencga_query:
-            for t in opencga_query['type'].split(','):
-                if t == 'SNV':
-                    type_ += ['Sub']
-                if t == 'INDEL':
-                    type_ += ['Del', 'Ins']
-                if t == 'SV':
-                    type_ += ['BND', 'DELETION', 'BREAKEND', 'DUPLICATION', 'TANDEM_DUPLICATION', 'INVERSION', 'TRANSLOCATION']
-                if t == 'CNV':
-                    type_ += ['CNV', 'COPY_NUMBER']
-
-        # Opening VCF file (BGZIP VCF file)
-        pysam_vcf_fhand = pysam.VariantFile(vcf_fpath)
-
-        # FILTERING
-        if header:
-            yield pysam_vcf_fhand.header
-        for record in pysam_vcf_fhand:
-            # Getting all VCF types
-            vcf_types = list(filter(None, [record.info.get('VT'), record.info.get('EXT_SVTYPE'), record.info.get('SVTYPE')]))
-            if not set(vcf_types).intersection(type_):
-                continue
-
-            yield record
-
     def create_snv_genome_context_file(self):
         """Create a genome context file that contains all SNVs and their flanking bases
 
@@ -118,16 +94,9 @@ class MutationalCatalogueAnalysis:
             1:10126:T:A     CTA
         """
 
-        # TODO Is this already provided and we just have to take it from a folder?
-        # Create VCF file with ALL SNVs
-        snv_vcf_fhand = open(self.snv_vcf_fpath[:-4], 'w')
-        for variant in self.vcf_filter_iterator(vcf_fpath=self.vcf_file, opencga_query={"type": "SNV"}):
-            snv_vcf_fhand.write(str(variant))
-        snv_vcf_fhand.close()
-        self.snv_vcf_fpath = bgzip_vcf(self.snv_vcf_fpath[:-4], delete_original=True)  # BGZIPping VCF (pysam req)
-
-        # Opening SNV VCF file (BGZIP VCF file)
-        pysam_snv_vcf_fhand = pysam.VariantFile(self.snv_vcf_fpath)
+        # Opening ALL SNV VCF file (BGZIP VCF file)
+        snv_all_vcf_fpath = bgzip_vcf(self.snv_all_vcf_fpath)  # BGZIPping VCF (pysam requirement)
+        pysam_snv_all_vcf_fhand = pysam.VariantFile(snv_all_vcf_fpath)
 
         # Opening reference genome FASTA file
         ref_genome = pysam.FastaFile(self.ref_genome_fasta_fpath)
@@ -137,7 +106,7 @@ class MutationalCatalogueAnalysis:
 
         # Writing context
         flank = 1  # How many bases the variant should be flanked
-        for record in pysam_snv_vcf_fhand:
+        for record in pysam_snv_all_vcf_fhand:
             # The position in the vcf file is 1-based, but pysam's fetch() expects 0-base coordinate
             triplet = ref_genome.fetch(record.chrom, record.pos - 1 - flank, record.pos - 1 + len(record.ref) + flank)
 
@@ -154,14 +123,13 @@ class MutationalCatalogueAnalysis:
         snv_contexts = {line.split()[0]: line.split()[1] for line in snv_genome_context_fhand}
         snv_genome_context_fhand.close()
 
-        # TODO Filter SNV VCF to get queried SNVs - Is this already provided and we just have to take it from a folder?
-
-        # Opening SNV VCF file (BGZIP VCF file)
-        pysam_snv_vcf_fhand = pysam.VariantFile(self.snv_vcf_fpath)
+        # Opening FILTERED SNV VCF file (BGZIP VCF file)
+        snv_filtered_vcf_fpath = bgzip_vcf(self.snv_filtered_vcf_fpath)  # BGZIPping VCF (pysam requirement)
+        pysam_snv_filtered_vcf_fhand = pysam.VariantFile(snv_filtered_vcf_fpath)
 
         # Counting SNV contexts
         counts = {}
-        for record in pysam_snv_vcf_fhand:
+        for record in pysam_snv_filtered_vcf_fhand:
             var_id = ':'.join(map(str, [record.chrom, record.pos, record.ref, ','.join(list(record.alts))]))
 
             # Creating key "first_flanking_base[REF>ALT]second_flanking_base". e.g. "A[C>A]T"
@@ -180,68 +148,116 @@ class MutationalCatalogueAnalysis:
         results = {'signatures': [{'counts': [{'context': k, 'total': counts[k]} for k in counts]}]}
         generate_results_json(results=results, outdir_path=self.output_dir)
 
-    def create_sv_clustering(self, sv_vcf_fpath):
+    @staticmethod
+    def get_sv_type(sv):
+        """Get SV type from pysam record
+
+        :param pysam.VariantRecord sv: VCF SV
+        :returns: SV type
+        """
+
+        # Getting SV type from VCF
+        if 'EXT_SVTYPE' in sv.info.keys():
+            var_type = sv.info.get('EXT_SVTYPE')
+        elif 'SVCLASS' in sv.info.keys():
+            var_type = sv.info.get('SVCLASS')
+        else:
+            var_type = None
+
+        # Translating SV types
+        if var_type in ['DEL', 'DELETION']:
+            return TYPE_DEL
+        elif var_type in ['DUP', 'TDS', 'DUPLICATION', 'TANDEM_DUPLICATION', 'TANDEM-DUPLICATION']:
+            return TYPE_TDS
+        elif var_type in ['INV', 'INVERSION']:
+            return TYPE_INV
+        elif var_type in ['TR', 'TRANS', 'TRANSLOCATION']:
+            return TYPE_TRANS
+        else:
+            LOGGER.debug('Skipping variant with unknown type "{}" for the SV mutational catalogue'.format(var_type))
+            return None
+
+    @staticmethod
+    def get_sv_length(var_type, chrom1, chrom2, pos1, pos2):
+        """Get SV length from pysam record
+
+        :param str var_type: SV type
+        :param str chrom1: variant chromosome
+        :param str chrom2: mate chromosome
+        :param int pos1: variant start
+        :param int pos2: mate start
+        :returns: SV length
+        """
+        if var_type is None:
+            return None
+        if var_type == TYPE_TRANS:
+            return LENGTH_NA
+        else:
+            if chrom1 == chrom2:
+                length = abs(pos2 - pos1)
+                if length <= 10000:
+                    return LENGTH_1_10Kb
+                elif length <= 100000:
+                    return LENGTH_10Kb_100Kb
+                elif length <= 1000000:
+                    return LENGTH_100Kb_1Mb
+                elif length <= 10000000:
+                    return LENGTH_1Mb_10Mb
+                return LENGTH_10Mb
+        return None
+
+    def create_sv_clustered_context_file(self):
         """Executes R script sv_clustering.R to generate clustering for SVs
-        CMD: Rscript sv_clustering.R ./in.bedpe ./out.bedpe
+        CMD: Rscript sv_clustering.R ./in.clustered.bedpe ./out.clustered.bedpe
 
         Input file:
-        chrom1  start1  end1    chrom2  start2  end2    sample
-        1   100 100 1   200 200 s1
-        2   100 100 1   200 200 s1
-        2   200 200 1   300 300 s1
+        chrom1 start1  end1    chrom2  start2  end2    length  type    sample
+        1   100 100 1   200 200 100 del s1
+        2   100 100 1   200 200 100 trans   s1
+        2   200 200 1   300 300 100 trans   s1
 
         Output file:
-        chrom1	start1	end1	chrom2	start2	end2	sample	id	is.clustered
-        1	100	100	1	200	200	s1	1	FALSE
-        2	100	100	1	200	200	s1	2	FALSE
-        2	200	200	1	300	300	s1	3	FALSE
+        chrom1	start1	end1	chrom2	start2	end2	length  type    sample	id	is.clustered
+        1	100	100	1	200	200	100 del s1  1	FALSE
+        2	100	100	1	200	200	100 trans   s1	2	FALSE
+        2	200	200	1	300	300	100 trans   s1	3	FALSE
 
-        :param str sv_vcf_fpath: SV VCF input file path
         :returns: The created output dir file
         """
 
-        # Opening SV VCF file (BGZIP VCF file)
-        pysam_sv_vcf_fhand = pysam.VariantFile(sv_vcf_fpath)
+        # Opening ALL SV VCF file (BGZIP VCF file)
+        sv_all_vcf_fpath = bgzip_vcf(self.sv_all_vcf_fpath)  # BGZIPping VCF (pysam requirement)
+        pysam_sv_all_vcf_fhand = pysam.VariantFile(sv_all_vcf_fpath)
 
         # Writing input file
-        in_bedpe_fpath = os.path.join(self.output_dir, 'in.bedpe')
+        in_bedpe_fpath = os.path.join(self.output_dir, 'in.clustered.bedpe')
         in_bedpe_fhand = open(in_bedpe_fpath, 'w')
-        in_bedpe_fhand.write('\t'.join(['chrom1', 'start1', 'end1', 'chrom2', 'start2', 'end2', 'sample']) + '\n')
+        header = ['chrom1', 'start1', 'end1', 'chrom2', 'start2', 'end2', 'length', 'type', 'sample']
+        in_bedpe_fhand.write('\t'.join(header) + '\n')
         mate_ids = []
-        for record in pysam_sv_vcf_fhand:
+        for record in pysam_sv_all_vcf_fhand:
+            # Skipping mates of already visited SVs
             mate_ids.append(record.info.get('MATEID'))
-            if record.info.get('VCF_ID') in mate_ids:  # Skip mates of already visited SVs
+            if record.info.get('VCF_ID') in mate_ids:
                 continue
+
+            # Getting variant information
             chrom2, pos2 = re.findall('.*[\[\]](.+):(.+)[\[\]].*', record.alts[0])[0]
-            line = '\t'.join(map(str, [record.chrom, record.pos, record.pos, chrom2, pos2, pos2, self.sample_id]))
+            var_type = self.get_sv_type(record)
+            length = self.get_sv_length(var_type, str(record.chrom), str(chrom2), int(record.pos), int(pos2))
+            line = '\t'.join(
+                map(str, [record.chrom, record.pos, record.pos, chrom2, pos2, pos2, length, var_type, self.sample_id])
+            )
             in_bedpe_fhand.write(line + '\n')
         in_bedpe_fhand.close()
 
         # Executing SV clustering
         r_script = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'sv_clustering.R')
-        out_bedpe_fpath = os.path.join(self.output_dir, 'out.bedpe')
+        out_bedpe_fpath = os.path.join(self.output_dir, 'out.clustered.bedpe')
         cmd = 'Rscript {} {} {}'.format(r_script, in_bedpe_fpath, out_bedpe_fpath)
         execute_bash_command(cmd)
 
         return out_bedpe_fpath
-
-    def create_sv_clustered_context_file(self):
-
-        # TODO Is this already provided and we just have to take it from a folder?
-        # Create VCF file with ALL SVs
-        sv_vcf_fhand = open(self.sv_vcf_fpath[:-4], 'w')
-        for variant in self.vcf_filter_iterator(vcf_fpath=self.vcf_file, opencga_query={"type": "SV"}):
-            sv_vcf_fhand.write(str(variant))
-        sv_vcf_fhand.close()
-        self.sv_vcf_fpath = bgzip_vcf(self.sv_vcf_fpath[:-4], delete_original=True)  # BGZIPping VCF (pysam req)
-
-        # Generating clustering for SVs
-        out_bedpe_fpath = self.create_sv_clustering(self.sv_vcf_fpath)
-
-        # Counting SV contexts
-        # https://cancer.sanger.ac.uk/signatures/sv/sv1/
-        # TODO
-
 
     def run(self):
         # Creating mutational signature catalogue

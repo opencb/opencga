@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-import common
-import family_qc
+
 import json
 import logging
 import os
-from utils import *
+
+from common.relatedness_analysis import RelatednessAnalysis
+from family_qc.family_quality_control import FamilyQualityControl
+from utils import get_samples_info_from_individual, get_sample_id_from_individual_id, get_sample_info_from_individual_id
 
 LOGGER = logging.getLogger('variant_qc_logger')
 
@@ -93,10 +95,10 @@ class FamilyQCExecutor:
 
         LOGGER.info(f"Family QC executor info: {executor_info}")
 
-        qc = family_qc.FamilyQualityControl()
+        qc = FamilyQualityControl()
 
         # Run relatedness analysis
-        relatedness_analysis = common.RelatednessAnalysis(executor_info)
+        relatedness_analysis = RelatednessAnalysis(executor_info)
         relatedness_analysis.run()
         qc.relatedness.append(relatedness_analysis.relatedness)
 

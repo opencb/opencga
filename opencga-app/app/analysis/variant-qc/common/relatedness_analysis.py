@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 
-import common
 import logging
 import os
-from quality_control import *
-from utils import *
+
+from common.relatedness import Relatedness, Score
+from quality_control import Software
+from utils import (RELATEDNESS_FREQS_FILE, RELATEDNESS_THRESHOLDS_FILE, RELATEDNESS_PRUNE_IN_MARKERS_FILE,
+                   create_output_dir, execute_bash_command, create_sex_file, create_parents_file, create_phenotype_file,
+                   get_family_id)
 
 LOGGER = logging.getLogger('variant_qc_logger')
 
@@ -26,7 +29,7 @@ class RelatednessAnalysis:
         self.freqs_fpath = None
         self.thresholds_fpath = None
         self.executor = executor
-        self.relatedness = common.Relatedness()
+        self.relatedness = Relatedness()
 
     def relatedness_setup(self):
         if self.executor != None:
@@ -216,7 +219,7 @@ class RelatednessAnalysis:
                           "PPC": float(genome_file_row_values[12]),
                           "RATIO": float(genome_file_row_values[13])
                         }
-                score = common.Score(
+                score = Score(
                     sampleId1=str(genome_file_row_values[1]),
                     sampleId2=str(genome_file_row_values[3]),
                     reportedRelationship="",

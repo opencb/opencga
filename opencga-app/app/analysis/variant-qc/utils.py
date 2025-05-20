@@ -7,6 +7,7 @@ import os
 import subprocess
 from pydantic import BaseModel, Field
 from typing import Dict, List
+import pysam
 
 LOGGER = logging.getLogger('variant_qc_logger')
 
