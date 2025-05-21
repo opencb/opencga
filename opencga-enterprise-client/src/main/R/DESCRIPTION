@@ -1,7 +1,7 @@
 Package: opencgaEnterpriseR
 Type: Package
 Title: Querying Opencga Data
-Version: OPENCGA_R_VERSION
+Version: 3.1.0.9000
 Author: Zetta Genomics
 Maintainer: Zetta Genomics <support@zettagenomics.com>
 Description: R client that contains classes and methods for working with
@@ -51,5 +51,5 @@ Collate:
     'User-methods.R'
     'Variant-methods.R'
     'Workflow-methods.R'
-RoxygenNote: 7.3.2
+RoxygenNote: 7.1.2
 VignetteBuilder: knitr
