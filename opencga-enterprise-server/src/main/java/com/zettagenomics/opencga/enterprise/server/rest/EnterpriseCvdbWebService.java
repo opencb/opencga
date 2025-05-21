@@ -36,7 +36,7 @@ import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 
 @Path("/{apiVersion}/analysis/cvdb")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "CVDB", position = 4, description = "Methods for working with CVDB (clinical variant database)")
+@Api(value = "Analysis - CVDB", position = 4, description = "Methods for working with CVDB (clinical variant database)")
 public class EnterpriseCvdbWebService extends OpenCGAWSServer {
 
     public static final AtomicReference<CvdbSolrEngine> cvdbEngineAtomicRef = new AtomicReference();
