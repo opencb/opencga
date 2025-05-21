@@ -16,10 +16,12 @@
 
 package org.opencb.opencga.server.generator.writers;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.server.generator.config.CategoryConfig;
 import org.opencb.opencga.server.generator.config.Command;
 import org.opencb.opencga.server.generator.config.CommandLineConfiguration;
+import org.opencb.opencga.server.generator.config.RestMethodParse;
 import org.opencb.opencga.server.generator.models.RestApi;
 import org.opencb.opencga.server.generator.models.RestCategory;
 import org.opencb.opencga.server.generator.models.RestEndpoint;
@@ -186,16 +188,34 @@ public abstract class ParentClientRestApiWriter {
         return path.replace("/{apiVersion}/", "").replace("/", "_");
     }
 
-    public static String getCommandName(RestCategory restCategory, RestEndpoint restEndpoint) {
+    public String getCommandName(RestCategory restCategory, RestEndpoint restEndpoint) {
         return getMethodName(restCategory, restEndpoint).replaceAll("_", "-");
     }
 
-    protected static String getMethodName(RestCategory restCategory, RestEndpoint restEndpoint) {
-        String subpath = restEndpoint.getPath().replace(restCategory.getPath() + "/", "");
-        return getMethodName(subpath);
+    protected String getMethodName(RestCategory restCategory, RestEndpoint restEndpoint) {
+        String endpoint = restEndpoint.getPath().replace("/{apiVersion}/", "");
+        String methodName = getSpecialMethodName(endpoint);
+        if (methodName != null) {
+            System.out.println("Special method name '" + methodName + "' found for endpoint '" + endpoint + "'");
+            return methodName;
+        } else {
+            String subpath = restEndpoint.getPath().replace(restCategory.getPath() + "/", "");
+            return getMethodName(subpath);
+        }
     }
 
-    protected static String getMethodName(String subpath) {
+    private String getSpecialMethodName(String endpoint) {
+        if (CollectionUtils.isNotEmpty(config.getApiConfig().getRestMethodParseList())) {
+            for (RestMethodParse restMethodParse : config.getApiConfig().getRestMethodParseList()) {
+                if (restMethodParse.getRest().equalsIgnoreCase(endpoint)) {
+                    return restMethodParse.getMethodName();
+                }
+            }
+        }
+        return null;
+    }
+
+    protected String getMethodName(String subpath) {
         String methodName = "";
         // String subpath = restEndpoint.getPath().replace(restCategory.getPath() + "/", "");
         String[] items = subpath.split("/");
@@ -351,6 +371,7 @@ public abstract class ParentClientRestApiWriter {
     }
 
     protected String getJavaMethodName(CategoryConfig config, String commandName) {
+        System.out.println("Command name: " + commandName);
         Command command = config.getCommand(commandName);
         String commandMethod;
         if (command != null && StringUtils.isNotEmpty(command.getRename())) {
