@@ -135,7 +135,6 @@ readConfFile <- function(conf){
 #' @description
 #' A function to login Opencga web services
 #'
-#' @aliases OpencgaLogin
 #' @param ocga an object of type OpencgaR generated using initOpencgaR
 #' @param userid a charatcer with the username
 #' @param passwd a charcter with the user password
@@ -297,7 +296,6 @@ opencgaLogin <- function(opencga, userid=NULL, passwd=NULL, interactive=FALSE,
 #' @description
 #' A function to logout from Opencga web services
 #'
-#' @aliases OpencgaLogout
 #' @param ocga an object of type OpencgaR generated using opencgaLogin
 #' @examples
 #' \dontrun{
@@ -320,7 +318,6 @@ opencgaLogout <- function(opencga){
 #' A function extract all the available information from Opencga web services
 #' at the defined host
 #'
-#' @aliases OpencgaHelp
 #' @param opencga an object of type OpencgaR generated using initOpencga or
 #' opencgaLogin
 #'

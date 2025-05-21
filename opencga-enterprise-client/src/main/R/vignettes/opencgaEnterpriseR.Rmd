@@ -35,22 +35,22 @@ library(tidyr)
 
 # Connection and authentication into an OpenCGA instance
 
-A set of methods have been implemented to deal with the connectivity and log into the REST host. Connection to the host is done in two steps using the functions ***initopencgaEnterpriseR*** and ***opencgaLogin*** for defining the connection details and login, respectively.
+A set of methods have been implemented to deal with the connectivity and log into the REST host. Connection to the host is done in two steps using the functions ***initOpencgaR*** and ***opencgaLogin*** for defining the connection details and login, respectively.
 
-The ***initopencgaEnterpriseR*** function accepts either host and version information or a configuration file (as a `list()` or in [YAML or JSON format](http://docs.opencb.org/display/opencga/client-configuration.yml)). The ***opencgaLogin*** function establishes the connection with the host. It requires an opencgaEnterpriseR object (created using the `initopencgaEnterpriseR` function) and the login details: user and password. User and password can be introduced interactively through a popup window using `interactive=TRUE`, to avoid typing user credentials within the R script or a config file.
+The ***initOpencgaR*** function accepts either host and version information or a configuration file (as a `list()` or in [YAML or JSON format](http://docs.opencb.org/display/opencga/client-configuration.yml)). The ***opencgaLogin*** function establishes the connection with the host. It requires an OpencgaR object (created using the `initOpencgaR` function) and the login details: user and password. User and password can be introduced interactively through a popup window using `interactive=TRUE`, to avoid typing user credentials within the R script or a config file.
 
 The code below shows different ways to initialise the OpenCGA connection with the REST server.
 
 ```{r eval=FALSE, results='hide'}
 ## Initialise connection using a configuration in R list
 conf <- list(version="v2", rest=list(host="https://test.app.zettagenomics.com/myenv/opencga/"))
-con <- initopencgaEnterpriseR(opencgaConfig=conf)
+con <- initOpencgaR(opencgaConfig=conf)
 ```
 
 ```{r eval=FALSE, results='hide'}
 ## Initialise connection using a configuration file (in YAML or JSON format)
 # conf <- "/path/to/conf/client-configuration.yml"
-# con <- initopencgaEnterpriseR(opencgaConfig=conf)
+# con <- initOpencgaR(opencgaConfig=conf)
 ```
 
 Once the connection has been initialised users can login specifying their OpenCGA user ID and password.
@@ -67,14 +67,14 @@ con <- opencgaLogin(opencga = con, userid = "userID", passwd = "1234567890",
 Retrieving the list of projects accessible to the user:
 
 ```{r, eval=FALSE, results='hide'}
-projects <- projectClient(opencgaEnterpriseR = con, endpointName = "search")
+projects <- projectClient(OpencgaR = con, endpointName = "search")
 getResponseResults(projects)[[1]][,c("id","name", "description")]
 ```
 
 List the studies accessible in a project
 
 ```{r, eval=FALSE, results='hide'}
-projects <- projectClient(opencgaEnterpriseR=con, project="population", endpointName="studies")
+projects <- projectClient(OpencgaR=con, project="population", endpointName="studies")
 getResponseResults(projects)[[1]][,c("id","name", "description")]
 ```
 
@@ -83,22 +83,22 @@ getResponseResults(projects)[[1]][,c("id","name", "description")]
 study <- "test@germline:platinum"
 
 # Study name
-study_result <- studyClient(opencgaEnterpriseR = con, studies = study, endpointName = "info")
+study_result <- studyClient(OpencgaR = con, studies = study, endpointName = "info")
 study_name <- getResponseResults(study_result)[[1]][,"name"]
 # Number of samples in this study
-count_samples <- sampleClient(opencgaEnterpriseR = con, endpointName = "search", 
+count_samples <- sampleClient(OpencgaR = con, endpointName = "search",
                               params=list(study=study, count=TRUE, limit=0))
 num_samples <- getResponseNumMatches(count_samples)
 # Number of individuals
-count_individuals <- individualClient(opencgaEnterpriseR = con, endpointName = "search", 
+count_individuals <- individualClient(OpencgaR = con, endpointName = "search",
                                       params=list(study=study, count=TRUE, limit=0))
 num_individuals <- getResponseNumMatches(count_individuals)
 # Number of clinical cases
-count_cases <- clinicalClient(opencgaEnterpriseR = con, endpointName = "search", 
+count_cases <- clinicalClient(OpencgaR = con, endpointName = "search",
                               params=list(study=study, count=TRUE, limit=0))
 num_cases <- getResponseNumMatches(count_cases)
 # Number of variants
-count_variants <- variantClient(opencgaEnterpriseR = con, endpointName = "query", 
+count_variants <- variantClient(OpencgaR = con, endpointName = "query",
                                 params=list(study=study, count=TRUE, limit=0))
 num_variants <- getResponseNumMatches(count_variants)
 
@@ -118,7 +118,7 @@ As an example we are going to retrieve a random variant from the database
 
 ```{r, eval=FALSE, results='hide'}
 # Retrieve the first variant
-variant_example <- variantClient(opencgaEnterpriseR = con, endpointName = "query", 
+variant_example <- variantClient(OpencgaR = con, endpointName = "query",
                                  params=list(study=study, limit=1, type="SNV"))
 variant_id <- getResponseResults(variant_example)[[1]][,"id"]
 glue("Variant example: {variant_id}")
@@ -128,7 +128,7 @@ glue("Variant example: {variant_id}")
 
 ```{r eval=FALSE, message=FALSE, warning=FALSE, results='hide'}
 # Retrieve the samples that have this variant
-variant_result <- variantClient(opencgaEnterpriseR = con, endpointName = "querySample", 
+variant_result <- variantClient(OpencgaR = con, endpointName = "querySample",
                                 params=list(study=study, variant=variant_id))
 
 glue("Number of samples with this variant: 
@@ -146,7 +146,7 @@ df
 ```{r, eval=FALSE, results='hide', message=FALSE, warning=FALSE, include=FALSE}
 # Fetch the samples with a specific genotype
 genotype <- "0/1,1/1"
-variant_result <- variantClient(opencgaEnterpriseR = con, endpointName = "querySample", 
+variant_result <- variantClient(OpencgaR = con, endpointName = "querySample",
                                 params=list(study=study, variant=variant_id, 
                                             genotype=genotype))
 glue("Number of samples with genotype {genotype} in this variant: 
@@ -156,7 +156,7 @@ glue("Number of samples with genotype {genotype} in this variant:
 ```{r, eval=FALSE, results='hide'}
 # Search for homozygous alternate samples
 genotype <- "1/1"
-variant_result <- variantClient(opencgaEnterpriseR = con, endpointName = "querySample", 
+variant_result <- variantClient(OpencgaR = con, endpointName = "querySample",
                                 params=list(study=study, variant=variant_id, 
                                             genotype=genotype))
 glue("Number of samples with genotype {genotype} in this variant: 
@@ -169,7 +169,7 @@ glue("Number of samples with genotype {genotype} in this variant:
 # Search for homozygous alternate samples
 region <- "1:62273600-62273700"
 region <- "11:119345500-119345600"
-variant_result <- variantClient(opencgaEnterpriseR = con, endpointName = "query", 
+variant_result <- variantClient(OpencgaR = con, endpointName = "query",
                                 params=list(study=study, region=region, limit=100))
 
 glue("Number of variants in region {region}: {getResponseNumResults(variant_result)}")
@@ -186,7 +186,7 @@ Variants can be filtered by gene using the parameters gene or xref:
 ```{r, eval=FALSE, results='hide'}
 ## Filter by gene
 genes <- "HCN3,MTOR"
-variant_result <- variantClient(opencgaEnterpriseR = con, endpointName = "query", 
+variant_result <- variantClient(OpencgaR = con, endpointName = "query",
                                 params=list(study=study, gene=genes, limit=10))
 getResponseResults(variant_result)[[1]] %>% select(-names, -studies, -annotation)
 ```
@@ -195,7 +195,7 @@ getResponseResults(variant_result)[[1]] %>% select(-names, -studies, -annotation
 ## Filter by xref
 #snp <- "rs147394986"
 hgvs <- "NP_002747.2:p.Arg67Trp"
-variant_result <- variantClient(opencgaEnterpriseR = con, endpointName = "query", 
+variant_result <- variantClient(OpencgaR = con, endpointName = "query",
                                 params=list(study=study, xref=hgvs, limit=5))
 getResponseResults(variant_result)[[1]] %>% select(-names, -studies, -annotation)
 ```
@@ -207,7 +207,7 @@ OpenCGA provides a rich variant annotation that includes Ensembl consequence typ
 ```{r, eval=FALSE, results='hide'}
 ## Filter by missense variants and stop_gained
 ct <- "missense_variant,stop_gained"
-variant_result <- variantClient(opencgaEnterpriseR = con, endpointName = "query", 
+variant_result <- variantClient(OpencgaR = con, endpointName = "query",
                                 params=list(study=study, ct=ct, limit=5))
 glue("Number of missense and stop gained variants: {getResponseNumMatches(variant_result)}")
 getResponseResults(variant_result)[[1]] %>% select(-names, -studies, -annotation)
@@ -215,7 +215,7 @@ getResponseResults(variant_result)[[1]] %>% select(-names, -studies, -annotation
 
 ```{r, eval=FALSE, results='hide'}
 ## Filter by LoF (alias created containing 9 different CTs)
-variant_result <- variantClient(opencgaEnterpriseR = con, endpointName = "query", 
+variant_result <- variantClient(OpencgaR = con, endpointName = "query",
                                 params=list(study=study, ct="lof", limit=5))
 glue("Number of LoF variants: {getResponseNumMatches(variant_result)}")
 getResponseResults(variant_result)[[1]] %>% select(-names, -studies, -annotation)
@@ -236,7 +236,7 @@ The syntax for the query parameter is: `{study}:{population}:{cohort}[<|>|<=|>=]
 ```{r, eval=FALSE, results='hide'}
 ## Filter by population alternate frequency
 population_frequency_alt <- '1000G:ALL<0.001'
-variant_result <- variantClient(opencgaEnterpriseR = con, endpointName = "query", 
+variant_result <- variantClient(OpencgaR = con, endpointName = "query",
                                 params=list(study=study, 
                                             populationFrequencyAlt=population_frequency_alt, 
                                             limit=5))
@@ -248,7 +248,7 @@ glue("Number of variants matching the filter: {getResponseNumMatches(variant_res
 ## Filter by two population alternate frequency
 ## Remember to use commas for OR and semi-colon for AND
 population_frequency_alt <- '1000G:ALL<0.001;GNOMAD_GENOMES:ALL<0.001'
-variant_result <- variantClient(opencgaEnterpriseR = con, endpointName = "query", 
+variant_result <- variantClient(OpencgaR = con, endpointName = "query",
                                 params=list(study=study, 
                                             populationFrequencyAlt=population_frequency_alt, 
                                             limit=5))
@@ -260,7 +260,7 @@ getResponseResults(variant_result)[[1]] %>% select(-names, -studies, -annotation
 ```{r, eval=FALSE, results='hide'}
 ## Filter by population alternate frequency using a range of values
 population_frequency_alt <- '1000G:ALL>0.001;1000G:ALL<0.005'
-variant_result <- variantClient(opencgaEnterpriseR = con, endpointName = "query", 
+variant_result <- variantClient(OpencgaR = con, endpointName = "query",
                                 params=list(study=study, 
                                             populationFrequencyAlt=population_frequency_alt, 
                                             limit=5))
@@ -278,7 +278,7 @@ OpenCGA implements a very advanced variant query engine that allows to combine m
 ct <- 'lof,missense_variant'
 clinicalSignificance <- 'likely_pathogenic,pathogenic'
 populationFrequencyAlt <- '1000G:ALL<0.01;GNOMAD_GENOMES:ALL<0.01'
-variant_result <- variantClient(opencgaEnterpriseR = con, endpointName = "query", 
+variant_result <- variantClient(OpencgaR = con, endpointName = "query",
                                 params=list(study=study, limit=5, ct=ct, 
                                             clinicalSignificance=clinicalSignificance,
                                             populationFrequencyAlt=population_frequency_alt))
@@ -294,7 +294,7 @@ OpenCGA allows users to define cohorts of samples and calculate and index the al
 ```{r, eval=FALSE, results='hide'}
 ## Filter by cohort ALL frequency
 cohort_stats <- paste0(study, ':ALL<0.001')
-variant_result <- variantClient(opencgaEnterpriseR = con, endpointName = "query", 
+variant_result <- variantClient(OpencgaR = con, endpointName = "query",
                                 params=list(study=study, cohortStatsAlt=cohort_stats, 
                                             limit=5))
 glue("Number of variants matching the filter: {getResponseNumMatches(variant_result)}")
@@ -307,14 +307,14 @@ The following examples are just examples of how queries should be made, they are
 ```{r, eval=FALSE, eval=FALSE}
 ## Filter by custom cohorts' frequency
 cohort_stats = study + ':MY_COHORT_A<0.001'
-variant_result <- variantClient(opencgaEnterpriseR = con, endpointName = "query", 
+variant_result <- variantClient(OpencgaR = con, endpointName = "query",
                                 params=list(study=study, cohortStatsAlt=cohort_stats, 
                                             limit=5))
 glue("Number of variants matching the filter: {getResponseNumMatches(variant_result)}")
 
 ## Filter by more than one cohort frequency and consequence type
 cohort_stats = study + ':MY_COHORT_A<0.001' + ';' + study + ':MY_COHORT_B<0.001'
-variant_result <- variantClient(opencgaEnterpriseR = con, endpointName = "query", 
+variant_result <- variantClient(OpencgaR = con, endpointName = "query",
                                 params=list(study=study, cohortStatsAlt=cohort_stats, 
                                             limit=5))
 glue("Number of variants matching the filter: {getResponseNumMatches(variant_result)}")
@@ -323,7 +323,7 @@ glue("Number of variants matching the filter: {getResponseNumMatches(variant_res
 ## Retrieve cohort frequencies for a specific variant
 
 ```{r, eval=FALSE, results='hide'}
-variant_result <- variantClient(opencgaEnterpriseR = con, endpointName = "query", 
+variant_result <- variantClient(OpencgaR = con, endpointName = "query",
                                 params=list(study=study, id=variant_id))
 glue("Variant example: {variant_id}")
 getResponseResults(variant_result)[[1]]$studies[[1]]$stats[[1]][,c('cohortId', 'alleleCount',
@@ -337,7 +337,7 @@ getResponseResults(variant_result)[[1]]$studies[[1]]$stats[[1]][,c('cohortId', '
 
 ```{r, eval=FALSE, results='hide', fig.width=7}
 ## Aggregate by number of LoF variants per gene
-variants_agg <- variantClient(opencgaEnterpriseR = con, endpointName = "aggregationStats", 
+variants_agg <- variantClient(OpencgaR = con, endpointName = "aggregationStats",
                               params=list(study=study, ct='lof', fields="genes"))
 df <- getResponseResults(variants_agg)[[1]]$buckets[[1]]
 barplot(height = df$count, names.arg = df$value, las=2, cex.names = 0.6)
