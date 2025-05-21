@@ -39,8 +39,6 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
-import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -71,7 +69,6 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
     private Path vcfFile;
 
     private String variantsSource;
-    private String phenotypeSource;
 
     private List<String> caseSamples;
     private List<String> controlSamples;
@@ -143,14 +140,37 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
             // Copy all files to the resources; and add other options
             for (String key : options.keySet()) {
                 if (ALL_FILE_OPTIONS.contains(key)) {
-                    Path path = checkRegenieInputFile(options.getString(key), false, "Option " + key + " file ", study, catalogManager,
-                            token);
+                    String value = options.getString(key);
+                    if (key.equalsIgnoreCase(PHENO_FILE_OPTION) && !value.startsWith(FILE_PREFIX)) {
+                        // phenoFile is an exception, it can start with COHORT_PREFIX or PHENOTYPE_PREFIX in addition to FILE_PREFIX
+                        // (and the phenoFile was already checked)
+                        continue;
+                    }
+                    Path path = checkRegenieInputFile(value, false, "Option " + key + " file ", study, catalogManager, token);
                     Path dest = resourcePath.resolve(path.getFileName());
                     FileUtils.copyFile(path, dest);
                     if (!Files.exists(dest)) {
                         throw new ToolException("File " + dest + " not found after copy (preparing resources)");
                     }
                     regenieOptions.put(key, dest.toAbsolutePath().toString());
+
+                    // The implicit files (e.g. the files .bim and .fam for the file .bed) are copied to the resources folder
+                    // (they were already checked in previously and they are expected to be in the same folder)
+                    if (key.equals(BED_OPTION)) {
+                        String bedFile = path.getFileName().toString();
+                        if (bedFile.endsWith(".bed")) {
+                            bedFile = bedFile.substring(0, bedFile.length() - 4);
+                        }
+                        FileUtils.copyFile(path.getParent().resolve(bedFile + ".bim"), resourcePath.resolve(bedFile + ".bim"));
+                        FileUtils.copyFile(path.getParent().resolve(bedFile + ".fam"), resourcePath.resolve(bedFile + ".fam"));
+                    } else if (key.equals(PGEN_OPTION)) {
+                        String pgenFile = path.getFileName().toString();
+                        if (pgenFile.endsWith(".pgen")) {
+                            pgenFile = pgenFile.substring(0, pgenFile.length() - 5);
+                        }
+                        FileUtils.copyFile(path.getParent().resolve(pgenFile + ".pvar"), resourcePath.resolve(pgenFile + ".pvar"));
+                        FileUtils.copyFile(path.getParent().resolve(pgenFile + ".psam"), resourcePath.resolve(pgenFile + ".psam"));
+                    }
                 } else {
                     // Ohter options
                     regenieOptions.put(key, options.get(key));
@@ -184,10 +204,10 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
     }
 
     private void cleanResources() throws IOException {
-        FileUtils.deleteDirectory(resourcePath);
+//        FileUtils.deleteDirectory(resourcePath);
     }
 
-    private void checkVariants(ObjectMap inputOptions) throws ToolException, CatalogException {
+    private void checkVariants(ObjectMap inputOptions) throws ToolException, CatalogException, IOException {
         variantsSource = "";
         if (MapUtils.isNotEmpty(inputOptions) && (inputOptions.containsKey(BGEN_OPTION) || inputOptions.containsKey(BED_OPTION)
                 || inputOptions.containsKey(PGEN_OPTION))) {
@@ -198,34 +218,52 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
             logger.info("Variants from the BGEN file {}", vcfFile);
             variantsSource = "vcf";
         }
-        if (StringUtils.isEmpty(variantsSource) && !MapUtils.isEmpty(regenieParams.getVariantExportQuery())) {
-            if (logger.isInfoEnabled()) {
-                logger.info("Variants from the query {}", regenieParams.getVariantExportQuery().toJson());
-            }
-            variantsSource = "query";
-        }
         if (StringUtils.isEmpty(variantsSource)) {
             throw new ToolException("Missing variants data used in the regenie step1. Please, use the options " + BGEN_OPTION + ", "
-                    + BED_OPTION + ", " + PGEN_OPTION + " or provide a VCF file or a query to export the variants");
+                    + BED_OPTION + ", " + PGEN_OPTION + " or provide a VCF file");
         }
     }
 
     private void checkPhenotype(ObjectMap inputOptions) throws ToolException, CatalogException {
-        if (MapUtils.isNotEmpty(inputOptions) && inputOptions.containsKey(PHENO_FILE_OPTION)) {
-            phenotypeSource = PHENO_FILE_OPTION;
+        if (MapUtils.isEmpty(inputOptions) || !inputOptions.containsKey(PHENO_FILE_OPTION)
+                || StringUtils.isEmpty(inputOptions.getString(PHENO_FILE_OPTION))) {
+            throw new ToolException("Missing option " + PHENO_FILE_OPTION);
+        }
+
+        String phenoValue = inputOptions.getString(PHENO_FILE_OPTION);
+        if (phenoValue.startsWith(FILE_PREFIX)) {
+            // Check phenotype file
             checkRegenieInputFile(inputOptions.getString(PHENO_FILE_OPTION), true, "Phenotype", study, catalogManager, token);
-        }
-        if (StringUtils.isEmpty(phenotypeSource)) {
-            if (StringUtils.isNotEmpty(regenieParams.getCaseCohort()) && StringUtils.isNotEmpty(regenieParams.getControlCohort())) {
-                checkPhenotypeFromCohorts();
-            } else if (StringUtils.isNotEmpty(regenieParams.getPhenotype())) {
-                checkPhenotypeFromPhenotypeID();
+        } else if (phenoValue.startsWith(COHORT_PREFIX)) {
+            // Check cohorts
+            String cohortNames = phenoValue.substring(COHORT_PREFIX.length());
+            if (StringUtils.isEmpty(cohortNames)) {
+                throw new ToolException(getPhenotypeErrorMessage(phenoValue));
             }
+            String[] cohorts = cohortNames.split(",");
+            if (cohorts.length != 2) {
+                throw new ToolException(getPhenotypeErrorMessage(phenoValue));
+            }
+            if (StringUtils.isEmpty(cohorts[0]) || StringUtils.isEmpty(cohorts[1])) {
+                throw new ToolException(getPhenotypeErrorMessage(phenoValue));
+            }
+            checkPhenotypeFromCohorts(cohorts[0], cohorts[1]);
+        } else if (phenoValue.startsWith(PHENOTYPE_PREFIX)) {
+            // Check phenotype ID
+            String phenotype = phenoValue.substring(PHENOTYPE_PREFIX.length());
+            if (StringUtils.isEmpty(phenotype)) {
+                throw new ToolException("Invalid phenotype ID: " + phenoValue + ". It must start with " + PHENOTYPE_PREFIX);
+            }
+            checkPhenotypeFromPhenotypeID(phenotype);
+        } else {
+            throw new ToolException("Invalid phenotype value: " + phenoValue + ". It must start with " + FILE_PREFIX + ", "
+                    + COHORT_PREFIX + " or " + PHENOTYPE_PREFIX);
         }
-        if (StringUtils.isEmpty(phenotypeSource)) {
-            throw new ToolException("Missing phenotype data. Please, use the option " + PHENO_FILE_OPTION + " or provide the case and"
-                    + " control cohort names, or a phenotype ID");
-        }
+    }
+
+    private static String getPhenotypeErrorMessage(String phenoValue) {
+        return "Invalid cohort names: " + phenoValue + ". It must start with " + COHORT_PREFIX + ". E.g.: " + PHENO_FILE_OPTION
+                + " cohort:case-cohort,control-cohort";
     }
 
     private void checkRegenieOptions(ObjectMap inputOptions) throws ToolException {
@@ -237,6 +275,11 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
                         throw new ToolException(key + " is a file option, so its value must not be empty");
                     }
                     if (!value.startsWith(FILE_PREFIX)) {
+                        if (key.equalsIgnoreCase(PHENO_FILE_OPTION)) {
+                            // phenoFile is an exception, it can start with COHORT_PREFIX or PHENOTYPE_PREFIX in addition to FILE_PREFIX
+                            // (and the phenoFile was already checked)
+                            continue;
+                        }
                         throw new ToolException(key + " is a file option, so its value must start with " + FILE_PREFIX
                                 + ". Current value: " + value);
                     }
@@ -292,7 +335,7 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
         }
     }
 
-    private void checkBgenBedPgenOptions(ObjectMap inputOptions) throws ToolException, CatalogException {
+    private void checkBgenBedPgenOptions(ObjectMap inputOptions) throws ToolException, CatalogException, IOException {
         Path path = checkRegenieInputFile(inputOptions.getString(BGEN_OPTION), false, "BGEN", study, catalogManager, token);
         if (path != null) {
             logger.info("Variants from the BGEN file {}", path);
@@ -323,41 +366,36 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
         }
     }
 
-    private void checkPhenotypeFromPhenotypeID() throws CatalogException, ToolException {
+    private void checkPhenotypeFromPhenotypeID(String phenotype) throws CatalogException, ToolException {
         // Get case samples from phenotype ID
-        Query query = new Query(IndividualDBAdaptor.QueryParams.PHENOTYPES.key(),
-                Collections.singletonList(regenieParams.getPhenotype()));
-        OpenCGAResult<Individual> individuals = catalogManager.getIndividualManager().search(study, query, QueryOptions.empty(),
-                token);
+        Query query = new Query(IndividualDBAdaptor.QueryParams.PHENOTYPES.key(), Collections.singletonList(phenotype));
+        OpenCGAResult<Individual> individuals = catalogManager.getIndividualManager().search(study, query, QueryOptions.empty(), token);
         if (individuals.getNumResults() == 0) {
-            throw new ToolException("Phenotype " + regenieParams.getPhenotype() + " not found in the OpenCGA catalog individuals");
+            throw new ToolException("Phenotype " + phenotype + " not found in the OpenCGA catalog individuals");
         }
-        caseSamples = individuals.getResults().stream().filter(i -> CollectionUtils.isEmpty(i.getSamples()))
+        caseSamples = individuals.getResults().stream().filter(i -> CollectionUtils.isNotEmpty(i.getSamples()))
                 .map(i -> i.getSamples().get(0).getId()).collect(Collectors.toList());
         if (caseSamples.size() < MINIMUN_NUM_SAMPLES) {
             throw new ToolException("Insufficient number of 'case' samples (" + caseSamples.size() + ") from individual phenotype "
-                    + regenieParams.getPhenotype() + ". Minimum number of samples: " + MINIMUN_NUM_SAMPLES);
+                    + phenotype + ". Minimum number of samples: " + MINIMUN_NUM_SAMPLES);
         }
 
         // Get control samples
         individuals = catalogManager.getIndividualManager().search(study, new Query(), QueryOptions.empty(), token);
-        controlSamples = individuals.getResults().stream().filter(i -> CollectionUtils.isEmpty(i.getSamples()))
+        controlSamples = individuals.getResults().stream().filter(i -> CollectionUtils.isNotEmpty(i.getSamples()))
                 .map(i -> i.getSamples().get(0).getId()).collect(Collectors.toList());
         controlSamples.removeAll(caseSamples);
         if (controlSamples.size() < MINIMUN_NUM_SAMPLES) {
             throw new ToolException("Insufficient number of 'control' samples (" + controlSamples.size() + ") from individual"
-                    + " phenotype " + regenieParams.getPhenotype() + ". Minimum number of samples: " + MINIMUN_NUM_SAMPLES);
+                    + " phenotype " + phenotype + ". Minimum number of samples: " + MINIMUN_NUM_SAMPLES);
         }
-
-        // Set phenotype source
-        phenotypeSource = "phenotype";
     }
 
-    private void checkPhenotypeFromCohorts() throws CatalogException, ToolException {
+    private void checkPhenotypeFromCohorts(String caseCohortName, String controlCohortName) throws CatalogException, ToolException {
         // Get samples from case and control cohorts
-        OpenCGAResult<Sample> samples = catalogManager.getCohortManager().getSamples(study, regenieParams.getCaseCohort(), token);
+        OpenCGAResult<Sample> samples = catalogManager.getCohortManager().getSamples(study, caseCohortName, token);
         caseSamples = samples.getResults().stream().map(Sample::getId).collect(Collectors.toList());
-        samples = catalogManager.getCohortManager().getSamples(study, regenieParams.getControlCohort(), token);
+        samples = catalogManager.getCohortManager().getSamples(study, controlCohortName, token);
         controlSamples = samples.getResults().stream().map(Sample::getId).collect(Collectors.toList());
         Collection<String> intersection = CollectionUtils.intersection(caseSamples, controlSamples);
         if (CollectionUtils.isNotEmpty(intersection)) {
@@ -366,45 +404,30 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
         }
 
         if (caseSamples.size() < MINIMUN_NUM_SAMPLES) {
-            throw new ToolException("Insufficient number of samples (" + caseSamples.size() + ") from case cohort "
-                    + regenieParams.getCaseCohort() + " after removing duplicated samples in both cohorts. Minimum number of"
-                    + " samples: " + MINIMUN_NUM_SAMPLES);
+            throw new ToolException("Insufficient number of samples (" + caseSamples.size() + ") from case cohort " + caseCohortName
+                    + " after removing duplicated samples in both cohorts. Minimum number of samples: " + MINIMUN_NUM_SAMPLES);
         }
         if (controlSamples.size() < MINIMUN_NUM_SAMPLES) {
             throw new ToolException("Insufficient number of samples (" + controlSamples.size() + ") from control cohort "
-                    + regenieParams.getControlCohort() + " after removing duplicated samples in both cohorts. Minimum number of"
-                    + " samples: " + MINIMUN_NUM_SAMPLES);
+                    + controlCohortName + " after removing duplicated samples in both cohorts. Minimum number of samples: "
+                    + MINIMUN_NUM_SAMPLES);
         }
-
-        // Set phenotype source
-        phenotypeSource = "cohorts";
     }
 
     private void prepareGenotype() throws IOException, ToolException {
-        switch (phenotypeSource) {
-            case PHENO_FILE_OPTION: {
-                // Nothing to do: the file is already copied
-                break;
-            }
-
-            case "cohorts":
-            case "phenotype": {
-                // Create phenotype file
-                Path phenoFile = resourcePath.resolve(PHENO_FILENAME);
-                try (BufferedWriter bw = FileUtils.newBufferedWriter(phenoFile)) {
-                    for (String sample : caseSamples) {
-                        bw.write(sample + "\t1\n");
-                    }
-                    for (String sample : controlSamples) {
-                        bw.write(sample + "\t0\n");
-                    }
+        if (CollectionUtils.isNotEmpty(caseSamples) && CollectionUtils.isNotEmpty(controlSamples)) {
+            // Create the phenoFile from case and control samples
+            Path phenoFile = resourcePath.resolve(PHENO_FILENAME);
+            try (BufferedWriter bw = FileUtils.newBufferedWriter(phenoFile)) {
+                bw.write("FID\tIID\tPHENO\n");
+                for (String sample : caseSamples) {
+                    bw.write(sample + "\t" + sample + "\t1\n");
                 }
-                break;
+                for (String sample : controlSamples) {
+                    bw.write(sample + "\t" + sample + "\t0\n");
+                }
             }
-
-            default: {
-                throw new ToolException("Unknown phenotype source: " + phenotypeSource);
-            }
+            regenieOptions.put(PHENO_FILE_OPTION, phenoFile.toAbsolutePath().toString());
         }
     }
 
@@ -422,37 +445,13 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
                 if (!Files.exists(resourcePath.resolve(vcfFile.getFileName()))) {
                     throw new ToolException("VCF file not found in the resources folder after copy");
                 }
-                vcfFile = resourcePath.resolve(vcfFile.getFileName());
-                break;
-            }
-
-            case "query": {
-                // Export variants
-                vcfFile = resourcePath.resolve(VCF_FILENAME);
-                VariantQuery variantQuery = new VariantQuery()
-                        .study(getStudy())
-                        .includeSampleAll()
-                        .includeSampleData("GT,FT")
-                        .unknownGenotype("0/0");
-                if (MapUtils.isNotEmpty(regenieParams.getVariantExportQuery())) {
-                    variantQuery.putAll(regenieParams.getVariantExportQuery());
-                }
-                QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id,studies.samples");
-                logger.info("Variant export query: {}", MapUtils.isEmpty(variantQuery) ? null : variantQuery.toJson());
-                getVariantStorageManager().exportData(vcfFile.toString(), VariantWriterFactory.VariantOutputFormat.VCF_GZ, null,
-                        variantQuery, queryOptions, getToken());
-                if (!Files.exists(vcfFile)) {
-                    throw new ToolException("Exported VCF file not found");
-                }
+                makeBedFile(resourcePath.resolve(vcfFile.getFileName()));
                 break;
             }
 
             default: {
-                throw new ToolException("Unknown phenotype source: " + phenotypeSource);
+                throw new ToolException("Unknown variant source: " + variantsSource);
             }
-        }
-        if (vcfFile != null) {
-            makeBedFile();
         }
     }
 
@@ -524,20 +523,21 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
     }
 
     private void clean() {
-        List<Path> paths = Arrays.asList(getOutDir().resolve(ID), getOutDir().resolve(RESOURCES_DIRNAME));
-        for (Path path : paths) {
-            if (Files.exists(path)) {
-                try {
-                    logger.info("Cleaning after error: deleting directory {}", path);
-                    FileUtils.deleteDirectory(path);
-                } catch (IOException e) {
-                    logger.error("Error deleting directory {}: {}", path, e.getMessage(), e);
-                }
-            }
-        }
+//        List<Path> paths = Arrays.asList(getOutDir().resolve(ID), getOutDir().resolve(RESOURCES_DIRNAME));
+//        for (Path path : paths) {
+//            if (Files.exists(path)) {
+//                try {
+//                    logger.info("Cleaning after error: deleting directory {}", path);
+//                    FileUtils.deleteDirectory(path);
+//                } catch (IOException e) {
+//                    logger.error("Error deleting directory {}: {}", path, e.getMessage(), e);
+//                }
+//            }
+//        }
     }
 
-    private Path checkInputFiles(String inputFilename, String mainExtension, List<String> extensions) throws ToolException, CatalogException {
+    private Path checkInputFiles(String inputFilename, String mainExtension, List<String> extensions)
+            throws ToolException, CatalogException, IOException {
         Path inputPath = checkRegenieInputFile(inputFilename, false, mainExtension, getStudy(), getCatalogManager(), getToken());
         if (inputPath != null) {
             String filename = inputPath.toFile().getName();
@@ -556,7 +556,7 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
                 boolean found = false;
                 for (File file: results.getResults()) {
                     Path path = Paths.get(file.getUri().getPath()).toAbsolutePath();
-                    if (path.getParent() == inputPath.getParent()) {
+                    if (path.getParent().toAbsolutePath().toString().equals(inputPath.getParent().toAbsolutePath().toString())) {
                         if (Files.exists(path)) {
                             found = true;
                             break;
@@ -566,19 +566,18 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
                     }
                 }
                 if (!found) {
-                    throw new ToolException("Any file " + name + " found is located next to the " + mainExtension + " file ("
-                            + filename + ")");
+                    throw new ToolException("File " + name + " is not located in the directory of the file " + filename);
                 }
             }
         }
         return inputPath;
     }
 
-    private void makeBedFile() throws ToolException, IOException {
+    private void makeBedFile(Path vcfPath) throws ToolException, IOException {
         Path step1ScriptPath = getOpencgaHome().resolve("analysis/regenie/make_bed.sh");
 
         String basename;
-        String vcfFilename = vcfFile.getFileName().toString();
+        String vcfFilename = vcfPath.getFileName().toString();
         if (vcfFilename.endsWith(".vcf")) {
             basename = vcfFilename.substring(0, vcfFilename.length() - ".vcf".length());
         } else if (vcfFilename.endsWith(".vcf.gz")) {

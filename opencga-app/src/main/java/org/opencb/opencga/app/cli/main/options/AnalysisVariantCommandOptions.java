@@ -2067,18 +2067,6 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--vcf-file"}, description = "VCF file; alternative to the BGEN, BED or PGEN input file.", required = false, arity = 1)
         public String vcfFile;
     
-        @DynamicParameter(names = {"--variant-export-query"}, description = "Query to export a subset of variants for the regenie step1 (as performing regenie step1 on a subset is recommended over the entire dataset); alternative to the BGEN, BED or PGEN input file. Key-values examples: 'cohortStatsMaf'='ALL<0.05', 'sampleLimit'=5000. Use: --variant-export-query key=value", required = false)
-        public Map<String, ?> variantExportQuery = new HashMap<>(); //Dynamic parameters must be initialized;
-    
-        @Parameter(names = {"--control-cohort"}, description = "Control cohort name to identify the control samples. Alternative to the option --phenoFile.", required = false, arity = 1)
-        public String controlCohort;
-    
-        @Parameter(names = {"--case-cohort"}, description = "Control cohort name to identify the case samples. Alternative to the option --phenoFile", required = false, arity = 1)
-        public String caseCohort;
-    
-        @Parameter(names = {"--phenotype"}, description = "Phenotype to identify control and case samples, e.g.: HP:003203. Alternative to the option --phenoFile.", required = false, arity = 1)
-        public String phenotype;
-    
         @Parameter(names = {"--docker-name"}, description = "Docker image name of the regenie-walker, it must include the organization (or namespace), e.g.: myorganization/1000g-regenie.", required = false, arity = 1)
         public String dockerName;
     

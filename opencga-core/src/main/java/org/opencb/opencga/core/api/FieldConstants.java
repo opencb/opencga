@@ -639,12 +639,6 @@ public class FieldConstants {
     public static final String REGENIE_VARIANT_EXPORT_QUERY_DESCRIPTION = "Query to export a subset of variants for the regenie step1 (as"
             + " performing regenie step1 on a subset is recommended over the entire dataset); alternative to the BGEN, BED or PGEN input"
         + " file. Key-values examples: \"cohortStatsMaf\"=\"ALL<0.05\", \"sampleLimit\"=5000";
-    public static final String REGENIE_CONTROL_COHORT_DESCRIPTION = "Control cohort name to identify the control samples."
-            + " Alternative to the option --phenoFile.";
-    public static final String REGENIE_CASE_COHORT_DESCRIPTION = "Control cohort name to identify the case samples."
-            + " Alternative to the option --phenoFile";
-    public static final String REGENIE_PHENOTYPE_DESCRIPTION = "Phenotype to identify control and case samples, e.g.: HP:003203."
-            + " Alternative to the option --phenoFile.";
     public static final String REGENIE_WALKER_DOCKER_NAME_DESCRIPTION = "Docker image name of the regenie-walker, it must include the"
             + " organization (or namespace), e.g.: myorganization/1000g-regenie.";
     public static final String REGENIE_WALKER_DOCKER_TAG_DESCRIPTION = "Docker image tag of the regenie-walker, e.g.: v2";

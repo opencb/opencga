@@ -5,8 +5,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.exec.Command;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.common.GitRepositoryState;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -81,7 +79,9 @@ public final class RegenieUtils {
 
     public static final List<String> SKIP_OPTIONS = Arrays.asList("--out", "--step");
 
-    public static final String FILE_PREFIX = "file:/";
+    public static final String FILE_PREFIX = "file://";
+    public static final String COHORT_PREFIX = "cohort:";
+    public static final String PHENOTYPE_PREFIX = "phenotype:";
 
     public static final int MINIMUN_NUM_SAMPLES = 2;
 
