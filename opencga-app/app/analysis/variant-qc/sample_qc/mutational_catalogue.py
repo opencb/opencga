@@ -25,6 +25,8 @@ LENGTH_10Kb_100Kb = "10-100Kb"
 LENGTH_100Kb_1Mb = "100Kb-1Mb"
 LENGTH_1Mb_10Mb = "1Mb-10Mb"
 LENGTH_10Mb = ">10Mb"
+CLUSTERED = 'clustered'
+NON_CLUSTERED = 'non-clustered'
 
 class MutationalCatalogueAnalysis:
     def __init__(self, vcf_file, resource_dir, config_json, output_dir, sample_id):
@@ -117,6 +119,17 @@ class MutationalCatalogueAnalysis:
         snv_genome_context_fhand.close()
 
     def create_snv_signature_catalogue(self):
+        """Create the SNV mutational profile (counts)
+        e.g.
+        {'counts': [{'context': 'A[C>A]A', 'total': 265},
+                    {'context': 'A[C>A]C', 'total': 228},
+                    {'context': 'A[C>A]G', 'total': 32},
+                    [...]
+                    {'context': 'T[T>G]C', 'total': 74},
+                    {'context': 'T[T>G]G', 'total': 119},
+                    {'context': 'T[T>G]T', 'total': 480}]
+        }
+        """
 
         # Getting variant contexts
         snv_genome_context_fhand = open(self.snv_genome_context_fpath, 'r')
@@ -127,8 +140,15 @@ class MutationalCatalogueAnalysis:
         snv_filtered_vcf_fpath = bgzip_vcf(self.snv_filtered_vcf_fpath)  # BGZIPping VCF (pysam requirement)
         pysam_snv_filtered_vcf_fhand = pysam.VariantFile(snv_filtered_vcf_fpath)
 
-        # Counting SNV contexts
+        # Creating context keys
         counts = {}
+        for var_mutation in ['[C>A]', '[C>G]', '[C>T]', '[T>A]', '[T>C]', '[T>G]']:
+            for first_flanking_base in ['A', 'C', 'G', 'T']:
+                for second_flanking_base in ['A', 'C', 'G', 'T']:
+                    context_key = ''.join([first_flanking_base, var_mutation, second_flanking_base])
+                    counts[context_key] = 0
+
+        # Counting SNV contexts
         for record in pysam_snv_filtered_vcf_fhand:
             var_id = ':'.join(map(str, [record.chrom, record.pos, record.ref, ','.join(list(record.alts))]))
 
@@ -142,7 +162,7 @@ class MutationalCatalogueAnalysis:
                 context = snv_contexts[var_id]
                 alt = var_id.split(':')[3]
             context_key = '{}[{}>{}]{}'.format(context[0], context[1], alt, context[2])
-            counts[context_key] = counts.get(context_key, 0) + 1
+            counts[context_key] += 1
 
         # Creating results
         results = {'signatures': [{'counts': [{'context': k, 'total': counts[k]} for k in counts]}]}
@@ -206,7 +226,7 @@ class MutationalCatalogueAnalysis:
                 return LENGTH_10Mb
         return None
 
-    def create_sv_clustered_context_file(self):
+    def create_sv_clustered_file(self):
         """Executes R script sv_clustering.R to generate clustering for SVs
         CMD: Rscript sv_clustering.R ./in.clustered.bedpe ./out.clustered.bedpe
 
@@ -244,9 +264,9 @@ class MutationalCatalogueAnalysis:
             # Getting variant information
             chrom2, pos2 = re.findall('.*[\[\]](.+):(.+)[\[\]].*', record.alts[0])[0]
             var_type = self.get_sv_type(record)
-            length = self.get_sv_length(var_type, str(record.chrom), str(chrom2), int(record.pos), int(pos2))
+            var_length = self.get_sv_length(var_type, str(record.chrom), str(chrom2), int(record.pos), int(pos2))
             line = '\t'.join(
-                map(str, [record.chrom, record.pos, record.pos, chrom2, pos2, pos2, length, var_type, self.sample_id])
+                map(str, [record.chrom, record.pos, record.pos, chrom2, pos2, pos2, var_length, var_type, self.sample_id])
             )
             in_bedpe_fhand.write(line + '\n')
         in_bedpe_fhand.close()
@@ -259,14 +279,58 @@ class MutationalCatalogueAnalysis:
 
         return out_bedpe_fpath
 
+    def create_sv_signature_catalogue(self):
+        """Create the SV mutational profile (counts)
+        e.g.
+        {'counts': [{'context': 'clustered_del_1-10Kb', 'total': 4},
+                    {'context': 'clustered_del_10-100Kb', 'total': 3},
+                    [...]
+                    {'context': 'clustered_trans', 'total': 82},
+                    [...]
+                    {'context': 'non-clustered_del_1-10Kb', 'total': 26},
+                    {'context': 'non-clustered_del_10-100Kb', 'total': 25},
+                    [...]
+                    {'context': 'non-clustered_trans', 'total': 49}]
+        }
+        """
+
+        # Creating context keys
+        counts = {}
+        for var_clustering in [CLUSTERED, NON_CLUSTERED]:
+            for var_type in [TYPE_DEL, TYPE_TDS, TYPE_INV, TYPE_TRANS]:
+                for length in [LENGTH_1_10Kb, LENGTH_10Kb_100Kb, LENGTH_100Kb_1Mb, LENGTH_1Mb_10Mb, LENGTH_10Mb]:
+                    if var_type == TYPE_TRANS:
+                        context_key = '_'.join([var_clustering, var_type])
+                    else:
+                        context_key = '_'.join([var_clustering, var_type, length])
+                    counts[context_key] = 0
+
+        # Counting SV contexts
+        out_bedpe_fpath = self.create_sv_clustered_file()
+        out_bedpe_fhand = open(out_bedpe_fpath, 'r')
+        out_bedpe_fhand.readline()  # Skipping header
+        for line in out_bedpe_fhand:
+            items = line.split()
+            var_clustering = CLUSTERED if items[10] == 'TRUE' else NON_CLUSTERED
+            var_type = items[7]
+            var_length = items[6]
+            if var_type == TYPE_TRANS:
+                context_key = '_'.join([var_clustering, var_type])
+            else:
+                context_key = '_'.join([var_clustering, var_type, var_length])
+            counts[context_key] += 1
+
+        # Creating results
+        results = {'signatures': [{'counts': [{'context': k, 'total': counts[k]} for k in counts]}]}
+        generate_results_json(results=results, outdir_path=self.output_dir)
+
     def run(self):
         # Creating mutational signature catalogue
         if self.ms_type == 'SNV':
             self.create_snv_genome_context_file()
             self.create_snv_signature_catalogue()
         elif self.ms_type == 'SV':
-            self.create_sv_clustered_context_file()
-            # self.create_sv_signature_catalogue()
+            self.create_sv_signature_catalogue()
             pass
         else:
             msg = 'Mutational signature for type "{}" not implemented'.format(self.ms_type)
