@@ -11,6 +11,9 @@ public class ExternalToolRunParams extends ToolParams {
     private String id;
     private Integer version;
     private Map<String, String> params;
+    private String commandLine;
+
+    private Docker docker;
 
     public ExternalToolRunParams() {
     }
@@ -21,12 +24,25 @@ public class ExternalToolRunParams extends ToolParams {
         this.params = params;
     }
 
+    public ExternalToolRunParams(String id, Integer version, Map<String, String> params, String commandLine) {
+        this.id = id;
+        this.version = version;
+        this.params = params;
+        this.commandLine = commandLine;
+    }
+
+    public ExternalToolRunParams(Docker docker) {
+        this.docker = docker;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("ExternalToolRunParams{");
         sb.append("id='").append(id).append('\'');
         sb.append(", version=").append(version);
         sb.append(", params=").append(params);
+        sb.append(", commandLine='").append(commandLine).append('\'');
+        sb.append(", docker=").append(docker);
         sb.append('}');
         return sb.toString();
     }
@@ -55,6 +71,24 @@ public class ExternalToolRunParams extends ToolParams {
 
     public ExternalToolRunParams setParams(Map<String, String> params) {
         this.params = params;
+        return this;
+    }
+
+    public String getCommandLine() {
+        return commandLine;
+    }
+
+    public ExternalToolRunParams setCommandLine(String commandLine) {
+        this.commandLine = commandLine;
+        return this;
+    }
+
+    public Docker getDocker() {
+        return docker;
+    }
+
+    public ExternalToolRunParams setDocker(Docker docker) {
+        this.docker = docker;
         return this;
     }
 }

@@ -11,7 +11,7 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
 
 import java.util.Arrays;
 
-@Migration(id = "externaltool__task_7610",
+@Migration(id = "external_tool__task_7610",
         description = "Extend Workflow data model for new ExternalTool, #TASK-7610", version = "5.0.0",
         language = Migration.MigrationLanguage.JAVA, domain = Migration.MigrationDomain.CATALOG, date = 20250506)
 public class ExternalToolTask7610Migration extends MigrationTool {

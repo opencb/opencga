@@ -11,14 +11,16 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaDockerToolScopeStudy;
 import org.opencb.opencga.catalog.db.api.ExternalToolDBAdaptor;
-import org.opencb.opencga.catalog.utils.InputFileUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.externalTool.*;
+import org.opencb.opencga.core.models.externalTool.ExternalTool;
+import org.opencb.opencga.core.models.externalTool.ExternalToolRunParams;
+import org.opencb.opencga.core.models.externalTool.ExternalToolVariable;
+import org.opencb.opencga.core.models.externalTool.WorkflowScript;
 import org.opencb.opencga.core.models.job.ToolInfoExecutor;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.ToolDependency;
@@ -48,7 +50,7 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
     public static final String DESCRIPTION = "Execute a Nextflow analysis.";
 
     @ToolParams
-    protected ExternalToolRunParams externalToolRunParams = new ExternalToolRunParams();
+    protected ExternalToolRunParams runParams = new ExternalToolRunParams();
 
     private ExternalTool externalTool;
     private String cliParams;
@@ -65,27 +67,25 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
     protected void check() throws Exception {
         super.check();
 
-        if (externalToolRunParams.getId() == null) {
+        if (runParams.getId() == null) {
             throw new IllegalArgumentException("Missing Nextflow ID");
         }
 
-        InputFileUtils inputFileUtils = new InputFileUtils(catalogManager);
-
         OpenCGAResult<ExternalTool> result;
-        if (externalToolRunParams.getVersion() != null) {
-            Query query = new Query(ExternalToolDBAdaptor.QueryParams.VERSION.key(), externalToolRunParams.getVersion());
-            result = catalogManager.getExternalToolManager().get(study, Collections.singletonList(externalToolRunParams.getId()), query,
+        if (runParams.getVersion() != null) {
+            Query query = new Query(ExternalToolDBAdaptor.QueryParams.VERSION.key(), runParams.getVersion());
+            result = catalogManager.getExternalToolManager().get(study, Collections.singletonList(runParams.getId()), query,
                     QueryOptions.empty(), false, token);
         } else {
-            result = catalogManager.getExternalToolManager().get(study, externalToolRunParams.getId(), QueryOptions.empty(), token);
+            result = catalogManager.getExternalToolManager().get(study, runParams.getId(), QueryOptions.empty(), token);
         }
         if (result.getNumResults() == 0) {
-            throw new ToolException("Workflow '" + externalToolRunParams.getId() + "' not found");
+            throw new ToolException("Workflow '" + runParams.getId() + "' not found");
         }
         externalTool = result.first();
 
         if (externalTool == null) {
-            throw new ToolException("Workflow '" + externalToolRunParams.getId() + "' is null");
+            throw new ToolException("Workflow '" + runParams.getId() + "' is null");
         }
 
         outDirPath = getOutDir().toAbsolutePath().toString();
@@ -130,8 +130,8 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
         updateJobInformation(new ArrayList<>(tags), toolInfoExecutor);
 
         StringBuilder cliParamsBuilder = new StringBuilder();
-        if (MapUtils.isNotEmpty(externalToolRunParams.getParams())) {
-            for (Map.Entry<String, String> entry : externalToolRunParams.getParams().entrySet()) {
+        if (MapUtils.isNotEmpty(runParams.getParams())) {
+            for (Map.Entry<String, String> entry : runParams.getParams().entrySet()) {
                 String variableId = removePrefix(entry.getKey());
                 // Remove from the mandatoryParams set
                 mandatoryParams.remove(variableId);
