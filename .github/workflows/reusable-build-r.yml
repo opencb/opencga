@@ -70,6 +70,7 @@ jobs:
         run: |
           VERSION=$(grep '^Version:' build/clients/R/DESCRIPTION | cut -d' ' -f2)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
+          ls build/
 
       - name: Upload built R package as artifact
         uses: actions/upload-artifact@v4
