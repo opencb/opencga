@@ -5,7 +5,7 @@ setGeneric("federationClient", function(OpencgaR, id, endpointName, params=NULL,
 
 # ##############################################################################
 ## OrganizationClient
-setGeneric("organizationClient", function(OpencgaR, eventId, id, organization, user, endpointName, params=NULL, ...)
+setGeneric("organizationClient", function(OpencgaR, id, organization, user, endpointName, params=NULL, ...)
     standardGeneric("organizationClient"))
 
 # ##############################################################################
@@ -32,6 +32,11 @@ setGeneric("fileClient", function(OpencgaR, annotationSet, file, files, folder, 
 ## JobClient
 setGeneric("jobClient", function(OpencgaR, job, jobs, members, endpointName, params=NULL, ...)
     standardGeneric("jobClient"))
+
+# ##############################################################################
+## ExternalToolClient
+setGeneric("externaltoolClient", function(OpencgaR, members, toolId, tools, endpointName, params=NULL, ...)
+    standardGeneric("externaltoolClient"))
 
 # ##############################################################################
 ## WorkflowClient

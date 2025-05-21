@@ -82,6 +82,10 @@ public class EnterpriseOpenCGAClient extends OpenCGAClient {
         return this.getClient(CohortClient.class, () -> new CohortClient(this.token, this.clientConfiguration));
     }
 
+    public ExternalToolClient getEnterpriseExternalToolClient() {
+        return this.getClient(ExternalToolClient.class, () -> new ExternalToolClient(this.token, this.clientConfiguration));
+    }
+
     public ClinicalAnalysisClient getEnterpriseClinicalAnalysisClient() {
         return this.getClient(ClinicalAnalysisClient.class,
                 () -> new ClinicalAnalysisClient(this.token, this.clientConfiguration));

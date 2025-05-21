@@ -36,6 +36,7 @@ public class EnterpriseResourceConfig extends ResourceConfig {
         enterpriseApiClasses.put("studies", StudyWSServer.class);
         enterpriseApiClasses.put("files", FileWSServer.class);
         enterpriseApiClasses.put("jobs", JobWSServer.class);
+        enterpriseApiClasses.put("tools", ExternalToolWSServer.class);
         enterpriseApiClasses.put("workflows", WorkflowWSServer.class);
         enterpriseApiClasses.put("samples", SampleWSServer.class);
         enterpriseApiClasses.put("individuals", IndividualWSServer.class);
