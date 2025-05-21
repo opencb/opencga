@@ -371,7 +371,6 @@ public abstract class ParentClientRestApiWriter {
     }
 
     protected String getJavaMethodName(CategoryConfig config, String commandName) {
-        System.out.println("Command name: " + commandName);
         Command command = config.getCommand(commandName);
         String commandMethod;
         if (command != null && StringUtils.isNotEmpty(command.getRename())) {
