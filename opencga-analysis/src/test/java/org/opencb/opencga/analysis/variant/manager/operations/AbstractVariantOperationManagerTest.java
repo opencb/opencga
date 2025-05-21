@@ -168,7 +168,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
         outputPath = "data/index/";
         studyId2 = catalogManager.getStudyManager().create(projectId, "s2", "s2", "s2", "Study " + "2", null, null,
                 null, Collections.singletonMap(VariantStatsAnalysis.STATS_AGGREGATION_CATALOG, getAggregation()),
-                new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first().getId();
+                        new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first().getId();
         outputId2 = catalogManager.getFileManager().createFolder(studyId2, Paths.get("data", "index").toString(),
                 true, null, QueryOptions.empty(), sessionId).first().getId();
 

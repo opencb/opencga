@@ -436,6 +436,91 @@ public class IndividualManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void fatherMotherOptionsTest() throws CatalogException {
+        Individual individual = new Individual()
+                .setId("father")
+                .setName("father");
+        catalogManager.getIndividualManager().create(studyFqn, individual, Collections.emptyList(), QueryOptions.empty(), ownerToken);
+
+        individual = new Individual()
+                .setId("mother")
+                .setName("mother");
+        catalogManager.getIndividualManager().create(studyFqn, individual, Collections.emptyList(), QueryOptions.empty(), ownerToken);
+
+        individual = new Individual().setId("brother")
+                .setName("brother")
+                .setFather(new Individual().setId("father"))
+                .setMother(new Individual().setId("mother"));
+        catalogManager.getIndividualManager().create(studyFqn, individual, Collections.emptyList(), QueryOptions.empty(), ownerToken);
+
+        individual = new Individual().setId("sister")
+                .setName("sister")
+                .setFather(new Individual().setId("father"))
+                .setMother(new Individual().setId("mother"));
+        catalogManager.getIndividualManager().create(studyFqn, individual, Collections.emptyList(), QueryOptions.empty(), ownerToken);
+
+        OpenCGAResult<Individual> result = catalogManager.getIndividualManager().get(studyFqn, Arrays.asList("brother", "sister"),
+                QueryOptions.empty(), ownerToken);
+        assertEquals(2, result.getNumResults());
+        for (Individual tIndividual : result.getResults()) {
+            assertTrue("brother".equals(tIndividual.getId()) || "sister".equals(tIndividual.getId()));
+            assertNotNull(tIndividual.getFather());
+            assertNotNull(tIndividual.getMother());
+            assertEquals("father", tIndividual.getFather().getId());
+            assertEquals("father", tIndividual.getFather().getName());
+            assertEquals("mother", tIndividual.getMother().getId());
+            assertEquals("mother", tIndividual.getMother().getName());
+        }
+
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(IndividualDBAdaptor.QueryParams.NAME.key(),
+                IndividualDBAdaptor.QueryParams.FATHER.key() + "." + IndividualDBAdaptor.QueryParams.ID.key(),
+                IndividualDBAdaptor.QueryParams.FATHER.key() + "." + IndividualDBAdaptor.QueryParams.NAME.key(),
+                IndividualDBAdaptor.QueryParams.MOTHER.key() + "." + IndividualDBAdaptor.QueryParams.ID.key()));
+        result = catalogManager.getIndividualManager().get(studyFqn, Arrays.asList("brother", "sister"), options, ownerToken);
+        assertEquals(2, result.getNumResults());
+        for (Individual tIndividual : result.getResults()) {
+            assertTrue("brother".equals(tIndividual.getId()) || "sister".equals(tIndividual.getId()));
+            assertTrue("brother".equals(tIndividual.getName()) || "sister".equals(tIndividual.getName()));
+            assertNotNull(tIndividual.getFather());
+            assertNotNull(tIndividual.getMother());
+            assertEquals("father", tIndividual.getFather().getId());
+            assertEquals("father", tIndividual.getFather().getName());
+            assertEquals("mother", tIndividual.getMother().getId());
+            assertNull(tIndividual.getMother().getName());
+        }
+
+        options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                IndividualDBAdaptor.QueryParams.FATHER.key() + "." + IndividualDBAdaptor.QueryParams.ID.key(),
+                IndividualDBAdaptor.QueryParams.MOTHER.key() + "." + IndividualDBAdaptor.QueryParams.ID.key(),
+                IndividualDBAdaptor.QueryParams.MOTHER.key() + "." + IndividualDBAdaptor.QueryParams.NAME.key()));
+        result = catalogManager.getIndividualManager().get(studyFqn, Arrays.asList("brother", "sister"), options, ownerToken);
+        assertEquals(2, result.getNumResults());
+        for (Individual tIndividual : result.getResults()) {
+            assertTrue("brother".equals(tIndividual.getId()) || "sister".equals(tIndividual.getId()));
+            assertNull(tIndividual.getName());
+            assertNotNull(tIndividual.getFather());
+            assertNotNull(tIndividual.getMother());
+            assertEquals("father", tIndividual.getFather().getId());
+            assertNull(tIndividual.getFather().getName());
+            assertEquals("mother", tIndividual.getMother().getId());
+            assertEquals("mother", tIndividual.getMother().getName());
+        }
+
+        options = new QueryOptions(QueryOptions.INCLUDE, Collections.singletonList(IndividualDBAdaptor.QueryParams.FATHER.key()
+                + "." + IndividualDBAdaptor.QueryParams.ID.key()));
+        result = catalogManager.getIndividualManager().get(studyFqn, Arrays.asList("brother", "sister"), options, ownerToken);
+        assertEquals(2, result.getNumResults());
+        for (Individual tIndividual : result.getResults()) {
+            assertTrue("brother".equals(tIndividual.getId()) || "sister".equals(tIndividual.getId()));
+            assertNull(tIndividual.getName());
+            assertNotNull(tIndividual.getFather());
+            assertNull(tIndividual.getMother());
+            assertEquals("father", tIndividual.getFather().getId());
+            assertNull(tIndividual.getFather().getName());
+        }
+    }
+
+    @Test
     public void testUpdateWithLockedClinicalAnalysis() throws CatalogException {
         Sample sample = new Sample().setId("sample1");
         catalogManager.getSampleManager().create(studyFqn, sample, QueryOptions.empty(), ownerToken);
