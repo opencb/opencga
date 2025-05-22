@@ -118,7 +118,7 @@ public class VariantSearchManager {
     }
 
     public boolean isAlive(SearchIndexMetadata indexMetadata) {
-        return solrManager.isAlive(buildCollectionName(indexMetadata));
+        return indexMetadata != null && solrManager.isAlive(buildCollectionName(indexMetadata));
     }
 
     public String create(SearchIndexMetadata indexMetadata) throws VariantSearchException {
@@ -673,8 +673,6 @@ public class VariantSearchManager {
             NamedList<Object> collections = (NamedList<Object>) cluster.get("collections");
             Map<String, Object>  collection = (Map<String, Object>) collections.get(collectionName);
             String configName = collection.get("configName").toString();
-            logger.info("Collection {} exists. Missing index metadata. Create index metadata for configSet {}",
-                    collectionName, configName);
             return createIndexMetadataIfEmpty(configName);
         }
         return null;

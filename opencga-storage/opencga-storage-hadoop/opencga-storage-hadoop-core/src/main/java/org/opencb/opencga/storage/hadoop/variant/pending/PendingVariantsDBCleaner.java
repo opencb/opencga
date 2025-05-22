@@ -31,12 +31,12 @@ import java.util.concurrent.TimeUnit;
 public class PendingVariantsDBCleaner extends AbstractHBaseDataWriter<byte[], Delete> {
 
     public static final int MAX_PENDING_REGIONS_TO_COMPACT = 2;
-    private final PendingVariantsDescriptor descriptor;
+    private final PendingVariantsTableBasedDescriptor descriptor;
     private final Deque<HRegionLocation> regions = new LinkedList<>();
     private RegionLocator regionLocator;
     private final Logger logger = LoggerFactory.getLogger(PendingVariantsDBCleaner.class);
 
-    public PendingVariantsDBCleaner(HBaseManager hBaseManager, String tableName, PendingVariantsDescriptor descriptor) {
+    public PendingVariantsDBCleaner(HBaseManager hBaseManager, String tableName, PendingVariantsTableBasedDescriptor descriptor) {
         super(hBaseManager, tableName);
         this.descriptor = descriptor;
         descriptor.checkValidPendingTableName(tableName);

@@ -1,7 +1,5 @@
 package org.opencb.opencga.app.migrations.v5.v5_0_0.storage;
 
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.opencb.opencga.app.migrations.StorageMigrationTool;
 import org.opencb.opencga.catalog.migration.Migration;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
@@ -38,7 +36,10 @@ public class AddVariantSearchMetadata extends StorageMigrationTool {
                         }
                         if (variantSearchManager.existsCollection(dbName)) {
                             // Check if a default collection exists
-                            variantSearchManager.createMissingIndexMetadata();
+                            indexMetadata = variantSearchManager.createMissingIndexMetadata();
+
+                            logger.info("Collection {} exists. Missing index metadata. Create index metadata for configSet {}",
+                                    dbName, indexMetadata.getConfigSetId());
                         }
                     }
 

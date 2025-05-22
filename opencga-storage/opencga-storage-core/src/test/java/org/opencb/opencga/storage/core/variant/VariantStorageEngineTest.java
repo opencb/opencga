@@ -20,7 +20,6 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Iterators;
-import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -36,6 +35,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.TestIOConnector;
@@ -46,8 +46,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
-import org.opencb.opencga.core.models.common.mixins.GenericRecordAvroJsonMixin;
-import org.opencb.opencga.core.models.common.mixins.VariantStatsJsonMixin;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.slf4j.Logger;
@@ -505,8 +503,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
 
         JsonFactory jsonFactory = new JsonFactory();
         ObjectMapper jsonObjectMapper = new ObjectMapper(jsonFactory);
-        jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
-        jsonObjectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
+        JacksonUtils.addVariantMixIn(jsonObjectMapper);
         try (JsonParser parser = jsonFactory.createParser(new GZIPInputStream(new FileInputStream(statsFile1[0])))) {
             while (parser.nextToken() != null) {
                 VariantStatsWrapper variantStatsWrapper = parser.readValueAs(VariantStatsWrapper.class);

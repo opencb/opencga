@@ -25,6 +25,7 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.util.StopWatch;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.DataResult;
@@ -101,7 +102,7 @@ import org.opencb.opencga.storage.hadoop.variant.prune.VariantPruneManager;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreLoader;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreRemover;
 import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchDataWriter;
-import org.opencb.opencga.storage.hadoop.variant.search.SecondaryIndexPendingVariantsManager;
+import org.opencb.opencga.storage.hadoop.variant.search.pending.index.file.SecondaryIndexPendingVariantsFileBasedManager;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopMRVariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
@@ -121,6 +122,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.REGION;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.isValidParam;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.*;
 import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver.*;
 
@@ -480,11 +482,26 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             throws StorageEngineException, IOException, VariantSearchException {
         queryOptions = queryOptions == null ? new QueryOptions() : new QueryOptions(queryOptions);
 
+        boolean shouldRunDiscover = true;
         if (getOptions().getBoolean("skipDiscoverPendingVariantsToSecondaryIndex", false)) {
+            shouldRunDiscover = false;
             logger.info("Skip discover pending variants to secondary index");
-        } else {
-            new SecondaryIndexPendingVariantsManager(getDBAdaptor())
-                    .discoverPending(getMRExecutor(), overwrite, getMergedOptions(queryOptions));
+        }
+        if (shouldRunDiscover) {
+            boolean partialLoad = isValidParam(query, VariantQueryParam.REGION);
+            ObjectMap mrOptions = getMergedOptions(queryOptions);
+            if (partialLoad) {
+                mrOptions.put(VariantQueryParam.REGION.key(), query.getString(VariantQueryParam.REGION.key()));
+            }
+            ObjectMap result = new SecondaryIndexPendingVariantsFileBasedManager(getVariantTableName(), getConf())
+                    .discoverPending(getMRExecutor(), getVariantTableName(), overwrite, mrOptions.appendAll(query));
+            if (!partialLoad) {
+                getMetadataManager().updateProjectMetadata(pm -> {
+                    pm.getSecondaryAnnotationIndex().getIndexMetadata(indexMetadata.getVersion())
+                            .getAttributes().putAll(result);
+                });
+                indexMetadata.getAttributes().putAll(result);
+            }
         }
 
         return super.secondaryIndex(query, queryOptions, overwrite, indexMetadata);
@@ -496,7 +513,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
 
         logger.info("Get variants to index from pending variants table");
         logger.info("Query: " + query.toJson());
-        return new SecondaryIndexPendingVariantsManager(getDBAdaptor()).iterator(query);
+        try {
+            return new SecondaryIndexPendingVariantsFileBasedManager(getVariantTableName(), getConf()).iterator(query);
+        } catch (IOException e) {
+            throw new StorageEngineException("Error getting variants to index from pending variants table", e);
+        }
     }
 
     @Override
@@ -1317,7 +1338,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     private Configuration getHadoopConfiguration(ObjectMap options) {
-        Configuration conf = this.conf == null ? HBaseConfiguration.create() : this.conf;
+        Configuration conf = this.conf == null ? HBaseConfiguration.create(new HdfsConfiguration()) : this.conf;
         // This is the only key needed to connect to HDFS:
         //   CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY = fs.defaultFS
         //

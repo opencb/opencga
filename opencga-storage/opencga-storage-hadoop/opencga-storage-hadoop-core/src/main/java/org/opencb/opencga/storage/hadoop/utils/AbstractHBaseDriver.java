@@ -8,6 +8,7 @@ import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.mapreduce.MultithreadedTableMapper;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
 import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
 import org.apache.hadoop.io.compress.CompressionCodec;
@@ -16,6 +17,7 @@ import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.LazyOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
@@ -172,10 +174,19 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
             LOGGER.info("     - InputDir    : " + job.getConfiguration().get(FileInputFormat.INPUT_DIR));
         }
         int numMapLimit = job.getConfiguration().getInt(MRJobConfig.JOB_RUNNING_MAP_LIMIT, 0);
-        if (numMapLimit > 0) {
-            LOGGER.info("   * Mapper        : " + numMapLimit + "x " + job.getMapperClass().getName());
+        Class<? extends Mapper<?, ?, ?, ?>> mapperClass = job.getMapperClass();
+        final String mapperClassName;
+        if (mapperClass.equals(MultithreadedTableMapper.class)) {
+            mapperClass = MultithreadedTableMapper.getMapperClass(job);
+            int numThreads = MultithreadedTableMapper.getNumberOfThreads(job);
+            mapperClassName = MultithreadedTableMapper.class.getSimpleName() + "(" + numThreads + " threads) : " + mapperClass.getName();
         } else {
-            LOGGER.info("   * Mapper        : " + job.getMapperClass().getName());
+            mapperClassName = mapperClass.getName();
+        }
+        if (numMapLimit > 0) {
+            LOGGER.info("   * Mapper        : " + numMapLimit + "x " + mapperClassName);
+        } else {
+            LOGGER.info("   * Mapper        : " + mapperClassName);
         }
         JobConf jobConf = (JobConf) job.getConfiguration();
         LOGGER.info("     - memory required (MB) : " + jobConf.getMemoryRequired(TaskType.MAP));
@@ -189,7 +200,14 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         } else {
             LOGGER.info("   * Reducer       : (no reducer)");
         }
-        LOGGER.info("   * OutputFormat  : " + job.getOutputFormatClass().getName());
+        String outputFormatClassName;
+        if (job.getOutputFormatClass().equals(LazyOutputFormat.class)) {
+            Class<?> actualOutputFormat = job.getConfiguration().getClass(LazyOutputFormat.OUTPUT_FORMAT, OutputFormat.class);
+            outputFormatClassName = LazyOutputFormat.class.getSimpleName() + ": " + actualOutputFormat.getName();
+        } else {
+            outputFormatClassName = job.getOutputFormatClass().getName();
+        }
+        LOGGER.info("   * OutputFormat  : " + outputFormatClassName);
         if (job.getOutputFormatClass().equals(TableOutputFormat.class)
                 && StringUtils.isNotEmpty(job.getConfiguration().get(TableOutputFormat.OUTPUT_TABLE))) {
             LOGGER.info("     - OutputTable : " + job.getConfiguration().get(TableOutputFormat.OUTPUT_TABLE));

@@ -742,9 +742,13 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             if (variantSearchManager.existsCollection(dbName)) {
                 // Check if a default collection exists
                 indexMetadata = variantSearchManager.createMissingIndexMetadata();
+                logger.info("Collection {} exists. Missing index metadata. Create index metadata for configSet {}",
+                        dbName, indexMetadata.getConfigSetId());
             } else {
                 // Create if it does not exist
                 indexMetadata = variantSearchManager.createIndexMetadataIfEmpty(configuration.getSearch().getConfigSet());
+                logger.info("Creating new secondary annotation index collection '{}' , configSetId:'{}'",
+                        variantSearchManager.buildCollectionName(indexMetadata), indexMetadata.getConfigSetId());
             }
         } else if (overwrite) {
             boolean shouldCreateNewIndex = false;
@@ -754,8 +758,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 shouldCreateNewIndex = true;
             }
             if (shouldCreateNewIndex) {
+                logger.info("Create new secondary annotation index collection.");
+                logger.info(" Prev : '{}' , configSetId:'{}'", variantSearchManager.buildCollectionName(indexMetadata),
+                        indexMetadata.getConfigSetId());
                 indexMetadata = variantSearchManager.newIndexMetadata(configuration.getSearch().getConfigSet());
-                logger.info("Creating new secondary annotation index collection:'{}' , configSetId:'{}'",
+                logger.info(" New : '{}' , configSetId:'{}'",
                         variantSearchManager.buildCollectionName(indexMetadata),
                         indexMetadata.getConfigSetId());
             }

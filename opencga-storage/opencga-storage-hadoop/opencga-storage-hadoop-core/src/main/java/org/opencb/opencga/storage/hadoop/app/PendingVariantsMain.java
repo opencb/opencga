@@ -13,8 +13,7 @@ import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.annotation.pending.AnnotationPendingVariantsManager;
 import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsManager;
-import org.opencb.opencga.storage.hadoop.variant.prune.SecondaryIndexPrunePendingVariantsManager;
-import org.opencb.opencga.storage.hadoop.variant.search.SecondaryIndexPendingVariantsManager;
+import org.opencb.opencga.storage.hadoop.variant.search.pending.prune.table.SecondaryIndexPrunePendingVariantsManager;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 
 import java.io.IOException;
@@ -113,12 +112,12 @@ public class PendingVariantsMain extends AbstractMain {
             HBaseVariantTableNameGenerator tableNameGenerator = new HBaseVariantTableNameGenerator(dbName, hBaseManager.getConf());
             System.err.println("Detect AnnotationPendingVariants table");
             return new AnnotationPendingVariantsManager(hBaseManager, tableNameGenerator);
-        } else if (HBaseVariantTableNameGenerator.isValidPendingSecondaryIndexTableName(table)) {
-            String dbName = HBaseVariantTableNameGenerator.getDBNameFromPendingSecondaryIndexTableName(table);
-            HBaseVariantTableNameGenerator tableNameGenerator = new HBaseVariantTableNameGenerator(dbName, hBaseManager.getConf());
-            System.err.println("Detect SecondaryIndexPendingVariants table");
-            return new SecondaryIndexPendingVariantsManager(
-                    new VariantHadoopDBAdaptor(hBaseManager, hBaseManager.getConf(), tableNameGenerator, new ObjectMap()));
+//        } else if (HBaseVariantTableNameGenerator.isValidPendingSecondaryIndexTableName(table)) {
+//            String dbName = HBaseVariantTableNameGenerator.getDBNameFromPendingSecondaryIndexTableName(table);
+//            HBaseVariantTableNameGenerator tableNameGenerator = new HBaseVariantTableNameGenerator(dbName, hBaseManager.getConf());
+//            System.err.println("Detect SecondaryIndexPendingVariants table");
+//            return new SecondaryIndexPendingVariantsManager(
+//                    new VariantHadoopDBAdaptor(hBaseManager, hBaseManager.getConf(), tableNameGenerator, new ObjectMap()));
         } else if (HBaseVariantTableNameGenerator.isValidPendingSecondaryIndexPruneTableName(table)) {
             String dbName = HBaseVariantTableNameGenerator.getDBNameFromPendingSecondaryIndexPruneTableName(table);
             HBaseVariantTableNameGenerator tableNameGenerator = new HBaseVariantTableNameGenerator(dbName, hBaseManager.getConf());

@@ -7,7 +7,7 @@ import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsDBCleaner;
-import org.opencb.opencga.storage.hadoop.variant.prune.SecondaryIndexPrunePendingVariantsManager;
+import org.opencb.opencga.storage.hadoop.variant.search.pending.prune.table.SecondaryIndexPrunePendingVariantsManager;
 
 import java.io.IOException;
 import java.util.*;

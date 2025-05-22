@@ -228,9 +228,9 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
         Iterator<Variant> variantsFromSearchIterator = variantsFromSearch.iterator();
         Iterator<Variant> variantsFromDBIterator = variantsFromDB.iterator();
         for (int i = 0; i < variantsFromDB.size(); i++) {
-            Variant variantFromDB = variantsFromSearchIterator.next();
+            Variant variantFromDB = variantsFromDBIterator.next();
             Set<String> studiesFromDB = variantFromDB.getStudies().stream().map(StudyEntry::getStudyId).collect(Collectors.toSet());
-            Variant variantFromSearch = variantsFromDBIterator.next();
+            Variant variantFromSearch = variantsFromSearchIterator.next();
             Set<String> studiesFromSearch = variantFromSearch.getStudies().stream().map(StudyEntry::getStudyId).collect(Collectors.toSet());
 
             assertEquals(variantFromDB.toString(), variantFromSearch.toString());

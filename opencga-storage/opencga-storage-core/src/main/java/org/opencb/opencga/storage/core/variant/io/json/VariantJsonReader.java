@@ -19,15 +19,10 @@ package org.opencb.opencga.storage.core.variant.io.json;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.opencb.biodata.models.variant.Genotype;
-import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
-import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.storage.core.variant.io.AbstractVariantReader;
-import org.opencb.opencga.core.models.common.mixins.GenotypeJsonMixin;
-import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantSourceEntryJsonMixin;
-import org.opencb.opencga.core.models.common.mixins.VariantStatsJsonMixin;
 import org.xerial.snappy.SnappyInputStream;
 
 import java.io.FileInputStream;
@@ -55,6 +50,13 @@ public class VariantJsonReader extends AbstractVariantReader {
     private InputStream variantsStream;
 
     private String variantFilename;
+
+    public VariantJsonReader(InputStream variantsStream) {
+        super((InputStream) null, new VariantStudyMetadata());
+        this.variantsStream = variantsStream;
+        this.factory = new JsonFactory();
+        this.jsonObjectMapper = new ObjectMapper(this.factory);
+    }
 
     public VariantJsonReader(VariantStudyMetadata metadata, InputStream variantsStream, InputStream metaFileStream) {
         super(metaFileStream, metadata);
@@ -108,9 +110,7 @@ public class VariantJsonReader extends AbstractVariantReader {
     public boolean pre() {
         super.pre();
 
-        jsonObjectMapper.addMixIn(StudyEntry.class, VariantSourceEntryJsonMixin.class);
-        jsonObjectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);
-        jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
+        JacksonUtils.addVariantMixIn(jsonObjectMapper);
         try {
             variantsParser = factory.createParser(variantsStream);
             // TODO Optimizations for memory management?

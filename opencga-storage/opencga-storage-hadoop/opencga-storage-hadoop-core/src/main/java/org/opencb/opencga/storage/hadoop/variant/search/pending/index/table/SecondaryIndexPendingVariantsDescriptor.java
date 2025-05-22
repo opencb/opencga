@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.hadoop.variant.search;
+package org.opencb.opencga.storage.hadoop.variant.search.pending.index.table;
 
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
@@ -16,7 +16,8 @@ import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
-import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsDescriptor;
+import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsTableBasedDescriptor;
+import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchIndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 
 import java.io.IOException;
@@ -26,7 +27,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.SEAR
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.STUDY_SUFIX_BYTES;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.VariantColumn.*;
 
-public class SecondaryIndexPendingVariantsDescriptor implements PendingVariantsDescriptor {
+public class SecondaryIndexPendingVariantsDescriptor implements PendingVariantsTableBasedDescriptor {
 
     @Override
     public String name() {

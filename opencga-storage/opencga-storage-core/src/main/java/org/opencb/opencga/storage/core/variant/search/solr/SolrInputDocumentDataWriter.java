@@ -47,7 +47,7 @@ public class SolrInputDocumentDataWriter implements DataWriter<SolrInputDocument
     @Override
     public boolean post() {
         try {
-            commit();
+            commit(true);
         } catch (Exception e) {
             Throwables.propagate(e);
         }
@@ -64,8 +64,12 @@ public class SolrInputDocumentDataWriter implements DataWriter<SolrInputDocument
     }
 
     protected void commit() throws Exception {
+        commit(false);
+    }
+
+    protected void commit(boolean openSearcher) throws Exception {
         UpdateResponse response = retry(() -> new UpdateRequest()
-                .setAction(UpdateRequest.ACTION.COMMIT, true, false, 1, false, false, false)
+                .setAction(UpdateRequest.ACTION.COMMIT, true, false, 1, false, false, openSearcher)
 //                .setAction(UpdateRequest.ACTION.COMMIT, true, true)
                 .process(solrClient, collection));
         commitTimeMs += response.getElapsedTime();

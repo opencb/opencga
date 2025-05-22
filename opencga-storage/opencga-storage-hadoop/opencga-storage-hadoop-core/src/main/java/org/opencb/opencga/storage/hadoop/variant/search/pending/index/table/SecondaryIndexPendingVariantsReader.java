@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.hadoop.variant.search;
+package org.opencb.opencga.storage.hadoop.variant.search.pending.index.table;
 
 import org.apache.hadoop.hbase.client.Result;
 import org.opencb.biodata.models.variant.Variant;

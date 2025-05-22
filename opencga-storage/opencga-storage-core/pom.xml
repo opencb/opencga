@@ -250,6 +250,7 @@
                 <directory>src/main/resources</directory>
                 <includes>
                     <include>solr/**</include>
+                    <include>managed-schema</include>
                 </includes>
             </testResource>
         </testResources>

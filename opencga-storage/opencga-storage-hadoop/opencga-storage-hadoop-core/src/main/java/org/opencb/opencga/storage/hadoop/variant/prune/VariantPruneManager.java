@@ -27,6 +27,8 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenix
 import org.opencb.opencga.storage.hadoop.variant.annotation.pending.AnnotationPendingVariantsDescriptor;
 import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsDBCleaner;
 import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchDataDeleter;
+import org.opencb.opencga.storage.hadoop.variant.search.pending.prune.table.SecondaryIndexPrunePendingVariantsDescriptor;
+import org.opencb.opencga.storage.hadoop.variant.search.pending.prune.table.SecondaryIndexPrunePendingVariantsManager;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

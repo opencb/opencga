@@ -14,18 +14,18 @@ import java.io.IOException;
 
 public abstract class PendingVariantsManager {
 
-    private final PendingVariantsDescriptor descriptor;
+    private final PendingVariantsTableBasedDescriptor descriptor;
     private final HBaseManager hBaseManager;
     private final HBaseVariantTableNameGenerator tableNameGenerator;
 
-    protected PendingVariantsManager(VariantHadoopDBAdaptor dbAdaptor, PendingVariantsDescriptor descriptor) {
+    protected PendingVariantsManager(VariantHadoopDBAdaptor dbAdaptor, PendingVariantsTableBasedDescriptor descriptor) {
         hBaseManager = dbAdaptor.getHBaseManager();
         tableNameGenerator = dbAdaptor.getTableNameGenerator();
         this.descriptor = descriptor;
     }
 
     protected PendingVariantsManager(HBaseManager hBaseManager, HBaseVariantTableNameGenerator tableNameGenerator,
-                                  PendingVariantsDescriptor descriptor) {
+                                     PendingVariantsTableBasedDescriptor descriptor) {
         this.hBaseManager = hBaseManager;
         this.tableNameGenerator = tableNameGenerator;
         this.descriptor = descriptor;
@@ -43,12 +43,12 @@ public abstract class PendingVariantsManager {
         return new PendingVariantsDBCleaner(hBaseManager, descriptor.getTableName(tableNameGenerator), descriptor);
     }
 
-    public void discoverPending(MRExecutor mrExecutor, boolean overwrite, ObjectMap options) throws StorageEngineException {
-        discoverPending(mrExecutor, new QueryOptions(options).append(DiscoverPendingVariantsDriver.OVERWRITE, overwrite));
+    public ObjectMap discoverPending(MRExecutor mrExecutor, boolean overwrite, ObjectMap options) throws StorageEngineException {
+        return discoverPending(mrExecutor, new QueryOptions(options).append(DiscoverPendingVariantsDriver.OVERWRITE, overwrite));
     }
 
-    public void discoverPending(MRExecutor mrExecutor, ObjectMap options) throws StorageEngineException {
-        mrExecutor.run(DiscoverPendingVariantsDriver.class,
+    public ObjectMap discoverPending(MRExecutor mrExecutor, ObjectMap options) throws StorageEngineException {
+        return mrExecutor.run(DiscoverPendingVariantsDriver.class,
                 DiscoverPendingVariantsDriver.buildArgs(
                         tableNameGenerator.getVariantTableName(), descriptor.getClass(), options),
                 "Discover pending " + descriptor.name() + " variants");

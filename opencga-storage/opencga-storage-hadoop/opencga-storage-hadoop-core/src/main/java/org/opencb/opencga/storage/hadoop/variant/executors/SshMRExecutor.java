@@ -204,7 +204,7 @@ public class SshMRExecutor extends MRExecutor {
     private Path copyOutputFiles(String output, List<String> env) throws StorageEngineException {
         URI targetOutputUri = UriUtils.createUriSafe(output);
         if (!MapReduceOutputFile.isLocal(targetOutputUri)) {
-            logger.info("Output is not a file:// URI. Skipping copy file {}", targetOutputUri);
+            logger.info("Output to non-local destination. Skip \"copy to local\" file {}", targetOutputUri);
             return null;
         }
         String targetOutput = targetOutputUri.getPath();

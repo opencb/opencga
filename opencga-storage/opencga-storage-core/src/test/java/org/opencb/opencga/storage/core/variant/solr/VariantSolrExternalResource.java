@@ -25,12 +25,14 @@ import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -64,7 +66,11 @@ public class VariantSolrExternalResource extends ExternalResource {
         Path rootDir = Paths.get("target/test-data", "junit-variant-solr-" + TimeUtils.getTimeMillis());
         Files.createDirectories(rootDir);
 
-        String configSet = "opencga-variant-configset-" + GitRepositoryState.getInstance().getBuildVersion();
+        String configSet;
+        try (InputStream is = getClass().getClassLoader().getResourceAsStream("storage-configuration.yml")) {
+            StorageConfiguration storageConfiguration = StorageConfiguration.load(is);
+            configSet = storageConfiguration.getSearch().getConfigSet();
+        }
 
         // Copy configuration
         getResourceUri("configsets/variantsCollection/solrconfig.xml", "configsets/" + configSet + "/solrconfig.xml", rootDir);
