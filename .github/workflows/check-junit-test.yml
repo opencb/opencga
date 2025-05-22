@@ -51,7 +51,7 @@ on:
 jobs:
   get_profiles:
     name: Test JUnit
-    runs-on: ubuntu-22.04
+    runs-on: ${{ vars.UBUNTU_VERSION }}
     outputs:
       profiles: ${{ steps.validate.outputs.profiles }}
       modules: ${{ steps.validate.outputs.modules }}
