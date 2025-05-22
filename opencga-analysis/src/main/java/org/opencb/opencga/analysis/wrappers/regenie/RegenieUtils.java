@@ -3,6 +3,7 @@ package org.opencb.opencga.analysis.wrappers.regenie;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.exec.Command;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -23,7 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-public final class RegenieUtils {
+public class RegenieUtils {
 
     public static final String VCF_BASENAME = "input";
     public static final String VCF_FILENAME = VCF_BASENAME + ".vcf.gz";
@@ -70,24 +71,37 @@ public final class RegenieUtils {
     public static final String CONDITION_FILE_SAMPLE_OPTION = "--condition-file-sample";
     public static final String LD_EXTRACT_OPTION = "--ld-extract";
 
-    public static final List<String> ALL_FILE_OPTIONS = Arrays.asList(BGEN_OPTION, BED_OPTION, PGEN_OPTION, SAMPLE_OPTION, BGI_OPTION,
+    protected static final List<String> ALL_FILE_OPTIONS = Arrays.asList(BGEN_OPTION, BED_OPTION, PGEN_OPTION, SAMPLE_OPTION, BGI_OPTION,
             KEEP_OPTION, REMOVE_OPTION, EXTRACT_OPTION, EXCLUDE_OPTION, EXTRACT_OR_OPTION, EXCLUDE_OR_OPTION, PHENO_FILE_OPTION,
             COVAR_FILE_OPTION, PRED_OPTION, TPHENO_FILE_OPTION, SRUN_L0_OPTION, USER_NULL_FIRTH_OPTION, ANNO_FILE_OPTION, SET_LIST_OPTION,
             EXTRACT_SETS_OPTION, EXCLUDE_SETS_OPTION, AAF_FILE_OPTION, MASK_DEF_OPTION, LOVO_SNPLIST_OPTION, INTERACTION_FILE_OPTION,
             INTERACTION_FILE_SAMPLE_OPTION, CONDITION_LIST_OPTION, CONDITION_FILE_OPTION, CONDITION_FILE_SAMPLE_OPTION,
             CONDITION_FILE_SAMPLE_OPTION, LD_EXTRACT_OPTION);
 
-    public static final List<String> SKIP_OPTIONS = Arrays.asList("--out", "--step");
+    protected static final List<String> SKIP_OPTIONS = Arrays.asList("--out", "--step");
+
+    public static final String BGEN = ".bgen";
+    public static final String BED  = ".bed";
+    public static final String BIM  = ".bim";
+    public static final String FAM  = ".fam";
+    public static final String PGEN = ".pgen";
+    public static final String PVAR = ".pvar";
+    public static final String PSAM = ".psam";
+
+    public static final String REGENIE_HEADER_PREFIX = "CHROM GENPOS ";
 
     public static final String FILE_PREFIX = "file://";
     public static final String COHORT_PREFIX = "cohort:";
     public static final String PHENOTYPE_PREFIX = "phenotype:";
+    public static final String FLAG_TRUE = "flag:true";
+    public static final String FLAG_FALSE = "flag:false";
 
-    public static final int MINIMUN_NUM_SAMPLES = 2;
+    public static final int MINIMUM_NUM_SAMPLES = 2;
 
-    private static Random random = new Random();
+    private static final Random random = new Random();
 
-    private static Logger logger = LoggerFactory.getLogger(RegenieUtils.class);
+    private static final Logger logger = LoggerFactory.getLogger(RegenieUtils.class);
+
 
     private RegenieUtils() {
         throw new IllegalStateException("Utility class");

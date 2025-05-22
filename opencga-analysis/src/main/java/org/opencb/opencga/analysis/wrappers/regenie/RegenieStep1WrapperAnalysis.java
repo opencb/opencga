@@ -64,7 +64,7 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
     private static final String CLEAN_RESOURCES_STEP = "clean-resources";
     private static final String PREPARE_WALKER_DOCKER_STEP = "build-and-push-walker-docker";
 
-    private ObjectMap regenieOptions = new ObjectMap();
+    private final ObjectMap regenieOptions = new ObjectMap();
 
     private Path vcfFile;
 
@@ -96,7 +96,7 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
         executor = getToolExecutor(RegenieStep1WrapperAnalysisExecutor.class);
         ObjectMap options = regenieParams.getRegenieParams();
 
-        // Check input variants from BGEN, BED, PGEN, VCF or query
+        // Check input variants from file BGEN, BED, PGEN or VCF
         checkVariants(options);
 
         // Check phenotype from phenotype file, case/control cohorts or phenotype ID
@@ -147,29 +147,31 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
                         continue;
                     }
                     Path path = checkRegenieInputFile(value, false, "Option " + key + " file ", study, catalogManager, token);
-                    Path dest = resourcePath.resolve(path.getFileName());
-                    FileUtils.copyFile(path, dest);
-                    if (!Files.exists(dest)) {
-                        throw new ToolException("File " + dest + " not found after copy (preparing resources)");
-                    }
-                    regenieOptions.put(key, dest.toAbsolutePath().toString());
+                    if (path != null) {
+                        Path dest = resourcePath.resolve(path.getFileName());
+                        FileUtils.copyFile(path, dest);
+                        if (!Files.exists(dest)) {
+                            throw new ToolException("File " + dest + " not found after copy (preparing resources)");
+                        }
+                        regenieOptions.put(key, dest.toAbsolutePath().toString());
 
-                    // The implicit files (e.g. the files .bim and .fam for the file .bed) are copied to the resources folder
-                    // (they were already checked in previously and they are expected to be in the same folder)
-                    if (key.equals(BED_OPTION)) {
-                        String bedFile = path.getFileName().toString();
-                        if (bedFile.endsWith(".bed")) {
-                            bedFile = bedFile.substring(0, bedFile.length() - 4);
+                        // The implicit files (e.g. the files .bim and .fam for the file .bed) are copied to the resources folder
+                        // (they were already checked in previously and they are expected to be in the same folder)
+                        if (key.equals(BED_OPTION)) {
+                            String bedFile = path.getFileName().toString();
+                            if (bedFile.endsWith(BED)) {
+                                bedFile = bedFile.substring(0, bedFile.length() - 4);
+                            }
+                            FileUtils.copyFile(path.getParent().resolve(bedFile + BIM), resourcePath.resolve(bedFile + BIM));
+                            FileUtils.copyFile(path.getParent().resolve(bedFile + FAM), resourcePath.resolve(bedFile + FAM));
+                        } else if (key.equals(PGEN_OPTION)) {
+                            String pgenFile = path.getFileName().toString();
+                            if (pgenFile.endsWith(PGEN)) {
+                                pgenFile = pgenFile.substring(0, pgenFile.length() - 5);
+                            }
+                            FileUtils.copyFile(path.getParent().resolve(pgenFile + PVAR), resourcePath.resolve(pgenFile + PVAR));
+                            FileUtils.copyFile(path.getParent().resolve(pgenFile + PSAM), resourcePath.resolve(pgenFile + PSAM));
                         }
-                        FileUtils.copyFile(path.getParent().resolve(bedFile + ".bim"), resourcePath.resolve(bedFile + ".bim"));
-                        FileUtils.copyFile(path.getParent().resolve(bedFile + ".fam"), resourcePath.resolve(bedFile + ".fam"));
-                    } else if (key.equals(PGEN_OPTION)) {
-                        String pgenFile = path.getFileName().toString();
-                        if (pgenFile.endsWith(".pgen")) {
-                            pgenFile = pgenFile.substring(0, pgenFile.length() - 5);
-                        }
-                        FileUtils.copyFile(path.getParent().resolve(pgenFile + ".pvar"), resourcePath.resolve(pgenFile + ".pvar"));
-                        FileUtils.copyFile(path.getParent().resolve(pgenFile + ".psam"), resourcePath.resolve(pgenFile + ".psam"));
                     }
                 } else {
                     // Ohter options
@@ -182,7 +184,7 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
 
             // Prepare phenotype
             prepareGenotype();
-        } catch (ToolException | IOException | CatalogException | StorageEngineException e) {
+        } catch (ToolException | IOException e) {
             clean();
             throw new ToolException(e);
         }
@@ -207,7 +209,7 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
 //        FileUtils.deleteDirectory(resourcePath);
     }
 
-    private void checkVariants(ObjectMap inputOptions) throws ToolException, CatalogException, IOException {
+    private void checkVariants(ObjectMap inputOptions) throws ToolException, CatalogException {
         variantsSource = "";
         if (MapUtils.isNotEmpty(inputOptions) && (inputOptions.containsKey(BGEN_OPTION) || inputOptions.containsKey(BED_OPTION)
                 || inputOptions.containsKey(PGEN_OPTION))) {
@@ -335,7 +337,7 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
         }
     }
 
-    private void checkBgenBedPgenOptions(ObjectMap inputOptions) throws ToolException, CatalogException, IOException {
+    private void checkBgenBedPgenOptions(ObjectMap inputOptions) throws ToolException, CatalogException {
         Path path = checkRegenieInputFile(inputOptions.getString(BGEN_OPTION), false, "BGEN", study, catalogManager, token);
         if (path != null) {
             logger.info("Variants from the BGEN file {}", path);
@@ -346,7 +348,7 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
         }
 
         // Check BED, BIM and FAM files
-        path = checkInputFiles(inputOptions.getString(BED_OPTION), ".bed", Arrays.asList(".bim", ".fam"));
+        path = checkInputFiles(inputOptions.getString(BED_OPTION), BED, Arrays.asList(BIM, FAM));
         if (path != null) {
             logger.info("Variants from the BED file {}", path);
             regenieOptions.put(BED_OPTION, path.toAbsolutePath().toString());
@@ -356,7 +358,7 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
         }
 
         // Check PGEN, PVAR and PSAM files
-        path = checkInputFiles(inputOptions.getString(PGEN_OPTION), ".pgen", Arrays.asList(".pvar", ".psam"));
+        path = checkInputFiles(inputOptions.getString(PGEN_OPTION), PGEN, Arrays.asList(PVAR, PSAM));
         if (path != null) {
             logger.info("Variants from the PGEN file {}", path);
             regenieOptions.put(PGEN_OPTION, path.toAbsolutePath().toString());
@@ -375,9 +377,9 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
         }
         caseSamples = individuals.getResults().stream().filter(i -> CollectionUtils.isNotEmpty(i.getSamples()))
                 .map(i -> i.getSamples().get(0).getId()).collect(Collectors.toList());
-        if (caseSamples.size() < MINIMUN_NUM_SAMPLES) {
+        if (caseSamples.size() < MINIMUM_NUM_SAMPLES) {
             throw new ToolException("Insufficient number of 'case' samples (" + caseSamples.size() + ") from individual phenotype "
-                    + phenotype + ". Minimum number of samples: " + MINIMUN_NUM_SAMPLES);
+                    + phenotype + ". Minimum number of samples: " + MINIMUM_NUM_SAMPLES);
         }
 
         // Get control samples
@@ -385,9 +387,9 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
         controlSamples = individuals.getResults().stream().filter(i -> CollectionUtils.isNotEmpty(i.getSamples()))
                 .map(i -> i.getSamples().get(0).getId()).collect(Collectors.toList());
         controlSamples.removeAll(caseSamples);
-        if (controlSamples.size() < MINIMUN_NUM_SAMPLES) {
+        if (controlSamples.size() < MINIMUM_NUM_SAMPLES) {
             throw new ToolException("Insufficient number of 'control' samples (" + controlSamples.size() + ") from individual"
-                    + " phenotype " + phenotype + ". Minimum number of samples: " + MINIMUN_NUM_SAMPLES);
+                    + " phenotype " + phenotype + ". Minimum number of samples: " + MINIMUM_NUM_SAMPLES);
         }
     }
 
@@ -403,18 +405,18 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
             controlSamples = controlSamples.stream().filter(s -> !intersection.contains(s)).collect(Collectors.toList());
         }
 
-        if (caseSamples.size() < MINIMUN_NUM_SAMPLES) {
+        if (caseSamples.size() < MINIMUM_NUM_SAMPLES) {
             throw new ToolException("Insufficient number of samples (" + caseSamples.size() + ") from case cohort " + caseCohortName
-                    + " after removing duplicated samples in both cohorts. Minimum number of samples: " + MINIMUN_NUM_SAMPLES);
+                    + " after removing duplicated samples in both cohorts. Minimum number of samples: " + MINIMUM_NUM_SAMPLES);
         }
-        if (controlSamples.size() < MINIMUN_NUM_SAMPLES) {
+        if (controlSamples.size() < MINIMUM_NUM_SAMPLES) {
             throw new ToolException("Insufficient number of samples (" + controlSamples.size() + ") from control cohort "
                     + controlCohortName + " after removing duplicated samples in both cohorts. Minimum number of samples: "
-                    + MINIMUN_NUM_SAMPLES);
+                    + MINIMUM_NUM_SAMPLES);
         }
     }
 
-    private void prepareGenotype() throws IOException, ToolException {
+    private void prepareGenotype() throws IOException {
         if (CollectionUtils.isNotEmpty(caseSamples) && CollectionUtils.isNotEmpty(controlSamples)) {
             // Create the phenoFile from case and control samples
             Path phenoFile = resourcePath.resolve(PHENO_FILENAME);
@@ -431,7 +433,7 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
         }
     }
 
-    private void prepareVariants() throws IOException, ToolException, CatalogException, StorageEngineException {
+    private void prepareVariants() throws IOException, ToolException {
         switch (variantsSource) {
             case BGEN_OPTION:
             case BED_OPTION:
@@ -466,7 +468,7 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
                 throw new ToolException("Could not create directory " + dataDir);
             }
 
-            // Copy pheno and covar files
+            // Copy all regenie files (e.g. pheno and covar files)
             FileUtils.copyDirectory(resourcePath, dataDir);
 
             // Copy Python scripts and files
@@ -496,7 +498,7 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
                         throw new ToolExecutorException("Could not find the regenie-step1 loco file: " + locoPath.getFileName());
                     }
                     FileUtils.copyFile(locoPath, predDir.resolve(locoFilename));
-                    bw.write(split[0] + " " + OPT_APP_PRED_VIRTUAL_DIR + "/" + locoFilename + "\n");
+                    bw.write(split[0] + " " + OPT_APP_PRED_VIRTUAL_DIR + locoFilename + "\n");
                 }
             }
 
@@ -537,7 +539,7 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
     }
 
     private Path checkInputFiles(String inputFilename, String mainExtension, List<String> extensions)
-            throws ToolException, CatalogException, IOException {
+            throws ToolException, CatalogException {
         Path inputPath = checkRegenieInputFile(inputFilename, false, mainExtension, getStudy(), getCatalogManager(), getToken());
         if (inputPath != null) {
             String filename = inputPath.toFile().getName();

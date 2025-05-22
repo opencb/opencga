@@ -63,18 +63,20 @@ public class RegenieStep1WrapperAnalysisExecutor extends DockerWrapperAnalysisEx
 
                         // Remove extension
                         String filename = path.getFileName().toString();
-                        if (filename.endsWith(".bed")) {
+                        if (filename.endsWith(BED)) {
                             filename = filename.substring(0, filename.length() - 4);
-                        } else if (filename.endsWith(".bgen") || filename.endsWith(".pgen")) {
+                        } else if (filename.endsWith(BGEN) || filename.endsWith(PGEN)) {
                             filename = filename.substring(0, filename.length() - 5);
                         }
                         params.append(" ").append(key).append(" ").append(INPUT_VIRTUAL_PATH).append("/").append(filename);
                     } else {
-                        if (options.get(key) instanceof String) {
+                        if (options.get(key) == null) {
+                            params.append(" ").append(key);
+                        } else if (options.get(key) instanceof String) {
                             String value = options.getString(key);
-                            if ("TRUE".equalsIgnoreCase(value)) {
+                            if (FLAG_TRUE.equalsIgnoreCase(value)) {
                                 params.append(" ").append(key);    // Sanity check
-                            } else if (!"FALSE".equalsIgnoreCase(value)) {
+                            } else if (!FLAG_FALSE.equalsIgnoreCase(value)) {
                                 params.append(" ").append(key).append(" ").append(value);
                             }
                         } else {

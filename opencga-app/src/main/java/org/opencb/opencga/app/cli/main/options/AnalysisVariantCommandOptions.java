@@ -2061,11 +2061,11 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean jobDryRun; 
     
-        @DynamicParameter(names = {"--regenie-params"}, description = "Regenie options as described in the Regenie documentation. Key-values examples: '--bgen'='file://regenie/example.bgen', '--bt'='', '--bsize'=100. Use: --regenie-params key=value", required = false)
-        public Map<String, ?> regenieParams = new HashMap<>(); //Dynamic parameters must be initialized;
-    
         @Parameter(names = {"--vcf-file"}, description = "VCF file; alternative to the BGEN, BED or PGEN input file.", required = false, arity = 1)
         public String vcfFile;
+    
+        @DynamicParameter(names = {"--regenie-params"}, description = "Regenie options as described in the Regenie documentation. Key-values examples: '--bgen'='file://regenie/example.bgen', '--bt'='', '--bsize'=100. Use: --regenie-params key=value", required = false)
+        public Map<String, ?> regenieParams = new HashMap<>(); //Dynamic parameters must be initialized;
     
         @Parameter(names = {"--docker-name"}, description = "Docker image name of the regenie-walker, it must include the organization (or namespace), e.g.: myorganization/1000g-regenie.", required = false, arity = 1)
         public String dockerName;
@@ -2116,6 +2116,12 @@ public class AnalysisVariantCommandOptions {
     
         @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean jobDryRun; 
+    
+        @Parameter(names = {"--vcf-file"}, description = "VCF file; alternative to the BGEN, BED or PGEN input file.", required = false, arity = 1)
+        public String vcfFile;
+    
+        @DynamicParameter(names = {"--regenie-params"}, description = "Regenie options as described in the Regenie documentation. Key-values examples: '--bgen'='file://regenie/example.bgen', '--bt'='', '--bsize'=100. Use: --regenie-params key=value", required = false)
+        public Map<String, ?> regenieParams = new HashMap<>(); //Dynamic parameters must be initialized;
     
         @Parameter(names = {"--step1job-id"}, description = "Job ID that performed the regenie step1 analysis.", required = false, arity = 1)
         public String step1JobId;

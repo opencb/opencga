@@ -1442,8 +1442,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), RegenieStep1WrapperParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedMapIfNotEmpty(beanParams, "regenieParams", commandOptions.regenieParams, true);
             putNestedIfNotEmpty(beanParams, "vcfFile", commandOptions.vcfFile, true);
+            putNestedMapIfNotEmpty(beanParams, "regenieParams", commandOptions.regenieParams, true);
             putNestedIfNotEmpty(beanParams, "docker.name", commandOptions.dockerName, true);
             putNestedIfNotEmpty(beanParams, "docker.tag", commandOptions.dockerTag, true);
             putNestedIfNotEmpty(beanParams, "docker.username", commandOptions.dockerUsername, true);
@@ -1486,6 +1486,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), RegenieStep2WrapperParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "vcfFile", commandOptions.vcfFile, true);
+            putNestedMapIfNotEmpty(beanParams, "regenieParams", commandOptions.regenieParams, true);
             putNestedIfNotEmpty(beanParams, "step1JobId", commandOptions.step1JobId, true);
             putNestedIfNotEmpty(beanParams, "docker.name", commandOptions.dockerName, true);
             putNestedIfNotEmpty(beanParams, "docker.tag", commandOptions.dockerTag, true);

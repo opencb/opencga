@@ -145,7 +145,8 @@ public class JobWSServer extends OpenCGAWSServer {
     @POST
     @Path("/tool/build")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = CustomToolExecutor.DESCRIPTION, response = Job.class)
+    @ApiOperation(value =
+            CustomToolExecutor.DESCRIPTION, response = Job.class)
     public Response dockerBuildByPost(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
