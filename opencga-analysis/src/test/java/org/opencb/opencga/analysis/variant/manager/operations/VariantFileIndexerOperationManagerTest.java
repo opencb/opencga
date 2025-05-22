@@ -34,10 +34,12 @@ import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileInternalVariantIndex;
@@ -172,7 +174,20 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
         QueryOptions queryOptions = new QueryOptions(VariantStorageOptions.ANNOTATE.key(), false)
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
 
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION.key()));
+        SampleIndexConfiguration sampleIndex = catalogManager.getStudyManager().get(studyId, options, sessionId)
+                .first().getInternal().getConfiguration().getVariantEngine().getSampleIndex();
+        assertNotNull(sampleIndex);
+
+        catalogManager.getStudyManager().setVariantEngineConfigurationSampleIndex(studyId, null, sessionId);
+        sampleIndex = catalogManager.getStudyManager().get(studyId, options, sessionId)
+                .first().getInternal().getConfiguration().getVariantEngine().getSampleIndex();
+        assertNull(sampleIndex);
+
         indexFile(getFile(0), queryOptions, outputId);
+        sampleIndex = catalogManager.getStudyManager().get(studyId, options, sessionId)
+                .first().getInternal().getConfiguration().getVariantEngine().getSampleIndex();
+        assertNotNull(sampleIndex);
     }
 
     @Test

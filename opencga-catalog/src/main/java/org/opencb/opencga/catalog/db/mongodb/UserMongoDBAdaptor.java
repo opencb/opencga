@@ -158,8 +158,8 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
     }
 
     @Override
-    public OpenCGAResult changePassword(String userId, String oldPassword, String newPassword) throws CatalogException {
-        return setPassword(userId, oldPassword, newPassword);
+    public OpenCGAResult<User> changePassword(String userId, String oldPassword, String newPassword) throws CatalogException {
+        return setPassword(userId, oldPassword, newPassword, 0);
     }
 
     @Override
@@ -215,11 +215,12 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
     }
 
     @Override
-    public OpenCGAResult resetPassword(String userId, String email, String newPassword) throws CatalogException {
-        return setPassword(userId, null, newPassword);
+    public OpenCGAResult<User> resetPassword(String userId, String email, String newPassword) throws CatalogException {
+        return setPassword(userId, null, newPassword, 1); // Expire password in 1 day so the user needs to change it manually
     }
 
-    public OpenCGAResult setPassword(String userId, @Nullable String oldPassword, String newPassword) throws CatalogException {
+    public OpenCGAResult<User> setPassword(String userId, @Nullable String oldPassword, String newPassword, int expirationDays)
+            throws CatalogException {
         String prefixErrorMsg = "Could not update the password. ";
         return runTransaction(clientSession -> {
             // 1. Obtain archived passwords
@@ -270,7 +271,11 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
             updateDocument.getPush().put(PRIVATE_PASSWORD_ARCHIVE, document);
 
             updateDocument.getSet().put(INTERNAL_ACCOUNT_PASSWORD_LAST_MODIFIED.key(), TimeUtils.getTime());
-            if (configuration.getAccount().getPasswordExpirationDays() > 0) {
+            if (expirationDays > 0) {
+                Date date = TimeUtils.addDaysToCurrentDate(expirationDays);
+                String stringDate = TimeUtils.getTime(date);
+                updateDocument.getSet().put(INTERNAL_ACCOUNT_PASSWORD_EXPIRATION_DATE.key(), stringDate);
+            } else if (configuration.getAccount().getPasswordExpirationDays() > 0) {
                 Date date = TimeUtils.addDaysToCurrentDate(configuration.getAccount().getPasswordExpirationDays());
                 String stringDate = TimeUtils.getTime(date);
                 updateDocument.getSet().put(INTERNAL_ACCOUNT_PASSWORD_EXPIRATION_DATE.key(), stringDate);
