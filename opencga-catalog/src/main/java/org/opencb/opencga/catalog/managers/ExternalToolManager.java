@@ -929,8 +929,9 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
         }
         externalTool.getWorkflow().setRepository(externalTool.getWorkflow().getRepository() != null
                 ? externalTool.getWorkflow().getRepository()
-                : new WorkflowRepository(""));
-        if (externalTool.getWorkflow().getRepository() != null) {
+                : new WorkflowRepository());
+        if (CollectionUtils.isEmpty(externalTool.getWorkflow().getScripts())) {
+            // If scripts are not provided, repository must be provided
             validateWorkflowRepository(externalTool.getWorkflow().getRepository());
         }
         if (StringUtils.isEmpty(externalTool.getWorkflow().getRepository().getName())
