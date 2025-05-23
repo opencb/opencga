@@ -64,15 +64,11 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         analysisVariantSubCommands.addCommand("hr-detect-run", analysisVariantCommandOptions.runHrDetectCommandOptions);
         analysisVariantSubCommands.addCommand("index-run", analysisVariantCommandOptions.runIndexCommandOptions);
         analysisVariantSubCommands.addCommand("individual-qc-run", analysisVariantCommandOptions.runIndividualQcCommandOptions);
-        analysisVariantSubCommands.addCommand("inferred-sex-run", analysisVariantCommandOptions.runInferredSexCommandOptions);
         analysisVariantSubCommands.addCommand("knockout-gene-query", analysisVariantCommandOptions.queryKnockoutGeneCommandOptions);
         analysisVariantSubCommands.addCommand("knockout-individual-query", analysisVariantCommandOptions.queryKnockoutIndividualCommandOptions);
         analysisVariantSubCommands.addCommand("knockout-run", analysisVariantCommandOptions.runKnockoutCommandOptions);
         analysisVariantSubCommands.addCommand("liftover-run", analysisVariantCommandOptions.runLiftoverCommandOptions);
-        analysisVariantSubCommands.addCommand("mendelian-error-run", analysisVariantCommandOptions.runMendelianErrorCommandOptions);
         analysisVariantSubCommands.addCommand("metadata", analysisVariantCommandOptions.metadataCommandOptions);
-        analysisVariantSubCommands.addCommand("mutational-signature-query", analysisVariantCommandOptions.queryMutationalSignatureCommandOptions);
-        analysisVariantSubCommands.addCommand("mutational-signature-run", analysisVariantCommandOptions.runMutationalSignatureCommandOptions);
         analysisVariantSubCommands.addCommand("plink-run", analysisVariantCommandOptions.runPlinkCommandOptions);
         analysisVariantSubCommands.addCommand("query", analysisVariantCommandOptions.queryCommandOptions);
         analysisVariantSubCommands.addCommand("rvtests-run", analysisVariantCommandOptions.runRvtestsCommandOptions);
