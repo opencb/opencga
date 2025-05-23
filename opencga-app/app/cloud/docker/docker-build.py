@@ -11,12 +11,12 @@ from pathlib import Path
 parser = argparse.ArgumentParser()
 parser.add_argument('action', help="Action to execute", choices=["build", "push", "delete"], default="build")
 parser.add_argument('--images',
-                    help="comma separated list of images to be made, e.g. base,workflow,init,ext-tools,python-notebook,r-builder")
-parser.add_argument('--tag', help="the tag for this code, e.g. v2.0.0-hdp3.1")
+                    help="comma separated list of images to be made, e.g. base,ext-tools,python-notebook,workflow,init", default="base")
 parser.add_argument('--build-folder', help="the location of the build folder, if not default location")
 parser.add_argument('--org', help="Docker organization", default="opencb")
+parser.add_argument('--tag', help="The tag for this code, e.g. v2.0.0-hdp3.1")
 parser.add_argument('--username', help="Username to login to the docker registry (REQUIRED if deleting from DockerHub)")
-parser.add_argument('--password', help="Password to login to the docker registry (REQUIRED if deleting from DockerHub)")
+parser.add_argument('--password', help="Password or PAT to login to the docker registry (REQUIRED if deleting from DockerHub)")
 parser.add_argument('--docker-build-args',
                     help="Additional build arguments to pass to the docker build command. Usage: --docker-build-args='ARGS' e.g: --docker-build-args='--no-cache'",
                     default="")
@@ -201,7 +201,7 @@ else:
 
 # 5. Get a list with all images
 if args.images is None:
-    images = ["base", "init", "demo", "r", "samtools", "python-notebook", "ext-tools"]
+    images = ["base", "ext-tools", "python-notebook", "workflow", "init"]
 else:
     imagesUnsorted = args.images.split(",")
     images = []

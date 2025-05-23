@@ -7,6 +7,7 @@ import os
 import subprocess
 from pydantic import BaseModel, Field
 from typing import Dict, List
+import pysam
 
 LOGGER = logging.getLogger('variant_qc_logger')
 
@@ -143,20 +144,18 @@ def execute_bash_command(cmd):
     :param str cmd: Command line
     :returns: Return code, stdout, stderr
     """
-    LOGGER.info(cmd)
-    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    LOGGER.debug('Executing in bash: "{}"'.format(cmd))
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
 
     stdout, stderr = p.communicate()
     p.wait()
     return_code = p.returncode
 
     if return_code != 0:
-        msg = f"Error code {return_code} when executing command {cmd}"
+        msg = 'Command line "{}" returned non-zero exit status "{}"\nSTDOUT: "{}"\nSTDERR: "{}"'.format(
+            cmd, return_code, stdout, stderr
+        )
         LOGGER.error(msg)
-        if stdout != None:
-            LOGGER.error(stdout.decode())
-        if stderr != None:
-            LOGGER.error(stderr.decode())
         raise Exception(msg)
 
     return return_code, stdout, stderr
@@ -183,3 +182,35 @@ def get_base64_image(image_fpath: str):
 
         # Encode the binary data as a Base64 string
         return base64.b64encode(binary_data).decode('utf-8')
+
+def bgzip_vcf(vcf_fpath, delete_original=False):
+    """
+    BGZIPs a VCF.
+
+    :param str vcf_fpath: VCF file path
+    :param bool delete_original: Delete original file if True
+    :return: BGZIPped VCF file path
+    """
+    if vcf_fpath.endswith('.vcf.gz'):
+        execute_bash_command('gzip -dkf {}'.format(vcf_fpath))  # Decompress GZIP
+        fname_out = vcf_fpath[:-3] + '.bgz'
+        pysam.tabix_compress(vcf_fpath[:-3],fname_out, force=True)
+        os.remove(vcf_fpath[:-3])  # Remove decompressed file
+    elif vcf_fpath.endswith('.vcf.bgz'):
+        fname_out = vcf_fpath
+        delete_original = False
+    elif vcf_fpath.endswith('.vcf'):
+        fname_out = vcf_fpath + '.bgz'
+        pysam.tabix_compress(vcf_fpath, fname_out, force=True)
+    else:
+        raise ValueError('Compressed file format not recognized')
+
+    if delete_original:
+        os.remove(vcf_fpath)
+
+    return fname_out
+
+def get_reverse_complement(seq):
+    complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'}
+    reverse_complement = "".join(complement.get(base, base) for base in reversed(seq))
+    return reverse_complement
