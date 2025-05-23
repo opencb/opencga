@@ -127,12 +127,9 @@ public class GenomePlotAnalysis extends OpenCgaToolScopeStudy {
         return null;
     }
 
-    public String getStudy() {
-        return study;
-    }
-
+    @Override
     public GenomePlotAnalysis setStudy(String study) {
-        this.study = study;
+        super.setStudy(study);
         return this;
     }
 
