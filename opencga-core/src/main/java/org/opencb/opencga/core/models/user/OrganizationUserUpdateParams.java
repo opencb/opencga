@@ -3,6 +3,7 @@ package org.opencb.opencga.core.models.user;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.models.notification.NotificationConfiguration;
 
 import java.util.Map;
 
@@ -17,8 +18,9 @@ public class OrganizationUserUpdateParams extends UserUpdateParams {
     public OrganizationUserUpdateParams() {
     }
 
-    public OrganizationUserUpdateParams(String name, String email, UserQuota quota, Internal internal, Map<String, Object> attributes) {
-        super(name, email);
+    public OrganizationUserUpdateParams(String name, String email, NotificationConfiguration notificationConfiguration, UserQuota quota,
+                                        Internal internal, Map<String, Object> attributes) {
+        super(name, email, notificationConfiguration);
         this.quota = quota;
         this.internal = internal;
         this.attributes = attributes;

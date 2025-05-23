@@ -23,6 +23,7 @@ import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.models.JwtPayload;
+import org.opencb.opencga.core.models.notification.*;
 import org.opencb.opencga.core.models.organizations.OrganizationConfiguration;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
@@ -44,7 +45,6 @@ import java.util.*;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.*;
-import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 @Category(MediumTests.class)
 public class UserManagerTest extends AbstractManagerTest {
@@ -320,21 +320,19 @@ public class UserManagerTest extends AbstractManagerTest {
         UserUpdateParams userUpdateParams = new UserUpdateParams()
                 .setName("newName")
                 .setEmail("mail@mail.com");
-        ObjectMap updateParams = new ObjectMap(getUpdateObjectMapper().writeValueAsString(userUpdateParams));
-        User user = catalogManager.getUserManager().update(normalUserId1, updateParams, INCLUDE_RESULT, normalToken1).first();
+        User user = catalogManager.getUserManager().update(normalUserId1, userUpdateParams, INCLUDE_RESULT, normalToken1).first();
         assertEquals(userUpdateParams.getName(), user.getName());
         assertEquals(userUpdateParams.getEmail(), user.getEmail());
 
-        assertThrows(CatalogAuthorizationException.class, () -> catalogManager.getUserManager().update(normalUserId1, updateParams, INCLUDE_RESULT, normalToken2));
-        assertThrows(CatalogAuthorizationException.class, () -> catalogManager.getUserManager().update(normalUserId1, updateParams, INCLUDE_RESULT, opencgaToken));
-        assertThrows(CatalogAuthorizationException.class, () -> catalogManager.getUserManager().update(normalUserId1, updateParams, INCLUDE_RESULT, ownerToken));
-        assertThrows(CatalogAuthorizationException.class, () -> catalogManager.getUserManager().update(normalUserId1, updateParams, INCLUDE_RESULT, orgAdminToken1));
-        assertThrows(CatalogAuthorizationException.class, () -> catalogManager.getUserManager().update(normalUserId1, updateParams, INCLUDE_RESULT, studyAdminToken1));
+        assertThrows(CatalogAuthorizationException.class, () -> catalogManager.getUserManager().update(normalUserId1, userUpdateParams, INCLUDE_RESULT, normalToken2));
+        assertThrows(CatalogAuthorizationException.class, () -> catalogManager.getUserManager().update(normalUserId1, userUpdateParams, INCLUDE_RESULT, opencgaToken));
+        assertThrows(CatalogAuthorizationException.class, () -> catalogManager.getUserManager().update(normalUserId1, userUpdateParams, INCLUDE_RESULT, ownerToken));
+        assertThrows(CatalogAuthorizationException.class, () -> catalogManager.getUserManager().update(normalUserId1, userUpdateParams, INCLUDE_RESULT, orgAdminToken1));
+        assertThrows(CatalogAuthorizationException.class, () -> catalogManager.getUserManager().update(normalUserId1, userUpdateParams, INCLUDE_RESULT, studyAdminToken1));
 
-        userUpdateParams = new UserUpdateParams()
+        UserUpdateParams userUpdateParams2 = new UserUpdateParams()
                 .setEmail("notAnEmail");
-        ObjectMap updateParams2 = new ObjectMap(getUpdateObjectMapper().writeValueAsString(userUpdateParams));
-        assertThrows(CatalogParameterException.class, () -> catalogManager.getUserManager().update(normalUserId1, updateParams2, INCLUDE_RESULT, normalToken1));
+        assertThrows(CatalogParameterException.class, () -> catalogManager.getUserManager().update(normalUserId1, userUpdateParams2, INCLUDE_RESULT, normalToken1));
     }
 
     @Test
@@ -430,17 +428,19 @@ public class UserManagerTest extends AbstractManagerTest {
 
     @Test
     public void testModifyUser() throws CatalogException, InterruptedException, IOException {
-        ObjectMap params = new ObjectMap();
         String newName = "Changed Name " + RandomStringUtils.randomAlphanumeric(10);
-        String newPassword = PasswordUtils.getStrongRandomPassword();
         String newEmail = "new@email.ac.uk";
-
-        params.put("name", newName);
+        UserUpdateParams userUpdateParams = new UserUpdateParams()
+                .setName(newName);
+        String newPassword = PasswordUtils.getStrongRandomPassword();
 
         Thread.sleep(10);
 
-        catalogManager.getUserManager().update(orgOwnerUserId, params, null, ownerToken);
-        catalogManager.getUserManager().update(orgOwnerUserId, new ObjectMap("email", newEmail), null, ownerToken);
+        catalogManager.getUserManager().update(orgOwnerUserId, userUpdateParams, null, ownerToken);
+
+        userUpdateParams = new UserUpdateParams()
+                .setEmail(newEmail);
+        catalogManager.getUserManager().update(orgOwnerUserId, userUpdateParams, null, ownerToken);
         catalogManager.getUserManager().changePassword(organizationId, orgOwnerUserId, TestParamConstants.PASSWORD, newPassword);
 
         List<User> userList = catalogManager.getUserManager().get(organizationId, orgOwnerUserId, new QueryOptions(QueryOptions
@@ -459,22 +459,26 @@ public class UserManagerTest extends AbstractManagerTest {
         String anotherPassword = PasswordUtils.getStrongRandomPassword();
         catalogManager.getUserManager().changePassword(organizationId, orgOwnerUserId, newPassword, anotherPassword);
         catalogManager.getUserManager().login(organizationId, orgOwnerUserId, anotherPassword);
+    }
 
-        try {
-            params = new ObjectMap();
-            params.put("password", "1234321");
-            catalogManager.getUserManager().update(orgOwnerUserId, params, null, ownerToken);
-            fail("Expected exception");
-        } catch (CatalogDBException e) {
-            System.out.println(e);
-        }
+    @Test
+    public void updateNotificationTest() throws CatalogException, InterruptedException, IOException {
+        NotificationConfiguration notificationConfiguration = new NotificationConfiguration()
+                .setEmail(new NotificationEmailConfiguration(true, NotificationLevel.INFO, Arrays.asList(NotificationScope.values())))
+                .setSlack(new NotificationSlackConfiguration().setActive(false));
+        UserUpdateParams userUpdateParams = new UserUpdateParams()
+                .setNotifications(notificationConfiguration);
 
-        try {
-            catalogManager.getUserManager().update(orgOwnerUserId, params, null, orgAdminToken1);
-            fail("Expected exception");
-        } catch (CatalogException e) {
-            System.out.println(e);
-        }
+        catalogManager.getUserManager().update(orgOwnerUserId, userUpdateParams, null, ownerToken);
+        User user = catalogManager.getUserManager().get(organizationId, orgOwnerUserId, QueryOptions.empty(), ownerToken).first();
+
+        // Assert the notifications object look like the one we set
+        assertEquals(notificationConfiguration.getEmail().isActive(), user.getNotifications().getEmail().isActive());
+        assertEquals(notificationConfiguration.getEmail().getMinLevel(), user.getNotifications().getEmail().getMinLevel());
+        assertEquals(notificationConfiguration.getEmail().getScopes(), user.getNotifications().getEmail().getScopes());
+        assertEquals(notificationConfiguration.getSlack().isActive(), user.getNotifications().getSlack().isActive());
+        assertEquals(notificationConfiguration.getSlack().getMinLevel(), user.getNotifications().getSlack().getMinLevel());
+        assertEquals(notificationConfiguration.getSlack().getScopes(), user.getNotifications().getSlack().getScopes());
     }
 
     @Test

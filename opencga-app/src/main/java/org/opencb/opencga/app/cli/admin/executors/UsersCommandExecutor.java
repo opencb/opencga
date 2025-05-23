@@ -20,11 +20,9 @@ package org.opencb.opencga.app.cli.admin.executors;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Event;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
-import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.models.user.User;
@@ -62,9 +60,6 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                 break;
             case "delete":
                 delete();
-                break;
-            case "quota":
-                setQuota();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -186,22 +181,6 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                     System.out.println("The user has been successfully deleted from the database: " + user.toString());
                 }
             }
-        }
-    }
-
-    private void setQuota() throws CatalogException {
-        setCatalogDatabaseCredentials(usersCommandOptions.quotaUserCommandOptions.databaseHost,
-                usersCommandOptions.quotaUserCommandOptions.prefix, usersCommandOptions.quotaUserCommandOptions.databaseUser,
-                usersCommandOptions.quotaUserCommandOptions.databasePassword,
-                usersCommandOptions.quotaUserCommandOptions.commonOptions.adminPassword);
-
-        try (CatalogManager catalogManager = new CatalogManager(configuration)) {
-            catalogManager.getUserManager().loginAsAdmin(usersCommandOptions.quotaUserCommandOptions.commonOptions.adminPassword);
-
-            User user = catalogManager.getUserManager().update(usersCommandOptions.quotaUserCommandOptions.userId, new ObjectMap
-                    (UserDBAdaptor.QueryParams.QUOTA.key(), usersCommandOptions.quotaUserCommandOptions.quota * 1073741824), null, null).first();
-
-            System.out.println("The disk quota has been properly updated: " + user.toString());
         }
     }
 

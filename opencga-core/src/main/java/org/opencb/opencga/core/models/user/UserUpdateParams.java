@@ -16,17 +16,28 @@
 
 package org.opencb.opencga.core.models.user;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
+import org.opencb.opencga.core.models.notification.NotificationConfiguration;
+
 public class UserUpdateParams {
 
+    @DataField(id = "name", indexed = true, description = FieldConstants.USER_NAME)
     private String name;
+
+    @DataField(id = "email", indexed = true, description = FieldConstants.USER_EMAIL)
     private String email;
+
+    @DataField(id = "notifications", description = FieldConstants.USER_NOTIFICATIONS)
+    private NotificationConfiguration notifications;
 
     public UserUpdateParams() {
     }
 
-    public UserUpdateParams(String name, String email) {
+    public UserUpdateParams(String name, String email, NotificationConfiguration notifications) {
         this.name = name;
         this.email = email;
+        this.notifications = notifications;
     }
 
     @Override
@@ -34,6 +45,7 @@ public class UserUpdateParams {
         final StringBuilder sb = new StringBuilder("UserUpdateParams{");
         sb.append("name='").append(name).append('\'');
         sb.append(", email='").append(email).append('\'');
+        sb.append(", notifications=").append(notifications);
         sb.append('}');
         return sb.toString();
     }
@@ -56,4 +68,12 @@ public class UserUpdateParams {
         return this;
     }
 
+    public NotificationConfiguration getNotifications() {
+        return notifications;
+    }
+
+    public UserUpdateParams setNotifications(NotificationConfiguration notifications) {
+        this.notifications = notifications;
+        return this;
+    }
 }

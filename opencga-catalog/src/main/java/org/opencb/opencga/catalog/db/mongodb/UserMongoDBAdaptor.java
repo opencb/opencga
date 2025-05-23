@@ -559,7 +559,7 @@ public class UserMongoDBAdaptor extends CatalogMongoDBAdaptor implements UserDBA
         final String[] acceptedIntParams = {INTERNAL_ACCOUNT_FAILED_ATTEMPTS.key()};
         filterIntParams(parameters, document.getSet(), acceptedIntParams);
 
-        final String[] acceptedObjectParams = {QueryParams.QUOTA.key()};
+        final String[] acceptedObjectParams = {QueryParams.QUOTA.key(), NOTIFICATIONS.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
 
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
