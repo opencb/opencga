@@ -494,6 +494,10 @@ public class NotificationManager extends AbstractManager {
             // Only OpenCGA administrators can see any notification
             query.put(NotificationDBAdaptor.QueryParams.TARGET.key(), tokenPayload.getUserId());
         }
+        if (query.containsKey(ParamConstants.INTERNAL_STATUS_PARAM)) {
+            query.put(NotificationDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), query.get(ParamConstants.INTERNAL_STATUS_PARAM));
+            query.remove(ParamConstants.INTERNAL_STATUS_PARAM);
+        }
         if (query.containsKey(ParamConstants.NOTIFICATION_VISITED_PARAM)) {
             query.put(NotificationDBAdaptor.QueryParams.INTERNAL_VISITED.key(), query.get(ParamConstants.NOTIFICATION_VISITED_PARAM));
             query.remove(ParamConstants.NOTIFICATION_VISITED_PARAM);
