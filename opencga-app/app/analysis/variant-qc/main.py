@@ -26,10 +26,10 @@ def get_parser():
 
     parser = argparse.ArgumentParser(description='This program runs variant QC on sample/individual/family')
 
+    parser.add_argument("action", help="QC to execute", choices=['sample', 'individual', 'family'])
     parser.add_argument('-i', '--vcf-file', dest='vcf_file', required=True, help='comma-separated VCF file paths')
     parser.add_argument('-j', '--info-json', dest='info_json', required=True, help='comma-separated info JSON file paths')
     parser.add_argument('-b', '--bam-file', dest='bam_file', help='comma-separated BAM file paths')
-    parser.add_argument('-q', '--qc-type', dest='qc_type', choices = ['sample', 'individual', 'family'], required=True, help='type of QC')
     parser.add_argument('-c', '--config', dest='config', required=True, help='configuration file path')
     parser.add_argument('-r', '--resource-dir', dest='resource_dir', default='resources', help='resources directory path')
     parser.add_argument('-o', '--output-dir', dest='output_dir', help='output directory path')
@@ -185,7 +185,7 @@ def main():
     vcf_files = args.vcf_file.split(',')
     info_jsons = args.info_json.split(',')
     bam_files = args.bam_file.split(',') if args.bam_file else [None]*len(vcf_files)
-    qc_type = args.qc_type
+    qc_type = args.action
     config = args.config
     resource_dir = os.path.realpath(args.resource_dir)
     output_dir = os.path.realpath(os.path.expanduser(args.output_dir))

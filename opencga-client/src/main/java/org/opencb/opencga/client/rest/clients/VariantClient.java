@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.client.rest.clients;
 
+import java.util.List;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
@@ -310,10 +311,10 @@ public class VariantClient extends ParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Job> runFamilyQc(FamilyQcAnalysisParams data, ObjectMap params) throws ClientException {
+    public RestResponse<List> runFamilyQc(FamilyQcAnalysisParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
-        return execute("analysis", null, "variant/family/qc", null, "run", params, POST, Job.class);
+        return execute("analysis", null, "variant/family/qc", null, "run", params, POST, List.class);
     }
 
     /**

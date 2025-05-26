@@ -63,11 +63,10 @@ import static org.opencb.opencga.core.models.study.StudyPermissions.Permissions.
 public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
 
     // QC folders
-    private static final String QC = "qc";
+    private static final String VARIANT_QC = "variant-qc";
 
-    public static final String QC_FOLDER = QC + "/";
+    public static final String VARIANT_QC_FOLDER = VARIANT_QC + "/";
     public static final String RESOURCES_FOLDER = "resources/";
-    public static final String QC_RESOURCES_FOLDER = QC_FOLDER + RESOURCES_FOLDER;
 
     public static final String QC_RESULTS_FILENAME = "results.json";
 
@@ -326,20 +325,24 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
     // Catalog utils
     //-------------------------------------------------------------------------
 
-    protected static List<String> getIndexedAndNoSomaticSampleIds(Family family, String studyId, CatalogManager catalogManager, String token)
-            throws CatalogException {
-        // Get list of individual IDs
-        List<String> individualIds = family.getMembers().stream().map(m -> m.getId()).collect(Collectors.toList());
-
-        Query query = new Query(IndividualDBAdaptor.QueryParams.ID.key(), individualIds);
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "samples");
-
+    protected static List<String> getIndexedAndNoSomaticSampleIds(Family family, String studyId, CatalogManager catalogManager,
+                                                                  String token) throws ToolException {
         List<String> sampleIds = new ArrayList<>();
-        OpenCGAResult<Individual> individualResult = catalogManager.getIndividualManager().search(studyId, query, queryOptions, token);
-        for (Individual individual : individualResult.getResults()) {
-            if (CollectionUtils.isNotEmpty(individual.getSamples())) {
-                sampleIds.addAll(getIndexedAndNoSomaticSampleIds(individual));
+        try {
+            // Get list of individual IDs
+            List<String> individualIds = family.getMembers().stream().map(Individual::getId).collect(Collectors.toList());
+
+            Query query = new Query(IndividualDBAdaptor.QueryParams.ID.key(), individualIds);
+            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "samples");
+
+            OpenCGAResult<Individual> individualResult = catalogManager.getIndividualManager().search(studyId, query, queryOptions, token);
+            for (Individual individual : individualResult.getResults()) {
+                if (CollectionUtils.isNotEmpty(individual.getSamples())) {
+                    sampleIds.addAll(getIndexedAndNoSomaticSampleIds(individual));
+                }
             }
+        } catch (CatalogException e) {
+            throw new ToolException("Error checking somatic samples from family '" + family.getId() + "' in study '" + studyId + "'", e);
         }
         return sampleIds;
     }

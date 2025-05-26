@@ -16,17 +16,16 @@
 
 package org.opencb.opencga.server.rest.analysis;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
-import org.opencb.biodata.models.clinical.qc.Signature;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantSetStats;
-import org.opencb.cellbase.core.exception.CellBaseException;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.analysis.family.qc.FamilyVariantQcAnalysis;
 import org.opencb.opencga.analysis.individual.qc.IndividualVariantQcAnalysis;
@@ -42,7 +41,6 @@ import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysisResultReader;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
-import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.operations.VariantFileDeleteOperationTool;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
 import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
@@ -59,10 +57,7 @@ import org.opencb.opencga.analysis.wrappers.rvtests.RvtestsWrapperAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
@@ -90,8 +85,8 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManag
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.*;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.File;
 import java.io.FileInputStream;
@@ -1008,7 +1003,7 @@ public class VariantWebService extends AnalysisWebService {
 
     @POST
     @Path("/family/qc/run")
-    @ApiOperation(value = FamilyVariantQcAnalysis.DESCRIPTION, response = Job.class)
+    @ApiOperation(value = FamilyVariantQcAnalysis.DESCRIPTION, response = List.class)
     public Response familyQcRun(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
@@ -1019,14 +1014,57 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = FAMILY_QC_PARAMS_DESCRIPTION, required = true) FamilyQcAnalysisParams params) {
-        return run(() -> {
-            // Check before submitting the job
-            FamilyVariantQcAnalysis.checkParameters(params, study, catalogManager, token);
 
-            // Submit the family QC analysis
-            return submitJobRaw(null, study, JobType.NATIVE, FamilyVariantQcAnalysis.ID, params, jobName, jobDescription, dependsOn,
-                    jobTags, scheduledStartTime, jobPriority, dryRun);
-        });
+        if (StringUtils.isEmpty(params.getFamily()) || CollectionUtils.isEmpty(params.getFamilies())) {
+            return createErrorResponse(new Exception("Missing family IDs."));
+        }
+        List<String> familyIds = params.getFamilies();
+        if (CollectionUtils.isEmpty(familyIds)) {
+            familyIds = Collections.singletonList(params.getFamily());
+        }
+        StopWatch watch = StopWatch.createStarted();
+        List<String> failedFamilyIds = new ArrayList<>(familyIds.size());
+        List<Job> jobList = new ArrayList<>(familyIds.size());
+        List<Event> eventList = new ArrayList<>();
+
+        // Check
+        for (String familyId : familyIds) {
+            FamilyQcAnalysisParams updatedParams = (FamilyQcAnalysisParams) params.toParams();
+            updatedParams.setFamilies(Collections.singletonList(familyId));
+            try {
+                FamilyVariantQcAnalysis.checkParameters(updatedParams, study, catalogManager, token);
+            } catch (ToolException e) {
+                failedFamilyIds.add(familyId);
+                String msg = "Family check failed for family ID " + familyId + " before submitting QC job : " + e.getMessage();
+                Event event = new Event(Event.Type.ERROR, msg);
+                eventList.add(event);
+                logger.error(msg, e);
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(eventList)) {
+            OpenCGAResult<Job> result = new OpenCGAResult<>(((int) watch.getTime()), eventList, 0, Collections.emptyList(), 0);
+            return createErrorResponse("Some family checks failed for IDs: " + StringUtils.join(failedFamilyIds, ","), result);
+        }
+
+        // Submit QC job for each checked family
+        for (String familyId : familyIds) {
+            FamilyQcAnalysisParams updatedParams = (FamilyQcAnalysisParams) params.toParams();
+            updatedParams.setFamilies(Collections.singletonList(familyId));
+            try {
+                DataResult<Job> jobResult = submitJobRaw(null, study, JobType.NATIVE, FamilyVariantQcAnalysis.ID, updatedParams,
+                        jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+                jobList.add(jobResult.first());
+            } catch (CatalogException e) {
+                String msg = "Error submitting family QC job for family ID " + familyId + ": " + e.getMessage();
+                Event event = new Event(Event.Type.WARNING, msg);
+                eventList.add(event);
+                logger.error(msg, e);
+            }
+        }
+
+        OpenCGAResult<Job> result = new OpenCGAResult<>(((int) watch.getTime()), eventList, jobList.size(), jobList, jobList.size());
+        return createOkResponse(result);
     }
 
     @POST

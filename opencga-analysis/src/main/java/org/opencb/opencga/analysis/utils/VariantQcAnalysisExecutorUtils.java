@@ -31,7 +31,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.analysis.variant.qc.VariantQcAnalysis.QC_FOLDER;
+import static org.opencb.opencga.analysis.variant.qc.VariantQcAnalysis.VARIANT_QC_FOLDER;
 import static org.opencb.opencga.analysis.variant.qc.VariantQcAnalysis.RESOURCES_FOLDER;
 
 public class VariantQcAnalysisExecutorUtils {
@@ -42,19 +42,16 @@ public class VariantQcAnalysisExecutorUtils {
     private static String SCRIPT_VIRTUAL_FOLDER = "/script";
     private static String JOB_VIRTUAL_FOLDER = "/jobdir";
 
-    public static void run(String qcType, LinkedList<Path> vcfPaths, LinkedList<Path> jsonPaths, Path configPath, Path outDir,
-                           Path opencgaHome)
-            throws ToolExecutorException {
+    public static void run(String qcType, LinkedList<Path> vcfPaths, LinkedList<Path> jsonPaths, Path configPath, Path scriptPath,
+                           Path outDir, String dockerImage) throws ToolExecutorException {
         // Run the Python script responsible for performing the family QC analyses
-        //    variant_qc.main.py --vcf-file xxx --info-json xxx --bam-file xxx --qc-type xxx --config xxx --resource-dir xxx --output-dir xxx
+        //   variant_qc.main.py --vcf-file xxx --info-json xxx --bam-file xxx --qc-type xxx --config xxx --resource-dir xxx --output-dir xxx
 
         // Build command line to run Python script via docker image
-
         try {
             // Input binding
             List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
-            inputBindings.add(new AbstractMap.SimpleEntry<>(opencgaHome.resolve(ResourceManager.ANALYSIS_DIRNAME).resolve(QC_FOLDER)
-                    .toAbsolutePath().toString(), SCRIPT_VIRTUAL_FOLDER));
+            inputBindings.add(new AbstractMap.SimpleEntry<>(scriptPath.toAbsolutePath().toString(), SCRIPT_VIRTUAL_FOLDER));
 
             // Output binding
             AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(outDir.toAbsolutePath().toString(),
@@ -65,15 +62,12 @@ public class VariantQcAnalysisExecutorUtils {
                     outDir.toAbsolutePath().toString(), JOB_VIRTUAL_FOLDER)).collect(Collectors.toList()), ",")
                     + " --info-json " + StringUtils.join(jsonPaths.stream().map(p -> p.toAbsolutePath().toString().replace(
                     outDir.toAbsolutePath().toString(), JOB_VIRTUAL_FOLDER)).collect(Collectors.toList()), ",")
-                    + " --qc-type " + qcType
                     + " --config " + Paths.get(JOB_VIRTUAL_FOLDER).resolve(configPath.getFileName())
                     + " --resource-dir " + Paths.get(JOB_VIRTUAL_FOLDER).resolve(RESOURCES_FOLDER)
-                    + " --output-dir " + JOB_VIRTUAL_FOLDER;
-
+                    + " --output-dir " + JOB_VIRTUAL_FOLDER
+                    + " " + qcType;
 
             // Execute Pythong script in docker
-            String dockerImage = "opencb/opencga-ext-tools:" + GitRepositoryState.getInstance().getBuildVersion();
-
             DockerUtils.run(dockerImage, inputBindings, outputBinding, params, null);
         } catch (IOException e) {
             throw new ToolExecutorException(e);

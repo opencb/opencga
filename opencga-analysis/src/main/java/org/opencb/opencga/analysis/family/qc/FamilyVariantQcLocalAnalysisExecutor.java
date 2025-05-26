@@ -17,8 +17,10 @@
 package org.opencb.opencga.analysis.family.qc;
 
 import com.fasterxml.jackson.databind.ObjectWriter;
+import org.opencb.opencga.analysis.ConfigurationUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.utils.VariantQcAnalysisExecutorUtils;
+import org.opencb.opencga.catalog.utils.ResourceManager;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.models.variant.qc.FamilyQcAnalysisParams;
@@ -30,7 +32,7 @@ import java.nio.file.Path;
 
 import static org.opencb.opencga.analysis.utils.VariantQcAnalysisExecutorUtils.CONFIG_FILENAME;
 import static org.opencb.opencga.analysis.variant.qc.VariantQcAnalysis.FAMILY_QC_TYPE;
-import static org.opencb.opencga.analysis.variant.qc.VariantQcAnalysis.RESOURCES_FOLDER;
+import static org.opencb.opencga.analysis.variant.qc.VariantQcAnalysis.VARIANT_QC_FOLDER;
 
 @ToolExecutor(id="opencga-local", tool = FamilyVariantQcAnalysis.ID, framework = ToolExecutor.Framework.LOCAL,
         source = ToolExecutor.Source.STORAGE)
@@ -46,6 +48,9 @@ public class FamilyVariantQcLocalAnalysisExecutor extends FamilyVariantQcAnalysi
             throw new ToolExecutorException(e);
         }
 
-        VariantQcAnalysisExecutorUtils.run(FAMILY_QC_TYPE, getVcfPaths(), getJsonPaths(), configPath, getOutDir(), getOpencgaHome());
+        Path scriptPath = getOpencgaHome().resolve(ResourceManager.ANALYSIS_DIRNAME).resolve(VARIANT_QC_FOLDER);
+        String dockerImage = ConfigurationUtils.getDockerImage(getConfiguration());
+
+        VariantQcAnalysisExecutorUtils.run(FAMILY_QC_TYPE, getVcfPaths(), getJsonPaths(), configPath, scriptPath, getOutDir(), dockerImage);
     }
 }

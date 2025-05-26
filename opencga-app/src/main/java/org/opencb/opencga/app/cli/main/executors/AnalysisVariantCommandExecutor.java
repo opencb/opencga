@@ -582,7 +582,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getVariantClient().genotypesFamily(commandOptions.modeOfInheritance, queryParams);
     }
 
-    private RestResponse<Job> runFamilyQc() throws Exception {
+    private RestResponse<List> runFamilyQc() throws Exception {
         logger.debug("Executing runFamilyQc in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunFamilyQcCommandOptions commandOptions = analysisVariantCommandOptions.runFamilyQcCommandOptions;
@@ -603,7 +603,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
         FamilyQcAnalysisParams familyQcAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
-            RestResponse<Job> res = new RestResponse<>();
+            RestResponse<List> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/family/qc/run"));
             return res;

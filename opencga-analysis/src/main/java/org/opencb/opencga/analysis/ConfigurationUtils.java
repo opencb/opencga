@@ -19,6 +19,7 @@ package org.opencb.opencga.analysis;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.utils.FileUtils;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.config.AnalysisTool;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.ResourceFile;
@@ -155,6 +156,18 @@ public class ConfigurationUtils {
         for (String resourceId : analysisTool.getResourceIds()) {
             getToolResourcePath(resourceId, configuration);
         }
+    }
 
+    public static String getDockerImage(Configuration configuration) {
+        String dockerImage;
+        if (configuration != null && configuration.getAnalysis() != null && configuration.getAnalysis().getOpencgaExtTools() != null) {
+            dockerImage = configuration.getAnalysis().getOpencgaExtTools();
+        } else {
+            dockerImage = "opencb/opencga-ext-tools";
+        }
+        if (!dockerImage.contains(":")) {
+            dockerImage += ":" + GitRepositoryState.getInstance().getBuildVersion();
+        }
+        return dockerImage;
     }
 }

@@ -1199,7 +1199,10 @@ public class VariantAnalysisTest {
     }
 
     @Test
-    public void testIndividualQC() throws Exception {
+    public void
+
+
+    testIndividualQC() throws Exception {
         assumeResources(RELATEDNESS_ANALYSIS_ID);
         assumeResources(INFERRED_SEX_ANALYSIS_ID);
 
@@ -1386,7 +1389,9 @@ public class VariantAnalysisTest {
         Assume.assumeTrue(CollectionUtils.isNotEmpty(resourceIds));
         for (String resourceId : resourceIds) {
             String filename = resourceManager.getResourceFilename(resourceId);
-            Assume.assumeTrue(Files.exists(Paths.get("/opt/opencga/analysis/resources/" + analysisId + "/" + filename)));
+            Path resourcePath = Paths.get("/opt/opencga/analysis/resources/" + analysisId + "/" + filename);
+            System.out.println("Checking resource ID " + resourceId + " and if resource file exists: " + filename + " at " + resourcePath);
+            Assume.assumeTrue(Files.exists(resourcePath));
         }
     }
 
