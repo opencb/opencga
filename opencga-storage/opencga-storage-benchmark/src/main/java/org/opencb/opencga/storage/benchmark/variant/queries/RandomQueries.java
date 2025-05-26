@@ -12,6 +12,7 @@ public class RandomQueries {
 
     private List<Region> regions;
     private List<String> gene;
+    private String geneFile;
     private List<String> ct;
     private List<String> type;
     private List<String> study;
@@ -72,6 +73,15 @@ public class RandomQueries {
 
     public RandomQueries setGene(List<String> gene) {
         this.gene = gene;
+        return this;
+    }
+
+    public String getGeneFile() {
+        return geneFile;
+    }
+
+    public RandomQueries setGeneFile(String geneFile) {
+        this.geneFile = geneFile;
         return this;
     }
 

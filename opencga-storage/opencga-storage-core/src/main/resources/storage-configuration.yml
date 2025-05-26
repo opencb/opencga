@@ -64,7 +64,7 @@ benchmark:
   connectionType: REST         # Select between REST or DIRECT.
   mode: FIXED                  # Select between FIXED or RANDOM
   databaseName: "opencga"
-  rest: "http://localhost:8080/${opencga.war.name}"
+#  rest:
 
 io:
   connectors:

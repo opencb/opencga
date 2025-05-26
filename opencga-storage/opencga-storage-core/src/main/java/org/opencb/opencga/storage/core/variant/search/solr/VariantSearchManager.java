@@ -259,6 +259,8 @@ public class VariantSearchManager {
 
         int count = variantDBIterator.getCount();
         logger.info("Variant Search loading done. " + count + " variants indexed in " + TimeUtils.durationToString(stopWatch));
+        float rate = count / (stopWatch.getTime() / 1000f) * 3600;
+        logger.info("Insertion rate: " + String.format("%.3f", rate) + " variants/hour");
         return new VariantSearchLoadResult(count, count, 0);
     }
 

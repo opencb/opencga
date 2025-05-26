@@ -60,7 +60,7 @@ public class MultiQueryGenerator extends QueryGenerator {
         }
 
         generators = new ArrayList<>();
-        randomQueries = readYmlFile(queryFilePath, RandomQueries.class);
+        randomQueries = readRandomQueriesConfig(queryFilePath);
         baseQueriesFromCLI = getBaseQueryFromCLI(params);
 
         for (String param : query.split(",")) {
@@ -172,7 +172,7 @@ public class MultiQueryGenerator extends QueryGenerator {
         for (QueryGenerator generator : generators) {
             generator.generateQuery(query);
         }
-        appendbaseQuery(randomQueries, query);
+        appendBaseQuery(randomQueries, query);
         appendRandomSessionId(randomQueries.getSessionIds(), query);
         query.putAll(baseQueriesFromCLI);
         return query;
