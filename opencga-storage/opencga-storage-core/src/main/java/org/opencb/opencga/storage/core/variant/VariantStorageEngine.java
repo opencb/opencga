@@ -839,13 +839,21 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 logger.info("Updating secondary annotation index status from {} to {}",
                         indexMetadata.getStatus(), SearchIndexMetadata.Status.ACTIVE);
             }
-            mm.updateProjectMetadata(projectMetadata -> {
+            ProjectMetadata pm = mm.updateProjectMetadata(projectMetadata -> {
                 projectMetadata.getAttributes().put(SEARCH_INDEX_LAST_TIMESTAMP.key(), newTimestamp);
+                for (SearchIndexMetadata value : projectMetadata.getSecondaryAnnotationIndex().getValues()) {
+                    if (value.getStatus() == SearchIndexMetadata.Status.ACTIVE) {
+                        // If there is an active index, update its status to DEPRECATED
+                        value.setStatus(SearchIndexMetadata.Status.DEPRECATED);
+                    }
+                }
                 projectMetadata.getSecondaryAnnotationIndex().getIndexMetadata(indexMetadata.getVersion())
                         .setStatus(SearchIndexMetadata.Status.ACTIVE)
                         .setModificationDate(Date.from(Instant.ofEpochMilli(newTimestamp)));
                 return projectMetadata;
             });
+
+            // TODO: Remove deprecated indexes
 
             for (Map.Entry<Integer, Set<Integer>> entry : filesToBeUpdated.entrySet()) {
                 Integer study = entry.getKey();

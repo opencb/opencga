@@ -25,7 +25,8 @@ public class VariantSecondaryAnnotationIndexSets {
     }
 
     public SearchIndexMetadata getActiveIndex() {
-        for (SearchIndexMetadata indexSet : values) {
+        for (int i = values.size() - 1; i >= 0; i--) {
+            SearchIndexMetadata indexSet = values.get(i);
             if (indexSet.getStatus() == SearchIndexMetadata.Status.ACTIVE) {
                 return indexSet;
             }
@@ -51,6 +52,16 @@ public class VariantSecondaryAnnotationIndexSets {
 
     public void addIndexMetadata(SearchIndexMetadata index) {
         this.values.add(index);
+    }
+
+    public List<SearchIndexMetadata> getDeprecatedIndexes() {
+        List<SearchIndexMetadata> deprecatedIndexes = new LinkedList<>();
+        for (SearchIndexMetadata indexSet : values) {
+            if (indexSet.getStatus() == SearchIndexMetadata.Status.DEPRECATED) {
+                deprecatedIndexes.add(indexSet);
+            }
+        }
+        return deprecatedIndexes;
     }
 
     public SearchIndexMetadata getIndexMetadata(int version) {
