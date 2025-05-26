@@ -361,9 +361,6 @@ public class NotificationMongoDBAdaptor extends CatalogMongoDBAdaptor implements
         List<Bson> andBsonList = new ArrayList<>();
 
         Query queryCopy = new Query(query);
-        if (StringUtils.isNotEmpty(user)) {
-            queryCopy.put(QueryParams.TARGET.key(), user);
-        }
 
         for (Map.Entry<String, Object> entry : queryCopy.entrySet()) {
             String key = entry.getKey().split("\\.")[0];

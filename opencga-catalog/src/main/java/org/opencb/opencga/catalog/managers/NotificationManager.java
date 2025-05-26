@@ -385,7 +385,7 @@ public class NotificationManager extends AbstractManager {
         String userId = tokenPayload.getUserId(organizationId);
 
         Query finalQuery = new Query(query);
-        fixQueryObject(query, tokenPayload);
+        fixQueryObject(finalQuery, tokenPayload);
 
         return getNotificationDBAdaptor(organizationId).iterator(finalQuery, options, userId);
     }

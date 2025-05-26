@@ -46,23 +46,21 @@ public class NotificationService extends MonitorParentDaemon implements Closeabl
         userMap = new HashMap<>();
         List<String> organizationIds = catalogManager.getOrganizationManager().getOrganizationIds(token);
 
-        boolean idle = false;
-        while (!idle) {
-            idle = true;
-            for (String organizationId : organizationIds) {
-                Query query = new Query(ParamConstants.INTERNAL_STATUS_PARAM, NotificationStatus.PENDING);
-                try (DBIterator<Notification> iterator = catalogManager.getNotificationManager()
-                        .iterator(organizationId, query, QueryOptions.empty(), token)) {
-                    while (iterator.hasNext()) {
-                        idle = false;
-                        processNotification(organizationId, iterator.next());
-                    }
+        for (String organizationId : organizationIds) {
+            logger.info("----- NOTIFICATION SERVICE  ----- Checking notifications for organization '{}'", organizationId);
+            Query query = new Query(ParamConstants.INTERNAL_STATUS_PARAM, NotificationStatus.PENDING);
+            try (DBIterator<Notification> iterator = catalogManager.getNotificationManager()
+                    .iterator(organizationId, query, QueryOptions.empty(), token)) {
+                while (iterator.hasNext()) {
+                    processNotification(organizationId, iterator.next());
                 }
             }
         }
     }
 
     private void processNotification(String organizationId, Notification notification) {
+        logger.info("----- NOTIFICATION SERVICE  ----- Processing notification '{}' for user '{}'", notification.getUuid(),
+                notification.getTarget());
         User user = getUserConfiguration(organizationId, notification);
         if (user == null) {
             updateNotificationStatus(organizationId, notification.getUuid(), NotificationStatus.ERROR, ERROR_DESCRIPTION, null);
