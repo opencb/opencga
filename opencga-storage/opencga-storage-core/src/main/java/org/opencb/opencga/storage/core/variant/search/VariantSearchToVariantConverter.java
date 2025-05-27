@@ -164,7 +164,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                                                   Map<String, StudyEntry> studyEntryMap, Map<String, VariantScore> scoreStudyMap) {
 
         if (includeFields != null && !includeFields.contains(VariantField.ANNOTATION)) {
-            updateScoreStudyMap(studyEntryMap, scoreStudyMap, variantSearchModel);
+//            updateScoreStudyMap(studyEntryMap, scoreStudyMap, variantSearchModel);
             return null;
         }
 
@@ -211,129 +211,129 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         variantAnnotation.setHgvs(new ArrayList<>());
         variantAnnotation.setCytoband(new ArrayList<>());
         variantAnnotation.setRepeat(new ArrayList<>());
-        for (String other : variantSearchModel.getOther()) {
-            // Sanity check
-            if (StringUtils.isEmpty(other)) {
-                continue;
-            }
-            String[] fields = StringUtils.splitByWholeSeparatorPreserveAllTokens(other, FIELD_SEP);
-            switch (fields[0]) {
-                case "DCT":
-                    variantAnnotation.setDisplayConsequenceType(fields[1]);
-                    break;
-                case "HGVS":
-                    variantAnnotation.getHgvs().add(fields[1]);
-                    break;
-                case "SC":
-                    updateScoreStudyMap(studyEntryMap, scoreStudyMap, fields);
-                    break;
-                case "CB":
-                    Cytoband cytoband = Cytoband.newBuilder()
-                            .setChromosome(variant.getChromosome())
-                            .setName(fields[1])
-                            .setStain(fields[2])
-                            .setStart(Integer.parseInt(fields[3])).setEnd(Integer.parseInt(fields[4]))
-                            .build();
-                    variantAnnotation.getCytoband().add(cytoband);
-                    break;
-                case "RP":
-                    Repeat repeat = Repeat.newBuilder()
-                            .setId(fields[1])
-                            .setSource(fields[2])
-                            .setChromosome(variant.getChromosome())
-                            .setStart(Integer.parseInt(fields[5]))
-                            .setEnd(Integer.parseInt(fields[6]))
-                            .setCopyNumber(parseFloat(fields[3], null))
-                            .setPercentageMatch(parseFloat(fields[4], null))
-                            .setPeriod(null)
-                            .setConsensusSize(null)
-                            .setScore(null)
-                            .setSequence(null)
-                            .build();
-                    variantAnnotation.getRepeat().add(repeat);
-                    break;
-                case "TRANS":
-                    // Create consequence type from transcript info:
-                    //       1            2             3                 4               5           6
-                    // transcriptId -- biotype -- annotationFlags -- cdnaPosition -- cdsPosition -- codon
-                    //           7                   8                 9                 10           11
-                    // -- uniprotAccession -- uniprotAccession -- uniprotVariantId -- position -- aaChange
-                    //     12           13            14                15
-                    // siftScore -- siftDescr -- poliphenScore -- poliphenDescr
-                    ConsequenceType consequenceType = new ConsequenceType();
-                    if (fields.length > 2) {
-                        consequenceType.setTranscriptId(fields[1]);
-                        consequenceType.setEnsemblTranscriptId(fields[1]);
-                        consequenceType.setBiotype(fields[2]);
-                    }
-                    if (fields.length > 3) {
-                        if (fields[3].length() > 0) {
-                            consequenceType.setTranscriptFlags(Arrays.asList(fields[3].split(",")));
-                        }
-                    }
-                    if (fields.length > 4) {
-                        consequenceType.setCdnaPosition(Integer.parseInt(fields[4]));
-                        consequenceType.setCdsPosition(Integer.parseInt(fields[5]));
-                        if (fields.length > 6) {
-                            // Sometimes, codon (i.e., split at 5) is null, check it!
-                            consequenceType.setCodon(fields[6]);
-                        }
-                    }
-                    if (fields.length > 7) {
-                        // Create, init and add protein variant annotation to the consequence type
-                        ProteinVariantAnnotation protVarAnnotation = new ProteinVariantAnnotation();
-                        // Uniprot info
-                        protVarAnnotation.setUniprotAccession(fields[7]);
-                        protVarAnnotation.setUniprotName(fields[8]);
-                        protVarAnnotation.setUniprotVariantId(fields[9]);
-                        if (StringUtils.isNotEmpty(fields[10])) {
-                            try {
-                                protVarAnnotation.setPosition(Integer.parseInt(fields[10]));
-                            } catch (NumberFormatException e) {
-                                logger.warn("Parsing position: " + e.getMessage());
-                            }
-                        }
-                        if (StringUtils.isNotEmpty(fields[11]) && fields[11].contains("/")) {
-                            String[] refAlt = fields[11].split("/");
-                            protVarAnnotation.setReference(refAlt[0]);
-                            protVarAnnotation.setAlternate(refAlt[1]);
-                        }
-                        // Sift score
-                        List<Score> scores = new ArrayList<>(2);
-                        if (fields.length > 12
-                                && (StringUtils.isNotEmpty(fields[12]) || StringUtils.isNotEmpty(fields[13]))) {
-                            Score score = new Score();
-                            score.setSource("sift");
-                            if (StringUtils.isNotEmpty(fields[12])) {
-                                score.setScore(parseDouble(fields[12], null, "Exception parsing Sift score"));
-                            }
-                            score.setDescription(fields[13]);
-                            scores.add(score);
-                        }
-                        // Polyphen score
-                        if (fields.length > 14
-                                && (StringUtils.isNotEmpty(fields[14]) || StringUtils.isNotEmpty(fields[15]))) {
-                            Score score = new Score();
-                            score.setSource("polyphen");
-                            if (StringUtils.isNotEmpty(fields[14])) {
-                                score.setScore(parseDouble(fields[14], null, "Exception parsing Polyphen score"));
-                            }
-                            score.setDescription(fields[15]);
-                            scores.add(score);
-                        }
-                        protVarAnnotation.setSubstitutionScores(scores);
-
-                        // Finally, set protein variant annotation in consequence type
-                        consequenceType.setProteinVariantAnnotation(protVarAnnotation);
-                    }
-
-                    // The key is the ENST id
-                    consequenceTypeMap.put(fields[1], consequenceType);
-                    break;
-                default:
-                    break;
-            }
-        }
+//        for (String other : variantSearchModel.getOther()) {
+//            // Sanity check
+//            if (StringUtils.isEmpty(other)) {
+//                continue;
+//            }
+//            String[] fields = StringUtils.splitByWholeSeparatorPreserveAllTokens(other, FIELD_SEP);
+//            switch (fields[0]) {
+//                case "DCT":
+//                    variantAnnotation.setDisplayConsequenceType(fields[1]);
+//                    break;
+//                case "HGVS":
+//                    variantAnnotation.getHgvs().add(fields[1]);
+//                    break;
+//                case "SC":
+//                    updateScoreStudyMap(studyEntryMap, scoreStudyMap, fields);
+//                    break;
+//                case "CB":
+//                    Cytoband cytoband = Cytoband.newBuilder()
+//                            .setChromosome(variant.getChromosome())
+//                            .setName(fields[1])
+//                            .setStain(fields[2])
+//                            .setStart(Integer.parseInt(fields[3])).setEnd(Integer.parseInt(fields[4]))
+//                            .build();
+//                    variantAnnotation.getCytoband().add(cytoband);
+//                    break;
+//                case "RP":
+//                    Repeat repeat = Repeat.newBuilder()
+//                            .setId(fields[1])
+//                            .setSource(fields[2])
+//                            .setChromosome(variant.getChromosome())
+//                            .setStart(Integer.parseInt(fields[5]))
+//                            .setEnd(Integer.parseInt(fields[6]))
+//                            .setCopyNumber(parseFloat(fields[3], null))
+//                            .setPercentageMatch(parseFloat(fields[4], null))
+//                            .setPeriod(null)
+//                            .setConsensusSize(null)
+//                            .setScore(null)
+//                            .setSequence(null)
+//                            .build();
+//                    variantAnnotation.getRepeat().add(repeat);
+//                    break;
+//                case "TRANS":
+//                    // Create consequence type from transcript info:
+//                    //       1            2             3                 4               5           6
+//                    // transcriptId -- biotype -- annotationFlags -- cdnaPosition -- cdsPosition -- codon
+//                    //           7                   8                 9                 10           11
+//                    // -- uniprotAccession -- uniprotAccession -- uniprotVariantId -- position -- aaChange
+//                    //     12           13            14                15
+//                    // siftScore -- siftDescr -- poliphenScore -- poliphenDescr
+//                    ConsequenceType consequenceType = new ConsequenceType();
+//                    if (fields.length > 2) {
+//                        consequenceType.setTranscriptId(fields[1]);
+//                        consequenceType.setEnsemblTranscriptId(fields[1]);
+//                        consequenceType.setBiotype(fields[2]);
+//                    }
+//                    if (fields.length > 3) {
+//                        if (fields[3].length() > 0) {
+//                            consequenceType.setTranscriptFlags(Arrays.asList(fields[3].split(",")));
+//                        }
+//                    }
+//                    if (fields.length > 4) {
+//                        consequenceType.setCdnaPosition(Integer.parseInt(fields[4]));
+//                        consequenceType.setCdsPosition(Integer.parseInt(fields[5]));
+//                        if (fields.length > 6) {
+//                            // Sometimes, codon (i.e., split at 5) is null, check it!
+//                            consequenceType.setCodon(fields[6]);
+//                        }
+//                    }
+//                    if (fields.length > 7) {
+//                        // Create, init and add protein variant annotation to the consequence type
+//                        ProteinVariantAnnotation protVarAnnotation = new ProteinVariantAnnotation();
+//                        // Uniprot info
+//                        protVarAnnotation.setUniprotAccession(fields[7]);
+//                        protVarAnnotation.setUniprotName(fields[8]);
+//                        protVarAnnotation.setUniprotVariantId(fields[9]);
+//                        if (StringUtils.isNotEmpty(fields[10])) {
+//                            try {
+//                                protVarAnnotation.setPosition(Integer.parseInt(fields[10]));
+//                            } catch (NumberFormatException e) {
+//                                logger.warn("Parsing position: " + e.getMessage());
+//                            }
+//                        }
+//                        if (StringUtils.isNotEmpty(fields[11]) && fields[11].contains("/")) {
+//                            String[] refAlt = fields[11].split("/");
+//                            protVarAnnotation.setReference(refAlt[0]);
+//                            protVarAnnotation.setAlternate(refAlt[1]);
+//                        }
+//                        // Sift score
+//                        List<Score> scores = new ArrayList<>(2);
+//                        if (fields.length > 12
+//                                && (StringUtils.isNotEmpty(fields[12]) || StringUtils.isNotEmpty(fields[13]))) {
+//                            Score score = new Score();
+//                            score.setSource("sift");
+//                            if (StringUtils.isNotEmpty(fields[12])) {
+//                                score.setScore(parseDouble(fields[12], null, "Exception parsing Sift score"));
+//                            }
+//                            score.setDescription(fields[13]);
+//                            scores.add(score);
+//                        }
+//                        // Polyphen score
+//                        if (fields.length > 14
+//                                && (StringUtils.isNotEmpty(fields[14]) || StringUtils.isNotEmpty(fields[15]))) {
+//                            Score score = new Score();
+//                            score.setSource("polyphen");
+//                            if (StringUtils.isNotEmpty(fields[14])) {
+//                                score.setScore(parseDouble(fields[14], null, "Exception parsing Polyphen score"));
+//                            }
+//                            score.setDescription(fields[15]);
+//                            scores.add(score);
+//                        }
+//                        protVarAnnotation.setSubstitutionScores(scores);
+//
+//                        // Finally, set protein variant annotation in consequence type
+//                        consequenceType.setProteinVariantAnnotation(protVarAnnotation);
+//                    }
+//
+//                    // The key is the ENST id
+//                    consequenceTypeMap.put(fields[1], consequenceType);
+//                    break;
+//                default:
+//                    break;
+//            }
+//        }
 
         // consequence types
         String geneName = null;
@@ -543,17 +543,17 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         return variantAnnotation;
     }
 
-    private void updateScoreStudyMap(Map<String, StudyEntry> studyEntryMap, Map<String, VariantScore> scoreStudyMap,
-                                     VariantSearchModel variantSearchModel) {
-        // Get cohort1 and cohort2
-        if (scoreStudyMap.size() > 0 && CollectionUtils.isNotEmpty(variantSearchModel.getOther())) {
-            for (String other : variantSearchModel.getOther()) {
-                if (StringUtils.isNotEmpty(other) && other.startsWith("SC")) {
-                    updateScoreStudyMap(studyEntryMap, scoreStudyMap, StringUtils.splitByWholeSeparatorPreserveAllTokens(other, FIELD_SEP));
-                }
-            }
-        }
-    }
+//    private void updateScoreStudyMap(Map<String, StudyEntry> studyEntryMap, Map<String, VariantScore> scoreStudyMap,
+//                                     VariantSearchModel variantSearchModel) {
+//        // Get cohort1 and cohort2
+//        if (scoreStudyMap.size() > 0 && CollectionUtils.isNotEmpty(variantSearchModel.getOther())) {
+//            for (String other : variantSearchModel.getOther()) {
+//                if (StringUtils.isNotEmpty(other) && other.startsWith("SC")) {
+//                    updateScoreStudyMap(studyEntryMap, scoreStudyMap, StringUtils.splitByWholeSeparatorPreserveAllTokens(other, FIELD_SEP));
+//                }
+//            }
+//        }
+//    }
 
     private void updateScoreStudyMap(Map<String, StudyEntry> studyEntryMap, Map<String, VariantScore> scoreStudyMap, String[] fields) {
         // Fields content: SC -- studyId -- scoreId -- score -- p-value -- cohort1 -- cohort2
