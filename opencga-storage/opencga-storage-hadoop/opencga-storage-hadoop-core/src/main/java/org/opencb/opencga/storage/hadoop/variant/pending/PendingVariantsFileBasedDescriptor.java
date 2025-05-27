@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.pending;
 
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Scan;
 import org.opencb.biodata.models.variant.Variant;
@@ -83,5 +84,9 @@ public interface PendingVariantsFileBasedDescriptor extends PendingVariantsDescr
 
     default boolean isPendingVariantsFile(String name) {
         return name.startsWith(name() + ".");
+    }
+
+    default boolean isPendingVariantsFile(FileStatus fileStatus) {
+        return fileStatus.isFile() && isPendingVariantsFile(fileStatus.getPath().getName());
     }
 }

@@ -482,12 +482,46 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             throws StorageEngineException, IOException, VariantSearchException {
         queryOptions = queryOptions == null ? new QueryOptions() : new QueryOptions(queryOptions);
 
-        boolean shouldRunDiscover = true;
+        boolean shouldRunDiscover = false;
+        if (overwrite) {
+            logger.info("Overwrite is true, running discover pending variants to secondary index");
+            shouldRunDiscover = true;
+        }
+        // TODO: Check if there has been any change since last time discover was run
+//        int lastUpdateTimestamp = indexMetadata.getAttributes().getInt("pendingVariantsToSecondaryIndexTimestamp", 0);
+//        ProjectMetadata projectMetadata = getMetadataManager().getProjectMetadata();
+
+        if (!shouldRunDiscover) {
+            // Check pending variant files integrity
+            logger.info("Checking pending variants files integrity");
+            SecondaryIndexPendingVariantsFileBasedManager pendingVariantsFileBasedManager =
+                    new SecondaryIndexPendingVariantsFileBasedManager(getVariantTableName(), getConf());
+            try {
+                if (!pendingVariantsFileBasedManager.checkFilesIntegrity()) {
+                    logger.warn("Pending variants files integrity check failed. Running discover pending variants to secondary index.");
+                    shouldRunDiscover = true;
+                }
+            } catch (IOException e) {
+                throw new StorageEngineException("Error checking pending variants files integrity", e);
+            }
+        }
+
+
+
         if (getOptions().getBoolean("skipDiscoverPendingVariantsToSecondaryIndex", false)) {
+            // Ignore other options if skipDiscoverPendingVariantsToSecondaryIndex is true
+            // Testing purposes
             shouldRunDiscover = false;
-            logger.info("Skip discover pending variants to secondary index");
+            logger.info("Skip discover pending variants to secondary index.");
+        }
+        if (getOptions().getBoolean("forceDiscoverPendingVariantsToSecondaryIndex", false)) {
+            // Ignore other options if forceDiscoverPendingVariantsToSecondaryIndex is true
+            // Testing purposes
+            shouldRunDiscover = true;
+            logger.info("Force discover pending variants to secondary index.");
         }
         if (shouldRunDiscover) {
+            long updateTimestamp = System.currentTimeMillis();
             boolean partialLoad = isValidParam(query, VariantQueryParam.REGION);
             ObjectMap mrOptions = getMergedOptions(queryOptions);
             if (partialLoad) {
@@ -496,11 +530,12 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             ObjectMap result = new SecondaryIndexPendingVariantsFileBasedManager(getVariantTableName(), getConf())
                     .discoverPending(getMRExecutor(), getVariantTableName(), overwrite, mrOptions.appendAll(query));
             if (!partialLoad) {
-                getMetadataManager().updateProjectMetadata(pm -> {
-                    pm.getSecondaryAnnotationIndex().getIndexMetadata(indexMetadata.getVersion())
-                            .getAttributes().putAll(result);
-                });
-                indexMetadata.getAttributes().putAll(result);
+                int version = indexMetadata.getVersion();
+                indexMetadata = getMetadataManager().updateProjectMetadata(pm -> {
+                    SearchIndexMetadata im = pm.getSecondaryAnnotationIndex().getIndexMetadata(version);
+                    im.getAttributes().put("pendingVariantsToSecondaryIndex", result);
+                    im.getAttributes().put("pendingVariantsToSecondaryIndexTimestamp", updateTimestamp);
+                }).getSecondaryAnnotationIndex().getIndexMetadata(version);
             }
         }
 

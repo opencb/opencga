@@ -128,7 +128,7 @@ public abstract class PendingVariantsFileBasedManager {
             FileStatus[] fileStatuses = fs.listStatus(new Path(pendingVariantsDir));
             Arrays.sort(fileStatuses, Comparator.comparing(FileStatus::getPath));
             for (FileStatus fileStatus : fileStatuses) {
-                if (fileStatus.isDirectory() || !descriptor.isPendingVariantsFile(fileStatus.getPath().getName())) {
+                if (!descriptor.isPendingVariantsFile(fileStatus)) {
                     // Ignore other files
                     continue;
                 }
@@ -224,7 +224,7 @@ public abstract class PendingVariantsFileBasedManager {
             long size = 0;
             FileStatus[] files = fs.listStatus(new Path(outdir));
             for (FileStatus file : files) {
-                if (file.isDirectory() || !descriptor.isPendingVariantsFile(file.getPath().getName())) {
+                if (!descriptor.isPendingVariantsFile(file)) {
                     continue;
                 }
                 try {
@@ -272,6 +272,30 @@ public abstract class PendingVariantsFileBasedManager {
         } catch (IOException e) {
             throw new StorageEngineException("Unable to delete pending variants directory", e);
         }
+    }
+
+    public boolean checkFilesIntegrity() throws IOException {
+        // Ensure that all pending files are valid
+        Path pendingPath = new Path(pendingVariantsDir);
+        if (!fs.exists(pendingPath)) {
+            logger.warn("Pending variants directory does not exist: " + pendingPath);
+            return false;
+        }
+        FileStatus[] fileStatuses = fs.listStatus(pendingPath);
+        for (FileStatus fileStatus : fileStatuses) {
+            if (!descriptor.isPendingVariantsFile(fileStatus)) {
+                // Ignore other files
+                continue;
+            }
+            try {
+                // Check if the file is readable
+                fs.open(fileStatus.getPath()).close();
+            } catch (IOException e) {
+                logger.error("Error reading pending variants file: " + fileStatus.getPath(), e);
+                return false;
+            }
+        }
+        return true;
     }
 
 }
