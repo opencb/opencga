@@ -126,7 +126,7 @@ public class NotificationService extends MonitorParentDaemon implements Closeabl
                 .allMatch((r) -> r.getStatus().equals(NotificationInternalNotificationResult.SUCCESS));
         String status = success ? NotificationStatus.SUCCESS : NotificationStatus.ERROR;
         String description = success ? SUCCESS_DESCRIPTION : ERROR_DESCRIPTION;
-        updateNotificationStatus(status, notification.getUuid(), status, description, notificationInternalList);
+        updateNotificationStatus(organizationId, notification.getUuid(), status, description, notificationInternalList);
     }
 
     private boolean notificationIsExpected(Notification notification, AbstractNotificationScopeLevel threshold, String notificator)
