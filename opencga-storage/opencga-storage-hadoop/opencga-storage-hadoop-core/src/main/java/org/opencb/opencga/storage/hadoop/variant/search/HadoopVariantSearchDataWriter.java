@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.search;
 
-import org.apache.hadoop.hbase.client.BufferedMutatorParams;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.phoenix.schema.types.PIntegerArray;
@@ -8,6 +8,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
 import org.opencb.opencga.storage.core.variant.search.solr.SolrInputDocumentDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseDataWriter;
@@ -17,10 +18,11 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.search.pending.index.file.SecondaryIndexPendingVariantsFileBasedManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 
@@ -39,17 +41,16 @@ public class HadoopVariantSearchDataWriter extends SolrInputDocumentDataWriter {
     private final byte[] family = GenomeHelper.COLUMN_FAMILY_BYTES;
     protected final Map<String, Integer> studiesMap;
 
+    private long hbasePutTimeMs = 0;
+    private long cleanTimeMs = 0;
+
+    private final Logger logger = LoggerFactory.getLogger(HadoopVariantSearchDataWriter.class);
+
+
     public HadoopVariantSearchDataWriter(String collection, SolrClient solrClient, int insertBatchSize,
                                          VariantHadoopDBAdaptor dbAdaptor) {
         super(collection, solrClient, insertBatchSize);
-        this.writer = new HBaseDataWriter<Mutation>(dbAdaptor.getHBaseManager(), dbAdaptor.getVariantTable()) {
-            @Override
-            protected BufferedMutatorParams buildBufferedMutatorParams() {
-                // Set write buffer size to 10GB to ensure that will only be triggered manually on flush
-                return super.buildBufferedMutatorParams().writeBufferSize(10L * 1024L * 1024L * 1024L)
-                        .setWriteBufferPeriodicFlushTimeoutMs(TimeUnit.DAYS.toMillis(365)); // 1 year
-            }
-        };
+        this.writer = new HBaseDataWriter<>(dbAdaptor.getHBaseManager(), dbAdaptor.getVariantTable());
         try {
             this.cleaner = new SecondaryIndexPendingVariantsFileBasedManager(dbAdaptor.getVariantTable(), dbAdaptor.getConfiguration())
                     .cleaner();
@@ -100,12 +101,18 @@ public class HadoopVariantSearchDataWriter extends SolrInputDocumentDataWriter {
     @Override
     protected void commit() throws Exception {
         super.commit();
+        StopWatch stopWatch = StopWatch.createStarted();
         writer.write(rowsToUpdate);
         writer.flush();
+        hbasePutTimeMs += stopWatch.getTime();
         rowsToUpdate.clear();
+        stopWatch.reset();
+
+        stopWatch.start();
         cleaner.write(variantsToClean);
-        variantsToClean.clear();
 //        cleaner.flush();
+        variantsToClean.clear();
+        cleanTimeMs += stopWatch.getTime();
     }
 
     @Override
@@ -127,8 +134,15 @@ public class HadoopVariantSearchDataWriter extends SolrInputDocumentDataWriter {
     @Override
     public boolean post() {
         super.post();
+        StopWatch stopWatch = StopWatch.createStarted();
         writer.post();
+        hbasePutTimeMs += stopWatch.getTime();
+        stopWatch.reset();
+        stopWatch.start();
         cleaner.post();
+        cleanTimeMs += stopWatch.getTime();
+        logger.info("HBase flags update time: {}", TimeUtils.durationToString(hbasePutTimeMs));
+        logger.info("Pending Variants Files Clean: {}", TimeUtils.durationToString(cleanTimeMs));
         return true;
     }
 

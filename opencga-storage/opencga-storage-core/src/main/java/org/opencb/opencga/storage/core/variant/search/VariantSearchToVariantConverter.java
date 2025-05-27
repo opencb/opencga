@@ -583,8 +583,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
     public VariantSearchModel convertToStorageType(Variant variant) {
         VariantSearchModel variantSearchModel = new VariantSearchModel();
 
-        // Create the Other list to insert scores and transcripts info (biotype, protein, variant annotation,...)
-        List<String> other = new ArrayList<>();
+//        // Create the Other list to insert scores and transcripts info (biotype, protein, variant annotation,...)
+//        List<String> other = new ArrayList<>();
 
         // Set general Variant attributes: id, dbSNP, chromosome, start, end, type
         String variantId = getVariantId(variant);
@@ -597,7 +597,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         variantSearchModel.setType(variant.getType().toString());
 
         // convert Study related information
-        convertStudies(variant, variantSearchModel, other);
+        convertStudies(variant, variantSearchModel);
 
         // We init all annotation numeric values to MISSING_VALUE, this fixes two different scenarios:
         // 1. No Variant Annotation has been found, probably because it is a SV longer than 100bp.
@@ -803,9 +803,9 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             }
                         }
                     }
-                    if (StringUtils.isNotEmpty(conseqType.getTranscriptId()) && trans.length() > 0) {
-                        other.add(trans.toString());
-                    }
+//                    if (StringUtils.isNotEmpty(conseqType.getTranscriptId()) && trans.length() > 0) {
+//                        other.add(trans.toString());
+//                    }
                 }
 
                 // We store the accumulated data
@@ -922,31 +922,31 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             variantSearchModel.setTraits(new ArrayList<>(traits));
 
             // Now we fill other field
-            if (StringUtils.isNotEmpty(variantAnnotation.getDisplayConsequenceType())) {
-                other.add("DCT" + FIELD_SEP + variantAnnotation.getDisplayConsequenceType());
-            }
-            if (variantAnnotation.getHgvs() != null) {
-                for (String hgvs : variantAnnotation.getHgvs()) {
-                    other.add("HGVS" + FIELD_SEP + hgvs);
-                }
-            }
-            if (variantAnnotation.getCytoband() != null) {
-                for (Cytoband cytoband : variantAnnotation.getCytoband()) {
-                    other.add("CB" + FIELD_SEP + cytoband.getName() + FIELD_SEP + cytoband.getStain()
-                            + FIELD_SEP + cytoband.getStart() + FIELD_SEP + cytoband.getEnd());
-                }
-            }
-            if (variantAnnotation.getRepeat() != null) {
-                for (Repeat repeat : variantAnnotation.getRepeat()) {
-                    other.add("RP" + FIELD_SEP + repeat.getId() + FIELD_SEP + repeat.getSource()
-                            + FIELD_SEP + repeat.getCopyNumber() + FIELD_SEP + repeat.getPercentageMatch()
-                            + FIELD_SEP + repeat.getStart() + FIELD_SEP + repeat.getEnd());
-                }
-            }
+//            if (StringUtils.isNotEmpty(variantAnnotation.getDisplayConsequenceType())) {
+//                other.add("DCT" + FIELD_SEP + variantAnnotation.getDisplayConsequenceType());
+//            }
+//            if (variantAnnotation.getHgvs() != null) {
+//                for (String hgvs : variantAnnotation.getHgvs()) {
+//                    other.add("HGVS" + FIELD_SEP + hgvs);
+//                }
+//            }
+//            if (variantAnnotation.getCytoband() != null) {
+//                for (Cytoband cytoband : variantAnnotation.getCytoband()) {
+//                    other.add("CB" + FIELD_SEP + cytoband.getName() + FIELD_SEP + cytoband.getStain()
+//                            + FIELD_SEP + cytoband.getStart() + FIELD_SEP + cytoband.getEnd());
+//                }
+//            }
+//            if (variantAnnotation.getRepeat() != null) {
+//                for (Repeat repeat : variantAnnotation.getRepeat()) {
+//                    other.add("RP" + FIELD_SEP + repeat.getId() + FIELD_SEP + repeat.getSource()
+//                            + FIELD_SEP + repeat.getCopyNumber() + FIELD_SEP + repeat.getPercentageMatch()
+//                            + FIELD_SEP + repeat.getStart() + FIELD_SEP + repeat.getEnd());
+//                }
+//            }
         }
-        if (CollectionUtils.isNotEmpty(other)) {
-            variantSearchModel.setOther(other);
-        }
+//        if (CollectionUtils.isNotEmpty(other)) {
+//            variantSearchModel.setOther(other);
+//        }
 
         // This field contains all possible IDs: id, dbSNP, names, genes, transcripts, protein, clinvar, hpo, ...
         // This will help when searching by variant id. This is added at the end of the method after collecting all IDs
@@ -977,7 +977,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         return HASH_PREFIX + variant.getChromosome() + ":" + variant.getStart() + ":" + Integer.toString(variantString.hashCode());
     }
 
-    private void convertStudies(Variant variant, VariantSearchModel variantSearchModel, List<String> other) {
+    private void convertStudies(Variant variant, VariantSearchModel variantSearchModel) {
         // Sanity check
         if (CollectionUtils.isEmpty(variant.getStudies())) {
             return;
@@ -1001,8 +1001,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             stats.getAltAlleleFreq());
 
                     // PASS filter frequency
-                    if (MapUtils.isNotEmpty(stats.getFilterCount())
-                            && stats.getFilterCount().containsKey(VCFConstants.PASSES_FILTERS_v4)) {
+                    if (MapUtils.isNotEmpty(stats.getFilterFreq())
+                            && stats.getFilterFreq().containsKey(VCFConstants.PASSES_FILTERS_v4)) {
                         variantSearchModel.getPassStats().put("passStats" + FIELD_SEPARATOR + studyId + FIELD_SEPARATOR + cohortId,
                                 stats.getFilterFreq().get(VCFConstants.PASSES_FILTERS_v4));
                     }
@@ -1023,9 +1023,9 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     variantSearchModel.getScorePValue().put("scorePValue" + suffix, score.getPValue());
 
                     // and save score, pValue, cohort1 and cohort2 into the Other list (not indexed)
-                    other.add("SC" + FIELD_SEP + studyId + FIELD_SEP + score.getId() + FIELD_SEP + score.getScore() + FIELD_SEP
-                            + score.getPValue() + FIELD_SEP + score.getCohort1()
-                            + (StringUtils.isNotEmpty(score.getCohort2()) ? (FIELD_SEP + score.getCohort2()) : ""));
+//                    other.add("SC" + FIELD_SEP + studyId + FIELD_SEP + score.getId() + FIELD_SEP + score.getScore() + FIELD_SEP
+//                            + score.getPValue() + FIELD_SEP + score.getCohort1()
+//                            + (StringUtils.isNotEmpty(score.getCohort2()) ? (FIELD_SEP + score.getCohort2()) : ""));
                 }
             }
         }

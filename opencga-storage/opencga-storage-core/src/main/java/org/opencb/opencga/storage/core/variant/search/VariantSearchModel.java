@@ -107,9 +107,6 @@ public class VariantSearchModel {
     @Field("traits")
     private List<String> traits;
 
-    @Field("other")
-    private List<String> other;
-
     @Field("passStats_*")
     private Map<String, Float> passStats;
 
@@ -147,7 +144,6 @@ public class VariantSearchModel {
         this.soAcc = new ArrayList<>();
         this.geneToSoAcc = new ArrayList<>();
         this.traits = new ArrayList<>();
-        this.other = new ArrayList<>();
         this.passStats = new HashMap<>();
         this.altStats = new HashMap<>();
         this.score = new HashMap<>();
@@ -181,7 +177,6 @@ public class VariantSearchModel {
         this.geneToSoAcc = init.geneToSoAcc;
         this.clinicalSig = init.getClinicalSig();
         this.traits = init.getTraits();
-        this.other = init.getOther();
         this.passStats = init.getPassStats();
         this.altStats = init.getAltStats();
         this.score = init.getScore();
@@ -217,7 +212,6 @@ public class VariantSearchModel {
         sb.append(", geneToSoAcc=").append(geneToSoAcc);
         sb.append(", clinicalSig=").append(clinicalSig);
         sb.append(", traits=").append(traits);
-        sb.append(", other=").append(other);
         sb.append(", passStats=").append(passStats);
         sb.append(", altStats=").append(altStats);
         sb.append(", score=").append(score);
@@ -452,15 +446,6 @@ public class VariantSearchModel {
 
     public VariantSearchModel setTraits(List<String> traits) {
         this.traits = traits;
-        return this;
-    }
-
-    public List<String> getOther() {
-        return other;
-    }
-
-    public VariantSearchModel setOther(List<String> other) {
-        this.other = other;
         return this;
     }
 
