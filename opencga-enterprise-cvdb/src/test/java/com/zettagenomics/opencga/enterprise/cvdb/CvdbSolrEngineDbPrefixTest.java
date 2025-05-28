@@ -4,6 +4,7 @@ import com.zettagenomics.opencga.enterprise.cvdb.dummy.DummyVariantStorageMetada
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import com.zettagenomics.opencga.enterprise.cvdb.parsers.CollectionPrefixUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -13,6 +14,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -21,6 +23,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.clinical.CvdbIndexStatus;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
+import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.User;
@@ -43,7 +46,7 @@ public class CvdbSolrEngineDbPrefixTest {
     protected String projectId = "project1";
     protected Study study;
 
-    protected String CVDB_PREFIX = "opencga_prefix_attrs";
+    protected String CVDB_PREFIX = "opencga_prefix_in_cvdb_datastore";
 
     @Rule
 //    public CatalogManagerExternalResource catalogManagerResource = new CatalogManagerExternalResource();
@@ -94,26 +97,21 @@ public class CvdbSolrEngineDbPrefixTest {
 
         userToken = catalogManager.getUserManager().login(organizationId, "user", PASSWORD).first().getToken();
 
-        catalogManager.getProjectManager().create(projectId, "Project about some genomes", "", "Homo sapiens",
+        Project project = catalogManager.getProjectManager().create(projectId, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, userToken).first();
 
-        ObjectMap objectMap = new ObjectMap();
-        ObjectMap attrs = new ObjectMap();
-        attrs.put(OPENCGA_CVDB_DBPREFIX_KEY, CVDB_PREFIX);
-        objectMap.put(ProjectDBAdaptor.QueryParams.ATTRIBUTES.key(), attrs);
+        DataStore cvdbDataStore = VariantStorageManager.defaultCvdbDataStore(CVDB_PREFIX, project.getFqn());
+        catalogManager.getProjectManager().setDatastoreCvdb(projectId, cvdbDataStore, userToken);
 
-        OpenCGAResult<Project> update = catalogManager.getProjectManager().update(projectId, objectMap, INCLUDE_RESULT, userToken);
-        assertEquals(1, update.getNumResults());
-        assertTrue(MapUtils.isNotEmpty(update.first().getAttributes()));
-        assertTrue(update.first().getAttributes().containsKey(OPENCGA_CVDB_DBPREFIX_KEY));
-        assertEquals(CVDB_PREFIX, update.first().getAttributes().get(OPENCGA_CVDB_DBPREFIX_KEY));
+        Project updatedProject = catalogManager.getProjectManager().get(projectId, QueryOptions.empty(), userToken).first();
+        Assert.assertTrue(updatedProject.getInternal().getDatastores().getCvdb().getDbName().startsWith(CVDB_PREFIX));
 
         study = catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null,
                 INCLUDE_RESULT, userToken).first();
     }
 
     @Test
-    public void testIndexProjectDbPrefixInAttrs() throws CatalogException, IOException, CvdbException, SolrServerException {
+    public void testIndexProjectDbPrefixFromDatastore() throws CatalogException, IOException, CvdbException, SolrServerException {
         TestUtilities.loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca2.json.gz", "ca3.json.gz"), study, userToken, opencgaToken, catalogManager);
         TestUtilities.checkClinicalAnalysisIndexStatus(CvdbIndexStatus.NONE, study, catalogManager, userToken);
 

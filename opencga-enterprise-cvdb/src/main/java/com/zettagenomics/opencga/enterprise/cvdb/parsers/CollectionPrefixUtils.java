@@ -16,9 +16,10 @@
 
 package com.zettagenomics.opencga.enterprise.cvdb.parsers;
 
-import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.models.project.Project;
@@ -50,17 +51,18 @@ public class CollectionPrefixUtils {
     public String getCollectionPrefix(String organizationId, String projectId, String token) throws CatalogException {
         String key = organizationId + "===" + projectId;
         if (!collectionPrefixMap.containsKey(key)) {
-            Project project = catalogManager.getProjectManager().get(projectId, new QueryOptions(QueryOptions.INCLUDE, "attributes"), token)
-                    .first();
-            String dbPrefix = null;
-            if (MapUtils.isNotEmpty(project.getAttributes()) && project.getAttributes().containsKey(OPENCGA_CVDB_DBPREFIX_KEY)) {
-                dbPrefix = (String) project.getAttributes().get(OPENCGA_CVDB_DBPREFIX_KEY);
+            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES_CVDB.key());
+            Project project = catalogManager.getProjectManager().get(projectId, queryOptions, token).first();
+            String collectionPrefix = null;
+            if (project.getInternal() != null && project.getInternal().getDatastores() != null
+                    && project.getInternal().getDatastores().getCvdb() != null) {
+                collectionPrefix = project.getInternal().getDatastores().getCvdb().getDbName();
             }
-            if ( StringUtils.isEmpty(dbPrefix)) {
-                dbPrefix = catalogManager.getConfiguration().getDatabasePrefix();
+            if (StringUtils.isEmpty(collectionPrefix)) {
+                collectionPrefix = VariantStorageManager.buildDatabaseName(catalogManager.getConfiguration().getDatabasePrefix(), "cvdb",
+                        organizationId, projectId);
             }
 
-            String collectionPrefix = dbPrefix + CVDB_SEP + "cvdb" + CVDB_SEP + organizationId + CVDB_SEP + projectId;
             collectionPrefixMap.put(key, collectionPrefix);
         }
 
