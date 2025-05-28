@@ -490,6 +490,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         // TODO: Check if there has been any change since last time discover was run
 //        int lastUpdateTimestamp = indexMetadata.getAttributes().getInt("pendingVariantsToSecondaryIndexTimestamp", 0);
 //        ProjectMetadata projectMetadata = getMetadataManager().getProjectMetadata();
+        shouldRunDiscover = true; // TODO: Remove this line when the above is implemented
 
         if (!shouldRunDiscover) {
             // Check pending variant files integrity

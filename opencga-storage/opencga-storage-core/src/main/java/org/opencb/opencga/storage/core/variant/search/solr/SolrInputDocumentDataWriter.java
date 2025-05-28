@@ -63,7 +63,7 @@ public class SolrInputDocumentDataWriter implements DataWriter<SolrInputDocument
         serverBufferSize += batch.size();
     }
 
-    protected void commit() throws Exception {
+    protected final void commit() throws Exception {
         commit(false);
     }
 

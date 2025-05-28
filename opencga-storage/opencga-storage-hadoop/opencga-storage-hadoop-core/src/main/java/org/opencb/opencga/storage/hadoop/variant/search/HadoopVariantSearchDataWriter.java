@@ -99,8 +99,8 @@ public class HadoopVariantSearchDataWriter extends SolrInputDocumentDataWriter {
     }
 
     @Override
-    protected void commit() throws Exception {
-        super.commit();
+    protected void commit(boolean openSearcher) throws Exception {
+        super.commit(openSearcher);
         StopWatch stopWatch = StopWatch.createStarted();
         writer.write(rowsToUpdate);
         writer.flush();
