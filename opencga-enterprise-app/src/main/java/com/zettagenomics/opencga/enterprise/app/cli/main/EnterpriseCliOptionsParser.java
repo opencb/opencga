@@ -28,6 +28,7 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
     private final FamiliesCommandOptions familiesCommandOptions;
     private final UsersCommandOptions usersCommandOptions;
     private final SamplesCommandOptions samplesCommandOptions;
+    private final AnalysisCVDBCommandOptions analysisCVDBCommandOptions;
     private final AnalysisAlignmentCommandOptions analysisAlignmentCommandOptions;
     private final MetaCommandOptions metaCommandOptions;
     private final OrganizationsCommandOptions organizationsCommandOptions;
@@ -253,6 +254,20 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         samplesSubCommands.addCommand("update", samplesCommandOptions.updateCommandOptions);
         samplesSubCommands.addCommand("annotation-sets-annotations-update", samplesCommandOptions.updateAnnotationSetsAnnotationsCommandOptions);
 
+        analysisCVDBCommandOptions = new AnalysisCVDBCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("cvdb", analysisCVDBCommandOptions);
+        JCommander analysisCVDBSubCommands = jCommander.getCommands().get("cvdb");
+        analysisCVDBSubCommands.addCommand("analysis-aggregate", analysisCVDBCommandOptions.aggregateAnalysisCommandOptions);
+        analysisCVDBSubCommands.addCommand("analysis-query", analysisCVDBCommandOptions.queryAnalysisCommandOptions);
+        analysisCVDBSubCommands.addCommand("evidence-aggregate", analysisCVDBCommandOptions.aggregateEvidenceCommandOptions);
+        analysisCVDBSubCommands.addCommand("evidence-query", analysisCVDBCommandOptions.queryEvidenceCommandOptions);
+        analysisCVDBSubCommands.addCommand("index-run", analysisCVDBCommandOptions.runIndexCommandOptions);
+        analysisCVDBSubCommands.addCommand("interpretation-aggregate", analysisCVDBCommandOptions.aggregateInterpretationCommandOptions);
+        analysisCVDBSubCommands.addCommand("interpretation-query", analysisCVDBCommandOptions.queryInterpretationCommandOptions);
+        analysisCVDBSubCommands.addCommand("variant-aggregate", analysisCVDBCommandOptions.aggregateVariantCommandOptions);
+        analysisCVDBSubCommands.addCommand("variant-query", analysisCVDBCommandOptions.queryVariantCommandOptions);
+        analysisCVDBSubCommands.addCommand("variant-stats", analysisCVDBCommandOptions.statsVariantCommandOptions);
+
         analysisAlignmentCommandOptions = new AnalysisAlignmentCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("alignments", analysisAlignmentCommandOptions);
         JCommander analysisAlignmentSubCommands = jCommander.getCommands().get("alignments");
@@ -292,9 +307,6 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         organizationsSubCommands.addCommand("update-status-user", organizationsCommandOptions.userUpdateStatusCommandOptions);
         organizationsSubCommands.addCommand("user-update", organizationsCommandOptions.updateUserCommandOptions);
         organizationsSubCommands.addCommand("configuration-update", organizationsCommandOptions.updateConfigurationCommandOptions);
-        organizationsSubCommands.addCommand("events-query", organizationsCommandOptions.queryEventsCommandOptions);
-        organizationsSubCommands.addCommand("events-archive", organizationsCommandOptions.archiveEventsCommandOptions);
-        organizationsSubCommands.addCommand("events-retry", organizationsCommandOptions.retryEventsCommandOptions);
         organizationsSubCommands.addCommand("info", organizationsCommandOptions.infoCommandOptions);
         organizationsSubCommands.addCommand("update", organizationsCommandOptions.updateCommandOptions);
 
@@ -467,6 +479,11 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
     
     public SamplesCommandOptions getSamplesCommandOptions() {
         return samplesCommandOptions;
+    }
+    
+    
+    public AnalysisCVDBCommandOptions getAnalysisCVDBCommandOptions() {
+        return analysisCVDBCommandOptions;
     }
     
     

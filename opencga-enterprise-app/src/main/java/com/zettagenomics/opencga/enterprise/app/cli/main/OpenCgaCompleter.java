@@ -24,7 +24,7 @@ import static java.util.stream.Collectors.toList;
 
 public abstract class OpenCgaCompleter implements Completer {
 
-    protected List<Candidate> commands = asList("login","logout","help","use","variant","projects","panels","clinical","jobs","admin","individuals","families","users","samples","alignments","meta","organizations","studies","files","federations","operations","cohorts")
+    protected List<Candidate> commands = asList("login","logout","help","use","variant","projects","panels","clinical","jobs","admin","individuals","families","users","samples","cvdb","alignments","meta","organizations","studies","files","federations","operations","cohorts")
             .stream()
             .map(Candidate::new)
             .collect(toList());
@@ -79,6 +79,11 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
+    private List<Candidate> cvdbList = asList( "analysis-aggregate","analysis-query","evidence-aggregate","evidence-query","index-run","interpretation-aggregate","interpretation-query","variant-aggregate","variant-query","variant-stats")
+            .stream()
+            .map(Candidate::new)
+            .collect(toList());
+
     private List<Candidate> alignmentsList = asList( "bwa-run","coverage-index-run","coverage-qc-genecoveragestats-run","coverage-query","coverage-ratio","coverage-stats","deeptools-run","fastqc-run","index-run","picard-run","qc-run","query","samtools-run")
             .stream()
             .map(Candidate::new)
@@ -89,7 +94,7 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> organizationsList = asList( "create","notes-create","notes-search","notes-delete","notes-update","update-status-user","user-update","configuration-update","events-query","events-archive","events-retry","info","update")
+    private List<Candidate> organizationsList = asList( "create","notes-create","notes-search","notes-delete","notes-update","update-status-user","user-update","configuration-update","info","update")
             .stream()
             .map(Candidate::new)
             .collect(toList());
@@ -137,6 +142,7 @@ public abstract class OpenCgaCompleter implements Completer {
         mapCandidates.put( "families", familiesList);
         mapCandidates.put( "users", usersList);
         mapCandidates.put( "samples", samplesList);
+        mapCandidates.put( "cvdb", cvdbList);
         mapCandidates.put( "alignments", alignmentsList);
         mapCandidates.put( "meta", metaList);
         mapCandidates.put( "organizations", organizationsList);
