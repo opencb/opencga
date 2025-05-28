@@ -13,6 +13,7 @@ import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.MultithreadedTableMapper;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
+import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.compress.GzipCodec;
 import org.apache.hadoop.mapreduce.Counter;
@@ -157,6 +158,10 @@ public class DiscoverPendingVariantsDriver extends AbstractVariantsTableDriver {
 
             FileOutputFormat.setCompressOutput(job, true);
             FileOutputFormat.setOutputCompressorClass(job, GzipCodec.class);
+
+            // Set DFS replication factor to 1. Replication factor is not really needed for these temporary files
+            // Before using these files, need to check their integrity
+            job.getConfiguration().set(DFSConfigKeys.DFS_REPLICATION_KEY, "1");
         }
 
         VariantMapReduceUtil.setNoneReduce(job);
