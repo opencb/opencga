@@ -19,25 +19,24 @@ package org.opencb.opencga.storage.core.variant.solr;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
-import org.apache.solr.core.NodeConfig;
+import org.apache.solr.client.solrj.embedded.JettyConfig;
+import org.apache.solr.cloud.MiniSolrCloudCluster;
+import org.apache.solr.cloud.ZkTestServer;
 import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.solr.SolrManager;
-import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.opencga.core.config.SearchConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.DB_NAME;
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
 
 /**
@@ -48,9 +47,11 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.get
  */
 public class VariantSolrExternalResource extends ExternalResource {
 
-    public String coreName = DB_NAME;
+    public static final String CONFIG_SET = "opencga_variants";
+    public static int ZK_PORT = 19983;
 
     private SolrClient solrClient;
+    private MiniSolrCloudCluster miniSolrCloudCluster;
     protected boolean embeded = true;
 
     public VariantSolrExternalResource() {
@@ -66,11 +67,7 @@ public class VariantSolrExternalResource extends ExternalResource {
         Path rootDir = Paths.get("target/test-data", "junit-variant-solr-" + TimeUtils.getTimeMillis());
         Files.createDirectories(rootDir);
 
-        String configSet;
-        try (InputStream is = getClass().getClassLoader().getResourceAsStream("storage-configuration.yml")) {
-            StorageConfiguration storageConfiguration = StorageConfiguration.load(is);
-            configSet = storageConfiguration.getSearch().getConfigSet();
-        }
+        String configSet = CONFIG_SET;
 
         // Copy configuration
         getResourceUri("configsets/variantsCollection/solrconfig.xml", "configsets/" + configSet + "/solrconfig.xml", rootDir);
@@ -84,15 +81,13 @@ public class VariantSolrExternalResource extends ExternalResource {
         String solrHome = rootDir.resolve("solr").toString();
 
         if (embeded) {
-            solrClient = create(solrHome, rootDir.resolve("configsets").toString(), coreName);
+            miniSolrCloudCluster = create(solrHome, rootDir.resolve("configsets").toString());
+            solrClient = miniSolrCloudCluster.getSolrClient();
         } else {
             String host = "http://localhost:8983/solr";
             int timeout = 5000;
 
-            SolrManager solrManager = new SolrManager(host, "core", timeout);
-            if (!solrManager.existsCore(coreName)) {
-                solrManager.createCore(coreName, configSet);
-            }
+            SolrManager solrManager = new SolrManager(host, "cloud", timeout);
 
             this.solrClient = solrManager.getSolrClient();
         }
@@ -103,11 +98,12 @@ public class VariantSolrExternalResource extends ExternalResource {
         super.after();
         try {
             if (embeded) {
-                ((MyEmbeddedSolrServer) solrClient).realClose();
+                solrClient.close();
+                miniSolrCloudCluster.shutdown();
             } else {
                 solrClient.close();
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         } finally {
             solrClient = null;
@@ -119,11 +115,20 @@ public class VariantSolrExternalResource extends ExternalResource {
     }
 
     public VariantSearchManager configure(VariantStorageEngine variantStorageEngine) throws StorageEngineException {
-        variantStorageEngine.getConfiguration().getSearch().setMode("core");
-        variantStorageEngine.getConfiguration().getSearch().setActive(true);
+        SearchConfiguration searchConfiguration = variantStorageEngine.getConfiguration().getSearch();
+        searchConfiguration.setMode("cloud");
+        searchConfiguration.setActive(true);
         VariantSearchManager variantSearchManager = variantStorageEngine.getVariantSearchManager();
-        variantSearchManager.setSolrManager(new SolrManager(solrClient, "localhost", "core",
-                variantStorageEngine.getConfiguration().getSearch().getTimeout()));
+        String host;
+        if (embeded) {
+            host = "localhost:" + ZK_PORT;
+            searchConfiguration.setConfigSet(CONFIG_SET);
+        } else {
+            host = "http://localhost:8983";
+        }
+        variantSearchManager.setSolrManager(new SolrManager(solrClient, host, "cloud",
+                searchConfiguration.getTimeout()));
+        variantSearchManager.setSearchConfiguration(searchConfiguration);
         variantSearchManager.setSolrClient(solrClient);
         return variantSearchManager;
     }
@@ -134,26 +139,24 @@ public class VariantSolrExternalResource extends ExternalResource {
      *
      * @param solrHome the Solr home directory to use
      * @param configSetHome the directory containing config sets
-     * @param coreName the name of the core, must have a matching directory in configHome
      *
-     * @return an EmbeddedSolrServer with a core created for the given coreName
+     * @return a MiniSolrCloudCluster
      * @throws IOException
      */
-    public static SolrClient create(final String solrHome, final String configSetHome, final String coreName)
+    public static MiniSolrCloudCluster create(final String solrHome, final String configSetHome)
             throws IOException, SolrServerException {
-        return create(solrHome, configSetHome, coreName, true);
+        return create(solrHome, configSetHome, true);
     }
 
     /**
      * @param solrHome the Solr home directory to use
      * @param configSetHome the directory containing config sets
-     * @param coreName the name of the core, must have a matching directory in configHome
      * @param cleanSolrHome if true the directory for solrHome will be deleted and re-created if it already exists
      *
-     * @return an EmbeddedSolrServer with a core created for the given coreName
+     * @return a MiniSolrCloudCluster
      * @throws IOException
      */
-    public static SolrClient create(final String solrHome, final String configSetHome, final String coreName, final boolean cleanSolrHome)
+    public static MiniSolrCloudCluster create(final String solrHome, final String configSetHome, final boolean cleanSolrHome)
             throws IOException, SolrServerException {
 
         final File solrHomeDir = new File(solrHome);
@@ -165,37 +168,41 @@ public class VariantSolrExternalResource extends ExternalResource {
         } else {
             solrHomeDir.mkdirs();
         }
+        final File zkDir = new File(solrHomeDir, "zookeeper");
+        if (zkDir.exists()) {
+            if (cleanSolrHome) {
+                // Delete the zookeeper directory if it exists
+                FileUtils.deleteDirectory(zkDir);
+                zkDir.mkdirs();
+            }
+        } else {
+            zkDir.mkdirs();
+        }
 
         System.setProperty("solr.solr.home", solrHomeDir.toPath().toAbsolutePath().normalize().toString());
 
 //        final SolrResourceLoader loader = new SolrResourceLoader(solrHomeDir.toPath());
         final Path configSetPath = Paths.get(configSetHome).toAbsolutePath();
 
-        final NodeConfig config = new NodeConfig.NodeConfigBuilder("embeddedSolrServerNode", solrHomeDir.toPath())
-                .setConfigSetBaseDirectory(configSetPath.toString())
-                .build();
+        try {
 
-        final EmbeddedSolrServer embeddedSolrServer = new MyEmbeddedSolrServer(config, coreName);
+            ZkTestServer zkTestServer = new ZkTestServer(zkDir.toPath().toAbsolutePath(), ZK_PORT);
+            zkTestServer.run();
 
-//        final CoreAdminRequest.Create createRequest = new CoreAdminRequest.Create();
-//        createRequest.setCoreName(coreName);
-//        createRequest.setConfigSet(coreName);
-//        embeddedSolrServer.request(createRequest);
+            JettyConfig jettyConfig = JettyConfig.builder()
+                    .setPort(8989) // if you want multiple servers in the solr cloud comment it out.
+                    .setContext("/solr")
+                    .stopAtShutdown(true)
+                    .withServlets(new HashMap<>())
+                    .withSSLConfig(null)
+                    .build();
 
-        return embeddedSolrServer;
-    }
+            MiniSolrCloudCluster cloudCluster = new MiniSolrCloudCluster(1, solrHomeDir.toPath(), MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML, jettyConfig, zkTestServer);
 
-    private static class MyEmbeddedSolrServer extends EmbeddedSolrServer {
-        public MyEmbeddedSolrServer(NodeConfig config, String coreName) {
-            super(config, coreName);
-        }
-
-        @Override
-        public void close() throws IOException {
-        }
-
-        private void realClose() throws IOException {
-            super.close();
+            cloudCluster.uploadConfigSet(configSetPath.resolve(CONFIG_SET), CONFIG_SET);
+            return cloudCluster;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 }

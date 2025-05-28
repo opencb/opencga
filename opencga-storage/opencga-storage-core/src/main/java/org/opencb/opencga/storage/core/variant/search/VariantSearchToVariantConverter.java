@@ -549,7 +549,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 //        if (scoreStudyMap.size() > 0 && CollectionUtils.isNotEmpty(variantSearchModel.getOther())) {
 //            for (String other : variantSearchModel.getOther()) {
 //                if (StringUtils.isNotEmpty(other) && other.startsWith("SC")) {
-//                    updateScoreStudyMap(studyEntryMap, scoreStudyMap, StringUtils.splitByWholeSeparatorPreserveAllTokens(other, FIELD_SEP));
+//                    updateScoreStudyMap(studyEntryMap, scoreStudyMap, StringUtils
+//                    .splitByWholeSeparatorPreserveAllTokens(other, FIELD_SEP));
 //                }
 //            }
 //        }

@@ -13,7 +13,6 @@ import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -40,7 +39,9 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
     public VariantSolrExternalResource solr = new VariantSolrExternalResource();
 
     @Before
-    public void setUp() throws Exception {
+    @Override
+    public void before() throws Exception {
+        super.before();
         solr.configure(variantStorageEngine);
     }
 
@@ -48,7 +49,6 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
     public void testIncrementalIndex() throws Exception {
         VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
 
-        VariantStorageEngine storageEngine = getVariantStorageEngine();
         QueryOptions options = new QueryOptions();
 
         int maxStudies = 2;
@@ -67,9 +67,9 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
             if (inputFiles.size() == 4) {
 //                dbAdaptor.getMetadataManager().updateStudyMetadata(studyMetadata, null);
                 options.put(VariantStorageOptions.STUDY.key(), studyId);
-                storageEngine.getOptions().putAll(options);
-                storageEngine.getOptions().put(VariantStorageOptions.RELEASE.key(), release++);
-                storageEngine.index(inputFiles.subList(0, 2), outputUri, true, true, true);
+                variantStorageEngine.getOptions().putAll(options);
+                variantStorageEngine.getOptions().put(VariantStorageOptions.RELEASE.key(), release++);
+                variantStorageEngine.index(inputFiles.subList(0, 2), outputUri, true, true, true);
 
                 Query query = new Query(VariantQueryParam.STUDY.key(), studyId);
                 long expected = dbAdaptor.count(query).first();
@@ -80,9 +80,9 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
                 checkVariantSearchIndex(dbAdaptor);
 
                 //////////////////////
-                storageEngine.getOptions().putAll(options);
-                storageEngine.getOptions().put(VariantStorageOptions.RELEASE.key(), release++);
-                storageEngine.index(inputFiles.subList(2, 4), outputUri, true, true, true);
+                variantStorageEngine.getOptions().putAll(options);
+                variantStorageEngine.getOptions().put(VariantStorageOptions.RELEASE.key(), release++);
+                variantStorageEngine.index(inputFiles.subList(2, 4), outputUri, true, true, true);
 
                 expected = dbAdaptor.count(query.append(VariantQueryParam.FILE.key(),
                         "!" + fileNames.get(0) + ";!" + fileNames.get(1) + ";" + fileNames.get(2) + ";" + fileNames.get(3))).first();
@@ -102,7 +102,7 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
                         .append(VariantStorageOptions.LOAD_BATCH_SIZE.key(), 100)
                         .append(DefaultVariantStatisticsManager.OUTPUT, outputUri)
                         .append(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME, "stats");
-                storageEngine.calculateStats(studyMetadata.getName(), Collections.singletonList("ALL"), statsOptions);
+                variantStorageEngine.calculateStats(studyMetadata.getName(), Collections.singletonList("ALL"), statsOptions);
 
                 query = new Query(VariantQueryParam.STUDY.key(), studyId);
                 expected = dbAdaptor.count(query).first();
@@ -159,7 +159,6 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
     public void testRemoveFiles(boolean searchIndexBeforeRemove) throws Exception {
         VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
 
-        VariantStorageEngine storageEngine = getVariantStorageEngine();
         QueryOptions options = new QueryOptions();
 
         List<URI> inputFiles = new ArrayList<>();
@@ -176,8 +175,8 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
 
 //        dbAdaptor.getMetadataManager().updateStudyMetadata(studyMetadata, null);
         options.put(VariantStorageOptions.STUDY.key(), studyId);
-        storageEngine.getOptions().putAll(options);
-        storageEngine.index(inputFiles, outputUri, true, true, true);
+        variantStorageEngine.getOptions().putAll(options);
+        variantStorageEngine.index(inputFiles, outputUri, true, true, true);
 
         Query query = new Query(VariantQueryParam.STUDY.key(), studyMetadata.getId());
         long expected;
@@ -188,16 +187,16 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
             checkLoadResult(expected, loadResult);
 
             //////////////////////
-            storageEngine.removeFiles(studyMetadata.getName(), Collections.singletonList(fileNames.get(0)), outputUri);
+            variantStorageEngine.removeFiles(studyMetadata.getName(), Collections.singletonList(fileNames.get(0)), outputUri);
             try {
-                storageEngine.calculateStats(studyMetadata.getName(), Collections.singletonList(StudyEntry.DEFAULT_COHORT), new QueryOptions());
-                storageEngine.variantsPrune(false, false, outputUri);
+                variantStorageEngine.calculateStats(studyMetadata.getName(), Collections.singletonList(StudyEntry.DEFAULT_COHORT), new QueryOptions());
+                variantStorageEngine.variantsPrune(false, false, outputUri);
             } catch (UnsupportedOperationException ignored) {}
             expected = 0;
 
         } else {
             //////////////////////
-            storageEngine.removeFiles(studyMetadata.getName(), Collections.singletonList(fileNames.get(0)), outputUri);
+            variantStorageEngine.removeFiles(studyMetadata.getName(), Collections.singletonList(fileNames.get(0)), outputUri);
             expected = dbAdaptor.count(query).first();
         }
 
@@ -243,6 +242,7 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
     }
 
     public VariantSearchLoadResult searchIndex(boolean overwrite) throws Exception {
+        solr.configure(variantStorageEngine);
         return variantStorageEngine.secondaryIndex(new Query(), new QueryOptions(), overwrite);
     }
 }

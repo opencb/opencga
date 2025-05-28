@@ -7,6 +7,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchIndexTest;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
@@ -30,7 +31,7 @@ public class HadoopVariantSearchIndexTest extends VariantSearchIndexTest impleme
     @Override
     public VariantSearchLoadResult searchIndex(boolean overwrite) throws Exception {
         i++;
-        VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
+        VariantHadoopDBAdaptor dbAdaptor = ((HadoopVariantStorageEngine) variantStorageEngine).getDBAdaptor();
         VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri("searchIndex_" + i + "_pre"));
 
         externalResource.flush(dbAdaptor.getVariantTable());

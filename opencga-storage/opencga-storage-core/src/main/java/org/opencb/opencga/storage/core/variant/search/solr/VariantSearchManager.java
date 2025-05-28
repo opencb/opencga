@@ -44,6 +44,7 @@ import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.SearchConfiguration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
@@ -81,10 +82,9 @@ public class VariantSearchManager {
     private CellBaseClient cellBaseClient;
     private final ObjectMap options;
     private final String dbName;
-    private SolrQueryParser solrQueryParser;
     private VariantSearchToVariantConverter variantSearchToVariantConverter;
-    private final int insertBatchSize;
-    private final String configSet;
+    private int insertBatchSize;
+    private String configSet;
 
     private Logger logger;
 
@@ -96,19 +96,12 @@ public class VariantSearchManager {
                                 CellBaseUtils cellBaseUtils, StorageConfiguration storageConfiguration, ObjectMap options) {
         this.dbName = dbName;
         metadataManager = variantStorageMetadataManager;
-        this.solrQueryParser = new SolrQueryParser(metadataManager);
         this.cellBaseClient = cellBaseUtils.getCellBaseClient();
         this.options = options;
         this.variantSearchToVariantConverter = new VariantSearchToVariantConverter();
-        this.configSet = storageConfiguration.getSearch().getConfigSet();
-
+        setSearchConfiguration(storageConfiguration.getSearch());
         this.solrManager = new SolrManager(storageConfiguration.getSearch().getHosts(), storageConfiguration.getSearch().getMode(),
                 storageConfiguration.getSearch().getTimeout());
-
-        // Set internal insert batch size from configuration and default value
-        insertBatchSize = storageConfiguration.getSearch().getInsertBatchSize() > 0
-                ? storageConfiguration.getSearch().getInsertBatchSize()
-                : DEFAULT_INSERT_BATCH_SIZE;
 
         logger = LoggerFactory.getLogger(VariantSearchManager.class);
     }
@@ -315,7 +308,7 @@ public class VariantSearchManager {
     public VariantQueryResult<Variant> query(SearchIndexMetadata indexMetadata, ParsedVariantQuery variantQuery)
             throws VariantSearchException, IOException {
         String collection = buildCollectionName(indexMetadata);
-        SolrQuery solrQuery = solrQueryParser.parse(variantQuery.getQuery(), variantQuery.getInputOptions());
+        SolrQuery solrQuery = getSolrQueryParser(collection).parse(variantQuery.getQuery(), variantQuery.getInputOptions());
         SolrCollection solrCollection = solrManager.getCollection(collection);
         DataResult<Variant> queryResult;
         try {
@@ -342,7 +335,7 @@ public class VariantSearchManager {
     public DataResult<VariantSearchModel> nativeQuery(SearchIndexMetadata indexMetadata, Query query, QueryOptions queryOptions)
             throws VariantSearchException, IOException {
         String collection = buildCollectionName(indexMetadata);
-        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        SolrQuery solrQuery = getSolrQueryParser(collection).parse(query, queryOptions);
         SolrCollection solrCollection = solrManager.getCollection(collection);
         DataResult<VariantSearchModel> queryResult;
         try {
@@ -369,7 +362,7 @@ public class VariantSearchManager {
             throws VariantSearchException, IOException {
         String collection = buildCollectionName(indexMetadata);
         try {
-            SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+            SolrQuery solrQuery = getSolrQueryParser(collection).parse(query, queryOptions);
             return new SolrVariantDBIterator(solrManager.getSolrClient(), collection, solrQuery,
                     new VariantSearchToVariantConverter(VariantField.getIncludeFields(queryOptions)));
         } catch (SolrServerException e) {
@@ -391,7 +384,7 @@ public class VariantSearchManager {
             throws VariantSearchException {
         String collection = buildCollectionName(indexMetadata);
         try {
-            SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+            SolrQuery solrQuery = getSolrQueryParser(collection).parse(query, queryOptions);
             return new SolrNativeIterator(solrManager.getSolrClient(), collection, solrQuery);
         } catch (SolrServerException e) {
             throw new VariantSearchException("Error getting variant iterator (native)", e);
@@ -408,7 +401,7 @@ public class VariantSearchManager {
      */
     public long count(SearchIndexMetadata indexMetadata, Query query) throws VariantSearchException, IOException {
         String collection = buildCollectionName(indexMetadata);
-        SolrQuery solrQuery = solrQueryParser.parse(query, QueryOptions.empty());
+        SolrQuery solrQuery = getSolrQueryParser(collection).parse(query, QueryOptions.empty());
         SolrCollection solrCollection = solrManager.getCollection(collection);
 
         try {
@@ -508,13 +501,14 @@ public class VariantSearchManager {
         }
 
         // Query
-        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        String collection = buildCollectionName(indexMetadata);
+        SolrQuery solrQuery = getSolrQueryParser(collection).parse(query, queryOptions);
         Postprocessing postprocessing = null;
         String jsonFacet = solrQuery.get("json.facet");
         if (StringUtils.isNotEmpty(jsonFacet) && jsonFacet.contains(SolrQueryParser.CHROM_DENSITY)) {
             postprocessing = new Postprocessing().setFacet(jsonFacet);
         }
-        SolrCollection solrCollection = solrManager.getCollection(buildCollectionName(indexMetadata));
+        SolrCollection solrCollection = solrManager.getCollection(collection);
 
         DataResult<FacetField> facetResult;
         try {
@@ -785,6 +779,10 @@ public class VariantSearchManager {
         }
     }
 
+    private SolrQueryParser getSolrQueryParser(String collection) {
+        return new SolrQueryParser(metadataManager);
+    }
+
     /*--------------------------------------
      *  toString and GETTERS and SETTERS
      -------------------------------------*/
@@ -807,22 +805,13 @@ public class VariantSearchManager {
         return this;
     }
 
-    public SolrQueryParser getSolrQueryParser() {
-        return solrQueryParser;
-    }
+    public void setSearchConfiguration(SearchConfiguration searchConfiguration) {
+        this.configSet = searchConfiguration.getConfigSet();
 
-    public VariantSearchManager setSolrQueryParser(SolrQueryParser solrQueryParser) {
-        this.solrQueryParser = solrQueryParser;
-        return this;
-    }
-
-    public VariantSearchToVariantConverter getVariantSearchToVariantConverter() {
-        return variantSearchToVariantConverter;
-    }
-
-    public VariantSearchManager setVariantSearchToVariantConverter(VariantSearchToVariantConverter variantSearchToVariantConverter) {
-        this.variantSearchToVariantConverter = variantSearchToVariantConverter;
-        return this;
+        // Set internal insert batch size from configuration and default value
+        insertBatchSize = searchConfiguration.getInsertBatchSize() > 0
+                ? searchConfiguration.getInsertBatchSize()
+                : DEFAULT_INSERT_BATCH_SIZE;
     }
 
     public int getInsertBatchSize() {
