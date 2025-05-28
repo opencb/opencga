@@ -24,21 +24,17 @@ fetchOpenCGA <- function(object=object, category=NULL, categoryId=NULL,
     options(scipen=999)
     
     # Get connection info
-    host <- object@host
-    version <- object@version
-    
+    host <- extractHost(object@configuration)
     # real_batch_size <- real_batch_size
     
-    if(!endsWith(x = host, suffix = "/")){
-        host <- paste0(host, "/")
+    if(!endsWith(x = host$url, suffix = "/")){
+        host$url <- paste0(host$url, "/")
     }
-    if (!grepl("webservices/rest", host)){
-        host <- paste0(host, "webservices/rest/")
+    if (!grepl("webservices/rest", host$url)){
+        host$url <- paste0(host$url, "webservices/rest/")
     }
-    
-    if(!endsWith(x = version, suffix = "/")){
-        version <- paste0(version, "/")
-    }
+
+    version = "v2/"
     
     # Format category and subcategory
     if(is.null(category)){
@@ -93,9 +89,11 @@ fetchOpenCGA <- function(object=object, category=NULL, categoryId=NULL,
     if (is.null(params)){
         params <- list()
     }
-    
+
+	token = NULL
+	attributes = NULL
     while((unlist(num_results) == real_batch_size) && count <= limit){
-        pathUrl <- paste0(host, version, category, categoryId, subcategory, 
+        pathUrl <- paste0(host$url, version, category, categoryId, subcategory,
                           subcategoryId, action)
         
         ## send batch size as limit to callrest
@@ -104,55 +102,53 @@ fetchOpenCGA <- function(object=object, category=NULL, categoryId=NULL,
         #     break()
         # }
         params$limit <- real_batch_size
-        
-        # check expiration time
-        sessionTable <- jsonlite::fromJSON(object@sessionFile)
-        sessionTableMatch <- which(sessionTable$host==object@host & 
-                                       sessionTable$version == object@version & 
-                                       sessionTable$user == object@user)
-        if (length(sessionTableMatch) == 0){
-            stop("You are not logged into openCGA. Please, log in before launching a query.")
-        }else if (length(sessionTableMatch) == 1){
-            token <- sessionTable[sessionTableMatch, "token"]
-            expirationTime <- sessionTable[sessionTableMatch, "expirationTime"]
-        }else{
-            stop(paste("There is more than one connection to this host in your rsession file. Please, remove any duplicated entries in", 
-                       object@sessionFile))
-        }
-        timeNow <- lubridate::as_datetime(Sys.time())
-        timeLeft <- as.numeric(difftime(expirationTime, timeNow, units="mins"))
-        if (timeLeft > 0 & timeLeft <= 5){
-            print("INFO: Your session will expire in less than 5 minutes.")
-            urlNewToken <- paste0(host, version, "users/login")
-            resp <- httr::POST(url=urlNewToken, 
-                               httr::add_headers(.headers=c("Content-Type"="application/json",
-                                                            "Accept"="application/json",
-                                                            "Authorisation"="Bearer ")), 
-                               body=list(refreshToken=object@refreshToken),
-                               encode = "json")
-            content <- httr::content(resp, as="text", encoding = "utf-8")
-            if (length(jsonlite::fromJSON(content)$responses$results[[1]]$token) > 0){
-                token <- jsonlite::fromJSON(content)$responses$results[[1]]$token
-                loginInfo <- unlist(strsplit(x=token, split="\\."))[2]
-                loginInfojson <- jsonlite::fromJSON(rawToChar(base64enc::base64decode(what=loginInfo)))
-                expirationTime <- as.POSIXct(loginInfojson$exp, origin="1970-01-01")
-                expirationTime <- as.character(expirationTime, format="%Y%m%d%H%M%S")
-                sessionTable[sessionTableMatch, "token"] <- token
-                sessionTable[sessionTableMatch, "expirationTime"] <- expirationTime
-                write(x = jsonlite::toJSON(sessionTable), file = object@sessionFile)
-                print("Your session has been renewed!")
-            }else{
-                warning(paste0("WARNING: Your token could not be renewed, your session will expire in ", 
-                             round(x = timeLeft, digits = 2), " minutes"))
-            }
-        }else if(timeLeft <= 0){
-            stop("ERROR: Your session has expired, please renew your connection.")
+
+        if (length(object@sessionFile) > 0 && file.exists(object@sessionFile)) {
+            # check expiration time
+        	sessionTable <- jsonlite::fromJSON(object@sessionFile, flatten = TRUE)
+        	if (sessionTable$host==host$url && sessionTable$user == object@user) {
+        		token <- sessionTable$token
+                expirationTime <- sessionTable$expirationTime
+                attributes <- sessionTable$attributes
+        	} else {
+        		stop("You are not logged into openCGA. Please, log in before launching a query.")
+        	}
+
+            timeNow <- lubridate::as_datetime(Sys.time())
+			timeLeft <- as.numeric(difftime(expirationTime, timeNow, units="mins"))
+			if (timeLeft > 0 & timeLeft <= 5){
+				print("INFO: Your session will expire in less than 5 minutes.")
+				urlNewToken <- paste0(host$url, version, "users/login")
+				resp <- httr::POST(url=urlNewToken,
+								   httr::add_headers(.headers=c("Content-Type"="application/json",
+																"Accept"="application/json",
+																"Authorisation"="Bearer ")),
+								   body=list(refreshToken=object@refreshToken),
+								   encode = "json")
+				content <- httr::content(resp, as="text", encoding = "utf-8")
+				if (length(jsonlite::fromJSON(content)$responses$results[[1]]$token) > 0){
+					token <- jsonlite::fromJSON(content)$responses$results[[1]]$token
+					loginInfo <- unlist(strsplit(x=token, split="\\."))[2]
+					loginInfojson <- jsonlite::fromJSON(rawToChar(base64enc::base64decode(what=loginInfo)))
+					expirationTime <- as.POSIXct(loginInfojson$exp, origin="1970-01-01")
+					expirationTime <- as.character(expirationTime, format="%Y%m%d%H%M%S")
+					sessionTable[sessionTableMatch, "token"] <- token
+					sessionTable[sessionTableMatch, "expirationTime"] <- expirationTime
+					write(x = jsonlite::toJSON(sessionTable), file = object@sessionFile)
+					print("Your session has been renewed!")
+				}else{
+					warning(paste0("WARNING: Your token could not be renewed, your session will expire in ",
+								 round(x = timeLeft, digits = 2), " minutes"))
+				}
+			}else if(timeLeft <= 0){
+				stop("ERROR: Your session has expired, please renew your connection.")
+			}
         }
 
         response <- callREST(pathUrl=pathUrl, params=params, 
                              httpMethod=httpMethod, skip=skip, token=token,
-                             as.queryParam=as.queryParam, verbose=object@verbose, 
-                             sid=object@showToken)
+                             as.queryParam=as.queryParam, attributes = attributes,
+                             verbose=object@verbose, sid=object@showToken)
         
         skip <- skip+real_batch_size
         res_list <- parseResponse(resp=response$resp, content=response$content, 
@@ -189,12 +185,37 @@ get_qparams <- function(params){
 }
 
 ## Make call to server
-callREST <- function(pathUrl, params, httpMethod, skip, token, as.queryParam, 
-                     verbose, sid=FALSE){
+callREST <- function(pathUrl, params, httpMethod, skip, token, as.queryParam, attributes, verbose, sid=FALSE){
     content <- list()
-    session <- paste("Bearer", token)
+    # Check if token is provided
+    session <- ifelse (is.null(token), "", paste("Bearer", token))
     skip=paste0("?skip=", as.character(skip))
-    
+
+	set_config(httr::timeout(30))
+# 	config_opts <- httr::timeout(30)
+	if (length(session) > 0) {
+		# Add authorization headers
+		set_config(httr::add_headers(.headers=c(Authorization=session)))
+	}
+#
+	# Add cookies to config if they exist
+	if (!is.null(attributes) && !is.null(attributes$cookies) && length(attributes$cookies) > 0) {
+		# Initialize empty cookie string
+		cookie_strings <- character(0)
+
+		# Iterate through all cookies
+		for (cookie_name in names(attributes$cookies)) {
+			cookie_value <- attributes$cookies[[cookie_name]]
+			cookie_strings <- c(cookie_strings, paste0(cookie_name, "=", cookie_value))
+		}
+
+		# Join all cookie strings and add to config
+		if (length(cookie_strings) > 0) {
+			cookie_str <- paste(cookie_strings, collapse = "; ")
+			set_config(httr::config(cookie = cookie_str))
+		}
+	}
+
     # Make GET call
     if (httpMethod == "GET"){
         if (!is.null(params)){
@@ -212,11 +233,9 @@ callREST <- function(pathUrl, params, httpMethod, skip, token, as.queryParam,
         fullUrl <- httr::build_url(httr::parse_url(fullUrl))
         if (isTRUE(verbose)){
             print(paste("URL:", fullUrl))
+            print(paste("Request headers :", getOption("httr_config")))
         }
-        resp <- httr::GET(url=fullUrl,
-                          httr::add_headers(.headers=c(Accept="application/json", 
-                                                    Authorization=session)),
-                          httr::timeout(30))
+        resp <- httr::GET(url=fullUrl)
         
     }else if(httpMethod == "POST"){
     # Make POST call
@@ -253,19 +272,16 @@ callREST <- function(pathUrl, params, httpMethod, skip, token, as.queryParam,
         fullUrl <- httr::build_url(httr::parse_url(fullUrl))
         if (isTRUE(verbose)){
             print(paste("URL:",fullUrl))
+            print(paste("Request headers :", getOption("httr_config")))
         }
         if (exists("bodyParams")){
-            resp <- httr::POST(url=fullUrl, 
-                               body=bodyParams,
-                               httr::add_headers(.headers=c(Authorization=session)), 
-                               encode = "json")
+            resp <- httr::POST(url=fullUrl, body=bodyParams, encode = "json")
         }else{
-            resp <- httr::POST(url=fullUrl, 
-                               httr::add_headers(.headers=c(Authorization=session)), 
-                               encode = "json")
+            resp <- httr::POST(url=fullUrl, encode = "json")
         }
     }
-    
+
+    reset_config()  # Reset the configuration to default after the request
     content <- httr::content(resp, as="text", encoding = "utf-8")
     return(list(resp=resp, content=content))
 }
@@ -338,4 +354,17 @@ parseResponse <- function(resp, content, verbose){
     return(list(restResponse = myRestResponse, 
                 numResults = js$responses$numResults))
 }
+
+extractHost <- function(conf){
+  index <- ifelse(is.null(conf$defaultHostIndex), 0, conf$defaultHostIndex)
+  if ("hosts" %in% names(conf$rest)){
+    if (length(conf$rest$hosts) > index){
+      host <- conf$rest$hosts[[index+1]]
+    }else{
+      stop(paste("Please, specify the 'host' in the 'rest' section. The index", index, "is out of bounds."))
+    }
+  }
+  return (host)
+}
+
 ###############################################
