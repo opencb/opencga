@@ -57,7 +57,7 @@ public class VariantQcAnalysisExecutorUtils {
             AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(outDir.toAbsolutePath().toString(),
                     JOB_VIRTUAL_FOLDER);
 
-            String params = "python3 " + SCRIPT_VIRTUAL_FOLDER + "/variant_qc.main.py"
+            String params = "python3 " + SCRIPT_VIRTUAL_FOLDER + "/main.py"
                     + " --vcf-file " + StringUtils.join(vcfPaths.stream().map(p -> p.toAbsolutePath().toString().replace(
                     outDir.toAbsolutePath().toString(), JOB_VIRTUAL_FOLDER)).collect(Collectors.toList()), ",")
                     + " --info-json " + StringUtils.join(jsonPaths.stream().map(p -> p.toAbsolutePath().toString().replace(

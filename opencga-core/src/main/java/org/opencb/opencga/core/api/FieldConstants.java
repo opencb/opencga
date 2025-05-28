@@ -201,6 +201,7 @@ public class FieldConstants {
     // QC data model
     public static final String QC_FILES_DESCRIPTION = "File IDs related to the quality control";
     public static final String QC_COMMENTS_DESCRIPTION = "Comments related to the quality control";
+    public static final String QC_ATTRIBUTES_DESCRIPTION = "Quality control attributtes";
 
     // QC parameters
     public static final String RESOURCES_DIR_DESCRIPTION = "OpenCGA catalog directory where the analysis resources are located";

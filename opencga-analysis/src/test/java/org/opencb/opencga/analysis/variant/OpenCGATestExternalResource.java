@@ -320,6 +320,14 @@ public class OpenCGATestExternalResource extends ExternalResource {
                 Files.copy(inputStream, analysisPath.resolve(qcFile), StandardCopyOption.REPLACE_EXISTING);
             }
         }
+        // Individual QC
+        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/variant-qc/sample_qc")).toAbsolutePath();
+        qcFiles = Arrays.asList("mutational_catalogue.py", "plot_bfctools_stats.py", "sample_qc_executor.py", "sv_clustering.R", "__init__.py");
+        for (String qcFile : qcFiles) {
+            try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/variant-qc/sample_qc/" + qcFile)) {
+                Files.copy(inputStream, analysisPath.resolve(qcFile), StandardCopyOption.REPLACE_EXISTING);
+            }
+        }
 
         // Liftover analysis
         analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/liftover")).toAbsolutePath();

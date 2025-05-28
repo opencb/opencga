@@ -2,12 +2,13 @@
 
 import logging
 import os
+import pysam
 
 from common.relatedness import Relatedness, Score
 from quality_control import Software
 from utils import (RELATEDNESS_FREQS_FILE, RELATEDNESS_THRESHOLDS_FILE, RELATEDNESS_PRUNE_IN_MARKERS_FILE,
                    create_output_dir, execute_bash_command, create_sex_file, create_parents_file, create_phenotype_file,
-                   get_family_id)
+                   get_family_id, get_contig_prefix)
 
 LOGGER = logging.getLogger('variant_qc_logger')
 
@@ -82,20 +83,29 @@ class RelatednessAnalysis:
         # Check if input VCF FILTER field contains PASS variants:
         LOGGER.info(f"Checking for PASS variants in the FILTER field of {vcf_file}")
         cmd = f"bcftools view -i 'FILTER=\"PASS\"' {vcf_file} | grep -v '^#\|CHROM' | wc -l"
+        LOGGER.info(cmd)
         cmd_result = execute_bash_command(cmd)
         pass_vars = int(cmd_result[1].strip())
         LOGGER.info(f"Number of PASS variants: {pass_vars}")
+
+
+        # Check if input VCF uses 'chr' prefix in contig names:
+        prefix = get_contig_prefix(vcf_file)
+        LOGGER.info(f"Contig prefix '{prefix}' in input VCF: {vcf_file}")
+        if prefix == '':
+            prefix = "chr"
+            LOGGER.info(f"Setting contig prefix to '{prefix}'")
 
         # Annotate input VCF with chr coordinate IDs, filter for chr X pruned variants and, if annotated, for PASS variants:
         if pass_vars == 0:
             LOGGER.debug("Annotating and filtering '{}' for all pruned chr X variants".format(vcf_file))
             LOGGER.info("WARNING: no FILTER information available, input data will not be filtered for PASS variants, results may be unreliable")
-            cmd = f"bcftools annotate --set-id '%CHROM\:%POS\:%REF\:%FIRST_ALT' {vcf_file} -Oz | bcftools view --include ID==@{self.prune_in_markers_fpath} -Oz -o {filtered_vcf_path}"
+            cmd = f"bcftools annotate --set-id '{prefix}%CHROM\:%POS\:%REF\:%FIRST_ALT' {vcf_file} -Oz | bcftools view --include ID==@{self.prune_in_markers_fpath} -Oz -o {filtered_vcf_path}"
             LOGGER.info(cmd)
             execute_bash_command(cmd)
         else:
             LOGGER.debug("Annotating and filtering '{}' for chr X pruned PASS variants".format(vcf_file))
-            cmd = f"bcftools annotate --set-id '%CHROM\:%POS\:%REF\:%FIRST_ALT' {vcf_file} -Oz | bcftools view --include ID==@{self.prune_in_markers_fpath} -Oz | bcftools view -i 'FILTER=\"PASS\"' -Oz -o {filtered_vcf_path}"
+            cmd = f"bcftools annotate --set-id '{prefix}%CHROM\:%POS\:%REF\:%FIRST_ALT' {vcf_file} -Oz | bcftools view --include ID==@{self.prune_in_markers_fpath} -Oz | bcftools view -i 'FILTER=\"PASS\"' -Oz -o {filtered_vcf_path}"
             LOGGER.info(cmd)
             execute_bash_command(cmd)
 
@@ -217,7 +227,7 @@ class RelatednessAnalysis:
                           "PHE": int(genome_file_row_values[10]),
                           "DST": float(genome_file_row_values[11]),
                           "PPC": float(genome_file_row_values[12]),
-                          "RATIO": float(genome_file_row_values[13])
+                          "RATIO": str(genome_file_row_values[13])
                         }
                 score = Score(
                     sampleId1=str(genome_file_row_values[1]),

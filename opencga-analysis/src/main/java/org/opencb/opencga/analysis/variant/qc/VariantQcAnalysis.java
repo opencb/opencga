@@ -102,6 +102,7 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
     protected static final String FAILURE_COULD_NOT_UPDATE_QUALITY_CONTROL_IN_OPEN_CGA_CATALOG = "Failure: Could not update quality control"
             + " in OpenCGA catalog";
     protected static final String SUCCESS = "Success";
+    public static final String HAS_ALREADY_BEEN_COMPUTED_WITH_A_READY_STATUS = "has already been computed with a 'READY' status";
 
     // Common attributes
     public static final String OPENCGA_JOB_ID_ATTR = "OPENCGA_JOB_ID";
@@ -193,8 +194,6 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
                 if (!Files.exists(path)) {
                     throw new ToolException("Resources path '" + path + "' does not exist (OpenCGA path: " + userResourcesDir + ")");
                 }
-
-                // TODO: Check permissions to read
             } catch (CatalogException e) {
                 throw new ToolException("Error searching the OpenCGA catalog path '" + userResourcesDir + "'", e);
             }
@@ -251,9 +250,22 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
             logger.info("Copying resource {} to resource directory: {}", resourceId, destPath.resolve(path.getFileName()));
             FileUtils.copyFile(path.toFile(), destPath.resolve(path.getFileName()).toFile());
         }
+
+        // Check if the user provided a custom resources folder
+        if (Files.exists(userResourcesPath) && Files.isDirectory(userResourcesPath)
+                && configuration.getAnalysis() != null
+                && configuration.getAnalysis().getResource() != null
+                && configuration.getAnalysis().getResource().getFiles() != null) {
+            // Get the custom relatedness resources from the configuration file
+            List<String> filenames = new ArrayList<>();
+            configuration.getAnalysis().getResource().getFiles().stream()
+                    .filter(resourceFile -> analysisId.equals(resourceFile.getId()))
+                    .forEach(resourceFile -> filenames.add(Paths.get(resourceFile.getPath()).getFileName().toString()));
+            copyUserResourceFiles(filenames);
+        }
     }
 
-    private Path getResourcesPath() throws ResourceException, IOException {
+    private Path getResourcesPath() throws IOException {
         Path resourcesPath = getOutDir().resolve(RESOURCES_DIRNAME);
         if (!Files.exists(resourcesPath)) {
             resourcesPath = Files.createDirectories(getOutDir().resolve(RESOURCES_DIRNAME));
@@ -362,53 +374,16 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
     }
 
     protected static boolean isSampleIndexed(Sample sample) {
-        if (sample.getInternal() != null
+        return (sample.getInternal() != null
                 && sample.getInternal().getVariant() != null
                 && sample.getInternal().getVariant().getIndex() != null
                 && sample.getInternal().getVariant().getIndex().getStatus() != null
-                && InternalStatus.READY.equals(sample.getInternal().getVariant().getIndex().getStatus().getId())) {
-            return true;
-        }
-        return false;
+                && InternalStatus.READY.equals(sample.getInternal().getVariant().getIndex().getStatus().getId()));
     }
 
     //-------------------------------------------------------------------------
     // QC RESOURCES MANAGEMENT
     //-------------------------------------------------------------------------
-
-//    protected void prepareResources() throws ToolException {
-//        // Check resources are available
-//        Path destResourcesPath = checkResourcesPath(getOutDir().resolve(RESOURCES_FOLDER));
-//        if (userResourcesPath != null) {
-//            // If necessary, copy the user resource files
-//            copyUserResourceFiles();
-//        }
-//    }
-
-    protected void copyUserResourceFiles() throws ToolException {
-        // Sanity check
-        if (userResourcesPath != null && Files.exists(userResourcesPath)) {
-            copyUserResourceFiles(userResourcesPath);
-        }
-    }
-
-    protected void copyUserResourceFiles(Path inputPath) throws ToolException {
-        Path destResourcesPath = checkResourcesPath(getOutDir().resolve(RESOURCES_FOLDER));
-
-        // Copy custom resource files to the job dir
-        for (java.io.File file : inputPath.toFile().listFiles()) {
-            Path destPath = destResourcesPath.resolve(file.getName());
-            if (file.isFile()) {
-                try {
-                    Files.copy(file.toPath(), destPath, StandardCopyOption.REPLACE_EXISTING);
-                } catch (IOException e) {
-                    if (!Files.exists(destPath) || destPath.toFile().length() != file.length()) {
-                        throw new ToolException("Error copying resource file '" + file + "'", e);
-                    }
-                }
-            }
-        }
-    }
 
     protected Path checkResourcesPath(Path resourcesPath) throws ToolException {
         if (!Files.exists(resourcesPath)) {
@@ -426,5 +401,29 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
 
     protected String getIdLogMessage(String id, String qcType) {
         return " for " + qcType + " '" + id + "'";
+    }
+
+    private void copyUserResourceFiles(List<String> filenames) throws ToolException {
+        Path destResourcesPath = checkResourcesPath(getOutDir().resolve(RESOURCES_FOLDER));
+
+        // Copy custom resource files to the job dir
+        java.io.File[] files = userResourcesPath.toFile().listFiles();
+        if (files == null) {
+            // Nothing to copy
+            return;
+        }
+        for (java.io.File file : files) {
+            if (file.isFile() && (CollectionUtils.isEmpty(filenames) || filenames.contains(file.getName()))) {
+                Path destPath = destResourcesPath.resolve(file.getName());
+                try {
+                    logger.info("Copying user resource file '{}' to '{}'", file, destPath);
+                    Files.copy(file.toPath(), destPath, StandardCopyOption.REPLACE_EXISTING);
+                } catch (IOException e) {
+                    if (!Files.exists(destPath) || destPath.toFile().length() != file.length()) {
+                        throw new ToolException("Error copying resource file '" + file + "'", e);
+                    }
+                }
+            }
+        }
     }
 }

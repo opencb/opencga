@@ -25,14 +25,17 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.qc.Relatedness;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.ConfigurationUtils;
 import org.opencb.opencga.analysis.variant.qc.VariantQcAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.ResourceException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.ResourceManager;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.config.AnalysisTool;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.QualityControlStatus;
@@ -47,6 +50,7 @@ import org.opencb.opencga.core.tools.variant.FamilyVariantQcAnalysisExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -179,38 +183,34 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
     protected void indexQualityControl() throws ToolException {
         ObjectMapper objectMapper = JacksonUtils.getDefaultObjectMapper();
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        ObjectReader relatednessReader = JacksonUtils.getDefaultObjectMapper().readerFor(Relatedness.class);
-        ObjectReader relatednessListReader = JacksonUtils.getDefaultObjectMapper().readerFor(new TypeReference<List<Relatedness>>() {});
+        ObjectReader familyQcReader = JacksonUtils.getDefaultObjectMapper().readerFor(FamilyQualityControl.class);
 
         QualityControlStatus qcStatus;
-        FamilyQualityControl familyQc = new FamilyQualityControl();
+        FamilyQualityControl familyQc;
 
         // Check and parse the relatedness output file
-        Path qcPath = getOutDir().resolve(family.getId()).resolve(RELATEDNESS_ANALYSIS_ID).resolve(QC_RESULTS_FILENAME);
+        Path qcPath = getOutDir().resolve(family.getId()).resolve(QC_RESULTS_FILENAME);
         if (!Files.exists(qcPath)) {
             qcStatus = new QualityControlStatus(ERROR, FAILURE_FILE + qcPath.getFileName() + NOT_FOUND);
             clean();
-            updateFamilyQualityControl(familyQc, qcStatus);
+            updateFamilyQualityControl(new FamilyQualityControl(), qcStatus);
             throw new ToolException(qcStatus.getDescription() + getIdLogMessage(family.getId(), FAMILY_QC_TYPE));
         } else {
             try {
-                List<Relatedness> relatednessList = isQcArray(qcPath)
-                        ? relatednessListReader.readValue(qcPath.toFile())
-                        : Collections.singletonList(relatednessReader.readValue(qcPath.toFile()));
+                familyQc = familyQcReader.readValue(qcPath.toFile());
 
                 // Set common attributes
-                for (Relatedness relatedness : relatednessList) {
-                    addCommonAttributes(relatedness.getAttributes());
+                if (familyQc.getAttributes() == null) {
+                    familyQc.setAttributes(new ObjectMap());
                 }
+                addCommonAttributes(familyQc.getAttributes());
 
-                familyQc.setRelatedness(relatednessList);
                 qcStatus = new QualityControlStatus(READY, SUCCESS);
             } catch (IOException e) {
                 qcStatus = new QualityControlStatus(ERROR, FAILURE_ERROR_PARSING_QC_JSON_FILE + qcPath.getFileName() + "'");
                 // Clean family QC
-                familyQc = new FamilyQualityControl();
                 clean();
-                updateFamilyQualityControl(familyQc, qcStatus);
+                updateFamilyQualityControl(new FamilyQualityControl(), qcStatus);
                 throw new ToolException(qcStatus.getDescription() + getIdLogMessage(family.getId(), FAMILY_QC_TYPE));
             }
         }
@@ -267,8 +267,8 @@ public class FamilyVariantQcAnalysis extends VariantQcAnalysis {
                 .map(QualityControlStatus::getId)
                 .filter(READY::equals)
                 .isPresent()) {
-            throw new ToolException("Family QC has already been computed with a 'READY' status for family '" + familyId + "'. To recompute"
-                    + " QC, you must set the 'overwrite' flag to TRUE.");
+            throw new ToolException("Family QC " + HAS_ALREADY_BEEN_COMPUTED_WITH_A_READY_STATUS + " for family '" + familyId
+                    + "'. To recompute QC, you must set the 'overwrite' flag to TRUE.");
         }
 
         return checkedFamily;

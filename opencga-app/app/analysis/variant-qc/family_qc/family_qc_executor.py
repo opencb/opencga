@@ -103,7 +103,7 @@ class FamilyQCExecutor:
         qc.relatedness.append(relatedness_analysis.relatedness)
 
         # Write family quality control
-        results_fpath = os.path.join(self.output_parent_dir, "family_quality_control.json")
+        results_fpath = os.path.join(self.output_parent_dir, "results.json")
         LOGGER.info('Generating JSON file with results. File path: "{}"'.format(results_fpath))
         with open(results_fpath, 'w') as file:
             json.dump(qc.model_dump(), file, indent=2)
