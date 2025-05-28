@@ -62,6 +62,8 @@ initOpencgaR <- function(host=NULL, version="v2", user=NULL, opencgaConfig=NULL)
     dir.create(path=sessionDir, showWarnings=FALSE, recursive=TRUE)
     sessionFile <- file.path(sessionDir, paste0(host$name, "_session.json"), fsep = .Platform$file.sep)
     ocga@sessionFile <- sessionFile
+    ocga@showToken <- FALSE
+    ocga@verbose <- FALSE
     if (file.exists(sessionFile)) {
         sessionTable <- jsonlite::fromJSON(sessionFile, flatten = TRUE)
 
@@ -69,8 +71,6 @@ initOpencgaR <- function(host=NULL, version="v2", user=NULL, opencgaConfig=NULL)
         ocga@user <- sessionTable$user
         ocga@token <- sessionTable$token
         ocga@refreshToken <- sessionTable$refreshToken
-        ocga@showToken <- FALSE
-        ocga@verbose <- FALSE
     }
 
     # Download swagger

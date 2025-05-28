@@ -28,13 +28,13 @@ fetchOpenCGA <- function(object=object, category=NULL, categoryId=NULL,
     # real_batch_size <- real_batch_size
     
     if(!endsWith(x = host$url, suffix = "/")){
-        host$url <- paste0(host$url, "/")
+    	version <- "/"
+#         host$url <- paste0(host$url, "/")
     }
     if (!grepl("webservices/rest", host$url)){
-        host$url <- paste0(host$url, "webservices/rest/")
+    	version <- paste0(version, "webservices/rest/")
     }
-
-    version = "v2/"
+    version = paste0(version, "v2/")
     
     # Format category and subcategory
     if(is.null(category)){
