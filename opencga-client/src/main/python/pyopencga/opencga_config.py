@@ -37,12 +37,21 @@ class ClientConfiguration(object):
         return config_dict
 
     def get_sso_login_info(self):
+        # Checking if SSO login is specified
         if (('sso_login' in self._config and self._config['sso_login']) or
                 ('cookies' in self._config and self._config['cookies'])):
-            python_session_fhand = open(os.path.expanduser("~/.opencga/session.json"), 'r')
+
+            # Getting session file name
+            if 'name' in self._config['rest'] and self._config['rest']['name']:
+                host_name = self._config['rest']['name']
+            else:
+                host_name = 'opencga'
+            python_session_fhand = open(os.path.expanduser("~/.opencga/{}_session.json".format(host_name)), 'r')
+
+            # Loading info from session file
             session_info = json.loads(python_session_fhand.read())
             self._config['sso_login'] = True
-            self._config['cookies'] = session_info['cookies']
+            self._config['cookies'] = session_info['attributes']['cookies']
             self._config['token'] = session_info['token']
 
     def _validate_configuration(self):
