@@ -11,6 +11,7 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.mapreduce.MultithreadedTableMapper;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
 import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
+import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.GzipCodec;
 import org.apache.hadoop.mapred.JobConf;
@@ -212,7 +213,12 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
                 && StringUtils.isNotEmpty(job.getConfiguration().get(TableOutputFormat.OUTPUT_TABLE))) {
             LOGGER.info("     - OutputTable : " + job.getConfiguration().get(TableOutputFormat.OUTPUT_TABLE));
         } else if (StringUtils.isNotEmpty(job.getConfiguration().get(FileOutputFormat.OUTDIR))) {
-            LOGGER.info("     - Outdir      : " + job.getConfiguration().get(FileOutputFormat.OUTDIR));
+            String outdir = job.getConfiguration().get(FileOutputFormat.OUTDIR);
+            LOGGER.info("     - Outdir      : " + outdir);
+            if (outdir.startsWith("hdfs")) {
+                LOGGER.info("     - {} : x{}", DFSConfigKeys.DFS_REPLICATION_KEY,
+                        job.getConfiguration().getInt(DFSConfigKeys.DFS_REPLICATION_KEY, DFSConfigKeys.DFS_REPLICATION_DEFAULT));
+            }
 
             if (TextOutputFormat.getCompressOutput(job)) {
                 Class<? extends CompressionCodec> compressorClass = TextOutputFormat.getOutputCompressorClass(job, GzipCodec.class);
