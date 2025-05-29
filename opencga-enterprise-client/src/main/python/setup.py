@@ -13,12 +13,12 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-    name='pyopencga-enterprise',
+    name='pyopencga_enterprise',
     version='PYOPENCGA_ENTERPRISE_VERSION',
     description='A REST client for OpenCGA enterprise REST web services',
     long_description=long_description,
     long_description_content_type='text/x-rst',
-    packages=['pyopencga-enterprise', 'pyopencga-enterprise.rest_clients'],
+    packages=['pyopencga_enterprise', 'pyopencga_enterprise.rest_clients'],
     license='Apache Software License',
     author='Daniel Perez-Gil',
     author_email='daniel.perez@zettagenomics.com',
