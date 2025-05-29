@@ -7,7 +7,6 @@ import org.apache.phoenix.schema.types.PIntegerArray;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
 import org.opencb.opencga.storage.core.variant.search.solr.SolrInputDocumentDataWriter;
@@ -17,6 +16,7 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
+import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsFileBasedManager;
 import org.opencb.opencga.storage.hadoop.variant.search.pending.index.file.SecondaryIndexPendingVariantsFileBasedManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,8 +34,7 @@ import java.util.stream.Collectors;
 public class HadoopVariantSearchDataWriter extends SolrInputDocumentDataWriter {
 
     private final HBaseDataWriter<Mutation> writer;
-//    private final PendingVariantsDBCleaner cleaner;
-    private final DataWriter<Variant> cleaner;
+    private final PendingVariantsFileBasedManager.PendingVariantsFileCleaner cleaner;
     private final List<Variant> variantsToClean = new ArrayList<>();
     private final List<Mutation> rowsToUpdate = new ArrayList<>();
     private final byte[] family = GenomeHelper.COLUMN_FAMILY_BYTES;
@@ -63,9 +62,25 @@ public class HadoopVariantSearchDataWriter extends SolrInputDocumentDataWriter {
         }
     }
 
+    /**
+     * If an error occurs while writing to Solr, we reset the pending mutations and variants.
+     */
+    private void onError() {
+        // Reset the lists to avoid adding more mutations
+        logger.error("Error while writing to Solr. Resetting pending mutations and variants to clean.");
+        cleaner.abort();
+        variantsToClean.clear();
+        rowsToUpdate.clear();
+    }
+
     @Override
     protected void add(List<SolrInputDocument> batch) throws Exception {
-        super.add(batch);
+        try {
+            super.add(batch);
+        } catch (Exception e) {
+            onError();
+            throw e;
+        }
 
         if (!batch.isEmpty()) {
             List<Mutation> mutations = new ArrayList<>(batch.size());
@@ -100,7 +115,12 @@ public class HadoopVariantSearchDataWriter extends SolrInputDocumentDataWriter {
 
     @Override
     protected void commit(boolean openSearcher) throws Exception {
-        super.commit(openSearcher);
+        try {
+            super.commit(openSearcher);
+        } catch (Exception e) {
+            onError();
+            throw e;
+        }
         StopWatch stopWatch = StopWatch.createStarted();
         writer.write(rowsToUpdate);
         writer.flush();
@@ -133,7 +153,12 @@ public class HadoopVariantSearchDataWriter extends SolrInputDocumentDataWriter {
 
     @Override
     public boolean post() {
-        super.post();
+        try {
+            super.post();
+        } catch (Exception e) {
+            onError();
+            throw e;
+        }
         StopWatch stopWatch = StopWatch.createStarted();
         writer.post();
         hbasePutTimeMs += stopWatch.getTime();
@@ -148,7 +173,12 @@ public class HadoopVariantSearchDataWriter extends SolrInputDocumentDataWriter {
 
     @Override
     public boolean close() {
-        super.close();
+        try {
+            super.close();
+        } catch (Exception e) {
+            onError();
+            throw e;
+        }
         writer.close();
         cleaner.close();
         return true;

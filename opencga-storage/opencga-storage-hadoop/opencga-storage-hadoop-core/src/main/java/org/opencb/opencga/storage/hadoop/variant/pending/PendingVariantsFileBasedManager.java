@@ -162,43 +162,8 @@ public abstract class PendingVariantsFileBasedManager {
         return VariantDBIterator.wrapper(reader(query).iterator());
     }
 
-    public DataWriter<Variant> cleaner() {
-        return new DataWriter<Variant>() {
-            private final LinkedHashSet<String> pathsToClean = new LinkedHashSet<>();
-            private int deletedFiles = 0;
-            @Override
-            public boolean write(List<Variant> list) {
-                Set<String> files = new HashSet<>();
-                for (Variant variant : list) {
-                    files.addAll(descriptor.buildFileName(variant.getChromosome(), variant.getStart(), variant.getEnd()));
-                }
-                pathsToClean.addAll(files);
-
-                cleanFiles(5);
-                return true;
-            }
-
-            @Override
-            public boolean close() {
-                cleanFiles(0);
-                logger.info("Deleted " + deletedFiles + " files with pending variants");
-                return true;
-            }
-
-            private void cleanFiles(int filesLeft) {
-                while (pathsToClean.size() > filesLeft) {
-                    String next = pathsToClean.iterator().next();
-                    pathsToClean.remove(next);
-                    try {
-//                        logger.info("Deleting file " + next);
-                        fs.delete(new Path(new Path(pendingVariantsDir), next), true);
-                        deletedFiles++;
-                    } catch (IOException e) {
-                        throw new RuntimeException("Unable to delete file " + next, e);
-                    }
-                }
-            }
-        };
+    public PendingVariantsFileCleaner cleaner() {
+        return new PendingVariantsFileCleaner();
     }
 
     public ObjectMap discoverPending(MRExecutor mrExecutor, String variantsTable, boolean overwrite, ObjectMap options)
@@ -298,4 +263,52 @@ public abstract class PendingVariantsFileBasedManager {
         return true;
     }
 
+    public final class PendingVariantsFileCleaner implements DataWriter<Variant> {
+        private final LinkedHashSet<String> pathsToClean = new LinkedHashSet<>();
+        private int deletedFiles = 0;
+
+        private PendingVariantsFileCleaner() {
+        }
+
+        @Override
+        public boolean write(List<Variant> list) {
+            Set<String> files = new HashSet<>();
+            for (Variant variant : list) {
+                files.addAll(descriptor.buildFileName(variant.getChromosome(), variant.getStart(), variant.getEnd()));
+            }
+            pathsToClean.addAll(files);
+
+            cleanFiles(5);
+            return true;
+        }
+
+        @Override
+        public boolean close() {
+            cleanFiles(0);
+            logger.info("Deleted " + deletedFiles + " files with pending variants");
+            return true;
+        }
+
+        public void abort() {
+            // Something went wrong. Do not delete any more files
+            if (!pathsToClean.isEmpty()) {
+                logger.info("Aborting pending variants file cleaner. Avoid deleting {} pending files", pathsToClean.size());
+                pathsToClean.clear();
+            }
+        }
+
+        private void cleanFiles(int filesLeft) {
+            while (pathsToClean.size() > filesLeft) {
+                String next = pathsToClean.iterator().next();
+                pathsToClean.remove(next);
+                try {
+//                        logger.info("Deleting file " + next);
+                    fs.delete(new Path(new Path(pendingVariantsDir), next), true);
+                    deletedFiles++;
+                } catch (IOException e) {
+                    throw new RuntimeException("Unable to delete file " + next, e);
+                }
+            }
+        }
+    }
 }
