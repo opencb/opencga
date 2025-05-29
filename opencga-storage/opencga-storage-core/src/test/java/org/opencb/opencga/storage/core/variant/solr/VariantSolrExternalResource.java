@@ -48,11 +48,11 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.get
 public class VariantSolrExternalResource extends ExternalResource {
 
     public static final String CONFIG_SET = "opencga_variants";
-    public static int ZK_PORT = 19983;
 
     private SolrClient solrClient;
     private MiniSolrCloudCluster miniSolrCloudCluster;
     protected boolean embeded = true;
+    private ZkTestServer zkTestServer;
 
     public VariantSolrExternalResource() {
         this(true);
@@ -81,7 +81,7 @@ public class VariantSolrExternalResource extends ExternalResource {
         String solrHome = rootDir.resolve("solr").toString();
 
         if (embeded) {
-            miniSolrCloudCluster = create(solrHome, rootDir.resolve("configsets").toString());
+            create(solrHome, rootDir.resolve("configsets").toString());
             solrClient = miniSolrCloudCluster.getSolrClient();
         } else {
             String host = "http://localhost:8983/solr";
@@ -100,6 +100,7 @@ public class VariantSolrExternalResource extends ExternalResource {
             if (embeded) {
                 solrClient.close();
                 miniSolrCloudCluster.shutdown();
+                zkTestServer.shutdown();
             } else {
                 solrClient.close();
             }
@@ -121,7 +122,7 @@ public class VariantSolrExternalResource extends ExternalResource {
         VariantSearchManager variantSearchManager = variantStorageEngine.getVariantSearchManager();
         String host;
         if (embeded) {
-            host = "localhost:" + ZK_PORT;
+            host = miniSolrCloudCluster.getZkClient().getZkServerAddress();
             searchConfiguration.setConfigSet(CONFIG_SET);
         } else {
             host = "http://localhost:8983";
@@ -143,9 +144,9 @@ public class VariantSolrExternalResource extends ExternalResource {
      * @return a MiniSolrCloudCluster
      * @throws IOException
      */
-    public static MiniSolrCloudCluster create(final String solrHome, final String configSetHome)
+    public void create(final String solrHome, final String configSetHome)
             throws IOException, SolrServerException {
-        return create(solrHome, configSetHome, true);
+        create(solrHome, configSetHome, true);
     }
 
     /**
@@ -156,7 +157,7 @@ public class VariantSolrExternalResource extends ExternalResource {
      * @return a MiniSolrCloudCluster
      * @throws IOException
      */
-    public static MiniSolrCloudCluster create(final String solrHome, final String configSetHome, final boolean cleanSolrHome)
+    public void create(final String solrHome, final String configSetHome, final boolean cleanSolrHome)
             throws IOException, SolrServerException {
 
         final File solrHomeDir = new File(solrHome);
@@ -186,21 +187,19 @@ public class VariantSolrExternalResource extends ExternalResource {
 
         try {
 
-            ZkTestServer zkTestServer = new ZkTestServer(zkDir.toPath().toAbsolutePath(), ZK_PORT);
+            zkTestServer = new ZkTestServer(zkDir.toPath().toAbsolutePath());
             zkTestServer.run();
 
             JettyConfig jettyConfig = JettyConfig.builder()
-                    .setPort(8989) // if you want multiple servers in the solr cloud comment it out.
+//                    .setPort(8989) // if you want multiple servers in the solr cloud comment it out.
                     .setContext("/solr")
                     .stopAtShutdown(true)
                     .withServlets(new HashMap<>())
                     .withSSLConfig(null)
                     .build();
 
-            MiniSolrCloudCluster cloudCluster = new MiniSolrCloudCluster(1, solrHomeDir.toPath(), MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML, jettyConfig, zkTestServer);
-
-            cloudCluster.uploadConfigSet(configSetPath.resolve(CONFIG_SET), CONFIG_SET);
-            return cloudCluster;
+            miniSolrCloudCluster = new MiniSolrCloudCluster(2, solrHomeDir.toPath(), MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML, jettyConfig, zkTestServer);
+            miniSolrCloudCluster.uploadConfigSet(configSetPath.resolve(CONFIG_SET), CONFIG_SET);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
