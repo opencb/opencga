@@ -127,10 +127,8 @@ public class VariantSolrExternalResource extends ExternalResource {
         } else {
             host = "http://localhost:8983";
         }
-        variantSearchManager.setSolrManager(new SolrManager(solrClient, host, "cloud",
+        variantSearchManager.setSearchConfiguration(searchConfiguration, new SolrManager(solrClient, host, "cloud",
                 searchConfiguration.getTimeout()));
-        variantSearchManager.setSearchConfiguration(searchConfiguration);
-        variantSearchManager.setSolrClient(solrClient);
         return variantSearchManager;
     }
 

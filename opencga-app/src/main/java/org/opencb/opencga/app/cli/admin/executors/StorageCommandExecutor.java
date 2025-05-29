@@ -79,7 +79,7 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
             ObjectMap status = new ObjectMap();
             Collection<String> liveNodes;
             SolrClient solrClient = factory.getVariantStorageEngine(factory.getDefaultStorageEngineId(), "test_connection")
-                    .getVariantSearchManager().getSolrManager().getSolrClient();
+                    .getVariantSearchManager().getSolrClient();
             if (solrClient instanceof CloudSolrClient) {
                 liveNodes = ((CloudSolrClient) solrClient).getClusterStateProvider().getLiveNodes().stream()
                         .map(s -> "http://" + s)

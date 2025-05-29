@@ -100,8 +100,6 @@ public class VariantSearchManager {
         this.options = options;
         this.variantSearchToVariantConverter = new VariantSearchToVariantConverter();
         setSearchConfiguration(storageConfiguration.getSearch());
-        this.solrManager = new SolrManager(storageConfiguration.getSearch().getHosts(), storageConfiguration.getSearch().getMode(),
-                storageConfiguration.getSearch().getTimeout());
 
         logger = LoggerFactory.getLogger(VariantSearchManager.class);
     }
@@ -117,11 +115,67 @@ public class VariantSearchManager {
     public String create(SearchIndexMetadata indexMetadata) throws VariantSearchException {
         String collection = buildCollectionName(indexMetadata);
         try {
-            solrManager.create(collection, indexMetadata.getConfigSetId());
+            if (this.existsCollection(collection)) {
+                this.logger.warn("Solr cloud collection {} already exists", collection);
+                logCollectionStatus(collection);
+            } else {
+                try {
+                    int numNodes = getLiveNodes().size();
+                    int numReplicas = Math.min(2, numNodes);
+                    int numShards = 1;
+
+                    logger.info("Create collection with {} shards and {} Tlog replicas", numShards, numReplicas);
+                    CollectionAdminRequest.Create request = CollectionAdminRequest.createCollection(collection, configSet, numShards, 0,
+                            numReplicas, 0);
+                    request.setMaxShardsPerNode(numReplicas);
+                    request.process(getSolrClient());
+                    logCollectionStatus(collection);
+                } catch (SolrException e) {
+                    throw e;
+                } catch (Exception e) {
+                    throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+                }
+            }
             return collection;
+        } catch (VariantSearchException e) {
+            throw e;
         } catch (SolrException e) {
             throw new VariantSearchException("Error creating Solr collection '" + collection + "'", e);
         }
+    }
+
+    private void logCollectionStatus(String collection) throws VariantSearchException {
+        try {
+            ObjectMap responseMap = (ObjectMap) CollectionAdminRequest.getClusterStatus()
+                    .setCollectionName(collection)
+                    .process(getSolrClient()).toMap(new ObjectMap());
+            logger.info("Collection '{}'", collection);
+            ObjectMap shards = responseMap.getNestedMap("cluster.collections." + collection + ".shards");
+            for (String shard : shards.keySet()) {
+                ObjectMap shardMap = shards.getNestedMap(shard);
+                ObjectMap replicas = shardMap.getNestedMap("replicas");
+                logger.info(" - Shard: {}, Replicas: {}", shard, replicas.size());
+                for (String replica : replicas.keySet()) {
+                    ObjectMap replicaInfo = replicas.getNestedMap(replica);
+                    String coreName = replicaInfo.getString("core");
+                    String replicaType = replicaInfo.getString("type");
+                    boolean leader = replicaInfo.getBoolean("leader");
+                    boolean active = replicaInfo.getString("state").equals("active");
+                    logger.info("   - Replica: {}, Core: {}, Type: {}, Leader: {}, Active: {}",
+                            replica, coreName, replicaType, leader, active);
+                }
+            }
+        } catch (SolrServerException | IOException e) {
+            throw new VariantSearchException("Error getting Solr collection '" + collection + "' status", e);
+        }
+    }
+
+    private List<String> getLiveNodes() throws SolrServerException, IOException {
+        // Get number of solr nodes
+        ObjectMap result = new ObjectMap();
+        CollectionAdminResponse response = CollectionAdminRequest.getClusterStatus().process(getSolrClient());
+        response.toMap(result);
+        return new ObjectMap(result.getMap("cluster")).getAsStringList("live_nodes");
     }
 
 //    public void createCore(String coreName, String configSet) throws VariantSearchException {
@@ -220,7 +274,7 @@ public class VariantSearchManager {
         // first, create the collection if it does not exist
         String collection = create(indexMetadata);
 
-        getSolrManager().checkExists(collection);
+        solrManager.checkExists(collection);
 
         int batchSize = options.getInt(
                 VariantStorageOptions.SEARCH_LOAD_BATCH_SIZE.key(),
@@ -309,11 +363,24 @@ public class VariantSearchManager {
             throws VariantSearchException, IOException {
         String collection = buildCollectionName(indexMetadata);
         SolrQuery solrQuery = getSolrQueryParser(collection).parse(variantQuery.getQuery(), variantQuery.getInputOptions());
+        logger.info("Solr query collection: {}", collection);
+        logger.info(" - q: {}", solrQuery.getQuery());
+        if (solrQuery.getFilterQueries() != null) {
+            for (String filterQuery : solrQuery.getFilterQueries()) {
+                logger.info(" - fq: {}", filterQuery);
+            }
+        }
+        logger.info(" - fl: {}", solrQuery.getFields());
+        if (solrQuery.getSorts() != null) {
+            solrQuery.getSorts().forEach(sort -> logger.info(" - sort: {}", sort));
+        }
+        logger.info(" - rows: {}", solrQuery.getRows());
+
         SolrCollection solrCollection = solrManager.getCollection(collection);
         DataResult<Variant> queryResult;
         try {
             queryResult = solrCollection.query(solrQuery, VariantSearchModel.class,
-                    new VariantSearchToVariantConverter(VariantField.getIncludeFields(variantQuery.getInputOptions())));
+                    new VariantSearchToVariantConverter(variantQuery.getProjection().getFields()));
         } catch (SolrServerException e) {
             throw new VariantSearchException("Error executing variant query", e);
         }
@@ -791,27 +858,32 @@ public class VariantSearchManager {
         return solrManager;
     }
 
-    public VariantSearchManager setSolrManager(SolrManager solrManager) {
-        this.solrManager = solrManager;
-        return this;
-    }
-
     public SolrClient getSolrClient() {
         return solrManager.getSolrClient();
     }
 
-    public VariantSearchManager setSolrClient(SolrClient solrClient) {
-        this.solrManager.setSolrClient(solrClient);
-        return this;
+    public void setSearchConfiguration(SearchConfiguration searchConfiguration) {
+        SolrManager solrManager = new SolrManager(searchConfiguration.getHosts(),
+                searchConfiguration.getMode(),
+                searchConfiguration.getTimeout());
+
+        setSearchConfiguration(searchConfiguration, solrManager);
     }
 
-    public void setSearchConfiguration(SearchConfiguration searchConfiguration) {
+    public void setSearchConfiguration(SearchConfiguration searchConfiguration, SolrManager solrManager) {
         this.configSet = searchConfiguration.getConfigSet();
 
         // Set internal insert batch size from configuration and default value
         insertBatchSize = searchConfiguration.getInsertBatchSize() > 0
                 ? searchConfiguration.getInsertBatchSize()
                 : DEFAULT_INSERT_BATCH_SIZE;
+
+        if (!solrManager.getMode().equals("cloud")) {
+            throw new IllegalArgumentException("Search mode '" + solrManager.getMode() + "' is not supported. "
+                    + "Only 'cloud' mode is supported for Solr search.");
+        }
+
+        this.solrManager = solrManager;
     }
 
     public int getInsertBatchSize() {

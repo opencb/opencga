@@ -96,7 +96,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
 //            return invocation.callRealMethod();
 //        }).when(solrClient).query(anyString(), any());
         solr.configure(this.variantStorageEngine);
-        variantStorageEngine.getVariantSearchManager().setSolrClient(solrClient);
+        variantStorageEngine.getVariantSearchManager().getSolrManager().setSolrClient(solrClient);
         for (VariantQueryExecutor variantQueryExecutor : variantStorageEngine.getVariantQueryExecutors()) {
             if (variantQueryExecutor instanceof SearchIndexVariantQueryExecutor) {
                 this.variantQueryExecutor = ((SearchIndexVariantQueryExecutor) variantQueryExecutor);
