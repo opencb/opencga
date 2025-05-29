@@ -1,7 +1,7 @@
 .. contents::
 
 PyOpenCGA-enterprise
-==========
+====================
 
 This Python client package makes use of the comprehensive RESTful web services API implemented for the `OpenCGA`_ platform.
 OpenCGA is an open-source project that implements a high-performance, scalable and secure platform for Genomic data analysis and visualisation.

@@ -13,7 +13,7 @@
 #' @include AllGenerics.R
 #' @include commons.R
 
-#' @description This function implements the OpenCGA calls for managing CVDB.
+#' @description This function implements the OpenCGA calls for managing Analysis - CVDB.
 
 #' The following table summarises the available *actions* for this client:
 #'

@@ -63,10 +63,9 @@ jobs:
           name: ${{ inputs.artifact_name }}
           path: build
       - id: get_project_version
-        uses: avides/actions-project-version-check@v1.3.0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          file-to-check: pom.xml
-          only-return-version: true
+        name: Extract version using Maven
+        run: |
+          version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "version=$version" >> $GITHUB_OUTPUT
       - name: test-version-from-check
         run: echo "Project version is " ${{ steps.get_project_version.outputs.version }}
