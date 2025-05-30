@@ -31,7 +31,7 @@ public final class PendingVariantsFileCleaner implements DataWriter<Variant> {
     @Override
     public boolean write(List<Variant> list) {
         for (Variant variant : list) {
-            pathsToClean.addAll(descriptor.buildFileName(variant.getChromosome(), variant.getStart(), variant.getEnd()));
+            pathsToClean.add(descriptor.buildFileName(variant));
         }
 
         cleanFiles(5);

@@ -44,12 +44,16 @@ public interface PendingVariantsFileBasedDescriptor extends PendingVariantsDescr
     default List<String> buildFileName(String chromosome, int start, int end) {
         List<String> fileNames = new ArrayList<>();
         fileNames.add(buildFileName(chromosome, start));
-        start += 1_000_000;
+        start += getFileBatchSize();
         while (start < end) {
             fileNames.add(buildFileName(chromosome, start));
-            start += 1_000_000;
+            start += getFileBatchSize();
         }
         return fileNames;
+    }
+
+    default String buildFileName(Variant variant) {
+        return buildFileName(variant.getChromosome(), variant.getStart());
     }
 
     default String buildFileName(String chromosome, int position) {

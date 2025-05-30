@@ -268,8 +268,9 @@ public class DiscoverPendingVariantsDriver extends AbstractVariantsTableDriver {
                 context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, READY_VARIANTS_COUNTER).increment(1);
             } else {
                 context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, PENDING_VARIANTS_COUNTER).increment(1);
-                mos.write(new VariantLocusKey(variant), new Text(objectMapper.writeValueAsString(variant)),
-                        descriptor.buildFileName(variant.getChromosome(), variant.getStart()));
+                mos.write(new VariantLocusKey(variant),
+                        new Text(objectMapper.writeValueAsBytes(variant)),
+                        descriptor.buildFileName(variant));
             }
         }
 

@@ -292,6 +292,7 @@ public class VariantSearchManager {
                         .then(new VariantToSolrBeanConverterTask(solrManager.getSolrClient().getBinder())),
                 writer,
                 ParallelTaskRunner.Config.builder()
+                        .setSorted(true)
                         .setBatchSize(batchSize)
                         .setCapacity(2)
                         .setNumTasks(numThreads)
