@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.CLINICAL_ANALYSES_COLLECTION_SUFFIX;
+import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.CVDB_COLLECTIONS_KEY;
 import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.ADMIN_PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.CollectionPrefixUtils.OPENCGA_CVDB_DBPREFIX_KEY;
@@ -79,7 +80,11 @@ public class CvdbSolrEngineDbPrefixTest {
         cvdbEngine.setVariantStorageMetadataManager(new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory()));
 
         if (!cvdbEngine.existCollections(collectionPrefix)) {
-            cvdbEngine.createCollections(collectionPrefix);
+            cvdbEngine.createCollections(projectId, collectionPrefix, userToken);
+
+            Project project = catalogManager.getProjectManager().get(projectId, QueryOptions.empty(), userToken).first();
+            Assert.assertTrue(project.getInternal().getDatastores().getCvdb().getOptions().containsKey(CVDB_COLLECTIONS_KEY));
+            System.out.println(CVDB_COLLECTIONS_KEY + " = " + project.getInternal().getDatastores().getCvdb().getOptions().get(CVDB_COLLECTIONS_KEY));
         }
     }
 

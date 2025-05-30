@@ -62,7 +62,7 @@ public class CvdbIndexTask extends OpenCgaToolScopeStudy {
             String collectionPrefix = CollectionPrefixUtils.getInstance(catalogManager).getCollectionPrefix(organizationId, project.getId(),
                     token);
             if (!cvdbEngine.existCollections(collectionPrefix)) {
-                cvdbEngine.createCollections(collectionPrefix);
+                cvdbEngine.createCollections(project.getFqn(), collectionPrefix, token);
             }
         } catch (CvdbException e) {
             String msg = "Could not perform CVDB index for organization '" + organizationId + "' and project '" + project.getId() + "'";

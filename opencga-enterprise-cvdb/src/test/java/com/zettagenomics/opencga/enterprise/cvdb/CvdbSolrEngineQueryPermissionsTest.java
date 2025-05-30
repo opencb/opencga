@@ -84,7 +84,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
         cvdbEngine.setVariantStorageMetadataManager(new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory()));
 
         if (!cvdbEngine.existCollections(collectionPrefix)) {
-            cvdbEngine.createCollections(collectionPrefix);
+            cvdbEngine.createCollections(projectId, collectionPrefix, userToken);
         }
 
         // Load and index
