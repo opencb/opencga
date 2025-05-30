@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
+import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 
@@ -16,7 +17,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
 
-public class VariantSecondaryIndexFilter implements UnaryOperator<List<Variant>>, Predicate<Variant> {
+public class VariantSecondaryIndexFilter implements UnaryOperator<List<Variant>>, Predicate<Variant>, Task<Variant, Variant> {
 
     protected final Map<String, Integer> studiesMap;
 

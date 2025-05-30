@@ -5,28 +5,23 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.opencb.biodata.models.core.Region;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.io.DataReader;
-import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
-import org.opencb.opencga.storage.hadoop.variant.mr.VariantLocusKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.*;
-import java.util.zip.GZIPInputStream;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Abstract class for managing pending variants in a file-based system.
@@ -49,113 +44,9 @@ public abstract class PendingVariantsFileBasedManager {
         fs = FileSystem.get(pendingVariantsDir, conf);
     }
 
-    public DataReader<Variant> reader(Query query) {
+    public PendingVariantsFileReader reader(Query query) {
         List<String> regions = query.getAsStringList(VariantQueryParam.REGION.key());
-        return new DataReader<Variant>() {
-
-            private List<Path> pathsToRead;
-            private DataReader<Variant> fileReader = null;
-
-            @Override
-            public boolean open() {
-                pathsToRead = getPendingVariantFiles(regions);
-                return true;
-            }
-
-            @Override
-            public boolean pre() {
-                nextFile();
-                return true;
-            }
-
-            private void nextFile() {
-                if (fileReader != null) {
-                    fileReader.post();
-                    fileReader.close();
-                }
-                if (pathsToRead.isEmpty()) {
-                    fileReader = null;
-                    return;
-                }
-                Path path = pathsToRead.remove(0);
-                try {
-                    fileReader = new VariantJsonReader(new GZIPInputStream(fs.open(path)));
-                    fileReader.open();
-                    fileReader.pre();
-                } catch (IOException e) {
-                    throw new RuntimeException("Unable to open file " + path, e);
-                }
-            }
-
-            @Override
-            public List<Variant> read(int batch) {
-                if (fileReader == null) {
-                    return Collections.emptyList();
-                }
-                List<Variant> variants = new ArrayList<>(batch);
-                while (variants.size() < batch) {
-                    List<Variant> read = fileReader.read(batch - variants.size());
-                    if (read.isEmpty()) {
-                        nextFile();
-                        if (fileReader == null) {
-                            break;
-                        }
-                    } else {
-                        variants.addAll(read);
-                    }
-                }
-                return variants;
-            }
-
-            @Override
-            public boolean close() {
-                if (fileReader != null) {
-                    fileReader.post();
-                    fileReader.close();
-                }
-                return true;
-            }
-        };
-    }
-
-    private List<Path> getPendingVariantFiles(List<String> regionsStr) {
-        Set<Region> regions = new HashSet<>();
-        for (String region : regionsStr) {
-            regions.add(Region.parseRegion(region));
-        }
-        List<Path> pathsToRead = new ArrayList<>();
-        try {
-            FileStatus[] fileStatuses = fs.listStatus(new Path(pendingVariantsDir));
-            Arrays.sort(fileStatuses, Comparator.comparing(FileStatus::getPath));
-            for (FileStatus fileStatus : fileStatuses) {
-                if (!descriptor.isPendingVariantsFile(fileStatus)) {
-                    // Ignore other files
-                    continue;
-                }
-                if (!regions.isEmpty()) {
-                    String name = fileStatus.getPath().getName();
-
-                    // Extract region
-                    VariantLocusKey locusKey = descriptor.getLocusFromFileName(name);
-                    boolean anyMatch = false;
-                    for (Region region : regions) {
-                        if (region.contains(locusKey.getChromosome(), locusKey.getPosition())) {
-                            // Found a matching region
-                            anyMatch = true;
-                            break;
-                        }
-                    }
-                    if (anyMatch) {
-                        pathsToRead.add(fileStatus.getPath());
-                    }
-                } else {
-                    pathsToRead.add(fileStatus.getPath());
-                }
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("Unable to list files in pending variants directory", e);
-        }
-        return pathsToRead;
+        return new PendingVariantsFileReader(descriptor, fs, pendingVariantsDir, regions);
     }
 
     public VariantDBIterator iterator(Query query) {
@@ -163,7 +54,7 @@ public abstract class PendingVariantsFileBasedManager {
     }
 
     public PendingVariantsFileCleaner cleaner() {
-        return new PendingVariantsFileCleaner();
+        return new PendingVariantsFileCleaner(descriptor, fs, pendingVariantsDir);
     }
 
     public ObjectMap discoverPending(MRExecutor mrExecutor, String variantsTable, boolean overwrite, ObjectMap options)
@@ -263,52 +154,4 @@ public abstract class PendingVariantsFileBasedManager {
         return true;
     }
 
-    public final class PendingVariantsFileCleaner implements DataWriter<Variant> {
-        private final LinkedHashSet<String> pathsToClean = new LinkedHashSet<>();
-        private int deletedFiles = 0;
-
-        private PendingVariantsFileCleaner() {
-        }
-
-        @Override
-        public boolean write(List<Variant> list) {
-            Set<String> files = new HashSet<>();
-            for (Variant variant : list) {
-                files.addAll(descriptor.buildFileName(variant.getChromosome(), variant.getStart(), variant.getEnd()));
-            }
-            pathsToClean.addAll(files);
-
-            cleanFiles(5);
-            return true;
-        }
-
-        @Override
-        public boolean close() {
-            cleanFiles(0);
-            logger.info("Deleted " + deletedFiles + " files with pending variants");
-            return true;
-        }
-
-        public void abort() {
-            // Something went wrong. Do not delete any more files
-            if (!pathsToClean.isEmpty()) {
-                logger.info("Aborting pending variants file cleaner. Avoid deleting {} pending files", pathsToClean.size());
-                pathsToClean.clear();
-            }
-        }
-
-        private void cleanFiles(int filesLeft) {
-            while (pathsToClean.size() > filesLeft) {
-                String next = pathsToClean.iterator().next();
-                pathsToClean.remove(next);
-                try {
-//                        logger.info("Deleting file " + next);
-                    fs.delete(new Path(new Path(pendingVariantsDir), next), true);
-                    deletedFiles++;
-                } catch (IOException e) {
-                    throw new RuntimeException("Unable to delete file " + next, e);
-                }
-            }
-        }
-    }
 }

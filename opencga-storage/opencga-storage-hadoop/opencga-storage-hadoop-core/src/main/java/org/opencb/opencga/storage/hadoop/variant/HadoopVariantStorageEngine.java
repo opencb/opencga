@@ -27,11 +27,13 @@ import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.util.StopWatch;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.io.DataReader;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
@@ -54,7 +56,6 @@ import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetada
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
@@ -69,7 +70,9 @@ import org.opencb.opencga.storage.core.variant.query.executors.*;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantAggregationExecutor;
 import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantQueryExecutor;
+import org.opencb.opencga.storage.core.variant.search.VariantSecondaryIndexFilter;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.io.HDFSIOConnector;
@@ -98,6 +101,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdapt
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDeleteHBaseColumnTask;
 import org.opencb.opencga.storage.hadoop.variant.io.HadoopVariantExporter;
 import org.opencb.opencga.storage.hadoop.variant.mr.StreamVariantDriver;
+import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsFileCleaner;
 import org.opencb.opencga.storage.hadoop.variant.prune.VariantPruneManager;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreLoader;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreRemover;
@@ -544,26 +548,42 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     @Override
-    protected VariantDBIterator getVariantsToSecondaryIndex(boolean overwrite, Query query, QueryOptions queryOptions,
-                                                            VariantDBAdaptor dbAdaptor) throws StorageEngineException {
+    protected VariantSearchLoadResult secondaryIndexLoad(boolean overwrite, SearchIndexMetadata indexMetadata,
+                                                         Query query, QueryOptions queryOptions)
+            throws StorageEngineException, IOException {
+        VariantSearchManager variantSearchManager = getVariantSearchManager();
 
-        logger.info("Get variants to index from pending variants table");
+        logger.info("Get variants to index from pending variants files");
         logger.info("Query: " + query.toJson());
-        try {
-            return new SecondaryIndexPendingVariantsFileBasedManager(getVariantTableName(), getConf()).iterator(query);
-        } catch (IOException e) {
-            throw new StorageEngineException("Error getting variants to index from pending variants table", e);
-        }
-    }
+        SecondaryIndexPendingVariantsFileBasedManager pendingVariantsManager
+                = new SecondaryIndexPendingVariantsFileBasedManager(getVariantTableName(), getConf());
 
-    @Override
-    protected HadoopVariantSearchDataWriter newVariantSearchDataWriter(SearchIndexMetadata indexMetadata)
-            throws StorageEngineException {
-        return new HadoopVariantSearchDataWriter(
+        DataReader<Variant> reader;
+        VariantSecondaryIndexFilter filter = new VariantSecondaryIndexFilter(getMetadataManager().getStudies());
+        reader = pendingVariantsManager
+                .reader(query)
+                .then(filter);
+
+        PendingVariantsFileCleaner cleaner = pendingVariantsManager.cleaner();
+        HadoopVariantSearchDataWriter writer = new HadoopVariantSearchDataWriter(
                 getVariantSearchManager().buildCollectionName(indexMetadata),
                 getVariantSearchManager().getSolrClient(),
                 getVariantSearchManager().getInsertBatchSize(),
-                getDBAdaptor());
+                getDBAdaptor(),
+                cleaner
+        );
+
+        try (VariantDBIterator iterator = VariantDBIterator.wrapper(reader.iterator())) {
+            VariantSearchLoadResult load = variantSearchManager.load(indexMetadata, iterator, writer);
+            cleaner.success();
+            return load;
+        } catch (StorageEngineException e) {
+            cleaner.abort();
+            throw e;
+        } catch (Exception e) {
+            cleaner.abort();
+            throw new StorageEngineException("Exception building secondary index", e);
+        }
     }
 
     @Override

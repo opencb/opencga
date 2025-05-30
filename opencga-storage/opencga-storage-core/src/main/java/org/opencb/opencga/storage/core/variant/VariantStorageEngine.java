@@ -775,11 +775,12 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                                                      SearchIndexMetadata indexMetadata)
             throws StorageEngineException, IOException, VariantSearchException {
         Query query = VariantQueryUtils.copy(inputQuery);
+        if (query.keySet().stream().anyMatch(key -> !VariantQueryParam.REGION.key().equals(key))) {
+            throw new IllegalArgumentException("Secondary annotation index only supports queries with "
+                    + VariantQueryParam.REGION.key() + " parameter");
+        }
         QueryOptions queryOptions = VariantQueryUtils.copy(inputQueryOptions);
-
-        VariantDBAdaptor dbAdaptor = getDBAdaptor();
-
-        VariantSearchManager variantSearchManager = getVariantSearchManager();
+        queryOptions.put(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_SAMPLES, VariantField.STUDIES_FILES));
 
         // check files and samples that will be affected
         boolean partialLoad = isValidParam(query, VariantQueryParam.REGION);
@@ -819,15 +820,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
 
         // then, load variants
-        queryOptions.put(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_SAMPLES, VariantField.STUDIES_FILES));
-        VariantSearchLoadResult load;
-        try (VariantDBIterator iterator = getVariantsToSecondaryIndex(overwrite, query, queryOptions, dbAdaptor)) {
-            load = variantSearchManager.load(indexMetadata, iterator, newVariantSearchDataWriter(indexMetadata));
-        } catch (StorageEngineException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new StorageEngineException("Exception building secondary index", e);
-        }
+        VariantSearchLoadResult load = secondaryIndexLoad(overwrite, indexMetadata, query, queryOptions);
 
         if (partialLoad) {
             logger.info("Partial secondary annotation index. Do not update modificationDate nor status");
@@ -877,14 +870,26 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     }
 
-    protected VariantDBIterator getVariantsToSecondaryIndex(boolean overwrite, Query query, QueryOptions queryOptions,
-                                                            VariantDBAdaptor dbAdaptor)
-            throws StorageEngineException {
+    protected VariantSearchLoadResult secondaryIndexLoad(boolean overwrite, SearchIndexMetadata indexMetadata,
+                                                       Query query, QueryOptions queryOptions) throws StorageEngineException, IOException {
+        VariantSearchManager variantSearchManager = getVariantSearchManager();
+        VariantDBAdaptor dbAdaptor = getDBAdaptor();
+
         if (!overwrite) {
-            query.put(VariantQueryUtils.VARIANTS_TO_INDEX.key(), true);
+            query.put(VARIANTS_TO_INDEX.key(), true);
         }
         VariantSecondaryIndexFilter filter = new VariantSecondaryIndexFilter(getMetadataManager().getStudies());
-        return dbAdaptor.iterator(query, queryOptions).mapBuffered(filter, 10);
+        SolrInputDocumentDataWriter writer = new SolrInputDocumentDataWriter(getVariantSearchManager().buildCollectionName(indexMetadata),
+                getVariantSearchManager().getSolrClient(),
+                getVariantSearchManager().getInsertBatchSize());
+
+        try (VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions).mapBuffered(filter, 10)) {
+            return variantSearchManager.load(indexMetadata, iterator, writer);
+        } catch (StorageEngineException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new StorageEngineException("Exception building secondary index", e);
+        }
     }
 
     protected void searchIndexLoadedFiles(List<URI> inputFiles, ObjectMap options) throws StorageEngineException {
@@ -895,13 +900,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         } catch (IOException | VariantSearchException e) {
             throw new StorageEngineException("Error indexing in search", e);
         }
-    }
-
-    protected SolrInputDocumentDataWriter newVariantSearchDataWriter(SearchIndexMetadata indexMetadata)
-            throws StorageEngineException {
-        return new SolrInputDocumentDataWriter(getVariantSearchManager().buildCollectionName(indexMetadata),
-                getVariantSearchManager().getSolrClient(),
-                getVariantSearchManager().getInsertBatchSize());
     }
 
     public boolean secondaryAnnotationIndexActiveAndAlive() throws StorageEngineException {

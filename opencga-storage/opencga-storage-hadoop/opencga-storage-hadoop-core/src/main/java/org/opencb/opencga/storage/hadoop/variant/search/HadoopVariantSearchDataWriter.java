@@ -16,12 +16,10 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
-import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsFileBasedManager;
-import org.opencb.opencga.storage.hadoop.variant.search.pending.index.file.SecondaryIndexPendingVariantsFileBasedManager;
+import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsFileCleaner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -34,7 +32,7 @@ import java.util.stream.Collectors;
 public class HadoopVariantSearchDataWriter extends SolrInputDocumentDataWriter {
 
     private final HBaseDataWriter<Mutation> writer;
-    private final PendingVariantsFileBasedManager.PendingVariantsFileCleaner cleaner;
+    private final PendingVariantsFileCleaner cleaner;
     private final List<Variant> variantsToClean = new ArrayList<>();
     private final List<Mutation> rowsToUpdate = new ArrayList<>();
     private final byte[] family = GenomeHelper.COLUMN_FAMILY_BYTES;
@@ -47,15 +45,10 @@ public class HadoopVariantSearchDataWriter extends SolrInputDocumentDataWriter {
 
 
     public HadoopVariantSearchDataWriter(String collection, SolrClient solrClient, int insertBatchSize,
-                                         VariantHadoopDBAdaptor dbAdaptor) {
+                                         VariantHadoopDBAdaptor dbAdaptor, PendingVariantsFileCleaner cleaner) {
         super(collection, solrClient, insertBatchSize);
         this.writer = new HBaseDataWriter<>(dbAdaptor.getHBaseManager(), dbAdaptor.getVariantTable());
-        try {
-            this.cleaner = new SecondaryIndexPendingVariantsFileBasedManager(dbAdaptor.getVariantTable(), dbAdaptor.getConfiguration())
-                    .cleaner();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        this.cleaner = cleaner;
         this.studiesMap = new HashMap<>(dbAdaptor.getMetadataManager().getStudies());
         for (String study : new ArrayList<>(studiesMap.keySet())) {
             studiesMap.put(VariantSearchToVariantConverter.studyIdToSearchModel(study), studiesMap.get(study));
