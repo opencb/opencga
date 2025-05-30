@@ -1,6 +1,6 @@
 .. contents::
 
-PyOpenCGA-enterprise
+PyOpenCGA_enterprise
 ====================
 
 This Python client package makes use of the comprehensive RESTful web services API implemented for the `OpenCGA`_ platform.

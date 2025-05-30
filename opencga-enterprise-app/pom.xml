@@ -376,10 +376,10 @@
                                     <arg value="${build.dir}/clients/python/setup.py"/>
                                 </exec>
 
-                                <echo>Renaming folder pyopencga to pyopencga-enterprise</echo>
+                                <echo>Renaming folder pyopencga to pyopencga_enterprise</echo>
                                 <exec executable="mv" failonerror="true">
                                     <arg value="${build.dir}/clients/python/pyopencga"/>
-                                    <arg value="${build.dir}/clients/python/pyopencga-enterprise"/>
+                                    <arg value="${build.dir}/clients/python/pyopencga_enterprise"/>
                                 </exec>
 
                                 <!--END Building python library  -->
