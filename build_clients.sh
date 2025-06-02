@@ -94,7 +94,7 @@ if ! $SKIP_PYTHON; then
   PYPY_VERSION=$(python3 opencga-app/app/scripts/calculate_pypi_version.py "$VERSION")
   echo ">> Compressing OpenCGA Python client..."
   PYTHON_DIR="./build/clients/python"
-  ARCHIVE_NAME="python-client-$PYPY_VERSION.tar.gz"
+  ARCHIVE_NAME="opencga-python-client-$PYPY_VERSION.tar.gz"
   echo ">> Compressing the Python client directory $PYTHON_DIR to $DIST_DIR/$ARCHIVE_NAME..."
   tar -czf "$DIST_DIR/$ARCHIVE_NAME" -C "$PYTHON_DIR" .
 fi
@@ -109,7 +109,7 @@ fi
 if ! $SKIP_JS; then
   echo ">> Copying OpenCGA JavaScript client..."
   JAVASCRIPT_DIR="./build/clients/javascript"
-  JAVASCRIPT_CLIENT_NAME="javascript-client-$VERSION.tar.gz"
+  JAVASCRIPT_CLIENT_NAME="opencga-javascript-client-$VERSION.tar.gz"
   echo ">> Compressing the Javascript client directory $JAVASCRIPT_DIR to $DIST_DIR/$JAVASCRIPT_CLIENT_NAME..."
   tar -czf "$DIST_DIR/$JAVASCRIPT_CLIENT_NAME" -C "$JAVASCRIPT_DIR" .
 fi
