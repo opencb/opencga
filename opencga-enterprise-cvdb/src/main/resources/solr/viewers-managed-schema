@@ -568,33 +568,9 @@
     <fieldType name="float" class="solr.TrieFloatField" positionIncrementGap="0" docValues="true" precisionStep="0"/>
     <fieldType name="long" class="solr.TrieLongField" positionIncrementGap="0" docValues="true" precisionStep="0"/>
 
-	<!-- Catalog -->
-
+	<!-- Study ID -->
     <field name="studyId" type="text_en" indexed="true" stored="true" multiValued="false"/>
-
-	<!-- Clinical analysis -->
-
-    <field name="description" type="text_en" indexed="true" stored="true" multiValued="false"/>
-    <field name="type" type="text_en" indexed="true" stored="true" multiValued="false"/>
-    <field name="disorderId" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="fileNames" type="string" indexed="true" stored="true" multiValued="true"/>
-    <field name="probandId" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="probandDisorderIds" type="string" indexed="true" stored="true" multiValued="true"/>
-    <field name="probandPhenotypeNames" type="string" indexed="true" stored="true" multiValued="true"/>
-    <field name="familyId" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="familyPhenotypeNames" type="string" indexed="true" stored="true" multiValued="true"/>
-    <field name="familyMemberIds" type="string" indexed="true" stored="true" multiValued="true"/>
-    <field name="panelIds" type="string" indexed="true" stored="true" multiValued="true"/>
-
-    <field name="report" type="text_en" indexed="true" stored="true" multiValued="false"/>
-    <field name="status" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="locked" type="boolean" indexed="true" stored="true" multiValued="false"/>
-
-	<!-- Minimum JSON -->
-    <field name="minJson" type="text_en" indexed="false" stored="true" multiValued="false"/>
-	<!-- Medium JSON, i.e. without Panel.{gene|region|variant} for case, interpretation and secondaryInterpetrations -->
-    <field name="mediumJson" type="text_en" indexed="false" stored="true" multiValued="false"/>
-	<!-- Max JSON, i.e. with all information -->
-    <field name="maxJson" type="text_en" indexed="false" stored="true" multiValued="false"/>
+	<!-- List of viewers (i.e., user IDs) -->
+    <field name="viewers" type="string" indexed="true" stored="true" multiValued="true"/>
 
 </schema>

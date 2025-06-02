@@ -257,6 +257,7 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         analysisCVDBCommandOptions = new AnalysisCVDBCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("cvdb", analysisCVDBCommandOptions);
         JCommander analysisCVDBSubCommands = jCommander.getCommands().get("cvdb");
+        analysisCVDBSubCommands.addCommand("acl-update", analysisCVDBCommandOptions.updateAclCommandOptions);
         analysisCVDBSubCommands.addCommand("analysis-aggregate", analysisCVDBCommandOptions.aggregateAnalysisCommandOptions);
         analysisCVDBSubCommands.addCommand("analysis-query", analysisCVDBCommandOptions.queryAnalysisCommandOptions);
         analysisCVDBSubCommands.addCommand("evidence-aggregate", analysisCVDBCommandOptions.aggregateEvidenceCommandOptions);
