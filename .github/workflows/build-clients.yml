@@ -5,7 +5,7 @@ on:
 
 jobs:
   build-clients:
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.UBUNTU_VERSION }}
     steps:
       - uses: actions/checkout@v4
         with:
