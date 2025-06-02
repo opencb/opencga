@@ -127,6 +127,7 @@ variant:
     search.intersect.active: true           # Allow intersect queries with the SearchEngine (Solr)
     search.intersect.always: false          # Force intersect queries
     search.intersect.params.threshold: 3    # Minimum number of QueryParams in the query to intersect
+    search.load.shardsPerNode: 1            # Number of shards to be created per node in the SearchEngine (Solr)
 
     walker.docker.memory: "1024m" # Memory limit for the docker executor
 #    walker.docker.cpu: "1"        # CPU limit for the docker executor

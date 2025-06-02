@@ -53,9 +53,10 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
                                            String storageEngineId, StorageConfiguration configuration,
                                            ObjectMap options) {
         super(dbAdaptor, searchManager, storageEngineId, configuration, options);
-        intersectActive = getOptions().getBoolean(INTERSECT_ACTIVE.key(), INTERSECT_ACTIVE.defaultValue());
-        intersectAlways = getOptions().getBoolean(INTERSECT_ALWAYS.key(), INTERSECT_ALWAYS.defaultValue());
-        intersectParamsThreshold = getOptions().getInt(INTERSECT_PARAMS_THRESHOLD.key(), INTERSECT_PARAMS_THRESHOLD.defaultValue());
+        intersectActive = getOptions().getBoolean(SEARCH_INTERSECT_ACTIVE.key(), SEARCH_INTERSECT_ACTIVE.defaultValue());
+        intersectAlways = getOptions().getBoolean(SEARCH_INTERSECT_ALWAYS.key(), SEARCH_INTERSECT_ALWAYS.defaultValue());
+        intersectParamsThreshold = getOptions().getInt(SEARCH_INTERSECT_PARAMS_THRESHOLD.key(),
+                SEARCH_INTERSECT_PARAMS_THRESHOLD.defaultValue());
     }
 
     public SearchIndexVariantQueryExecutor setIntersectActive(boolean intersectActive) {

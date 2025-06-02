@@ -23,11 +23,15 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.opencb.biodata.models.core.Gene;
@@ -68,6 +72,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 
@@ -84,7 +89,6 @@ public class VariantSearchManager {
     private final String dbName;
     private VariantSearchToVariantConverter variantSearchToVariantConverter;
     private int insertBatchSize;
-    private String configSet;
 
     private Logger logger;
 
@@ -99,7 +103,7 @@ public class VariantSearchManager {
         this.cellBaseClient = cellBaseUtils.getCellBaseClient();
         this.options = options;
         this.variantSearchToVariantConverter = new VariantSearchToVariantConverter();
-        setSearchConfiguration(storageConfiguration.getSearch());
+        initSolr(storageConfiguration.getSearch());
 
         logger = LoggerFactory.getLogger(VariantSearchManager.class);
     }
@@ -113,69 +117,236 @@ public class VariantSearchManager {
     }
 
     public String create(SearchIndexMetadata indexMetadata) throws VariantSearchException {
-        String collection = buildCollectionName(indexMetadata);
+        return create(buildCollectionName(indexMetadata), indexMetadata.getConfigSetId());
+    }
+
+    private String create(String collection, String configSet) throws VariantSearchException {
         try {
             if (this.existsCollection(collection)) {
                 this.logger.warn("Solr cloud collection {} already exists", collection);
-                logCollectionStatus(collection);
-            } else {
-                try {
-                    int numNodes = getLiveNodes().size();
-                    int numReplicas = Math.min(2, numNodes);
-                    int numShards = 1;
-
-                    logger.info("Create collection with {} shards and {} Tlog replicas", numShards, numReplicas);
-                    CollectionAdminRequest.Create request = CollectionAdminRequest.createCollection(collection, configSet, numShards, 0,
-                            numReplicas, 0);
-                    request.setMaxShardsPerNode(numReplicas);
-                    request.process(getSolrClient());
-                    logCollectionStatus(collection);
-                } catch (SolrException e) {
-                    throw e;
-                } catch (Exception e) {
-                    throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+                SolrCollectionStatus status = getCollectionStatus(collection);
+                if (status.getShards().stream().flatMap(shard->shard.getReplicas().stream())
+                        .anyMatch(replica -> !replica.isLeader() && replica.isPreferredLeader())) {
+                    logger.warn("Collection {} has replicas that are not leaders but preferred leaders. "
+                                    + "Ensure shards are properly balanced before continuing.",
+                            collection);
+                    balanceCollectionLeaders(collection);
                 }
+            } else {
+                int numNodes = getLiveNodes().size();
+                // If there are multiple nodes, create collection with at least two replicas
+                int numReplicas = Math.min(2, numNodes);
+                // Create N shard per node
+                int shardsPerNode = options.getInt(VariantStorageOptions.SEARCH_LOAD_SHARDS_PER_NODE.key(),
+                        VariantStorageOptions.SEARCH_LOAD_SHARDS_PER_NODE.defaultValue());
+
+                int numShards = Math.max(1, numNodes * shardsPerNode);
+                int maxShardsPerNode = Math.max(1, numReplicas * shardsPerNode);
+
+                logger.info("Create collection with {} shards and {} Tlog replicas", numShards, numReplicas);
+                CollectionAdminRequest
+                        .createCollection(collection, configSet, numShards, 0, numReplicas, 0)
+                        .setMaxShardsPerNode(maxShardsPerNode)
+                        .process(getSolrClient());
+
+                // Ensure shard leaders are correctly balanced
+                balanceCollectionLeaders(collection);
             }
+            logCollectionStatus(collection);
             return collection;
-        } catch (VariantSearchException e) {
-            throw e;
-        } catch (SolrException e) {
+        } catch (SolrException | SolrServerException | IOException e) {
             throw new VariantSearchException("Error creating Solr collection '" + collection + "'", e);
         }
     }
 
-    private void logCollectionStatus(String collection) throws VariantSearchException {
+    public void balanceCollectionLeaders(String collection) throws SolrServerException, IOException {
+        // http://solr-node-0:8983/solr/admin/collections?action=BALANCESHARDUNIQUE&collection=my_coll&property=preferredLeader&wt=json
+        CollectionAdminRequest.balanceReplicaProperty(collection, "preferredLeader").process(getSolrClient());
+
+        // http://solr-node-0:8983/solr/admin/collections?action=RELOAD&collection=my_coll&wt=json
+        CollectionAdminRequest.reloadCollection(collection).process(getSolrClient());
+
+        // http://solr-node-0:8983/solr/admin/collections?action=REBALANCELEADERS&collection=my_coll&wt=json
+        CollectionAdminResponse rebalanceResponse = CollectionAdminRequest.rebalanceLeaders(collection).process(getSolrClient());
+        logger.info("REBALANCELEADERS({}) = {}", collection, rebalanceResponse);
+    }
+
+    public void waitForReplicasInSync(SearchIndexMetadata indexMetadata, int timeout, TimeUnit timeUnit) throws VariantSearchException {
+        waitForReplicasInSync(indexMetadata, timeout, timeUnit, true);
+    }
+
+    public boolean waitForReplicasInSync(SearchIndexMetadata indexMetadata, int timeout, TimeUnit timeUnit, boolean throwException)
+            throws VariantSearchException {
+        String collectionName = buildCollectionName(indexMetadata);
+
+        long sleepMs = TimeUnit.SECONDS.toMillis(5);
+        long timeoutMs = timeUnit.toMillis(timeout);
+        while (!tlogReplicasInSync(collectionName)) {
+            logger.info("Waiting for TLOG replicas in collection '{}' to be in sync...", collectionName);
+            if (timeoutMs < 0) {
+                if (throwException) {
+                    throw new VariantSearchException("Timeout while waiting for TLOG replicas to be in sync for collection "
+                            + "'" + collectionName + "'");
+                } else {
+                    logger.warn("Timeout while waiting for TLOG replicas to be in sync for collection '{}'", collectionName);
+                    return false;
+                }
+            }
+            try {
+                Thread.sleep(sleepMs);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new VariantSearchException("Interrupted while waiting for TLOG replicas to be in sync", e);
+            }
+            timeoutMs -= sleepMs;
+        }
+        return true;
+    }
+
+    public boolean tlogReplicasInSync(SearchIndexMetadata indexMetadata) throws VariantSearchException {
+        return tlogReplicasInSync(buildCollectionName(indexMetadata));
+    }
+
+    public boolean tlogReplicasInSync(String collection) throws VariantSearchException {
+        try {
+            boolean sync = true;
+            SolrCollectionStatus status = getCollectionStatus(collection);
+
+            for (SolrShardStatus shard : status.getShards()) {
+                // Get the leader's document count
+                SolrReplicaCoreStatus leader = shard.getReplicas().stream()
+                        .filter(SolrReplicaCoreStatus::isLeader)
+                        .findFirst()
+                        .orElseThrow(() -> new VariantSearchException("No leader found for shard: " + shard.getName()));
+
+                long leaderDocCount = getDocumentCount(leader.getBaseUrl(), leader.getCoreName());
+
+                // Check TLOG replicas
+                for (SolrReplicaCoreStatus replica : shard.getReplicas()) {
+                    if ("TLOG".equalsIgnoreCase(replica.getType())) {
+                        long replicaDocCount = getDocumentCount(replica.getBaseUrl(), replica.getCoreName());
+                        if (replicaDocCount != leaderDocCount) {
+                            logger.info("TLOG replica '{}' in shard '{}' is not in sync with the leader '{}'. "
+                                            + "Leader document count: {}, Replica document count: {}",
+                                    replica.getName(), shard.getName(), leader.getName(), leaderDocCount, replicaDocCount);
+                            sync = false;
+                        }
+                    }
+                }
+            }
+            return sync;
+        } catch (SolrServerException | IOException e) {
+            throw new VariantSearchException("Error checking TLOG replicas for collection '" + collection + "'", e);
+        }
+    }
+
+    private long getDocumentCount(String nodeName, String coreName) throws SolrServerException, IOException {
+        try (HttpSolrClient solrClient = new HttpSolrClient.Builder(nodeName).build()) {
+            CoreAdminRequest req = new CoreAdminRequest();
+            req.setAction(CoreAdminParams.CoreAdminAction.STATUS);
+            req.setIndexInfoNeeded(true);
+            CoreAdminResponse response = req.process(solrClient);
+            ObjectMap map = (ObjectMap) response.getCoreStatus(coreName).toMap(new ObjectMap());
+            return map.getNestedMap("index").getLong("numDocs");
+        }
+    }
+
+    public SolrCollectionStatus getCollectionStatus(String collection) throws VariantSearchException {
         try {
             ObjectMap responseMap = (ObjectMap) CollectionAdminRequest.getClusterStatus()
                     .setCollectionName(collection)
                     .process(getSolrClient()).toMap(new ObjectMap());
-            logger.info("Collection '{}'", collection);
+
+            List<SolrShardStatus> shardsList = new ArrayList<>();
             ObjectMap shards = responseMap.getNestedMap("cluster.collections." + collection + ".shards");
             for (String shard : shards.keySet()) {
                 ObjectMap shardMap = shards.getNestedMap(shard);
                 ObjectMap replicas = shardMap.getNestedMap("replicas");
-                logger.info(" - Shard: {}, Replicas: {}", shard, replicas.size());
+
+                List<SolrReplicaCoreStatus> replicaList = new ArrayList<>();
                 for (String replica : replicas.keySet()) {
                     ObjectMap replicaInfo = replicas.getNestedMap(replica);
-                    String coreName = replicaInfo.getString("core");
                     String replicaType = replicaInfo.getString("type");
+                    String nodeName = replicaInfo.getString("node_name");
+                    String baseUrl = replicaInfo.getString("base_url");
+                    String coreName = replicaInfo.getString("core");
+                    String state = replicaInfo.getString("state");
                     boolean leader = replicaInfo.getBoolean("leader");
-                    boolean active = replicaInfo.getString("state").equals("active");
-                    logger.info("   - Replica: {}, Core: {}, Type: {}, Leader: {}, Active: {}",
-                            replica, coreName, replicaType, leader, active);
+                    boolean preferredLeader = replicaInfo.getBoolean("property.preferredleader", false);
+
+                    replicaList.add(new SolrReplicaCoreStatus(
+                            replica,
+                            replicaType,
+                            nodeName,
+                            baseUrl,
+                            coreName,
+                            state,
+                            leader,
+                            preferredLeader));
                 }
+                replicaList.sort(Comparator.comparing(SolrReplicaCoreStatus::getNodeName));
+                shardsList.add(new SolrShardStatus(shard, replicaList));
             }
+            shardsList.sort(Comparator.comparing(SolrShardStatus::getName));
+            return new SolrCollectionStatus(collection, shardsList);
         } catch (SolrServerException | IOException e) {
             throw new VariantSearchException("Error getting Solr collection '" + collection + "' status", e);
         }
     }
 
-    private List<String> getLiveNodes() throws SolrServerException, IOException {
+    public void logCollectionStatus(String collection) throws VariantSearchException {
+        SolrCollectionStatus collectionStatus = getCollectionStatus(collection);
+        logCollectionStatus(collectionStatus);
+    }
+
+    private void logCollectionStatus(SolrCollectionStatus collectionStatus) {
+        logger.info("Collection '{}'", collectionStatus.getName());
+        for (SolrShardStatus shardStatus : collectionStatus.getShards()) {
+            logger.info(" * Shard '{}'", shardStatus.getName());
+            for (SolrReplicaCoreStatus replicaStatus : shardStatus.getReplicas()) {
+                String leaderStatus;
+                boolean warn = false;
+                if (replicaStatus.isLeader()) {
+                    if (replicaStatus.isPreferredLeader()) {
+                        leaderStatus = " (leader)";
+                    } else {
+                        leaderStatus = " (leader, NOT PREFERRED)";
+                        warn = true;
+                    }
+                } else {
+                    if (replicaStatus.isPreferredLeader()) {
+                        leaderStatus = " (preferred, NOT LEADER)";
+                        warn = true;
+                    } else {
+                        leaderStatus = "";
+                    }
+                }
+                if (warn) {
+                    logger.warn("   * Replica '{}'{} <<<<<", replicaStatus.getName(), leaderStatus);
+                } else {
+                    logger.info("   * Replica '{}'{}", replicaStatus.getName(), leaderStatus);
+                }
+                logger.info("     - CoreName: {}", replicaStatus.getCoreName());
+                logger.info("     - Node: {}", replicaStatus.getNodeName());
+                logger.info("     - Type: {}", replicaStatus.getType());
+                if (!"active".equals(replicaStatus.getState())) {
+                    logger.info("     - State: {}", replicaStatus.getState());
+                }
+            }
+        }
+    }
+
+    public List<String> getLiveNodes() throws VariantSearchException {
         // Get number of solr nodes
-        ObjectMap result = new ObjectMap();
-        CollectionAdminResponse response = CollectionAdminRequest.getClusterStatus().process(getSolrClient());
-        response.toMap(result);
-        return new ObjectMap(result.getMap("cluster")).getAsStringList("live_nodes");
+        try {
+            ObjectMap result = new ObjectMap();
+            CollectionAdminResponse response = CollectionAdminRequest.getClusterStatus()
+                    .process(getSolrClient());
+            response.toMap(result);
+            return new ObjectMap(result.getMap("cluster")).getAsStringList("live_nodes");
+        } catch (SolrServerException | IOException e) {
+            throw new VariantSearchException("Error getting Solr live nodes", e);
+        }
     }
 
 //    public void createCore(String coreName, String configSet) throws VariantSearchException {
@@ -304,11 +475,14 @@ public class VariantSearchManager {
         } catch (ExecutionException e) {
             throw new VariantSearchException("Error loading secondary index", e);
         }
-
+        logCollectionStatus(collection);
         int count = variantDBIterator.getCount();
         logger.info("Variant Search loading done. " + count + " variants indexed in " + TimeUtils.durationToString(stopWatch));
-        float rate = count / (stopWatch.getTime() / 1000f) * 3600;
-        logger.info("Insertion rate: " + String.format("%.3f", rate) + " variants/hour");
+        float ratePerHour = count / (stopWatch.getTime() / 1000f) * 3600;
+        logger.info("Insertion rate: " + String.format("%.2f", ratePerHour) + " variants/hour "
+                + "(" + String.format("%.2f", ratePerHour / 1000000) + " M/h)");
+
+        waitForReplicasInSync(indexMetadata, 5, TimeUnit.MINUTES, false);
         return new VariantSearchLoadResult(count, count, 0);
     }
 
@@ -863,17 +1037,15 @@ public class VariantSearchManager {
         return solrManager.getSolrClient();
     }
 
-    public void setSearchConfiguration(SearchConfiguration searchConfiguration) {
+    public void initSolr(SearchConfiguration searchConfiguration) {
         SolrManager solrManager = new SolrManager(searchConfiguration.getHosts(),
                 searchConfiguration.getMode(),
                 searchConfiguration.getTimeout());
 
-        setSearchConfiguration(searchConfiguration, solrManager);
+        initSolr(searchConfiguration, solrManager);
     }
 
-    public void setSearchConfiguration(SearchConfiguration searchConfiguration, SolrManager solrManager) {
-        this.configSet = searchConfiguration.getConfigSet();
-
+    public void initSolr(SearchConfiguration searchConfiguration, SolrManager solrManager) {
         // Set internal insert batch size from configuration and default value
         insertBatchSize = searchConfiguration.getInsertBatchSize() > 0
                 ? searchConfiguration.getInsertBatchSize()

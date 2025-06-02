@@ -36,10 +36,10 @@ public class VariantSecondaryAnnotationIndexSets {
 
     public SearchIndexMetadata getLastStagingOrActiveIndex() {
         SearchIndexMetadata stagingIndex = null;
-        for (SearchIndexMetadata indexSet : values) {
-            if (indexSet.getStatus() == SearchIndexMetadata.Status.STAGING) {
-                if (stagingIndex == null || stagingIndex.getCreationDate().before(indexSet.getCreationDate())) {
-                    stagingIndex = indexSet;
+        for (SearchIndexMetadata thisIndexMetadata : values) {
+            if (thisIndexMetadata.getStatus() == SearchIndexMetadata.Status.STAGING) {
+                if (stagingIndex == null || stagingIndex.getCreationDate().before(thisIndexMetadata.getCreationDate())) {
+                    stagingIndex = thisIndexMetadata;
                 }
             }
         }

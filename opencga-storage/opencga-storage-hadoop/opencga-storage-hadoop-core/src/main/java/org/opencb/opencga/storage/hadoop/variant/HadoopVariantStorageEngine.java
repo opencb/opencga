@@ -488,10 +488,12 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
 
         boolean shouldRunDiscover = false;
         if (overwrite) {
-            logger.info("Overwrite is true, running discover pending variants to secondary index");
+            logger.info("Overwrite is true, running discover pending variants to secondary annotation index");
             shouldRunDiscover = true;
         }
+
         // TODO: Check if there has been any change since last time discover was run
+        //     : Check if the indexMetadata is new. Should run "discover" with indexMetadata creation timestamp?
 //        int lastUpdateTimestamp = indexMetadata.getAttributes().getInt("pendingVariantsToSecondaryIndexTimestamp", 0);
 //        ProjectMetadata projectMetadata = getMetadataManager().getProjectMetadata();
         shouldRunDiscover = true; // TODO: Remove this line when the above is implemented

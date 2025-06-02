@@ -68,9 +68,7 @@ import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescripto
 import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantAggregationExecutor;
 import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.search.VariantSecondaryIndexFilter;
-import org.opencb.opencga.storage.core.variant.search.solr.SolrInputDocumentDataWriter;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
+import org.opencb.opencga.storage.core.variant.search.solr.*;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.core.variant.stats.SampleVariantStatsAggregationQuery;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
@@ -750,21 +748,44 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 logger.info("Creating new secondary annotation index collection '{}' , configSetId:'{}'",
                         variantSearchManager.buildCollectionName(indexMetadata), indexMetadata.getConfigSetId());
             }
-        } else if (overwrite) {
-            boolean shouldCreateNewIndex = false;
-            if (!indexMetadata.getConfigSetId().equals(configuration.getSearch().getConfigSet())) {
-                logger.info("ConfigSetId changed from '{}' to '{}'. Creating new secondary annotation index to match new configSetId",
-                        indexMetadata.getConfigSetId(), configuration.getSearch().getConfigSet());
-                shouldCreateNewIndex = true;
+        } else {
+            if (!variantSearchManager.exists(indexMetadata)) {
+                String collectionName = variantSearchManager.buildCollectionName(indexMetadata);
+                logger.info("Collection {} does not exist. Force overwrite=true", collectionName);
+                overwrite = true; // Force overwrite to true if the collection does not exist
             }
-            if (shouldCreateNewIndex) {
-                logger.info("Create new secondary annotation index collection.");
-                logger.info(" Prev : '{}' , configSetId:'{}'", variantSearchManager.buildCollectionName(indexMetadata),
-                        indexMetadata.getConfigSetId());
-                indexMetadata = variantSearchManager.newIndexMetadata(configuration.getSearch().getConfigSet());
-                logger.info(" New : '{}' , configSetId:'{}'",
-                        variantSearchManager.buildCollectionName(indexMetadata),
-                        indexMetadata.getConfigSetId());
+
+            if (overwrite) {
+                boolean shouldCreateNewIndex = false;
+                if (!indexMetadata.getConfigSetId().equals(configuration.getSearch().getConfigSet())) {
+                    logger.info("ConfigSetId changed from '{}' to '{}'. Creating new secondary annotation index to match new configSetId",
+                            indexMetadata.getConfigSetId(), configuration.getSearch().getConfigSet());
+                    shouldCreateNewIndex = true;
+                } else {
+                    String collectionName = variantSearchManager.buildCollectionName(indexMetadata);
+                    SolrCollectionStatus status = variantSearchManager.getCollectionStatus(collectionName);
+                    int numShards = status.getShards().size();
+                    int numNodes = variantSearchManager.getLiveNodes().size();
+                    int shardsPerNode = getOptions().getInt(VariantStorageOptions.SEARCH_LOAD_SHARDS_PER_NODE.key(),
+                            VariantStorageOptions.SEARCH_LOAD_SHARDS_PER_NODE.defaultValue());
+
+                    if (numShards < numNodes * shardsPerNode) {
+                        logger.info("Number of shards '{}' is less than expected '{}' ({} nodes * {} shards per node). "
+                                        + "Creating new secondary annotation index to match new number of shards",
+                                numShards, numNodes * shardsPerNode, numNodes, shardsPerNode);
+                        shouldCreateNewIndex = true;
+                    }
+                }
+
+                if (shouldCreateNewIndex) {
+                    logger.info("Create new secondary annotation index collection.");
+                    logger.info(" Prev : '{}' , configSetId:'{}'", variantSearchManager.buildCollectionName(indexMetadata),
+                            indexMetadata.getConfigSetId());
+                    indexMetadata = variantSearchManager.newIndexMetadata(configuration.getSearch().getConfigSet());
+                    logger.info(" New : '{}' , configSetId:'{}'",
+                            variantSearchManager.buildCollectionName(indexMetadata),
+                            indexMetadata.getConfigSetId());
+                }
             }
         }
 

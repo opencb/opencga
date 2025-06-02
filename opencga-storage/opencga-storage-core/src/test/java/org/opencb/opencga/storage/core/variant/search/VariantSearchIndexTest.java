@@ -5,8 +5,6 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
@@ -17,12 +15,13 @@ import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResu
 import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 
-import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created on 19/04/18.
@@ -40,6 +39,15 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
     public void before() throws Exception {
         super.before();
         solr.configure(variantStorageEngine);
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        try {
+            solr.printCollections(Paths.get(outputUri));
+        } catch (Exception e) {
+            System.err.println("Error printing collections: " + e.getMessage());
+        }
     }
 
     @Test
@@ -205,12 +213,13 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
         checkVariantSearchIndex(dbAdaptor);
     }
 
-    public void checkVariantSearchIndex(VariantDBAdaptor dbAdaptor) throws IOException, VariantSearchException, StorageEngineException {
+    public void checkVariantSearchIndex(VariantDBAdaptor dbAdaptor) throws Exception {
         QueryOptions queryOptions = new QueryOptions(QueryOptions.LIMIT, 1000);
         Query query = new Query();
 
         SearchIndexMetadata indexMetadata = metadataManager.getProjectMetadata().getSecondaryAnnotationIndex()
                 .getLastStagingOrActiveIndex();
+        assertTrue(variantStorageEngine.getVariantSearchManager().tlogReplicasInSync(indexMetadata));
 
         TreeSet<Variant> variantsFromSearch = new TreeSet<>(Comparator.comparing(Variant::toString));
         TreeSet<Variant> variantsFromDB = new TreeSet<>(Comparator.comparing(Variant::toString));

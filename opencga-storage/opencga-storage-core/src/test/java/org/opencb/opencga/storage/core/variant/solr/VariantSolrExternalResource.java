@@ -18,11 +18,15 @@ package org.opencb.opencga.storage.core.variant.solr;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.ZkTestServer;
+import org.apache.solr.common.SolrDocument;
 import org.junit.rules.ExternalResource;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.SearchConfiguration;
@@ -30,6 +34,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -127,11 +132,29 @@ public class VariantSolrExternalResource extends ExternalResource {
         } else {
             host = "http://localhost:8983";
         }
-        variantSearchManager.setSearchConfiguration(searchConfiguration, new SolrManager(solrClient, host, "cloud",
+        variantSearchManager.initSolr(searchConfiguration, new SolrManager(solrClient, host, "cloud",
                 searchConfiguration.getTimeout()));
         return variantSearchManager;
     }
 
+
+    public void printCollections(Path outdir) throws SolrServerException, IOException {
+        for (String collection : CollectionAdminRequest.listCollections(solrClient)) {
+            printCollection(collection, outdir);
+        }
+    }
+
+    public void printCollection(String collection, Path outdir) throws SolrServerException, IOException {
+        Path output = outdir.resolve("solr." + collection + ".txt");
+        System.out.println("Printing collection " + collection + " to " + output.toAbsolutePath());
+        try (DataOutputStream out = new DataOutputStream(Files.newOutputStream(output))) {
+            for (SolrDocument result : solrClient.query(collection, new SolrQuery().setQuery("*:*").setRows(10000)).getResults()) {
+                out.writeBytes(((ObjectMap) result.toMap(new ObjectMap())).toJson());
+                out.writeBytes("\n");
+            }
+        }
+
+    }
 
     /**
      * Cleans the given solrHome directory and creates a new EmbeddedSolrServer.
@@ -142,8 +165,8 @@ public class VariantSolrExternalResource extends ExternalResource {
      * @return a MiniSolrCloudCluster
      * @throws IOException
      */
-    public void create(final String solrHome, final String configSetHome)
-            throws IOException, SolrServerException {
+    private void create(final String solrHome, final String configSetHome)
+            throws IOException {
         create(solrHome, configSetHome, true);
     }
 
@@ -155,8 +178,8 @@ public class VariantSolrExternalResource extends ExternalResource {
      * @return a MiniSolrCloudCluster
      * @throws IOException
      */
-    public void create(final String solrHome, final String configSetHome, final boolean cleanSolrHome)
-            throws IOException, SolrServerException {
+    private void create(final String solrHome, final String configSetHome, final boolean cleanSolrHome)
+            throws IOException {
 
         final File solrHomeDir = new File(solrHome);
         if (solrHomeDir.exists()) {
