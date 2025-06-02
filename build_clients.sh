@@ -73,7 +73,7 @@ done
 
 if ! $SKIP_BUILD_OPENCGA; then
   echo ">> Building OpenCGA..."
-  mvn clean install -DskipTests -DskipITs -DskipCheckstyle -DskipSpotBugs -DskipJavadoc
+  mvn clean install -DskipTests -DskipITs -DskipCheckstyle -DskipSpotBugs -DskipJavadoc --no-transfer-progress
 fi
 
 
