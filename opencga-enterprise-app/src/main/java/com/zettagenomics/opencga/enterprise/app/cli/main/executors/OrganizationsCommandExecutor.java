@@ -83,6 +83,9 @@ public class OrganizationsCommandExecutor extends com.zettagenomics.opencga.ente
             case "notes-update":
                 queryResponse = updateNotes();
                 break;
+            case "user-password-reset":
+                queryResponse = resetUserPassword();
+                break;
             case "update-status-user":
                 queryResponse = userUpdateStatus();
                 break;
@@ -242,6 +245,17 @@ public class OrganizationsCommandExecutor extends com.zettagenomics.opencga.ente
                     .readValue(beanParams.toJson(), NoteUpdateParams.class);
         }
         return enterpriseOpenCGAClient.getEnterpriseOrganizationClient().updateNotes(commandOptions.id, noteUpdateParams, queryParams);
+    }
+
+    private RestResponse<ObjectMap> resetUserPassword() throws Exception {
+        logger.debug("Executing resetUserPassword in Organizations command line");
+
+        OrganizationsCommandOptions.ResetUserPasswordCommandOptions commandOptions = organizationsCommandOptions.resetUserPasswordCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("userId", commandOptions.userId);
+
+        return enterpriseOpenCGAClient.getEnterpriseOrganizationClient().resetUserPassword(queryParams);
     }
 
     private RestResponse<User> userUpdateStatus() throws Exception {
