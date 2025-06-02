@@ -30,6 +30,7 @@ import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
@@ -112,14 +113,29 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
             logger.info("Variant storage projects: {}", variantStorageProjects);
             for (String project : variantStorageProjects) {
                 DataStore dataStore = variantStorageManager.getDataStoreByProjectId(project, token);
-                ObjectMap map = new ObjectMap("project", project);
-                map.put("dataStore", dataStore);
+                ObjectMap map = new ObjectMap("project", project)
+                        .append("bioformat", File.Bioformat.VARIANT.name())
+                        .append("dataStore", dataStore);
+                dataStores.add(map);
+            }
+            List<String> cvdbProjects = getCvdbProjects(organizationIds, catalogManager);
+            logger.info("CVDB projects: {}", cvdbProjects);
+            for (String project : cvdbProjects) {
+                DataStore dataStore = getCvdbDatastore(project, catalogManager);
+                ObjectMap map = new ObjectMap("project", project)
+                        .append("bioformat", File.Bioformat.CVDB.name())
+                        .append("dataStore", dataStore);
                 dataStores.add(map);
             }
             status.put("dataStores", dataStores);
 
             System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(status));
         }
+    }
+
+    protected DataStore getCvdbDatastore(String project, CatalogManager catalogManager) throws CatalogException {
+        DataStore dataStore = VariantStorageManager.getDataStoreByProjectId(catalogManager, project, File.Bioformat.CVDB, token);
+        return dataStore;
     }
 
     private void updateDatabasePrefix() throws Exception {
@@ -148,6 +164,9 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
             List<String> organizationIds = parseOrganizationIds(catalogManager, commandOptions.organizationId);
 
             if (commandOptions.projectsWithoutStorage || commandOptions.projectsWithStorage) {
+                if (commandOptions.bioformat.equals("CVDB")) {
+                    throw new IllegalArgumentException("Cannot use --projects-without-storage or --projects-with-storage with CVDB bioformat.");
+                }
                 variantStorageProjects = new HashSet<>(getVariantStorageProjects(organizationIds, catalogManager, variantStorageManager));
             }
 
@@ -156,22 +175,30 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
                     logger.info("Skip project '{}'", project.getFqn());
                     continue;
                 }
-                if (commandOptions.projectsWithoutStorage && variantStorageProjects.contains(project.getFqn())) {
-                    // Only accept projects WITHOUT storage. so discard projects with storage
-                    logger.info("Skip project '{}' as it has a variant storage.", project.getFqn());
-                    continue;
-                }
-                if (commandOptions.projectsWithStorage && !variantStorageProjects.contains(project.getFqn())) {
-                    // Only accept projects WITH storage. so discard projects without storage
-                    logger.info("Skip project '{}' as it doesn't have a variant storage.", project.getFqn());
-                    continue;
-                }
 
-                // Update variant datastore
-                updateVariantDataStore(commandOptions.dbPrefix, commandOptions.projectsWithUndefinedDBName, project, catalogManager);
+                switch (commandOptions.bioformat) {
+                    case "VARIANT":
+                        if (commandOptions.projectsWithoutStorage && variantStorageProjects.contains(project.getFqn())) {
+                            // Only accept projects WITHOUT storage. so discard projects with storage
+                            logger.info("Skip project '{}' as it has a variant storage.", project.getFqn());
+                            continue;
+                        }
+                        if (commandOptions.projectsWithStorage && !variantStorageProjects.contains(project.getFqn())) {
+                            // Only accept projects WITH storage. so discard projects without storage
+                            logger.info("Skip project '{}' as it doesn't have a variant storage.", project.getFqn());
+                            continue;
+                        }
 
-                // Update CVDB datastore
-                updateCvdbDataStore(commandOptions.cvdbPrefix, commandOptions.projectsWithUndefinedDBName, project, catalogManager);
+                        // Update variant datastore
+                        updateVariantDataStore(commandOptions.dbPrefix, commandOptions.projectsWithUndefinedDBName, project, catalogManager);
+                        break;
+                    case "CVDB":
+                        // Update CVDB datastore
+                        updateCvdbDataStore(commandOptions.dbPrefix, commandOptions.projectsWithUndefinedDBName, project, catalogManager);
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Unknown bioformat '" + commandOptions.bioformat + "'");
+                }
             }
         }
     }
@@ -263,6 +290,15 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
             projects.addAll(catalogManager.getProjectManager().search(organizationId, new Query(), new QueryOptions(), token).getResults());
         }
         return projects;
+    }
+
+    /**
+     * Get list of projects that have CVDB data.
+     * @return List of projects
+     * @throws Exception on error
+     */
+    protected List<String> getCvdbProjects(List<String> organizationIds, CatalogManager catalogManager) throws Exception {
+        return Collections.emptyList();
     }
 
     /**

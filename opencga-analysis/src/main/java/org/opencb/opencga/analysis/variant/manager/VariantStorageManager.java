@@ -1797,12 +1797,28 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         }
 
         if (dataStore == null) { //get default datastore
-            dataStore = defaultDataStore(catalogManager, project);
+            dataStore = defaultDataStore(catalogManager, bioformat, project);
         }
         if (dataStore.getOptions() == null) {
             dataStore.setOptions(new ObjectMap());
         }
 
+        return dataStore;
+    }
+
+    private static DataStore defaultDataStore(CatalogManager catalogManager, File.Bioformat bioformat, Project project) {
+        DataStore dataStore;
+        switch (bioformat) {
+            case VARIANT:
+                dataStore = defaultDataStore(catalogManager, project);
+                break;
+            case CVDB:
+                dataStore = defaultCvdbDataStore(catalogManager, project);
+                break;
+            default:
+                throw new IllegalStateException("Unexpected bioformat '" + bioformat + "'. "
+                        + "Expected VARIANT or CVDB. Please, check the code.");
+        }
         return dataStore;
     }
 

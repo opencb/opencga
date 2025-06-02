@@ -58,13 +58,13 @@ public class StorageCommandOptions extends GeneralCliOptions {
         @Parameter(names = {"--db-prefix"}, hidden = true, description = "Database prefix. If empty, use the system db prefix.")
         public String dbPrefix;
 
-        @Parameter(names = {"--cvdb-prefix"}, hidden = true, description = "CVDB prefix. If empty, use the system CVDB prefix.")
-        public String cvdbPrefix;
+        @Parameter(names = {"--bioformat"}, hidden = true, description = "")
+        public String bioformat = "VARIANT";
 
-        @Parameter(names = {"--projects-without-storage"}, arity = 0, description = "Only update projects that don't exist on the VariantStorage")
+        @Parameter(names = {"--projects-without-storage"}, arity = 0, description = "Only update projects that don't exist on the VariantStorage. This param can only be used with bioformat=VARIANT")
         public boolean projectsWithoutStorage;
 
-        @Parameter(names = {"--projects-with-storage"}, arity = 0, description = "Only update projects that exist on the VariantStorage")
+        @Parameter(names = {"--projects-with-storage"}, arity = 0, description = "Only update projects that exist on the VariantStorage. This param can only be used with bioformat=VARIANT")
         public boolean projectsWithStorage;
 
         @Parameter(names = {"--projects-with-undefined-dbname"}, arity = 0, description = "Only update projects with undefined dbname")
