@@ -143,6 +143,12 @@
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-analysis</artifactId>
                 <version>${opencga.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.opencb.opencga</groupId>
+                        <artifactId>${opencga-storage-hadoop-deps.artifactId-default}</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
