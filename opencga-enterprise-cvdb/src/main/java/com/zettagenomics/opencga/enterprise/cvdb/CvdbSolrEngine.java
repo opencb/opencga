@@ -110,9 +110,6 @@ public class CvdbSolrEngine {
     private ClinicalVariantConverter cvConverter;
     private ClinicalVariantEvidenceConverter cveConverter;
 
-    // TODO: DELETE
-    public static final String CVDB_COLLECTIONS_KEY = "cvdb.collections";
-
     private static final String GIT_ENTERPRISE_PROPERTIES = "com/zettagenomics/opencga/enterprise/git-enterprise.properties";
     private Logger logger;
 
@@ -1340,9 +1337,7 @@ public class CvdbSolrEngine {
             solrClient.rollback();
             throw new CvdbException("Error when adding Solr documents (status = " + status + ")");
         } catch (SolrServerException | IOException e) {
-            e.printStackTrace();
             String msg = "Error when rollingback Solr after adding documents (status = " + status + ")";
-            logger.error(msg, e);
             throw new CvdbException(msg, e);
         }
     }
@@ -1352,9 +1347,7 @@ public class CvdbSolrEngine {
             solrClient.rollback();
             throw new CvdbException("Solr exception", exception);
         } catch (SolrServerException | IOException e) {
-            e.printStackTrace();
             String msg = "Error when rollingback after Solr exception (" + exception.getMessage() + ")";
-            logger.error(msg, e);
             throw new CvdbException(msg, e);
         }
     }
@@ -1368,9 +1361,29 @@ public class CvdbSolrEngine {
             }
             return true;
         } catch (SolrException e) {
-            e.printStackTrace();
             String msg = "Checking if Solr CVDB collections exist; collecton prefix = '" + collectionPrefix + "'";
-            logger.error(msg, e);
+            throw new CvdbException(msg, e);
+        }
+    }
+
+    public List<String> getCollectionNames(String collectionPrefix) throws CvdbException {
+        try {
+            List<String> collectionNames = new ArrayList<>(COLLECTION_SUFFIXES.size());
+            for (String suffix : COLLECTION_SUFFIXES) {
+                String collectionName = CollectionPrefixUtils.getCollectionName(collectionPrefix, suffix);
+                if (solrManager.exists(collectionName)) {
+                    collectionNames.add(collectionName);
+                }
+            }
+            if (collectionNames.size() != COLLECTION_SUFFIXES.size()) {
+                String msg = "Error getting CVDB collection names: not all CVDB collections found for prefix '" + collectionPrefix
+                        + "'. Found: " + collectionNames.size() + " (" + StringUtils.join(collectionNames, ",") + "), expected: "
+                        + COLLECTION_SUFFIXES.size();
+                throw new CvdbException(msg);
+            }
+            return collectionNames;
+        } catch (SolrException e) {
+            String msg = "Error getting CVDB collection names for collection prefix = '" + collectionPrefix + "'";
             throw new CvdbException(msg, e);
         }
     }
@@ -1392,23 +1405,8 @@ public class CvdbSolrEngine {
             throw new CvdbException(msg);
         }
 
-        // Get or create CVDB datastore
-        DataStore cvdbDatastore = getCvdbDatastore(projectFqn, collectionPrefix, project);
-
         // Create collections
-        List<String> collectionNames = createCollections(collectionPrefix);
-
-        try {
-            // Update and set CVDB datastore
-            if (cvdbDatastore.getOptions() == null) {
-                cvdbDatastore.setOptions(new ObjectMap());
-            }
-            cvdbDatastore.getOptions().put(CVDB_COLLECTIONS_KEY, collectionNames);
-            catalogManager.getProjectManager().setDatastoreCvdb(projectFqn, cvdbDatastore, token);
-        } catch (CatalogException e) {
-            String msg = "Error setting CVDB datastore for project '" + projectFqn + "' after creating collections";
-            throw new CvdbException(msg, e);
-        }
+        createCollections(collectionPrefix);
     }
 
     private static DataStore getCvdbDatastore(String projectFqn, String collectionPrefix, Project project) throws CvdbException {
