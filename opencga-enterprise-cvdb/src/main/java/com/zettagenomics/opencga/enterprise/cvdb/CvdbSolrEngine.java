@@ -110,6 +110,7 @@ public class CvdbSolrEngine {
     private ClinicalVariantConverter cvConverter;
     private ClinicalVariantEvidenceConverter cveConverter;
 
+    // TODO: DELETE
     public static final String CVDB_COLLECTIONS_KEY = "cvdb.collections";
 
     private static final String GIT_ENTERPRISE_PROPERTIES = "com/zettagenomics/opencga/enterprise/git-enterprise.properties";
