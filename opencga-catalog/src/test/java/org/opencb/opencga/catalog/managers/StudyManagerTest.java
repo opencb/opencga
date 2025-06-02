@@ -23,15 +23,19 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.TestParamConstants;
+import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.UserOrganizationConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.organizations.OrganizationConfiguration;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
 import org.opencb.opencga.core.models.study.configuration.ClinicalPriorityValue;
+import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.reflections.Reflections;
@@ -99,6 +103,47 @@ public class StudyManagerTest extends AbstractManagerTest {
             }
             variable.setVariables(new LinkedHashSet<>(l));
         }
+    }
+
+    @Test
+    public void testCreateStudyWithAllUsersAsMembers() throws CatalogException {
+        catalogManager.getOrganizationManager().updateConfiguration(organizationId, new OrganizationConfiguration()
+                .setUser(new UserOrganizationConfiguration("21000101000000", true)), QueryOptions.empty(), ownerToken);
+
+        Study study = catalogManager.getStudyManager().create(projectFqn1, new Study().setId("newStudy"), INCLUDE_RESULT, ownerToken).first();
+
+        List<String> userList = catalogManager.getUserManager().search(organizationId, new Query(),
+                        new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.ID.key()), ownerToken).getResults()
+                .stream().map(User::getId).collect(Collectors.toList());
+        assertEquals(8, userList.size());
+
+
+        assertEquals(2, study.getGroups().size());
+        for (Group group : study.getGroups()) {
+            switch (group.getId()) {
+                case StudyManager.ADMINS:
+                    assertEquals(3, group.getUserIds().size());
+                    assertTrue(group.getUserIds().containsAll(Arrays.asList(orgOwnerUserId, orgAdminUserId1, orgAdminUserId2)));
+                    break;
+                case StudyManager.MEMBERS:
+                    assertEquals(userList.size(), group.getUserIds().size());
+                    assertTrue(group.getUserIds().containsAll(userList));
+                    break;
+                default:
+                    fail("Unexpected group: " + group.getId());
+            }
+        }
+    }
+
+    @Test
+    public void removeFromMembersGroupWithAddToMembersConfigurationTest() throws CatalogException {
+        catalogManager.getOrganizationManager().updateConfiguration(organizationId, new OrganizationConfiguration()
+                .setUser(new UserOrganizationConfiguration("21000101000000", true)), QueryOptions.empty(), ownerToken);
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("organization configuration");
+        catalogManager.getStudyManager().updateGroup(studyId, StudyManager.MEMBERS, ParamUtils.BasicUpdateAction.REMOVE,
+                new GroupUpdateParams(Collections.singletonList(normalUserId1)), ownerToken);
     }
 
     @Test

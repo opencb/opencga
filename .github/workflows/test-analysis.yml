@@ -33,7 +33,7 @@ on:
 jobs:
   analysis:
     name: Execute Sonar Analysis
-    runs-on: ubuntu-22.04
+    runs-on: ${{ vars.UBUNTU_VERSION }}
     if: ${{ inputs.sonar }}
     steps:
       - uses: actions/checkout@v4
@@ -61,7 +61,7 @@ jobs:
 
   test:
     name: Execute JUnit and Jacoco tests
-    runs-on: ubuntu-22.04
+    runs-on: ${{ vars.UBUNTU_VERSION }}
     steps:
       - uses: actions/checkout@v4
         with:
