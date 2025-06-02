@@ -44,21 +44,20 @@ public class ClinicalAnalysisConverter extends SearchConverter<ClinicalAnalysis,
         this.clinicalAnalysisReader = mapper.readerFor(ClinicalAnalysis.class);
     }
 
-    public ClinicalAnalysisSearch toClinicalAnalysisSearch(ClinicalAnalysis clinicalAnalysis, String studyId, List<String> users)
+    public ClinicalAnalysisSearch toClinicalAnalysisSearch(ClinicalAnalysis clinicalAnalysis, String studyId)
             throws CvdbException {
-        return toClinicalAnalysisSearch(Collections.singletonList(clinicalAnalysis), studyId, users).get(0);
+        return toClinicalAnalysisSearch(Collections.singletonList(clinicalAnalysis), studyId).get(0);
     }
 
-    public List<ClinicalAnalysisSearch> toClinicalAnalysisSearch(List<ClinicalAnalysis> clinicalAnalysisList, String studyId,
-                                                                 List<String> viewers) throws CvdbException {
+    public List<ClinicalAnalysisSearch> toClinicalAnalysisSearch(List<ClinicalAnalysis> clinicalAnalysisList, String studyId)
+            throws CvdbException {
         List<ClinicalAnalysisSearch> clinicalAnalysisSearchList = new ArrayList<>();
 
         for (ClinicalAnalysis ca : clinicalAnalysisList) {
             ClinicalAnalysisSearch cas = new ClinicalAnalysisSearch()
                     .setId(ca.getId())
                     .setDescription(ca.getDescription())
-                    .setStudyId(studyId)
-                    .setViewers(viewers);
+                    .setStudyId(studyId);
 
             if (ca.getType() != null) {
                 cas.setType(ca.getType().name());

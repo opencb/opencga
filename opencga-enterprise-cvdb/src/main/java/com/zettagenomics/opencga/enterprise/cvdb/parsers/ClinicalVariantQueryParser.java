@@ -87,6 +87,9 @@ public class ClinicalVariantQueryParser extends ClinicalQueryParser {
                 CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX) + "}";
         addStringFilters(filters, join, solrQuery);
 
+        // Viewers
+        addViewerFilter(query, "caId", projectId, solrQuery);
+
         // Log queries
         logQueries(query, queryOptions, solrQuery, "Clinical variant");
 
