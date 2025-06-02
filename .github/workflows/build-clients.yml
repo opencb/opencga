@@ -1,4 +1,4 @@
-name: Build clients for opencga-enterprise
+name: Build clients for opencga
 
 on:
   workflow_dispatch:
