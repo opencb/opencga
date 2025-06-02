@@ -1816,8 +1816,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 dataStore = defaultCvdbDataStore(catalogManager, project);
                 break;
             default:
-                throw new IllegalStateException("Unexpected bioformat '" + bioformat + "'. "
-                        + "Expected VARIANT or CVDB. Please, check the code.");
+                throw new IllegalStateException("Unexpected bioformat '" + bioformat + "'. Expected values are VARIANT or CVDB.");
         }
         return dataStore;
     }

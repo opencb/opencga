@@ -36,6 +36,7 @@ import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 
+import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -45,7 +46,6 @@ import java.util.stream.Collectors;
 public class StorageCommandExecutor extends AdminCommandExecutor {
 
     private final StorageCommandOptions storageCommandOptions;
-
 
     public StorageCommandExecutor(StorageCommandOptions storageCommandOptions) {
         super(storageCommandOptions.getCommonOptions());
@@ -118,7 +118,7 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
                         .append("dataStore", dataStore);
                 dataStores.add(map);
             }
-            List<String> cvdbProjects = getCvdbProjects(organizationIds, catalogManager);
+            List<String> cvdbProjects = getCvdbProjects(organizationIds, catalogManager, opencgaHome);
             logger.info("CVDB projects: {}", cvdbProjects);
             for (String project : cvdbProjects) {
                 DataStore dataStore = getCvdbDatastore(project, catalogManager);
@@ -297,7 +297,7 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
      * @return List of projects
      * @throws Exception on error
      */
-    protected List<String> getCvdbProjects(List<String> organizationIds, CatalogManager catalogManager) throws Exception {
+    protected List<String> getCvdbProjects(List<String> organizationIds, CatalogManager catalogManager, Path opencgaHome) throws Exception {
         return Collections.emptyList();
     }
 
