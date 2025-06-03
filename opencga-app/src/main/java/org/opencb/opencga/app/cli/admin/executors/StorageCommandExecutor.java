@@ -36,7 +36,6 @@ import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 
-import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -118,7 +117,7 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
                         .append("dataStore", dataStore);
                 dataStores.add(map);
             }
-            List<String> cvdbProjects = getCvdbProjects(organizationIds, catalogManager, opencgaHome);
+            List<String> cvdbProjects = getCvdbProjects(organizationIds, catalogManager);
             logger.info("CVDB projects: {}", cvdbProjects);
             for (String project : cvdbProjects) {
                 DataStore dataStore = getCvdbDatastore(project, catalogManager);
@@ -133,9 +132,14 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
         }
     }
 
-    protected DataStore getCvdbDatastore(String project, CatalogManager catalogManager) throws CatalogException {
-        DataStore dataStore = VariantStorageManager.getDataStoreByProjectId(catalogManager, project, File.Bioformat.CVDB, token);
-        return dataStore;
+    // This method is implemented by the OpenCGA Enterprise
+    protected List<String> getCvdbProjects(List<String> organizationIds, CatalogManager catalogManager) throws Exception {
+        return Collections.emptyList();
+    }
+
+    // This method is implemented by the OpenCGA Enterprise
+    protected DataStore getCvdbDatastore(String projectFqn, CatalogManager catalogManager) throws Exception {
+        return new DataStore();
     }
 
     private void updateDatabasePrefix() throws Exception {
@@ -290,15 +294,6 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
             projects.addAll(catalogManager.getProjectManager().search(organizationId, new Query(), new QueryOptions(), token).getResults());
         }
         return projects;
-    }
-
-    /**
-     * Get list of projects that have CVDB data.
-     * @return List of projects
-     * @throws Exception on error
-     */
-    protected List<String> getCvdbProjects(List<String> organizationIds, CatalogManager catalogManager, Path opencgaHome) throws Exception {
-        return Collections.emptyList();
     }
 
     /**
