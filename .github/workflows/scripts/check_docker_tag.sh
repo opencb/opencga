@@ -7,17 +7,18 @@ IMAGE="opencb/ext-tools:${VERSION}"
 
 echo "Checking if Docker image exists: $IMAGE"
 
-TOKEN=$(curl -s -u "$DOCKER_USERNAME:$DOCKER_PASSWORD" \
-  "https://hub.docker.com/v2/users/login/" | jq -r .token)
+TOKEN=$( curl -sSLd "username=$DOCKER_USERNAME&password=$DOCKER_PASSWORD" https://hub.docker.com/v2/users/login | jq -r ".token" )
+RESPONSE=$( curl -sH "Authorization: JWT $TOKEN" "https://hub.docker.com/v2/repositories/opencb/opencga-ext-tools/tags/$VERSION/" | jq .)
 
-EXISTS=$(curl -s -o /dev/null -w "%{http_code}" \
-  -H "Authorization: JWT $TOKEN" \
-  "https://hub.docker.com/v2/repositories/opencb/ext-tools/tags/${VERSION}/")
 
-if [ "$EXISTS" -eq 200 ]; then
-  echo "Image exists"
+
+# Check if 'message' key exists -> tag not found
+EXISTS=$( echo "$RESPONSE" | jq -r 'has("message") | not' )
+
+if [ "$EXISTS" = "true" ]; then
+  echo "Image exists for tag $VERSION"
   echo "exists=true" >> "$GITHUB_OUTPUT"
 else
-  echo "Image does not exist"
+  echo "Image does not exist for tag $VERSION"
   echo "exists=false" >> "$GITHUB_OUTPUT"
 fi
