@@ -103,6 +103,10 @@ public class CvdbSolrEngineDbPrefixTest {
         Project project = catalogManager.getProjectManager().create(projectId, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, userToken).first();
 
+        // Add other projects
+        catalogManager.getProjectManager().create("Project-2", "Project 2", "", "Homo sapiens", null, "GRCh38", INCLUDE_RESULT, userToken);
+        catalogManager.getProjectManager().create("Project-3", "Project 3", "", "Homo sapiens", null, "GRCh38", INCLUDE_RESULT, userToken);
+
         DataStore cvdbDataStore = VariantStorageManager.defaultCvdbDataStore(CVDB_PREFIX, project.getFqn());
         catalogManager.getProjectManager().setDatastoreCvdb(projectId, cvdbDataStore, userToken);
 
