@@ -1469,19 +1469,13 @@ public class CvdbSolrEngine {
         QueryOptions queryOptions = new QueryOptions(INCLUDE, Arrays.asList(ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES_CVDB.key(),
                 ProjectDBAdaptor.QueryParams.ID.key(), ProjectDBAdaptor.QueryParams.FQN.key()));
         for (String organizationId : organizationIds) {
-            List<Project> projects = catalogManager.getProjectManager().search(organizationId, query, queryOptions, token).getResults();
-            for (Project project : projects) {
-                String dbPrefix;
-                if (project.getInternal() != null && project.getInternal().getDatastores() != null
-                        && project.getInternal().getDatastores().getCvdb() != null
-                        && StringUtils.isNotEmpty(project.getInternal().getDatastores().getCvdb().getDbName())) {
-                    dbPrefix = project.getInternal().getDatastores().getCvdb().getDbName();
-                } else {
-                    dbPrefix = VariantStorageManager.buildDatabaseName(catalogManager.getConfiguration().getDatabasePrefix(), "cvdb",
-                            organizationId, project.getId());
-                }
-                if (existCollections(dbPrefix)) {
-                    projectFqns.add(project.getFqn());
+            OpenCGAResult<Project> projectResults = catalogManager.getProjectManager().search(organizationId, query, queryOptions, token);
+            if (CollectionUtils.isNotEmpty(projectResults.getResults())) {
+                for (Project project : projectResults.getResults()) {
+                    String dbPrefix = getCvdbPrefix(organizationId, project);
+                    if (existCollections(dbPrefix)) {
+                        projectFqns.add(project.getFqn());
+                    }
                 }
             }
         }
@@ -1489,18 +1483,27 @@ public class CvdbSolrEngine {
         return  projectFqns;
     }
 
-    public DataStore getCvdbDatastore(String project, String token) throws CatalogException, CvdbException {
+    public DataStore getCvdbDatastore(String projectFqn, String token) throws CatalogException, CvdbException {
+        QueryOptions queryOptions = new QueryOptions(INCLUDE, Arrays.asList(ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES_CVDB.key(),
+                ProjectDBAdaptor.QueryParams.ID.key(), ProjectDBAdaptor.QueryParams.FQN.key()));
+        Project project = catalogManager.getProjectManager().get(projectFqn, queryOptions, token).first();
+        String dbPrefix = getCvdbPrefix(FqnUtils.getOrganization(projectFqn), project);
 
-        DataStore dataStore = VariantStorageManager.getDataStoreByProjectId(catalogManager, project, File.Bioformat.CVDB, token);
-        if (dataStore.getOptions() == null) {
-            dataStore.setOptions(new ObjectMap());
+        return new DataStore("solr", dbPrefix, new ObjectMap("collections", getCollectionNames(dbPrefix)));
+    }
+
+    private String getCvdbPrefix(String organizationId, Project project) {
+        String dbPrefix;
+        if (project.getInternal() != null && project.getInternal().getDatastores() != null
+                && project.getInternal().getDatastores().getCvdb() != null
+                && StringUtils.isNotEmpty(project.getInternal().getDatastores().getCvdb().getDbName())) {
+            dbPrefix = project.getInternal().getDatastores().getCvdb().getDbName();
+        } else {
+            dbPrefix = VariantStorageManager.buildDatabaseName(catalogManager.getConfiguration().getDatabasePrefix(), "cvdb",
+                    organizationId, project.getId());
         }
-
-        // Get CVDB collection names
-        List<String> collectionNames = getCollectionNames(dataStore.getDbName());
-        dataStore.getOptions().put("collections", collectionNames);
-
-        return dataStore;
+        logger.info("Checking CVDB database prefix '{}' for project '{}'", dbPrefix, project.getFqn());
+        return dbPrefix;
     }
 
     //----------------------------------------------------------------------
