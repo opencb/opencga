@@ -47,6 +47,7 @@ import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.utils.ListUtils;
+import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.SearchConfiguration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
@@ -65,6 +66,10 @@ import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchModel;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
 import org.opencb.opencga.storage.core.variant.search.VariantToSolrBeanConverterTask;
+import org.opencb.opencga.storage.core.variant.search.solr.models.SolrCollectionStatus;
+import org.opencb.opencga.storage.core.variant.search.solr.models.SolrCoreIndexStatus;
+import org.opencb.opencga.storage.core.variant.search.solr.models.SolrReplicaCoreStatus;
+import org.opencb.opencga.storage.core.variant.search.solr.models.SolrShardStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -123,9 +128,9 @@ public class VariantSearchManager {
     private String create(String collection, String configSet) throws VariantSearchException {
         try {
             if (this.existsCollection(collection)) {
-                this.logger.warn("Solr cloud collection {} already exists", collection);
+                this.logger.info("Solr cloud collection {} already exists", collection);
                 SolrCollectionStatus status = getCollectionStatus(collection);
-                if (status.getShards().stream().flatMap(shard->shard.getReplicas().stream())
+                if (status.getShards().stream().flatMap(shard -> shard.getReplicas().stream())
                         .anyMatch(replica -> !replica.isLeader() && replica.isPreferredLeader())) {
                     logger.warn("Collection {} has replicas that are not leaders but preferred leaders. "
                                     + "Ensure shards are properly balanced before continuing.",
@@ -219,12 +224,12 @@ public class VariantSearchManager {
                         .findFirst()
                         .orElseThrow(() -> new VariantSearchException("No leader found for shard: " + shard.getName()));
 
-                long leaderDocCount = getDocumentCount(leader.getBaseUrl(), leader.getCoreName());
+                long leaderDocCount = getCoreIndexStatus(leader.getBaseUrl(), leader.getCoreName()).getNumDocs();
 
                 // Check TLOG replicas
                 for (SolrReplicaCoreStatus replica : shard.getReplicas()) {
                     if ("TLOG".equalsIgnoreCase(replica.getType())) {
-                        long replicaDocCount = getDocumentCount(replica.getBaseUrl(), replica.getCoreName());
+                        long replicaDocCount = getCoreIndexStatus(replica.getBaseUrl(), replica.getCoreName()).getNumDocs();
                         if (replicaDocCount != leaderDocCount) {
                             logger.info("TLOG replica '{}' in shard '{}' is not in sync with the leader '{}'. "
                                             + "Leader document count: {}, Replica document count: {}",
@@ -240,14 +245,14 @@ public class VariantSearchManager {
         }
     }
 
-    private long getDocumentCount(String nodeName, String coreName) throws SolrServerException, IOException {
+    private SolrCoreIndexStatus getCoreIndexStatus(String nodeName, String coreName) throws SolrServerException, IOException {
         try (HttpSolrClient solrClient = new HttpSolrClient.Builder(nodeName).build()) {
             CoreAdminRequest req = new CoreAdminRequest();
             req.setAction(CoreAdminParams.CoreAdminAction.STATUS);
             req.setIndexInfoNeeded(true);
             CoreAdminResponse response = req.process(solrClient);
             ObjectMap map = (ObjectMap) response.getCoreStatus(coreName).toMap(new ObjectMap());
-            return map.getNestedMap("index").getLong("numDocs");
+            return new SolrCoreIndexStatus(coreName, map.getNestedMap("index"));
         }
     }
 
@@ -282,7 +287,8 @@ public class VariantSearchManager {
                             coreName,
                             state,
                             leader,
-                            preferredLeader));
+                            preferredLeader,
+                            getCoreIndexStatus(baseUrl, coreName)));
                 }
                 replicaList.sort(Comparator.comparing(SolrReplicaCoreStatus::getNodeName));
                 shardsList.add(new SolrShardStatus(shard, replicaList));
@@ -301,8 +307,15 @@ public class VariantSearchManager {
 
     private void logCollectionStatus(SolrCollectionStatus collectionStatus) {
         logger.info("Collection '{}'", collectionStatus.getName());
+        logger.info(" - Size: {} ({} bytes)", IOUtils.humanReadableByteCount(collectionStatus.getSizeInBytes(), false),
+                collectionStatus.getSizeInBytes());
+        logger.info(" - NumDocs: {}", collectionStatus.getNumDocs());
+
         for (SolrShardStatus shardStatus : collectionStatus.getShards()) {
             logger.info(" * Shard '{}'", shardStatus.getName());
+            logger.info("   - Size: {} ({} bytes)", IOUtils.humanReadableByteCount(shardStatus.getSizeInBytes(), false),
+                    shardStatus.getSizeInBytes());
+            logger.info("   - NumDocs: {}", shardStatus.getNumDocs());
             for (SolrReplicaCoreStatus replicaStatus : shardStatus.getReplicas()) {
                 String leaderStatus;
                 boolean warn = false;
@@ -329,6 +342,9 @@ public class VariantSearchManager {
                 logger.info("     - CoreName: {}", replicaStatus.getCoreName());
                 logger.info("     - Node: {}", replicaStatus.getNodeName());
                 logger.info("     - Type: {}", replicaStatus.getType());
+                logger.info("     - Size: {} ({} bytes)", IOUtils.humanReadableByteCount(replicaStatus.getIndexStatus().getSizeInBytes(), false),
+                        replicaStatus.getIndexStatus().getSizeInBytes());
+                logger.info("     - NumDocs: {}", replicaStatus.getIndexStatus().getNumDocs());
                 if (!"active".equals(replicaStatus.getState())) {
                     logger.info("     - State: {}", replicaStatus.getState());
                 }
@@ -475,7 +491,6 @@ public class VariantSearchManager {
         } catch (ExecutionException e) {
             throw new VariantSearchException("Error loading secondary index", e);
         }
-        logCollectionStatus(collection);
         int count = variantDBIterator.getCount();
         logger.info("Variant Search loading done. " + count + " variants indexed in " + TimeUtils.durationToString(stopWatch));
         float ratePerHour = count / (stopWatch.getTime() / 1000f) * 3600;
@@ -483,6 +498,7 @@ public class VariantSearchManager {
                 + "(" + String.format("%.2f", ratePerHour / 1000000) + " M/h)");
 
         waitForReplicasInSync(indexMetadata, 5, TimeUnit.MINUTES, false);
+        logCollectionStatus(collection);
         return new VariantSearchLoadResult(count, count, 0);
     }
 

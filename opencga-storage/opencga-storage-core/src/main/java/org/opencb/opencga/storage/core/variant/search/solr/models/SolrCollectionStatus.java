@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.variant.search.solr;
+package org.opencb.opencga.storage.core.variant.search.solr.models;
 
 import java.util.List;
 
@@ -17,5 +17,17 @@ public class SolrCollectionStatus {
 
     public List<SolrShardStatus> getShards() {
         return shards;
+    }
+
+    public long getSizeInBytes() {
+        return shards.stream()
+                .mapToLong(SolrShardStatus::getSizeInBytes)
+                .sum();
+    }
+
+    public long getNumDocs() {
+        return shards.stream()
+                .mapToLong(SolrShardStatus::getNumDocs)
+                .sum();
     }
 }

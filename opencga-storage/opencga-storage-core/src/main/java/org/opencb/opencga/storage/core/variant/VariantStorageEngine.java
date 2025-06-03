@@ -69,6 +69,7 @@ import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantAggregat
 import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.search.VariantSecondaryIndexFilter;
 import org.opencb.opencga.storage.core.variant.search.solr.*;
+import org.opencb.opencga.storage.core.variant.search.solr.models.SolrCollectionStatus;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.core.variant.stats.SampleVariantStatsAggregationQuery;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
@@ -749,14 +750,17 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                         variantSearchManager.buildCollectionName(indexMetadata), indexMetadata.getConfigSetId());
             }
         } else {
+            boolean shouldCreateNewIndex = false;
             if (!variantSearchManager.exists(indexMetadata)) {
                 String collectionName = variantSearchManager.buildCollectionName(indexMetadata);
-                logger.info("Collection {} does not exist. Force overwrite=true", collectionName);
-                overwrite = true; // Force overwrite to true if the collection does not exist
-            }
-
-            if (overwrite) {
-                boolean shouldCreateNewIndex = false;
+                if (overwrite) {
+                    logger.info("Collection {} does not exist.", collectionName);
+                } else {
+                    logger.info("Collection {} does not exist. Force overwrite=true", collectionName);
+                    overwrite = true; // Force overwrite to true if the collection does not exist
+                }
+                shouldCreateNewIndex = true;
+            } else if (overwrite) {
                 if (!indexMetadata.getConfigSetId().equals(configuration.getSearch().getConfigSet())) {
                     logger.info("ConfigSetId changed from '{}' to '{}'. Creating new secondary annotation index to match new configSetId",
                             indexMetadata.getConfigSetId(), configuration.getSearch().getConfigSet());
@@ -776,16 +780,16 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                         shouldCreateNewIndex = true;
                     }
                 }
+            }
 
-                if (shouldCreateNewIndex) {
-                    logger.info("Create new secondary annotation index collection.");
-                    logger.info(" Prev : '{}' , configSetId:'{}'", variantSearchManager.buildCollectionName(indexMetadata),
-                            indexMetadata.getConfigSetId());
-                    indexMetadata = variantSearchManager.newIndexMetadata(configuration.getSearch().getConfigSet());
-                    logger.info(" New : '{}' , configSetId:'{}'",
-                            variantSearchManager.buildCollectionName(indexMetadata),
-                            indexMetadata.getConfigSetId());
-                }
+            if (shouldCreateNewIndex) {
+                logger.info("Create new secondary annotation index collection.");
+                logger.info(" Prev : '{}' , configSetId:'{}'", variantSearchManager.buildCollectionName(indexMetadata),
+                        indexMetadata.getConfigSetId());
+                indexMetadata = variantSearchManager.newIndexMetadata(configuration.getSearch().getConfigSet());
+                logger.info(" New : '{}' , configSetId:'{}'",
+                        variantSearchManager.buildCollectionName(indexMetadata),
+                        indexMetadata.getConfigSetId());
             }
         }
 

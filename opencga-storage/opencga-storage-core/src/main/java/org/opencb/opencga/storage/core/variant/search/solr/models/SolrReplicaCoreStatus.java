@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.variant.search.solr;
+package org.opencb.opencga.storage.core.variant.search.solr.models;
 
 public class SolrReplicaCoreStatus {
     private final String name;
@@ -9,9 +9,10 @@ public class SolrReplicaCoreStatus {
     private final String state;
     private final boolean leader;
     private final boolean preferredLeader;
+    private final SolrCoreIndexStatus indexStatus;
 
     public SolrReplicaCoreStatus(String name, String type, String nodeName, String baseUrl, String coreName,
-                                 String state, boolean leader, boolean preferredLeader) {
+                                 String state, boolean leader, boolean preferredLeader, SolrCoreIndexStatus indexStatus) {
         this.name = name;
         this.type = type;
         this.nodeName = nodeName;
@@ -20,6 +21,7 @@ public class SolrReplicaCoreStatus {
         this.state = state;
         this.leader = leader;
         this.preferredLeader = preferredLeader;
+        this.indexStatus = indexStatus;
     }
 
     public String getName() {
@@ -52,5 +54,9 @@ public class SolrReplicaCoreStatus {
 
     public boolean isPreferredLeader() {
         return preferredLeader;
+    }
+
+    public SolrCoreIndexStatus getIndexStatus() {
+        return indexStatus;
     }
 }
