@@ -1,10 +1,11 @@
-name: Push OpenCGA develop
+name: Push ext-tools for develop branches
 
 on:
   push:
     branches:
       - develop
       - release-*
+      - TASK-*
   workflow_dispatch:
 
 jobs:
