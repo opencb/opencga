@@ -32,17 +32,7 @@ public class EnterpriseStorageCommandExecutor extends StorageCommandExecutor {
             throws CatalogException, CvdbException {
         // Get CVDB engine
         CvdbSolrEngine cvdbSolrEngine = getCvdbEngine(catalogManager, opencgaHome);
-
-        DataStore dataStore = VariantStorageManager.getDataStoreByProjectId(catalogManager, project, File.Bioformat.CVDB, token);
-        if (dataStore.getOptions() == null) {
-            dataStore.setOptions(new ObjectMap());
-        }
-
-        // Get CVDB collection names
-        List<String> collectionNames = cvdbSolrEngine.getCollectionNames(dataStore.getDbName());
-        dataStore.getOptions().put("collections", collectionNames);
-
-        return dataStore;
+        return cvdbSolrEngine.getCvdbDatastore(project, token);
     }
 
     /**
@@ -54,24 +44,7 @@ public class EnterpriseStorageCommandExecutor extends StorageCommandExecutor {
             throws CatalogException, CvdbException {
         // Get CVDB engine
         CvdbSolrEngine cvdbEngine = getCvdbEngine(catalogManager, opencgaHome);
-
-        List<String> projectFqns = new ArrayList<>();
-
-        Query query = new Query();
-        QueryOptions queryOptions = new QueryOptions(INCLUDE, Arrays.asList(ProjectDBAdaptor.QueryParams.ID.key(),
-                ProjectDBAdaptor.QueryParams.FQN.key()));
-        for (String organizationId : organizationIds) {
-            List<Project> projects = catalogManager.getProjectManager().search(organizationId, query, queryOptions, token).getResults();
-            for (Project project : projects) {
-                String dbPrefix = VariantStorageManager.buildDatabaseName(catalogManager.getConfiguration().getDatabasePrefix(), "cvdb",
-                        organizationId, project.getId());
-                if (cvdbEngine.existCollections(dbPrefix)) {
-                    projectFqns.add(project.getFqn());
-                }
-            }
-        }
-
-        return  projectFqns;
+        return cvdbEngine.getCvdbProjects(organizationIds, token);
     }
 
     private CvdbSolrEngine getCvdbEngine(CatalogManager catalogManager, Path opencgaHome) {

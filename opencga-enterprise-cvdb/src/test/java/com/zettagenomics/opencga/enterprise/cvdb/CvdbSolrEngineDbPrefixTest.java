@@ -3,6 +3,7 @@ package com.zettagenomics.opencga.enterprise.cvdb;
 import com.zettagenomics.opencga.enterprise.cvdb.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import com.zettagenomics.opencga.enterprise.cvdb.parsers.CollectionPrefixUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -15,6 +16,7 @@ import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FamilyManager;
+import org.opencb.opencga.catalog.utils.FqnUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.clinical.CvdbIndexStatus;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
@@ -27,6 +29,8 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.CLINICAL_ANALYSES_COLLECTION_SUFFIX;
 import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.ADMIN_PASSWORD;
@@ -77,8 +81,8 @@ public class CvdbSolrEngineDbPrefixTest {
             cvdbEngine.createCollections(projectId, collectionPrefix, userToken);
 
             Project project = catalogManager.getProjectManager().get(projectId, QueryOptions.empty(), userToken).first();
-//            Assert.assertTrue(project.getInternal().getDatastores().getCvdb().getOptions().containsKey(CVDB_COLLECTIONS_KEY));
-//            System.out.println(CVDB_COLLECTIONS_KEY + " = " + project.getInternal().getDatastores().getCvdb().getOptions().get(CVDB_COLLECTIONS_KEY));
+            System.out.println("project.getInternal().getDatastores().getCvdb().toString() = " + project.getInternal().getDatastores().getCvdb().toString());
+            Assert.assertEquals("solr", project.getInternal().getDatastores().getCvdb().getStorageEngine());
         }
     }
 
@@ -142,6 +146,18 @@ public class CvdbSolrEngineDbPrefixTest {
         }
 
         TestUtilities.checkClinicalAnalysisIndexStatus(CvdbIndexStatus.READY, study, catalogManager, userToken);
+
+
+        DataStore cvdbDatastore = cvdbEngine.getCvdbDatastore(projectId, userToken);
+        System.out.println("cvdbDatastore = " + cvdbDatastore);
+        Assert.assertEquals("solr", cvdbDatastore.getStorageEngine());
+        Assert.assertTrue(cvdbDatastore.getDbName().startsWith(CVDB_PREFIX));
+        Assert.assertEquals(CVDB_PREFIX + "_cvdb_" + organizationId + "_" + projectId, cvdbDatastore.getDbName());
+
+        List<String> cvdbProjectIds = cvdbEngine.getCvdbProjects(Collections.singletonList(organizationId), userToken);
+        System.out.println("cvdbProjectIds = " + StringUtils.join(cvdbProjectIds, ", "));
+        Assert.assertEquals(1, cvdbProjectIds.size());
+        Assert.assertEquals(projectId, FqnUtils.getProject(cvdbProjectIds.get(0)));
     }
 }
 

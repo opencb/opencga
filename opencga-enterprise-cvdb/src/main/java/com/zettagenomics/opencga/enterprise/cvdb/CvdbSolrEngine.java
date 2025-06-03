@@ -46,6 +46,7 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.commons.datastore.solr.SolrCollection;
 import org.opencb.commons.datastore.solr.SolrManager;
+import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBIterator;
@@ -69,6 +70,7 @@ import org.opencb.opencga.core.models.clinical.CvdbIndexStatus;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.federation.FederationClientParams;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.project.Project;
@@ -1392,7 +1394,7 @@ public class CvdbSolrEngine {
         // Sanity check
         Project project;
         ProjectManager projectManager = catalogManager.getProjectManager();
-        QueryOptions queryOptions = new QueryOptions().append(INCLUDE, ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES_CVDB);
+        QueryOptions queryOptions = new QueryOptions().append(INCLUDE, ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES_CVDB.key());
         try {
             project = projectManager.get(projectFqn, queryOptions, token).first();
         } catch (CatalogException e) {
@@ -1406,28 +1408,17 @@ public class CvdbSolrEngine {
         }
 
         // Create collections
+        logger.info("Creating CVDB collections for project '{}', collection prefix '{}'", projectFqn, collectionPrefix);
         createCollections(collectionPrefix);
-    }
 
-    private static DataStore getCvdbDatastore(String projectFqn, String collectionPrefix, Project project) throws CvdbException {
-        DataStore cvdbDatastore = null;
-        if (project.getInternal() != null && project.getInternal().getDatastores() != null
-                && project.getInternal().getDatastores().getCvdb() != null) {
-            cvdbDatastore = project.getInternal().getDatastores().getCvdb();
-            String existingCollectionPrefix = project.getInternal().getDatastores().getCvdb().getDbName();
-            if (StringUtils.isNotEmpty(existingCollectionPrefix) && !existingCollectionPrefix.equals(collectionPrefix)) {
-                String msg = "Project '" + projectFqn + "' already has a CVDB collection prefix '" + existingCollectionPrefix
-                        + "', but trying to create collections with prefix '" + collectionPrefix + "'";
-                throw new CvdbException(msg);
-            }
+        // If created successfully, set the CVDB datastore in the project
+        DataStore cvdbDatastore = new DataStore("solr", collectionPrefix, new ObjectMap());
+        logger.info("Setting CVDB datastore in project '{}': {}", projectFqn, cvdbDatastore);
+        try {
+            projectManager.setDatastoreCvdb(project.getFqn(), cvdbDatastore, token);
+        } catch (CatalogException e) {
+            throw new CvdbException("Error setting CVDB datastore after creating CVDB collections", e);
         }
-
-        if (cvdbDatastore == null) {
-            cvdbDatastore = new DataStore("solr", collectionPrefix, new ObjectMap());
-        } else if (StringUtils.isEmpty(cvdbDatastore.getDbName())) {
-             cvdbDatastore.setDbName(collectionPrefix);
-        }
-        return cvdbDatastore;
     }
 
     private List<String> createCollections(String collectionPrefix) throws CvdbException {
@@ -1467,6 +1458,49 @@ public class CvdbSolrEngine {
         } catch (CatalogException e) {
             throw new CvdbException("Error updating clinical anslysis CVBD index status", e);
         }
+    }
+
+    //----------------------------------------------------------------------
+
+    public List<String> getCvdbProjects(List<String> organizationIds, String token) throws CvdbException, CatalogException {
+        List<String> projectFqns = new ArrayList<>();
+
+        Query query = new Query();
+        QueryOptions queryOptions = new QueryOptions(INCLUDE, Arrays.asList(ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES_CVDB.key(),
+                ProjectDBAdaptor.QueryParams.ID.key(), ProjectDBAdaptor.QueryParams.FQN.key()));
+        for (String organizationId : organizationIds) {
+            List<Project> projects = catalogManager.getProjectManager().search(organizationId, query, queryOptions, token).getResults();
+            for (Project project : projects) {
+                String dbPrefix;
+                if (project.getInternal() != null && project.getInternal().getDatastores() != null
+                        && project.getInternal().getDatastores().getCvdb() != null
+                        && StringUtils.isNotEmpty(project.getInternal().getDatastores().getCvdb().getDbName())) {
+                    dbPrefix = project.getInternal().getDatastores().getCvdb().getDbName();
+                } else {
+                    dbPrefix = VariantStorageManager.buildDatabaseName(catalogManager.getConfiguration().getDatabasePrefix(), "cvdb",
+                            organizationId, project.getId());
+                }
+                if (existCollections(dbPrefix)) {
+                    projectFqns.add(project.getFqn());
+                }
+            }
+        }
+
+        return  projectFqns;
+    }
+
+    public DataStore getCvdbDatastore(String project, String token) throws CatalogException, CvdbException {
+
+        DataStore dataStore = VariantStorageManager.getDataStoreByProjectId(catalogManager, project, File.Bioformat.CVDB, token);
+        if (dataStore.getOptions() == null) {
+            dataStore.setOptions(new ObjectMap());
+        }
+
+        // Get CVDB collection names
+        List<String> collectionNames = getCollectionNames(dataStore.getDbName());
+        dataStore.getOptions().put("collections", collectionNames);
+
+        return dataStore;
     }
 
     //----------------------------------------------------------------------
