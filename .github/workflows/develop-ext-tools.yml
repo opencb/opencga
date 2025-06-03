@@ -1,0 +1,41 @@
+name: Push OpenCGA develop
+
+on:
+  push:
+    branches:
+      - develop
+      - release-*
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
+
+  check-docker-tag:
+    needs: build
+    runs-on: ubuntu-latest
+    outputs:
+      exists: ${{ steps.check.outputs.exists }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Make script executable
+        run: chmod +x .github/workflows/scripts/check_docker_tag.sh
+      - name: Check Docker tag existence
+        id: check
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_HUB_USER }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
+        run: |
+          .github/workflows/scripts/check_docker_tag.sh "${{ needs.build.outputs.version }}"
+
+  deploy-docker-ext-tools:
+    needs: [build, check-docker-tag]
+    if: needs.check-docker-tag.outputs.exists == 'false'
+    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+    with:
+      cli: python3 ./build/cloud/docker/docker-build.py push --images ext-tools --tag ${{ needs.build.outputs.version }}
+    secrets: inherit
+
+
+
+
