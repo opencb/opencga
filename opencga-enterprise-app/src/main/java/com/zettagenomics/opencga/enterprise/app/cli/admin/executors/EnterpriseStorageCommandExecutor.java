@@ -49,7 +49,9 @@ public class EnterpriseStorageCommandExecutor extends StorageCommandExecutor {
 
     private CvdbSolrEngine getCvdbEngine(CatalogManager catalogManager, Path opencgaHome) {
         // CVDB engine
-        EnterpriseConfiguration enterpriseConfig = EnterpriseConfiguration.load(opencgaHome.resolve("/enterprise-configuration.yml"));
+        Path path = opencgaHome.resolve("conf/enterprise-configuration.yml");
+        logger.info("Loading enterprise configuration from '{}' (OpenCGA home: '{}')", path, opencgaHome);
+        EnterpriseConfiguration enterpriseConfig = EnterpriseConfiguration.load(path);
         return new CvdbSolrEngine(catalogManager.getConfiguration(), enterpriseConfig.getCvdb());
     }
 
