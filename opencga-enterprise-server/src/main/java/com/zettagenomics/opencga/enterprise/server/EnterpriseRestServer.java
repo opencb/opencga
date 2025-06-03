@@ -24,6 +24,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.server.RestServer;
 
 import javax.servlet.DispatcherType;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -37,7 +38,7 @@ public class EnterpriseRestServer extends RestServer {
 
     private final EnterpriseConfiguration enterpriseConfiguration;
 
-    public EnterpriseRestServer(Path opencgaHome, int port) {
+    public EnterpriseRestServer(Path opencgaHome, int port) throws IOException {
         super(opencgaHome, port);
         enterpriseConfiguration = EnterpriseConfiguration.load(opencgaHome);
     }

@@ -47,7 +47,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
         EnterpriseFactory.init(catalogManager, opencgaHome);
     }
 
-    private CvdbSolrEngine getCvdbEngine() {
+    private CvdbSolrEngine getCvdbEngine() throws IOException {
         CvdbSolrEngine cvdbEngine = cvdbEngineAtomicRef.get();
         if (cvdbEngine == null) {
             synchronized(cvdbEngineAtomicRef) {
