@@ -295,6 +295,26 @@ public class OrganizationManager extends AbstractManager {
         return result;
     }
 
+    public OpenCGAResult<?> resetUserPassword(String userId, String token) throws CatalogException {
+        ParamUtils.checkParameter(userId, "userId");
+        ParamUtils.checkParameter(token, "token");
+        JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
+        String organizationId = jwtPayload.getOrganization();
+        try {
+            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, jwtPayload.getUserId());
+            String authOrigin = catalogManager.getUserManager().getAuthenticationOriginId(organizationId, userId);
+            OpenCGAResult<?> writeResult = authenticationFactory.resetPassword(organizationId, authOrigin, userId);
+
+            auditManager.auditUser(organizationId, jwtPayload.getUserId(organizationId), Enums.Action.RESET_USER_PASSWORD, userId,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            return writeResult;
+        } catch (CatalogException e) {
+            auditManager.auditUser(organizationId, jwtPayload.getUserId(organizationId), Enums.Action.RESET_USER_PASSWORD, userId,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+    }
+
     private void checkIsNotAFederatedUser(String organizationId, OrganizationUpdateParams updateParams) throws CatalogException {
         Set<String> users = new HashSet<>();
         if (StringUtils.isNotEmpty(updateParams.getOwner())) {
