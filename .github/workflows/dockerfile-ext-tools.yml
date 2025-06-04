@@ -1,11 +1,9 @@
-name: Release new ext-tools version
+name: Deploy Docker Ext-Tools
 
 on:
   push:
-    tags:
-      - '*'
-  workflow_dispatch:
-
+    paths:
+      - opencga-app/app/cloud/docker/opencga-ext-tools/Dockerfile
 
 jobs:
   build:

@@ -6,11 +6,12 @@ on:
       - develop
       - release-*
       - TASK-*
+    tags:
+      - '*'
   workflow_dispatch:
 
 jobs:
-
-  check-docker-tag:
+  check-push-ext-tools-docker-tag:
     runs-on: ubuntu-latest
     outputs:
       exists: ${{ steps.check.outputs.exists }}
