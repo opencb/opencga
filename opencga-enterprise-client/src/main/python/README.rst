@@ -23,7 +23,7 @@ If you don't have Python or pip, please refer to https://packaging.python.org/en
 
 To install PyOpencga-enterprise, run the following command in the shell::
 
-   $ pip install pyopencga_enterprise
+   $ pip install pyopencga-enterprise
 
 
 Usage
@@ -37,7 +37,7 @@ The first step is to import the ClientConfiguration and OpenCGAClient from pyOpe
 .. code-block:: python
 
     >>> from pyopencga_enterprise.opencga_config import ClientConfiguration
-    >>> from pyopencga_enterprise.opencga_client import OpenCGAClient
+    >>> from pyopencga_enterprise.opencga_client import OpencgaClient
 
 Setting up server host configuration
 ````````````````````````````````````
