@@ -62,6 +62,16 @@ jobs:
     with:
       artifact_name: emr13-build-folder
 
+  deploy-python:
+    uses: opencb/java-common-libs/.github/workflows/deploy-python-workflow.yml@develop
+    needs: build
+    with:
+      cli: ./clients/python/python-build.sh push
+      artifact: build-folder
+    secrets:
+      PYPI_TWINE_USER: ${{ secrets.PYPI_TWINE_USER }}
+      PYPI_TWINE_PASSWORD: ${{ secrets.PYPI_TWINE_PASSWORD }}
+
   release:
     name: Create GitHub Release
     runs-on: ubuntu-22.04
@@ -82,4 +92,3 @@ jobs:
         name: Results
         run: |
           echo "### The release of __Xetabase ${{ needs.build-hdp.outputs.version }}__ has been successful!!!! :heavy_check_mark: " | tee -a ${GITHUB_STEP_SUMMARY}
-
