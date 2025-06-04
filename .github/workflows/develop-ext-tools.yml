@@ -32,14 +32,17 @@ jobs:
           DOCKER_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
         run: |
           .github/workflows/scripts/check_docker_tag.sh
+            - uses: docker/login-action@v3
+      - uses: docker/login-action@v3
+        if: steps.check.outputs.exists == 'false'
+        with:
+          username: ${{ secrets.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+          logout: true
+      - name: Deploy in Docker Hub
+        if: steps.check.outputs.exists == 'false'
+        run: python3 ./opencga-app/app/cloud/docker/docker-build.py push --images ext-tools --tag ${{ steps.check.outputs.version }} --org opencb
 
-  deploy-docker-ext-tools:
-    needs: check-docker-tag
-    if: needs.check-docker-tag.outputs.exists == 'false'
-    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
-    with:
-      cli: python3 ./opencga-app/app/cloud/docker/docker-build.py push --images ext-tools --tag ${{ needs.check-docker-tag.outputs.version }}
-    secrets: inherit
 
 
 
