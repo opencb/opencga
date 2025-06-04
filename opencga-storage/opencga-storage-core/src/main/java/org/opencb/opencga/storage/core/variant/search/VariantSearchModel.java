@@ -57,34 +57,34 @@ public class VariantSearchModel {
     private String type;
 
     @Field("release")
-    private int release;
+    private Integer release;
 
     @Field("studies")
     private List<String> studies;
 
     @Field("phastCons")
-    private double phastCons;
+    private Double phastCons;
 
     @Field("phylop")
-    private double phylop;
+    private Double phylop;
 
     @Field("gerp")
-    private double gerp;
+    private Double gerp;
 
     @Field("caddRaw")
-    private double caddRaw;
+    private Double caddRaw;
 
     @Field("caddScaled")
-    private double caddScaled;
+    private Double caddScaled;
 
     @Field("sift")
-    private double sift;
+    private Double sift;
 
     @Field("siftDesc")
     private String siftDesc;
 
     @Field("polyphen")
-    private double polyphen;
+    private Double polyphen;
 
     @Field("polyphenDesc")
     private String polyphenDesc;
@@ -126,17 +126,7 @@ public class VariantSearchModel {
     private Map<String, Object> attr;
 
 
-    public static final double MISSING_VALUE = -100.0;
-
     public VariantSearchModel() {
-        phastCons = MISSING_VALUE;
-        phylop = MISSING_VALUE;
-        gerp = MISSING_VALUE;
-        caddRaw = MISSING_VALUE;
-        caddScaled = MISSING_VALUE;
-        sift = MISSING_VALUE;
-        polyphen = MISSING_VALUE;
-
         this.xrefs = new ArrayList<>();
         this.studies = new ArrayList<>();
         this.genes = new ArrayList<>();
@@ -296,11 +286,11 @@ public class VariantSearchModel {
         return this;
     }
 
-    public int getRelease() {
+    public Integer getRelease() {
         return release;
     }
 
-    public VariantSearchModel setRelease(int release) {
+    public VariantSearchModel setRelease(Integer release) {
         this.release = release;
         return this;
     }
@@ -314,56 +304,56 @@ public class VariantSearchModel {
         return this;
     }
 
-    public double getPhastCons() {
+    public Double getPhastCons() {
         return phastCons;
     }
 
-    public VariantSearchModel setPhastCons(double phastCons) {
+    public VariantSearchModel setPhastCons(Double phastCons) {
         this.phastCons = phastCons;
         return this;
     }
 
-    public double getPhylop() {
+    public Double getPhylop() {
         return phylop;
     }
 
-    public VariantSearchModel setPhylop(double phylop) {
+    public VariantSearchModel setPhylop(Double phylop) {
         this.phylop = phylop;
         return this;
     }
 
-    public double getGerp() {
+    public Double getGerp() {
         return gerp;
     }
 
-    public VariantSearchModel setGerp(double gerp) {
+    public VariantSearchModel setGerp(Double gerp) {
         this.gerp = gerp;
         return this;
     }
 
-    public double getCaddRaw() {
+    public Double getCaddRaw() {
         return caddRaw;
     }
 
-    public VariantSearchModel setCaddRaw(double caddRaw) {
+    public VariantSearchModel setCaddRaw(Double caddRaw) {
         this.caddRaw = caddRaw;
         return this;
     }
 
-    public double getCaddScaled() {
+    public Double getCaddScaled() {
         return caddScaled;
     }
 
-    public VariantSearchModel setCaddScaled(double caddScaled) {
+    public VariantSearchModel setCaddScaled(Double caddScaled) {
         this.caddScaled = caddScaled;
         return this;
     }
 
-    public double getSift() {
+    public Double getSift() {
         return sift;
     }
 
-    public VariantSearchModel setSift(double sift) {
+    public VariantSearchModel setSift(Double sift) {
         this.sift = sift;
         return this;
     }
@@ -377,11 +367,11 @@ public class VariantSearchModel {
         return this;
     }
 
-    public double getPolyphen() {
+    public Double getPolyphen() {
         return polyphen;
     }
 
-    public VariantSearchModel setPolyphen(double polyphen) {
+    public VariantSearchModel setPolyphen(Double polyphen) {
         this.polyphen = polyphen;
         return this;
     }

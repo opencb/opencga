@@ -4,11 +4,13 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Scan;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
@@ -18,10 +20,12 @@ import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsFileBase
 import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchIndexUtils;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.SEARCH_INDEX_LAST_TIMESTAMP;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.VariantColumn.*;
 
 public class SecondaryIndexPendingVariantsFileBasedDescriptor implements PendingVariantsFileBasedDescriptor {
@@ -38,6 +42,7 @@ public class SecondaryIndexPendingVariantsFileBasedDescriptor implements Pending
         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, FULL_ANNOTATION.bytes());
         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, ANNOTATION_ID.bytes());
         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, INDEX_NOT_SYNC.bytes());
+        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, INDEX_STATS_NOT_SYNC.bytes());
         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, INDEX_UNKNOWN.bytes());
         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, INDEX_STUDIES.bytes());
         for (Integer studyId : metadataManager.getStudyIds()) {
@@ -53,7 +58,7 @@ public class SecondaryIndexPendingVariantsFileBasedDescriptor implements Pending
         PendingVariantConverter converter = new PendingVariantConverter(metadataManager);
         if (overwrite) {
             // When overwriting mark all variants as pending
-            return converter::convert;
+            return value -> converter.convert(value, VariantStorageEngine.SyncStatus.NOT_SYNCHRONIZED);
         } else {
             long ts = metadataManager.getProjectMetadata().getAttributes().getLong(SEARCH_INDEX_LAST_TIMESTAMP.key());
             return (value) -> converter.checkAndConvert(value, ts);
@@ -66,7 +71,7 @@ public class SecondaryIndexPendingVariantsFileBasedDescriptor implements Pending
     }
 
     public static class PendingVariantConverter {
-        private final HBaseToVariantAnnotationConverter converter = new HBaseToVariantAnnotationConverter();
+        private final HBaseToVariantAnnotationConverter annotationConverter = new HBaseToVariantAnnotationConverter();
         private final HBaseToVariantStatsConverter statsConverter = new HBaseToVariantStatsConverter();
         private final VariantStorageMetadataManager metadataManager;
 
@@ -76,15 +81,15 @@ public class SecondaryIndexPendingVariantsFileBasedDescriptor implements Pending
 
         private Variant checkAndConvert(Result value, long ts) {
             VariantStorageEngine.SyncStatus syncStatus = HadoopVariantSearchIndexUtils.getSyncStatusCheckStudies(ts, value);
-            boolean pending = syncStatus != VariantStorageEngine.SyncStatus.SYNCHRONIZED;
-            if (pending) {
-                return convert(value);
-            } else {
+            if (syncStatus == VariantStorageEngine.SyncStatus.SYNCHRONIZED) {
+                // Variant is already synchronized. Nothing to do!
                 return null;
+            } else {
+                return convert(value, syncStatus);
             }
         }
 
-        private Variant convert(Result value) {
+        private Variant convert(Result value, VariantStorageEngine.SyncStatus syncStatus) {
             VariantRow variantRow = new VariantRow(value);
             Map<Integer, Map<Integer, org.opencb.biodata.models.variant.stats.VariantStats>> stats = statsConverter.convert(value);
             Variant variant = variantRow.walker().onStudy(studyId -> {
@@ -103,10 +108,33 @@ public class SecondaryIndexPendingVariantsFileBasedDescriptor implements Pending
                 }
             }
 
-            VariantAnnotation annotation = converter.convert(value);
-            if (annotation != null) {
-                variant.setAnnotation(annotation);
+            VariantAnnotation annotation;
+            switch (syncStatus) {
+                case NOT_SYNCHRONIZED:
+                    annotation = annotationConverter.convert(value);
+                    break;
+                case STATS_NOT_SYNC:
+                    annotation = null;
+                    break;
+                case STATS_NOT_SYNC_AND_STUDIES_UNKNOWN:
+                case STUDIES_UNKNOWN_SYNC:
+                case SYNCHRONIZED:
+                default:
+                    throw new IllegalStateException("Unexpected sync status: " + syncStatus);
             }
+            if (annotation == null) {
+                annotation = new VariantAnnotation();
+            }
+
+            if (annotation.getAdditionalAttributes() == null) {
+                annotation.setAdditionalAttributes(new HashMap<>());
+            }
+            AdditionalAttribute additionalAttribute = annotation.getAdditionalAttributes()
+                    .computeIfAbsent(GROUP_NAME.key(), k -> new AdditionalAttribute(new HashMap<>()));
+            additionalAttribute.getAttribute().put(VariantField.AdditionalAttributes.INDEX_SYNCHRONIZATION.key(), syncStatus.key());
+
+            variant.setAnnotation(annotation);
+
             return variant;
         }
     }

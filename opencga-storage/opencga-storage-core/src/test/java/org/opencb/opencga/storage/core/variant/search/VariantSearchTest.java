@@ -69,7 +69,7 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
         List<Variant> annotatedVariants = annotatedVariants(variants, studyMetadata.getName());
 
 
-        SearchIndexMetadata indexMetadata = variantSearchManager.createIndexMetadataIfEmpty(configSet);
+        SearchIndexMetadata indexMetadata = variantSearchManager.createIndexMetadataIfEmpty();
         variantSearchManager.create(indexMetadata);
 
         variantSearchManager.insert(indexMetadata, annotatedVariants);
@@ -204,7 +204,7 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
         int studyId = scm.createStudy(study).getId();
         int fileId = scm.registerFile(studyId, file, Arrays.asList("A-A", "B", "C", "D"));
         scm.addIndexedFiles(studyId, Collections.singletonList(fileId));
-        SearchIndexMetadata indexMetadata = variantSearchManager.createIndexMetadataIfEmpty(configSet);
+        SearchIndexMetadata indexMetadata = variantSearchManager.createIndexMetadataIfEmpty();
         variantSearchManager.create(indexMetadata);
 
         LinkedHashMap<String, Integer> samplePosition = new LinkedHashMap<>();
@@ -245,7 +245,7 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
 
         metadataManager.createStudy("s1");
 
-        SearchIndexMetadata indexMetadata = variantSearchManager.createIndexMetadataIfEmpty(configSet);
+        SearchIndexMetadata indexMetadata = variantSearchManager.createIndexMetadataIfEmpty();
         variantSearchManager.create(indexMetadata);
 
         variantSearchManager.insert(indexMetadata, annotatedVariants);
@@ -287,7 +287,7 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
 
         metadataManager.createStudy("s1");
 
-        SearchIndexMetadata indexMetadata = variantSearchManager.createIndexMetadataIfEmpty(configSet);
+        SearchIndexMetadata indexMetadata = variantSearchManager.createIndexMetadataIfEmpty();
         variantSearchManager.create(indexMetadata);
 
         variantSearchManager.insert(indexMetadata, annotatedVariants);

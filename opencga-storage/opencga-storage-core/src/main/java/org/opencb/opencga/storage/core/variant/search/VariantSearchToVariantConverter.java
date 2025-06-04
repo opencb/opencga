@@ -17,8 +17,6 @@
 package org.opencb.opencga.storage.core.variant.search;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -176,7 +174,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         variantAnnotation.setReference(variant.getReference());
 
         // Set 'release' if it was not missing
-        if (variantSearchModel.getRelease() > 0) {
+        if (variantSearchModel.getRelease() != null) {
             Map<String, String> attribute = new HashMap<>();
             attribute.put(RELEASE.key(), String.valueOf(variantSearchModel.getRelease()));
             variantAnnotation.setAdditionalAttributes(new HashMap<>());
@@ -351,7 +349,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         consequenceType.setTranscriptId(name);
                         consequenceType.setEnsemblTranscriptId(name);
                         consequenceTypeMap.put(name, consequenceType);
-                        logger.warn("No information found in Solr field 'other' for transcript '{}'", name);
+//                        logger.warn("No information found in Solr field 'other' for transcript '{}'", name);
 //                        throw new InternalError("Transcript '" + name + "' missing in schema field name 'other'");
                     }
                     consequenceType.setGeneName(geneName);
@@ -582,6 +580,18 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
      */
     @Override
     public VariantSearchModel convertToStorageType(Variant variant) {
+        return convertToStorageType(variant, true, true);
+    }
+
+    /**
+     * Conversion: from data model to storage type.
+     *
+     * @param variant Data model object
+     * @param includeStats      Include variant stats in the storage type object
+     * @param includeAnnotation Include variant annotation in the storage type object
+     * @return Storage type object
+     */
+    public VariantSearchModel convertToStorageType(Variant variant, boolean includeStats, boolean includeAnnotation) {
         VariantSearchModel variantSearchModel = new VariantSearchModel();
 
 //        // Create the Other list to insert scores and transcripts info (biotype, protein, variant annotation,...)
@@ -597,9 +607,21 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         variantSearchModel.setEnd(variant.getEnd());
         variantSearchModel.setType(variant.getType().toString());
 
-        // convert Study related information
-        convertStudies(variant, variantSearchModel);
+        convertStudyIds(variant, variantSearchModel);
 
+        if (includeStats) {
+            // convert Study related information
+            convertStats(variant, variantSearchModel);
+        }
+
+        if (includeAnnotation) {
+            convertVariantAnnotation(variant, variantSearchModel, variantId);
+        }
+
+        return variantSearchModel;
+    }
+
+    private void convertVariantAnnotation(Variant variant, VariantSearchModel variantSearchModel, String variantId) {
         // We init all annotation numeric values to MISSING_VALUE, this fixes two different scenarios:
         // 1. No Variant Annotation has been found, probably because it is a SV longer than 100bp.
         // 2. There are some conservation or CADD scores missing
@@ -961,7 +983,6 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             });
         }
         variantSearchModel.setXrefs(new ArrayList<>(xrefs));
-        return variantSearchModel;
     }
 
     public static String getVariantId(Variant variant) {
@@ -978,17 +999,26 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         return HASH_PREFIX + variant.getChromosome() + ":" + variant.getStart() + ":" + Integer.toString(variantString.hashCode());
     }
 
-    private void convertStudies(Variant variant, VariantSearchModel variantSearchModel) {
+    private void convertStudyIds(Variant variant, VariantSearchModel variantSearchModel) {
         // Sanity check
         if (CollectionUtils.isEmpty(variant.getStudies())) {
             return;
         }
 
-        ObjectWriter writer = new ObjectMapper().writer();
-
         for (StudyEntry studyEntry : variant.getStudies()) {
             String studyId = studyIdToSearchModel(studyEntry.getStudyId());
             variantSearchModel.getStudies().add(studyId);
+        }
+    }
+
+    private void convertStats(Variant variant, VariantSearchModel variantSearchModel) {
+        // Sanity check
+        if (CollectionUtils.isEmpty(variant.getStudies())) {
+            return;
+        }
+
+        for (StudyEntry studyEntry : variant.getStudies()) {
+            String studyId = studyIdToSearchModel(studyEntry.getStudyId());
 
             // We store the cohort stats:
             //    - altStats__STUDY__COHORT = alternate allele freq, e.g. altStats_1000G_ALL=0.02

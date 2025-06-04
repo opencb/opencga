@@ -1,24 +1,82 @@
 package org.opencb.opencga.storage.core.variant.search;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.solr.client.solrj.beans.DocumentObjectBinder;
 import org.apache.solr.common.SolrInputDocument;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.commons.Converter;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 
-public class VariantToSolrBeanConverterTask implements Converter<Variant, SolrInputDocument> {
+import java.util.ArrayList;
+import java.util.List;
+
+public class VariantToSolrBeanConverterTask implements Converter<Variant, Pair<SolrInputDocument, SolrInputDocument>> {
 
     private final VariantSearchToVariantConverter converter;
     private final DocumentObjectBinder binder;
+    private final VariantSecondaryIndexFilter filter;
+    private final boolean statsCollectionEnabled;
 
-    public VariantToSolrBeanConverterTask(DocumentObjectBinder binder) {
+    public VariantToSolrBeanConverterTask(DocumentObjectBinder binder, VariantSecondaryIndexFilter filter, boolean statsCollectionEnabled) {
         this.binder = binder;
+        this.filter = filter;
+        this.statsCollectionEnabled = statsCollectionEnabled;
         this.converter = new VariantSearchToVariantConverter();
     }
 
     @Override
-    public SolrInputDocument convert(Variant variant) {
-        VariantSearchModel variantSearchModel = converter.convertToStorageType(variant);
-        return binder.toSolrInputDocument(variantSearchModel);
+    public List<Pair<SolrInputDocument, SolrInputDocument>> apply(List<Variant> from) {
+        List<Pair<SolrInputDocument, SolrInputDocument>> convertedBatch = new ArrayList<>(from.size());
+
+        for (Variant item : from) {
+            Pair<SolrInputDocument, SolrInputDocument> convert = this.convert(item);
+            if (convert != null) {
+                convertedBatch.add(convert);
+            }
+        }
+
+        return convertedBatch;
+    }
+
+    @Override
+    public Pair<SolrInputDocument, SolrInputDocument> convert(Variant variant) {
+        VariantStorageEngine.SyncStatus status = filter.getSyncStatus(variant);
+        switch (status) {
+            case SYNCHRONIZED:
+                // Nothing to sync!
+                return null;
+            case NOT_SYNCHRONIZED:
+            case STATS_NOT_SYNC: {
+                final SolrInputDocument mainDocument;
+                final SolrInputDocument statsDocument;
+
+                if (statsCollectionEnabled) {
+                    if (status == VariantStorageEngine.SyncStatus.NOT_SYNCHRONIZED) {
+                        // Need to sync main collection.
+                        VariantSearchModel variantSearchModelAnnotation = converter.convertToStorageType(variant, false, true);
+                        mainDocument = binder.toSolrInputDocument(variantSearchModelAnnotation);
+                    } else {
+                        // Main document not needed. Only stats are out of sync
+                        mainDocument = null;
+                    }
+
+                    VariantSearchModel variantSearchModelStats = converter.convertToStorageType(variant, true, false);
+                    statsDocument = binder.toSolrInputDocument(variantSearchModelStats);
+                } else {
+                    // No stats collection enabled, so we only convert the main document that contains everything
+                    VariantSearchModel variantSearchModel = converter.convertToStorageType(variant);
+                    mainDocument = binder.toSolrInputDocument(variantSearchModel);
+                    statsDocument = null;
+                }
+                return Pair.of(mainDocument,
+                        statsDocument);
+            }
+            case STATS_NOT_SYNC_AND_STUDIES_UNKNOWN:
+            case STUDIES_UNKNOWN_SYNC:
+                // No uncertainty is expected at this point, so we should not reach here.
+            default:
+                throw new IllegalStateException("Unexpected value: " + filter.getSyncStatus(variant));
+        }
     }
 
 }

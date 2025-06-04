@@ -63,12 +63,12 @@ public final class PendingVariantsFileCleaner implements DataWriter<Variant> {
             String next = pathsToClean.iterator().next();
             pathsToClean.remove(next);
             try {
-//                        logger.info("Deleting file " + next);
+                logger.debug("Deleting file {}", next);
                 fs.delete(new Path(pendingVariantsDir, next), true);
-                deletedFiles++;
             } catch (IOException e) {
                 throw new RuntimeException("Unable to delete file " + next, e);
             }
+            deletedFiles++;
         }
     }
 }

@@ -184,7 +184,7 @@ public class VariantStatsFromResultMapper extends TableMapper<ImmutableBytesWrit
         if (put == null) {
             context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "stats.put.null").increment(1);
         } else {
-            HadoopVariantSearchIndexUtils.addNotSyncStatus(put);
+            HadoopVariantSearchIndexUtils.addStatsNotSyncStatus(put);
             context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "stats.put").increment(1);
             context.write(new ImmutableBytesWritable(helper.getVariantsTable()), put);
         }

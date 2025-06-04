@@ -31,6 +31,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
@@ -45,6 +46,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.function.Function;
+
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.SyncStatus;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
 
 /**
  * Created on 12/02/19.
@@ -257,16 +261,21 @@ public class DiscoverPendingVariantsDriver extends AbstractVariantsTableDriver {
             objectMapper = new ObjectMapper(new JsonFactory());
             objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
             JacksonUtils.addVariantMixIn(objectMapper);
+            context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, VARIANTS_COUNTER).increment(0);
+            context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, PENDING_VARIANTS_COUNTER).increment(0);
+            context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, READY_VARIANTS_COUNTER).increment(0);
         }
 
         @Override
         protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
             Variant variant = pendingEvaluator.apply(value);
-
             context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, VARIANTS_COUNTER).increment(1);
             if (variant == null) {
                 context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, READY_VARIANTS_COUNTER).increment(1);
             } else {
+                SyncStatus syncStatus = SyncStatus.from(variant.getAnnotation().getAdditionalAttributes()
+                                .get(GROUP_NAME.key()).getAttribute().get(VariantField.AdditionalAttributes.INDEX_SYNCHRONIZATION.key()));
+                context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, syncStatus.name()).increment(1);
                 context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, PENDING_VARIANTS_COUNTER).increment(1);
                 mos.write(new VariantLocusKey(variant),
                         new Text(objectMapper.writeValueAsBytes(variant)),

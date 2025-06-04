@@ -196,7 +196,8 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
 
         Cell studyCell = result.getColumnLatestCell(columnFamily, VariantColumn.INDEX_STUDIES.bytes());
         Cell notSyncCell = result.getColumnLatestCell(columnFamily, VariantColumn.INDEX_NOT_SYNC.bytes());
-        Cell unknownCell = result.getColumnLatestCell(columnFamily, VariantColumn.INDEX_UNKNOWN.bytes());
+        Cell statsNotSyncCell = result.getColumnLatestCell(columnFamily, VariantColumn.INDEX_STATS_NOT_SYNC.bytes());
+        Cell studiesUnknownCell = result.getColumnLatestCell(columnFamily, VariantColumn.INDEX_UNKNOWN.bytes());
 
         List<Integer> studies;
         if (studyCell != null && studyCell.getValueLength() != 0) {
@@ -208,7 +209,7 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
 
         VariantStorageEngine.SyncStatus syncStatus;
         if (includeIndexStatus) {
-            syncStatus = HadoopVariantSearchIndexUtils.getSyncStatus(ts, studyCell, notSyncCell, unknownCell);
+            syncStatus = HadoopVariantSearchIndexUtils.getSyncStatus(ts, studyCell, notSyncCell, statsNotSyncCell, studiesUnknownCell);
         } else {
             syncStatus = null;
         }
@@ -258,9 +259,10 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
                 }
 
                 boolean noSync = resultSet.getBoolean(VariantColumn.INDEX_NOT_SYNC.column());
+                boolean statsNotSync = resultSet.getBoolean(VariantColumn.INDEX_STATS_NOT_SYNC.column());
                 boolean unknown = resultSet.getBoolean(VariantColumn.INDEX_UNKNOWN.column());
 
-                syncStatus = HadoopVariantSearchIndexUtils.getSyncStatus(noSync, unknown, studies);
+                syncStatus = HadoopVariantSearchIndexUtils.getSyncStatus(noSync, unknown, statsNotSync, studies);
             } else {
                 studies = null;
                 syncStatus = null;

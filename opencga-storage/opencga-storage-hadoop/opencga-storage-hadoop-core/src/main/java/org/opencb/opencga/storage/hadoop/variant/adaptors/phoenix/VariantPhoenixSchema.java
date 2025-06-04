@@ -149,6 +149,7 @@ public final class VariantPhoenixSchema {
         FULL_ANNOTATION(ANNOTATION_PREFIX + "FULL", PVarchar.INSTANCE),
 
         INDEX_NOT_SYNC("_IDX_N", PBoolean.INSTANCE),
+        INDEX_STATS_NOT_SYNC("_IDX_S", PBoolean.INSTANCE),
         INDEX_UNKNOWN("_IDX_U", PBoolean.INSTANCE),
         INDEX_STUDIES("_IDX_ST_", PIntegerArray.INSTANCE);
 

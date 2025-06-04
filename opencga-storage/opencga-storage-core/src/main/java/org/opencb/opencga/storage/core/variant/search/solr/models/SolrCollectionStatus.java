@@ -4,15 +4,21 @@ import java.util.List;
 
 public class SolrCollectionStatus {
     private final String name;
+    private final String configName;
     private final List<SolrShardStatus> shards;
 
-    public SolrCollectionStatus(String name, List<SolrShardStatus> shards) {
+    public SolrCollectionStatus(String name, String configName, List<SolrShardStatus> shards) {
         this.name = name;
+        this.configName = configName;
         this.shards = shards;
     }
 
     public String getName() {
         return name;
+    }
+
+    public String getConfigName() {
+        return configName;
     }
 
     public List<SolrShardStatus> getShards() {

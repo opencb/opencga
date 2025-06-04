@@ -70,7 +70,6 @@ import org.opencb.opencga.storage.core.variant.query.executors.*;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantAggregationExecutor;
 import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantQueryExecutor;
-import org.opencb.opencga.storage.core.variant.search.VariantSecondaryIndexFilter;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
@@ -560,17 +559,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         SecondaryIndexPendingVariantsFileBasedManager pendingVariantsManager
                 = new SecondaryIndexPendingVariantsFileBasedManager(getVariantTableName(), getConf());
 
-        DataReader<Variant> reader;
-        VariantSecondaryIndexFilter filter = new VariantSecondaryIndexFilter(getMetadataManager().getStudies());
-        reader = pendingVariantsManager
-                .reader(query)
-                .then(filter);
+        DataReader<Variant> reader = pendingVariantsManager.reader(query);
 
         PendingVariantsFileCleaner cleaner = pendingVariantsManager.cleaner();
         HadoopVariantSearchDataWriter writer = new HadoopVariantSearchDataWriter(
-                getVariantSearchManager().buildCollectionName(indexMetadata),
-                getVariantSearchManager().getSolrClient(),
-                getVariantSearchManager().getInsertBatchSize(),
+                variantSearchManager, indexMetadata,
                 getDBAdaptor(),
                 cleaner
         );

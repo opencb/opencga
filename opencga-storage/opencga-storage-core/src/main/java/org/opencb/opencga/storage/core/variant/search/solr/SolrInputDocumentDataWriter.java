@@ -10,12 +10,11 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class SolrInputDocumentDataWriter implements DataWriter<SolrInputDocument> {
 
-    public static final int MAX_RETRIES = 5;
+    public static final int MAX_RETRIES = 30;
     private final String collection;
     private final SolrClient solrClient;
     private final int insertBatchSize;
@@ -37,11 +36,13 @@ public class SolrInputDocumentDataWriter implements DataWriter<SolrInputDocument
             add(batch);
             if (serverBufferSize > insertBatchSize) {
                 commit();
+                return true;
+            } else {
+                return false;
             }
         } catch (Exception e) {
-            Throwables.propagate(e);
+            throw Throwables.propagate(e);
         }
-        return true;
     }
 
     @Override
@@ -51,9 +52,10 @@ public class SolrInputDocumentDataWriter implements DataWriter<SolrInputDocument
         } catch (Exception e) {
             Throwables.propagate(e);
         }
-        logger.info("Finish Solr Bulk Load: {} inserted documents.", insertedDocuments);
-        logger.info("Push (add) time: {}", TimeUtils.durationToString(addTimeMs));
-        logger.info("Commit time: {}", TimeUtils.durationToString(commitTimeMs));
+        logger.info("Finish Solr Bulk Load on collection '{}'", collection);
+        logger.info(" - Inserted documents: {}", insertedDocuments);
+        logger.info(" - Push (add) time: {}", TimeUtils.durationToString(addTimeMs));
+        logger.info(" - Commit time: {}", TimeUtils.durationToString(commitTimeMs));
         return true;
     }
 
@@ -63,11 +65,11 @@ public class SolrInputDocumentDataWriter implements DataWriter<SolrInputDocument
         serverBufferSize += batch.size();
     }
 
-    protected final void commit() throws Exception {
+    public final void commit() throws Exception {
         commit(false);
     }
 
-    protected void commit(boolean openSearcher) throws Exception {
+    public void commit(boolean openSearcher) throws Exception {
         boolean waitSearcher = openSearcher;
         UpdateResponse response = retry(() -> new UpdateRequest()
                 .setAction(UpdateRequest.ACTION.COMMIT, true, waitSearcher, 1, false, false, openSearcher)
@@ -94,7 +96,11 @@ public class SolrInputDocumentDataWriter implements DataWriter<SolrInputDocument
                 }
                 return apply;
             } catch (Exception e) {
-                logger.warn("Error while writing to Solr: {}. Retrying... (attempt {}/{})", e.getMessage(), retry, MAX_RETRIES);
+                String message = e.getMessage();
+                // Remove duplicated lines from "message"
+               message = removeDuplicates(message, " | ");
+
+                logger.warn("Error while writing to Solr: {}. Retrying... (attempt {}/{})", message, retry, MAX_RETRIES);
                 if (retry++ > MAX_RETRIES) {
                     for (Exception s : suppressed) {
                         e.addSuppressed(s);
@@ -116,4 +122,38 @@ public class SolrInputDocumentDataWriter implements DataWriter<SolrInputDocument
         }
     }
 
+    public static String removeDuplicates(String message, String lineBreak) {
+        String[] lines = message.split("\n");
+        String prevLine = lines[0];
+        StringBuilder sb = new StringBuilder();
+
+        int duplicateCount = 0;
+        for (int i = 1; i < lines.length; i++) {
+            String line = lines[i];
+            if (line.equals(prevLine)) {
+                // Skip duplicate line
+                duplicateCount++;
+                continue;
+            }
+            if (sb.length() > 0) {
+                sb.append(lineBreak);
+            }
+            sb.append(prevLine);
+            if (duplicateCount > 0) {
+                sb.append(" (repeated ").append(duplicateCount + 1).append(" times)");
+                duplicateCount = 0; // Reset count after appending
+            }
+            prevLine = line;
+        }
+        // Append the last line
+        if (sb.length() > 0) {
+            sb.append(lineBreak);
+        }
+        sb.append(prevLine);
+        if (duplicateCount > 0) {
+            sb.append(" (repeated ").append(duplicateCount + 1).append(" times)");
+        }
+
+        return sb.toString();
+    }
 }

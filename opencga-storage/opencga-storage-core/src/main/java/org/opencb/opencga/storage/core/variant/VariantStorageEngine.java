@@ -67,8 +67,9 @@ import org.opencb.opencga.storage.core.variant.query.executors.*;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantAggregationExecutor;
 import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantQueryExecutor;
-import org.opencb.opencga.storage.core.variant.search.VariantSecondaryIndexFilter;
-import org.opencb.opencga.storage.core.variant.search.solr.*;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSolrInputDocumentDataWriter;
 import org.opencb.opencga.storage.core.variant.search.solr.models.SolrCollectionStatus;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.core.variant.stats.SampleVariantStatsAggregationQuery;
@@ -124,8 +125,26 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
     }
 
+    /**
+     * Variant secondary annotation index synchronization status.
+     *
+     * There are 3 elements to synchronize within a variant.
+     * - VariantAnnotation
+     * - VariantStats
+     * - studies
+     *
+     * The status of the synchronization is stored in the VariantAnnotation.additionalAttributes
+     *
+     */
     public enum SyncStatus {
-        SYNCHRONIZED("Y"), NOT_SYNCHRONIZED("N"), UNKNOWN("?");
+        /**
+         *
+         */
+        SYNCHRONIZED("Y"),                           // All elements are synchronized
+        NOT_SYNCHRONIZED("N"),                       // Nothing is synchronized
+        STATS_NOT_SYNC("S"),                         // VarAnnot sync | Stats not sync | Studies sync
+        STATS_NOT_SYNC_AND_STUDIES_UNKNOWN("S?"),    // VarAnnot sync | Stats not sync | Studies unknown
+        STUDIES_UNKNOWN_SYNC("?");                   // VarAnnot sync | Stats sync     | Studies unknown
         private final String c;
 
         SyncStatus(String c) {
@@ -134,6 +153,32 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
         public String key() {
             return c;
+        }
+
+        public static SyncStatus from(String c) {
+            if (c == null || c.isEmpty()) {
+                return STUDIES_UNKNOWN_SYNC;
+            }
+            switch (c) {
+                case "Y":
+                case "SYNCHRONIZED":
+                    return SYNCHRONIZED;
+                case "N":
+                case "NOT_SYNCHRONIZED":
+                    return NOT_SYNCHRONIZED;
+                case "S":
+                case "STATS_NOT_SYNCHRONIZED":
+                    return STATS_NOT_SYNC;
+                case "S?":
+                case "STATS_NOT_SYNCHRONIZED_AND_UNKNOWN":
+                    return STATS_NOT_SYNC_AND_STUDIES_UNKNOWN;
+                case "?":
+                case "UNKNOWN":
+                    return STUDIES_UNKNOWN_SYNC;
+                default:
+                    throw new IllegalArgumentException("Unknown sync status '" + c + "'. Available values: "
+                            + Arrays.toString(SyncStatus.values()));
+            }
         }
     }
 
@@ -745,7 +790,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                         dbName, indexMetadata.getConfigSetId());
             } else {
                 // Create if it does not exist
-                indexMetadata = variantSearchManager.createIndexMetadataIfEmpty(configuration.getSearch().getConfigSet());
+                indexMetadata = variantSearchManager.createIndexMetadataIfEmpty();
                 logger.info("Creating new secondary annotation index collection '{}' , configSetId:'{}'",
                         variantSearchManager.buildCollectionName(indexMetadata), indexMetadata.getConfigSetId());
             }
@@ -764,6 +809,15 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 if (!indexMetadata.getConfigSetId().equals(configuration.getSearch().getConfigSet())) {
                     logger.info("ConfigSetId changed from '{}' to '{}'. Creating new secondary annotation index to match new configSetId",
                             indexMetadata.getConfigSetId(), configuration.getSearch().getConfigSet());
+                    shouldCreateNewIndex = true;
+                } else if (variantSearchManager.isStatsCollectionEnabled(indexMetadata) != getOptions().getBoolean(
+                        VariantStorageOptions.SEARCH_STATS_COLLECTION_ENABLED.key(),
+                        VariantStorageOptions.SEARCH_STATS_COLLECTION_ENABLED.defaultValue())) {
+                    logger.info("Search stats collection enabled changed from '{}' to '{}'. "
+                                    + "Creating new secondary annotation index to match new stats collection enabled",
+                            variantSearchManager.isStatsCollectionEnabled(indexMetadata),
+                            getOptions().getBoolean(VariantStorageOptions.SEARCH_STATS_COLLECTION_ENABLED.key(),
+                                    VariantStorageOptions.SEARCH_STATS_COLLECTION_ENABLED.defaultValue()));
                     shouldCreateNewIndex = true;
                 } else {
                     String collectionName = variantSearchManager.buildCollectionName(indexMetadata);
@@ -786,7 +840,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 logger.info("Create new secondary annotation index collection.");
                 logger.info(" Prev : '{}' , configSetId:'{}'", variantSearchManager.buildCollectionName(indexMetadata),
                         indexMetadata.getConfigSetId());
-                indexMetadata = variantSearchManager.newIndexMetadata(configuration.getSearch().getConfigSet());
+                indexMetadata = variantSearchManager.newIndexMetadata();
                 logger.info(" New : '{}' , configSetId:'{}'",
                         variantSearchManager.buildCollectionName(indexMetadata),
                         indexMetadata.getConfigSetId());
@@ -903,12 +957,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         if (!overwrite) {
             query.put(VARIANTS_TO_INDEX.key(), true);
         }
-        VariantSecondaryIndexFilter filter = new VariantSecondaryIndexFilter(getMetadataManager().getStudies());
-        SolrInputDocumentDataWriter writer = new SolrInputDocumentDataWriter(getVariantSearchManager().buildCollectionName(indexMetadata),
-                getVariantSearchManager().getSolrClient(),
-                getVariantSearchManager().getInsertBatchSize());
+        VariantSolrInputDocumentDataWriter writer = new VariantSolrInputDocumentDataWriter(getVariantSearchManager(), indexMetadata);
 
-        try (VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions).mapBuffered(filter, 10)) {
+        try (VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions)) {
             return variantSearchManager.load(indexMetadata, iterator, writer);
         } catch (StorageEngineException e) {
             throw e;

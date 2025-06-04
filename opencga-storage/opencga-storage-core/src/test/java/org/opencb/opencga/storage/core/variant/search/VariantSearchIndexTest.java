@@ -1,8 +1,10 @@
 package org.opencb.opencga.storage.core.variant.search;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.junit.*;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -70,6 +72,13 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
             inputFiles.add(inputFile);
             metadataManager.registerFile(studyMetadata.getId(), fileName, Arrays.asList("NA" + fileId));
             if (inputFiles.size() == 4) {
+                long countBeforeIndex;
+                if (metadataManager.getIndexedFiles(studyMetadata.getId()).isEmpty()) {
+                    countBeforeIndex = 0;
+                } else {
+                    countBeforeIndex = dbAdaptor.count(new Query(VariantQueryParam.STUDY.key(), studyId)).first();
+                }
+
 //                dbAdaptor.getMetadataManager().updateStudyMetadata(studyMetadata, null);
                 options.put(VariantStorageOptions.STUDY.key(), studyId);
                 variantStorageEngine.getOptions().putAll(options);
@@ -81,7 +90,7 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
 
                 VariantSearchLoadResult loadResult = searchIndex();
                 System.out.println("Load result after load 1,2 files: = " + loadResult + ", at study : " + studyId);
-                checkLoadResult(expected, loadResult);
+                checkLoadResult(expected, expected, expected, loadResult);
                 checkVariantSearchIndex(dbAdaptor);
 
                 //////////////////////
@@ -98,9 +107,24 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
 
                 loadResult = searchIndex();
                 System.out.println("Load result after load 3,4 files: = " + loadResult + " , at study : " + studyId);
-                checkLoadResult(expected, loadResult);
+                checkLoadResult(expected, expected, expected, loadResult);
                 checkVariantSearchIndex(dbAdaptor);
 
+                //////////////////////
+                long countAfterIndex = dbAdaptor.count(new Query(VariantQueryParam.STUDY.key(), studyId)).first();
+                // Only "new variants" expected to be annotated
+                expected = 0;
+                for (Variant variant : dbAdaptor) {
+                    if (variant.getAnnotation() == null || CollectionUtils.isEmpty(variant.getAnnotation().getConsequenceTypes())) {
+                        expected++;
+                    }
+                }
+                assertEquals(expected, countAfterIndex - countBeforeIndex);
+                variantStorageEngine.annotate(outputUri, new ObjectMap());
+                loadResult = searchIndex(false);
+                System.out.println("Load result after annotate: = " + loadResult + " , at study : " + studyId);
+                checkLoadResult(expected, expected, expected, loadResult);
+                checkVariantSearchIndex(dbAdaptor);
 
                 //////////////////////
                 QueryOptions statsOptions = new QueryOptions(VariantStorageOptions.STUDY.key(), STUDY_NAME)
@@ -113,20 +137,21 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
                 expected = dbAdaptor.count(query).first();
                 loadResult = searchIndex();
                 System.out.println("Load result after stats calculate: = " + loadResult + " , at study : " + studyId);
-                checkLoadResult(expected, loadResult);
+                // Only stats updates are expected
+                checkLoadResult(expected, 0, expected, loadResult);
                 checkVariantSearchIndex(dbAdaptor);
 
                 //////////////////////
                 expected = dbAdaptor.count((Query) null).first();
                 loadResult = searchIndex(true);
                 System.out.println("Load result overwrite: = " + loadResult + " , at study : " + studyId);
-                checkLoadResult(expected, loadResult);
+                checkLoadResult(expected, expected, expected, loadResult);
                 checkVariantSearchIndex(dbAdaptor);
 
                 //////////////////////
                 loadResult = searchIndex();
                 System.out.println("Load result nothing to do: = " + loadResult + " , at study : " + studyId);
-                checkLoadResult(0, loadResult);
+                checkLoadResult(0, 0, 0, loadResult);
                 checkVariantSearchIndex(dbAdaptor);
 
                 /////////// NEW STUDY ///////////
@@ -142,6 +167,12 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
         }
 
         checkVariantSearchIndex(dbAdaptor);
+    }
+
+    public void checkLoadResult(long expected, long expectedMain, long expectedStats, VariantSearchLoadResult loadResult) {
+        assertEquals(expectedMain, loadResult.getNumLoadedVariantsMain());
+        assertEquals(expectedStats, loadResult.getNumLoadedVariantsStats());
+        checkLoadResult(expected, loadResult);
     }
 
     public void checkLoadResult(long expected, VariantSearchLoadResult loadResult) {
@@ -189,7 +220,7 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
             expected = dbAdaptor.count(query).first();
             VariantSearchLoadResult loadResult = searchIndex();
             System.out.println("Load result after load 1-4 files: = " + loadResult);
-            checkLoadResult(expected, loadResult);
+            checkLoadResult(expected, expected, expected, loadResult);
 
             //////////////////////
             variantStorageEngine.removeFiles(studyMetadata.getName(), Collections.singletonList(fileNames.get(0)), outputUri);
@@ -206,7 +237,7 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
         }
 
         VariantSearchLoadResult loadResult = searchIndex();
-        checkLoadResult(expected, loadResult);
+        checkLoadResult(expected, expected, expected, loadResult);
         System.out.println("Load result after remove: = " + loadResult);
 
 

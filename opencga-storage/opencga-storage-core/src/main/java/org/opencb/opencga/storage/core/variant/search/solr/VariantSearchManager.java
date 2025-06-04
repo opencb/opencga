@@ -20,6 +20,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -65,6 +66,7 @@ import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchModel;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
+import org.opencb.opencga.storage.core.variant.search.VariantSecondaryIndexFilter;
 import org.opencb.opencga.storage.core.variant.search.VariantToSolrBeanConverterTask;
 import org.opencb.opencga.storage.core.variant.search.solr.models.SolrCollectionStatus;
 import org.opencb.opencga.storage.core.variant.search.solr.models.SolrCoreIndexStatus;
@@ -80,6 +82,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.SEARCH_STATS_COLLECTION_ENABLED;
+
 
 /**
  * Created by imedina on 09/11/16.
@@ -94,6 +98,7 @@ public class VariantSearchManager {
     private final String dbName;
     private VariantSearchToVariantConverter variantSearchToVariantConverter;
     private int insertBatchSize;
+    private String defaultConfigSet;
 
     private Logger logger;
 
@@ -184,6 +189,17 @@ public class VariantSearchManager {
             throws VariantSearchException {
         String collectionName = buildCollectionName(indexMetadata);
 
+        boolean o = waitForReplicasInSync(collectionName, timeout, timeUnit, throwException);
+        if (isStatsCollectionEnabled(indexMetadata)) {
+            String statsCollectionName = buildStatsCollectionName(indexMetadata);
+            o &= waitForReplicasInSync(statsCollectionName, timeout, timeUnit, throwException);
+        }
+
+        return o;
+    }
+
+    private boolean waitForReplicasInSync(String collectionName, int timeout, TimeUnit timeUnit, boolean throwException)
+            throws VariantSearchException {
         long sleepMs = TimeUnit.SECONDS.toMillis(5);
         long timeoutMs = timeUnit.toMillis(timeout);
         while (!tlogReplicasInSync(collectionName)) {
@@ -263,7 +279,9 @@ public class VariantSearchManager {
                     .process(getSolrClient()).toMap(new ObjectMap());
 
             List<SolrShardStatus> shardsList = new ArrayList<>();
-            ObjectMap shards = responseMap.getNestedMap("cluster.collections." + collection + ".shards");
+            ObjectMap collectionObject = responseMap.getNestedMap("cluster.collections." + collection);
+            String configName = collectionObject.getString("configName");
+            ObjectMap shards = collectionObject.getNestedMap("shards");
             for (String shard : shards.keySet()) {
                 ObjectMap shardMap = shards.getNestedMap(shard);
                 ObjectMap replicas = shardMap.getNestedMap("replicas");
@@ -294,7 +312,7 @@ public class VariantSearchManager {
                 shardsList.add(new SolrShardStatus(shard, replicaList));
             }
             shardsList.sort(Comparator.comparing(SolrShardStatus::getName));
-            return new SolrCollectionStatus(collection, shardsList);
+            return new SolrCollectionStatus(collection, configName, shardsList);
         } catch (SolrServerException | IOException e) {
             throw new VariantSearchException("Error getting Solr collection '" + collection + "' status", e);
         }
@@ -309,6 +327,7 @@ public class VariantSearchManager {
         logger.info("Collection '{}'", collectionStatus.getName());
         logger.info(" - Size: {} ({} bytes)", IOUtils.humanReadableByteCount(collectionStatus.getSizeInBytes(), false),
                 collectionStatus.getSizeInBytes());
+        logger.info(" - ConfigSet: {}", collectionStatus.getConfigName());
         logger.info(" - NumDocs: {}", collectionStatus.getNumDocs());
 
         for (SolrShardStatus shardStatus : collectionStatus.getShards()) {
@@ -342,7 +361,8 @@ public class VariantSearchManager {
                 logger.info("     - CoreName: {}", replicaStatus.getCoreName());
                 logger.info("     - Node: {}", replicaStatus.getNodeName());
                 logger.info("     - Type: {}", replicaStatus.getType());
-                logger.info("     - Size: {} ({} bytes)", IOUtils.humanReadableByteCount(replicaStatus.getIndexStatus().getSizeInBytes(), false),
+                logger.info("     - Size: {} ({} bytes)",
+                        IOUtils.humanReadableByteCount(replicaStatus.getIndexStatus().getSizeInBytes(), false),
                         replicaStatus.getIndexStatus().getSizeInBytes());
                 logger.info("     - NumDocs: {}", replicaStatus.getIndexStatus().getNumDocs());
                 if (!"active".equals(replicaStatus.getState())) {
@@ -418,6 +438,21 @@ public class VariantSearchManager {
         }
     }
 
+    public String buildStatsCollectionName(SearchIndexMetadata indexMetadata) {
+        if (indexMetadata == null) {
+            throw new NullPointerException("Missing index metadata");
+        }
+        String suffix = indexMetadata.getAttributes().getString(VariantStorageOptions.SEARCH_STATS_COLLECTION_SUFFIX.key(),
+                VariantStorageOptions.SEARCH_STATS_COLLECTION_SUFFIX.defaultValue());
+
+        if (indexMetadata.getCollectionNameSuffix() == null || indexMetadata.getCollectionNameSuffix().isEmpty()) {
+            // Backward compatibility
+            return dbName + suffix;
+        } else {
+            return dbName + "_" + indexMetadata.getCollectionNameSuffix() + suffix;
+        }
+    }
+
     /**
      * Insert a list of variants into the given Solr collection.
      *
@@ -452,7 +487,7 @@ public class VariantSearchManager {
      */
     public VariantSearchLoadResult load(SearchIndexMetadata indexMetadata,
                                         VariantDBIterator variantDBIterator,
-                                        SolrInputDocumentDataWriter writer)
+                                        VariantSolrInputDocumentDataWriter writer)
             throws VariantSearchException {
         if (variantDBIterator == null) {
             throw new VariantSearchException("Missing variant DB iterator when loading Solr variant collection");
@@ -460,8 +495,14 @@ public class VariantSearchManager {
 
         // first, create the collection if it does not exist
         String collection = create(indexMetadata);
-
         solrManager.checkExists(collection);
+
+        boolean statsCollectionEnabled = isStatsCollectionEnabled(indexMetadata);
+        if (statsCollectionEnabled) {
+            String statsCollection = buildStatsCollectionName(indexMetadata);
+            create(statsCollection, indexMetadata.getConfigSetId());
+            solrManager.checkExists(statsCollection);
+        }
 
         int batchSize = options.getInt(
                 VariantStorageOptions.SEARCH_LOAD_BATCH_SIZE.key(),
@@ -472,11 +513,14 @@ public class VariantSearchManager {
 
         ProgressLogger progressLogger = new ProgressLogger("Variants loaded in Solr:");
 
-        ParallelTaskRunner<Variant, SolrInputDocument> ptr = new ParallelTaskRunner<>(
+        VariantToSolrBeanConverterTask converterTask = new VariantToSolrBeanConverterTask(solrManager.getSolrClient().getBinder(),
+                new VariantSecondaryIndexFilter(metadataManager.getStudies()), statsCollectionEnabled);
+
+        ParallelTaskRunner<Variant, Pair<SolrInputDocument, SolrInputDocument>> ptr = new ParallelTaskRunner<>(
                 new VariantDBReader(variantDBIterator),
                 progressLogger
                         .<Variant>asTask(d -> "up to position " + d)
-                        .then(new VariantToSolrBeanConverterTask(solrManager.getSolrClient().getBinder())),
+                        .then(converterTask),
                 writer,
                 ParallelTaskRunner.Config.builder()
                         .setSorted(true)
@@ -499,7 +543,12 @@ public class VariantSearchManager {
 
         waitForReplicasInSync(indexMetadata, 5, TimeUnit.MINUTES, false);
         logCollectionStatus(collection);
-        return new VariantSearchLoadResult(count, count, 0);
+        logCollectionStatus(collection);
+        return new VariantSearchLoadResult(count, count, 0, writer.getMainInsertedDocuments(), writer.getStatsInsertedDocuments());
+    }
+
+    public boolean isStatsCollectionEnabled(SearchIndexMetadata indexMetadata) {
+        return indexMetadata.getAttributes().getBoolean(SEARCH_STATS_COLLECTION_ENABLED.key(), false);
     }
 
 
@@ -927,20 +976,32 @@ public class VariantSearchManager {
             NamedList<Object> collections = (NamedList<Object>) cluster.get("collections");
             Map<String, Object>  collection = (Map<String, Object>) collections.get(collectionName);
             String configName = collection.get("configName").toString();
-            return createIndexMetadataIfEmpty(configName);
+            return newIndexMetadata(configName, true, new ObjectMap()
+                    .append(VariantStorageOptions.SEARCH_STATS_COLLECTION_ENABLED.key(), false));
         }
         return null;
     }
 
-    public SearchIndexMetadata createIndexMetadataIfEmpty(String configSetId) throws StorageEngineException {
-        return newIndexMetadata(configSetId, true);
+    public SearchIndexMetadata createIndexMetadataIfEmpty() throws StorageEngineException {
+        return newIndexMetadata(true);
     }
 
-    public SearchIndexMetadata newIndexMetadata(String configSetId) throws StorageEngineException {
-        return newIndexMetadata(configSetId, false);
+    public SearchIndexMetadata newIndexMetadata() throws StorageEngineException {
+        return newIndexMetadata(false);
     }
 
-    private SearchIndexMetadata newIndexMetadata(String configSetId, boolean ifNotExists) throws StorageEngineException {
+    private SearchIndexMetadata newIndexMetadata(boolean ifNotExists) throws StorageEngineException {
+        boolean statsCollectionEnabled = options.getBoolean(SEARCH_STATS_COLLECTION_ENABLED.key(),
+                SEARCH_STATS_COLLECTION_ENABLED.defaultValue());
+        String statsCollectionSuffix = options.getString(VariantStorageOptions.SEARCH_STATS_COLLECTION_SUFFIX.key(),
+                VariantStorageOptions.SEARCH_STATS_COLLECTION_SUFFIX.defaultValue());
+        return newIndexMetadata(defaultConfigSet, ifNotExists, new ObjectMap()
+                .append(VariantStorageOptions.SEARCH_STATS_COLLECTION_ENABLED.key(), statsCollectionEnabled)
+                .append(VariantStorageOptions.SEARCH_STATS_COLLECTION_SUFFIX.key(), statsCollectionSuffix));
+    }
+
+    private SearchIndexMetadata newIndexMetadata(String configSetId, boolean ifNotExists, ObjectMap attributes)
+            throws StorageEngineException {
         // Create if it does not exist
         return metadataManager.updateProjectMetadata(projectMetadata -> {
             SearchIndexMetadata indexMetadata = projectMetadata.getSecondaryAnnotationIndex().getLastStagingOrActiveIndex();
@@ -955,13 +1016,13 @@ public class VariantSearchManager {
                 createNewIndexMetadata = true;
             }
             if (createNewIndexMetadata) {
-                newIndexMetadata(projectMetadata, configSetId);
+                newIndexMetadata(projectMetadata, configSetId, attributes);
             }
             return projectMetadata;
         }).getSecondaryAnnotationIndex().getLastStagingOrActiveIndex();
     }
 
-    private void newIndexMetadata(ProjectMetadata projectMetadata, String configSetId) {
+    private void newIndexMetadata(ProjectMetadata projectMetadata, String configSetId, ObjectMap attributes) {
         List<SearchIndexMetadata> values = projectMetadata.getSecondaryAnnotationIndex().getValues();
         int maxVersion = 0;
         for (SearchIndexMetadata value : values) {
@@ -978,7 +1039,7 @@ public class VariantSearchManager {
                 SearchIndexMetadata.Status.STAGING,
                 configSetId,
                 collectionNameSuffix,
-                new ObjectMap()
+                attributes
         );
         values.add(indexMetadata);
     }
@@ -1066,6 +1127,7 @@ public class VariantSearchManager {
         insertBatchSize = searchConfiguration.getInsertBatchSize() > 0
                 ? searchConfiguration.getInsertBatchSize()
                 : DEFAULT_INSERT_BATCH_SIZE;
+        this.defaultConfigSet = searchConfiguration.getConfigSet();
 
         if (!solrManager.getMode().equals("cloud")) {
             throw new IllegalArgumentException("Search mode '" + solrManager.getMode() + "' is not supported. "

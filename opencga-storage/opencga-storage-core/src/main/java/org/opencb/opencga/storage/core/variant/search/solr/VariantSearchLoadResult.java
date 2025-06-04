@@ -26,10 +26,17 @@ public class VariantSearchLoadResult {
      */
     private final long numDeletedVariants;
 
-    public VariantSearchLoadResult(long numProcessedVariants, long numLoadedVariants, long numDeletedVariants) {
+    private final long numLoadedVariantsMain;
+
+    private final long numLoadedVariantsStats;
+
+    public VariantSearchLoadResult(long numProcessedVariants, long numLoadedVariants, long numDeletedVariants,
+                                   long numLoadedVariantsMain, long numLoadedVariantsStats) {
         this.numProcessedVariants = numProcessedVariants;
         this.numLoadedVariants = numLoadedVariants;
         this.numDeletedVariants = numDeletedVariants;
+        this.numLoadedVariantsMain = numLoadedVariantsMain;
+        this.numLoadedVariantsStats = numLoadedVariantsStats;
     }
 
     public long getNumProcessedVariants() {
@@ -44,12 +51,22 @@ public class VariantSearchLoadResult {
         return numDeletedVariants;
     }
 
+    public long getNumLoadedVariantsMain() {
+        return numLoadedVariantsMain;
+    }
+
+    public long getNumLoadedVariantsStats() {
+        return numLoadedVariantsStats;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this, ToStringStyle.JSON_STYLE)
                 .append("numProcessedVariants", numProcessedVariants)
                 .append("numLoadedVariants", numLoadedVariants)
                 .append("numDeletedVariants", numDeletedVariants)
+                .append("numLoadedVariantsMain", numLoadedVariantsMain)
+                .append("numLoadedVariantsStats", numLoadedVariantsStats)
                 .toString();
     }
 }

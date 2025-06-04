@@ -1,15 +1,17 @@
 package org.opencb.opencga.storage.hadoop.variant.search;
 
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.phoenix.schema.types.PIntegerArray;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
-import org.opencb.opencga.storage.core.variant.search.solr.SolrInputDocumentDataWriter;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSolrInputDocumentDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseDataWriter;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
@@ -29,7 +31,7 @@ import java.util.stream.Collectors;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HadoopVariantSearchDataWriter extends SolrInputDocumentDataWriter {
+public class HadoopVariantSearchDataWriter extends VariantSolrInputDocumentDataWriter {
 
     private final HBaseDataWriter<Mutation> writer;
     private final PendingVariantsFileCleaner cleaner;
@@ -44,9 +46,9 @@ public class HadoopVariantSearchDataWriter extends SolrInputDocumentDataWriter {
     private final Logger logger = LoggerFactory.getLogger(HadoopVariantSearchDataWriter.class);
 
 
-    public HadoopVariantSearchDataWriter(String collection, SolrClient solrClient, int insertBatchSize,
+    public HadoopVariantSearchDataWriter(VariantSearchManager variantSearchManager, SearchIndexMetadata indexMetadata,
                                          VariantHadoopDBAdaptor dbAdaptor, PendingVariantsFileCleaner cleaner) {
-        super(collection, solrClient, insertBatchSize);
+        super(variantSearchManager, indexMetadata);
         this.writer = new HBaseDataWriter<>(dbAdaptor.getHBaseManager(), dbAdaptor.getVariantTable());
         this.cleaner = cleaner;
         this.studiesMap = new HashMap<>(dbAdaptor.getMetadataManager().getStudies());
@@ -67,9 +69,9 @@ public class HadoopVariantSearchDataWriter extends SolrInputDocumentDataWriter {
     }
 
     @Override
-    protected void add(List<SolrInputDocument> batch) throws Exception {
+    public boolean write(List<Pair<SolrInputDocument, SolrInputDocument>> batch) {
         try {
-            super.add(batch);
+            super.write(batch);
         } catch (Exception e) {
             onError();
             throw e;
@@ -81,8 +83,12 @@ public class HadoopVariantSearchDataWriter extends SolrInputDocumentDataWriter {
             List<Variant> variants = new ArrayList<>(batch.size());
             Map<Collection<Object>, byte[]> studiesColumnMap = new HashMap<>();
 
-            for (SolrInputDocument document : batch) {
+            for (Pair<SolrInputDocument, SolrInputDocument> pair : batch) {
                 // For each variant, clear from pending and update INDEX_STUDIES
+                SolrInputDocument document = pair.getLeft();
+                if (document == null) {
+                    document = pair.getRight();
+                }
 
                 Collection<Object> studies = document.getFieldValues("studies");
                 byte[] bytes = studiesColumnMap.computeIfAbsent(studies, list -> {
@@ -99,31 +105,31 @@ public class HadoopVariantSearchDataWriter extends SolrInputDocumentDataWriter {
             }
             variantsToClean.addAll(variants);
             rowsToUpdate.addAll(mutations);
-
-//            writer.write(mutations);
-////            cleaner.write(variantRows);
-//            cleaner.write(variants);
         }
+        return true;
     }
 
     @Override
-    protected void commit(boolean openSearcher) throws Exception {
+    protected void flush(boolean mainCommit, boolean statsCommit) {
         try {
-            super.commit(openSearcher);
+            super.flush(mainCommit, statsCommit);
         } catch (Exception e) {
             onError();
             throw e;
         }
+        flush();
+    }
+
+    private void flush() {
         StopWatch stopWatch = StopWatch.createStarted();
         writer.write(rowsToUpdate);
         writer.flush();
         hbasePutTimeMs += stopWatch.getTime();
         rowsToUpdate.clear();
-        stopWatch.reset();
 
+        stopWatch.reset();
         stopWatch.start();
         cleaner.write(variantsToClean);
-//        cleaner.flush();
         variantsToClean.clear();
         cleanTimeMs += stopWatch.getTime();
     }
@@ -148,6 +154,7 @@ public class HadoopVariantSearchDataWriter extends SolrInputDocumentDataWriter {
     public boolean post() {
         try {
             super.post();
+            flush();
         } catch (Exception e) {
             onError();
             throw e;
