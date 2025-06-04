@@ -7,7 +7,7 @@ LABEL org.label-schema.vendor="OpenCB" \
       maintainer="Joaquin Tarraga <joaquintarraga@gmail.com>" \
       org.label-schema.schema-version="1.0"
 
-## Run update and install necessary packages
+## Run update and install necessary packages for ext-tools
 RUN apt-get update -y && \
     ## 1. Install system dependencies
     DEBIAN_FRONTEND="noninteractive" TZ="Europe/London" apt-get install -y libcurl4 git libgmp-dev libcurl4-openssl-dev libgit2-dev build-essential \
