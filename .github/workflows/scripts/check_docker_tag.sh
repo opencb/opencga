@@ -2,7 +2,8 @@
 
 set -e
 
-VERSION="$1"
+VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 IMAGE="opencb/ext-tools:${VERSION}"
 
 echo "Checking if Docker image exists: $IMAGE"
