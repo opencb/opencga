@@ -21,7 +21,7 @@ PyOpenCGA-enterprise can be installed from the Pypi repository. Make sure you ha
 
 If you don't have Python or pip, please refer to https://packaging.python.org/en/latest/tutorials/installing-packages/
 
-To install PyOpencga-enterprise, run the following command in the shell::
+To install pyOpenCGA-enterprise, run the following command in the shell::
 
    $ pip install pyopencga-enterprise
 
@@ -32,7 +32,7 @@ Usage
 Import pyOpenCGA-enterprise package
 ```````````````````````````````````
 
-The first step is to import the ClientConfiguration and OpenCGAClient from pyOpenCGA-enterprise:
+The first step is to import the ClientConfiguration and OpencgaClient from pyOpenCGA-enterprise:
 
 .. code-block:: python
 
@@ -56,11 +56,11 @@ The second step is to generate a ClientConfiguration instance by passing a confi
 Log in to OpenCGA host server
 `````````````````````````````
 
-With this configuration you can initialize the OpenCGAClient, and log in:
+With this configuration you can initialize the OpencgaClient, and log in:
 
 .. code-block:: python
 
-    >>> oc = OpenCGAClient(config)
+    >>> oc = OpencgaClient(config)
     >>> oc.login(user='user', password='pass', organization='organization')
 
 Examples
