@@ -58,6 +58,7 @@ import static org.opencb.opencga.storage.core.variant.search.VariantSearchUtils.
 public class SolrQueryParser {
 
     private final VariantStorageMetadataManager variantStorageMetadataManager;
+    private final String statsCollectionName;
 
     private static Map<String, String> includeMap;
 
@@ -98,11 +99,18 @@ public class SolrQueryParser {
         includeMap.put("annotation.conservation", "phastCons,phylop,gerp");
         includeMap.put("annotation.functionalScore", "caddRaw,caddScaled");
         includeMap.put("annotation.traitAssociation", "traits");
+
+        initChromosomeMap();
     }
 
     public SolrQueryParser(VariantStorageMetadataManager variantStorageMetadataManager) {
         this.variantStorageMetadataManager = variantStorageMetadataManager;
-        initChromosomeMap();
+        this.statsCollectionName = null;
+    }
+
+    public SolrQueryParser(VariantStorageMetadataManager variantStorageMetadataManager, String statsCollectionName) {
+        this.variantStorageMetadataManager = variantStorageMetadataManager;
+        this.statsCollectionName = statsCollectionName;
     }
 
     /**
@@ -883,19 +891,18 @@ public class SolrQueryParser {
      *
      *
      * @param param        Param name
-     * @param name         Parameter type: propFreq or altStats
-     * @param value        Parameter value
+     * @param field        Parameter field: propFreq, altStats or passStats
+     * @param value        Filter value, e.g.: 1000G:CEU<=0.0053191,1000G:CLM>0.0125319
      * @param type         Type of frequency: REF, ALT, MAF, empty
      * @param defaultStudy Default study. To be used only if the study is not present.
      * @param studies    True if multiple studies are present joined by , (i.e., OR logical operation), only for STATS
      * @return             The string with the boolean conditions
      */
-    private String parsePopFreqValue(VariantQueryParam param, String name, String value, String type, String defaultStudy,
+    private String parsePopFreqValue(VariantQueryParam param, String field, String value, String type, String defaultStudy,
                                      String studies) {
         // In Solr, range queries can be inclusive or exclusive of the upper and lower bounds:
         //    - Inclusive range queries are denoted by square brackets.
         //    - Exclusive range queries are denoted by curly brackets.
-        StringBuilder sb = new StringBuilder();
         if (StringUtils.isNotEmpty(value)) {
             // FIXME at the higher level
             value = value.replace("<<", "<");
@@ -903,10 +910,13 @@ public class SolrQueryParser {
 
             QueryOperation queryOperation = parseOrAndFilter(param, value);
             String logicalComparator = (queryOperation == QueryOperation.OR) ? " OR " : " AND ";
+            List<String> values = splitValue(value, queryOperation);
 
             // We need to know if
             boolean addOr = true;
-            if (name.equals("altStats") || name.equals("passStats")) {
+            boolean statsJoinFilter = false;
+            if (field.equals("altStats") || field.equals("passStats")) {
+                statsJoinFilter = statsCollectionName != null;
                 if (StringUtils.isNotEmpty(studies) || StringUtils.isNotEmpty(defaultStudy)) {
                     Set<String> studiesSet = new HashSet<>();
                     if (defaultStudy != null) {
@@ -918,7 +928,6 @@ public class SolrQueryParser {
                     }
 
                     if (studiesSet.size() > 0) {
-                        List<String> values = splitValue(value, queryOperation);
                         addOr = false;
                         for (String val: values) {
                             String std = val.contains(":") ? val.split(":")[0] : defaultStudy;
@@ -931,7 +940,6 @@ public class SolrQueryParser {
                 }
             }
 
-            List<String> values = splitValue(value, queryOperation);
             List<String> list = new ArrayList<>(values.size());
             for (String v : values) {
                 String[] keyOpValue = splitOperator(v);
@@ -959,7 +967,7 @@ public class SolrQueryParser {
                     pop = studyPop;
                 }
 
-                if (name.equals("popFreq")) {
+                if (field.equals("popFreq")) {
                     if ((study.equals(ParamConstants.POP_FREQ_1000G) || study.equals("GNOMAD_GENOMES")) && pop.equals("ALL")) {
                         addOr = false;
                     } else {
@@ -968,16 +976,33 @@ public class SolrQueryParser {
                 }
 
                 // concat expression, e.g.: value:[0 TO 12]
-                list.add(getRange(name + FIELD_SEPARATOR + study
+                list.add(getRange(field + FIELD_SEPARATOR + study
                         + FIELD_SEPARATOR, pop, freqValue[0], freqValue[1], addOr));
+            }
+            StringBuilder sb = new StringBuilder();
+            if (list.isEmpty()) {
+                return "";
+            } else if (statsJoinFilter) {
+                // Join filter
+                sb.append("{!join fromIndex=").append(statsCollectionName).append(" from=id to=id}");
             }
             if (list.size() == 1) {
                 sb.append(list.get(0));
             } else {
-                sb.append('(').append(StringUtils.join(list, logicalComparator)).append(')');
+                sb.append('(');
+                for (int i = 0; i < list.size(); i++) {
+                    String s = list.get(i);
+                    if (i != 0) {
+                        sb.append(logicalComparator);
+                    }
+                    sb.append(s);
+                }
+                sb.append(')');
             }
+            return sb.toString();
+        } else {
+            return "";
         }
-        return sb.toString();
     }
 
 //    private int getNumberOfStudies(List<String> values, VariantQueryParam paramName, String paramValue, String defaultStudy) {
@@ -1437,7 +1462,7 @@ public class SolrQueryParser {
         }
     }
 
-    private void initChromosomeMap() {
+    private static void initChromosomeMap() {
         chromosomeMap = new HashMap<>();
         chromosomeMap.put("1", 249250621);
         chromosomeMap.put("2", 243199373);

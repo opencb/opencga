@@ -25,34 +25,32 @@ import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.query.executors.VariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
 import static org.opencb.commons.datastore.core.QueryOptions.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
@@ -70,9 +68,8 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
     public static VariantSolrExternalResource solr = new VariantSolrExternalResource();
 
     protected VariantDBAdaptor dbAdaptor;
-    private StudyMetadata studyMetadata;
+    private static StudyMetadata studyMetadata;
     private static VariantQueryResult<Variant> allVariants;
-    private VariantFileMetadata fileMetadata;
     protected static boolean loaded = false;
     private SolrClient solrClient;
     private SearchIndexVariantQueryExecutor variantQueryExecutor;
@@ -117,7 +114,6 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
         VariantStorageMetadataManager metadataManager = variantStorageEngine.getMetadataManager();
         StoragePipelineResult etlResult = runDefaultETL(smallInputUri, variantStorageEngine, studyMetadata, params);
-        fileMetadata = this.variantStorageEngine.getVariantReaderUtils().readVariantFileMetadata(Paths.get(etlResult.getTransformResult().getPath()).toUri());
 
         Integer indexedFileId = metadataManager.getIndexedFiles(studyMetadata.getId()).iterator().next();
 
@@ -254,7 +250,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
                     .append(LIMIT, batchSize);
             VariantQueryResult<Variant> result = variantStorageEngine.get(new Query(query), thisOptions);
             for (Variant variant : result.getResults()) {
-                assertFalse(actual.contains(variant.toString()));
+                assertThat(actual, not(hasItem(variant.toString())));
                 actual.add(variant.toString());
             }
             assertNotEquals(0, result.getNumResults());
@@ -376,5 +372,29 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
         assertTrue(variantQueryExecutor.doQuerySearchManager(indexMetadata, new Query(), new QueryOptions(INCLUDE, VariantField.ID)));
         assertFalse(variantQueryExecutor.doQuerySearchManager(indexMetadata, new Query(STUDY.key(), 3), new QueryOptions(VariantField.SUMMARY, true)));
         assertTrue(variantQueryExecutor.doQuerySearchManager(indexMetadata, new Query(STUDY.key(), 3), new QueryOptions(INCLUDE, VariantField.ID)));
+    }
+
+    @Test
+    public void testSearchFilterByStudy() throws Exception {
+        Query query = new VariantQuery().includeSampleAll().study(studyMetadata.getName());
+        QueryOptions options = new QueryOptions(USE_SEARCH_INDEX, VariantStorageEngine.UseSearchIndex.YES);
+        VariantQueryResult<Variant> result = variantStorageEngine.get(query, options);
+        assertThat(result, everyResult(allVariants, withStudy(studyMetadata.getName())));
+    }
+
+    @Test
+    public void testSearchFilterByStudyAndStats() throws Exception {
+        Query query = new VariantQuery().includeSampleAll().study(studyMetadata.getName())
+                .cohortStatsAlt("cohort1>0.1");
+        // Use search index to filter by study and stats
+        QueryOptions options = new QueryOptions(USE_SEARCH_INDEX, VariantStorageEngine.UseSearchIndex.YES);
+        VariantQueryResult<Variant> result = variantStorageEngine.get(query, options);
+        System.out.println(result.getResults().size());
+        System.out.println(result.getNumMatches());
+        assertThat(result.getSource(), containsString("solr"));
+        assertThat(result, everyResult(allVariants, allOf(
+                withStudy(studyMetadata.getName(),
+                        withStats("cohort1", withAlt(gt(0.1)))))));
+
     }
 }

@@ -1,6 +1,5 @@
 package org.opencb.opencga.storage.core.variant.search;
 
-import org.apache.commons.collections4.CollectionUtils;
 import org.junit.*;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -72,13 +71,6 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
             inputFiles.add(inputFile);
             metadataManager.registerFile(studyMetadata.getId(), fileName, Arrays.asList("NA" + fileId));
             if (inputFiles.size() == 4) {
-                long countBeforeIndex;
-                if (metadataManager.getIndexedFiles(studyMetadata.getId()).isEmpty()) {
-                    countBeforeIndex = 0;
-                } else {
-                    countBeforeIndex = dbAdaptor.count(new Query(VariantQueryParam.STUDY.key(), studyId)).first();
-                }
-
 //                dbAdaptor.getMetadataManager().updateStudyMetadata(studyMetadata, null);
                 options.put(VariantStorageOptions.STUDY.key(), studyId);
                 variantStorageEngine.getOptions().putAll(options);
@@ -111,16 +103,8 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
                 checkVariantSearchIndex(dbAdaptor);
 
                 //////////////////////
-                long countAfterIndex = dbAdaptor.count(new Query(VariantQueryParam.STUDY.key(), studyId)).first();
                 // Only "new variants" expected to be annotated
-                expected = 0;
-                for (Variant variant : dbAdaptor) {
-                    if (variant.getAnnotation() == null || CollectionUtils.isEmpty(variant.getAnnotation().getConsequenceTypes())) {
-                        expected++;
-                    }
-                }
-                assertEquals(expected, countAfterIndex - countBeforeIndex);
-                variantStorageEngine.annotate(outputUri, new ObjectMap());
+                expected = variantStorageEngine.annotate(outputUri, new ObjectMap());
                 loadResult = searchIndex(false);
                 System.out.println("Load result after annotate: = " + loadResult + " , at study : " + studyId);
                 checkLoadResult(expected, expected, expected, loadResult);

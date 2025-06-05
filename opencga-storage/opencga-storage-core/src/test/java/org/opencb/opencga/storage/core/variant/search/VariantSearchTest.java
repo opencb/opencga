@@ -70,8 +70,6 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
 
 
         SearchIndexMetadata indexMetadata = variantSearchManager.createIndexMetadataIfEmpty();
-        variantSearchManager.create(indexMetadata);
-
         variantSearchManager.insert(indexMetadata, annotatedVariants);
 
         VariantQueryResult<Variant> results = variantSearchManager.query(indexMetadata, variantStorageEngine.parseQuery(new Query(),
@@ -205,8 +203,6 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
         int fileId = scm.registerFile(studyId, file, Arrays.asList("A-A", "B", "C", "D"));
         scm.addIndexedFiles(studyId, Collections.singletonList(fileId));
         SearchIndexMetadata indexMetadata = variantSearchManager.createIndexMetadataIfEmpty();
-        variantSearchManager.create(indexMetadata);
-
         LinkedHashMap<String, Integer> samplePosition = new LinkedHashMap<>();
         samplePosition.put("A-A", 0);
         samplePosition.put("B", 1);
@@ -246,8 +242,6 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
         metadataManager.createStudy("s1");
 
         SearchIndexMetadata indexMetadata = variantSearchManager.createIndexMetadataIfEmpty();
-        variantSearchManager.create(indexMetadata);
-
         variantSearchManager.insert(indexMetadata, annotatedVariants);
 
         QueryOptions queryOptions = new QueryOptions();
@@ -288,8 +282,6 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
         metadataManager.createStudy("s1");
 
         SearchIndexMetadata indexMetadata = variantSearchManager.createIndexMetadataIfEmpty();
-        variantSearchManager.create(indexMetadata);
-
         variantSearchManager.insert(indexMetadata, annotatedVariants);
 
         QueryOptions queryOptions = new QueryOptions();

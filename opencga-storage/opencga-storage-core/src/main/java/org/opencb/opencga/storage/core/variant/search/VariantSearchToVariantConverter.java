@@ -1066,17 +1066,6 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         return studyId.substring(studyId.lastIndexOf(':') + 1);
     }
 
-    public List<VariantSearchModel> convertListToStorageType(List<Variant> variants) {
-        List<VariantSearchModel> variantSearchModelList = new ArrayList<>(variants.size());
-        for (Variant variant : variants) {
-            VariantSearchModel variantSearchModel = convertToStorageType(variant);
-            if (variantSearchModel.getId() != null) {
-                variantSearchModelList.add(variantSearchModel);
-            }
-        }
-        return variantSearchModelList;
-    }
-
     /**
      * Retrieve the protein substitution scores and descriptions from a consequence
      * type annotation: sift or polyphen, and update the variant search model.

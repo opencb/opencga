@@ -19,12 +19,14 @@ package org.opencb.opencga.storage.core.variant.solr;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.util.NamedList;
 import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.solr.SolrManager;
@@ -54,7 +56,7 @@ public class VariantSolrExternalResource extends ExternalResource {
 
     public static final String CONFIG_SET = "opencga_variants";
 
-    private SolrClient solrClient;
+    private MySolrClient solrClient;
     private MiniSolrCloudCluster miniSolrCloudCluster;
     protected boolean embeded = true;
     private ZkTestServer zkTestServer;
@@ -87,14 +89,14 @@ public class VariantSolrExternalResource extends ExternalResource {
 
         if (embeded) {
             create(solrHome, rootDir.resolve("configsets").toString());
-            solrClient = miniSolrCloudCluster.getSolrClient();
+            solrClient = new MySolrClient(miniSolrCloudCluster.getSolrClient());
         } else {
             String host = "http://localhost:8983/solr";
             int timeout = 5000;
 
             SolrManager solrManager = new SolrManager(host, "cloud", timeout);
 
-            this.solrClient = solrManager.getSolrClient();
+            this.solrClient = new MySolrClient(solrManager.getSolrClient());
         }
     }
 
@@ -103,11 +105,11 @@ public class VariantSolrExternalResource extends ExternalResource {
         super.after();
         try {
             if (embeded) {
-                solrClient.close();
+                solrClient.actuallyClose();
                 miniSolrCloudCluster.shutdown();
                 zkTestServer.shutdown();
             } else {
-                solrClient.close();
+                solrClient.actuallyClose();
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -223,6 +225,28 @@ public class VariantSolrExternalResource extends ExternalResource {
             miniSolrCloudCluster.uploadConfigSet(configSetPath.resolve(CONFIG_SET), CONFIG_SET);
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private static class MySolrClient extends SolrClient {
+        private final SolrClient actualSolrClient;
+
+        public MySolrClient(SolrClient actualSolrClient) {
+            this.actualSolrClient = actualSolrClient;
+        }
+
+        @Override
+        public NamedList<Object> request(SolrRequest request, String collection) throws SolrServerException, IOException {
+            return actualSolrClient.request(request, collection);
+        }
+
+        @Override
+        public void close() throws IOException {
+            // Do not close the actual SolrClient, as it is managed by MiniSolrCloudCluster
+        }
+
+        public void actuallyClose() throws IOException {
+            actualSolrClient.close();
         }
     }
 }

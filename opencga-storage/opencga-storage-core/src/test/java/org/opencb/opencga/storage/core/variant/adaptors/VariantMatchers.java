@@ -476,6 +476,15 @@ public class VariantMatchers {
         };
     }
 
+    public static Matcher<VariantStats> withAlt(Matcher<? super Float> subMatcher) {
+        return new FeatureMatcher<VariantStats, Float>(subMatcher, "with alt", "ALT") {
+            @Override
+            protected Float featureValueOf(VariantStats actual) {
+                return actual.getAltAlleleFreq();
+            }
+        };
+    }
+
     public static Matcher<VariantStats> withMaf(Matcher<? super Float> subMatcher) {
         return new FeatureMatcher<VariantStats, Float>(subMatcher, "with maf", "MAF") {
             @Override
