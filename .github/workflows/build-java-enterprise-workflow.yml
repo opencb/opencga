@@ -58,6 +58,7 @@ jobs:
         run: |
           branch_name=$(git rev-parse --abbrev-ref HEAD)
           ./build.sh --storage-hadoop ${{ inputs.storage_hadoop }} -b -T "$branch_name"
+          ./build_clients.sh -b -r -j -w
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.artifact_name }}
