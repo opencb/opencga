@@ -38,7 +38,7 @@ function print_usage() {
 # Parse arguments
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    -b|--skbuild-opencga)
+    -b|--skip-build-opencga)
       SKIP_BUILD_OPENCGA=true
       shift
       ;;
@@ -104,9 +104,9 @@ if ! $SKIP_PYTHON; then
   
   echo "Updating imports from pyopencga to pyopencga_enterprise"
   find "$BUILD_DIR/clients/python/pyopencga" -type f -name "*.py" -exec sed -i.bak 's/from pyopencga/from pyopencga_enterprise/g' {} \;
-  find "$BUILD_DIR/clients/python/pyopencga/rest_clients" -type f -name "*.py" -exec sed -i.bak 's/from pyopencga/from pyopencga_enterprise/g' {} \;
+  #find "$BUILD_DIR/clients/python/pyopencga/rest_clients" -type f -name "*.py" -exec sed -i.bak 's/from pyopencga/from pyopencga_enterprise/g' {} \;
   find "$BUILD_DIR/clients/python/pyopencga" -name "*.bak" -delete
-  find "$BUILD_DIR/clients/python/pyopencga/rest_clients" -name "*.bak" -delete
+  #find "$BUILD_DIR/clients/python/pyopencga/rest_clients" -name "*.bak" -delete
 
   echo "Calculating Python version"
   PYTHON_VERSION=$(python3 "opencga-enterprise-app/app/scripts/calculate_pypi_version.py" "$VERSION")

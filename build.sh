@@ -159,6 +159,7 @@ function print_usage() {
   echo "     -d     --docker              FLAG           Publish docker of OpenCGA-enterprise."
   echo "     -p     --docker-tag          FLAG           Tag for docker of OpenCGA-enterprise."
   echo "     -c     --cellbase-db         STRING         Connection to mongodb to test cellbase (host:port)."
+  echo "     -C     --skip-clients        STRING         Skip build opencga-enterprise clients for python, R and javascript."
   echo "     -v     --verbose             FLAG           Print verbose logs"
   echo "     -h     --help                FLAG           Print this help and exit"
   echo ""
@@ -323,6 +324,11 @@ function build_opencga_enterprise() {
         log_version_summary "opencga-enterprise,$VERSION,$BRANCH"
         log_summary "$COMMAND opencga-enterprise test Success!"
       fi
+  fi
+  ## if we skip clients, we do not build them
+  if [ "$BUILD_CLIENTS" == "true" ]; then
+  cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
+   ./build_clients.sh --skip-build-opencga
   fi
 }
 
@@ -664,7 +670,7 @@ COMMAND="build"
 SAVE_REPORTS="false"
 VERSION_SUMMARY=""
 PARAM_SUMMARY=""
-
+BUILD_CLIENTS="true"
 ###################################
 
 ## 2. Read and parse CLI options
@@ -700,6 +706,10 @@ while [[ $# -gt 0 ]]; do
       COMMAND="test"
       shift # past argument
       ;;
+  -C | --skip-clients)
+        BUILD_CLIENTS="false"
+        shift # past argument
+        ;;
   -d | --docker)
       DOCKER="true"
       shift # past argument
