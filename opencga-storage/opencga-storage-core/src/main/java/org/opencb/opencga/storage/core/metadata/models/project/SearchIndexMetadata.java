@@ -16,10 +16,10 @@ public class SearchIndexMetadata {
      */
     private Date creationDate;
     /**
-     * Date when the index was last modified. Because the modification process takes
-     * some time, this date will record the date when the update process started.
+     * The date when the index was last updated. This field captures the timestamp
+     * of the start of the most recent update process for the index.
      */
-    private Date modificationDate;
+    private Date lastUpdateDate;
     /**
      * Status of the index.
      * <ul>
@@ -58,11 +58,11 @@ public class SearchIndexMetadata {
     protected SearchIndexMetadata() {
     }
 
-    public SearchIndexMetadata(int version, Date creationDate, Date modificationDate, Status status, String configSetId,
+    public SearchIndexMetadata(int version, Date creationDate, Date lastUpdateDate, Status status, String configSetId,
                                String collectionNameSuffix, ObjectMap attributes) {
         this.version = version;
         this.creationDate = creationDate;
-        this.modificationDate = modificationDate;
+        this.lastUpdateDate = lastUpdateDate;
         this.status = status;
         this.configSetId = configSetId;
         this.collectionNameSuffix = collectionNameSuffix;
@@ -87,12 +87,16 @@ public class SearchIndexMetadata {
         return this;
     }
 
-    public Date getModificationDate() {
-        return modificationDate;
+    public Date getLastUpdateDate() {
+        return lastUpdateDate;
     }
 
-    public SearchIndexMetadata setModificationDate(Date modificationDate) {
-        this.modificationDate = modificationDate;
+    public long getLastUpdateDateTimestamp() {
+        return lastUpdateDate == null ? 0 : lastUpdateDate.toInstant().toEpochMilli();
+    }
+
+    public SearchIndexMetadata setLastUpdateDate(Date lastUpdateDate) {
+        this.lastUpdateDate = lastUpdateDate;
         return this;
     }
 

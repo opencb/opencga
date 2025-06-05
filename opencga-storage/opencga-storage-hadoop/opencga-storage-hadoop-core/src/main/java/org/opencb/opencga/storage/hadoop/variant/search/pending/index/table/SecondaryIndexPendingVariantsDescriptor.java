@@ -23,7 +23,6 @@ import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGene
 import java.io.IOException;
 import java.util.function.Function;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.SEARCH_INDEX_LAST_TIMESTAMP;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.STUDY_SUFIX_BYTES;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.VariantColumn.*;
 
@@ -76,7 +75,8 @@ public class SecondaryIndexPendingVariantsDescriptor implements PendingVariantsT
             // When overwriting mark all variants as pending
             return (value) -> getMutation(value, true);
         } else {
-            long ts = metadataManager.getProjectMetadata().getAttributes().getLong(SEARCH_INDEX_LAST_TIMESTAMP.key());
+            long ts = metadataManager.getProjectMetadata().getSecondaryAnnotationIndex()
+                    .getLastStagingOrActiveIndex().getLastUpdateDateTimestamp();
             return (value) -> {
                 VariantStorageEngine.SyncStatus syncStatus = HadoopVariantSearchIndexUtils.getSyncStatusCheckStudies(ts, value);
                 boolean pending = syncStatus != VariantStorageEngine.SyncStatus.SYNCHRONIZED;

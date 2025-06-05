@@ -480,7 +480,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     @Override
-    public VariantSearchLoadResult secondaryIndex(Query query, QueryOptions queryOptions, boolean overwrite,
+    public VariantSearchLoadResult secondaryIndex(Query query, QueryOptions queryOptions, final boolean overwrite,
                                                   SearchIndexMetadata indexMetadata)
             throws StorageEngineException, IOException, VariantSearchException {
         queryOptions = queryOptions == null ? new QueryOptions() : new QueryOptions(queryOptions);

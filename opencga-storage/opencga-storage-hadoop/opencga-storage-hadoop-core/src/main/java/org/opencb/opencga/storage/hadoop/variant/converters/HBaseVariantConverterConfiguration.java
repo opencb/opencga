@@ -28,12 +28,12 @@ public class HBaseVariantConverterConfiguration {
     private final boolean mutableSamplesPosition;
     private final List<String> sampleDataKeys;
     private final boolean includeSampleId;
-    private final boolean includeIndexStatus;
+    private final long indexStatusTimestamp;
 
     public HBaseVariantConverterConfiguration(VariantQueryProjection projection, boolean failOnWrongVariants, boolean failOnEmptyVariants,
                                               boolean studyNameAsStudyId, boolean simpleGenotypes, String unknownGenotype,
                                               boolean mutableSamplesPosition, List<String> sampleDataKeys, boolean includeSampleId,
-                                              boolean includeIndexStatus) {
+                                              long indexStatusTimestamp) {
         this.projection = projection;
         this.failOnWrongVariants = failOnWrongVariants;
         this.failOnEmptyVariants = failOnEmptyVariants;
@@ -43,7 +43,7 @@ public class HBaseVariantConverterConfiguration {
         this.mutableSamplesPosition = mutableSamplesPosition;
         this.sampleDataKeys = sampleDataKeys;
         this.includeSampleId = includeSampleId;
-        this.includeIndexStatus = includeIndexStatus;
+        this.indexStatusTimestamp = indexStatusTimestamp;
     }
 
     public static Builder builder() {
@@ -126,8 +126,8 @@ public class HBaseVariantConverterConfiguration {
         return includeSampleId;
     }
 
-    public boolean getIncludeIndexStatus() {
-        return includeIndexStatus;
+    public long getIndexStatusTimestamp() {
+        return indexStatusTimestamp;
     }
 
     public static class Builder {
@@ -140,7 +140,7 @@ public class HBaseVariantConverterConfiguration {
         private boolean mutableSamplesPosition = true;
         private List<String> sampleDataKeys;
         private boolean includeSampleId;
-        private boolean includeIndexStatus;
+        private long indexStatusTimestamp;
 
         public Builder setProjection(VariantQueryProjection projection) {
             this.projection = projection;
@@ -191,8 +191,8 @@ public class HBaseVariantConverterConfiguration {
             return this;
         }
 
-        public Builder setIncludeIndexStatus(boolean includeIndexStatus) {
-            this.includeIndexStatus = includeIndexStatus;
+        public Builder setIncludeIndexStatus(long indexStatusTimestamp) {
+            this.indexStatusTimestamp = indexStatusTimestamp;
             return this;
         }
 
@@ -206,7 +206,7 @@ public class HBaseVariantConverterConfiguration {
                     mutableSamplesPosition,
                     sampleDataKeys,
                     includeSampleId,
-                    includeIndexStatus);
+                    indexStatusTimestamp);
         }
     }
 }

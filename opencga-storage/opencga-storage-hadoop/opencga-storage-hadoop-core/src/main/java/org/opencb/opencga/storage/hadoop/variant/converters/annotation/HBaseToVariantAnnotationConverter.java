@@ -69,7 +69,7 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
 
     private final ObjectMapper objectMapper;
     private final byte[] columnFamily;
-    private final long ts;
+    private long ts;
     private byte[] annotationColumn = VariantPhoenixSchema.VariantColumn.FULL_ANNOTATION.bytes();
     private String annotationColumnStr = Bytes.toString(annotationColumn);
     private String defaultAnnotationId = null;
@@ -77,17 +77,9 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
     private boolean includeIndexStatus;
 
     public HBaseToVariantAnnotationConverter() {
-        this(-1);
-    }
-
-    public HBaseToVariantAnnotationConverter(long ts) {
-        this(GenomeHelper.COLUMN_FAMILY_BYTES, ts);
-    }
-
-    public HBaseToVariantAnnotationConverter(byte[] columnFamily, long ts) {
-        super(columnFamily);
-        this.columnFamily = columnFamily;
-        this.ts = ts;
+        super(GenomeHelper.COLUMN_FAMILY_BYTES);
+        this.columnFamily = GenomeHelper.COLUMN_FAMILY_BYTES;
+        ts = -1;
         objectMapper = new ObjectMapper();
         JacksonUtils.addVariantMixIn(objectMapper);
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -162,8 +154,9 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
         return this;
     }
 
-    public void setIncludeIndexStatus(boolean includeIndexStatus) {
-        this.includeIndexStatus = includeIndexStatus;
+    public void setIncludeIndexStatus(long indexStatusTimestamp) {
+        this.ts = indexStatusTimestamp;
+        includeIndexStatus = true;
     }
 
     @Override

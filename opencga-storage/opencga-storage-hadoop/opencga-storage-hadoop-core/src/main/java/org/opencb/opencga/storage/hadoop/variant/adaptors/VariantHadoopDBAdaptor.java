@@ -30,8 +30,8 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -84,7 +84,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.SEARCH_INDEX_LAST_TIMESTAMP;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 
@@ -296,9 +295,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 throw VariantQueryException.internalException(e);
             }
         }).iterator();
-        long ts = getMetadataManager().getProjectMetadata().getAttributes()
-                .getLong(SEARCH_INDEX_LAST_TIMESTAMP.key());
-        HBaseToVariantAnnotationConverter converter = new HBaseToVariantAnnotationConverter(ts)
+        HBaseToVariantAnnotationConverter converter = new HBaseToVariantAnnotationConverter()
                 .setAnnotationIds(getMetadataManager().getProjectMetadata().getAnnotation())
                 .setIncludeFields(selectElements.getFields());
         converter.setAnnotationColumn(annotationColumn, name);
@@ -368,16 +365,22 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         }
         List<String> formats = getIncludeSampleData(query);
 
-        HBaseVariantConverterConfiguration converterConfiguration = HBaseVariantConverterConfiguration.builder()
+        HBaseVariantConverterConfiguration.Builder builder = HBaseVariantConverterConfiguration.builder()
                 .setMutableSamplesPosition(false)
                 .setStudyNameAsStudyId(options.getBoolean(HBaseVariantConverterConfiguration.STUDY_NAME_AS_STUDY_ID, true))
                 .setSimpleGenotypes(options.getBoolean(HBaseVariantConverterConfiguration.SIMPLE_GENOTYPES, true))
                 .setUnknownGenotype(unknownGenotype)
                 .setProjection(variantQuery.getProjection())
                 .setSampleDataKeys(formats)
-                .setIncludeSampleId(query.getBoolean(INCLUDE_SAMPLE_ID.key(), false))
-                .setIncludeIndexStatus(query.getBoolean(VariantQueryUtils.VARIANTS_TO_INDEX.key(), false))
-                .build();
+                .setIncludeSampleId(query.getBoolean(INCLUDE_SAMPLE_ID.key(), false));
+        if (query.getBoolean(VariantQueryUtils.VARIANTS_TO_INDEX.key(), false)) {
+            // Include index status
+            long indexStatusTimestamp = getMetadataManager().getProjectMetadata()
+                    .getSecondaryAnnotationIndex().getLastStagingOrActiveIndex()
+                    .getLastUpdateDateTimestamp();
+            builder.setIncludeIndexStatus(indexStatusTimestamp);
+        }
+        HBaseVariantConverterConfiguration converterConfiguration = builder.build();
 
         if (hbaseIterator) {
             return hbaseIterator(variantQuery, options, converterConfiguration);

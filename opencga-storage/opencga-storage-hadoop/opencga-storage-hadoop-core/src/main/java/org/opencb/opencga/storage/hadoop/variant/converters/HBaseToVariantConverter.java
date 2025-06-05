@@ -47,8 +47,8 @@ import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.SEARCH_INDEX_LAST_TIMESTAMP;
-import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory.*;
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory.extractVariantFromResult;
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory.extractVariantFromResultSet;
 
 /**
  * Created on 20/11/15.
@@ -65,8 +65,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
     protected HBaseVariantConverterConfiguration configuration;
 
     public HBaseToVariantConverter(VariantStorageMetadataManager scm) {
-        long ts = scm.getProjectMetadata().getAttributes().getLong(SEARCH_INDEX_LAST_TIMESTAMP.key());
-        this.annotationConverter = new HBaseToVariantAnnotationConverter(ts)
+        this.annotationConverter = new HBaseToVariantAnnotationConverter()
                 .setAnnotationIds(scm.getProjectMetadata().getAnnotation());
         HBaseToVariantStatsConverter statsConverter = new HBaseToVariantStatsConverter();
         this.studyEntryConverter = new HBaseToStudyEntryConverter(scm, statsConverter);
@@ -116,7 +115,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         if (configuration.getProjection() != null) {
             annotationConverter.setIncludeFields(configuration.getProjection().getFields());
         }
-        annotationConverter.setIncludeIndexStatus(configuration.getIncludeIndexStatus());
+        annotationConverter.setIncludeIndexStatus(configuration.getIndexStatusTimestamp());
         return this;
     }
 

@@ -773,7 +773,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         return secondaryIndex(new Query(), new QueryOptions(), false);
     }
 
-    public final VariantSearchLoadResult secondaryIndex(Query inputQuery, QueryOptions inputQueryOptions, boolean overwrite)
+    public final VariantSearchLoadResult secondaryIndex(Query inputQuery, QueryOptions inputQueryOptions, final boolean overwrite)
             throws StorageEngineException, IOException, VariantSearchException {
         if (!configuration.getSearch().isActive()) {
             throw new StorageEngineException("Search is not active!");
@@ -796,16 +796,19 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             }
         } else {
             boolean shouldCreateNewIndex = false;
-            if (!variantSearchManager.exists(indexMetadata)) {
+            boolean collectionExists = variantSearchManager.exists(indexMetadata);
+            if (!collectionExists) {
                 String collectionName = variantSearchManager.buildCollectionName(indexMetadata);
-                if (overwrite) {
-                    logger.info("Collection {} does not exist.", collectionName);
-                } else {
-                    logger.info("Collection {} does not exist. Force overwrite=true", collectionName);
-                    overwrite = true; // Force overwrite to true if the collection does not exist
-                }
-                shouldCreateNewIndex = true;
-            } else if (overwrite) {
+                logger.info("Collection {} does not exist. Clearing 'lastUpdateDate' and 'status' for index metadata",
+                        collectionName);
+                int indexMetadataVersion = indexMetadata.getVersion();
+                indexMetadata = getMetadataManager().updateProjectMetadata(pm -> {
+                    pm.getSecondaryAnnotationIndex().getIndexMetadata(indexMetadataVersion)
+                            .setLastUpdateDate(null)
+                            .setStatus(SearchIndexMetadata.Status.STAGING);
+                }).getSecondaryAnnotationIndex().getIndexMetadata(indexMetadataVersion);
+            }
+            if (overwrite || !collectionExists) {
                 if (!indexMetadata.getConfigSetId().equals(configuration.getSearch().getConfigSet())) {
                     logger.info("ConfigSetId changed from '{}' to '{}'. Creating new secondary annotation index to match new configSetId",
                             indexMetadata.getConfigSetId(), configuration.getSearch().getConfigSet());
@@ -911,8 +914,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 logger.info("Updating secondary annotation index status from {} to {}",
                         indexMetadata.getStatus(), SearchIndexMetadata.Status.ACTIVE);
             }
-            ProjectMetadata pm = mm.updateProjectMetadata(projectMetadata -> {
-                projectMetadata.getAttributes().put(SEARCH_INDEX_LAST_TIMESTAMP.key(), newTimestamp);
+            mm.updateProjectMetadata(projectMetadata -> {
                 for (SearchIndexMetadata value : projectMetadata.getSecondaryAnnotationIndex().getValues()) {
                     if (value.getStatus() == SearchIndexMetadata.Status.ACTIVE) {
                         // If there is an active index, update its status to DEPRECATED
@@ -921,7 +923,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 }
                 projectMetadata.getSecondaryAnnotationIndex().getIndexMetadata(indexMetadata.getVersion())
                         .setStatus(SearchIndexMetadata.Status.ACTIVE)
-                        .setModificationDate(Date.from(Instant.ofEpochMilli(newTimestamp)));
+                        .setLastUpdateDate(Date.from(Instant.ofEpochMilli(newTimestamp)));
                 return projectMetadata;
             });
 

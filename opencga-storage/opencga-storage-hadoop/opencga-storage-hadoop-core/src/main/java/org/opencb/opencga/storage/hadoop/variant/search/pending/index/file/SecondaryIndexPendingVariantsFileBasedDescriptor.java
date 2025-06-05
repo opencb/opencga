@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.SEARCH_INDEX_LAST_TIMESTAMP;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.VariantColumn.*;
 
@@ -60,7 +59,8 @@ public class SecondaryIndexPendingVariantsFileBasedDescriptor implements Pending
             // When overwriting mark all variants as pending
             return value -> converter.convert(value, VariantStorageEngine.SyncStatus.NOT_SYNCHRONIZED);
         } else {
-            long ts = metadataManager.getProjectMetadata().getAttributes().getLong(SEARCH_INDEX_LAST_TIMESTAMP.key());
+            long ts = metadataManager.getProjectMetadata().getSecondaryAnnotationIndex()
+                    .getLastStagingOrActiveIndex().getLastUpdateDateTimestamp();
             return (value) -> converter.checkAndConvert(value, ts);
         }
     }

@@ -24,12 +24,17 @@ public class SecondaryIndexPendingVariantsReader extends PendingVariantsReader {
         QueryOptions qo = new QueryOptions(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_SAMPLES, VariantField.STUDIES_FILES));
         VariantQueryProjection projection =
                 new VariantQueryProjectionParser(dbAdaptor.getMetadataManager()).parseVariantQueryProjection(query, qo);
+
+        long indexStatusTimestamp = dbAdaptor.getMetadataManager().getProjectMetadata()
+                .getSecondaryAnnotationIndex()
+                .getLastStagingOrActiveIndex()
+                .getLastUpdateDateTimestamp();
         converter = HBaseToVariantConverter.fromResult(dbAdaptor.getMetadataManager())
                 .configure(HBaseVariantConverterConfiguration.builder()
                         .setMutableSamplesPosition(false)
                         .setStudyNameAsStudyId(true)
                         .setProjection(projection)
-                        .setIncludeIndexStatus(true)
+                        .setIncludeIndexStatus(indexStatusTimestamp)
                         .build());
     }
 

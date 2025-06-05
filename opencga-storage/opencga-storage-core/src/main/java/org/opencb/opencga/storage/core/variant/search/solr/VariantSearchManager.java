@@ -1029,8 +1029,19 @@ public class VariantSearchManager {
             NamedList<Object> collections = (NamedList<Object>) cluster.get("collections");
             Map<String, Object>  collection = (Map<String, Object>) collections.get(collectionName);
             String configName = collection.get("configName").toString();
-            return newIndexMetadata(configName, true, new ObjectMap()
-                    .append(VariantStorageOptions.SEARCH_STATS_COLLECTION_ENABLED.key(), false));
+            SearchIndexMetadata indexMetadata = newIndexMetadata(configName, true, new ObjectMap()
+                    .append(SEARCH_STATS_COLLECTION_ENABLED.key(), false));
+            if (metadataManager.getProjectMetadata().getAttributes().containsKey("search.index.last.timestamp")) {
+                // If the project metadata has a "search.index.last.timestamp" attribute (old SEARCH_INDEX_LAST_TIMESTAMP),
+                // it means that the index was created before the introduction of the SearchIndexMetadata,
+                // so we set the last update date to the value of that attribute
+                indexMetadata = metadataManager.updateProjectMetadata(projectMetadata -> {
+                    projectMetadata.getSecondaryAnnotationIndex().getLastStagingOrActiveIndex().setLastUpdateDate(
+                            Date.from(Instant.ofEpochMilli(projectMetadata
+                                    .getAttributes().getLong("search.index.last.timestamp"))));
+                }).getSecondaryAnnotationIndex().getIndexMetadata(indexMetadata.getVersion());
+            }
+            return indexMetadata;
         }
         return null;
     }
@@ -1088,7 +1099,7 @@ public class VariantSearchManager {
         SearchIndexMetadata indexMetadata = new SearchIndexMetadata(
                 newVersion,
                 Date.from(Instant.now()),
-                Date.from(Instant.now()),
+                null,
                 SearchIndexMetadata.Status.STAGING,
                 configSetId,
                 collectionNameSuffix,
