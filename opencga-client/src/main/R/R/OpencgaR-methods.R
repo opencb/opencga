@@ -37,7 +37,7 @@
 initOpencgaR <- function(host=NULL, version="v2", user=NULL, opencgaConfig=NULL){
     if (is.null(opencgaConfig)){
     	if (!is.null(host)) {
-    		conf <- list(version="v2", rest=list(hosts=list(name="opencga", url=host)), defaultHostIndex = 0)
+    		conf <- list(version="v2", rest=list(hosts=list(list(name="opencga", url=host))), defaultHostIndex = 0)
     		user <- ifelse(is.null(user), "", user)
     		ocga <- new("OpencgaR", configuration=conf, user=user, sessionFile="")
     	} else {
@@ -70,7 +70,9 @@ initOpencgaR <- function(host=NULL, version="v2", user=NULL, opencgaConfig=NULL)
         # Fill ocga values using session file
         ocga@user <- sessionTable$user
         ocga@token <- sessionTable$token
-        ocga@refreshToken <- sessionTable$refreshToken
+        if (!is.null(sessionTable$refreshToken)) {
+            ocga@refreshToken <- sessionTable$refreshToken
+        }
     }
 
     # Download swagger
@@ -82,7 +84,7 @@ initOpencgaR <- function(host=NULL, version="v2", user=NULL, opencgaConfig=NULL)
 #     }
 #     baseurl <- paste0(host$url, "swagger.json")
     # ----------
-    # TODO: Make help available by retrieving the WSs information from the new 
+    # TODO: Make help available by retrieving the WSs information from the new
     # JSON
     # Help temporarily unavailable while swagger has been decommissioned
     # swagger <- jsonlite::fromJSON(baseurl)
@@ -175,7 +177,7 @@ readConfFile <- function(conf){
 #' #@param ... Any other arguments
 #'
 #' @return an Opencga class object
-#' 
+#'
 #' \dontrun{
 #' con <- initOpencgaR(host = "http://bioinfo.hpc.cam.ac.uk/opencga-prod/", version = "v2")
 #' con <- opencgaLogin(opencga = con, userid = "xxx", passwd = "xxx", showToken = TRUE)
@@ -192,8 +194,8 @@ readConfFile <- function(conf){
 #' }
 #' @export
 
-opencgaLogin <- function(opencga, userid=NULL, passwd=NULL, interactive=FALSE, 
-                         autoRenew=FALSE, verbose=FALSE, showToken=FALSE, 
+opencgaLogin <- function(opencga, userid=NULL, passwd=NULL, interactive=FALSE,
+                         autoRenew=FALSE, verbose=FALSE, showToken=FALSE,
                          organization=NULL){
     if (class(opencga) == "OpencgaR"){
     	host <- extractHost(opencga@configuration)
@@ -211,7 +213,7 @@ opencgaLogin <- function(opencga, userid=NULL, passwd=NULL, interactive=FALSE,
               shiny::textInput("username", "Username"),
               shiny::passwordInput("password", "Password"),
               shiny::passwordInput("organization", "Organization")))
-          
+
           server <- function(input, output) {
             shiny::observeEvent(input$done, {
               user <- input$username
@@ -224,15 +226,15 @@ opencgaLogin <- function(opencga, userid=NULL, passwd=NULL, interactive=FALSE,
               shiny::stopApp(stop("No password.", call. = FALSE))
             })
           }
-          
+
           shiny::runGadget(ui, server, viewer=shiny::dialogViewer("user_login"))
         }
         cred <- user_login()
         userid <- cred$user
         passwd <- cred$pass
         organization <- cred$org
-      }else{
-        print("The 'miniUI' and 'shiny' packages are required to run the 
+      } else {
+        print("The 'miniUI' and 'shiny' packages are required to run the
            interactive login, please install it and try again.
            To install 'miniUI': install.packages('miniUI')
            To install 'shiny': install.packages('shiny')")
@@ -263,13 +265,13 @@ opencgaLogin <- function(opencga, userid=NULL, passwd=NULL, interactive=FALSE,
 
     opencga@token <- token
     opencga@refreshToken <- refreshToken
-    
+
     # get expiration time
     loginInfo <- unlist(strsplit(x=token, split="\\."))[2]
     loginInfojson <- jsonlite::fromJSON(rawToChar(base64enc::base64decode(what=loginInfo)))
     loginTime <- lubridate::as_datetime(as.POSIXct(loginInfojson$iat, origin="1970-01-01"))
     expirationTime <- lubridate::as_datetime(as.POSIXct(loginInfojson$exp, origin="1970-01-01"))
-    
+
     # Get system to define session directory
     if(.Platform$OS.type == "unix") {
         sessionDir <- file.path(Sys.getenv("HOME"), ".opencga", fsep = .Platform$file.sep)
@@ -278,7 +280,7 @@ opencgaLogin <- function(opencga, userid=NULL, passwd=NULL, interactive=FALSE,
                                     Sys.getenv("HOMEPATH"), "opencga",
                                     winslash = .Platform$file.sep))
     }
-    
+
     # Create/update session file
     dir.create(path=sessionDir, showWarnings=FALSE, recursive=TRUE)
     sessionFile <- file.path(sessionDir, paste0(host$name, "_session.json"), fsep = .Platform$file.sep)

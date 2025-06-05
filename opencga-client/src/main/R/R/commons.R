@@ -26,7 +26,7 @@ fetchOpenCGA <- function(object=object, category=NULL, categoryId=NULL,
     # Get connection info
     host <- extractHost(object@configuration)
     # real_batch_size <- real_batch_size
-    
+
     if(!endsWith(x = host$url, suffix = "/")){
     	version <- "/"
 #         host$url <- paste0(host$url, "/")
@@ -35,20 +35,20 @@ fetchOpenCGA <- function(object=object, category=NULL, categoryId=NULL,
     	version <- paste0(version, "webservices/rest/")
     }
     version = paste0(version, "v2/")
-    
+
     # Format category and subcategory
     if(is.null(category)){
         category <- ""
     }else{
         category <- paste0(category, "/", sep="")
     }
-    
+
     if(is.null(subcategory)){
         subcategory <- ""
     }else{
         subcategory <- paste0(subcategory, "/")
     }
-    
+
     # Format IDs
     if(is.null(categoryId)){
         categoryId <- ""
@@ -56,14 +56,14 @@ fetchOpenCGA <- function(object=object, category=NULL, categoryId=NULL,
         categoryId <- paste0(categoryId, collapse = ",")
         categoryId <- paste0(categoryId, "/")
     }
-    
+
     if(is.null(subcategoryId)){
         subcategoryId <- ""
     }else{
         subcategoryId <- paste0(subcategoryId, collapse = ",")
         subcategoryId <- paste0(subcategoryId, "/")
     }
-    
+
     # Extract limit from params
     if(is.null(params)){
        limit <- 400000
@@ -74,18 +74,17 @@ fetchOpenCGA <- function(object=object, category=NULL, categoryId=NULL,
             limit <- params$limit
         }
     }
-    
+
     # Call server
     i <- 1
     real_batch_size <- min(c(batch_size, limit))
-    skip <- 0
     num_results <- real_batch_size
     container <- list()
     count <- 0
-    
+
     # Initialise array of RestResponse objects
     restResponseList = list()
-    
+
     if (is.null(params)){
         params <- list()
     }
@@ -95,7 +94,7 @@ fetchOpenCGA <- function(object=object, category=NULL, categoryId=NULL,
     while((unlist(num_results) == real_batch_size) && count <= limit){
         pathUrl <- paste0(host$url, version, category, categoryId, subcategory,
                           subcategoryId, action)
-        
+
         ## send batch size as limit to callrest
         real_batch_size <- min(c(real_batch_size, limit-count))
         # if(real_batch_size == 0){
@@ -145,27 +144,27 @@ fetchOpenCGA <- function(object=object, category=NULL, categoryId=NULL,
 			}
         }
 
-        response <- callREST(pathUrl=pathUrl, params=params, 
+        response <- callREST(pathUrl=pathUrl, params=params,
                              httpMethod=httpMethod, skip=skip, token=token,
                              as.queryParam=as.queryParam, attributes = attributes,
                              verbose=object@verbose, sid=object@showToken)
-        
+
         skip <- skip+real_batch_size
-        res_list <- parseResponse(resp=response$resp, content=response$content, 
+        res_list <- parseResponse(resp=response$resp, content=response$content,
                                   verbose=object@verbose)
         num_results <- res_list$numResults
         restResponseList <- append(x = restResponseList, values = res_list$restResponse)
-        
+
         count <- count + num_results
         if (isTRUE(object@verbose)){
             print(paste("Number of retrieved documents:", count))
         }
-        
+
         if(num_results == limit){
           break()
         }
     }
-    
+
     # Merge RestResponses
     finalRestResponse <- opencgaR::mergeResponses(restResponseList = restResponseList)
     return(finalRestResponse)
@@ -191,11 +190,11 @@ callREST <- function(pathUrl, params, httpMethod, skip, token, as.queryParam, at
     session <- ifelse (is.null(token), "", paste("Bearer", token))
     skip=paste0("?skip=", as.character(skip))
 
-	set_config(httr::timeout(30))
+	httr::set_config(httr::timeout(30))
 # 	config_opts <- httr::timeout(30)
 	if (length(session) > 0) {
 		# Add authorization headers
-		set_config(httr::add_headers(.headers=c(Authorization=session)))
+		httr::set_config(httr::add_headers(.headers=c(Authorization=session)))
 	}
 #
 	# Add cookies to config if they exist
@@ -212,7 +211,7 @@ callREST <- function(pathUrl, params, httpMethod, skip, token, as.queryParam, at
 		# Join all cookie strings and add to config
 		if (length(cookie_strings) > 0) {
 			cookie_str <- paste(cookie_strings, collapse = "; ")
-			set_config(httr::config(cookie = cookie_str))
+			httr::set_config(httr::config(cookie = cookie_str))
 		}
 	}
 
@@ -224,11 +223,11 @@ callREST <- function(pathUrl, params, httpMethod, skip, token, as.queryParam, at
         }else{
             fullUrl <- paste0(pathUrl, skip)
         }
-        
+
         if (sid){
             fullUrl <- paste0(fullUrl, "&sid=", token)
         }
-        
+
         # Encode the URL
         fullUrl <- httr::build_url(httr::parse_url(fullUrl))
         if (isTRUE(verbose)){
@@ -236,7 +235,7 @@ callREST <- function(pathUrl, params, httpMethod, skip, token, as.queryParam, at
             print(paste("Request headers :", getOption("httr_config")))
         }
         resp <- httr::GET(url=fullUrl)
-        
+
     }else if(httpMethod == "POST"){
     # Make POST call
         if (!is.null(as.queryParam)){
@@ -246,7 +245,7 @@ callREST <- function(pathUrl, params, httpMethod, skip, token, as.queryParam, at
         } else {
           as.queryParam = c("skip", "limit", "include", "exclude")
         }
-        
+
         if (!is.null(params)){
             # extract study as query param
             if (any(as.queryParam %in% names(params))){
@@ -257,17 +256,17 @@ callREST <- function(pathUrl, params, httpMethod, skip, token, as.queryParam, at
                 queryParams <- ""
             }
         }
-        
+
         if (is.null(params) | queryParams == ""){
             fullUrl <- paste0(pathUrl, skip)
         }else{
             fullUrl <- paste0(pathUrl, skip, "&", queryParams)
         }
-        
+
         if (sid){
             fullUrl <- paste0(fullUrl, "&sid=", token)
         }
-        
+
         # Encode the URL
         fullUrl <- httr::build_url(httr::parse_url(fullUrl))
         if (isTRUE(verbose)){
@@ -281,7 +280,7 @@ callREST <- function(pathUrl, params, httpMethod, skip, token, as.queryParam, at
         }
     }
 
-    reset_config()  # Reset the configuration to default after the request
+    httr::reset_config()  # Reset the configuration to default after the request
     content <- httr::content(resp, as="text", encoding = "utf-8")
     return(list(resp=resp, content=content))
 }
