@@ -7,28 +7,28 @@ if sys.version_info >= (3, 8):
 else:
     from importlib_metadata import version
 
-from pyopencga_enterprise.opencga_config import ClientConfiguration
-from pyopencga_enterprise.rest_clients.admin_client import Admin
-from pyopencga_enterprise.rest_clients.alignment_client import Alignment
-from pyopencga_enterprise.rest_clients.clinical_analysis_client import ClinicalAnalysis
-from pyopencga_enterprise.rest_clients.cohort_client import Cohort
-from pyopencga_enterprise.rest_clients.family_client import Family
-from pyopencga_enterprise.rest_clients.file_client import File
-from pyopencga_enterprise.rest_clients.ga4gh_client import GA4GH
-from pyopencga_enterprise.rest_clients.individual_client import Individual
-from pyopencga_enterprise.rest_clients.job_client import Job
-from pyopencga_enterprise.rest_clients.meta_client import Meta
-from pyopencga_enterprise.rest_clients.disease_panel_client import DiseasePanel
-from pyopencga_enterprise.rest_clients.project_client import Project
-from pyopencga_enterprise.rest_clients.sample_client import Sample
-from pyopencga_enterprise.rest_clients.study_client import Study
-from pyopencga_enterprise.rest_clients.variant_operation_client import VariantOperation
-from pyopencga_enterprise.rest_clients.user_client import User
-from pyopencga_enterprise.rest_clients.variant_client import Variant
-from pyopencga_enterprise.rest_clients.organization_client import Organization
-from pyopencga_enterprise.rest_clients.workflow_client import Workflow
-from pyopencga_enterprise.rest_clients.federation_client import Federation
-from pyopencga_enterprise.rest_clients.cvdb_client import CVDB
+from pyopencga.opencga_config import ClientConfiguration
+from pyopencga.rest_clients.admin_client import Admin
+from pyopencga.rest_clients.alignment_client import Alignment
+from pyopencga.rest_clients.clinical_analysis_client import ClinicalAnalysis
+from pyopencga.rest_clients.cohort_client import Cohort
+from pyopencga.rest_clients.family_client import Family
+from pyopencga.rest_clients.file_client import File
+from pyopencga.rest_clients.ga4gh_client import GA4GH
+from pyopencga.rest_clients.individual_client import Individual
+from pyopencga.rest_clients.job_client import Job
+from pyopencga.rest_clients.meta_client import Meta
+from pyopencga.rest_clients.disease_panel_client import DiseasePanel
+from pyopencga.rest_clients.project_client import Project
+from pyopencga.rest_clients.sample_client import Sample
+from pyopencga.rest_clients.study_client import Study
+from pyopencga.rest_clients.variant_operation_client import VariantOperation
+from pyopencga.rest_clients.user_client import User
+from pyopencga.rest_clients.variant_client import Variant
+from pyopencga.rest_clients.organization_client import Organization
+from pyopencga.rest_clients.workflow_client import Workflow
+from pyopencga.rest_clients.federation_client import Federation
+from pyopencga.rest_clients.cvdb_client import CVDB
 
 
 class OpencgaClient(object):
