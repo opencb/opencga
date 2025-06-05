@@ -17,7 +17,7 @@
         <build.dir>${project.basedir}/../build</build.dir>
         <opencga.build.dir>${project.basedir}/../opencga-home/build</opencga.build.dir>
         <app.dir>${project.basedir}/app</app.dir>
-        <opencga.client.dir>opencga-enterprise-client-${project.parent.version}</opencga.client.dir>
+        <opencga.client.dir>opencga-enterprise-cli-${project.parent.version}</opencga.client.dir>
 <!--        <dep.jline.version>3.12.1</dep.jline.version>-->
 
     </properties>
@@ -338,51 +338,7 @@
                                     <arg value="${build.dir}/misc/git"/>
                                 </exec>
 
-                                 <!--Building python library  -->
-                                <echo>Building python library</echo>
-                                <echo>=============================</echo>
-                                <echo>Copying OpenCGA python client files ${build.dir}/clients</echo>
-                                <exec executable="cp" failonerror="true">
-                                    <arg value="-r"/>
-                                    <arg value="${opencga.build.dir}/clients/python"/>
-                                    <arg value="${build.dir}/clients"/>
-                                </exec>
 
-                                <echo>Copying Python to ${build.dir}/clients</echo>
-                                <exec executable="cp" failonerror="true">
-                                    <arg value="-r"/>
-                                    <arg value="${project.basedir}/../opencga-enterprise-client/src/main/python"/>
-                                    <arg value="${build.dir}/clients"/>
-                                </exec>
-
-                                <echo>Updating imports from pyopencga to pyopencga-enterprise </echo>
-                                <exec executable="bash" failonerror="true">
-                                    <arg value="-c"/>
-                                    <arg value='find ${build.dir}/clients/python/pyopencga/rest_clients -type f -name "*.py" -exec sed -i.bak "s/from pyopencga/from pyopencga-enterprise/g" {} \; &amp;&amp; find ${build.dir}/clients/python/pyopencga/rest_clients -name "*.bak" -delete'/>
-                                </exec>
-
-                                <echo>Calculating Python version</echo>
-                                <exec executable="python3" outputproperty="calculated.version" failonerror="true">
-                                    <arg value="${app.dir}/scripts/calculate_pypi_version.py"/>
-                                    <arg value="${project.version}"/>
-                                </exec>
-
-                                <echo message="Calculated Python Version: ${calculated.version}"/>
-
-                                <echo>Updating setup.py with version ${calculated.version}</echo>
-                                <exec executable="sed" failonerror="true">
-                                    <arg value="-i"/>
-                                    <arg value="s/PYOPENCGA_ENTERPRISE_VERSION/${calculated.version}/"/>
-                                    <arg value="${build.dir}/clients/python/setup.py"/>
-                                </exec>
-
-                                <echo>Renaming folder pyopencga to pyopencga_enterprise</echo>
-                                <exec executable="mv" failonerror="true">
-                                    <arg value="${build.dir}/clients/python/pyopencga"/>
-                                    <arg value="${build.dir}/clients/python/pyopencga_enterprise"/>
-                                </exec>
-
-                                <!--END Building python library  -->
 
                                 <!--Building R library  -->
                                 <echo>Copying OpenCGA R client files ${build.dir}/clients</echo>
@@ -483,9 +439,6 @@
                                 <exec executable="cp" failonerror="true">
                                     <arg value="-r"/>
                                     <arg value="${build.dir}/libs"/>
-                                    <arg value="${build.dir}/clients/python"/>
-                                    <arg value="${build.dir}/clients/R"/>
-                                    <arg value="${build.dir}/clients/javascript"/>
 <!--                                    <arg value="${build.dir}/LICENSE"/>-->
 <!--                                    <arg value="${build.dir}/README.md"/>-->
                                     <arg value="${build.dir}/${opencga.client.dir}"/>

@@ -14,8 +14,10 @@ SKIP_JS=false
 # Get the OpenCGA version from the Maven project
 VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
 # Define the directory where the built clients will be stored
-DIST_DIR="./build/dist"
 
+BUILD_DIR="./build"
+DIST_DIR="$BUILD_DIR/dist"
+OPENCGA_BUILD_DIR="./opencga-home/build"
 # Function to print main usage of the script
 function print_usage() {
   echo ""
@@ -81,20 +83,48 @@ mkdir -p ${DIST_DIR}
 
 if ! $SKIP_RCLIENT; then
   echo ">> Building OpenCGA R client..."
-  docker build -t opencb/opencga-r-builder:dev -f opencga-home/opencga-app/app/cloud/docker/opencga-r-builder/Dockerfile opencga-home/opencga-app/app/cloud/docker/opencga-r-builder
+  export DOCKER_BUILDKIT=1
+  docker buildx build -t opencb/opencga-r-builder:dev -f opencga-home/opencga-app/app/cloud/docker/opencga-r-builder/Dockerfile opencga-home/opencga-app/app/cloud/docker/opencga-r-builder
   docker run --rm  --mount type=bind,source="./build/clients/R",target=/opt/opencga/R --mount type=bind,source="$DIST_DIR",target=/opt/opencga opencb/opencga-r-builder:dev R CMD build /opt/opencga/R
   rm -rf ${DIST_DIR}/R
 fi
 
 if ! $SKIP_PYTHON; then
-  echo ">> Building OpenCGA Python client..."
+  echo "Building python library"
+  echo "============================="
+
+  echo "Prepare directory: Python"
+  rm -rf "$BUILD_DIR/clients/python"
+  
+  echo "Copying OpenCGA python client files to $BUILD_DIR/clients"
+  cp -r "$OPENCGA_BUILD_DIR/clients/python" "$BUILD_DIR/clients"
+  
+  echo "Copying Python to $BUILD_DIR/clients"
+  cp -r "opencga-enterprise-client/src/main/python" "$BUILD_DIR/clients"
+  
+  echo "Updating imports from pyopencga to pyopencga_enterprise"
+  find "$BUILD_DIR/clients/python/pyopencga" -type f -name "*.py" -exec sed -i.bak 's/from pyopencga/from pyopencga_enterprise/g' {} \;
+  find "$BUILD_DIR/clients/python/pyopencga/rest_clients" -type f -name "*.py" -exec sed -i.bak 's/from pyopencga/from pyopencga_enterprise/g' {} \;
+  find "$BUILD_DIR/clients/python/pyopencga" -name "*.bak" -delete
+  find "$BUILD_DIR/clients/python/pyopencga/rest_clients" -name "*.bak" -delete
+
+  echo "Calculating Python version"
+  PYTHON_VERSION=$(python3 "opencga-enterprise-app/app/scripts/calculate_pypi_version.py" "$VERSION")
+  echo "Calculated Python Version: $PYTHON_VERSION"
+  
+  echo "Updating setup.py with version $PYTHON_VERSION"
+  sed -i "s/PYOPENCGA_ENTERPRISE_VERSION/${PYTHON_VERSION}/" "$BUILD_DIR/clients/python/setup.py"
+  
+  echo "Renaming folder pyopencga to pyopencga_enterprise"
+  mv "$BUILD_DIR/clients/python/pyopencga" "$BUILD_DIR/clients/python/pyopencga_enterprise"
+
   python3 -m pip install --upgrade pip
   pip install --upgrade setuptools packaging
   ./build/clients/python/python-build.sh build
-  PYPY_VERSION=$(python3 opencga-enterprise-app/app/scripts/calculate_pypi_version.py "$VERSION")
+
   echo ">> Compressing OpenCGA Python client..."
   PYTHON_DIR="./build/clients/python"
-  ARCHIVE_NAME="opencga-enterprise-python-client-$PYPY_VERSION.tar.gz"
+  ARCHIVE_NAME="opencga-enterprise-python-client-$PYTHON_VERSION.tar.gz"
   echo ">> Compressing the Python client directory $PYTHON_DIR to $DIST_DIR/$ARCHIVE_NAME..."
   tar -czf "$DIST_DIR/$ARCHIVE_NAME" -C "$PYTHON_DIR" .
 fi
@@ -113,3 +143,5 @@ if ! $SKIP_JS; then
   echo ">> Compressing the Javascript client directory $JAVASCRIPT_DIR to $DIST_DIR/$JAVASCRIPT_CLIENT_NAME..."
   tar -czf "$DIST_DIR/$JAVASCRIPT_CLIENT_NAME" -C "$JAVASCRIPT_DIR" .
 fi
+
+#tar -czvf build/opencga-enterprise-clients-$VERSION.tar.gz -C "$DIST_DIR" .
