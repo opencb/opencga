@@ -84,8 +84,8 @@ mkdir -p ${DIST_DIR}
 if ! $SKIP_RCLIENT; then
   echo ">> Building OpenCGA R client..."
   export DOCKER_BUILDKIT=1
-  docker buildx build -t opencb/opencga-r-builder:dev -f opencga-home/opencga-app/app/cloud/docker/opencga-r-builder/Dockerfile opencga-home/opencga-app/app/cloud/docker/opencga-r-builder
-  docker run --rm  --mount type=bind,source="./build/clients/R",target=/opt/opencga/R --mount type=bind,source="$DIST_DIR",target=/opt/opencga opencb/opencga-r-builder:dev R CMD build /opt/opencga/R
+  docker build -t opencb/opencga-r-builder:dev -f opencga-home/opencga-app/app/cloud/docker/opencga-r-builder/Dockerfile opencga-home/opencga-app/app/cloud/docker/opencga-r-builder
+  docker run --rm --mount type=bind,source="./build/clients/R",target=/opt/opencga/R --mount type=bind,source="$DIST_DIR",target=/opt/opencga opencb/opencga-r-builder:dev R CMD build /opt/opencga/R
   rm -rf ${DIST_DIR}/R
 fi
 
@@ -104,9 +104,7 @@ if ! $SKIP_PYTHON; then
   
   echo "Updating imports from pyopencga to pyopencga_enterprise"
   find "$BUILD_DIR/clients/python/pyopencga" -type f -name "*.py" -exec sed -i.bak 's/from pyopencga/from pyopencga_enterprise/g' {} \;
-  #find "$BUILD_DIR/clients/python/pyopencga/rest_clients" -type f -name "*.py" -exec sed -i.bak 's/from pyopencga/from pyopencga_enterprise/g' {} \;
   find "$BUILD_DIR/clients/python/pyopencga" -name "*.bak" -delete
-  #find "$BUILD_DIR/clients/python/pyopencga/rest_clients" -name "*.bak" -delete
 
   echo "Calculating Python version"
   PYTHON_VERSION=$(python3 "opencga-enterprise-app/app/scripts/calculate_pypi_version.py" "$VERSION")
