@@ -35,19 +35,15 @@ public class VariantSecondaryAnnotationIndexSets {
     }
 
     public SearchIndexMetadata getLastStagingOrActiveIndex() {
-        SearchIndexMetadata stagingIndex = null;
+        SearchIndexMetadata index = getActiveIndex();
         for (SearchIndexMetadata thisIndexMetadata : values) {
             if (thisIndexMetadata.getStatus() == SearchIndexMetadata.Status.STAGING) {
-                if (stagingIndex == null || stagingIndex.getCreationDate().before(thisIndexMetadata.getCreationDate())) {
-                    stagingIndex = thisIndexMetadata;
+                if (index == null || index.getCreationDate().before(thisIndexMetadata.getCreationDate())) {
+                    index = thisIndexMetadata;
                 }
             }
         }
-        if (stagingIndex == null) {
-            return getActiveIndex();
-        } else {
-            return stagingIndex;
-        }
+        return index;
     }
 
     public void addIndexMetadata(SearchIndexMetadata index) {
