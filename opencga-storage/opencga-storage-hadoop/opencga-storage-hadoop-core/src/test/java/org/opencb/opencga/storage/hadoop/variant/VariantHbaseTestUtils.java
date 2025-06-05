@@ -525,7 +525,6 @@ public class VariantHbaseTestUtils {
                     }
 
                 });
-
             });
         }
     }
