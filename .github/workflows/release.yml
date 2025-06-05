@@ -22,7 +22,7 @@ jobs:
 
   deploy-hdp-docker:
     uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
-    needs: hdp-build-hdp
+    needs: build-hdp
     secrets: inherit
     with:
       artifact_name: hdp-build-folder
