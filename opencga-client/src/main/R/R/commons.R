@@ -15,14 +15,19 @@
 #' @export
 
 
-fetchOpenCGA <- function(object=object, category=NULL, categoryId=NULL, 
-                         subcategory=NULL, subcategoryId=NULL, action=NULL, 
-                         params=NULL, httpMethod="GET", skip=0,
-                         num_threads=NULL, as.queryParam=NULL, batch_size=1000){
+fetchOpenCGA <- function(object=object, category=NULL, categoryId=NULL, subcategory=NULL, subcategoryId=NULL, action=NULL,
+                         params=NULL, httpMethod="GET", num_threads=NULL, as.queryParam=NULL, batch_size=1000){
     
     # Need to disable scientific notation to avoid errors in the URL
     options(scipen=999)
-    
+
+    # Set variable skip to 0 if not provided in params object, otherwise use the value in params
+    if (is.null(params) || is.null(params$skip)){
+        skip <- 0
+    } else {
+        skip <- params$skip
+    }
+
     # Get connection info
     host <- extractHost(object@configuration)
     # real_batch_size <- real_batch_size
