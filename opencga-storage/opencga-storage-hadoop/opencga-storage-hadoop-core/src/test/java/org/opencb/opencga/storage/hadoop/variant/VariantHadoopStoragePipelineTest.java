@@ -82,6 +82,7 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
             studyMetadata = VariantStorageBaseTest.newStudyMetadata();
             etlResult = VariantStorageBaseTest.runDefaultETL(inputUri, variantStorageManager, studyMetadata,
                     new ObjectMap(VariantStorageOptions.TRANSFORM_FORMAT.key(), "avro")
+                            .append(VariantStorageOptions.LOAD_ARCHIVE.key(), true)
                             .append(VariantStorageOptions.ANNOTATE.key(), true)
                             .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
             );
