@@ -157,12 +157,6 @@
                         </goals>
                         <configuration>
                             <failOnWarning>true</failOnWarning>
-                            <ignoredUsedUndeclaredDependencies>
-                                <ignoredUsedUndeclaredDependency>org.mortbay.jetty:servlet-api:jar:2.5-20081211</ignoredUsedUndeclaredDependency>
-                            </ignoredUsedUndeclaredDependencies>
-                            <ignoredNonTestScopedDependencies>
-                                <ignoredNonTestScopedDependency>org.mortbay.jetty:servlet-api:jar:2.5-20081211</ignoredNonTestScopedDependency>
-                            </ignoredNonTestScopedDependencies>
                         </configuration>
                     </execution>
                 </executions>
