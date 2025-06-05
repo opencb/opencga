@@ -12,7 +12,7 @@ RUN apt-get update -y && DEBIAN_FRONTEND="noninteractive" TZ="Europe/London" apt
     pandoc libcurl4 libssl-dev libcurl4-openssl-dev \
     r-base && \
     ## Installation dependencies using R install.packages() is slower than apt-get but final size is 400GB smaller.
-    R -e "install.packages(c('BiocManager', 'nnls', 'ggplot2', 'jsonlite', 'optparse', 'knitr', 'configr', 'dplyr', 'rmarkdown', 'tidyr', 'httr'))" && \
+    R -e "install.packages(c('BiocManager', 'nnls', 'ggplot2', 'jsonlite', 'optparse', 'knitr', 'configr', 'dplyr', 'rmarkdown', 'tidyr', 'httr', 'lubridate'))" && \
     R -e "BiocManager::install('BiocStyle')" && \
     rm -rf /var/lib/apt/lists/* /tmp/*
 
