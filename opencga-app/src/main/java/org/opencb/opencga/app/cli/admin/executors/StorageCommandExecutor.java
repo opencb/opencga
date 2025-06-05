@@ -36,6 +36,7 @@ import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -71,6 +72,7 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
     private void status() throws Exception {
         StorageCommandOptions.StatusCommandOptions commandOptions = storageCommandOptions.getStatusCommandOptions();
         StorageEngineFactory factory = StorageEngineFactory.get(storageConfiguration);
+        Set<SolrClient> solrClients = new HashSet<>();
         try (CatalogManager catalogManager = new CatalogManager(configuration);
              VariantStorageManager variantStorageManager = new VariantStorageManager(catalogManager, factory)) {
             String adminPassword = getAdminPassword(true);
@@ -99,6 +101,8 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
                 logger.warn("Solr not alive", e);
                 solrAlive = false;
             }
+            solrClients.add(solrClient);
+
             ObjectMap solrStatus = new ObjectMap();
             solrStatus.put("alive", solrAlive);
             solrStatus.put("live_nodes", liveNodes);
@@ -129,6 +133,11 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
             status.put("dataStores", dataStores);
 
             System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(status));
+        }
+
+        // Close solr clients
+        for (SolrClient solrClient : solrClients) {
+            solrClient.close();
         }
     }
 
