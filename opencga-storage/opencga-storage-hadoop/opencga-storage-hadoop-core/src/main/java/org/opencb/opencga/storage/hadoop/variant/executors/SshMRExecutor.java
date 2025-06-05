@@ -37,6 +37,7 @@ public class SshMRExecutor extends MRExecutor {
     private static final String HADOOP_SSH_HOST_ENV = "HADOOP_SSH_HOST";
     private static final String HADOOP_SSH_KEY_ENV  = "HADOOP_SSH_KEY";
     private static final String HADOOP_SSH_REMOTE_TMP  = "HADOOP_SSH_REMOTE_TMP";
+    private static final String HADOOP_SSH_STDIN_ENABLED  = "HADOOP_SSH_STDIN_ENABLED";
     // env-var expected by "sshpass -e"
     private static final String SSHPASS_ENV = "SSHPASS";
     public static final String PID = "PID";
@@ -139,6 +140,7 @@ public class SshMRExecutor extends MRExecutor {
             commandLine = buildCommand(executable, AbstractHBaseDriver.ARGS_FROM_STDIN);
             redactSecureString(args, MR_EXECUTOR_SSH_PASSWORD.key());
             redactSecureString(args, "token");
+            env.add(HADOOP_SSH_STDIN_ENABLED + "=true");
 
             command = new Command(commandLine, env);
             command.setErrorOutputStream(outputStream);

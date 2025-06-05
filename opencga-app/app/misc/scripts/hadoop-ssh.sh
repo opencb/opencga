@@ -90,14 +90,12 @@ exec ${CMD}
 EOF
 
 STDIN_CONCAT=
-## Check if stdin comes from a terminal or a pipe
-if [ -t 0 ]; then
-    # stdin is a terminal.
-    # Interactive mode not supported. Don't concatenate stdin
+## Check if args are coming from stdin
+if [ -z "${HADOOP_SSH_STDIN_ENABLED}" ]; then
+    # stdin does not contain any data
     STDIN_CONCAT=""
 else
-    # stdin is a pipe
-    # Concatenate stdin with the script
+    # stdin should be concatenated to the script
     STDIN_CONCAT="-"
 fi
 
