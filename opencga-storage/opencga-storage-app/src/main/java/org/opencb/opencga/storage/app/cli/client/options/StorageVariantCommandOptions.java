@@ -810,39 +810,6 @@ public class StorageVariantCommandOptions {
     }
 
     /**
-     *  benchmark: specific options
-     */
-    @Parameters(commandNames = {"benchmark"}, commandDescription = "[PENDING] Benchmark load and fetch variants with different databases")
-    public class BenchmarkCommandOptions {
-
-        @ParametersDelegate
-        public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
-
-
-        @Parameter(names = {"--num-repetition"}, description = "Number of repetition", arity = 1)
-        public int repetition = 3;
-
-        @Parameter(names = {"--load"}, description = "File name with absolute path", arity = 1)
-        public String load;
-
-        @Parameter(names = {"--queries"}, description = "Queries to fetch the data from tables", arity = 1)
-        public String queries;
-
-        @Parameter(names = {"-d", "--database"}, description = "DataBase name", arity = 1)
-        public String database;
-
-        @Parameter(names = {"-t", "--table"}, description = "Benchmark variants", arity = 1)
-        public String table;
-
-        @Parameter(names = {"--host"}, description = "DataBase name", arity = 1)
-        public String host;
-
-        @Parameter(names = {"--concurrency"}, description = "Number of threads to run in parallel", arity = 1)
-        public int concurrency = 1;
-
-    }
-
-    /**
      *  stats: generic and specific options
      */
     public static class GenericVariantStatsOptions {

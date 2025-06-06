@@ -27,6 +27,7 @@ public class RandomQueries {
     private List<String> includeSample;
     private List<String> includeFile;
     private List<String> includeStudy;
+    private List<Score> cohortStats;
 
     private Score qual;
     private Score conservation;
@@ -253,6 +254,15 @@ public class RandomQueries {
 
     public RandomQueries setIncludeStudy(List<String> includeStudy) {
         this.includeStudy = includeStudy;
+        return this;
+    }
+
+    public List<Score> getCohortStats() {
+        return cohortStats;
+    }
+
+    public RandomQueries setCohortStats(List<Score> cohortStats) {
+        this.cohortStats = cohortStats;
         return this;
     }
 

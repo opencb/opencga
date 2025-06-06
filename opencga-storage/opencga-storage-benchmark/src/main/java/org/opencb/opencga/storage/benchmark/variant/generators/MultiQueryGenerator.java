@@ -136,6 +136,15 @@ public class MultiQueryGenerator extends QueryGenerator {
                 case "proteinSubstitution":
                     queryGenerator = new ScoreQueryGenerator.ProteinSubstQueryGenerator(randomQueries);
                     break;
+                case "cohortStatsRef":
+                    queryGenerator = new ScoreQueryGenerator.CohortStatsRefQueryGenerator(randomQueries);
+                    break;
+                case "cohortStatsAlt":
+                    queryGenerator = new ScoreQueryGenerator.CohortStatsAltQueryGenerator(randomQueries);
+                    break;
+                case "cohortStatsMaf":
+                    queryGenerator = new ScoreQueryGenerator.CohortStatsMafQueryGenerator(randomQueries);
+                    break;
                 case "populationFrequencyAlt":
                     queryGenerator = new ScoreQueryGenerator.PopulationFrequenciesAltQueryGenerator(randomQueries);
                     break;

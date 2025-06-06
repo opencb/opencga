@@ -126,7 +126,9 @@ public class SessionManager {
     }
 
     public Path getSessionPath(String host) {
-        return sessionFolder.resolve(host + SESSION_FILENAME_SUFFIX);
+        String sessionFileName = host + SESSION_FILENAME_SUFFIX;
+        sessionFileName = sessionFileName.replaceAll("[^a-zA-Z0-9.-]+", "_"); // Sanitize host name
+        return sessionFolder.resolve(sessionFileName);
     }
 
     public Session getSession() {
@@ -134,7 +136,7 @@ public class SessionManager {
     }
 
     public Session getSession(String host) {
-        Path sessionPath = sessionFolder.resolve(host + SESSION_FILENAME_SUFFIX);
+        Path sessionPath = getSessionPath(host);
         if (Files.exists(sessionPath)) {
             try {
                 logger.debug("Retrieving session from file " + sessionPath);
@@ -152,7 +154,6 @@ public class SessionManager {
         }
         return session;
     }
-
 
     public void updateSessionToken(String token, String host) throws IOException {
         updateSessionToken(token, host, Collections.emptyMap());
@@ -233,10 +234,10 @@ public class SessionManager {
         if (!Files.exists(sessionFolder)) {
             Files.createDirectory(sessionFolder);
         }
+        Path sessionPath = getSessionPath(host);
         logger.debug("Saving '{}'", session);
-        logger.debug("Session file '{}'", host + SESSION_FILENAME_SUFFIX);
+        logger.debug("Session file '{}'", sessionPath.getFileName());
 
-        Path sessionPath = sessionFolder.resolve(host + SESSION_FILENAME_SUFFIX);
         objectWriter.writeValue(sessionPath.toFile(), session);
     }
 

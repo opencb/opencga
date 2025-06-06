@@ -154,6 +154,42 @@ public abstract class ScoreQueryGenerator extends ConfiguredQueryGenerator {
         }
     }
 
+    public static class CohortStatsRefQueryGenerator extends ScoreQueryGenerator {
+
+        public CohortStatsRefQueryGenerator(RandomQueries randomQueries) {
+            super(randomQueries.getCohortStats(), VariantQueryParam.STATS_REF.key());
+        }
+
+        @Override
+        public void setUp(Map<String, String> params, RandomQueries queries) {
+            super.setUp(params);
+        }
+    }
+
+    public static class CohortStatsAltQueryGenerator extends ScoreQueryGenerator {
+
+        public CohortStatsAltQueryGenerator(RandomQueries randomQueries) {
+            super(randomQueries.getCohortStats(), VariantQueryParam.STATS_ALT.key());
+        }
+
+        @Override
+        public void setUp(Map<String, String> params, RandomQueries queries) {
+            super.setUp(params);
+        }
+    }
+
+    public static class CohortStatsMafQueryGenerator extends ScoreQueryGenerator {
+
+        public CohortStatsMafQueryGenerator(RandomQueries randomQueries) {
+            super(randomQueries.getCohortStats(), VariantQueryParam.STATS_MAF.key());
+        }
+
+        @Override
+        public void setUp(Map<String, String> params, RandomQueries queries) {
+            super.setUp(params);
+        }
+    }
+
     public static class QualQueryGenerator extends ScoreQueryGenerator {
 
         public QualQueryGenerator(RandomQueries randomQueries) {

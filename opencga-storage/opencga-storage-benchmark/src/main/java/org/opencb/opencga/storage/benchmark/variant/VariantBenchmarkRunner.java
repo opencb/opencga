@@ -21,6 +21,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.base.Throwables;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.jmeter.protocol.http.control.AuthManager;
+import org.apache.jmeter.protocol.http.control.Authorization;
+import org.apache.jmeter.protocol.http.control.Header;
+import org.apache.jmeter.protocol.http.control.HeaderManager;
+import org.apache.jmeter.protocol.http.sampler.HTTPSampler;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.benchmark.BenchmarkRunner;
@@ -58,6 +63,17 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
 
     public void addThreadGroup(ConnectionType type, ExecutionMode mode, Path dataDir, Map<String, String> baseQuery, String queryFile,
                                String queries, QueryOptions queryOptions) {
+        addThreadGroup(type, mode, dataDir, baseQuery, queryFile, queries, queryOptions, Collections.emptyMap(), (Authorization) null);
+    }
+
+    public void addThreadGroup(ConnectionType type, ExecutionMode mode, Path dataDir, Map<String, String> baseQuery, String queryFile,
+                               String queries, QueryOptions queryOptions, Map<String, String> httpHeader, String token) {
+        addThreadGroup(type, mode, dataDir, baseQuery, queryFile, queries, queryOptions, httpHeader,
+                new VariantBenchmarkRunner.BearerAuthorization(token));
+    }
+
+    public void addThreadGroup(ConnectionType type, ExecutionMode mode, Path dataDir, Map<String, String> baseQuery, String queryFile,
+                               String queries, QueryOptions queryOptions, Map<String, String> httpHeader, Authorization authorization) {
 
         final List<String> queriesList;
         switch (mode) {
@@ -92,6 +108,22 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
                     .setQueryGeneratorConfig(FixedQueryGenerator.FILE, queryFile)
                     .setQueryGeneratorConfig(FixedQueryGenerator.OUT_DIR, outdir.toString());
             setBaseQueryFromCommandLine(variantStorageSampler, baseQuery);
+
+            if (variantStorageSampler instanceof HTTPSampler) {
+                HeaderManager headerManager = new HeaderManager();
+                httpHeader.forEach((key, value) -> {
+                    headerManager.add(new Header(key, value));
+                });
+                ((HTTPSampler) variantStorageSampler).setHeaderManager(headerManager);
+
+                if (authorization != null) {
+                    authorization.setURL(storageConfiguration.getBenchmark().getRest().toString());
+
+                    AuthManager authManager = new AuthManager();
+                    authManager.addAuth(authorization);
+                    ((HTTPSampler) variantStorageSampler).setAuthManager(authManager);
+                }
+            }
 
             switch (mode) {
                 case FIXED:
@@ -163,6 +195,22 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
             for (String key : baseQuery.keySet()) {
                 variantStorageEngineSampler.setQueryGeneratorConfig(QueryGenerator.BASE_QUERY_REFIX + key, baseQuery.get(key));
             }
+        }
+    }
+
+    public static class BearerAuthorization extends Authorization {
+
+        public BearerAuthorization() {
+        }
+
+        public BearerAuthorization(String token) {
+            setPass(token);
+            setMechanism(AuthManager.Mechanism.BASIC);
+        }
+
+        @Override
+        public String toBasicHeader() {
+            return "Bearer " + getPass();
         }
     }
 }
