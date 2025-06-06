@@ -31,7 +31,10 @@ search:
   configSet: "${OPENCGA.STORAGE.SEARCH.CONFIG_SET}"
   mode: "cloud"
   timeout: ${OPENCGA.STORAGE.SEARCH.TIMEOUT}
-  insertBatchSize: 5000
+  ## Insert batch size is the number of documents after which a commit is done.
+  ## This is used to avoid too many commits, which can be very expensive.
+  ## This number can be increased up to 500k, but it is not recommended to go beyond 50k.
+  insertBatchSize: 15000
 
 ## Clinical database for indexing the pathogenic variants reported.
 clinical:
