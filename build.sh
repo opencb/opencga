@@ -159,7 +159,9 @@ function print_usage() {
   echo "     -d     --docker              FLAG           Publish docker of OpenCGA-enterprise."
   echo "     -p     --docker-tag          FLAG           Tag for docker of OpenCGA-enterprise."
   echo "     -c     --cellbase-db         STRING         Connection to mongodb to test cellbase (host:port)."
-  echo "     -C     --skip-clients        STRING         Skip build opencga-enterprise clients for python, R and javascript."
+  echo "     -P     --python-client       STRING         Also builds opencga-enterprise python client"
+  echo "     -W     --javascript-client   STRING         Also builds opencga-enterprise javascript client."
+  echo "     -R     --R-client            STRING         Also builds opencga-enterprise R client"
   echo "     -v     --verbose             FLAG           Print verbose logs"
   echo "     -h     --help                FLAG           Print this help and exit"
   echo ""
@@ -327,8 +329,18 @@ function build_opencga_enterprise() {
   fi
   ## if we skip clients, we do not build them
   if [ "$BUILD_CLIENTS" == "true" ]; then
-  cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
-   ./build_clients.sh --skip-build-opencga
+    SKIP_CLIENTS=""
+    cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
+    if [ "$PYTHON_CLIENT" == "false" ]; then
+     SKIP_CLIENTS="--skip-python"
+    fi
+    if [ "$R_CLIENT" == "false" ]; then
+     SKIP_CLIENTS="$SKIP_CLIENTS --skip-rclient"
+    fi
+    if [ "$JAVASCRIPT_CLIENT" == "false" ]; then
+     SKIP_CLIENTS="$SKIP_CLIENTS --skip-javascript"
+    fi
+    ./build_clients.sh --skip-build-opencga "$SKIP_CLIENTS"
   fi
 }
 
@@ -670,7 +682,10 @@ COMMAND="build"
 SAVE_REPORTS="false"
 VERSION_SUMMARY=""
 PARAM_SUMMARY=""
-BUILD_CLIENTS="true"
+BUILD_CLIENTS="false"
+PYTHON_CLIENT="false"
+R_CLIENT="false"
+JAVASCRIPT_CLIENT="false"
 ###################################
 
 ## 2. Read and parse CLI options
@@ -706,10 +721,21 @@ while [[ $# -gt 0 ]]; do
       COMMAND="test"
       shift # past argument
       ;;
-  -C | --skip-clients)
-        BUILD_CLIENTS="false"
-        shift # past argument
-        ;;
+  -P | --python-client)
+      PYTHON_CLIENT="true"
+      BUILD_CLIENTS="true"
+      shift # past argument
+      ;;
+  -R | --R-client)
+      R_CLIENT="true"
+      BUILD_CLIENTS="true"
+      shift # past argument
+      ;;
+  -W | --javascript-client)
+      JAVASCRIPT_CLIENT="true"
+      BUILD_CLIENTS="true"
+      shift # past argument
+      ;;
   -d | --docker)
       DOCKER="true"
       shift # past argument

@@ -17,6 +17,7 @@ jobs:
     with:
       storage_hadoop: hdp3.1
       artifact_name: build-folder
+      python_client: true
 
   deploy-docker-hub:
     name: Push Docker image

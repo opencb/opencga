@@ -13,6 +13,19 @@ on:
         type: string
         required: false
         default: ""
+      python_client:
+        type: string
+        required: false
+        default: "false"
+      r_client:
+        type: string
+        required: false
+        default: "false"
+      javascript_client:
+        type: string
+        required: false
+        default: "false"
+
     outputs:
       version:
         description: "XetaBase project version"
@@ -52,8 +65,21 @@ jobs:
         uses: docker/setup-buildx-action@v3
       - name: OpenCGA Enterprise Maven Build (skip tests)
         run: |
+          CLIENTS=""
+          if [ "${{ inputs.python_client }}" == "true" ]; then
+            echo "Building Python client"
+            CLIENTS="$CLIENTS --python-client"
+          fi
+          if [ "${{ inputs.r_client }}" == "true" ]; then
+              echo "Building R client"
+              CLIENTS="$CLIENTS --R-client"
+          fi
+          if [ "${{ inputs.javascript_client }}" == "true" ]; then
+              echo "Building JavaScript client"
+              CLIENTS="$CLIENTS --javascript-client"
+          fi
           branch_name=$(git rev-parse --abbrev-ref HEAD)
-          ./build.sh --storage-hadoop ${{ inputs.storage_hadoop }} -b -T "$branch_name"
+          ./build.sh --storage-hadoop ${{ inputs.storage_hadoop }} -b -T "$branch_name" $CLIENTS
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.artifact_name }}

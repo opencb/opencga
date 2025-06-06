@@ -29,7 +29,6 @@ function print_usage() {
   echo "     -b     --skip-build-opencga       FLAG         Skip Build OpenCGA-enterprise"
   echo "     -p     --skip-python              FLAG         Skip Build OpenCGA Python client"
   echo "     -r     --skip-rclient             FLAG         Skip Build OpenCGA R client"
-  echo "     -j     --skip-java                FLAG         Skip Build OpenCGA Java client"
   echo "     -w     --skip-javascript          FLAG         Skip Build OpenCGA JavaScript client"
   echo "     -h     --help                     FLAG         Print this help and exit"
   echo ""
@@ -42,19 +41,15 @@ while [[ $# -gt 0 ]]; do
       SKIP_BUILD_OPENCGA=true
       shift
       ;;
-    -p|--skpython)
+    -p|--skip-python)
       SKIP_PYTHON=true
       shift
       ;;
-    -r|--skrclient)
+    -r|--skip-rclient)
       SKIP_RCLIENT=true
       shift
       ;;
-    -j|--skjava)
-      SKIP_JAVA=true
-      shift
-      ;;
-    -w|--skjavascript)
+    -w|--skip-javascript)
       SKIP_JS=true
       shift
       ;;
@@ -126,13 +121,6 @@ if ! $SKIP_PYTHON; then
   echo ">> Compressing the Python client directory $PYTHON_DIR to $DIST_DIR/$ARCHIVE_NAME..."
   tar -czf "$DIST_DIR/$ARCHIVE_NAME" -C "$PYTHON_DIR" .
 fi
-
-if ! $SKIP_JAVA; then
-  echo ">> Copying OpenCGA Java client..."
-  # Copiar el .jar generado al directorio build
-  cp ./opencga-enterprise-client/target/opencga-enterprise-client-*.jar "$DIST_DIR"
-fi
-
 
 if ! $SKIP_JS; then
   echo ">> Copying OpenCGA JavaScript client..."
