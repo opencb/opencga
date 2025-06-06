@@ -335,12 +335,13 @@ function build_opencga_enterprise() {
      SKIP_CLIENTS="--skip-python"
     fi
     if [ "$R_CLIENT" == "false" ]; then
-     SKIP_CLIENTS="$SKIP_CLIENTS --skip-rclient"
+     SKIP_CLIENTS="$SKIP_CLIENTS --skip-r"
     fi
     if [ "$JAVASCRIPT_CLIENT" == "false" ]; then
      SKIP_CLIENTS="$SKIP_CLIENTS --skip-javascript"
     fi
-    ./build_clients.sh --skip-build-opencga "$SKIP_CLIENTS"
+    #Do not put quotes in the following command or it will not work
+    ./build_clients.sh --skip-build-opencga $SKIP_CLIENTS
   fi
 }
 

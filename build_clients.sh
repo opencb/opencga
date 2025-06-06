@@ -7,7 +7,7 @@ set -o nounset
 # Default: NO skip
 SKIP_BUILD_OPENCGA=false
 SKIP_PYTHON=false
-SKIP_RCLIENT=false
+SKIP_R=false
 SKIP_JAVA=false
 SKIP_JS=false
 
@@ -28,7 +28,7 @@ function print_usage() {
   echo "  Options:"
   echo "     -b     --skip-build-opencga       FLAG         Skip Build OpenCGA-enterprise"
   echo "     -p     --skip-python              FLAG         Skip Build OpenCGA Python client"
-  echo "     -r     --skip-rclient             FLAG         Skip Build OpenCGA R client"
+  echo "     -r     --skip-r                   FLAG         Skip Build OpenCGA R client"
   echo "     -w     --skip-javascript          FLAG         Skip Build OpenCGA JavaScript client"
   echo "     -h     --help                     FLAG         Print this help and exit"
   echo ""
@@ -45,8 +45,8 @@ while [[ $# -gt 0 ]]; do
       SKIP_PYTHON=true
       shift
       ;;
-    -r|--skip-rclient)
-      SKIP_RCLIENT=true
+    -r|--skip-r)
+      SKIP_R=true
       shift
       ;;
     -w|--skip-javascript)
@@ -76,7 +76,7 @@ fi
 
 mkdir -p ${DIST_DIR}
 
-if ! $SKIP_RCLIENT; then
+if ! $SKIP_R; then
   echo ">> Building OpenCGA R client..."
   export DOCKER_BUILDKIT=1
   docker build -t opencb/opencga-r-builder:dev -f opencga-home/opencga-app/app/cloud/docker/opencga-r-builder/Dockerfile opencga-home/opencga-app/app/cloud/docker/opencga-r-builder
