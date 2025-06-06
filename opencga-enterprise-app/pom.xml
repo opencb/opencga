@@ -338,44 +338,7 @@
                                     <arg value="${build.dir}/misc/git"/>
                                 </exec>
 
-
-
-                                <!--Building R library  -->
-                                <echo>Copying OpenCGA R client files ${build.dir}/clients</echo>
-                                <!-- R -->
-                                <exec executable="cp" failonerror="true">
-                                    <arg value="-r"/>
-                                    <arg value="${project.basedir}/../opencga-enterprise-client/src/main/R"/>
-                                    <arg value="${build.dir}/clients"/>
-                                </exec>
-
-                                <!-- If the version ends with -SNAPSHOT, replace it with -dev -->
-                                <exec executable="bash" outputproperty="R.version" failonerror="true">
-                                    <arg value="-c"/>
-                                    <arg value="echo ${project.version} | sed 's/-SNAPSHOT/.9000/g'"/>
-                                </exec>
-
-                                <echo message="Calculated R Version: ${R.version}"/>
-
-                                <echo>Updating ${build.dir}/clients/R/DESCRIPTION with version ${R.version}</echo>
-                                <exec executable="sed" failonerror="true">
-                                    <arg value="-i"/>
-                                    <arg value="s/OPENCGA_R_VERSION/${R.version}/"/>
-                                    <arg value="${build.dir}/clients/R/DESCRIPTION"/>
-                                </exec>
-
-
-                                <!--END Building R library  -->
-
                                 <!--Building javascript library  -->
-                                <echo>Copying OpenCGA javascript client files ${build.dir}/clients</echo>
-
-                                <exec executable="cp" failonerror="true">
-                                    <arg value="-r"/>
-                                    <arg value="${project.basedir}/../opencga-enterprise-client/src/main/javascript"/>
-                                    <arg value="${build.dir}/clients"/>
-                                </exec>
-
                                 <echo>Copying configuration files</echo>
                                 <exec executable="cp" failonerror="true">
                                     <arg value="${project.basedir}/../opencga-enterprise-core/target/classes/enterprise-configuration.yml"/>

@@ -17,7 +17,9 @@ VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
 
 BUILD_DIR="./build"
 DIST_DIR="$BUILD_DIR/dist"
+CLIENTS_DIR="$BUILD_DIR/clients"
 OPENCGA_BUILD_DIR="./opencga-home/build"
+
 # Function to print main usage of the script
 function print_usage() {
   echo ""
@@ -65,69 +67,69 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-
-
-
 if ! $SKIP_BUILD_OPENCGA; then
   echo ">> Building OpenCGA-enterprise..."
   ./build.sh
 fi
 
-
+# Check if the build directory exists, and delete it to create a new one total clean
+[ -d "${DIST_DIR}" ] && rm -rf "${DIST_DIR}"
+# Create the directory for the clients distribution
 mkdir -p ${DIST_DIR}
 
 if ! $SKIP_R; then
-  echo ">> Building OpenCGA R client..."
+  echo "Building R library"
+  echo "==================="
+  R_SOURCE_DIR="./opencga-enterprise-client/src/main/R"
+  echo "Copying OpenCGA R client files to $CLIENTS_DIR"
+  cp -r "$R_SOURCE_DIR" "$CLIENTS_DIR"
+  # If Version is a SNAPSHOT, we need to replace it with a version that R can understand
+  R_VERSION=$(echo "$VERSION" | sed 's/-SNAPSHOT/.9000/g')
+  echo "Calculated R Version: $R_VERSION"
+  # Update the DESCRIPTION file with the calculated version
+  DESCRIPTION_FILE="$CLIENTS_DIR/R/DESCRIPTION"
+  echo "Updating $DESCRIPTION_FILE with version $R_VERSION"
+  sed -i "s/OPENCGA_R_VERSION/${R_VERSION}/" "$DESCRIPTION_FILE"
   export DOCKER_BUILDKIT=1
   docker build -t opencb/opencga-r-builder:dev -f opencga-home/opencga-app/app/cloud/docker/opencga-r-builder/Dockerfile opencga-home/opencga-app/app/cloud/docker/opencga-r-builder
-  docker run --rm --mount type=bind,source="./build/clients/R",target=/opt/opencga/R --mount type=bind,source="$DIST_DIR",target=/opt/opencga opencb/opencga-r-builder:dev R CMD build /opt/opencga/R
+  docker run --rm --mount type=bind,source="$CLIENTS_DIR/R",target=/opt/opencga/R --mount type=bind,source="$DIST_DIR",target=/opt/opencga opencb/opencga-r-builder:dev R CMD build /opt/opencga/R
   rm -rf ${DIST_DIR}/R
 fi
 
 if ! $SKIP_PYTHON; then
   echo "Building python library"
   echo "============================="
-
   echo "Prepare directory: Python"
-  rm -rf "$BUILD_DIR/clients/python"
-  
-  echo "Copying OpenCGA python client files to $BUILD_DIR/clients"
-  cp -r "$OPENCGA_BUILD_DIR/clients/python" "$BUILD_DIR/clients"
-  
-  echo "Copying Python to $BUILD_DIR/clients"
-  cp -r "opencga-enterprise-client/src/main/python" "$BUILD_DIR/clients"
-  
+  rm -rf "$CLIENTS_DIR/python"
+  echo "Copying OpenCGA python client files to $CLIENTS_DIR"
+  cp -r "$OPENCGA_BUILD_DIR/clients/python" "$CLIENTS_DIR"
+  echo "Copying Python to $CLIENTS_DIR"
+  cp -r "opencga-enterprise-client/src/main/python" "$CLIENTS_DIR"
   echo "Updating imports from pyopencga to pyopencga_enterprise"
-  find "$BUILD_DIR/clients/python/pyopencga" -type f -name "*.py" -exec sed -i.bak 's/from pyopencga/from pyopencga_enterprise/g' {} \;
-  find "$BUILD_DIR/clients/python/pyopencga" -name "*.bak" -delete
-
+  find "$CLIENTS_DIR/python/pyopencga" -type f -name "*.py" -exec sed -i.bak 's/from pyopencga/from pyopencga_enterprise/g' {} \;
+  find "$CLIENTS_DIR/python/pyopencga" -name "*.bak" -delete
   echo "Calculating Python version"
   PYTHON_VERSION=$(python3 "opencga-enterprise-app/app/scripts/calculate_pypi_version.py" "$VERSION")
-  echo "Calculated Python Version: $PYTHON_VERSION"
-  
   echo "Updating setup.py with version $PYTHON_VERSION"
-  sed -i "s/PYOPENCGA_ENTERPRISE_VERSION/${PYTHON_VERSION}/" "$BUILD_DIR/clients/python/setup.py"
-  
+  sed -i "s/PYOPENCGA_ENTERPRISE_VERSION/${PYTHON_VERSION}/" "$CLIENTS_DIR/python/setup.py"
   echo "Renaming folder pyopencga to pyopencga_enterprise"
-  mv "$BUILD_DIR/clients/python/pyopencga" "$BUILD_DIR/clients/python/pyopencga_enterprise"
-
+  mv "$CLIENTS_DIR/python/pyopencga" "$CLIENTS_DIR/python/pyopencga_enterprise"
   python3 -m pip install --upgrade pip
   pip install --upgrade setuptools packaging
   ./build/clients/python/python-build.sh build
-
   echo ">> Compressing OpenCGA Python client..."
-  PYTHON_DIR="./build/clients/python"
+  PYTHON_DIR="$CLIENTS_DIR/python"
   ARCHIVE_NAME="opencga-enterprise-python-client-$PYTHON_VERSION.tar.gz"
   echo ">> Compressing the Python client directory $PYTHON_DIR to $DIST_DIR/$ARCHIVE_NAME..."
   tar -czf "$DIST_DIR/$ARCHIVE_NAME" -C "$PYTHON_DIR" .
 fi
 
 if ! $SKIP_JS; then
-  echo ">> Copying OpenCGA JavaScript client..."
-  JAVASCRIPT_DIR="./build/clients/javascript"
+  JAVASCRIPT_DIR="$CLIENTS_DIR/javascript"
+  echo "Building JavaScript library"
+  echo "============================="
+  cp -r ./opencga-enterprise-client/src/main/javascript "$JAVASCRIPT_DIR"
   JAVASCRIPT_CLIENT_NAME="opencga-enterprise-javascript-client-$VERSION.tar.gz"
   echo ">> Compressing the Javascript client directory $JAVASCRIPT_DIR to $DIST_DIR/$JAVASCRIPT_CLIENT_NAME..."
   tar -czf "$DIST_DIR/$JAVASCRIPT_CLIENT_NAME" -C "$JAVASCRIPT_DIR" .
 fi
-
-#tar -czvf build/opencga-enterprise-clients-$VERSION.tar.gz -C "$DIST_DIR" .
