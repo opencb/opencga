@@ -1,4 +1,4 @@
-FROM debian:bullseye
+FROM ubuntu:24.04
 
 LABEL org.label-schema.vendor="OpenCB" \
       org.label-schema.name="opencga-ext-tools" \
@@ -15,7 +15,7 @@ RUN apt-get update -y && DEBIAN_FRONTEND="noninteractive" TZ="Europe/London" apt
     libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev \
     gnuplot pandoc samtools bcftools tabix fastqc plink1.9 bwa r-base && \
     ## Installation dependencies using R install.packages() is slower than apt-get but final size is 400GB smaller.
-    R -e "install.packages(c('BiocManager', 'RCircos', 'nnls', 'ggplot2', 'jsonlite', 'optparse', 'knitr', 'configr', 'dplyr', 'rmarkdown', 'tidyr', 'httr', 'kinship2', 'limSolve'))" && \
+    R -e "install.packages(c('BiocManager', 'RCircos', 'nnls', 'ggplot2', 'jsonlite', 'optparse', 'knitr', 'configr', 'dplyr', 'rmarkdown', 'tidyr', 'httr', 'kinship2', 'limSolve','gh', 'usethis'))" && \
     R -e "BiocManager::install('BiocStyle')" && \
     R -e "BiocManager::install('BSgenome.Hsapiens.UCSC.hg38')" && \
     ## signature.tools.lib installation \
