@@ -92,7 +92,7 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
 
     @Override
     public final void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
-        logger.info("Start mapping key: " + Bytes.toString(key.get()));
+//        logger.info("Start mapping key: " + Bytes.toString(key.get()));
         startStep();
         if (value.isEmpty()) {
             context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "VCF_RESULT_EMPTY").increment(1);
@@ -131,7 +131,7 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
         // Clean up of this slice
         this.getMrHelper().addTimesAsCounters();
 
-        logger.info("Finished mapping key: " + Bytes.toString(key.get()));
+//        logger.info("Finished mapping key: " + Bytes.toString(key.get()));
     }
 
     protected abstract void map(VariantMapReduceContext ctx) throws IOException, InterruptedException;

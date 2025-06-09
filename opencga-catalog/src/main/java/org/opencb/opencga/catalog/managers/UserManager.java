@@ -47,6 +47,7 @@ import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.GroupUpdateParams;
+import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
@@ -129,7 +130,7 @@ public class UserManager extends AbstractManager {
 
         Organization organization = getOrganizationDBAdaptor(organizationId).get(OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION)
                 .first();
-        validateNewUser(user, password, organization.getConfiguration().getDefaultUserExpirationDate(), organizationId);
+        validateNewUser(user, password, organization.getConfiguration().getUser().getDefaultExpirationDate(), organizationId);
         ObjectMap auditParams = new ObjectMap("user", user);
 
         if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationId) || !OPENCGA.equals(user.getId())) {
@@ -158,6 +159,12 @@ public class UserManager extends AbstractManager {
             }
 
             getUserDBAdaptor(organizationId).insert(user, password, QueryOptions.empty());
+
+            // If all users are expected to belong to the members group of all studies, add it
+            if (organization.getConfiguration().getUser() != null && organization.getConfiguration().getUser().isAddToStudyMembers()) {
+                List<Study> studyList = catalogManager.getStudyManager().listStudies(organizationId);
+                catalogManager.getStudyManager().addToMembersGroup(organizationId, studyList, Collections.singletonList(user.getId()));
+            }
 
             auditManager.auditCreate(organizationId, user.getId(), Enums.Resource.USER, user.getId(), "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -1584,7 +1591,7 @@ public class UserManager extends AbstractManager {
         }
     }
 
-    private String getAuthenticationOriginId(String organizationId, String userId) throws CatalogException {
+    String getAuthenticationOriginId(String organizationId, String userId) throws CatalogException {
         OpenCGAResult<User> user = getUserDBAdaptor(organizationId).get(userId, new QueryOptions());
         if (user == null || user.getNumResults() == 0) {
             throw new CatalogException(userId + " user not found");

@@ -193,10 +193,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     public ArchiveTableHelper getArchiveHelper(int studyId, int fileId) throws StorageEngineException {
-        VariantFileMetadata fileMetadata = getMetadataManager().getVariantFileMetadata(studyId, fileId, null).first();
-        if (fileMetadata == null) {
-            throw VariantQueryException.fileNotFound(fileId, studyId);
-        }
+        VariantFileMetadata fileMetadata = getMetadataManager().getVariantFileMetadata(studyId, fileId);
         return new ArchiveTableHelper(configuration, studyId, fileMetadata);
 
     }
