@@ -16,7 +16,9 @@ public class VariantSearchLoadResult {
     private final long numProcessedVariants;
 
     /**
-     * Number of loaded variants. This number will always be lower equal than {@link #numProcessedVariants}.
+     * Number of loaded variants. Includes inserted and partially updated variants.
+     *
+     * This number will always be lower equal than {@link #numProcessedVariants}.
      */
     private final long numLoadedVariants;
 
@@ -26,17 +28,27 @@ public class VariantSearchLoadResult {
      */
     private final long numDeletedVariants;
 
-    private final long numLoadedVariantsMain;
+    /**
+     * Number of inserted variants. This number will always be lower equal than {@link #numLoadedVariants}.
+     *
+     * This number does not include variants that were partially updated.
+     */
+    private final long numInsertedVariants;
 
-    private final long numLoadedVariantsStats;
+    /**
+     * Number of variants that were partially updated. This number will always be lower equal than {@link #numLoadedVariants}.
+     *
+     * This number does not include variants that were inserted.
+     */
+    private final long numLoadedVariantsPartialStatsUpdate;
 
     public VariantSearchLoadResult(long numProcessedVariants, long numLoadedVariants, long numDeletedVariants,
-                                   long numLoadedVariantsMain, long numLoadedVariantsStats) {
+                                   long numInsertedVariants, long numLoadedVariantsPartialStatsUpdate) {
         this.numProcessedVariants = numProcessedVariants;
         this.numLoadedVariants = numLoadedVariants;
         this.numDeletedVariants = numDeletedVariants;
-        this.numLoadedVariantsMain = numLoadedVariantsMain;
-        this.numLoadedVariantsStats = numLoadedVariantsStats;
+        this.numInsertedVariants = numInsertedVariants;
+        this.numLoadedVariantsPartialStatsUpdate = numLoadedVariantsPartialStatsUpdate;
     }
 
     public long getNumProcessedVariants() {
@@ -51,12 +63,12 @@ public class VariantSearchLoadResult {
         return numDeletedVariants;
     }
 
-    public long getNumLoadedVariantsMain() {
-        return numLoadedVariantsMain;
+    public long getNumInsertedVariants() {
+        return numInsertedVariants;
     }
 
-    public long getNumLoadedVariantsStats() {
-        return numLoadedVariantsStats;
+    public long getNumLoadedVariantsPartialStatsUpdate() {
+        return numLoadedVariantsPartialStatsUpdate;
     }
 
     @Override
@@ -65,8 +77,8 @@ public class VariantSearchLoadResult {
                 .append("numProcessedVariants", numProcessedVariants)
                 .append("numLoadedVariants", numLoadedVariants)
                 .append("numDeletedVariants", numDeletedVariants)
-                .append("numLoadedVariantsMain", numLoadedVariantsMain)
-                .append("numLoadedVariantsStats", numLoadedVariantsStats)
+                .append("numLoadedVariantsMain", numInsertedVariants)
+                .append("numLoadedVariantsStats", numLoadedVariantsPartialStatsUpdate)
                 .toString();
     }
 }

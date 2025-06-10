@@ -11,15 +11,9 @@ import java.util.List;
 public class VariantSolrInputDocumentDataWriter implements DataWriter<Pair<SolrInputDocument, SolrInputDocument>> {
 
     private final SolrInputDocumentDataWriter mainWriter;
-    private final SolrInputDocumentDataWriter statsWriter;
     private int insertedDocuments = 0;
     private int mainInsertedDocuments = 0;
-    private int statsInsertedDocuments = 0;
-
-    public VariantSolrInputDocumentDataWriter(SolrInputDocumentDataWriter mainWriter, SolrInputDocumentDataWriter statsWriter) {
-        this.mainWriter = mainWriter;
-        this.statsWriter = statsWriter;
-    }
+    private int statsPartialUpdatedDocuments = 0;
 
     public VariantSolrInputDocumentDataWriter(VariantSearchManager variantSearchManager, SearchIndexMetadata indexMetadata) {
         mainWriter = new SolrInputDocumentDataWriter(
@@ -27,33 +21,17 @@ public class VariantSolrInputDocumentDataWriter implements DataWriter<Pair<SolrI
                 variantSearchManager.getSolrClient(),
                 variantSearchManager.getInsertBatchSize()
         );
-
-        if (variantSearchManager.isStatsCollectionEnabled(indexMetadata)) {
-            statsWriter = new SolrInputDocumentDataWriter(
-                    variantSearchManager.buildStatsCollectionName(indexMetadata),
-                    variantSearchManager.getSolrClient(),
-                    variantSearchManager.getInsertBatchSize()
-            );
-        } else {
-            statsWriter = null;
-        }
     }
 
     @Override
     public boolean open() {
         mainWriter.open();
-        if (statsWriter != null) {
-            statsWriter.open();
-        }
         return true;
     }
 
     @Override
     public boolean pre() {
         mainWriter.pre();
-        if (statsWriter != null) {
-            statsWriter.pre();
-        }
         return true;
     }
 
@@ -61,8 +39,7 @@ public class VariantSolrInputDocumentDataWriter implements DataWriter<Pair<SolrI
     public boolean write(List<Pair<SolrInputDocument, SolrInputDocument>> batch) {
         List<SolrInputDocument> mainDocuments = new ArrayList<>(batch.size());
         List<SolrInputDocument> statsDocuments = new ArrayList<>(batch.size());
-        boolean mainCommit = false;
-        boolean statsCommit = false;
+        boolean commit = false;
         for (Pair<SolrInputDocument, SolrInputDocument> pair : batch) {
             insertedDocuments++;
             if (pair.getLeft() != null) {
@@ -73,52 +50,33 @@ public class VariantSolrInputDocumentDataWriter implements DataWriter<Pair<SolrI
             }
         }
         if (!mainDocuments.isEmpty()) {
-            mainCommit = mainWriter.write(mainDocuments);
+            commit = mainWriter.write(mainDocuments);
             mainInsertedDocuments += mainDocuments.size();
         }
         if (!statsDocuments.isEmpty()) {
-            // TODO: If statsWriter is null, should update the main collection
-            statsCommit = statsWriter.write(statsDocuments);
-            statsInsertedDocuments += statsDocuments.size();
+            commit |= mainWriter.update(statsDocuments);
+            statsPartialUpdatedDocuments += statsDocuments.size();
         }
-        if (mainCommit || statsCommit) {
-            flush(mainCommit, statsCommit);
+        if (commit) {
+            flush();
             return true;
         } else {
             return false;
         }
     }
 
-    protected void flush(boolean mainCommit, boolean statsCommit) {
-        try {
-            if (mainCommit || statsCommit) {
-                if (!mainCommit) {
-                    mainWriter.commit();
-                }
-                if (!statsCommit && statsWriter != null) {
-                    statsWriter.commit();
-                }
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Error flushing Solr documents", e);
-        }
+    protected void flush() {
     }
 
     @Override
     public boolean post() {
         mainWriter.post();
-        if (statsWriter != null) {
-            statsWriter.post();
-        }
         return true;
     }
 
     @Override
     public boolean close() {
         mainWriter.close();
-        if (statsWriter != null) {
-            statsWriter.close();
-        }
         return true;
     }
 
@@ -130,8 +88,8 @@ public class VariantSolrInputDocumentDataWriter implements DataWriter<Pair<SolrI
         return mainInsertedDocuments;
     }
 
-    public int getStatsInsertedDocuments() {
-        return statsInsertedDocuments;
+    public int getStatsPartialUpdatedDocuments() {
+        return statsPartialUpdatedDocuments;
     }
 
 }

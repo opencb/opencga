@@ -813,15 +813,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                     logger.info("ConfigSetId changed from '{}' to '{}'. Creating new secondary annotation index to match new configSetId",
                             indexMetadata.getConfigSetId(), configuration.getSearch().getConfigSet());
                     shouldCreateNewIndex = true;
-                } else if (variantSearchManager.isStatsCollectionEnabled(indexMetadata) != getOptions().getBoolean(
-                        VariantStorageOptions.SEARCH_STATS_COLLECTION_ENABLED.key(),
-                        VariantStorageOptions.SEARCH_STATS_COLLECTION_ENABLED.defaultValue())) {
-                    logger.info("Search stats collection enabled changed from '{}' to '{}'. "
-                                    + "Creating new secondary annotation index to match new stats collection enabled",
-                            variantSearchManager.isStatsCollectionEnabled(indexMetadata),
-                            getOptions().getBoolean(VariantStorageOptions.SEARCH_STATS_COLLECTION_ENABLED.key(),
-                                    VariantStorageOptions.SEARCH_STATS_COLLECTION_ENABLED.defaultValue()));
-                    shouldCreateNewIndex = true;
                 } else if (collectionExists) {
                     String collectionName = variantSearchManager.buildCollectionName(indexMetadata);
                     SolrCollectionStatus status = variantSearchManager.getCollectionStatus(collectionName);

@@ -30,6 +30,8 @@ import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.annotation.converters.VariantAnnotationModelUtils;
 import org.opencb.opencga.storage.core.variant.annotation.converters.VariantTraitAssociationToEvidenceEntryConverter;
@@ -59,6 +61,19 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
     private final Map<String, Integer> cohortsSize = new HashMap<>();
 
     private final VariantAnnotationModelUtils variantAnnotationModelUtils = new VariantAnnotationModelUtils();
+
+    public VariantSearchToVariantConverter(VariantStorageMetadataManager metadataManager) {
+        this.includeFields = null;
+        for (Map.Entry<String, Integer> entry : metadataManager.getStudies().entrySet()) {
+            String studyName = entry.getKey();
+            studyName = VariantSearchToVariantConverter.studyIdToSearchModel(studyName);
+
+            for (CohortMetadata cohort : metadataManager.getCalculatedOrPartialCohorts(entry.getValue())) {
+                String cohortName = cohort.getName();
+                cohortsSize.put(studyName + VariantSearchUtils.FIELD_SEPARATOR + cohortName, cohort.getSamples().size());
+            }
+        }
+    }
 
     public VariantSearchToVariantConverter(Map<String, Integer> cohortsSize) {
         this.includeFields = null;
@@ -440,23 +455,23 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
         // Set conservations scores
         scores = new ArrayList<>();
-        if (!equalWithEpsilon(variantSearchModel.getPhylop(), MISSING_VALUE)) {
+        if (variantSearchModel.getPhylop() != null && !equalWithEpsilon(variantSearchModel.getPhylop(), MISSING_VALUE)) {
             scores.add(new Score(variantSearchModel.getPhylop(), "phylop", ""));
         }
-        if (!equalWithEpsilon(variantSearchModel.getPhastCons(), MISSING_VALUE)) {
+        if (variantSearchModel.getPhastCons() != null && !equalWithEpsilon(variantSearchModel.getPhastCons(), MISSING_VALUE)) {
             scores.add(new Score(variantSearchModel.getPhastCons(), "phastCons", ""));
         }
-        if (!equalWithEpsilon(variantSearchModel.getGerp(), MISSING_VALUE)) {
+        if (variantSearchModel.getGerp() != null && !equalWithEpsilon(variantSearchModel.getGerp(), MISSING_VALUE)) {
             scores.add(new Score(variantSearchModel.getGerp(), "gerp", ""));
         }
         variantAnnotation.setConservation(scores);
 
         // Set CADD scores
         scores = new ArrayList<>();
-        if (!equalWithEpsilon(variantSearchModel.getCaddRaw(), MISSING_VALUE)) {
+        if (variantSearchModel.getCaddRaw() != null && !equalWithEpsilon(variantSearchModel.getCaddRaw(), MISSING_VALUE)) {
             scores.add(new Score(variantSearchModel.getCaddRaw(), "cadd_raw", ""));
         }
-        if (!equalWithEpsilon(variantSearchModel.getCaddScaled(), MISSING_VALUE)) {
+        if (variantSearchModel.getCaddScaled() != null && !equalWithEpsilon(variantSearchModel.getCaddScaled(), MISSING_VALUE)) {
             scores.add(new Score(variantSearchModel.getCaddScaled(), "cadd_scaled", ""));
         }
         variantAnnotation.setFunctionalScore(scores);

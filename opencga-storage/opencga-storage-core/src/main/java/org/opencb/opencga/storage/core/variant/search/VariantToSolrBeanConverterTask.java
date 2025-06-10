@@ -6,37 +6,21 @@ import org.apache.solr.common.SolrInputDocument;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.commons.Converter;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class VariantToSolrBeanConverterTask implements Converter<Variant, Pair<SolrInputDocument, SolrInputDocument>> {
 
     private final VariantSearchToVariantConverter converter;
     private final DocumentObjectBinder binder;
     private final VariantSecondaryIndexFilter filter;
-    private final boolean statsCollectionEnabled;
 
-    public VariantToSolrBeanConverterTask(DocumentObjectBinder binder, VariantStorageMetadataManager metadataManager,
-                                          boolean statsCollectionEnabled) {
+    public VariantToSolrBeanConverterTask(DocumentObjectBinder binder, VariantStorageMetadataManager metadataManager) {
         this.binder = binder;
         this.filter = new VariantSecondaryIndexFilter(metadataManager.getStudies());
-        this.statsCollectionEnabled = statsCollectionEnabled;
-        HashMap<String, Integer> cohorts = new HashMap<>();
-        for (Map.Entry<String, Integer> entry : metadataManager.getStudies().entrySet()) {
-            String studyName = entry.getKey();
-            studyName = VariantSearchToVariantConverter.studyIdToSearchModel(studyName);
-
-            for (CohortMetadata cohort : metadataManager.getCalculatedOrPartialCohorts(entry.getValue())) {
-                String cohortName = cohort.getName();
-                cohorts.put(studyName + VariantSearchUtils.FIELD_SEPARATOR + cohortName, cohort.getSamples().size());
-            }
-        }
-        this.converter = new VariantSearchToVariantConverter(cohorts);
+        this.converter = new VariantSearchToVariantConverter(metadataManager);
     }
 
     @Override
@@ -61,31 +45,19 @@ public class VariantToSolrBeanConverterTask implements Converter<Variant, Pair<S
                 // Nothing to sync!
                 return null;
             case NOT_SYNCHRONIZED:
-            case STATS_NOT_SYNC: {
                 final SolrInputDocument mainDocument;
+                // Need to sync main document
+                // This should contain all the fields, including stats
+                mainDocument = binder.toSolrInputDocument(converter.convertToStorageType(variant, true, true));
+
+                return Pair.of(mainDocument, null);
+            case STATS_NOT_SYNC: {
                 final SolrInputDocument statsDocument;
+                // Need to sync stats document
+                // This should contain only the stats fields, as will be merged with the main document with partial solr updates
+                statsDocument = binder.toSolrInputDocument(converter.convertToStorageType(variant, true, false));
 
-                if (statsCollectionEnabled) {
-                    if (status == VariantStorageEngine.SyncStatus.NOT_SYNCHRONIZED) {
-                        // Need to sync main collection.
-                        VariantSearchModel variantSearchModelAnnotation = converter.convertToStorageType(variant, false, true);
-                        mainDocument = binder.toSolrInputDocument(variantSearchModelAnnotation);
-                    } else {
-                        // Main document not needed. Only stats are out of sync
-                        mainDocument = null;
-                    }
-
-                    VariantSearchModel variantSearchModelStats = converter.convertToStorageType(variant, true, false);
-                    statsDocument = binder.toSolrInputDocument(variantSearchModelStats);
-                } else {
-                    // TODO: If sync status is STATS_NOT_SYNC, we should generate only the stats document
-                    // No stats collection enabled, so we only convert the main document that contains everything
-                    VariantSearchModel variantSearchModel = converter.convertToStorageType(variant);
-                    mainDocument = binder.toSolrInputDocument(variantSearchModel);
-                    statsDocument = null;
-                }
-                return Pair.of(mainDocument,
-                        statsDocument);
+                return Pair.of(null, statsDocument);
             }
             case STATS_NOT_SYNC_AND_STUDIES_UNKNOWN:
             case STUDIES_UNKNOWN_SYNC:

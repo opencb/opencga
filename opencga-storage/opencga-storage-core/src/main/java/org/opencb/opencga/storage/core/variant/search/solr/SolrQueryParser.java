@@ -61,7 +61,6 @@ public class SolrQueryParser {
 
     private final VariantStorageMetadataManager variantStorageMetadataManager;
     private final boolean functionQueryStats;
-    private final String statsCollectionName;
 
     private static Map<String, String> includeMap;
 
@@ -108,20 +107,17 @@ public class SolrQueryParser {
 
     public SolrQueryParser(VariantStorageMetadataManager variantStorageMetadataManager) {
         this.variantStorageMetadataManager = variantStorageMetadataManager;
-        this.statsCollectionName = null;
         this.functionQueryStats = true;
     }
 
     public SolrQueryParser(VariantStorageMetadataManager variantStorageMetadataManager, String statsCollectionName) {
         this.variantStorageMetadataManager = variantStorageMetadataManager;
-        this.statsCollectionName = statsCollectionName;
         this.functionQueryStats = true;
     }
 
     public SolrQueryParser(VariantStorageMetadataManager variantStorageMetadataManager, boolean functionQueryStats) {
         this.variantStorageMetadataManager = variantStorageMetadataManager;
         this.functionQueryStats = functionQueryStats;
-        this.statsCollectionName = null;
     }
 
     /**

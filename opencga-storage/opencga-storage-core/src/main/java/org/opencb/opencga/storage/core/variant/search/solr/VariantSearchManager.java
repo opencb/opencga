@@ -81,7 +81,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.SEARCH_STATS_COLLECTION_ENABLED;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.SEARCH_STATS_FUNCTIONAL_QUERIES_ENABLED;
 
 
 /**
@@ -124,17 +124,8 @@ public class VariantSearchManager {
     }
 
     public void createCollections(SearchIndexMetadata indexMetadata) throws VariantSearchException {
-        boolean statsCollectionEnabled = isStatsCollectionEnabled(indexMetadata);
         String mainCollection = buildCollectionName(indexMetadata);
-        String statsCollection;
-        if (statsCollectionEnabled) {
-            statsCollection = buildStatsCollectionName(indexMetadata);
-            createCollection(statsCollection, indexMetadata.getConfigSetId(), null, false, null);
-            solrManager.checkExists(statsCollection);
-        } else {
-            statsCollection = null;
-        }
-        createCollection(mainCollection, indexMetadata.getConfigSetId(), statsCollection, true, 2);
+        createCollection(mainCollection, indexMetadata.getConfigSetId(), null, true, 2);
         solrManager.checkExists(mainCollection);
     }
 
@@ -215,13 +206,7 @@ public class VariantSearchManager {
             throws VariantSearchException {
         String collectionName = buildCollectionName(indexMetadata);
 
-        boolean o = waitForReplicasInSync(collectionName, timeout, timeUnit, throwException);
-        if (isStatsCollectionEnabled(indexMetadata)) {
-            String statsCollectionName = buildStatsCollectionName(indexMetadata);
-            o &= waitForReplicasInSync(statsCollectionName, timeout, timeUnit, throwException);
-        }
-
-        return o;
+        return waitForReplicasInSync(collectionName, timeout, timeUnit, throwException);
     }
 
     private boolean waitForReplicasInSync(String collectionName, int timeout, TimeUnit timeUnit, boolean throwException)
@@ -346,9 +331,6 @@ public class VariantSearchManager {
 
     public void logCollectionsStatus(SearchIndexMetadata indexMetadata) throws VariantSearchException {
         logCollectionStatus(buildCollectionName(indexMetadata));
-        if (isStatsCollectionEnabled(indexMetadata)) {
-            logCollectionStatus(buildStatsCollectionName(indexMetadata));
-        }
     }
 
     public void logCollectionStatus(String collection) throws VariantSearchException {
@@ -471,21 +453,6 @@ public class VariantSearchManager {
         }
     }
 
-    public String buildStatsCollectionName(SearchIndexMetadata indexMetadata) {
-        if (indexMetadata == null) {
-            throw new NullPointerException("Missing index metadata");
-        }
-        String suffix = indexMetadata.getAttributes().getString(VariantStorageOptions.SEARCH_STATS_COLLECTION_SUFFIX.key(),
-                VariantStorageOptions.SEARCH_STATS_COLLECTION_SUFFIX.defaultValue());
-
-        if (indexMetadata.getCollectionNameSuffix() == null || indexMetadata.getCollectionNameSuffix().isEmpty()) {
-            // Backward compatibility
-            return dbName + suffix;
-        } else {
-            return dbName + "_" + indexMetadata.getCollectionNameSuffix() + suffix;
-        }
-    }
-
     /**
      * Insert a list of variants into the given Solr collection.
      *
@@ -499,8 +466,7 @@ public class VariantSearchManager {
         if (CollectionUtils.isNotEmpty(variants)) {
             VariantToSolrBeanConverterTask converterTask = new VariantToSolrBeanConverterTask(
                     solrManager.getSolrClient().getBinder(),
-                    metadataManager,
-                    isStatsCollectionEnabled(indexMetadata));
+                    metadataManager);
 
             converterTask.pre();
             List<Pair<SolrInputDocument, SolrInputDocument>> pairs = converterTask.apply(variants);
@@ -534,7 +500,6 @@ public class VariantSearchManager {
 
         // first, create the collection if it does not exist
         createCollections(indexMetadata);
-        boolean statsCollectionEnabled = isStatsCollectionEnabled(indexMetadata);
 
         int batchSize = options.getInt(
                 VariantStorageOptions.SEARCH_LOAD_BATCH_SIZE.key(),
@@ -546,7 +511,7 @@ public class VariantSearchManager {
         ProgressLogger progressLogger = new ProgressLogger("Variants loaded in Solr:");
 
         VariantToSolrBeanConverterTask converterTask = new VariantToSolrBeanConverterTask(solrManager.getSolrClient().getBinder(),
-                metadataManager, statsCollectionEnabled);
+                metadataManager);
 
         ParallelTaskRunner<Variant, Pair<SolrInputDocument, SolrInputDocument>> ptr = new ParallelTaskRunner<>(
                 new VariantDBReader(variantDBIterator),
@@ -575,11 +540,11 @@ public class VariantSearchManager {
 
         waitForReplicasInSync(indexMetadata, 5, TimeUnit.MINUTES, false);
         logCollectionsStatus(indexMetadata);
-        return new VariantSearchLoadResult(count, count, 0, writer.getMainInsertedDocuments(), writer.getStatsInsertedDocuments());
+        return new VariantSearchLoadResult(count, count, 0, writer.getMainInsertedDocuments(), writer.getStatsPartialUpdatedDocuments());
     }
 
-    public boolean isStatsCollectionEnabled(SearchIndexMetadata indexMetadata) {
-        return indexMetadata.getAttributes().getBoolean(SEARCH_STATS_COLLECTION_ENABLED.key(), false);
+    public boolean isStatsFunctionalQueryEnabled(SearchIndexMetadata indexMetadata) {
+        return indexMetadata.getAttributes().getBoolean(SEARCH_STATS_FUNCTIONAL_QUERIES_ENABLED.key(), false);
     }
 
     /**
@@ -651,14 +616,8 @@ public class VariantSearchManager {
     }
 
     private SolrQuery parseQuery(SearchIndexMetadata indexMetadata, Query query, QueryOptions inputOptions) {
-        SolrQueryParser result;
-        if (isStatsCollectionEnabled(indexMetadata)) {
-            String statsCollectionName = buildStatsCollectionName(indexMetadata);
-            result = new SolrQueryParser(metadataManager, statsCollectionName);
-        } else {
-            result = new SolrQueryParser(metadataManager);
-        }
-        SolrQuery solrQuery = result.parse(query, inputOptions);
+        SolrQueryParser parser = new SolrQueryParser(metadataManager, isStatsFunctionalQueryEnabled(indexMetadata));
+        SolrQuery solrQuery = parser.parse(query, inputOptions);
 
         logger.info("Solr query collection: {}", buildCollectionName(indexMetadata));
         logger.info(" - q: {}", solrQuery.getQuery());
@@ -1028,7 +987,7 @@ public class VariantSearchManager {
             Map<String, Object>  collection = (Map<String, Object>) collections.get(collectionName);
             String configName = collection.get("configName").toString();
             SearchIndexMetadata indexMetadata = newIndexMetadata(configName, true, new ObjectMap()
-                    .append(SEARCH_STATS_COLLECTION_ENABLED.key(), false));
+                    .append(SEARCH_STATS_FUNCTIONAL_QUERIES_ENABLED.key(), false));
             if (metadataManager.getProjectMetadata().getAttributes().containsKey("search.index.last.timestamp")) {
                 // If the project metadata has a "search.index.last.timestamp" attribute (old SEARCH_INDEX_LAST_TIMESTAMP),
                 // it means that the index was created before the introduction of the SearchIndexMetadata,
@@ -1053,13 +1012,10 @@ public class VariantSearchManager {
     }
 
     private SearchIndexMetadata newIndexMetadata(boolean ifNotExists) throws StorageEngineException {
-        boolean statsCollectionEnabled = options.getBoolean(SEARCH_STATS_COLLECTION_ENABLED.key(),
-                SEARCH_STATS_COLLECTION_ENABLED.defaultValue());
-        String statsCollectionSuffix = options.getString(VariantStorageOptions.SEARCH_STATS_COLLECTION_SUFFIX.key(),
-                VariantStorageOptions.SEARCH_STATS_COLLECTION_SUFFIX.defaultValue());
+        boolean statsFuncQueryEnabled = options.getBoolean(SEARCH_STATS_FUNCTIONAL_QUERIES_ENABLED.key(),
+                SEARCH_STATS_FUNCTIONAL_QUERIES_ENABLED.defaultValue());
         return newIndexMetadata(defaultConfigSet, ifNotExists, new ObjectMap()
-                .append(VariantStorageOptions.SEARCH_STATS_COLLECTION_ENABLED.key(), statsCollectionEnabled)
-                .append(VariantStorageOptions.SEARCH_STATS_COLLECTION_SUFFIX.key(), statsCollectionSuffix));
+                .append(VariantStorageOptions.SEARCH_STATS_FUNCTIONAL_QUERIES_ENABLED.key(), statsFuncQueryEnabled));
     }
 
     private SearchIndexMetadata newIndexMetadata(String configSetId, boolean ifNotExists, ObjectMap attributes)

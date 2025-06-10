@@ -120,17 +120,14 @@ public class HadoopVariantSearchDataWriter extends VariantSolrInputDocumentDataW
     }
 
     @Override
-    protected void flush(boolean mainCommit, boolean statsCommit) {
+    protected void flush() {
         try {
-            super.flush(mainCommit, statsCommit);
+            super.flush();
         } catch (Exception e) {
             onError();
             throw e;
         }
-        flush();
-    }
 
-    private void flush() {
         StopWatch stopWatch = StopWatch.createStarted();
         writer.write(rowsToUpdate);
         writer.flush();
