@@ -6,7 +6,6 @@ on:
 jobs:
   build-test-publish:
     runs-on: ${{ vars.UBUNTU_VERSION }}
-    needs: build
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
