@@ -47,7 +47,7 @@ jobs:
       artifact: build-folder
       file: |
         opencga-client-${{ needs.build-hdp.outputs.version }}.tar.gz
-        clients/R/opencgaR_${{ needs.build-hdp.outputs.version }}.tar.gz
+        dist/*.*
 
   deploy-docker-python-notebook:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop

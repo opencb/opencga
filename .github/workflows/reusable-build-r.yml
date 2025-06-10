@@ -9,14 +9,8 @@ on:
         required: true
 
 jobs:
-  build:
-    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
-    with:
-      maven_opts: -Phdp3.1 -Dopencga.war.name=opencga -Dcheckstyle.skip
-      build_folder: build-folder
-
   build-test-publish:
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.UBUNTU_VERSION }}
     needs: build
     steps:
       - name: Checkout repository
@@ -29,35 +23,17 @@ jobs:
         with:
           name: build-folder
           path: build
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_HUB_USER }}
-          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
-
       - name: Build Docker image
         run: |
-          docker build -t opencb/opencga-r-builder:dev \
-            -f opencga-app/app/cloud/docker/opencga-r-builder/Dockerfile \
-            opencga-app/app/cloud/docker/opencga-r-builder
-
-      - name: Test R CMD build inside container
-        run: |
-          docker run --rm \
-            --mount type=bind,source="${{ github.workspace }}/build/clients/R",target=/opt/opencga/R \
-            --mount type=bind,source="${{ github.workspace }}/build",target=/opt/opencga \
-            opencb/opencga-r-builder:dev \
-            R CMD build /opt/opencga/R
-
+          build_clients.sh --skip-python --skip-javascript 
       - name: Extract version from DESCRIPTION
         id: version
         run: |
           VERSION=$(grep '^Version:' build/clients/R/DESCRIPTION | cut -d' ' -f2)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-
+          ls build/
       - name: Upload built R package as artifact
         uses: actions/upload-artifact@v4
         with:
           name: opencgaR_${{ steps.version.outputs.version }}.tar.gz
-          path: build/opencgaR_${{ steps.version.outputs.version }}.tar.gz
+          path: build/dist/opencgaR_${{ steps.version.outputs.version }}.tar.gz
