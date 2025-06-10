@@ -38,7 +38,7 @@ jobs:
           path: build
       - name: Build Docker image
         run: |
-          build_clients.sh --skip-python --skip-javascript
+          ./build_clients.sh --skip-python --skip-javascript
       - name: Extract version from DESCRIPTION
         id: version
         run: |
