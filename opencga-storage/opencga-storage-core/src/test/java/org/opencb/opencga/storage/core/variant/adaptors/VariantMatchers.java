@@ -468,7 +468,7 @@ public class VariantMatchers {
     }
 
     public static Matcher<StudyEntry> withStats(final String cohortName, Matcher<? super VariantStats> subMatcher) {
-        return new FeatureMatcher<StudyEntry, VariantStats>(subMatcher, "with stats " + cohortName, "Stats") {
+        return new FeatureMatcher<StudyEntry, VariantStats>(subMatcher, "with stats from cohort '" + cohortName + "'", "Stats") {
             @Override
             protected VariantStats featureValueOf(StudyEntry actual) {
                 return actual.getStats(cohortName);
@@ -489,7 +489,7 @@ public class VariantMatchers {
         return new FeatureMatcher<VariantStats, Float>(subMatcher, "with refFreq", "REF_FREQ") {
             @Override
             protected Float featureValueOf(VariantStats actual) {
-                return actual.getRefAlleleFreq();
+                return actual.getRefAlleleFreq() == -1 ? Float.POSITIVE_INFINITY : actual.getRefAlleleFreq();
             }
         };
     }

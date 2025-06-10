@@ -399,8 +399,8 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
                 withStats("cohort1", withAlt(lt(0.3))));
 
         checkStudyQuery(new VariantQuery().includeSampleAll().study(studyMetadata.getName())
-                .cohortStatsRef("cohort1<0.1"),
-                withStats("cohort1", withRef(lt(0.1))));
+                .cohortStatsRef("cohort2<0.3"),
+                withStats("cohort2", withRef(lt(0.3))));
 
         checkStudyQuery(new VariantQuery().includeSampleAll().study(studyMetadata.getName())
                 .cohortStatsRef("cohort1>0.3"),
@@ -413,12 +413,16 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
                         withStats("cohort2", withRef(lt(0.3)))));
 
         checkStudyQuery(new VariantQuery().includeSampleAll().study(studyMetadata.getName())
-                .cohortStatsMaf("cohort1>0.1"),
-                withStats("cohort1", withMaf(gt(0.1))));
-
-        checkStudyQuery(new VariantQuery().includeSampleAll().study(studyMetadata.getName())
                 .cohortStatsMaf("cohort1<0.3"),
                 withStats("cohort1", withMaf(lt(0.3))));
+
+        checkStudyQuery(new VariantQuery().includeSampleAll().study(studyMetadata.getName())
+                .cohortStatsMaf("cohort1<0.8"),
+                withStats("cohort1", withMaf(lt(0.8))));
+
+        checkStudyQuery(new VariantQuery().includeSampleAll().study(studyMetadata.getName())
+                        .cohortStatsMaf("cohort1>0.1"),
+                withStats("cohort1", withMaf(gt(0.1))));
     }
 
     private void checkStudyQuery(Query query, Matcher<StudyEntry> studyMatcher) {

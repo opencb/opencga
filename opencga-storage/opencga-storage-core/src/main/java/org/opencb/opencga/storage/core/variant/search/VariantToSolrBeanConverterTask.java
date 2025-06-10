@@ -21,7 +21,8 @@ public class VariantToSolrBeanConverterTask implements Converter<Variant, Pair<S
     private final VariantSecondaryIndexFilter filter;
     private final boolean statsCollectionEnabled;
 
-    public VariantToSolrBeanConverterTask(DocumentObjectBinder binder, VariantStorageMetadataManager metadataManager, boolean statsCollectionEnabled) {
+    public VariantToSolrBeanConverterTask(DocumentObjectBinder binder, VariantStorageMetadataManager metadataManager,
+                                          boolean statsCollectionEnabled) {
         this.binder = binder;
         this.filter = new VariantSecondaryIndexFilter(metadataManager.getStudies());
         this.statsCollectionEnabled = statsCollectionEnabled;
@@ -32,7 +33,7 @@ public class VariantToSolrBeanConverterTask implements Converter<Variant, Pair<S
 
             for (CohortMetadata cohort : metadataManager.getCalculatedOrPartialCohorts(entry.getValue())) {
                 String cohortName = cohort.getName();
-                cohorts.put(studyName + VariantSearchUtils.FIELD_SEPARATOR + cohortName, cohort.getId());
+                cohorts.put(studyName + VariantSearchUtils.FIELD_SEPARATOR + cohortName, cohort.getSamples().size());
             }
         }
         this.converter = new VariantSearchToVariantConverter(cohorts);

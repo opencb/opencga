@@ -1024,8 +1024,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
             // We store the cohort stats:
             //    - altStats__<STUDY>__<COHORT>_AC = alternate allele count, e.g. altStats_1000G_ALL_AC=100
-            //    - altStats__<STUDY>__<COHORT>_Adiff = Missing (.) of gap alleles (non-diploid).
-            //                                        = (numSamples * 2) - Allele count
+            //    - altStats__<STUDY>__<COHORT>_GAP = Missing (.) or gap alleles (non-diploid).
+            //                                        = (numSamples * 2) - AlleleCount
             //    - altStats__<STUDY>__<COHORT> = alternate allele freq, e.g. altStats_1000G_ALL=0.02
             //    - passStats__STUDY__COHORT = pass filter freq
             if (studyEntry.getStats() != null && !studyEntry.getStats().isEmpty()) {
@@ -1033,16 +1033,29 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 for (VariantStats stats : studyStats) {
                     String cohortName = stats.getCohortId();
                     // Alternate allele frequency
-                    // AltFreq = AltAlleleCount / (2 * cohortSize) - alleleDiff
-                    // RefFreq = RefAlleleCount / (2 * cohortSize) - alleleDiff
-                    int alleleDiff = (cohortsSize.get(studyId + FIELD_SEPARATOR + cohortName) * 2) - stats.getAlleleCount();
+                    // AltFreq = AltAlleleCount / (2 * cohortSize) - alleleGap
+                    // RefFreq = RefAlleleCount / (2 * cohortSize) - alleleGap
+                    float alleleGap = (cohortsSize.get(studyId + FIELD_SEPARATOR + cohortName) * 2) - stats.getAlleleCount();
+                    float altAlleleCount = stats.getAltAlleleCount();
+                    if (altAlleleCount == 0) {
+                        // Avoid 0/0 division
+                        // Instead, have a possible -0.00...000001/0 division, which would result in -Infinity
+                        altAlleleCount = -0.0000000000000000001f;
+                    }
+                    float nonRef = stats.getAlleleCount() - stats.getRefAlleleCount();
+                    float nonFilterPass = stats.getFileCount()
+                            - stats.getFilterCount().getOrDefault(VCFConstants.PASSES_FILTERS_v4, 0);
 
                     variantSearchModel.getAltStats().put("altStats" + FIELD_SEPARATOR + studyId + FIELD_SEPARATOR + cohortName,
                             stats.getAltAlleleFreq());
                     variantSearchModel.getAltStats().put(buildStatsAltAlleleCountField(studyId, cohortName),
-                            (float) stats.getAltAlleleCount());
-                    variantSearchModel.getAltStats().put(buildStatsAlleleDiffCountField(studyId, cohortName),
-                            (float) alleleDiff);
+                            altAlleleCount);
+                    variantSearchModel.getAltStats().put(buildStatsAlleleMissGapCountField(studyId, cohortName),
+                            alleleGap);
+                    variantSearchModel.getAltStats().put(buildStatsAlleleNonRefCountField(studyId, cohortName),
+                            nonRef);
+                    variantSearchModel.getAltStats().put(buildStatsNonFilterPassCountField(studyId, cohortName),
+                            nonFilterPass);
 
                     // PASS filter frequency
                     if (MapUtils.isNotEmpty(stats.getFilterFreq())
@@ -1075,16 +1088,30 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         }
     }
 
-    public static String buildStatsAlleleDiffCountField(String studyId, String cohortName) {
-        return "altStats" + FIELD_SEPARATOR + studyId + FIELD_SEPARATOR + cohortName + FIELD_SEPARATOR + "Adiff";
+    public static String buildStatsAlleleMissGapCountField(String studyId, String cohortName) {
+        return "altStats" + FIELD_SEPARATOR + studyId + FIELD_SEPARATOR + cohortName + FIELD_SEPARATOR + "GAP";
+    }
+
+    public static String buildStatsAlleleNonRefCountField(String studyId, String cohortName) {
+        return "altStats" + FIELD_SEPARATOR + studyId + FIELD_SEPARATOR + cohortName + FIELD_SEPARATOR + "NR";
     }
 
     public static String buildStatsAltAlleleCountField(String studyId, String cohortName) {
         return "altStats" + FIELD_SEPARATOR + studyId + FIELD_SEPARATOR + cohortName + FIELD_SEPARATOR + "AC";
     }
 
+    public static String buildStatsNonFilterPassCountField(String studyId, String cohortName) {
+        return "altStats" + FIELD_SEPARATOR + studyId + FIELD_SEPARATOR + cohortName + FIELD_SEPARATOR + "NP";
+    }
+
     public static String studyIdToSearchModel(String studyId) {
-        return studyId.substring(studyId.lastIndexOf(':') + 1);
+        int idx = studyId.lastIndexOf(':');
+        if (idx < 0) {
+            // No separator found, return the original studyId
+            return studyId;
+        } else {
+            return studyId.substring(idx + 1);
+        }
     }
 
     /**
