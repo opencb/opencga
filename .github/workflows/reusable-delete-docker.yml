@@ -15,7 +15,7 @@ on:
 jobs:
   delete-docker:
     name: Execute delete docker image
-    runs-on: ubuntu-22.04
+    runs-on: ${{ vars.UBUNTU_VERSION }}
     steps:
       - uses: actions/checkout@v4
         with:
