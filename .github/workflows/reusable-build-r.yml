@@ -2,11 +2,6 @@ name: Build and Test opencga-r-builder Docker Image
 
 on:
   workflow_call:
-    secrets:
-      DOCKER_HUB_USER:
-        required: true
-      DOCKER_HUB_PASSWORD:
-        required: true
 
 jobs:
 
@@ -38,7 +33,7 @@ jobs:
           path: build
       - name: Build Docker image
         run: |
-          build_clients.sh --skip-python --skip-javascript
+          ./build_clients.sh --skip-python --skip-javascript
       - name: Extract version from DESCRIPTION
         id: version
         run: |
