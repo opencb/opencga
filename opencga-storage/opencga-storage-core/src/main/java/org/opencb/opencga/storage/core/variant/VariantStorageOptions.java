@@ -114,7 +114,7 @@ public enum VariantStorageOptions implements ConfigurationOption {
     SEARCH_LOAD_BATCH_SIZE("search.load.batchSize", 100),
     SEARCH_LOAD_THREADS("search.load.numThreads", 2),
     SEARCH_LOAD_SHARDS_PER_NODE("search.load.shardsPerNode", 1),             // Number of shards to create per solr node
-    SEARCH_STATS_COLLECTION_ENABLED("search.stats.collection.enabled", true),
+    SEARCH_STATS_COLLECTION_ENABLED("search.stats.collection.enabled", false),
     SEARCH_STATS_COLLECTION_SUFFIX("search.stats.collection.suffix", "_stats"),
 
     APPROXIMATE_COUNT_SAMPLING_SIZE("approximateCountSamplingSize", 1000),

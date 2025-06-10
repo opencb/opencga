@@ -56,11 +56,13 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
     private final Logger logger = LoggerFactory.getLogger(VariantSearchToVariantConverter.class);
     private final Set<VariantField> includeFields;
+    private final Map<String, Integer> cohortsSize = new HashMap<>();
 
     private final VariantAnnotationModelUtils variantAnnotationModelUtils = new VariantAnnotationModelUtils();
 
-    public VariantSearchToVariantConverter() {
+    public VariantSearchToVariantConverter(Map<String, Integer> cohortsSize) {
         this.includeFields = null;
+        this.cohortsSize.putAll(cohortsSize);
     }
 
     public VariantSearchToVariantConverter(Set<VariantField> includeFields) {
@@ -1021,20 +1023,31 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             String studyId = studyIdToSearchModel(studyEntry.getStudyId());
 
             // We store the cohort stats:
-            //    - altStats__STUDY__COHORT = alternate allele freq, e.g. altStats_1000G_ALL=0.02
+            //    - altStats__<STUDY>__<COHORT>_AC = alternate allele count, e.g. altStats_1000G_ALL_AC=100
+            //    - altStats__<STUDY>__<COHORT>_Adiff = Missing (.) of gap alleles (non-diploid).
+            //                                        = (numSamples * 2) - Allele count
+            //    - altStats__<STUDY>__<COHORT> = alternate allele freq, e.g. altStats_1000G_ALL=0.02
             //    - passStats__STUDY__COHORT = pass filter freq
-            if (studyEntry.getStats() != null && studyEntry.getStats().size() > 0) {
+            if (studyEntry.getStats() != null && !studyEntry.getStats().isEmpty()) {
                 List<VariantStats> studyStats = studyEntry.getStats();
                 for (VariantStats stats : studyStats) {
-                    String cohortId = stats.getCohortId();
+                    String cohortName = stats.getCohortId();
                     // Alternate allele frequency
-                    variantSearchModel.getAltStats().put("altStats" + FIELD_SEPARATOR + studyId + FIELD_SEPARATOR + cohortId,
+                    // AltFreq = AltAlleleCount / (2 * cohortSize) - alleleDiff
+                    // RefFreq = RefAlleleCount / (2 * cohortSize) - alleleDiff
+                    int alleleDiff = (cohortsSize.get(studyId + FIELD_SEPARATOR + cohortName) * 2) - stats.getAlleleCount();
+
+                    variantSearchModel.getAltStats().put("altStats" + FIELD_SEPARATOR + studyId + FIELD_SEPARATOR + cohortName,
                             stats.getAltAlleleFreq());
+                    variantSearchModel.getAltStats().put(buildStatsAltAlleleCountField(studyId, cohortName),
+                            (float) stats.getAltAlleleCount());
+                    variantSearchModel.getAltStats().put(buildStatsAlleleDiffCountField(studyId, cohortName),
+                            (float) alleleDiff);
 
                     // PASS filter frequency
                     if (MapUtils.isNotEmpty(stats.getFilterFreq())
                             && stats.getFilterFreq().containsKey(VCFConstants.PASSES_FILTERS_v4)) {
-                        variantSearchModel.getPassStats().put("passStats" + FIELD_SEPARATOR + studyId + FIELD_SEPARATOR + cohortId,
+                        variantSearchModel.getPassStats().put("passStats" + FIELD_SEPARATOR + studyId + FIELD_SEPARATOR + cohortName,
                                 stats.getFilterFreq().get(VCFConstants.PASSES_FILTERS_v4));
                     }
                 }
@@ -1060,6 +1073,14 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 }
             }
         }
+    }
+
+    public static String buildStatsAlleleDiffCountField(String studyId, String cohortName) {
+        return "altStats" + FIELD_SEPARATOR + studyId + FIELD_SEPARATOR + cohortName + FIELD_SEPARATOR + "Adiff";
+    }
+
+    public static String buildStatsAltAlleleCountField(String studyId, String cohortName) {
+        return "altStats" + FIELD_SEPARATOR + studyId + FIELD_SEPARATOR + cohortName + FIELD_SEPARATOR + "AC";
     }
 
     public static String studyIdToSearchModel(String studyId) {

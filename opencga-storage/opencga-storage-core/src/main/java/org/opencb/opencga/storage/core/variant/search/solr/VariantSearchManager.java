@@ -66,7 +66,6 @@ import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchModel;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
-import org.opencb.opencga.storage.core.variant.search.VariantSecondaryIndexFilter;
 import org.opencb.opencga.storage.core.variant.search.VariantToSolrBeanConverterTask;
 import org.opencb.opencga.storage.core.variant.search.solr.models.SolrCollectionStatus;
 import org.opencb.opencga.storage.core.variant.search.solr.models.SolrCoreIndexStatus;
@@ -130,21 +129,20 @@ public class VariantSearchManager {
         String statsCollection;
         if (statsCollectionEnabled) {
             statsCollection = buildStatsCollectionName(indexMetadata);
-            create(statsCollection, indexMetadata.getConfigSetId(), null, false, null);
+            createCollection(statsCollection, indexMetadata.getConfigSetId(), null, false, null);
             solrManager.checkExists(statsCollection);
         } else {
             statsCollection = null;
         }
-
-        create(mainCollection, indexMetadata.getConfigSetId(), statsCollection);
+        createCollection(mainCollection, indexMetadata.getConfigSetId(), statsCollection, true, 2);
         solrManager.checkExists(mainCollection);
     }
 
-    private String create(String collection, String configSet, String withCollection) throws VariantSearchException {
-        return create(collection, configSet, withCollection, true, 2);
+    private String createCollection(String collection, String configSet, String withCollection) throws VariantSearchException {
+        return createCollection(collection, configSet, withCollection, true, 2);
     }
 
-    private String create(String collection, String configSet, String withCollection, boolean sharding, Integer maxReplicas)
+    private String createCollection(String collection, String configSet, String withCollection, boolean sharding, Integer maxReplicas)
             throws VariantSearchException {
         try {
             if (this.existsCollection(collection)) {
@@ -501,7 +499,7 @@ public class VariantSearchManager {
         if (CollectionUtils.isNotEmpty(variants)) {
             VariantToSolrBeanConverterTask converterTask = new VariantToSolrBeanConverterTask(
                     solrManager.getSolrClient().getBinder(),
-                    new VariantSecondaryIndexFilter(metadataManager.getStudies()),
+                    metadataManager,
                     isStatsCollectionEnabled(indexMetadata));
 
             converterTask.pre();
@@ -548,7 +546,7 @@ public class VariantSearchManager {
         ProgressLogger progressLogger = new ProgressLogger("Variants loaded in Solr:");
 
         VariantToSolrBeanConverterTask converterTask = new VariantToSolrBeanConverterTask(solrManager.getSolrClient().getBinder(),
-                new VariantSecondaryIndexFilter(metadataManager.getStudies()), statsCollectionEnabled);
+                metadataManager, statsCollectionEnabled);
 
         ParallelTaskRunner<Variant, Pair<SolrInputDocument, SolrInputDocument>> ptr = new ParallelTaskRunner<>(
                 new VariantDBReader(variantDBIterator),

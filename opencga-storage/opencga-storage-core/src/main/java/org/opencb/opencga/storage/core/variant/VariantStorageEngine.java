@@ -822,7 +822,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                             getOptions().getBoolean(VariantStorageOptions.SEARCH_STATS_COLLECTION_ENABLED.key(),
                                     VariantStorageOptions.SEARCH_STATS_COLLECTION_ENABLED.defaultValue()));
                     shouldCreateNewIndex = true;
-                } else {
+                } else if (collectionExists) {
                     String collectionName = variantSearchManager.buildCollectionName(indexMetadata);
                     SolrCollectionStatus status = variantSearchManager.getCollectionStatus(collectionName);
                     int numShards = status.getShards().size();

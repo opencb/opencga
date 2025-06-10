@@ -77,6 +77,7 @@ public class VariantSolrInputDocumentDataWriter implements DataWriter<Pair<SolrI
             mainInsertedDocuments += mainDocuments.size();
         }
         if (!statsDocuments.isEmpty()) {
+            // TODO: If statsWriter is null, should update the main collection
             statsCommit = statsWriter.write(statsDocuments);
             statsInsertedDocuments += statsDocuments.size();
         }
@@ -94,7 +95,7 @@ public class VariantSolrInputDocumentDataWriter implements DataWriter<Pair<SolrI
                 if (!mainCommit) {
                     mainWriter.commit();
                 }
-                if (!statsCommit) {
+                if (!statsCommit && statsWriter != null) {
                     statsWriter.commit();
                 }
             }
@@ -119,6 +120,10 @@ public class VariantSolrInputDocumentDataWriter implements DataWriter<Pair<SolrI
             statsWriter.close();
         }
         return true;
+    }
+
+    public int getInsertedDocuments() {
+        return insertedDocuments;
     }
 
     public int getMainInsertedDocuments() {

@@ -5,12 +5,16 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.SolrInputField;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 public class SolrInputDocumentDataWriter implements DataWriter<SolrInputDocument> {
 
@@ -23,11 +27,50 @@ public class SolrInputDocumentDataWriter implements DataWriter<SolrInputDocument
     private long addTimeMs = 0;
     private long commitTimeMs = 0;
     private final Logger logger = LoggerFactory.getLogger(SolrInputDocumentDataWriter.class);
+    private final String uniqueKey;
+
+    private static final String SET = "set";
 
     public SolrInputDocumentDataWriter(String collection, SolrClient solrClient, int insertBatchSize) {
+        this(collection, solrClient, insertBatchSize, "id");
+    }
+
+    public SolrInputDocumentDataWriter(String collection, SolrClient solrClient, int insertBatchSize, String uniqueKey) {
         this.collection = collection;
         this.solrClient = solrClient;
         this.insertBatchSize = insertBatchSize;
+        this.uniqueKey = uniqueKey;
+    }
+
+    public final boolean update(List<SolrInputDocument> batch) {
+        batch.forEach(doc -> {
+            for (String fieldName : new ArrayList<>(doc.getFieldNames())) {
+                SolrInputField field = doc.getField(fieldName);
+                if (fieldName.equals(uniqueKey)) {
+                    // uniqueKey field should not be modified.
+                    continue;
+                } else {
+                    toSetValue(field);
+                }
+            }
+        });
+        return write(batch);
+    }
+
+    public static void toSetValue(SolrInputField field) {
+        field.setValue(Collections.singletonMap(SET, field.getValue()));
+    }
+
+    public static <T> T readSetValue(SolrInputField field) {
+        if (isSetValue(field)) {
+            return (T) ((Map<?, ?>) field.getValue()).get(SET);
+        } else {
+            throw new IllegalArgumentException("Field value is not a Map: " + field.getValue());
+        }
+    }
+
+    public static boolean isSetValue(SolrInputField field) {
+        return field.getValue() instanceof Map && ((Map<?, ?>) field.getValue()).containsKey(SET);
     }
 
     @Override

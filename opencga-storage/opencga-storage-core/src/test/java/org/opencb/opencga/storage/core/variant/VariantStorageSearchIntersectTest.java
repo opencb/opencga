@@ -20,10 +20,12 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.DataResult;
@@ -44,6 +46,7 @@ import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -175,6 +178,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
 
         solr.configure(this.variantStorageEngine);
         this.variantStorageEngine.secondaryIndex();
+        solr.printCollections(Paths.get(outputUri));
     }
 
     @Test
@@ -380,21 +384,51 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
         QueryOptions options = new QueryOptions(USE_SEARCH_INDEX, VariantStorageEngine.UseSearchIndex.YES);
         VariantQueryResult<Variant> result = variantStorageEngine.get(query, options);
         assertThat(result, everyResult(allVariants, withStudy(studyMetadata.getName())));
+        checkStudyQuery(new VariantQuery().includeSampleAll().study(studyMetadata.getName()),
+                with("study", StudyEntry::getStudyId, is(studyMetadata.getName())));
     }
 
     @Test
     public void testSearchFilterByStudyAndStats() throws Exception {
-        Query query = new VariantQuery().includeSampleAll().study(studyMetadata.getName())
-                .cohortStatsAlt("cohort1>0.1");
+        checkStudyQuery(new VariantQuery().includeSampleAll().study(studyMetadata.getName())
+                .cohortStatsAlt("cohort1>0.1"),
+                withStats("cohort1", withAlt(gt(0.1))));
+
+        checkStudyQuery(new VariantQuery().includeSampleAll().study(studyMetadata.getName())
+                .cohortStatsAlt("cohort1<0.3"),
+                withStats("cohort1", withAlt(lt(0.3))));
+
+        checkStudyQuery(new VariantQuery().includeSampleAll().study(studyMetadata.getName())
+                .cohortStatsRef("cohort1<0.1"),
+                withStats("cohort1", withRef(lt(0.1))));
+
+        checkStudyQuery(new VariantQuery().includeSampleAll().study(studyMetadata.getName())
+                .cohortStatsRef("cohort1>0.3"),
+                withStats("cohort1", withRef(gt(0.3))));
+
+        checkStudyQuery(new VariantQuery().includeSampleAll().study(studyMetadata.getName())
+                        .cohortStatsAlt("cohort1>0.1")
+                        .cohortStatsRef("cohort2<0.3"),
+                allOf(withStats("cohort1", withAlt(gt(0.1))),
+                        withStats("cohort2", withRef(lt(0.3)))));
+
+        checkStudyQuery(new VariantQuery().includeSampleAll().study(studyMetadata.getName())
+                .cohortStatsMaf("cohort1>0.1"),
+                withStats("cohort1", withMaf(gt(0.1))));
+
+        checkStudyQuery(new VariantQuery().includeSampleAll().study(studyMetadata.getName())
+                .cohortStatsMaf("cohort1<0.3"),
+                withStats("cohort1", withMaf(lt(0.3))));
+    }
+
+    private void checkStudyQuery(Query query, Matcher<StudyEntry> studyMatcher) {
         // Use search index to filter by study and stats
         QueryOptions options = new QueryOptions(USE_SEARCH_INDEX, VariantStorageEngine.UseSearchIndex.YES);
         VariantQueryResult<Variant> result = variantStorageEngine.get(query, options);
-        System.out.println(result.getResults().size());
-        System.out.println(result.getNumMatches());
+
         assertThat(result.getSource(), containsString("solr"));
         assertThat(result, everyResult(allVariants, allOf(
                 withStudy(studyMetadata.getName(),
-                        withStats("cohort1", withAlt(gt(0.1)))))));
-
+                        studyMatcher))));
     }
 }

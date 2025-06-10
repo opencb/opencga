@@ -10,6 +10,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
+import org.opencb.opencga.storage.core.variant.search.solr.SolrInputDocumentDataWriter;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSolrInputDocumentDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseDataWriter;
@@ -90,13 +91,22 @@ public class HadoopVariantSearchDataWriter extends VariantSolrInputDocumentDataW
                     document = pair.getRight();
                 }
 
-                Collection<Object> studies = document.getFieldValues("studies");
+                String attrId;
+                Collection<Object> studies;
+                if (SolrInputDocumentDataWriter.isSetValue(document.getField("attr_id"))) {
+                    attrId = SolrInputDocumentDataWriter.readSetValue(document.getField("attr_id")).toString();
+                    studies = SolrInputDocumentDataWriter.readSetValue(document.getField("studies"));
+                } else {
+                    attrId = document.getFieldValue("attr_id").toString();
+                    studies = document.getFieldValues("studies");
+                }
+
                 byte[] bytes = studiesColumnMap.computeIfAbsent(studies, list -> {
                     Set<Integer> studyIds = list.stream().map(o -> studiesMap.get(o.toString())).collect(Collectors.toSet());
                     return PhoenixHelper.toBytes(studyIds, PIntegerArray.INSTANCE);
                 });
 
-                Variant variant = new Variant(document.getFieldValue("attr_id").toString());
+                Variant variant = new Variant(attrId);
                 variants.add(variant);
                 byte[] row = VariantPhoenixKeyFactory.generateVariantRowKey(variant);
                 variantRows.add(row);

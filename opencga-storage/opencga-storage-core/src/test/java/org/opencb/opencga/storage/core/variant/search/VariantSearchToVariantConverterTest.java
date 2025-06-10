@@ -7,6 +7,8 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantScore;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
+import java.util.Collections;
+
 import static org.junit.Assert.*;
 
 @Category(ShortTests.class)
@@ -16,7 +18,7 @@ public class VariantSearchToVariantConverterTest {
 
     @Before
     public void setUp() throws Exception {
-        converter = new VariantSearchToVariantConverter();
+        converter = new VariantSearchToVariantConverter(Collections.emptyMap());
     }
 
     @Test

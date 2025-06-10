@@ -53,8 +53,12 @@ public final class PendingVariantsFileCleaner implements DataWriter<Variant> {
     public void abort() {
         // Something went wrong. Do not delete any more files
         if (!pathsToClean.isEmpty()) {
-            logger.info("Aborting pending variants file cleaner. Avoid deleting {} pending files", pathsToClean.size());
+            logger.info("Aborting pending variants file cleaner. Avoid deleting {} pending files. Already deleted {} files",
+                    pathsToClean.size(), deletedFiles);
             pathsToClean.clear();
+        } else {
+            logger.info("Aborting pending variants file cleaner. No pending files to delete. Already deleted {} files",
+                    deletedFiles);
         }
     }
 

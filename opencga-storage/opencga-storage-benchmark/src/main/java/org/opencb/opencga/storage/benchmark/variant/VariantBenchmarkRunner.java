@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.benchmark.variant;
 
-import com.beust.jcommander.MissingCommandException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.base.Throwables;
@@ -89,9 +88,11 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
                 break;
             case RANDOM:
                 if (StringUtils.isEmpty(queries)) {
-                    throw new MissingCommandException("Please provide execution queries for dynamic mode.");
+                    throw new IllegalArgumentException("Please provide execution queries for dynamic mode.");
+//                    readRandomQueriesFromFile(dataDir, queryFile);
+                } else {
+                    queriesList = Arrays.asList(queries.split(";"));
                 }
-                queriesList = Arrays.asList(queries.split(";"));
                 break;
             default:
                 throw new IllegalArgumentException("Unknown mode " + mode);
