@@ -29,6 +29,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.ClinicalTsvAnnotationLoader;
 import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.rga.AuxiliarRgaAnalysis;
+import org.opencb.opencga.analysis.clinical.rga.RgaAnalysis;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
@@ -231,7 +232,7 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
             put(CancerTieringInterpretationAnalysis.ID, "clinical " + CancerTieringInterpretationAnalysis.ID + "-run");
             put(ExomiserInterpretationAnalysis.ID, "clinical " + ExomiserInterpretationAnalysis.ID + "-run");
 
-            put(ParamConstants.ID, "clinical " + ParamConstants.ID + "-run");
+            put(RgaAnalysis.ID, "clinical " + RgaAnalysis.ID + "-run");
             put(AuxiliarRgaAnalysis.ID, "clinical " + AuxiliarRgaAnalysis.ID + "-run");
             put(ClinicalTsvAnnotationLoader.ID, "clinical tsv-load");
 

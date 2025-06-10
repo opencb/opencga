@@ -8,6 +8,7 @@ import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.opencga.analysis.clinical.ClinicalTsvAnnotationLoader;
 import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.rga.AuxiliarRgaAnalysis;
+import org.opencb.opencga.analysis.clinical.rga.RgaAnalysis;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
@@ -15,6 +16,7 @@ import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysis;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.models.clinical.RgaAnalysisParams;
 import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.BasicVariantQueryOptions;
 
 import java.util.List;
@@ -287,10 +289,10 @@ public class ClinicalCommandOptions {
         public String outdir;
     }
 
-    @Parameters(commandNames = {RgaSecondaryIndexCommandOptions.RGA_INDEX_RUN_COMMAND}, commandDescription = ParamConstants.RGA_INDEX_DESCRIPTION)
+    @Parameters(commandNames = {RgaSecondaryIndexCommandOptions.RGA_INDEX_RUN_COMMAND}, commandDescription = RgaAnalysis.DESCRIPTION)
     public class RgaSecondaryIndexCommandOptions extends GeneralCliOptions.StudyOption {
 
-        public static final String RGA_INDEX_RUN_COMMAND = ParamConstants.ID + "-run";
+        public static final String RGA_INDEX_RUN_COMMAND = RgaAnalysis.ID + "-run";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -298,7 +300,7 @@ public class ClinicalCommandOptions {
         @ParametersDelegate
         public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
 
-        @Parameter(names = {"--" + ParamConstants.FILE}, description = "Json file containing the KnockoutByIndividual information",
+        @Parameter(names = {"--" + RgaAnalysisParams.FILE}, description = "Json file containing the KnockoutByIndividual information",
                 required = true, arity = 1)
         public String file;
 
