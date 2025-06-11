@@ -17,8 +17,10 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.client.ClientSession;
+import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
+import com.mongodb.client.model.Variable;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
@@ -31,6 +33,7 @@ import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
+import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
@@ -942,6 +945,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
 
     private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        Query nestedQuery = extractNestedQuery(query, INTERPRETATION.key());
         Bson bson = parseQuery(query, user);
         QueryOptions qOptions;
         if (options != null) {
@@ -957,9 +961,40 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
         qOptions = removeInnerProjections(qOptions, QueryParams.INTERPRETATION.key());
         qOptions = removeInnerProjections(qOptions, QueryParams.SECONDARY_INTERPRETATIONS.key());
 
-        logger.debug("Clinical analysis query : {}", bson.toBsonDocument());
         MongoDBCollection collection = getQueryCollection(query, clinicalCollection, archiveClinicalCollection, deletedClinicalCollection);
-        return collection.iterator(clientSession, bson, null, null, qOptions);
+
+        if (nestedQuery.isEmpty()) {
+            logger.debug("Clinical analysis query : {}", bson.toBsonDocument());
+            return collection.iterator(clientSession, bson, null, null, qOptions);
+        } else {
+            filterQueryOptionsToIncludeKeys(qOptions, Collections.singletonList(INTERPRETATION.key()));
+            Bson mainProjection = MongoDBQueryUtils.getProjection(qOptions);
+            Bson nestedBsonQuery = dbAdaptorFactory.getInterpretationDBAdaptor().parseQuery(nestedQuery);
+            QueryOptions nestedOptions = extractNestedOptions(options, INTERPRETATION.key());
+            List<Variable<String>> let = new ArrayList<>();
+            let.add(new Variable<>("intUid", "$interpretation.uid"));
+            let.add(new Variable<>("intVersion", "$interpretation.version"));
+
+            List<Bson> pipeline = new ArrayList<>();
+            pipeline.add(Aggregates.match(new Document("$and", Arrays.asList(
+                    new Document("$expr", new Document("$and", Arrays.asList(
+                            new Document("$eq", Arrays.asList("$uid", "$$intUid")),
+                            new Document("$eq", Arrays.asList("$version", "$$intVersion"))
+                    ))),
+                    nestedBsonQuery)
+            )));
+            logger.debug("Clinical analysis query : {}", bson.toBsonDocument());
+            for (Bson bsonPipeline : pipeline) {
+                logger.debug("Pipeline stage : {}", bsonPipeline.toBsonDocument());
+            }
+            if (!nestedOptions.isEmpty()) {
+                Bson projection = MongoDBQueryUtils.getProjection(nestedOptions);
+                pipeline.add(projection);
+            }
+
+            return collection.leftJoinFind(clientSession, bson, mainProjection, OrganizationMongoDBAdaptorFactory.INTERPRETATION_COLLECTION,
+                    let, pipeline, INTERPRETATION.key(), true, null, qOptions);
+        }
     }
 
     @Override

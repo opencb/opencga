@@ -62,9 +62,8 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SamplePermissions;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.study.*;
-import org.opencb.opencga.core.models.study.configuration.ClinicalConsent;
 import org.opencb.opencga.core.models.study.configuration.*;
-import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.models.study.configuration.ClinicalConsent;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
@@ -952,6 +951,47 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         assertEquals(attributes.get("a"), clinical.getAttributes().get("a"));
         assertEquals(attributes.get("b"), clinical.getAttributes().get("b"));
     }
+
+    @Test
+    public void leftJoinQueryTest() throws CatalogException {
+        Individual individual = new Individual()
+                .setId("proband")
+                .setSamples(Collections.singletonList(new Sample().setId("sample")));
+        catalogManager.getIndividualManager().create(studyFqn, individual, QueryOptions.empty(), ownerToken);
+
+        List<ClinicalVariant> findingList = new ArrayList<>();
+        VariantAvro variantAvro = new VariantAvro("id1", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
+        ClinicalVariantEvidence evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method");
+        ClinicalVariant cv1 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
+                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
+        findingList.add(cv1);
+        variantAvro = new VariantAvro("id2", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
+        ClinicalVariant cv2 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, new ClinicalDiscussion(),
+                ClinicalVariant.Status.NOT_REVIEWED, Collections.emptyList(), null);
+        findingList.add(cv2);
+
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("Clinical")
+                .setType(ClinicalAnalysis.Type.SINGLE)
+                .setProband(individual)
+                .setInterpretation(new Interpretation()
+                        .setPrimaryFindings(findingList)
+                );
+        ClinicalAnalysis clinical = catalogManager.getClinicalAnalysisManager().create(studyFqn, clinicalAnalysis, INCLUDE_RESULT, ownerToken).first();
+        assertEquals(1, clinical.getVersion());
+        assertEquals(1, clinical.getInterpretation().getVersion());
+
+        Query query = new Query()
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), clinical.getId())
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key() + "." + InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS_ID.key(), "id3");
+        OpenCGAResult<ClinicalAnalysis> result = catalogManager.getClinicalAnalysisManager().search(studyFqn, query, QueryOptions.empty(), ownerToken);
+        assertEquals(0, result.getNumResults());
+
+        query.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key() + "." + InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS_ID.key(), "id2");
+        result = catalogManager.getClinicalAnalysisManager().search(studyFqn, query, QueryOptions.empty(), ownerToken);
+        assertEquals(1, result.getNumResults());
+    }
+
 
     @Test
     public void versioningTest() throws CatalogException {

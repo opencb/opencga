@@ -611,6 +611,34 @@ public abstract class MongoDBAdaptor extends AbstractDBAdaptor {
     }
 
     /**
+     * Extract a new Query object containing only the key:value pairs of another nested object.
+     *
+     * @param query Original Query object.
+     * @param key   Nested key by which to extract the new query.
+     * @return new Query object.
+     */
+    protected Query extractNestedQuery(Query query, String key) {
+        Query nestedQuery = new Query();
+        if (query == null || query.isEmpty()) {
+            return nestedQuery;
+        }
+
+        String projectionKey = key.endsWith(".") ? key : key + ".";
+        Iterator<Map.Entry<String, Object>> iterator = query.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<String, Object> entry = iterator.next();
+            String field = entry.getKey();
+            if (field.startsWith(projectionKey)) {
+                String newField = field.replace(projectionKey, "");
+                nestedQuery.put(newField, entry.getValue());
+                iterator.remove();
+            }
+        }
+
+        return nestedQuery;
+    }
+
+    /**
      * Removes any other entity projections made. This method should be called by any entity containing inner entities:
      * Family -> Individual; Individual -> Sample; File -> Sample; Cohort -> Sample
      *
@@ -618,7 +646,7 @@ public abstract class MongoDBAdaptor extends AbstractDBAdaptor {
      * @param projectionKey Projection key to be removed from the query options.
      * @return new QueryOptions after removing the inner projectionKey projections.
      */
-    protected QueryOptions removeInnerProjections(QueryOptions options, String projectionKey) {
+    protected QueryOptions  removeInnerProjections(QueryOptions options, String projectionKey) {
         QueryOptions queryOptions = ParamUtils.defaultObject(options, QueryOptions::new);
 
         if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
