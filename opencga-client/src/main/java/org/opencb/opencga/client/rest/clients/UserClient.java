@@ -20,8 +20,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.*;
-import org.opencb.opencga.core.models.admin.DeprecatedGroupSyncParams;
-import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.ConfigUpdateParams;
 import org.opencb.opencga.core.models.user.FilterUpdateParams;
@@ -121,18 +119,6 @@ public class UserClient extends AbstractParentClient {
     public RestResponse<User> search(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         return execute("users", null, null, null, "search", params, GET, User.class);
-    }
-
-    /**
-     * Synchronise a group of users from an authentication origin with a group in a study from catalog.
-     * @param data JSON containing the parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Group> sync(DeprecatedGroupSyncParams data) throws ClientException {
-        ObjectMap params = new ObjectMap();
-        params.put("body", data);
-        return execute("users", null, null, null, "sync", params, POST, Group.class);
     }
 
     /**

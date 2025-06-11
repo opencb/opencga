@@ -216,7 +216,6 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         usersSubCommands.addCommand("login", usersCommandOptions.loginCommandOptions);
         usersSubCommands.addCommand("password", usersCommandOptions.passwordCommandOptions);
         usersSubCommands.addCommand("search", usersCommandOptions.searchCommandOptions);
-        usersSubCommands.addCommand("sync", usersCommandOptions.syncCommandOptions);
         usersSubCommands.addCommand("info", usersCommandOptions.infoCommandOptions);
         usersSubCommands.addCommand("configs", usersCommandOptions.configsCommandOptions);
         usersSubCommands.addCommand("configs-update", usersCommandOptions.updateConfigsCommandOptions);
@@ -291,6 +290,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         studiesSubCommands.addCommand("info", studiesCommandOptions.infoCommandOptions);
         studiesSubCommands.addCommand("audit-search", studiesCommandOptions.searchAuditCommandOptions);
         studiesSubCommands.addCommand("groups", studiesCommandOptions.groupsCommandOptions);
+        studiesSubCommands.addCommand("groups-sync", studiesCommandOptions.syncGroupsCommandOptions);
         studiesSubCommands.addCommand("groups-update", studiesCommandOptions.updateGroupsCommandOptions);
         studiesSubCommands.addCommand("groups-users-update", studiesCommandOptions.updateGroupsUsersCommandOptions);
         studiesSubCommands.addCommand("notes-create", studiesCommandOptions.createNotesCommandOptions);
@@ -303,6 +303,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         studiesSubCommands.addCommand("templates-upload", studiesCommandOptions.uploadTemplatesCommandOptions);
         studiesSubCommands.addCommand("templates-delete", studiesCommandOptions.deleteTemplatesCommandOptions);
         studiesSubCommands.addCommand("update", studiesCommandOptions.updateCommandOptions);
+        studiesSubCommands.addCommand("users-sync", studiesCommandOptions.syncUsersCommandOptions);
         studiesSubCommands.addCommand("variablesets", studiesCommandOptions.variableSetsCommandOptions);
         studiesSubCommands.addCommand("variable-sets-update", studiesCommandOptions.updateVariableSetsCommandOptions);
         studiesSubCommands.addCommand("variable-sets-variables-update", studiesCommandOptions.updateVariableSetsVariablesCommandOptions);

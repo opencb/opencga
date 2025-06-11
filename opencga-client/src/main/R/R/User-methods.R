@@ -24,7 +24,6 @@
 #' | login | /{apiVersion}/users/login | body |
 #' | password | /{apiVersion}/users/password | body[*] |
 #' | search | /{apiVersion}/users/search | include, exclude, limit, skip, count, organization, id, authenticationId |
-#' | sync | /{apiVersion}/users/sync | body[*] |
 #' | info | /{apiVersion}/users/{users}/info | include, exclude, organization, users[*] |
 #' | configs | /{apiVersion}/users/{user}/configs | user[*], name |
 #' | updateConfigs | /{apiVersion}/users/{user}/configs/update | user[*], action, body[*] |
@@ -80,12 +79,6 @@ setMethod("userClient", "OpencgaR", function(OpencgaR, filterId, user, users, en
         #' @param authenticationId Authentication origin ID.
         search=fetchOpenCGA(object=OpencgaR, category="users", categoryId=NULL, subcategory=NULL, subcategoryId=NULL,
                 action="search", params=params, httpMethod="GET", as.queryParam=NULL, ...),
-
-        #' @section Endpoint /{apiVersion}/users/sync:
-        #' Synchronise a group of users from an authentication origin with a group in a study from catalog.
-        #' @param data JSON containing the parameters.
-        sync=fetchOpenCGA(object=OpencgaR, category="users", categoryId=NULL, subcategory=NULL, subcategoryId=NULL,
-                action="sync", params=params, httpMethod="POST", as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/users/{users}/info:
         #' Return the user information including its projects and studies.

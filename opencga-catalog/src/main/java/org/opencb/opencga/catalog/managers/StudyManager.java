@@ -986,6 +986,7 @@ public class StudyManager extends AbstractManager {
      * @param studyStr            Study id or fqn.
      * @param groupSyncParams     Parameters to synchronise the group with an external group.
      * @param token               JWT token of the user performing the operation.
+     * @return                    OpenCGAResult with the created group.
      * @throws CatalogException   If the group already exists, or if the user does not have permissions to perform the operation.
      */
     public OpenCGAResult<Group> syncGroup(String studyStr, GroupSyncParams groupSyncParams, String token) throws CatalogException {
@@ -1043,8 +1044,8 @@ public class StudyManager extends AbstractManager {
                 OpenCGAResult<Group> result = catalogManager.getStudyManager().createGroup(studyStr, group, token);
                 logger.info("Group '{}' created and synchronised with external group", localGroupId);
                 auditManager.audit(organizationId, userId, Enums.Action.IMPORT_EXTERNAL_GROUP_OF_USERS, Enums.Resource.STUDY,
-                        group.getId(), "", study.getFqn(), study.getUuid(), auditParams
-                        , new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+                        group.getId(), "", study.getFqn(), study.getUuid(), auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
                 return result;
             } catch (CatalogException e) {
                 throw new CatalogException("Could not register group '" + localGroupId + "' in study '" + studyStr + "': " + e.getMessage(),

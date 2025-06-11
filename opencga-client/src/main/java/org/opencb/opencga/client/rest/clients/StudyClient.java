@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.client.rest.clients;
 
+import java.lang.Object;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
@@ -29,6 +30,7 @@ import org.opencb.opencga.core.models.notes.NoteUpdateParams;
 import org.opencb.opencga.core.models.study.CustomGroup;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.GroupCreateParams;
+import org.opencb.opencga.core.models.study.GroupSyncParams;
 import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.core.models.study.PermissionRule;
 import org.opencb.opencga.core.models.study.Study;
@@ -192,6 +194,19 @@ public class StudyClient extends AbstractParentClient {
     public RestResponse<CustomGroup> groups(String study, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         return execute("studies", study, null, null, "groups", params, GET, CustomGroup.class);
+    }
+
+    /**
+     * Associate a remote group from an authentication origin with a local group in a study.
+     * @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+     * @param data JSON containing the parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Group> syncGroups(String study, GroupSyncParams data) throws ClientException {
+        ObjectMap params = new ObjectMap();
+        params.put("body", data);
+        return execute("studies", study, "groups", null, "sync", params, POST, Group.class);
     }
 
     /**
@@ -395,6 +410,19 @@ public class StudyClient extends AbstractParentClient {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("studies", study, null, null, "update", params, POST, Study.class);
+    }
+
+    /**
+     * Synchronize all users from the remote groups of a given authentication origin.
+     * @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+     * @param authenticationOriginId Authentication origin ID.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Object> syncUsers(String study, String authenticationOriginId) throws ClientException {
+        ObjectMap params = new ObjectMap();
+        params.putIfNotNull("authenticationOriginId", authenticationOriginId);
+        return execute("studies", study, "users", null, "sync", params, POST, Object.class);
     }
 
     /**

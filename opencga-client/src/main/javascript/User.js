@@ -84,14 +84,6 @@ export default class User extends OpenCGAParentClass {
         return this._get("users", null, null, null, "search", params);
     }
 
-    /** Synchronise a group of users from an authentication origin with a group in a study from catalog
-    * @param {Object} data - JSON containing the parameters.
-    * @returns {Promise} Promise object in the form of RestResponse instance.
-    */
-    sync(data) {
-        return this._post("users", null, null, null, "sync", data);
-    }
-
     /** Return the user information including its projects and studies
     * @param {String} users - Comma separated list of user IDs.
     * @param {Object} [params] - The Object containing the following optional parameters:

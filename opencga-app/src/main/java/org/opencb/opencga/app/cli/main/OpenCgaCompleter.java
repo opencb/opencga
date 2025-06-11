@@ -69,7 +69,7 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> usersList = asList( "anonymous","create","login","password","search","sync","info","configs","configs-update","filters","password-reset","update")
+    private List<Candidate> usersList = asList( "anonymous","create","login","password","search","info","configs","configs-update","filters","password-reset","update")
             .stream()
             .map(Candidate::new)
             .collect(toList());
@@ -94,7 +94,7 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> studiesList = asList( "acl-update","create","search","acl","info","audit-search","groups","groups-update","groups-users-update","notes-create","notes-search","notes-delete","notes-update","permissionrules","permission-rules-update","templates-run","templates-upload","templates-delete","update","variablesets","variable-sets-update","variable-sets-variables-update")
+    private List<Candidate> studiesList = asList( "acl-update","create","search","acl","info","audit-search","groups","groups-sync","groups-update","groups-users-update","notes-create","notes-search","notes-delete","notes-update","permissionrules","permission-rules-update","templates-run","templates-upload","templates-delete","update","users-sync","variablesets","variable-sets-update","variable-sets-variables-update")
             .stream()
             .map(Candidate::new)
             .collect(toList());
