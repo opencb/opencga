@@ -58,6 +58,15 @@ public class HBaseVariantTableNameGenerator {
         pendingSecondaryIndexPruneTableName = getPendingSecondaryIndexPruneTableName(namespace, this.dbName);
     }
 
+    public static HBaseVariantTableNameGenerator fromVariantsTable(String variantTableName, Configuration conf) {
+        String dbName = getDBNameFromVariantsTableName(variantTableName);
+        return new HBaseVariantTableNameGenerator(conf.get(HadoopVariantStorageOptions.HBASE_NAMESPACE.key(), ""), dbName);
+    }
+
+    public String getDbName() {
+        return dbName;
+    }
+
     public String getVariantTableName() {
         return variantTableName;
     }

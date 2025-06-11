@@ -27,7 +27,6 @@ import java.util.stream.Collectors;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 @Category(LongTests.class)
-@Ignore
 public class HadoopVariantAnnotationManagerTest extends VariantAnnotationManagerTest implements HadoopVariantStorageTest {
 
     @ClassRule
@@ -48,7 +47,7 @@ public class HadoopVariantAnnotationManagerTest extends VariantAnnotationManager
                     .append(VariantStorageOptions.STATS_CALCULATE.key(), false));
 
             // Update pending variants
-            new TestMRExecutor().run(DiscoverPendingVariantsDriver.class,
+            getMrExecutor().run(DiscoverPendingVariantsDriver.class,
                     DiscoverPendingVariantsDriver.buildArgs(engine.getDBAdaptor().getVariantTable(), AnnotationPendingVariantsDescriptor.class, new ObjectMap()),
                     "Prepare variants to annotate");
 

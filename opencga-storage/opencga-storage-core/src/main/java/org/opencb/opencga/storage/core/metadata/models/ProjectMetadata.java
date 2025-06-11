@@ -4,6 +4,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import org.opencb.cellbase.core.models.DataRelease;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 
 import java.util.*;
@@ -40,6 +41,14 @@ public class ProjectMetadata {
             this.saved = saved;
         }
 
+        public VariantAnnotationSets(VariantAnnotationSets other) {
+            this.current = other.current == null ? null : new VariantAnnotationMetadata(other.current);
+            this.saved = new ArrayList<>(other.saved.size());
+            for (VariantAnnotationMetadata saved : other.saved) {
+                this.saved.add(new VariantAnnotationMetadata(saved));
+            }
+        }
+
         public VariantAnnotationMetadata getCurrent() {
             return current;
         }
@@ -70,6 +79,24 @@ public class ProjectMetadata {
             this.saved = saved;
             return this;
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            VariantAnnotationSets that = (VariantAnnotationSets) o;
+            return Objects.equals(current, that.current)
+                    && Objects.equals(saved, that.saved);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(current, saved);
+        }
     }
 
     public static class VariantAnnotationMetadata {
@@ -94,6 +121,19 @@ public class ProjectMetadata {
             this.sourceVersion = sourceVersion != null ? sourceVersion : new ArrayList<>();
             this.dataRelease = dataRelease;
             this.privateSources = privateSources;
+        }
+
+        public VariantAnnotationMetadata(VariantAnnotationMetadata other) {
+            this.id = other.id;
+            this.name = other.name;
+            this.creationDate = other.creationDate;
+            this.annotator = other.annotator;
+            this.sourceVersion = new ArrayList<>(other.sourceVersion.size());
+            for (ObjectMap source : other.sourceVersion) {
+                this.sourceVersion.add(new ObjectMap(source));
+            }
+            this.dataRelease = other.dataRelease == null ? null : JacksonUtils.copySafe(other.dataRelease, DataRelease.class);
+            this.privateSources = other.privateSources != null ? new ArrayList<>(other.privateSources) : null;
         }
 
         public int getId() {
@@ -157,6 +197,28 @@ public class ProjectMetadata {
         public VariantAnnotationMetadata setPrivateSources(List<String> privateSources) {
             this.privateSources = privateSources;
             return this;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            VariantAnnotationMetadata that = (VariantAnnotationMetadata) o;
+            return id == that.id && Objects.equals(name, that.name)
+                    && Objects.equals(creationDate, that.creationDate)
+                    && Objects.equals(annotator, that.annotator)
+                    && Objects.equals(sourceVersion, that.sourceVersion)
+                    && Objects.equals(dataRelease, that.dataRelease)
+                    && Objects.equals(privateSources, that.privateSources);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(id, name, creationDate, annotator, sourceVersion, dataRelease, privateSources);
         }
     }
 
@@ -253,9 +315,18 @@ public class ProjectMetadata {
         this.counters = counters != null ? counters : new HashMap<>();
     }
 
+    public ProjectMetadata(ProjectMetadata other) {
+        this.species = other.species;
+        this.assembly = other.assembly;
+        this.dataRelease = other.dataRelease;
+        this.release = other.release;
+        this.attributes = other.attributes != null ? new ObjectMap(other.attributes) : new ObjectMap();
+        this.annotation = other.annotation != null ? new VariantAnnotationSets(other.annotation) : new VariantAnnotationSets();
+        this.counters = other.counters != null ? new HashMap<>(other.counters) : new HashMap<>();
+    }
+
     public ProjectMetadata copy() {
-        return new ProjectMetadata(species, assembly, dataRelease, release, new ObjectMap(attributes), new HashMap<>(counters),
-                annotation);
+        return new ProjectMetadata(this);
     }
 
     public String getSpecies() {
@@ -321,4 +392,25 @@ public class ProjectMetadata {
         return this;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        ProjectMetadata that = (ProjectMetadata) o;
+        return release == that.release && Objects.equals(species, that.species)
+                && Objects.equals(assembly, that.assembly)
+                && Objects.equals(dataRelease, that.dataRelease)
+                && Objects.equals(annotation, that.annotation)
+                && Objects.equals(counters, that.counters)
+                && Objects.equals(attributes, that.attributes);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(species, assembly, dataRelease, release, annotation, counters, attributes);
+    }
 }

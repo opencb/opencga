@@ -410,8 +410,8 @@ public class HBaseManager implements AutoCloseable {
                     LOGGER.info("Splitting table '{}' at '{}'", tableName, Bytes.toStringBinary(expectedSplit));
                     admin.split(tableName, expectedSplit);
                     regionInfo = getRegionInfo(admin, tableName, expectedSplit);
-                    int getRegionInfoAttempts = 10;
-                    while (regionInfo == null) {
+                    int getRegionInfoAttempts = 20;
+                    while (regionInfo == null || regionInfo.isOffline()) {
                         try {
                             Thread.sleep(200);
                         } catch (InterruptedException e) {

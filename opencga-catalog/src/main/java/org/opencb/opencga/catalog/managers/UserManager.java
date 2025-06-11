@@ -305,9 +305,8 @@ public class UserManager extends AbstractManager {
 
     @Deprecated
     public void syncAllUsersOfExternalGroup(String organizationId, String study, String authOrigin, String token) throws CatalogException {
-        if (!OPENCGA.equals(authenticationFactory.getUserId(organizationId, authOrigin, token))) {
-            throw new CatalogAuthorizationException("Only the root user can perform this action");
-        }
+        JwtPayload payload = validateToken(token);
+        authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, payload.getUserId());
 
 
     }
@@ -394,9 +393,7 @@ public class UserManager extends AbstractManager {
                 .append("sync", sync)
                 .append("token", token);
         try {
-            if (!OPENCGA.equals(authenticationFactory.getUserId(organizationId, authOrigin, token))) {
-                throw new CatalogAuthorizationException("Only the root user can perform this action");
-            }
+            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
 
             ParamUtils.checkParameter(authOrigin, "Authentication origin");
             ParamUtils.checkParameter(remoteGroup, "Remote group");
@@ -1026,8 +1023,9 @@ public class UserManager extends AbstractManager {
                 User user = authenticationFactory.getRemoteUserInformation(organizationId, authId, Collections.singletonList(userId))
                         .get(0);
                 user.setOrganization(organizationId);
-                // Generate a root token to be able to create the user even if the installation is private
-                String rootToken = authenticationFactory.createToken(organizationId, CatalogAuthenticationManager.OPENCGA, OPENCGA);
+                // Generate a super admin token to be able to create the user even if the installation is private
+                String rootToken = authenticationFactory.createToken(ParamConstants.ADMIN_ORGANIZATION,
+                        CatalogAuthenticationManager.OPENCGA, OPENCGA);
                 create(user, null, rootToken);
             }
 

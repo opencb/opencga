@@ -7,6 +7,7 @@ on:
 
 jobs:
   calculate-xetabase-branch:
+    if: github.event.review.state == 'approved'
     name: Calculate Xetabase branch
     runs-on: ubuntu-22.04
     outputs:
@@ -31,6 +32,7 @@ jobs:
           ZETTA_REPO_ACCESS_TOKEN: ${{ secrets.ZETTA_REPO_ACCESS_TOKEN }}
 
   test:
+    if: github.event.review.state == 'approved'
     name: "Run all tests before merging"
     needs: calculate-xetabase-branch
     uses: opencb/java-common-libs/.github/workflows/test-xetabase-workflow.yml@develop

@@ -72,6 +72,11 @@ public class GenomeHelperTest {
     }
 
     @Test
+    public void testGenerateSplitArchiveMultiple() throws Exception {
+        assertOrder(GenomeHelper.generateBootPreSplitsHuman(2, (chr, pos) -> keyFactory.generateBlockIdAsBytes(1, chr, pos)), 2);
+    }
+
+    @Test
     public void testGenerateSplitVariant() throws Exception {
         int expectedSize = 10;
         List<byte[]> bytes = GenomeHelper.generateBootPreSplitsHuman(expectedSize, VariantPhoenixKeyFactory::generateVariantRowKey);

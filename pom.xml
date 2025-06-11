@@ -22,7 +22,7 @@
 
     <groupId>org.opencb.opencga</groupId>
     <artifactId>opencga</artifactId>
-    <version>3.4.0-SNAPSHOT</version>
+    <version>3.6.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>OpenCGA</name>
@@ -43,12 +43,12 @@
     </modules>
 
     <properties>
-        <pyopencga.version>3.4.0_dev</pyopencga.version>
-        <opencgar.version>3.4.0_dev</opencgar.version>
-        <cellbase.version>6.4.0-SNAPSHOT</cellbase.version>
-        <biodata.version>3.4.0-SNAPSHOT</biodata.version>
-        <java-common-libs.version>5.4.0-SNAPSHOT</java-common-libs.version>
-        <iva.version>3.4.0-SNAPSHOT</iva.version>
+        <pyopencga.version>3.6.0_dev</pyopencga.version>
+        <opencgar.version>3.6.0_dev</opencgar.version>
+        <cellbase.version>6.6.0-SNAPSHOT</cellbase.version>
+        <biodata.version>3.6.0-SNAPSHOT</biodata.version>
+        <java-common-libs.version>5.6.0-SNAPSHOT</java-common-libs.version>
+        <iva.version>3.6.0-SNAPSHOT</iva.version>
 
         <oskar.version>0.2.0</oskar.version>
 
@@ -113,7 +113,7 @@
         <rxjava.version>2.2.0</rxjava.version>
         <client-runtime.version>2.1.0</client-runtime.version>
         <reactive-streams.version>1.0.0</reactive-streams.version>
-        <snappy-java.version>1.1.8.2</snappy-java.version>
+        <snappy-java.version>1.1.10.4</snappy-java.version>
         <parquet-avro.version>${parquet-common.version}</parquet-avro.version>
         <jorphan.version>5.0</jorphan.version>
 
@@ -285,6 +285,18 @@
                 <version>${project.version}</version>
                 <type>test-jar</type>
                 <scope>test</scope>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.opencb.opencga</groupId>
+                        <artifactId>${opencga-storage-hadoop-deps.artifactId-default}</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-storage-hadoop-deps-emr6.1</artifactId>
+                <version>${project.version}</version>
+                <classifier>shaded</classifier>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
