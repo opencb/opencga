@@ -102,9 +102,17 @@ public class SshMRExecutor extends MRExecutor {
             }
         });
         Runtime.getRuntime().addShutdownHook(hook);
-        int exitValue = runRemote(executable, args, env, outputStream);
+        int exitValue;
+        try {
+            exitValue = runRemote(executable, args, env, outputStream);
+        } finally {
+            try {
+                Runtime.getRuntime().removeShutdownHook(hook);
+            } catch (Exception e) {
+                logger.error("Error removing shutdown hook", e);
+            }
+        }
         boolean succeed = exitValue == 0;
-        Runtime.getRuntime().removeShutdownHook(hook);
         ObjectMap result = readResult(new String(outputStream.toByteArray(), Charset.defaultCharset()));
         try {
             if (succeed) {
