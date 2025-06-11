@@ -12,7 +12,7 @@ jobs:
   build:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      maven_opts: -Phdp3.1,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
+      maven_opts: -Phdp3.1 -Dopencga.war.name=opencga -Dcheckstyle.skip
 
   test:
     uses: ./.github/workflows/test-analysis.yml
@@ -27,11 +27,3 @@ jobs:
     with:
       cli: python3 ./build/cloud/docker/docker-build.py push --images base,workflow --tag ${{ github.ref_name }}
     secrets: inherit
-
-#  deploy-python:
-#    uses: opencb/java-common-libs/.github/workflows/deploy-python-workflow.yml@develop
-#    needs: build
-#    with:
-#      cli: ./clients/python/python-build.sh push
-#      artifact: build-folder
-#    secrets: inherit

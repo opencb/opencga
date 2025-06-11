@@ -1,0 +1,21 @@
+name: Build clients for opencga
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-clients:
+    runs-on: ${{ vars.UBUNTU_VERSION }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: '10'
+      - name: Build clients
+        run: |
+          chmod +x build_clients.sh 
+          ./build_clients.sh
+      - name: Upload clients folder as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: clients
+          path: build/dist

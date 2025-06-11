@@ -11,7 +11,7 @@ jobs:
   build-hdp:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      maven_opts: -P hdp3.1,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
+      maven_opts: -P hdp3.1 -Dopencga.war.name=opencga -Dcheckstyle.skip
       build_folder: build-folder
 
   # Add the deploy-docker-hdp job that depends on the build-hdp job
@@ -47,7 +47,7 @@ jobs:
       artifact: build-folder
       file: |
         opencga-client-${{ needs.build-hdp.outputs.version }}.tar.gz
-        clients/R/opencgaR_${{ needs.build-hdp.outputs.version }}.tar.gz
+        dist/*.*
 
   deploy-docker-python-notebook:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
@@ -61,7 +61,7 @@ jobs:
   build-hdi:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      maven_opts: -P hdi5.1,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
+      maven_opts: -P hdi5.1-Dopencga.war.name=opencga -Dcheckstyle.skip
       build_folder: build-folder-hdi
 
   deploy-docker-hdi:
@@ -76,7 +76,7 @@ jobs:
   build-emr:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      maven_opts: -P emr6.1,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
+      maven_opts: -P emr6.1 -Dopencga.war.name=opencga -Dcheckstyle.skip
       build_folder: build-folder-emr
 
   deploy-docker-emr:
@@ -91,7 +91,7 @@ jobs:
   build-emr613:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      maven_opts: -P emr6.13,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
+      maven_opts: -P emr6.13 -Dopencga.war.name=opencga -Dcheckstyle.skip
       build_folder: build-folder-emr613
 
   deploy-docker-emr613:
