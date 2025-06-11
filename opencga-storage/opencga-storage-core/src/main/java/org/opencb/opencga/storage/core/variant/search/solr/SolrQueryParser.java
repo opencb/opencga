@@ -50,6 +50,7 @@ import java.util.stream.Collectors;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter.*;
+import static org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter.buildStatsAlleleNonRefCountField;
 import static org.opencb.opencga.storage.core.variant.search.VariantSearchUtils.FIELD_SEPARATOR;
 
 /**
@@ -61,6 +62,8 @@ public class SolrQueryParser {
 
     private final VariantStorageMetadataManager variantStorageMetadataManager;
     private final boolean functionQueryStats;
+    // Experimental! No performance improvement seen on small datasets. Disabled by default.
+    private final boolean auxQueryStats = false;
 
     private static Map<String, String> includeMap;
 
@@ -272,28 +275,28 @@ public class SolrQueryParser {
         // in the search model: "popFreq__1000G__CEU":0.0053191,popFreq__1000G__CLM">0.0125319"
         key = ANNOT_POPULATION_ALTERNATE_FREQUENCY.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parsePopFreqValue(ANNOT_POPULATION_ALTERNATE_FREQUENCY, "popFreq", query.getString(key), "ALT", null, null));
+            filterList.addAll(parsePopFreqValue(ANNOT_POPULATION_ALTERNATE_FREQUENCY, "popFreq", query.getString(key), "ALT", null, null));
         }
 
         // MAF population frequency
         // in the search model: "popFreq__1000G__CLM":0.005319148767739534
         key = ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parsePopFreqValue(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY, "popFreq", query.getString(key), "MAF", null, null));
+            filterList.addAll(parsePopFreqValue(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY, "popFreq", query.getString(key), "MAF", null, null));
         }
 
         // REF population frequency
         // in the search model: "popFreq__1000G__CLM":0.005319148767739534
         key = ANNOT_POPULATION_REFERENCE_FREQUENCY.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parsePopFreqValue(ANNOT_POPULATION_REFERENCE_FREQUENCY, "popFreq", query.getString(key), "REF", null, null));
+            filterList.addAll(parsePopFreqValue(ANNOT_POPULATION_REFERENCE_FREQUENCY, "popFreq", query.getString(key), "REF", null, null));
         }
 
         // Stats ALT
         // In the model: "altStats__1000G__ALL"=0.02
         key = STATS_ALT.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parsePopFreqValue(STATS_ALT, "altStats", query.getString(key), "ALT", defaultStudyName,
+            filterList.addAll(parsePopFreqValue(STATS_ALT, "altStats", query.getString(key), "ALT", defaultStudyName,
                     query.getString(STUDY.key())));
         }
 
@@ -301,7 +304,7 @@ public class SolrQueryParser {
         // In the model: "altStats__1000G__ALL"=0.02
         key = STATS_MAF.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parsePopFreqValue(STATS_MAF, "altStats", query.getString(key), "MAF", defaultStudyName,
+            filterList.addAll(parsePopFreqValue(STATS_MAF, "altStats", query.getString(key), "MAF", defaultStudyName,
                     query.getString(STUDY.key())));
         }
 
@@ -309,7 +312,7 @@ public class SolrQueryParser {
         // In the model: "altStats__1000G__ALL"=0.02
         key = STATS_REF.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parsePopFreqValue(STATS_REF, "altStats", query.getString(key), "REF", defaultStudyName,
+            filterList.addAll(parsePopFreqValue(STATS_REF, "altStats", query.getString(key), "REF", defaultStudyName,
                     query.getString(STUDY.key())));
         }
 
@@ -317,7 +320,7 @@ public class SolrQueryParser {
         // In the model: "passStats__1000G__ALL">0.2
         key = STATS_PASS_FREQ.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parsePopFreqValue(STATS_PASS_FREQ, "passStats", query.getString(key), "", defaultStudyName,
+            filterList.addAll(parsePopFreqValue(STATS_PASS_FREQ, "passStats", query.getString(key), "", defaultStudyName,
                     query.getString(STUDY.key())));
         }
 
@@ -903,7 +906,7 @@ public class SolrQueryParser {
      * @param studies      True if multiple studies are present joined by , (i.e., OR logical operation), only for STATS
      * @return             The string with the boolean conditions
      */
-    private String parsePopFreqValue(VariantQueryParam param, String field, String value, String type, String defaultStudy,
+    private List<String> parsePopFreqValue(VariantQueryParam param, String field, String value, String type, String defaultStudy,
                                      String studies) {
         // In Solr, range queries can be inclusive or exclusive of the upper and lower bounds:
         //    - Inclusive range queries are denoted by square brackets.
@@ -943,7 +946,8 @@ public class SolrQueryParser {
                 }
             }
 
-            List<String> list = new ArrayList<>(values.size());
+            List<String> filters = new ArrayList<>(values.size());
+            List<String> auxFilters = new ArrayList<>(values.size());
             for (String v : values) {
                 KeyOpValue<String, String> keyOpValue = parseKeyOpValue(v);
                 String studyPop = keyOpValue.getKey();
@@ -972,7 +976,7 @@ public class SolrQueryParser {
                         addOr = true;
                     }
                     // concat expression, e.g.: value:[0 TO 12]
-                    list.add(getRange(field + FIELD_SEPARATOR + study + FIELD_SEPARATOR, pop, op, numValue, addOr));
+                    filters.add(getRange(field + FIELD_SEPARATOR + study + FIELD_SEPARATOR, pop, op, numValue, addOr));
                 } else if (!functionQueryStats) {
                     // Backwards compatibility for altStats and passStats
 
@@ -982,7 +986,7 @@ public class SolrQueryParser {
                     numValue = fixedFreqValue[1];
 
                     // concat expression, e.g.: value:[0 TO 12]
-                    list.add(getRange(field + FIELD_SEPARATOR + study + FIELD_SEPARATOR, pop, op, numValue, addOr));
+                    filters.add(getRange(field + FIELD_SEPARATOR + studyIdToSearchModel(study) + FIELD_SEPARATOR, pop, op, numValue, addOr));
 
                 } else {
                     String cohort = pop;
@@ -1004,6 +1008,38 @@ public class SolrQueryParser {
                         switch (type) {
                             case "ALT":
                                 functionQuery = altFreqF(study, cohortMetadata);
+                                if (auxQueryStats) {
+                                    // Add extra FQ query for optimization
+                                    // (missingAllelesOrGap == 0 AND alternateAlleles < $expectedAlleles) OR missingAllelesOrGap > 0
+                                    float expectedAlleles = Float.parseFloat(numValue) * cohortMetadata.getSamples().size() * 2;
+                                    String range; // "[X TO Y]";
+                                    switch (op) {
+                                        case "<":
+                                        case "<<":
+                                            range = "[* TO " + expectedAlleles + "}";
+                                            break;
+                                        case "<=":
+                                        case "<<=":
+                                            range = "[* TO " + expectedAlleles + "]";
+                                            break;
+                                        case ">":
+                                        case ">>":
+                                            range = "{" + expectedAlleles + " TO *]";
+                                            break;
+                                        case ">=":
+                                        case ">>=":
+                                            range = "[" + expectedAlleles + " TO *]";
+                                            break;
+                                        default:
+                                            throw new IllegalArgumentException("Invalid operator '" + op + "' for field " + field
+                                                    + ". Valid values are: <, <=, >, >=.");
+                                    }
+                                    String cohortName = cohortMetadata.getName();
+                                    String altAlleleCount = buildStatsAltAlleleCountField(studyIdToSearchModel(study), cohortName);
+                                    String missingAllelesOrGap = buildStatsAlleleMissGapCountField(studyIdToSearchModel(study), cohortName);
+                                    auxFilters.add("(" + missingAllelesOrGap + ":0 AND " + altAlleleCount + ":" + range + ")"
+                                            + " OR " + missingAllelesOrGap + ":[1 TO *]");
+                                }
                                 break;
                             case "REF":
                                 functionQuery = refFreqF(study, cohortMetadata);
@@ -1020,7 +1056,7 @@ public class SolrQueryParser {
                                 .append(getFrangeQuery(op, Float.parseFloat(numValue)))
                                 .append(" v='").append(functionQuery).append("'}");
 
-                        list.add(sb.toString());
+                        filters.add(sb.toString());
                     } else if (field.equals("passStats")) {
                         // TODO: Implement this method
                         throw new IllegalArgumentException("Unsupported field: " + field
@@ -1031,25 +1067,33 @@ public class SolrQueryParser {
                 }
             }
 
-            StringBuilder sb = new StringBuilder();
-            if (list.isEmpty()) {
-                return "";
+            List<String> filtersToReturn = new ArrayList<>(2);
+            if (!filters.isEmpty()) {
+                filtersToReturn.add(concatFilters(filters, logicalComparator));
             }
-            if (list.size() == 1) {
-                sb.append(list.get(0));
-            } else {
-                for (int i = 0; i < list.size(); i++) {
-                    String s = list.get(i);
-                    if (i != 0) {
-                        sb.append(logicalComparator);
-                    }
-                    sb.append("(").append(s).append(")");
-                }
+            if (!auxFilters.isEmpty()) {
+                filtersToReturn.add(concatFilters(auxFilters, logicalComparator));
             }
-            return sb.toString();
+            return filtersToReturn;
         } else {
-            return "";
+            return Collections.emptyList();
         }
+    }
+
+    private static String concatFilters(List<String> filters, String logicalComparator) {
+        StringBuilder sb = new StringBuilder();
+        if (filters.size() == 1) {
+            sb.append(filters.get(0));
+        } else {
+            for (int i = 0; i < filters.size(); i++) {
+                String s = filters.get(i);
+                if (i != 0) {
+                    sb.append(logicalComparator);
+                }
+                sb.append("(").append(s).append(")");
+            }
+        }
+        return sb.toString();
     }
 
     /**

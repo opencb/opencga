@@ -391,8 +391,8 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
     @Test
     public void testSearchFilterByStudyAndStats() throws Exception {
         checkStudyQuery(new VariantQuery().includeSampleAll().study(studyMetadata.getName())
-                .cohortStatsAlt("cohort1>0.1"),
-                withStats("cohort1", withAlt(gt(0.1))));
+                .cohortStatsAlt("cohort1>0.3"),
+                withStats("cohort1", withAlt(gt(0.3))));
 
         checkStudyQuery(new VariantQuery().includeSampleAll().study(studyMetadata.getName())
                 .cohortStatsAlt("cohort1<0.3"),
