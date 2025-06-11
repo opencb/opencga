@@ -8,6 +8,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.exec.Command;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
+import org.opencb.opencga.storage.core.io.plain.StringDataReader;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -26,6 +27,8 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.WALKER_DOCKER_MAX_BYTES_PER_MAP;
 
 @Category(LongTests.class)
 public class HadoopVariantWalkerTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
@@ -112,6 +115,33 @@ public class HadoopVariantWalkerTest extends VariantStorageBaseTest implements H
         String cmdPython1 = "python variant_walker.py walker_example Cut --length 30";
         variantStorageEngine.getOptions().put(StreamVariantMapper.DOCKER_PRUNE_OPTS, " --filter label!=opencga_scope='test'");
         variantStorageEngine.walkData(outdir.resolve("variant4.txt.gz"), VariantWriterFactory.VariantOutputFormat.JSON, new Query(), new QueryOptions(), dockerImage, cmdPython1);
+
+        // Ensure that the docker image is not pruned
+        Command dockerImages = new Command(new String[]{"docker", "images", "--filter", "label=opencga_scope=test"}, Collections.emptyMap());
+        dockerImages.run();
+        assertEquals(0, dockerImages.getExitValue());
+        assertEquals(2, dockerImages.getOutput().split("\n").length);
+    }
+
+    @Test
+    public void exportDockerMultipleRestarts() throws Exception {
+        URI outdir = newOutputUri();
+
+        String cmdPython1 = "python variant_walker.py walker_example Echo";
+        variantStorageEngine.getOptions().put(StreamVariantMapper.DOCKER_PRUNE_OPTS, " --filter label!=opencga_scope='test'");
+        // Force multiple restarts
+        variantStorageEngine.getOptions().put(WALKER_DOCKER_MAX_BYTES_PER_MAP.key(), 2*1024);
+        List<URI> result = variantStorageEngine.walkData(outdir.resolve("variant4.txt.gz"), VariantWriterFactory.VariantOutputFormat.VCF, new Query(), new QueryOptions(), dockerImage, cmdPython1);
+
+        // Check that output has only one header
+        boolean inHeader = true;
+        for (String line : new StringDataReader(Paths.get(result.get(0)))) {
+            if (line.startsWith("#")) {
+                assertTrue(inHeader);
+            } else {
+                inHeader = false;
+            }
+        }
 
         // Ensure that the docker image is not pruned
         Command dockerImages = new Command(new String[]{"docker", "images", "--filter", "label=opencga_scope=test"}, Collections.emptyMap());

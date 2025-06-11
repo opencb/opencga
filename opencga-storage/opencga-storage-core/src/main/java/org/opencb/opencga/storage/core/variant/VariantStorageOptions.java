@@ -106,6 +106,7 @@ public enum VariantStorageOptions implements ConfigurationOption {
     WALKER_DOCKER_ENV("walker.docker.env", "", true),
     WALKER_DOCKER_MOUNT("walker.docker.mount", "", true),
     WALKER_DOCKER_OPTS("walker.docker.opts", "", true),
+    WALKER_DOCKER_MAX_BYTES_PER_MAP("walker.docker.maxBytesPerMap", null, true),
 
     // Search intersect options
     INTERSECT_ACTIVE("search.intersect.active", true),                       // Allow intersect queries with the SearchEngine (Solr)
