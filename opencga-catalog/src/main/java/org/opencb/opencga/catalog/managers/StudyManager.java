@@ -27,13 +27,11 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.result.Error;
+import org.opencb.opencga.catalog.auth.authentication.azure.AuthenticationFactory;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogIOException;
+import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
@@ -44,6 +42,7 @@ import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.AclEntryList;
@@ -95,6 +94,7 @@ public class StudyManager extends AbstractManager {
 
     private final CatalogIOManager catalogIOManager;
     private final IOManagerFactory ioManagerFactory;
+    private final AuthenticationFactory authenticationFactory;
 
     public static final String MEMBERS = ParamConstants.MEMBERS_GROUP;
     public static final String ADMINS = ParamConstants.ADMINS_GROUP;
@@ -121,11 +121,12 @@ public class StudyManager extends AbstractManager {
 
     StudyManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                  DBAdaptorFactory catalogDBAdaptorFactory, IOManagerFactory ioManagerFactory, CatalogIOManager catalogIOManager,
-                 Configuration configuration) {
+                 AuthenticationFactory authenticationFactory, Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
 
         this.catalogIOManager = catalogIOManager;
         this.ioManagerFactory = ioManagerFactory;
+        this.authenticationFactory = authenticationFactory;
         logger = LoggerFactory.getLogger(StudyManager.class);
     }
 
@@ -977,6 +978,202 @@ public class StudyManager extends AbstractManager {
             }
         }
         return results;
+    }
+
+    /**
+     * Synchronise a group with an external group.
+     *
+     * @param studyStr            Study id or fqn.
+     * @param groupSyncParams     Parameters to synchronise the group with an external group.
+     * @param token               JWT token of the user performing the operation.
+     * @throws CatalogException   If the group already exists, or if the user does not have permissions to perform the operation.
+     */
+    public OpenCGAResult<Group> syncGroup(String studyStr, GroupSyncParams groupSyncParams, String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn catalogFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = catalogFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        Study study = resolveId(catalogFqn, QueryOptions.empty(), tokenPayload);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("groupSyncParams", groupSyncParams)
+                .append("token", token);
+        try {
+            authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
+
+            ParamUtils.checkObj(groupSyncParams, "Group sync parameters");
+            String authOriginId = groupSyncParams.getAuthenticationOriginId();
+            String localGroupId = groupSyncParams.getLocalGroupId();
+            String remoteGroup = groupSyncParams.getRemoteGroupId();
+            ParamUtils.checkParameter(authOriginId, "Authentication origin id");
+            ParamUtils.checkParameter(localGroupId, "Local group id");
+            ParamUtils.checkParameter(remoteGroup, "Remote group id");
+
+            // Check if the local group already exists
+            OpenCGAResult<Group> groupResult = catalogManager.getStudyManager().getGroup(studyStr, localGroupId, token);
+            if (groupResult.getNumResults() == 1) {
+                throw new CatalogException("Cannot synchronise with group " + localGroupId + ". The group already exists.");
+            }
+
+            // Check if the authentication origin exists
+            Organization organization = catalogManager.getOrganizationManager()
+                    .get(organizationId, OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION, token).first();
+            boolean authOriginExists = false;
+            for (AuthenticationOrigin authenticationOrigin : organization.getConfiguration().getAuthenticationOrigins()) {
+                if (authenticationOrigin.getId().equals(authOriginId)) {
+                    // Authentication origin exists
+                    authOriginExists = true;
+                    break;
+                }
+            }
+            if (!authOriginExists) {
+                List<String> supportedAuthOriginIds = organization.getConfiguration().getAuthenticationOrigins().stream()
+                        .map(AuthenticationOrigin::getId).collect(Collectors.toList());
+                throw new CatalogException("Cannot synchronise with group " + localGroupId + ". The authentication origin '"
+                        + authOriginId + "' does not exist in organization '" + organizationId + "'. Supported authentication origins: "
+                        + supportedAuthOriginIds);
+            }
+
+            // Create new group associating it to the remote group
+            try {
+                logger.info("Attempting to register group '{}' in study '{}'", localGroupId, study.getFqn());
+                Group.Sync groupSync = new Group.Sync(authOriginId, remoteGroup);
+                Group group = new Group(localGroupId, Collections.emptyList(), groupSync);
+                OpenCGAResult<Group> result = catalogManager.getStudyManager().createGroup(studyStr, group, token);
+                logger.info("Group '{}' created and synchronised with external group", localGroupId);
+                auditManager.audit(organizationId, userId, Enums.Action.IMPORT_EXTERNAL_GROUP_OF_USERS, Enums.Resource.STUDY,
+                        group.getId(), "", study.getFqn(), study.getUuid(), auditParams
+                        , new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+                return result;
+            } catch (CatalogException e) {
+                throw new CatalogException("Could not register group '" + localGroupId + "' in study '" + studyStr + "': " + e.getMessage(),
+                        e);
+            }
+
+        } catch (CatalogException e) {
+            auditManager.audit(organizationId, userId, Enums.Action.IMPORT_EXTERNAL_GROUP_OF_USERS, Enums.Resource.STUDY, "", "",
+                    study.getFqn(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+    }
+
+    /**
+     * Synchronise the users belonging to an external authentication origin.
+     *
+     * @param studyStr        Study id or fqn.
+     * @param authOriginId    Authentication origin id.
+     * @param token           JWT token of the user performing the operation.
+     * @return OpenCGAResult with the number of updated groups.
+     * @throws CatalogException If the user does not have permissions to perform the operation, or if there is an error retrieving the users
+     *                          from the external authentication origin.
+     */
+    public OpenCGAResult<?> syncUsers(String studyStr, String authOriginId, String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn catalogFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = catalogFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        Study study = resolveId(catalogFqn, QueryOptions.empty(), tokenPayload);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("authenticationOriginId", authOriginId)
+                .append("token", token);
+        try {
+            // Because we could potentially create users, we need to check that the user has at least organization
+            // owner or admin permissions
+            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
+
+            ParamUtils.checkParameter(authOriginId, "Authentication origin id");
+
+            // Check if the authentication origin exists
+            Organization organization = catalogManager.getOrganizationManager()
+                    .get(organizationId, OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION, token).first();
+            boolean authOriginExists = false;
+            for (AuthenticationOrigin authenticationOrigin : organization.getConfiguration().getAuthenticationOrigins()) {
+                if (authenticationOrigin.getId().equals(authOriginId)) {
+                    // Authentication origin exists
+                    authOriginExists = true;
+                    break;
+                }
+            }
+            if (!authOriginExists) {
+                List<String> supportedAuthOriginIds = organization.getConfiguration().getAuthenticationOrigins().stream()
+                        .map(AuthenticationOrigin::getId).collect(Collectors.toList());
+                throw new CatalogException("The authentication origin '" + authOriginId + "' does not exist in organization '"
+                        + organizationId + "'. Supported authentication origins: " + supportedAuthOriginIds);
+            }
+
+            OpenCGAResult<Group> allGroups = catalogManager.getStudyManager().getGroup(study.getFqn(), null, token);
+
+            int numGroupsUpdated = 0;
+            List<Event> events = new ArrayList<>();
+            for (Group group : allGroups.getResults()) {
+                if (group.getSyncedFrom() != null && group.getSyncedFrom().getAuthOrigin().equals(authOriginId)) {
+                    logger.info("Fetching users of group '{}' from authentication origin '{}'", group.getSyncedFrom().getRemoteGroup(),
+                            group.getSyncedFrom().getAuthOrigin());
+
+                    List<User> userList;
+                    try {
+                        userList = authenticationFactory.getUsersFromRemoteGroup(organizationId, group.getSyncedFrom().getAuthOrigin(),
+                                group.getSyncedFrom().getRemoteGroup());
+                    } catch (CatalogException e) {
+                        // There was some kind of issue for which we could not retrieve the group information.
+                        logger.info("Removing all users from group '{}' belonging to group '{}' in the external authentication origin",
+                                group.getId(), group.getSyncedFrom().getAuthOrigin());
+                        logger.info("Please, manually remove group '{}' if external group '{}' was removed from the authentication origin",
+                                group.getId(), group.getSyncedFrom().getAuthOrigin());
+                        catalogManager.getStudyManager().updateGroup(study.getFqn(), group.getId(), ParamUtils.BasicUpdateAction.SET,
+                                new GroupUpdateParams(Collections.emptyList()), token);
+                        events.add(new Event(Event.Type.ERROR, group.getId(), "Could not retrieve users from external group '"
+                                + group.getSyncedFrom().getRemoteGroup() + "' in authentication origin '" + group.getSyncedFrom()
+                                .getAuthOrigin() + "'. All users associated to group '" + group.getId() + "' were removed. Please,"
+                                + " manually remove group '" + group.getId() + "' if external group '"
+                                + group.getSyncedFrom().getRemoteGroup() + "' was removed from the authentication origin."));
+                        continue;
+                    }
+                    Iterator<User> iterator = userList.iterator();
+                    while (iterator.hasNext()) {
+                        User user = iterator.next();
+                        user.setOrganization(organizationId);
+                        try {
+                            catalogManager.getUserManager().create(user, null, token);
+                            logger.info("User '{}' ({}) successfully created", user.getId(), user.getName());
+                        } catch (CatalogException e) {
+                            if (!e.getMessage().contains("already exists")) {
+                                logger.warn("Could not create user '{}' ({}). {}", user.getId(), user.getName(), e.getMessage());
+                                iterator.remove();
+                                events.add(new Event(Event.Type.ERROR, group.getId(), "Could not automatically create user '"
+                                        + user.getId() + "' (" + user.getName() + "). " + e.getMessage()));
+                            }
+                        }
+                    }
+
+                    GroupUpdateParams updateParams;
+                    if (CollectionUtils.isEmpty(userList)) {
+                        logger.info("No members associated to the external group");
+                        updateParams = new GroupUpdateParams(Collections.emptyList());
+                    } else {
+                        logger.info("Associating members to the internal OpenCGA group");
+                        updateParams = new GroupUpdateParams(new ArrayList<>(userList.stream().map(User::getId)
+                                .collect(Collectors.toSet())));
+                    }
+                    catalogManager.getStudyManager().updateGroup(study.getFqn(), group.getId(), ParamUtils.BasicUpdateAction.SET,
+                            updateParams, token);
+                    numGroupsUpdated++;
+                }
+            }
+            if (numGroupsUpdated == 0) {
+                logger.info("No synced groups found in study '{}' from authentication origin '{}'", study.getFqn(), authOriginId);
+            }
+            auditManager.audit(organizationId, userId, Enums.Action.SYNC_EXTERNAL_GROUP_OF_USERS, Enums.Resource.STUDY,
+                    "", "", study.getFqn(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            return new OpenCGAResult<>(0, events, 0, Collections.emptyList(), 0, 0, numGroupsUpdated, 0, new ObjectMap());
+        } catch (CatalogException e) {
+            auditManager.audit(organizationId, userId, Enums.Action.SYNC_EXTERNAL_GROUP_OF_USERS, Enums.Resource.STUDY, "", "",
+                    study.getFqn(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
     }
 
     public OpenCGAResult<Group> createGroup(String studyStr, String groupId, List<String> users, String token) throws CatalogException {

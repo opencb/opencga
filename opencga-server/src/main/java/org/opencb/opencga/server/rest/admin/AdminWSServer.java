@@ -201,7 +201,7 @@ public class AdminWSServer extends OpenCGAWSServer {
     )
     public Response externalSync(
             @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION) @QueryParam(ParamConstants.ORGANIZATION) String organizationId,
-            @ApiParam(value = "JSON containing the parameters", required = true) GroupSyncParams syncParams
+            @ApiParam(value = "JSON containing the parameters", required = true) DeprecatedGroupSyncParams syncParams
     ) {
         try {
             // TODO: These two methods should return an OpenCGAResult containing at least the number of changes

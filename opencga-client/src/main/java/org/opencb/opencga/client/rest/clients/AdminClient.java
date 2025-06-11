@@ -21,7 +21,7 @@ import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.*;
 import org.opencb.opencga.core.models.Acl;
-import org.opencb.opencga.core.models.admin.GroupSyncParams;
+import org.opencb.opencga.core.models.admin.DeprecatedGroupSyncParams;
 import org.opencb.opencga.core.models.admin.InstallationParams;
 import org.opencb.opencga.core.models.admin.JWTParams;
 import org.opencb.opencga.core.models.admin.UserImportParams;
@@ -168,7 +168,7 @@ public class AdminClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Group> syncUsers(GroupSyncParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Group> syncUsers(DeprecatedGroupSyncParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("admin", null, "users", null, "sync", params, POST, Group.class);

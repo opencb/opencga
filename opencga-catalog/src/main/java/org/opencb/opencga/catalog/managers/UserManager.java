@@ -309,62 +309,7 @@ public class UserManager extends AbstractManager {
             throw new CatalogAuthorizationException("Only the root user can perform this action");
         }
 
-        OpenCGAResult<Group> allGroups = catalogManager.getStudyManager().getGroup(study, null, token);
 
-        boolean foundAny = false;
-        for (Group group : allGroups.getResults()) {
-            if (group.getSyncedFrom() != null && group.getSyncedFrom().getAuthOrigin().equals(authOrigin)) {
-                logger.info("Fetching users of group '{}' from authentication origin '{}'", group.getSyncedFrom().getRemoteGroup(),
-                        group.getSyncedFrom().getAuthOrigin());
-                foundAny = true;
-
-                List<User> userList;
-                try {
-                    userList = authenticationFactory.getUsersFromRemoteGroup(organizationId, group.getSyncedFrom().getAuthOrigin(),
-                            group.getSyncedFrom().getRemoteGroup());
-                } catch (CatalogException e) {
-                    // There was some kind of issue for which we could not retrieve the group information.
-                    logger.info("Removing all users from group '{}' belonging to group '{}' in the external authentication origin",
-                            group.getId(), group.getSyncedFrom().getAuthOrigin());
-                    logger.info("Please, manually remove group '{}' if external group '{}' was removed from the authentication origin",
-                            group.getId(), group.getSyncedFrom().getAuthOrigin());
-                    catalogManager.getStudyManager().updateGroup(study, group.getId(), ParamUtils.BasicUpdateAction.SET,
-                            new GroupUpdateParams(Collections.emptyList()), token);
-                    continue;
-                }
-                Iterator<User> iterator = userList.iterator();
-                while (iterator.hasNext()) {
-                    User user = iterator.next();
-                    user.setOrganization(organizationId);
-                    try {
-                        create(user, null, token);
-                        logger.info("User '{}' ({}) successfully created", user.getId(), user.getName());
-                    } catch (CatalogParameterException e) {
-                        logger.warn("Could not create user '{}' ({}). {}", user.getId(), user.getName(), e.getMessage());
-                        iterator.remove();
-                    } catch (CatalogException e) {
-                        if (!e.getMessage().contains("already exists")) {
-                            logger.warn("Could not create user '{}' ({}). {}", user.getId(), user.getName(), e.getMessage());
-                            iterator.remove();
-                        }
-                    }
-                }
-
-                GroupUpdateParams updateParams;
-                if (ListUtils.isEmpty(userList)) {
-                    logger.info("No members associated to the external group");
-                    updateParams = new GroupUpdateParams(Collections.emptyList());
-                } else {
-                    logger.info("Associating members to the internal OpenCGA group");
-                    updateParams = new GroupUpdateParams(new ArrayList<>(userList.stream().map(User::getId).collect(Collectors.toSet())));
-                }
-                catalogManager.getStudyManager().updateGroup(study, group.getId(), ParamUtils.BasicUpdateAction.SET,
-                        updateParams, token);
-            }
-        }
-        if (!foundAny) {
-            logger.info("No synced groups found in study '{}' from authentication origin '{}'", study, authOrigin);
-        }
     }
 
     public void syncAllUsersOfExternalGroup(String studyStr, String authOrigin, String token) throws CatalogException {
@@ -523,6 +468,7 @@ public class UserManager extends AbstractManager {
      * @param token          JWT token. The token should belong to the root user.
      * @throws CatalogException If any of the parameters is wrong or there is any internal error.
      */
+    @Deprecated
     public void importRemoteGroupOfUsers(String authOrigin, String remoteGroup, @Nullable String internalGroup,
                                          @Nullable String studyStr, boolean sync, String token) throws CatalogException {
         JwtPayload tokenPayload = validateToken(token);

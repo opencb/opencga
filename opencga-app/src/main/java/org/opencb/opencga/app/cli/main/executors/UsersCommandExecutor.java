@@ -1,30 +1,17 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.PrintUtils;
-import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
 import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandOptions;
-import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.UsersCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveAction;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.models.admin.GroupSyncParams;
-import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.admin.DeprecatedGroupSyncParams;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.ConfigUpdateParams;
-import org.opencb.opencga.core.models.user.FilterUpdateParams;
-import org.opencb.opencga.core.models.user.LoginParams;
 import org.opencb.opencga.core.models.user.PasswordChangeParams;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.models.user.UserCreateParams;
@@ -219,7 +206,7 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
 
         UsersCommandOptions.SyncCommandOptions commandOptions = usersCommandOptions.syncCommandOptions;
 
-        GroupSyncParams groupSyncParams = null;
+        DeprecatedGroupSyncParams groupSyncParams = null;
         if (commandOptions.jsonDataModel) {
             RestResponse<Group> res = new RestResponse<>();
             res.setType(QueryType.VOID);
@@ -227,7 +214,7 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
             return res;
         } else if (commandOptions.jsonFile != null) {
             groupSyncParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), GroupSyncParams.class);
+                    .readValue(new java.io.File(commandOptions.jsonFile), DeprecatedGroupSyncParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "authenticationOriginId", commandOptions.authenticationOriginId, true);
@@ -239,7 +226,7 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
 
             groupSyncParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), GroupSyncParams.class);
+                    .readValue(beanParams.toJson(), DeprecatedGroupSyncParams.class);
         }
         return openCGAClient.getUserClient().sync(groupSyncParams);
     }
