@@ -8,11 +8,8 @@ import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.search.VariantSearchSyncStatus;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.HBaseToVariantStatsConverter;
@@ -25,7 +22,6 @@ import java.util.Map;
 import java.util.function.Function;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
-import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.VariantColumn.*;
 
 public class SecondaryIndexPendingVariantsFileBasedDescriptor implements PendingVariantsFileBasedDescriptor {
 
@@ -36,28 +32,14 @@ public class SecondaryIndexPendingVariantsFileBasedDescriptor implements Pending
 
     @Override
     public Scan configureScan(Scan scan, VariantStorageMetadataManager metadataManager) {
-        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, TYPE.bytes());
-        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, ALLELES.bytes());
-        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, FULL_ANNOTATION.bytes());
-        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, ANNOTATION_ID.bytes());
-        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, INDEX_NOT_SYNC.bytes());
-        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, INDEX_STATS_NOT_SYNC.bytes());
-        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, INDEX_UNKNOWN.bytes());
-        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, INDEX_STUDIES.bytes());
-        for (Integer studyId : metadataManager.getStudyIds()) {
-            scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.getStudyColumn(studyId).bytes());
-            for (CohortMetadata cohort : metadataManager.getCalculatedOrPartialCohorts(studyId)) {
-                scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.getStatsColumn(studyId, cohort.getId()).bytes());
-            }
-        }
-        return scan;
+        return HadoopVariantSearchIndexUtils.configureScan(scan, metadataManager);
     }
 
     public Function<Result, Variant> getPendingEvaluatorMapper(VariantStorageMetadataManager metadataManager, boolean overwrite) {
         PendingVariantConverter converter = new PendingVariantConverter(metadataManager);
         if (overwrite) {
             // When overwriting mark all variants as pending
-            return value -> converter.convert(value, VariantStorageEngine.SyncStatus.NOT_SYNCHRONIZED);
+            return value -> converter.convert(value, VariantSearchSyncStatus.NOT_SYNCHRONIZED);
         } else {
             long ts = metadataManager.getProjectMetadata().getSecondaryAnnotationIndex()
                     .getLastStagingOrActiveIndex().getLastUpdateDateTimestamp();
@@ -80,8 +62,8 @@ public class SecondaryIndexPendingVariantsFileBasedDescriptor implements Pending
         }
 
         private Variant checkAndConvert(Result value, long ts) {
-            VariantStorageEngine.SyncStatus syncStatus = HadoopVariantSearchIndexUtils.getSyncStatusCheckStudies(ts, value);
-            if (syncStatus == VariantStorageEngine.SyncStatus.SYNCHRONIZED) {
+            VariantSearchSyncStatus syncStatus = HadoopVariantSearchIndexUtils.getSyncStatusCheckStudies(ts, value);
+            if (syncStatus == VariantSearchSyncStatus.SYNCHRONIZED) {
                 // Variant is already synchronized. Nothing to do!
                 return null;
             } else {
@@ -89,7 +71,7 @@ public class SecondaryIndexPendingVariantsFileBasedDescriptor implements Pending
             }
         }
 
-        private Variant convert(Result value, VariantStorageEngine.SyncStatus syncStatus) {
+        private Variant convert(Result value, VariantSearchSyncStatus syncStatus) {
             VariantRow variantRow = new VariantRow(value);
             Map<Integer, Map<Integer, org.opencb.biodata.models.variant.stats.VariantStats>> stats = statsConverter.convert(value);
             Variant variant = variantRow.walker().onStudy(studyId -> {

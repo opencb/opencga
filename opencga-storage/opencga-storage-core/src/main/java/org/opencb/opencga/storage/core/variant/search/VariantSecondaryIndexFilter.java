@@ -5,7 +5,6 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.commons.run.Task;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 
 import java.util.List;
@@ -25,7 +24,7 @@ public class VariantSecondaryIndexFilter implements Task<Variant, Variant> {
 
     @Override
     public List<Variant> apply(List<Variant> variants) {
-        variants.removeIf(variant -> getSyncStatus(variant) == VariantStorageEngine.SyncStatus.SYNCHRONIZED);
+        variants.removeIf(variant -> getSyncStatus(variant) == VariantSearchSyncStatus.SYNCHRONIZED);
         return variants;
     }
 
@@ -35,16 +34,16 @@ public class VariantSecondaryIndexFilter implements Task<Variant, Variant> {
      * @param variant Variant
      * @return true/false
      */
-    public VariantStorageEngine.SyncStatus getSyncStatus(Variant variant) {
+    public VariantSearchSyncStatus getSyncStatus(Variant variant) {
         if (variant.getAnnotation() != null
                 && variant.getAnnotation().getAdditionalAttributes() != null
                 && variant.getAnnotation().getAdditionalAttributes().get(GROUP_NAME.key()) != null) {
             AdditionalAttribute additionalAttribute = variant.getAnnotation().getAdditionalAttributes().get(GROUP_NAME.key());
             String syncStr = additionalAttribute.getAttribute().get(VariantField.AdditionalAttributes.INDEX_SYNCHRONIZATION.key());
             if (syncStr == null) {
-                return VariantStorageEngine.SyncStatus.NOT_SYNCHRONIZED; // No sync status, so we need to update the secondary index
+                return VariantSearchSyncStatus.NOT_SYNCHRONIZED; // No sync status, so we need to update the secondary index
             }
-            VariantStorageEngine.SyncStatus sync = VariantStorageEngine.SyncStatus.from(syncStr);
+            VariantSearchSyncStatus sync = VariantSearchSyncStatus.from(syncStr);
             switch (sync) {
                 case SYNCHRONIZED:
                 case NOT_SYNCHRONIZED:
@@ -66,23 +65,23 @@ public class VariantSecondaryIndexFilter implements Task<Variant, Variant> {
                                 allStudiesIndexed &= studies.contains(Integer.valueOf(indexedStudy));
                             }
                             if (allStudiesIndexed) {
-                                if (sync == VariantStorageEngine.SyncStatus.STUDIES_UNKNOWN_SYNC) {
-                                    return VariantStorageEngine.SyncStatus.SYNCHRONIZED;
+                                if (sync == VariantSearchSyncStatus.STUDIES_UNKNOWN_SYNC) {
+                                    return VariantSearchSyncStatus.SYNCHRONIZED;
                                 } else {
-                                    return VariantStorageEngine.SyncStatus.STATS_NOT_SYNC;
+                                    return VariantSearchSyncStatus.STATS_NOT_SYNC;
                                 }
                             }
                         }
                     }
-                    if (sync == VariantStorageEngine.SyncStatus.STUDIES_UNKNOWN_SYNC) {
-                        return VariantStorageEngine.SyncStatus.NOT_SYNCHRONIZED; // No sync status, so we need to update the secondary index
+                    if (sync == VariantSearchSyncStatus.STUDIES_UNKNOWN_SYNC) {
+                        return VariantSearchSyncStatus.NOT_SYNCHRONIZED; // No sync status, so we need to update the secondary index
                     } else {
-                        return VariantStorageEngine.SyncStatus.STATS_NOT_SYNC; // Stats not synchronized, but studies are ok
+                        return VariantSearchSyncStatus.STATS_NOT_SYNC; // Stats not synchronized, but studies are ok
                     }
                 default:
                     throw new IllegalStateException("Unknown sync status: " + sync);
             }
         }
-        return VariantStorageEngine.SyncStatus.NOT_SYNCHRONIZED; // No sync status, so we need to update the secondary index
+        return VariantSearchSyncStatus.NOT_SYNCHRONIZED; // No sync status, so we need to update the secondary index
     }
 }

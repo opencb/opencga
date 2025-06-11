@@ -20,7 +20,6 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -31,7 +30,6 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -66,6 +64,7 @@ import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchModel;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
+import org.opencb.opencga.storage.core.variant.search.VariantSearchUpdateDocument;
 import org.opencb.opencga.storage.core.variant.search.VariantToSolrBeanConverterTask;
 import org.opencb.opencga.storage.core.variant.search.solr.models.SolrCollectionStatus;
 import org.opencb.opencga.storage.core.variant.search.solr.models.SolrCoreIndexStatus;
@@ -469,13 +468,13 @@ public class VariantSearchManager {
                     metadataManager);
 
             converterTask.pre();
-            List<Pair<SolrInputDocument, SolrInputDocument>> pairs = converterTask.apply(variants);
+            List<VariantSearchUpdateDocument> documents = converterTask.apply(variants);
             converterTask.post();
 
             VariantSolrInputDocumentDataWriter writer = new VariantSolrInputDocumentDataWriter(this, indexMetadata);
             writer.open();
             writer.pre();
-            writer.write(pairs);
+            writer.write(documents);
             writer.post();
             writer.close();
         }
@@ -513,7 +512,7 @@ public class VariantSearchManager {
         VariantToSolrBeanConverterTask converterTask = new VariantToSolrBeanConverterTask(solrManager.getSolrClient().getBinder(),
                 metadataManager);
 
-        ParallelTaskRunner<Variant, Pair<SolrInputDocument, SolrInputDocument>> ptr = new ParallelTaskRunner<>(
+        ParallelTaskRunner<Variant, VariantSearchUpdateDocument> ptr = new ParallelTaskRunner<>(
                 new VariantDBReader(variantDBIterator),
                 progressLogger
                         .<Variant>asTask(d -> "up to position " + d)
@@ -540,7 +539,7 @@ public class VariantSearchManager {
 
         waitForReplicasInSync(indexMetadata, 5, TimeUnit.MINUTES, false);
         logCollectionsStatus(indexMetadata);
-        return new VariantSearchLoadResult(count, count, 0, writer.getMainInsertedDocuments(), writer.getStatsPartialUpdatedDocuments());
+        return new VariantSearchLoadResult(count, count, 0, writer.getInsertedDocuments(), writer.getPartiallyUpdatedDocuments());
     }
 
     public boolean isStatsFunctionalQueryEnabled(SearchIndexMetadata indexMetadata) {

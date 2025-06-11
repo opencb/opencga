@@ -1,17 +1,19 @@
 package org.opencb.opencga.storage.core.variant.search;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.solr.client.solrj.beans.DocumentObjectBinder;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.SolrInputField;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.commons.Converter;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.search.solr.SolrInputDocumentDataWriter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
-public class VariantToSolrBeanConverterTask implements Converter<Variant, Pair<SolrInputDocument, SolrInputDocument>> {
+public class VariantToSolrBeanConverterTask implements Converter<Variant, VariantSearchUpdateDocument> {
 
     private final VariantSearchToVariantConverter converter;
     private final DocumentObjectBinder binder;
@@ -24,11 +26,11 @@ public class VariantToSolrBeanConverterTask implements Converter<Variant, Pair<S
     }
 
     @Override
-    public List<Pair<SolrInputDocument, SolrInputDocument>> apply(List<Variant> from) {
-        List<Pair<SolrInputDocument, SolrInputDocument>> convertedBatch = new ArrayList<>(from.size());
+    public List<VariantSearchUpdateDocument> apply(List<Variant> from) {
+        List<VariantSearchUpdateDocument> convertedBatch = new ArrayList<>(from.size());
 
         for (Variant item : from) {
-            Pair<SolrInputDocument, SolrInputDocument> convert = this.convert(item);
+            VariantSearchUpdateDocument convert = this.convert(item);
             if (convert != null) {
                 convertedBatch.add(convert);
             }
@@ -38,26 +40,41 @@ public class VariantToSolrBeanConverterTask implements Converter<Variant, Pair<S
     }
 
     @Override
-    public Pair<SolrInputDocument, SolrInputDocument> convert(Variant variant) {
-        VariantStorageEngine.SyncStatus status = filter.getSyncStatus(variant);
+    public VariantSearchUpdateDocument convert(Variant variant) {
+        VariantSearchSyncStatus status = filter.getSyncStatus(variant);
+
+        List<String> studies = variant.getStudies().stream()
+                .map(StudyEntry::getStudyId)
+                .collect(Collectors.toList());
+
         switch (status) {
             case SYNCHRONIZED:
                 // Nothing to sync!
                 return null;
             case NOT_SYNCHRONIZED:
-                final SolrInputDocument mainDocument;
+                final SolrInputDocument insertDocument;
                 // Need to sync main document
                 // This should contain all the fields, including stats
-                mainDocument = binder.toSolrInputDocument(converter.convertToStorageType(variant, true, true));
+                insertDocument = binder.toSolrInputDocument(converter.convertToStorageType(variant, true, true));
 
-                return Pair.of(mainDocument, null);
+                return new VariantSearchUpdateDocument(variant, studies, insertDocument, true, status);
             case STATS_NOT_SYNC: {
-                final SolrInputDocument statsDocument;
+                final SolrInputDocument updateDocument;
                 // Need to sync stats document
                 // This should contain only the stats fields, as will be merged with the main document with partial solr updates
-                statsDocument = binder.toSolrInputDocument(converter.convertToStorageType(variant, true, false));
+                updateDocument = binder.toSolrInputDocument(converter.convertToStorageType(variant, true, false));
 
-                return Pair.of(null, statsDocument);
+                for (String fieldName : new ArrayList<>(updateDocument.getFieldNames())) {
+                    SolrInputField field = updateDocument.getField(fieldName);
+                    if (fieldName.equals("id")) {
+                        // uniqueKey field should not be modified.
+                        continue;
+                    } else {
+                        SolrInputDocumentDataWriter.toSetValue(field);
+                    }
+                }
+
+                return new VariantSearchUpdateDocument(variant, studies, updateDocument, false, status);
             }
             case STATS_NOT_SYNC_AND_STUDIES_UNKNOWN:
             case STUDIES_UNKNOWN_SYNC:

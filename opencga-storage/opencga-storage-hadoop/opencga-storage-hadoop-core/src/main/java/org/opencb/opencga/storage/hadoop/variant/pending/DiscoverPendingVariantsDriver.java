@@ -47,7 +47,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.function.Function;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.SyncStatus;
+import org.opencb.opencga.storage.core.variant.search.VariantSearchSyncStatus;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
 
 /**
@@ -273,7 +273,7 @@ public class DiscoverPendingVariantsDriver extends AbstractVariantsTableDriver {
             if (variant == null) {
                 context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, READY_VARIANTS_COUNTER).increment(1);
             } else {
-                SyncStatus syncStatus = SyncStatus.from(variant.getAnnotation().getAdditionalAttributes()
+                VariantSearchSyncStatus syncStatus = VariantSearchSyncStatus.from(variant.getAnnotation().getAdditionalAttributes()
                                 .get(GROUP_NAME.key()).getAttribute().get(VariantField.AdditionalAttributes.INDEX_SYNCHRONIZATION.key()));
                 context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, syncStatus.name()).increment(1);
                 context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, PENDING_VARIANTS_COUNTER).increment(1);

@@ -1,30 +1,25 @@
 package org.opencb.opencga.storage.hadoop.variant.search;
 
 import org.apache.commons.lang3.time.StopWatch;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.client.Mutation;
-import org.apache.hadoop.hbase.client.Put;
-import org.apache.phoenix.schema.types.PIntegerArray;
-import org.apache.solr.common.SolrInputDocument;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
-import org.opencb.opencga.storage.core.variant.search.solr.SolrInputDocumentDataWriter;
+import org.opencb.opencga.storage.core.variant.search.VariantSearchUpdateDocument;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSolrInputDocumentDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseDataWriter;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsFileCleaner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -70,7 +65,7 @@ public class HadoopVariantSearchDataWriter extends VariantSolrInputDocumentDataW
     }
 
     @Override
-    public boolean write(List<Pair<SolrInputDocument, SolrInputDocument>> batch) {
+    public boolean write(List<VariantSearchUpdateDocument> batch) {
         try {
             super.write(batch);
         } catch (Exception e) {
@@ -80,38 +75,11 @@ public class HadoopVariantSearchDataWriter extends VariantSolrInputDocumentDataW
 
         if (!batch.isEmpty()) {
             List<Mutation> mutations = new ArrayList<>(batch.size());
-            List<byte[]> variantRows = new ArrayList<>(batch.size());
             List<Variant> variants = new ArrayList<>(batch.size());
-            Map<Collection<Object>, byte[]> studiesColumnMap = new HashMap<>();
 
-            for (Pair<SolrInputDocument, SolrInputDocument> pair : batch) {
-                // For each variant, clear from pending and update INDEX_STUDIES
-                SolrInputDocument document = pair.getLeft();
-                if (document == null) {
-                    document = pair.getRight();
-                }
-
-                String attrId;
-                Collection<Object> studies;
-                if (SolrInputDocumentDataWriter.isSetValue(document.getField("attr_id"))) {
-                    attrId = SolrInputDocumentDataWriter.readSetValue(document.getField("attr_id")).toString();
-                    studies = SolrInputDocumentDataWriter.readSetValue(document.getField("studies"));
-                } else {
-                    attrId = document.getFieldValue("attr_id").toString();
-                    studies = document.getFieldValues("studies");
-                }
-
-                byte[] bytes = studiesColumnMap.computeIfAbsent(studies, list -> {
-                    Set<Integer> studyIds = list.stream().map(o -> studiesMap.get(o.toString())).collect(Collectors.toSet());
-                    return PhoenixHelper.toBytes(studyIds, PIntegerArray.INSTANCE);
-                });
-
-                Variant variant = new Variant(attrId);
-                variants.add(variant);
-                byte[] row = VariantPhoenixKeyFactory.generateVariantRowKey(variant);
-                variantRows.add(row);
-                mutations.add(new Put(row)
-                        .addColumn(family, VariantPhoenixSchema.VariantColumn.INDEX_STUDIES.bytes(), bytes));
+            for (VariantSearchUpdateDocument updateDocument : batch) {
+                variants.add(updateDocument.getVariant());
+                mutations.add(HadoopVariantSearchIndexUtils.updateSyncStatus(updateDocument, studiesMap));
             }
             variantsToClean.addAll(variants);
             rowsToUpdate.addAll(mutations);
