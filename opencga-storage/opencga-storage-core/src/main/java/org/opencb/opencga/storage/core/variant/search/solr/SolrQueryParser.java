@@ -50,7 +50,6 @@ import java.util.stream.Collectors;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter.*;
-import static org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter.buildStatsAlleleNonRefCountField;
 import static org.opencb.opencga.storage.core.variant.search.VariantSearchUtils.FIELD_SEPARATOR;
 
 /**
@@ -282,14 +281,16 @@ public class SolrQueryParser {
         // in the search model: "popFreq__1000G__CLM":0.005319148767739534
         key = ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.addAll(parsePopFreqValue(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY, "popFreq", query.getString(key), "MAF", null, null));
+            filterList.addAll(parsePopFreqValue(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY,
+                    "popFreq", query.getString(key), "MAF", null, null));
         }
 
         // REF population frequency
         // in the search model: "popFreq__1000G__CLM":0.005319148767739534
         key = ANNOT_POPULATION_REFERENCE_FREQUENCY.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.addAll(parsePopFreqValue(ANNOT_POPULATION_REFERENCE_FREQUENCY, "popFreq", query.getString(key), "REF", null, null));
+            filterList.addAll(parsePopFreqValue(ANNOT_POPULATION_REFERENCE_FREQUENCY,
+                    "popFreq", query.getString(key), "REF", null, null));
         }
 
         // Stats ALT
@@ -986,7 +987,8 @@ public class SolrQueryParser {
                     numValue = fixedFreqValue[1];
 
                     // concat expression, e.g.: value:[0 TO 12]
-                    filters.add(getRange(field + FIELD_SEPARATOR + studyIdToSearchModel(study) + FIELD_SEPARATOR, pop, op, numValue, addOr));
+                    filters.add(getRange(field + FIELD_SEPARATOR + studyIdToSearchModel(study) + FIELD_SEPARATOR,
+                            pop, op, numValue, addOr));
 
                 } else {
                     String cohort = pop;
@@ -1058,9 +1060,9 @@ public class SolrQueryParser {
 
                         filters.add(sb.toString());
                     } else if (field.equals("passStats")) {
-                        // TODO: Implement this method
-                        throw new IllegalArgumentException("Unsupported field: " + field
-                                + ". Only 'altStats' is supported for stats queries.");
+                        // concat expression, e.g.: value:[0 TO 12]
+                        filters.add(getRange(field + FIELD_SEPARATOR + studyIdToSearchModel(study) + FIELD_SEPARATOR,
+                                cohort, op, numValue, addOr));
                     } else {
                         throw new IllegalArgumentException("Unknown field: " + field);
                     }

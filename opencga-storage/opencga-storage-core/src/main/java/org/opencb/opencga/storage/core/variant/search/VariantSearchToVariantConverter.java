@@ -1058,8 +1058,6 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         altAlleleCount = -0.0000000000000000001f;
                     }
                     float nonRef = stats.getAlleleCount() - stats.getRefAlleleCount();
-                    float nonFilterPass = stats.getFileCount()
-                            - stats.getFilterCount().getOrDefault(VCFConstants.PASSES_FILTERS_v4, 0);
 
                     variantSearchModel.getAltStats().put("altStats" + FIELD_SEPARATOR + studyId + FIELD_SEPARATOR + cohortName,
                             stats.getAltAlleleFreq());
@@ -1069,15 +1067,16 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             alleleGap);
                     variantSearchModel.getAltStats().put(buildStatsAlleleNonRefCountField(studyId, cohortName),
                             nonRef);
-                    variantSearchModel.getAltStats().put(buildStatsNonFilterPassCountField(studyId, cohortName),
-                            nonFilterPass);
 
-                    // PASS filter frequency
-                    if (MapUtils.isNotEmpty(stats.getFilterFreq())
-                            && stats.getFilterFreq().containsKey(VCFConstants.PASSES_FILTERS_v4)) {
-                        variantSearchModel.getPassStats().put("passStats" + FIELD_SEPARATOR + studyId + FIELD_SEPARATOR + cohortName,
-                                stats.getFilterFreq().get(VCFConstants.PASSES_FILTERS_v4));
+                    float passFreq;
+                    if (stats.getFilterFreq() == null) {
+                        passFreq = 0f;
+                    } else {
+                        passFreq = stats.getFilterFreq().getOrDefault(VCFConstants.PASSES_FILTERS_v4, 0f);
                     }
+                    // PASS filter frequency
+                    variantSearchModel.getPassStats()
+                            .put("passStats" + FIELD_SEPARATOR + studyId + FIELD_SEPARATOR + cohortName, passFreq);
                 }
             }
 

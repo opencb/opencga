@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.variant.adaptors;
 
+import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang3.EnumUtils;
 import org.hamcrest.*;
 import org.hamcrest.core.Every;
@@ -499,6 +500,15 @@ public class VariantMatchers {
             @Override
             protected Float featureValueOf(VariantStats actual) {
                 return actual.getMaf();
+            }
+        };
+    }
+
+    public static Matcher<VariantStats> withPass(Matcher<? super Float> subMatcher) {
+        return new FeatureMatcher<VariantStats, Float>(subMatcher, "with PASS", "PASS") {
+            @Override
+            protected Float featureValueOf(VariantStats actual) {
+                return actual.getFilterFreq().getOrDefault(VCFConstants.PASSES_FILTERS_v4, 0F);
             }
         };
     }

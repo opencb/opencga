@@ -423,6 +423,14 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
         checkStudyQuery(new VariantQuery().includeSampleAll().study(studyMetadata.getName())
                         .cohortStatsMaf("cohort1>0.1"),
                 withStats("cohort1", withMaf(gt(0.1))));
+
+        checkStudyQuery(new VariantQuery().includeSampleAll().study(studyMetadata.getName())
+                        .cohortStatsPass("cohort1>0.1"),
+                withStats("cohort1", withPass(gt(0.1))));
+
+        checkStudyQuery(new VariantQuery().includeSampleAll().study(studyMetadata.getName())
+                        .cohortStatsPass("cohort1<0.6"),
+                withStats("cohort1", withPass(lt(0.6))));
     }
 
     private void checkStudyQuery(Query query, Matcher<StudyEntry> studyMatcher) {
