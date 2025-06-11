@@ -39,4 +39,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: opencgaEnterpriseR_${{ steps.version.outputs.version }}.tar.gz
-          path: build/opencgaEnterpriseR_${{ steps.version.outputs.version }}.tar.gz
+          path: build/dist/opencgaEnterpriseR_${{ steps.version.outputs.version }}.tar.gz
