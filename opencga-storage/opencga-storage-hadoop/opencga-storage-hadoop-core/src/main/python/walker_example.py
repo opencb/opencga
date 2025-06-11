@@ -6,7 +6,8 @@ class Echo(VariantWalker):
         pass
 
     def header(self, header):
-        self.write(header)
+        for line in header:
+            self.write(line)
 
     def map(self, line):
         self.write(line)
