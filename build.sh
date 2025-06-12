@@ -265,7 +265,6 @@ function build_opencga() {
   if [ "$COMMAND" == "build" ];then
       log "Compiling opencga... $(pwd)"
       mvn clean install -DskipTests -P"$STORAGE_HADOOP_DEPS" -T 2 --no-transfer-progress
-      ./build_clients.sh -b
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND opencga build FAILED!!!!!"
         print_log_summary
@@ -291,6 +290,23 @@ function build_opencga() {
         log_summary "$COMMAND opencga test Success!"
       fi
   fi
+  ## if we skip clients, we do not build them
+    if [ "$BUILD_CLIENTS" == "true" ]; then
+      cd "$OPENCGA_HOME_DIR" || exit 2
+      SKIP_CLIENTS=""
+      cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
+      if [ "$PYTHON_CLIENT" == "false" ]; then
+       SKIP_CLIENTS="--skip-python"
+      fi
+      if [ "$R_CLIENT" == "false" ]; then
+       SKIP_CLIENTS="$SKIP_CLIENTS --skip-rclient"
+      fi
+      if [ "$JAVASCRIPT_CLIENT" == "false" ]; then
+       SKIP_CLIENTS="$SKIP_CLIENTS --skip-javascript"
+      fi
+      #Do not put quotes in the following command or it will not work
+      ./build_clients.sh --skip-build-opencga $SKIP_CLIENTS
+    fi
 }
 
 # Function to build or/and test the opencga-enterprise
