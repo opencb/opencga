@@ -17,13 +17,14 @@
 package org.opencb.opencga.core.models.variant.regenie;
 
 import org.opencb.commons.annotations.DataField;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
 public class RegenieStep2WrapperParams extends ToolParams {
 
-    @DataField(id = "step1JobId", description = FieldConstants.REGENIE_STEP1_JOB_ID_DESCRIPTION)
-    private String step1JobId;
+    @DataField(id = "regenieParams", description = FieldConstants.REGENIE_OPTIONS_DESCRIPTION)
+    private ObjectMap regenieParams;
 
     @DataField(id = "dockerParams", description = FieldConstants.REGENIE_WALKER_DOCKER_NAME_DESCRIPTION)
     private RegenieDockerParams docker;
@@ -31,26 +32,26 @@ public class RegenieStep2WrapperParams extends ToolParams {
     public RegenieStep2WrapperParams() {
     }
 
-    public RegenieStep2WrapperParams(String step1JobId, RegenieDockerParams docker) {
-        this.step1JobId = step1JobId;
+    public RegenieStep2WrapperParams(ObjectMap regenieParams, RegenieDockerParams docker) {
+        this.regenieParams = regenieParams;
         this.docker = docker;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("RegenieStep2WrapperParams{");
-        sb.append("step1JobId='").append(step1JobId).append('\'');
+        sb.append("regenieParams=").append(regenieParams);
         sb.append(", docker=").append(docker);
         sb.append('}');
         return sb.toString();
     }
 
-    public String getStep1JobId() {
-        return step1JobId;
+    public ObjectMap getRegenieParams() {
+        return regenieParams;
     }
 
-    public RegenieStep2WrapperParams setStep1JobId(String step1JobId) {
-        this.step1JobId = step1JobId;
+    public RegenieStep2WrapperParams setRegenieParams(ObjectMap regenieParams) {
+        this.regenieParams = regenieParams;
         return this;
     }
 

@@ -54,6 +54,7 @@ import org.opencb.opencga.core.models.variant.SampleVariantStatsAnalysisParams;
 import org.opencb.opencga.core.models.variant.VariantExportParams;
 import org.opencb.opencga.core.models.variant.VariantStatsAnalysisParams;
 import org.opencb.opencga.core.models.variant.VariantWalkerParams;
+import org.opencb.opencga.core.models.variant.regenie.RegenieBuilderWrapperParams;
 import org.opencb.opencga.core.models.variant.regenie.RegenieDockerParams;
 import org.opencb.opencga.core.models.variant.regenie.RegenieStep1WrapperParams;
 import org.opencb.opencga.core.models.variant.regenie.RegenieStep2WrapperParams;
@@ -181,6 +182,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "query":
                 queryResponse = query();
+                break;
+            case "regenie-builder-run":
+                queryResponse = runRegenieBuilder();
                 break;
             case "regenie-step1-run":
                 queryResponse = runRegenieStep1();
@@ -1412,6 +1416,49 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getVariantClient().query(queryParams);
     }
 
+    private RestResponse<Job> runRegenieBuilder() throws Exception {
+        logger.debug("Executing runRegenieBuilder in Analysis - Variant command line");
+
+        AnalysisVariantCommandOptions.RunRegenieBuilderCommandOptions commandOptions = analysisVariantCommandOptions.runRegenieBuilderCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
+        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
+        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
+        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        RegenieBuilderWrapperParams regenieBuilderWrapperParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/regenie/builder/run"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            regenieBuilderWrapperParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), RegenieBuilderWrapperParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedMapIfNotEmpty(beanParams, "regenieFileOptions", commandOptions.regenieFileOptions, true);
+            putNestedIfNotEmpty(beanParams, "docker.name", commandOptions.dockerName, true);
+            putNestedIfNotEmpty(beanParams, "docker.tag", commandOptions.dockerTag, true);
+            putNestedIfNotEmpty(beanParams, "docker.username", commandOptions.dockerUsername, true);
+            putNestedIfNotEmpty(beanParams, "docker.password", commandOptions.dockerPassword, true);
+
+            regenieBuilderWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), RegenieBuilderWrapperParams.class);
+        }
+        return openCGAClient.getVariantClient().runRegenieBuilder(regenieBuilderWrapperParams, queryParams);
+    }
+
     private RestResponse<Job> runRegenieStep1() throws Exception {
         logger.debug("Executing runRegenieStep1 in Analysis - Variant command line");
 
@@ -1442,8 +1489,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), RegenieStep1WrapperParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "phenoFile", commandOptions.phenoFile, true);
-            putNestedMapIfNotEmpty(beanParams, "variantExportQuery", commandOptions.variantExportQuery, true);
+            putNestedIfNotEmpty(beanParams, "vcfFile", commandOptions.vcfFile, true);
+            putNestedMapIfNotEmpty(beanParams, "regenieParams", commandOptions.regenieParams, true);
             putNestedIfNotEmpty(beanParams, "docker.name", commandOptions.dockerName, true);
             putNestedIfNotEmpty(beanParams, "docker.tag", commandOptions.dockerTag, true);
             putNestedIfNotEmpty(beanParams, "docker.username", commandOptions.dockerUsername, true);
@@ -1486,7 +1533,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), RegenieStep2WrapperParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "step1JobId", commandOptions.step1JobId, true);
+            putNestedMapIfNotEmpty(beanParams, "regenieParams", commandOptions.regenieParams, true);
             putNestedIfNotEmpty(beanParams, "docker.name", commandOptions.dockerName, true);
             putNestedIfNotEmpty(beanParams, "docker.tag", commandOptions.dockerTag, true);
             putNestedIfNotEmpty(beanParams, "docker.username", commandOptions.dockerUsername, true);

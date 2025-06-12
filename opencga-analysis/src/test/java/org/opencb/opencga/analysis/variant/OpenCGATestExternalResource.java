@@ -306,7 +306,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
 
         // Regenie analysis
         Path dockerPath = Files.createDirectories(opencgaHome.resolve("analysis/regenie")).toAbsolutePath();
-        filenames = Arrays.asList("regenie_walker.py", "regenie_step1.sh", "requirements.txt", "variant_walker.py");
+        filenames = Arrays.asList("regenie_walker.py", "regenie_step1.sh", "make_bed.sh", "requirements.txt", "variant_walker.py");
         for (String filename : filenames) {
             try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/regenie/" + filename)) {
                 Files.copy(inputStream, dockerPath.resolve(filename), StandardCopyOption.REPLACE_EXISTING);

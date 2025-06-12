@@ -21,53 +21,37 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
-import java.util.Map;
+public class RegenieBuilderWrapperParams extends ToolParams {
 
-public class RegenieStep1WrapperParams extends ToolParams {
-
-    @DataField(id = "vcfFile", description = FieldConstants.REGENIE_VCF_FILE_DESCRIPTION)
-    private String vcfFile;
-
-    @DataField(id = "regenieParams", description = FieldConstants.REGENIE_OPTIONS_DESCRIPTION)
-    private ObjectMap regenieParams;
+    @DataField(id = "regenieFileOptions", description = FieldConstants.REGENIE_FILE_OPTIONS_DESCRIPTION)
+    private ObjectMap regenieFileOptions;
 
     @DataField(id = "dockerParams", description = FieldConstants.REGENIE_WALKER_DOCKER_NAME_DESCRIPTION)
     private RegenieDockerParams docker;
 
-    public RegenieStep1WrapperParams() {
+    public RegenieBuilderWrapperParams() {
     }
 
-    public RegenieStep1WrapperParams(String vcfFile, ObjectMap regenieParams, RegenieDockerParams docker) {
-        this.vcfFile = vcfFile;
-        this.regenieParams = regenieParams;
+    public RegenieBuilderWrapperParams(ObjectMap regenieFileOptions, RegenieDockerParams docker) {
+        this.regenieFileOptions = regenieFileOptions;
         this.docker = docker;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("RegenieStep1WrapperParams{");
-        sb.append("vcfFile='").append(vcfFile).append('\'');
-        sb.append(", regenieParams=").append(regenieParams);
+        final StringBuilder sb = new StringBuilder("RegenieBuilderWrapperParams{");
+        sb.append("regenieFileOptions=").append(regenieFileOptions);
         sb.append(", docker=").append(docker);
         sb.append('}');
         return sb.toString();
     }
 
-    public String getVcfFile() {
-        return vcfFile;
+    public ObjectMap getRegenieFileOptions() {
+        return regenieFileOptions;
     }
 
-    public RegenieStep1WrapperParams setVcfFile(String vcfFile) {
-        this.vcfFile = vcfFile;
-        return this;
-    }
-
-    public ObjectMap getRegenieParams() {
-        return regenieParams;
-    }
-
-    public RegenieStep1WrapperParams setRegenieParams(ObjectMap regenieParams) {
-        this.regenieParams = regenieParams;
+    public RegenieBuilderWrapperParams setRegenieFileOptions(ObjectMap regenieFileOptions) {
+        this.regenieFileOptions = regenieFileOptions;
         return this;
     }
 
@@ -75,7 +59,7 @@ public class RegenieStep1WrapperParams extends ToolParams {
         return docker;
     }
 
-    public RegenieStep1WrapperParams setDocker(RegenieDockerParams docker) {
+    public RegenieBuilderWrapperParams setDocker(RegenieDockerParams docker) {
         this.docker = docker;
         return this;
     }

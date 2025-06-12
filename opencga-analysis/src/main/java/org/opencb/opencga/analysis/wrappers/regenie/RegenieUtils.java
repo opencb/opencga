@@ -3,12 +3,12 @@ package org.opencb.opencga.analysis.wrappers.regenie;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.exec.Command;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.common.GitRepositoryState;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,10 +19,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 
-public final class RegenieUtils {
+public class RegenieUtils {
 
     public static final String VCF_BASENAME = "input";
     public static final String VCF_FILENAME = VCF_BASENAME + ".vcf.gz";
@@ -37,16 +39,77 @@ public final class RegenieUtils {
 
     public static final String OPENCGA_REGENIE_WALKER_DOCKER_IMAGE_KEY = "OPENCGA_REGENIE_WALKER_DOCKER_IMAGE";
 
-    private static Random random = new Random();
+    // Regenie files options
+    public static final String BGEN_OPTION = "--bgen";
+    public static final String BED_OPTION = "--bed";
+    public static final String PGEN_OPTION = "--pgen";
+    public static final String SAMPLE_OPTION = "--sample";
+    public static final String BGI_OPTION = "--bgi";
+    public static final String KEEP_OPTION = "--keep";
+    public static final String REMOVE_OPTION = "--remove";
+    public static final String EXTRACT_OPTION = "--extract";
+    public static final String EXCLUDE_OPTION = "--exclude";
+    public static final String EXTRACT_OR_OPTION = "--extract-or";
+    public static final String EXCLUDE_OR_OPTION = "--exclude-or";
+    public static final String PHENO_FILE_OPTION = "--phenoFile";
+    public static final String COVAR_FILE_OPTION = "--covarFile";
+    public static final String PRED_OPTION = "--pred";
+    public static final String TPHENO_FILE_OPTION = "--tpheno-file";
+    public static final String SRUN_L0_OPTION = "--run-l0"; // FILE,K
+    public static final String USER_NULL_FIRTH_OPTION = "--use-null-firth";
+    public static final String ANNO_FILE_OPTION = "--anno-file";
+    public static final String SET_LIST_OPTION = "--set-list";
+    public static final String EXTRACT_SETS_OPTION = "--extract-sets";
+    public static final String EXCLUDE_SETS_OPTION = "--exclude-sets";
+    public static final String AAF_FILE_OPTION = "--aaf-file";
+    public static final String MASK_DEF_OPTION = "--mask-def";
+    public static final String LOVO_SNPLIST_OPTION = "--lovo-snplist";
+    public static final String INTERACTION_FILE_OPTION = "--interaction-file"; // FORMAT,FILE
+    public static final String INTERACTION_FILE_SAMPLE_OPTION = "--interaction-file-sample";
+    public static final String CONDITION_LIST_OPTION = "--condition-list";
+    public static final String CONDITION_FILE_OPTION = "--condition-file"; // FORMAT,FILE
+    public static final String CONDITION_FILE_SAMPLE_OPTION = "--condition-file-sample";
+    public static final String LD_EXTRACT_OPTION = "--ld-extract";
 
-    private static Logger logger = LoggerFactory.getLogger(RegenieUtils.class);
+    protected static final List<String> ALL_FILE_OPTIONS = Arrays.asList(BGEN_OPTION, BED_OPTION, PGEN_OPTION, SAMPLE_OPTION, BGI_OPTION,
+            KEEP_OPTION, REMOVE_OPTION, EXTRACT_OPTION, EXCLUDE_OPTION, EXTRACT_OR_OPTION, EXCLUDE_OR_OPTION, PHENO_FILE_OPTION,
+            COVAR_FILE_OPTION, PRED_OPTION, TPHENO_FILE_OPTION, SRUN_L0_OPTION, USER_NULL_FIRTH_OPTION, ANNO_FILE_OPTION, SET_LIST_OPTION,
+            EXTRACT_SETS_OPTION, EXCLUDE_SETS_OPTION, AAF_FILE_OPTION, MASK_DEF_OPTION, LOVO_SNPLIST_OPTION, INTERACTION_FILE_OPTION,
+            INTERACTION_FILE_SAMPLE_OPTION, CONDITION_LIST_OPTION, CONDITION_FILE_OPTION, CONDITION_FILE_SAMPLE_OPTION,
+            CONDITION_FILE_SAMPLE_OPTION, LD_EXTRACT_OPTION);
+
+    protected static final List<String> SKIP_OPTIONS = Arrays.asList("--out", "--step");
+
+    public static final String BGEN = ".bgen";
+    public static final String BED  = ".bed";
+    public static final String BIM  = ".bim";
+    public static final String FAM  = ".fam";
+    public static final String PGEN = ".pgen";
+    public static final String PVAR = ".pvar";
+    public static final String PSAM = ".psam";
+
+    public static final String REGENIE_HEADER_PREFIX = "CHROM GENPOS ";
+
+    public static final String FILE_PREFIX = "file://";
+    public static final String COHORT_PREFIX = "cohort:";
+    public static final String PHENOTYPE_PREFIX = "phenotype:";
+    public static final String FLAG_TRUE = "flag:true";
+    public static final String FLAG_FALSE = "flag:false";
+
+    public static final int MINIMUM_NUM_SAMPLES = 2;
+
+    private static final Random random = new Random();
+
+    private static final Logger logger = LoggerFactory.getLogger(RegenieUtils.class);
+
 
     private RegenieUtils() {
         throw new IllegalStateException("Utility class");
     }
 
-    public static Path checkRegenieInputFile(String fileId, boolean mandatory, String msg, String studyId, CatalogManager catalogManager,
+    public static Path checkRegenieInputFile(String entryStr, boolean mandatory, String msg, String studyId, CatalogManager catalogManager,
                                              String token) throws ToolException {
+        String fileId = entryStr;
         if (StringUtils.isEmpty(fileId)) {
             if (mandatory) {
                 throw new ToolException(msg + " file is missing.");
@@ -54,8 +117,20 @@ public final class RegenieUtils {
             return null;
         }
 
+        if (fileId.startsWith(FILE_PREFIX)) {
+            fileId = fileId.substring(FILE_PREFIX.length());
+        }
+
+
         try {
-            File opencgaFile = catalogManager.getFileManager().get(studyId, fileId, QueryOptions.empty(), token).first();
+            OpenCGAResult<File> fileResults = catalogManager.getFileManager().get(studyId, fileId, QueryOptions.empty(), token);
+            if (fileResults.getNumResults() == 0) {
+                throw new ToolException("File " + entryStr + " not found in OpenCGA catalog");
+            }
+            if (fileResults.getNumResults() > 1) {
+                throw new ToolException("More than one file found for " + entryStr + " in OpenCGA catalog");
+            }
+            File opencgaFile = fileResults.first();
             Path path = Paths.get(opencgaFile.getUri().getPath()).toAbsolutePath();
             if (!Files.exists(path)) {
                 throw new ToolException(msg + " file does not exit: " + path);
@@ -75,7 +150,7 @@ public final class RegenieUtils {
 
     public static Path createDockerfile(Path dataDir, String dockerBasename, Path opencgaHome)
             throws ToolException {
-        Path dockerBuildScript = opencgaHome.resolve("analysis/resources/walker/custom-tool-docker-build.py");
+        Path dockerBuildScript = opencgaHome.resolve("analysis/resources/common/tool-docker-builder.py");
         Command dockerBuild = new Command(new String[]{"python3", dockerBuildScript.toAbsolutePath().toString(),
                 "--custom-tool-dir", dataDir.toAbsolutePath().toString(),
                 "--base-image", dockerBasename,
@@ -182,6 +257,15 @@ public final class RegenieUtils {
         } catch (IOException e) {
             logger.error("Error when accessing Docker Hub {}: {}", apiUrl, e.getMessage());
             return false;
+        }
+    }
+
+    public static void copyPythonFiles(Path destPath, Path opencgaHome) throws IOException {
+        Path pythonDir = destPath.resolve("python");
+        List<String> filenames = Arrays.asList("requirements.txt", "variant_walker.py", "regenie_walker.py");
+        for (String filename : filenames) {
+            FileUtils.copyFile(opencgaHome.resolve("analysis/regenie/" + filename).toAbsolutePath(),
+                    pythonDir.resolve(filename));
         }
     }
 }

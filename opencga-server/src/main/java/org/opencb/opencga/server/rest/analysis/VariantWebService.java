@@ -57,6 +57,7 @@ import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.gatk.GatkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.liftover.LiftoverWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.plink.PlinkWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.regenie.RegenieBuilderWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.regenie.RegenieStep1WrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.regenie.RegenieStep2WrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.rvtests.RvtestsWrapperAnalysis;
@@ -82,6 +83,7 @@ import org.opencb.opencga.core.models.operations.variant.VariantIndexParams;
 import org.opencb.opencga.core.models.operations.variant.VariantStatsExportParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.variant.*;
+import org.opencb.opencga.core.models.variant.regenie.RegenieBuilderWrapperParams;
 import org.opencb.opencga.core.models.variant.regenie.RegenieStep1WrapperParams;
 import org.opencb.opencga.core.models.variant.regenie.RegenieStep2WrapperParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -1282,6 +1284,22 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = "Params of " + RegenieStep2WrapperAnalysis.ID + " analysis", required = true) RegenieStep2WrapperParams params) {
         return submitJob(study, JobType.NATIVE, RegenieStep2WrapperAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+    }
+
+    @POST
+    @Path("/regenie/builder/run")
+    @ApiOperation(value = RegenieBuilderWrapperAnalysis.DESCRIPTION, response = Job.class)
+    public Response runRegenieBuilder(
+            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
+            @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
+            @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
+            @ApiParam(value = "Params of " + RegenieBuilderWrapperAnalysis.ID + " analysis", required = true) RegenieBuilderWrapperParams params) {
+        return submitJob(study, JobType.NATIVE, RegenieBuilderWrapperAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @POST

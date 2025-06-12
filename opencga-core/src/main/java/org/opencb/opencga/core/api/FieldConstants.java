@@ -1,5 +1,6 @@
 package org.opencb.opencga.core.api;
 
+import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.models.alignment.AlignmentQcParams;
 import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
 import org.opencb.opencga.core.models.variant.SampleQcAnalysisParams;
@@ -623,18 +624,11 @@ public class FieldConstants {
             + " destination path";
 
     // Regenie
-    public static final String REGENIE_STEP1 = "step1";
-    public static final String REGENIE_STEP2 = "step2";
-    public static final String REGENIE_PHENO_FILE_DESCRIPTION = "Phenotype file, which contains one or more traits to be analyzed.";
-    public static final String REGENIE_COVAR_FILE_DESCRIPTION = "Covariate file, used to adjust the analysis for confounding variables"
-            + " (e.g., sex, age, PCs).";
-    public static final String REGENIE_STEP1_JOB_ID_DESCRIPTION = "Job ID that performed the regenie step1 analysis.";
-    public static final String REGENIE_WALKER_DOCKER_IMAGE_NAME_DESCRIPTION = "Walker docker image name that contains the phenotype,"
-            + " covariates and prediction files. The name must include the organization (or namespace) and the tag, e.g.:"
-            + " myorganization/1000g-regenie:v2";
-    public static final String REGENIE_VARIANT_EXPORT_QUERY_DESCRIPTION = "Query to export a subset of variants for the regenie step1 (as"
-            + " performing regenie step1 on a subset is recommended over the entire dataset). Key-values examples:"
-            + " \"cohortStatsMaf\"=\"ALL<0.05\", \"sampleLimit\"=5000";
+    public static final String REGENIE_OPTIONS_DESCRIPTION = "Regenie options as described in the Regenie documentation. Key-values"
+            + " examples: \"--bgen\"=\"file://regenie/example.bgen\", \"--bt\"=\"flag:true\", \"--bsize\"=100";
+    public static final String REGENIE_FILE_OPTIONS_DESCRIPTION = "Regenie options for files as described in the Regenie documentation"
+    + " that will be include in the regenie-walker docker to use in step2. Key-values examples: \"--bgen\"=\"file://regenie/example.bgen\"";
+    public static final String REGENIE_VCF_FILE_DESCRIPTION = "VCF file; alternative to the BGEN, BED or PGEN input file.";
     public static final String REGENIE_WALKER_DOCKER_NAME_DESCRIPTION = "Docker image name of the regenie-walker, it must include the"
             + " organization (or namespace), e.g.: myorganization/1000g-regenie.";
     public static final String REGENIE_WALKER_DOCKER_TAG_DESCRIPTION = "Docker image tag of the regenie-walker, e.g.: v2";
