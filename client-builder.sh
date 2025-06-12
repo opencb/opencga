@@ -77,6 +77,9 @@ fi
 # Create the directory for the clients distribution
 mkdir -p ${DIST_DIR}
 
+
+
+
 if ! $SKIP_R; then
   echo "Building R library"
   echo "==================="
@@ -102,6 +105,7 @@ if ! $SKIP_PYTHON; then
   echo "Prepare directory: Python"
   rm -rf "$CLIENTS_DIR/python"
   echo "Copying OpenCGA python client files to $CLIENTS_DIR"
+  ./opencga-home/build_clients.sh --skip-rclient --skip-javascript
   cp -r "$OPENCGA_BUILD_DIR/clients/python" "$CLIENTS_DIR"
   echo "Copying Python to $CLIENTS_DIR"
   cp -r "opencga-enterprise-client/src/main/python" "$CLIENTS_DIR"
