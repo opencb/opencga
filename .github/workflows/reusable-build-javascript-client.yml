@@ -15,7 +15,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
       - name: Build R client
         run: |
-          ./build_clients.sh --skip-r --skip-python
+          ./build_clients.sh --skip-rclient --skip-python
       - name: Upload built javascript client package as artifact
         uses: actions/upload-artifact@v4
         with:
