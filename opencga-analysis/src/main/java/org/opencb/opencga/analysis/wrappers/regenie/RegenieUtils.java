@@ -150,7 +150,7 @@ public class RegenieUtils {
 
     public static Path createDockerfile(Path dataDir, String dockerBasename, Path opencgaHome)
             throws ToolException {
-        Path dockerBuildScript = opencgaHome.resolve("analysis/resources/walker/custom-tool-docker-build.py");
+        Path dockerBuildScript = opencgaHome.resolve("analysis/resources/common/tool-docker-builder.py");
         Command dockerBuild = new Command(new String[]{"python3", dockerBuildScript.toAbsolutePath().toString(),
                 "--custom-tool-dir", dataDir.toAbsolutePath().toString(),
                 "--base-image", dockerBasename,
@@ -257,6 +257,15 @@ public class RegenieUtils {
         } catch (IOException e) {
             logger.error("Error when accessing Docker Hub {}: {}", apiUrl, e.getMessage());
             return false;
+        }
+    }
+
+    public static void copyPythonFiles(Path destPath, Path opencgaHome) throws IOException {
+        Path pythonDir = destPath.resolve("python");
+        List<String> filenames = Arrays.asList("requirements.txt", "variant_walker.py", "regenie_walker.py");
+        for (String filename : filenames) {
+            FileUtils.copyFile(opencgaHome.resolve("analysis/regenie/" + filename).toAbsolutePath(),
+                    pythonDir.resolve(filename));
         }
     }
 }

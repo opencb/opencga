@@ -23,8 +23,7 @@ class Regenie(VariantWalker):
         self.run_regenie_step2()
         out_file = self.gwas_results + "_PHENO.regenie"
         for line in self.fread_lines(out_file):
-            if not line.startswith("CHROM"):
-                self.write(line.rstrip())
+            self.write(line.rstrip())
         pass
 
     def run_regenie_step2(self):
