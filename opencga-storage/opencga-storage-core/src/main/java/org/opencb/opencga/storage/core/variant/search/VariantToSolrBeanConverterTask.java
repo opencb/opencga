@@ -41,7 +41,7 @@ public class VariantToSolrBeanConverterTask implements Converter<Variant, Varian
 
     @Override
     public VariantSearchUpdateDocument convert(Variant variant) {
-        VariantSearchSyncStatus status = filter.getSyncStatus(variant);
+        VariantSearchSyncInfo.Status status = filter.getSyncStatus(variant);
 
         List<String> studies = variant.getStudies().stream()
                 .map(StudyEntry::getStudyId)

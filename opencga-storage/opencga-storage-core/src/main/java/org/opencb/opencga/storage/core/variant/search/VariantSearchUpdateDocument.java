@@ -11,10 +11,10 @@ public class VariantSearchUpdateDocument {
     private final List<String> studies;
     private final SolrInputDocument document;
     private final boolean insert;
-    private final VariantSearchSyncStatus status;
+    private final VariantSearchSyncInfo.Status status;
 
     public VariantSearchUpdateDocument(Variant variant, List<String> studies, SolrInputDocument document,
-                                       boolean insert, VariantSearchSyncStatus status) {
+                                       boolean insert, VariantSearchSyncInfo.Status status) {
         this.variant = new Variant(variant.toString());
         this.studies = studies;
         this.document = document;
@@ -38,7 +38,7 @@ public class VariantSearchUpdateDocument {
         return insert;
     }
 
-    public VariantSearchSyncStatus getStatus() {
+    public VariantSearchSyncInfo.Status getStatus() {
         return status;
     }
 }

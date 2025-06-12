@@ -9,7 +9,7 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.variant.search.VariantSearchSyncStatus;
+import org.opencb.opencga.storage.core.variant.search.VariantSearchSyncInfo;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
@@ -58,8 +58,8 @@ public class SecondaryIndexPendingVariantsDescriptor implements PendingVariantsT
             long ts = metadataManager.getProjectMetadata().getSecondaryAnnotationIndex()
                     .getLastStagingOrActiveIndex().getLastUpdateDateTimestamp();
             return (value) -> {
-                VariantSearchSyncStatus syncStatus = HadoopVariantSearchIndexUtils.getSyncStatusCheckStudies(ts, value);
-                boolean pending = syncStatus != VariantSearchSyncStatus.SYNCHRONIZED;
+                VariantSearchSyncInfo.Status syncStatus = HadoopVariantSearchIndexUtils.getSyncStatusInfoResolved(ts, value);
+                boolean pending = syncStatus != VariantSearchSyncInfo.Status.SYNCHRONIZED;
                 return getMutation(value, pending);
             };
         }

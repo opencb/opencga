@@ -7,7 +7,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
-import org.opencb.opencga.storage.core.variant.search.VariantSearchSyncStatus;
+import org.opencb.opencga.storage.core.variant.search.VariantSearchSyncInfo;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 
@@ -25,34 +25,34 @@ public class HadoopVariantSearchIndexUtilsTest {
     @Test
     public void getSyncStatusCheckStudies() {
 
-        assertEquals(VariantSearchSyncStatus.SYNCHRONIZED,
-                HadoopVariantSearchIndexUtils.getSyncStatusCheckStudies(12, Result.create(Arrays.asList(kv(10, INDEX_STUDIES), kv(9, INDEX_NOT_SYNC)))));
+        assertEquals(VariantSearchSyncInfo.Status.SYNCHRONIZED,
+                HadoopVariantSearchIndexUtils.getSyncStatusInfoResolved(12, Result.create(Arrays.asList(kv(10, INDEX_STUDIES), kv(9, INDEX_NOT_SYNC)))));
 
-        assertEquals(VariantSearchSyncStatus.SYNCHRONIZED,
-                HadoopVariantSearchIndexUtils.getSyncStatusCheckStudies(8, Result.create(Arrays.asList(kv(10, INDEX_STUDIES), kv(9, INDEX_NOT_SYNC)))));
+        assertEquals(VariantSearchSyncInfo.Status.SYNCHRONIZED,
+                HadoopVariantSearchIndexUtils.getSyncStatusInfoResolved(8, Result.create(Arrays.asList(kv(10, INDEX_STUDIES), kv(9, INDEX_NOT_SYNC)))));
 
-        assertEquals(VariantSearchSyncStatus.NOT_SYNCHRONIZED,
-                HadoopVariantSearchIndexUtils.getSyncStatusCheckStudies(8, result(
+        assertEquals(VariantSearchSyncInfo.Status.NOT_SYNCHRONIZED,
+                HadoopVariantSearchIndexUtils.getSyncStatusInfoResolved(8, result(
                         kv(10, INDEX_STUDIES),
                         kv(11, INDEX_NOT_SYNC))));
 
-        assertEquals(VariantSearchSyncStatus.SYNCHRONIZED,
-                HadoopVariantSearchIndexUtils.getSyncStatusCheckStudies(0, result(
+        assertEquals(VariantSearchSyncInfo.Status.SYNCHRONIZED,
+                HadoopVariantSearchIndexUtils.getSyncStatusInfoResolved(0, result(
                         kv(5, INDEX_STUDIES),
                         kv(1, INDEX_NOT_SYNC))));
 
-        assertEquals(VariantSearchSyncStatus.NOT_SYNCHRONIZED,
-                HadoopVariantSearchIndexUtils.getSyncStatusCheckStudies(0, result(
+        assertEquals(VariantSearchSyncInfo.Status.NOT_SYNCHRONIZED,
+                HadoopVariantSearchIndexUtils.getSyncStatusInfoResolved(0, result(
                         kv(1, INDEX_STUDIES),
                         kv(5, INDEX_NOT_SYNC))));
 
-        assertEquals(VariantSearchSyncStatus.SYNCHRONIZED,
-                HadoopVariantSearchIndexUtils.getSyncStatusCheckStudies(10, result(
+        assertEquals(VariantSearchSyncInfo.Status.SYNCHRONIZED,
+                HadoopVariantSearchIndexUtils.getSyncStatusInfoResolved(10, result(
                         kv(5, INDEX_STUDIES),
                         kv(1, INDEX_NOT_SYNC))));
 
-        assertEquals(VariantSearchSyncStatus.SYNCHRONIZED,
-                HadoopVariantSearchIndexUtils.getSyncStatusCheckStudies(10, result(
+        assertEquals(VariantSearchSyncInfo.Status.SYNCHRONIZED,
+                HadoopVariantSearchIndexUtils.getSyncStatusInfoResolved(10, result(
                         kv(1, INDEX_STUDIES),
                         kv(5, INDEX_NOT_SYNC))));
     }

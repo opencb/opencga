@@ -34,6 +34,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.search.VariantSearchSyncInfo;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.utils.MapReduceOutputFile;
 import org.opencb.opencga.storage.hadoop.utils.ValueOnlyTextOutputFormat;
@@ -47,7 +48,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.function.Function;
 
-import org.opencb.opencga.storage.core.variant.search.VariantSearchSyncStatus;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
 
 /**
@@ -273,7 +273,7 @@ public class DiscoverPendingVariantsDriver extends AbstractVariantsTableDriver {
             if (variant == null) {
                 context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, READY_VARIANTS_COUNTER).increment(1);
             } else {
-                VariantSearchSyncStatus syncStatus = VariantSearchSyncStatus.from(variant.getAnnotation().getAdditionalAttributes()
+                VariantSearchSyncInfo.Status syncStatus = VariantSearchSyncInfo.Status.from(variant.getAnnotation().getAdditionalAttributes()
                                 .get(GROUP_NAME.key()).getAttribute().get(VariantField.AdditionalAttributes.INDEX_SYNCHRONIZATION.key()));
                 context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, syncStatus.name()).increment(1);
                 context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, PENDING_VARIANTS_COUNTER).increment(1);

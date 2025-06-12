@@ -9,7 +9,7 @@ import org.apache.phoenix.schema.types.PIntegerArray;
 import org.apache.phoenix.schema.types.PhoenixArray;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
-import org.opencb.opencga.storage.core.variant.search.VariantSearchSyncStatus;
+import org.opencb.opencga.storage.core.variant.search.VariantSearchSyncInfo;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchUpdateDocument;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
@@ -42,12 +42,11 @@ public class HadoopVariantSearchIndexUtils {
      * @param put Mutation to add new Variant information.
      * @return The same put operation with the {@link VariantColumn#INDEX_NOT_SYNC} column.
      */
-    public static Put addNotSyncStatus(Put put) {
+    public static void addNotSyncStatus(Put put) {
         if (put != null) {
             put.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantColumn.INDEX_NOT_SYNC.bytes(), System.currentTimeMillis(),
                     PBoolean.TRUE_BYTES);
         }
-        return put;
     }
 
     /**
@@ -56,12 +55,11 @@ public class HadoopVariantSearchIndexUtils {
      * @param put Mutation to add new Variant information.
      * @return The same put operation with the {@link VariantColumn#INDEX_STATS_NOT_SYNC} column.
      */
-    public static Put addStatsNotSyncStatus(Put put) {
+    public static void addStatsNotSyncStatus(Put put) {
         if (put != null) {
             put.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantColumn.INDEX_STATS_NOT_SYNC.bytes(), System.currentTimeMillis(),
                     PBoolean.TRUE_BYTES);
         }
-        return put;
     }
 
     /**
@@ -70,70 +68,51 @@ public class HadoopVariantSearchIndexUtils {
      * @param put Mutation to add new Variant information.
      * @return The same put operation with the {@link VariantColumn#INDEX_UNKNOWN} column.
      */
-    public static Put addUnknownSyncStatus(Put put) {
+    public static void addUnknownSyncStatus(Put put) {
         if (put != null) {
             put.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantColumn.INDEX_UNKNOWN.bytes(), System.currentTimeMillis(),
                     PBoolean.TRUE_BYTES);
         }
-        return put;
     }
 
     public static Put updateSyncStatus(VariantSearchUpdateDocument updateDocument, Map<String, Integer> studiesMap) {
+        byte[] row = VariantPhoenixKeyFactory.generateVariantRowKey(updateDocument.getVariant());
+        Put put = new Put(row);
+
         List<String> studies = updateDocument.getStudies();
         Set<Integer> studyIds = studies.stream().map(o -> studiesMap.get(o.toString())).collect(Collectors.toSet());
         byte[] bytes = PhoenixHelper.toBytes(studyIds, PIntegerArray.INSTANCE);
+        put.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.INDEX_STUDIES.bytes(), bytes);
 
-        byte[] row = VariantPhoenixKeyFactory.generateVariantRowKey(updateDocument.getVariant());
-        Put put = new Put(row)
-                .addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.INDEX_STUDIES.bytes(), bytes);
         return put;
     }
 
-    public static VariantSearchSyncStatus getSyncStatusCheckStudies(long ts, Result result) {
-        VariantSearchSyncStatus syncStatus = getSyncStatus(ts, result);
-        if (syncStatus == VariantSearchSyncStatus.STUDIES_UNKNOWN_SYNC
-                || syncStatus == VariantSearchSyncStatus.STATS_NOT_SYNC_AND_STUDIES_UNKNOWN) {
-            Cell studiesCell = result.getColumnLatestCell(GenomeHelper.COLUMN_FAMILY_BYTES, VariantColumn.INDEX_STUDIES.bytes());
-            List<Integer> indexedStudies = AbstractPhoenixConverter.toList((PhoenixArray) VariantColumn.INDEX_STUDIES.getPDataType()
-                    .toObject(studiesCell.getValueArray(), studiesCell.getValueOffset(), studiesCell.getValueLength()));
+    /**
+     * Get the synchronization status of a variant, given the timestamp and the result.
+     * Resolve the uncertain status. No "UNKNOWN" status will be returned.
+     *
+     * @param ts        LastUpdateDateTimestamp
+     * @param result    HBase result.
+     * @return          Resolved status
+     */
+    public static VariantSearchSyncInfo.Status getSyncStatusInfoResolved(long ts, Result result) {
+        VariantSearchSyncInfo info = getSyncInformation(ts, result);
+        VariantSearchSyncInfo.Status status = info.getStatus();
+        if (status == VariantSearchSyncInfo.Status.STUDIES_UNKNOWN_SYNC
+                || status == VariantSearchSyncInfo.Status.STATS_NOT_SYNC_AND_STUDIES_UNKNOWN) {
+            List<Integer> indexedStudies = info.getStudies();
             Set<Integer> actualStudies = new VariantRow(result).getStudies();
             if (indexedStudies.size() == actualStudies.size() && actualStudies.containsAll(indexedStudies)) {
-                if (syncStatus == VariantSearchSyncStatus.STUDIES_UNKNOWN_SYNC) {
-                    return VariantSearchSyncStatus.SYNCHRONIZED;
+                if (status == VariantSearchSyncInfo.Status.STUDIES_UNKNOWN_SYNC) {
+                    return VariantSearchSyncInfo.Status.SYNCHRONIZED;
                 } else {
-                    return VariantSearchSyncStatus.STATS_NOT_SYNC;
+                    return VariantSearchSyncInfo.Status.STATS_NOT_SYNC;
                 }
             } else {
-                return VariantSearchSyncStatus.NOT_SYNCHRONIZED;
+                return VariantSearchSyncInfo.Status.NOT_SYNCHRONIZED;
             }
         }
-        return syncStatus;
-    }
-
-    public static VariantSearchSyncStatus getSyncStatus(long ts, Result result) {
-        Cell studiesCell = result.getColumnLatestCell(GenomeHelper.COLUMN_FAMILY_BYTES, VariantColumn.INDEX_STUDIES.bytes());
-        Cell notSyncCell = result.getColumnLatestCell(GenomeHelper.COLUMN_FAMILY_BYTES, VariantColumn.INDEX_NOT_SYNC.bytes());
-        Cell statsNotSyncCell = result.getColumnLatestCell(GenomeHelper.COLUMN_FAMILY_BYTES, VariantColumn.INDEX_STATS_NOT_SYNC.bytes());
-        Cell studiesUnknownCell = result.getColumnLatestCell(GenomeHelper.COLUMN_FAMILY_BYTES, VariantColumn.INDEX_UNKNOWN.bytes());
-        return getSyncStatus(ts, studiesCell, notSyncCell, statsNotSyncCell, studiesUnknownCell);
-    }
-
-    public static class VariantSearchSyncInfo {
-        private final VariantSearchSyncStatus syncStatus;
-        private final List<Integer> studies;
-
-        public VariantSearchSyncInfo(VariantSearchSyncStatus syncStatus, List<Integer> studies) {
-            this.syncStatus = syncStatus;
-            this.studies = studies;
-        }
-
-        public VariantSearchSyncStatus getSyncStatus() {
-            return syncStatus;
-        }
-
-        public List<Integer> getStudies() {
-            return studies;
-        }
+        return status;
     }
 
     public static VariantSearchSyncInfo getSyncInformation(long ts, ResultSet resultSet) throws SQLException {
@@ -149,9 +128,8 @@ public class HadoopVariantSearchIndexUtils {
         boolean statsNotSync = resultSet.getBoolean(VariantColumn.INDEX_STATS_NOT_SYNC.column());
         boolean unknown = resultSet.getBoolean(VariantColumn.INDEX_UNKNOWN.column());
 
-        VariantSearchSyncStatus status = HadoopVariantSearchIndexUtils.getSyncStatus(noSync, unknown, statsNotSync, studies);
+        VariantSearchSyncInfo.Status status = HadoopVariantSearchIndexUtils.getSyncStatus(noSync, unknown, statsNotSync, studies);
         return new VariantSearchSyncInfo(status, studies);
-
     }
 
     public static VariantSearchSyncInfo getSyncInformation(long ts, Result result) {
@@ -168,12 +146,12 @@ public class HadoopVariantSearchIndexUtils {
             studies = null;
         }
 
-        VariantSearchSyncStatus status = getSyncStatus(ts, studiesCell, notSyncCell, statsNotSyncCell, studiesUnknownCell);
+        VariantSearchSyncInfo.Status status = getSyncStatus(ts, studiesCell, notSyncCell, statsNotSyncCell, studiesUnknownCell);
         return new VariantSearchSyncInfo(status, studies);
     }
 
-    public static VariantSearchSyncStatus getSyncStatus(long ts, Cell studiesCell, Cell notSyncCell,
-                                                        Cell statsNotSyncCell, Cell studiesUnknownCell) {
+    private static VariantSearchSyncInfo.Status getSyncStatus(long ts, Cell studiesCell, Cell notSyncCell,
+                                                              Cell statsNotSyncCell, Cell studiesUnknownCell) {
         // Don't need to check the value. If present, only check the timestamp.
         boolean notSync = notSyncCell != null && notSyncCell.getTimestamp() > ts;
         boolean statsNotSync = statsNotSyncCell != null && statsNotSyncCell.getTimestamp() > ts;
@@ -197,34 +175,34 @@ public class HadoopVariantSearchIndexUtils {
         return HadoopVariantSearchIndexUtils.getSyncStatus(notSync, studiesUnknown, statsNotSync, hasStudies);
     }
 
-    public static VariantSearchSyncStatus getSyncStatus(boolean noSync, boolean studiesUnknown, boolean statsNotSync,
-                                                        List<Integer> studies) {
+    private static VariantSearchSyncInfo.Status getSyncStatus(boolean noSync, boolean studiesUnknown, boolean statsNotSync,
+                                                              List<Integer> studies) {
         return getSyncStatus(noSync, studiesUnknown, statsNotSync, studies != null && !studies.isEmpty());
     }
 
-    public static VariantSearchSyncStatus getSyncStatus(boolean noSync, boolean studiesUnknown, boolean statsNotSync,
-                                                        boolean hasStudies) {
-        final VariantSearchSyncStatus syncStatus;
+    private static VariantSearchSyncInfo.Status getSyncStatus(boolean noSync, boolean studiesUnknown, boolean statsNotSync,
+                                                              boolean hasStudies) {
+        final VariantSearchSyncInfo.Status syncStatus;
         if (noSync) {
             // Some process marked this variant as not synchronized. No doubts here.
-            syncStatus = VariantSearchSyncStatus.NOT_SYNCHRONIZED;
+            syncStatus = VariantSearchSyncInfo.Status.NOT_SYNCHRONIZED;
         } else if (!hasStudies) {
             // If the list of studies is not present, this variant had never been loaded into solr.
-            syncStatus = VariantSearchSyncStatus.NOT_SYNCHRONIZED;
+            syncStatus = VariantSearchSyncInfo.Status.NOT_SYNCHRONIZED;
         } else if (statsNotSync) {
             if (studiesUnknown) {
                 // Stats unsync, but we do not know the studies.
-                syncStatus = VariantSearchSyncStatus.STATS_NOT_SYNC_AND_STUDIES_UNKNOWN;
+                syncStatus = VariantSearchSyncInfo.Status.STATS_NOT_SYNC_AND_STUDIES_UNKNOWN;
             } else {
                 // Only the stats are not synchronized.
-                syncStatus = VariantSearchSyncStatus.STATS_NOT_SYNC;
+                syncStatus = VariantSearchSyncInfo.Status.STATS_NOT_SYNC;
             }
         } else if (studiesUnknown) {
             // Unknown level of synchronization.
-            syncStatus = VariantSearchSyncStatus.STUDIES_UNKNOWN_SYNC;
+            syncStatus = VariantSearchSyncInfo.Status.STUDIES_UNKNOWN_SYNC;
         } else {
             // If noSync, unknown or statsNotSync are false, then the variant is synchronized
-            syncStatus = VariantSearchSyncStatus.SYNCHRONIZED;
+            syncStatus = VariantSearchSyncInfo.Status.SYNCHRONIZED;
         }
         return syncStatus;
     }

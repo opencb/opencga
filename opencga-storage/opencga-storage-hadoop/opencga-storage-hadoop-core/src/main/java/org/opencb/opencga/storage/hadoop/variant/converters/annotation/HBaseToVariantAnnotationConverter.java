@@ -40,11 +40,13 @@ import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.search.VariantSecondaryIndexFilter;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.VariantColumn;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchIndexUtils;
+import org.opencb.opencga.storage.core.variant.search.VariantSearchSyncInfo;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -184,7 +186,7 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
             }
         }
 
-        HadoopVariantSearchIndexUtils.VariantSearchSyncInfo searchSyncInfo;
+        VariantSearchSyncInfo searchSyncInfo;
         if (includeIndexStatus) {
             searchSyncInfo = HadoopVariantSearchIndexUtils.getSyncInformation(ts, result);
         } else {
@@ -211,7 +213,7 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
 
 
         List<Integer> releases = new ArrayList<>();
-        HadoopVariantSearchIndexUtils.VariantSearchSyncInfo searchSyncInfo;
+        VariantSearchSyncInfo searchSyncInfo;
         try {
             if (includeIndexStatus) {
                 searchSyncInfo = HadoopVariantSearchIndexUtils.getSyncInformation(ts, resultSet);
@@ -300,7 +302,7 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
     }
 
     private VariantAnnotation post(VariantAnnotation variantAnnotation, List<Integer> releases,
-                                   HadoopVariantSearchIndexUtils.VariantSearchSyncInfo searchSyncInfo, String annotationId) {
+                                   VariantSearchSyncInfo searchSyncInfo, String annotationId) {
         boolean hasRelease = releases != null && !releases.isEmpty();
         boolean hasIndex = searchSyncInfo != null;
         boolean hasAnnotationId = StringUtils.isNotEmpty(annotationId);
@@ -342,35 +344,30 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
             }
         }
 
-        AdditionalAttribute additionalAttribute = null;
         if (hasAnnotationId || hasRelease || hasIndex) {
-            if (variantAnnotation.getAdditionalAttributes() == null) {
-                variantAnnotation.setAdditionalAttributes(new HashMap<>());
+            AdditionalAttribute additionalAttribute = getAdditionalAttribute(variantAnnotation);
+            if (hasRelease) {
+                String release = releases.stream().min(Integer::compareTo).orElse(0).toString();
+                additionalAttribute.getAttribute().put(VariantField.AdditionalAttributes.RELEASE.key(), release);
             }
-            if (variantAnnotation.getAdditionalAttributes().containsKey(GROUP_NAME.key())) {
-                additionalAttribute = variantAnnotation.getAdditionalAttributes().get(GROUP_NAME.key());
-            } else {
-                additionalAttribute = new AdditionalAttribute(new HashMap<>());
-                variantAnnotation.getAdditionalAttributes().put(GROUP_NAME.key(), additionalAttribute);
-            }
-        }
-        if (hasRelease) {
-            String release = releases.stream().min(Integer::compareTo).orElse(0).toString();
-            additionalAttribute.getAttribute().put(VariantField.AdditionalAttributes.RELEASE.key(), release);
-        }
 
-        if (hasIndex) {
-            additionalAttribute.getAttribute().put(VariantField.AdditionalAttributes.INDEX_SYNCHRONIZATION.key(),
-                    searchSyncInfo.getSyncStatus().key());
-            if (searchSyncInfo.getStudies() != null) {
-                additionalAttribute.getAttribute().put(VariantField.AdditionalAttributes.INDEX_STUDIES.key(),
-                        searchSyncInfo.getStudies().stream().map(Object::toString).collect(Collectors.joining(",")));
+            if (hasIndex) {
+                VariantSecondaryIndexFilter.addSearchSyncInfoToAnnotation(additionalAttribute, searchSyncInfo);
             }
-        }
 
-        if (hasAnnotationId) {
-            additionalAttribute.getAttribute().put(VariantField.AdditionalAttributes.ANNOTATION_ID.key(), annotationId);
+            if (hasAnnotationId) {
+                additionalAttribute.getAttribute().put(VariantField.AdditionalAttributes.ANNOTATION_ID.key(), annotationId);
+            }
         }
         return variantAnnotation;
     }
+
+    public static AdditionalAttribute getAdditionalAttribute(VariantAnnotation variantAnnotation) {
+        if (variantAnnotation.getAdditionalAttributes() == null) {
+            variantAnnotation.setAdditionalAttributes(new HashMap<>());
+        }
+        return variantAnnotation.getAdditionalAttributes()
+                .computeIfAbsent(GROUP_NAME.key(), k -> new AdditionalAttribute(new HashMap<>()));
+    }
+
 }
