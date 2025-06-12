@@ -184,7 +184,7 @@ public class RgaManagerTest {
 
     public void setUpCatalogManager() throws CatalogException {
         catalogManager.getUserManager().create(OWNER, "User Name", "mail@ebi.ac.uk", PASSWORD, ORGANIZATION, null, opencga.getAdminToken());
-        ownerToken = catalogManager.getUserManager().login(ORGANIZATION, OWNER, PASSWORD).getToken();
+        ownerToken = catalogManager.getUserManager().login(ORGANIZATION, OWNER, PASSWORD).first().getToken();
 
         String projectId = catalogManager.getProjectManager().create(PROJECT, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh37", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), ownerToken).first().getId();
@@ -200,7 +200,7 @@ public class RgaManagerTest {
         }
 
         catalogManager.getUserManager().create(USER, "Other Name", "mail2@ebi.ac.uk", PASSWORD, ORGANIZATION, null, opencga.getAdminToken());
-        userToken = catalogManager.getUserManager().login(ORGANIZATION, USER, PASSWORD).getToken();
+        userToken = catalogManager.getUserManager().login(ORGANIZATION, USER, PASSWORD).first().getToken();
     }
 
     @Test

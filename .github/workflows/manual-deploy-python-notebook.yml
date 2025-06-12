@@ -1,0 +1,59 @@
+name: Reusable deploy Docker python-notebook
+run-name: 'Run deploy Docker python-notebook ${{ inputs.branch }} by @${{ github.actor }}'
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "The branch, tag or SHA of the source code to build docker."
+        type: string
+        required: true
+      tag:
+        description: "The tag for the new docker."
+        type: string
+        required: true
+      hadoop:
+        type: string
+        description: 'Hadoop flavour. Any of: [hdp3.1, hdi5.1, emr6.1, emr6.13]'
+        required: false
+        default: "hdp3.1"
+      pyopencga_version:
+        type: string
+        description: 'PyOpenCGA version.'
+        required: true
+
+jobs:
+  build:
+    name: Build Java app
+    runs-on: ${{ vars.UBUNTU_VERSION }}
+    outputs:
+      version: ${{ steps.get_project_version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: '10'
+          ref: "${{ inputs.branch }}"
+      - name: Set up JDK 8
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '8'
+          cache: 'maven'
+      - name: Install dependencies branches
+        run: |
+          if [ -f "./.github/workflows/scripts/get_same_branch.sh" ]; then
+            chmod +x ./.github/workflows/scripts/get_same_branch.sh
+            ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }} ${{ inputs.hadoop }}
+          fi
+      - name: Maven Build (skip tests)
+        run: mvn -T 2 clean install -DskipTests
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-folder
+          path: build
+
+  deploy-docker-python-notebook:
+    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+    needs: build
+    with:
+      cli: python3 ./build/cloud/docker/docker-build.py push --images python-notebook --tag ${{ inputs.tag }} --docker-build-args "--build-arg VERSION=${{ inputs.pyopencga_version }}"
+    secrets: inherit

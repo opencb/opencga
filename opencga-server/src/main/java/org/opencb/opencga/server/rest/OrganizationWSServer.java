@@ -148,6 +148,20 @@ public class OrganizationWSServer extends OpenCGAWSServer {
         }
     }
 
+    @POST
+    @Path("/user/password/reset")
+    @ApiOperation(value = "Reset user's password",
+            notes = "Reset the user's password and send a new random one to the e-mail stored in catalog.")
+    public Response resetPassword(
+            @ApiParam(value = "User whose password needs to be reset") @QueryParam("userId") String userId) {
+        try {
+            OpenCGAResult<?> result = catalogManager.getOrganizationManager().resetUserPassword(userId, token);
+            return createOkResponse(result, "The new password has been sent to the user's email.");
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
     @GET
     @Path("/notes/search")
     @ApiOperation(value = "Search for notes of scope ORGANIZATION", response = Note.class)
@@ -161,6 +175,7 @@ public class OrganizationWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.CREATION_DATE_PARAM) String creationDate,
             @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.MODIFICATION_DATE_PARAM) String modificationDate,
             @ApiParam(value = FieldConstants.NOTES_ID_DESCRIPTION) @QueryParam(FieldConstants.NOTES_ID_PARAM) String noteId,
+            @ApiParam(value = FieldConstants.NOTES_TYPE_DESCRIPTION) @QueryParam(FieldConstants.NOTES_TYPE_PARAM) String type,
             @ApiParam(value = FieldConstants.NOTES_SCOPE_DESCRIPTION) @QueryParam(FieldConstants.NOTES_SCOPE_PARAM) String scope,
             @ApiParam(value = FieldConstants.NOTES_VISIBILITY_DESCRIPTION) @QueryParam(FieldConstants.NOTES_VISIBILITY_PARAM) String visibility,
             @ApiParam(value = FieldConstants.GENERIC_UUID_DESCRIPTION) @QueryParam("uuid") String uuid,

@@ -46,6 +46,7 @@ import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.PermissionRule;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyPermissions;
+import org.opencb.opencga.core.models.workflow.WorkflowPermissions;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -239,8 +240,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkCanCreateUpdateDeleteVariableSets(String organizationId, long studyId, String userId) throws CatalogException {
-        if (!isAtLeastOrganizationOwnerOrAdmin(organizationId, userId)) {
-            throw CatalogAuthorizationException.notOrganizationOwnerOrAdmin("create, update or delete variable sets.");
+        if (!isAtLeastStudyAdministrator(organizationId, studyId, userId)) {
+            throw CatalogAuthorizationException.notStudyAdmin("create, update or delete variable sets.");
         }
     }
 
@@ -441,6 +442,20 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "ClinicalAnalysis", analysisId, null);
+    }
+
+    @Override
+    public void checkWorkflowPermission(String organizationId, long studyUid, long workflowUid, String userId,
+                                        WorkflowPermissions permission) throws CatalogException {
+        Query query = new Query()
+                .append(WorkflowDBAdaptor.QueryParams.UID.key(), workflowUid)
+                .append(WorkflowDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+                .append(ParamConstants.ACL_PARAM, userId + ":" + permission.name());
+
+        if (checkUserPermission(organizationId, userId, query, dbAdaptorFactory.getWorkflowDBAdaptor(organizationId))) {
+            return;
+        }
+        throw CatalogAuthorizationException.deny(userId, permission.toString(), "Workflow", workflowUid, null);
     }
 
     @Override
@@ -739,6 +754,17 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                                 .collect(Collectors.toSet())
                         );
                         break;
+                    case WORKFLOW:
+                        allPermissions.addAll(aclParam.getPermissions()
+                                .stream()
+                                .map(WorkflowPermissions::valueOf)
+                                .map(WorkflowPermissions::getDependentPermissions)
+                                .flatMap(List::stream)
+                                .collect(Collectors.toSet())
+                                .stream().map(Enum::name)
+                                .collect(Collectors.toSet())
+                        );
+                        break;
                     default:
                         throw new CatalogAuthorizationException("Unexpected resource '" + aclParam.getResource() + "'");
                 }
@@ -853,6 +879,17 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                             .collect(Collectors.toSet())
                     );
                     break;
+                case WORKFLOW:
+                    allPermissions.addAll(aclParam.getPermissions()
+                            .stream()
+                            .map(WorkflowPermissions::valueOf)
+                            .map(WorkflowPermissions::getImplicitPermissions)
+                            .flatMap(List::stream)
+                            .collect(Collectors.toSet())
+                            .stream().map(Enum::name)
+                            .collect(Collectors.toSet())
+                    );
+                    break;
                 default:
                     throw new CatalogAuthorizationException("Unexpected resource '" + aclParam.getResource() + "'");
             }
@@ -959,6 +996,17 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                         .stream()
                         .map(ClinicalAnalysisPermissions::valueOf)
                         .map(ClinicalAnalysisPermissions::getImplicitPermissions)
+                        .flatMap(List::stream)
+                        .collect(Collectors.toSet())
+                        .stream().map(Enum::name)
+                        .collect(Collectors.toSet())
+                );
+                break;
+            case WORKFLOW:
+                allPermissions.addAll(permissions
+                        .stream()
+                        .map(WorkflowPermissions::valueOf)
+                        .map(WorkflowPermissions::getImplicitPermissions)
                         .flatMap(List::stream)
                         .collect(Collectors.toSet())
                         .stream().map(Enum::name)

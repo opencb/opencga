@@ -27,6 +27,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.manager.operations.AbstractVariantOperationManagerTest;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.Job;
@@ -35,6 +36,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -70,7 +72,7 @@ public class VariantStorageManagerTest extends AbstractVariantOperationManagerTe
 
         try {
             Study study = catalogManager.getStudyManager().create(projectId, "s_no_setup", "s_no_setup", "s_no_setup",
-                            "Study 1", null, null, null, Collections.singletonMap(VariantStatsAnalysis.STATS_AGGREGATION_CATALOG, getAggregation()), null, sessionId)
+                            "Study 1", null, null, null, Collections.singletonMap(VariantStatsAnalysis.STATS_AGGREGATION_CATALOG, getAggregation()), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId)
                     .first();
             // Variant setup mandatory for configuring study
             variantManager.configureStudy(study.getFqn(), expectedStudyConfiguration1, sessionId);
@@ -102,6 +104,21 @@ public class VariantStorageManagerTest extends AbstractVariantOperationManagerTe
     }
 
     @Test
+    public void testConfigureProtectedValues() throws Exception {
+        VariantStorageOptions key = VariantStorageOptions.WALKER_DOCKER_MEMORY;
+        assertTrue(key.isProtected());
+        ObjectMap conf = new ObjectMap(key.key(), "30g");
+
+        String fqn = catalogManager.getProjectManager().get(projectId, null, sessionId).first().getFqn();
+
+        variantManager.configureProject(fqn, new ObjectMap(conf), opencga.getAdminToken());
+
+        thrown.expect(StorageEngineException.class);
+        thrown.expectMessage("Unable to update protected option '" + key.key() + "'");
+        variantManager.configureProject(projectId, new ObjectMap(conf), sessionId);
+    }
+
+    @Test
     public void testConfigureSampleIndex() throws Exception {
         SampleIndexConfiguration conf = getRandomConf();
         OpenCGAResult<Job> result = variantManager.configureSampleIndex(studyId, conf, true, sessionId);
@@ -128,7 +145,7 @@ public class VariantStorageManagerTest extends AbstractVariantOperationManagerTe
         assertEquals(new HashSet<>(file.getSampleIds()), variantManager.getIndexedSamples(studyId, sessionId));
 
         Study studyNew = catalogManager.getStudyManager().create(projectId, "sNew", "sNew", "sNew",
-                "Study New", null, null, null, null, null, sessionId)
+                "Study New", null, null, null, null, new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId)
                 .first();
         assertEquals(Collections.emptySet(), variantManager.getIndexedSamples(studyNew.getId(), sessionId));
     }

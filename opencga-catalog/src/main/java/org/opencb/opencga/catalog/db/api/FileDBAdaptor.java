@@ -58,6 +58,7 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
         MODIFICATION_DATE("modificationDate", TEXT_ARRAY, ""),
         DESCRIPTION("description", TEXT_ARRAY, ""),
         EXTERNAL("external", BOOLEAN, ""),
+        RESOURCE("resource", BOOLEAN, ""),
         RELEASE("release", INTEGER, ""),
         STATUS("status", TEXT_ARRAY, ""),
         STATUS_ID("status.id", TEXT, ""),
@@ -96,8 +97,13 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
         INTERNAL_VARIANT_SECONDARY_INDEX("internal.variant.secondaryIndex", TEXT_ARRAY, ""),
         @Deprecated // Deprecated filter. Should use INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX_STATUS_ID once the migration is completed
         INTERNAL_VARIANT_SECONDARY_INDEX_STATUS_ID("internal.variant.secondaryIndex.status.id", TEXT_ARRAY, ""),
+        INTERNAL_ALIGNMENT("internal.alignment", OBJECT, ""),
         INTERNAL_ALIGNMENT_INDEX("internal.alignment.index", TEXT_ARRAY, ""),
         INTERNAL_ALIGNMENT_INDEX_STATUS_ID("internal.alignment.index.status.id", TEXT_ARRAY, ""),
+        INTERNAL_ALIGNMENT_INDEX_FILE_ID("internal.alignment.index.fileId", STRING, ""),
+        INTERNAL_ALIGNMENT_COVERAGE("internal.alignment.coverage", TEXT_ARRAY, ""),
+        INTERNAL_ALIGNMENT_COVERAGE_FILE_ID("internal.alignment.coverage.fileId", STRING, ""),
+        INTERNAL_ALIGNMENT_COVERAGE_STATUS_ID("internal.alignment.coverage.status.id", TEXT_ARRAY, ""),
         INTERNAL_MISSING_SAMPLES("internal.missingSamples", OBJECT, ""),
         INTERNAL_MISSING_SAMPLES_EXISTING("internal.missingSamples.existing", TEXT_ARRAY, ""),
         INTERNAL_MISSING_SAMPLES_NON_EXISTING("internal.missingSamples.nonExisting", TEXT_ARRAY, ""),
@@ -315,6 +321,8 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
      * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
      */
     OpenCGAResult delete(Query query, String status) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+
+    void associateAlignmentFiles(long studyUid) throws CatalogException;
 
     int getFileSampleLinkThreshold();
 

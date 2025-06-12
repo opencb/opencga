@@ -3,6 +3,8 @@ package org.opencb.opencga.analysis.wrappers.plink;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
+import org.opencb.opencga.core.config.Analysis;
+import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +22,15 @@ public class PlinkWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor 
     private String study;
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
+
+    public static String getDockerImageName(Analysis analysisConf) throws ToolException {
+        return analysisConf.getOpencgaExtTools().split(":")[0];
+    }
+
+    @Override
+    public String getDockerImageName() throws ToolException {
+        return getDockerImageName(getConfiguration().getAnalysis());
+    }
 
     @Override
     protected void run() throws Exception {

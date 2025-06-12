@@ -153,7 +153,17 @@ public abstract class MigrationTool {
                 .cursor()) {
             while (it.hasNext()) {
                 Document document = it.next();
-                migrateFunc.accept(document, list);
+                try {
+                    migrateFunc.accept(document, list);
+                } catch (Exception e) {
+                    try {
+                        logger.error("Error migrating document: {}", document.toJson());
+                    } catch (Exception e1) {
+                        e.addSuppressed(e1);
+                        logger.error("Error migrating document: {}", e.getMessage());
+                    }
+                    throw e;
+                }
 
                 if (list.size() >= batchSize) {
                     count += list.size();

@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.clinical.ClinicalComment;
@@ -8,10 +9,7 @@ import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -110,11 +108,11 @@ public class IndividualManagerTest extends AbstractManagerTest {
                 .setDisorders(Collections.singletonList(new Disorder().setId("adisorder2")));
         catalogManager.getIndividualManager().create(studyFqn, individual, null, ownerToken);
 
-        OpenCGAResult<?> result = catalogManager.getIndividualManager().distinct(organizationId, studyFqn,
+        OpenCGAResult<?> result = catalogManager.getIndividualManager().distinct(studyFqn,
                 IndividualDBAdaptor.QueryParams.DISORDERS_ID.key(), new Query(), ownerToken);
         assertEquals(3, result.getNumResults());
 
-        result = catalogManager.getIndividualManager().distinct(organizationId, studyFqn, IndividualDBAdaptor.QueryParams.DISORDERS_ID.key(),
+        result = catalogManager.getIndividualManager().distinct(studyFqn, IndividualDBAdaptor.QueryParams.DISORDERS_ID.key(),
                 new Query(IndividualDBAdaptor.QueryParams.DISORDERS.key(), "~^disor"), ownerToken);
         assertEquals(2, result.getNumResults());
 
@@ -142,7 +140,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
                 .setDisorders(Collections.singletonList(new Disorder().setId("disorder2")));
         catalogManager.getIndividualManager().create(studyFqn, individual, null, ownerToken);
 
-        OpenCGAResult<?> result = catalogManager.getIndividualManager().distinct(organizationId, studyFqn,
+        OpenCGAResult<?> result = catalogManager.getIndividualManager().distinct(studyFqn,
                 IndividualDBAdaptor.QueryParams.DISORDERS_ID.key(), new Query(), ownerToken);
         assertEquals(3, result.getNumResults());
 
@@ -434,6 +432,91 @@ public class IndividualManagerTest extends AbstractManagerTest {
             if (!entry.getKey().equals("newId1")) {
                 assertTrue(entry.getValue().containsKey("newId1"));
             }
+        }
+    }
+
+    @Test
+    public void fatherMotherOptionsTest() throws CatalogException {
+        Individual individual = new Individual()
+                .setId("father")
+                .setName("father");
+        catalogManager.getIndividualManager().create(studyFqn, individual, Collections.emptyList(), QueryOptions.empty(), ownerToken);
+
+        individual = new Individual()
+                .setId("mother")
+                .setName("mother");
+        catalogManager.getIndividualManager().create(studyFqn, individual, Collections.emptyList(), QueryOptions.empty(), ownerToken);
+
+        individual = new Individual().setId("brother")
+                .setName("brother")
+                .setFather(new Individual().setId("father"))
+                .setMother(new Individual().setId("mother"));
+        catalogManager.getIndividualManager().create(studyFqn, individual, Collections.emptyList(), QueryOptions.empty(), ownerToken);
+
+        individual = new Individual().setId("sister")
+                .setName("sister")
+                .setFather(new Individual().setId("father"))
+                .setMother(new Individual().setId("mother"));
+        catalogManager.getIndividualManager().create(studyFqn, individual, Collections.emptyList(), QueryOptions.empty(), ownerToken);
+
+        OpenCGAResult<Individual> result = catalogManager.getIndividualManager().get(studyFqn, Arrays.asList("brother", "sister"),
+                QueryOptions.empty(), ownerToken);
+        assertEquals(2, result.getNumResults());
+        for (Individual tIndividual : result.getResults()) {
+            assertTrue("brother".equals(tIndividual.getId()) || "sister".equals(tIndividual.getId()));
+            assertNotNull(tIndividual.getFather());
+            assertNotNull(tIndividual.getMother());
+            assertEquals("father", tIndividual.getFather().getId());
+            assertEquals("father", tIndividual.getFather().getName());
+            assertEquals("mother", tIndividual.getMother().getId());
+            assertEquals("mother", tIndividual.getMother().getName());
+        }
+
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(IndividualDBAdaptor.QueryParams.NAME.key(),
+                IndividualDBAdaptor.QueryParams.FATHER.key() + "." + IndividualDBAdaptor.QueryParams.ID.key(),
+                IndividualDBAdaptor.QueryParams.FATHER.key() + "." + IndividualDBAdaptor.QueryParams.NAME.key(),
+                IndividualDBAdaptor.QueryParams.MOTHER.key() + "." + IndividualDBAdaptor.QueryParams.ID.key()));
+        result = catalogManager.getIndividualManager().get(studyFqn, Arrays.asList("brother", "sister"), options, ownerToken);
+        assertEquals(2, result.getNumResults());
+        for (Individual tIndividual : result.getResults()) {
+            assertTrue("brother".equals(tIndividual.getId()) || "sister".equals(tIndividual.getId()));
+            assertTrue("brother".equals(tIndividual.getName()) || "sister".equals(tIndividual.getName()));
+            assertNotNull(tIndividual.getFather());
+            assertNotNull(tIndividual.getMother());
+            assertEquals("father", tIndividual.getFather().getId());
+            assertEquals("father", tIndividual.getFather().getName());
+            assertEquals("mother", tIndividual.getMother().getId());
+            assertNull(tIndividual.getMother().getName());
+        }
+
+        options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                IndividualDBAdaptor.QueryParams.FATHER.key() + "." + IndividualDBAdaptor.QueryParams.ID.key(),
+                IndividualDBAdaptor.QueryParams.MOTHER.key() + "." + IndividualDBAdaptor.QueryParams.ID.key(),
+                IndividualDBAdaptor.QueryParams.MOTHER.key() + "." + IndividualDBAdaptor.QueryParams.NAME.key()));
+        result = catalogManager.getIndividualManager().get(studyFqn, Arrays.asList("brother", "sister"), options, ownerToken);
+        assertEquals(2, result.getNumResults());
+        for (Individual tIndividual : result.getResults()) {
+            assertTrue("brother".equals(tIndividual.getId()) || "sister".equals(tIndividual.getId()));
+            assertNull(tIndividual.getName());
+            assertNotNull(tIndividual.getFather());
+            assertNotNull(tIndividual.getMother());
+            assertEquals("father", tIndividual.getFather().getId());
+            assertNull(tIndividual.getFather().getName());
+            assertEquals("mother", tIndividual.getMother().getId());
+            assertEquals("mother", tIndividual.getMother().getName());
+        }
+
+        options = new QueryOptions(QueryOptions.INCLUDE, Collections.singletonList(IndividualDBAdaptor.QueryParams.FATHER.key()
+                + "." + IndividualDBAdaptor.QueryParams.ID.key()));
+        result = catalogManager.getIndividualManager().get(studyFqn, Arrays.asList("brother", "sister"), options, ownerToken);
+        assertEquals(2, result.getNumResults());
+        for (Individual tIndividual : result.getResults()) {
+            assertTrue("brother".equals(tIndividual.getId()) || "sister".equals(tIndividual.getId()));
+            assertNull(tIndividual.getName());
+            assertNotNull(tIndividual.getFather());
+            assertNull(tIndividual.getMother());
+            assertEquals("father", tIndividual.getFather().getId());
+            assertNull(tIndividual.getFather().getName());
         }
     }
 
@@ -1141,4 +1224,61 @@ public class IndividualManagerTest extends AbstractManagerTest {
         assertTrue(Arrays.asList("variant-test-file.vcf.gz", "NA19600.chrom20.small.bam").containsAll(individual.getSamples().get(0).getFileIds()));
     }
 
+    @Test
+    public void testFacet() throws CatalogException {
+        OpenCGAResult<Individual> results = catalogManager.getIndividualManager().search(studyFqn, new Query(), QueryOptions.empty(), normalToken1);
+        System.out.println("results.getResults() = " + results.getResults());
+        OpenCGAResult<FacetField> facets = catalogManager.getIndividualManager().facet(studyFqn, new Query(), "karyotypicSex", normalToken1);
+
+        long totalCount = 0;
+        Map<String, Integer> map = new HashMap<>();
+        for (Individual result : results.getResults()) {
+            String key;
+            if (result.getKaryotypicSex() == null) {
+                key = "null";
+            } else {
+                key = result.getKaryotypicSex().name();
+            }
+            if (!map.containsKey(key)) {
+                map.put(key, 0);
+            }
+            map.put(key, 1 + map.get(key));
+            totalCount++;
+        }
+
+        Assert.assertEquals(1, facets.getResults().size());
+        for (FacetField result : facets.getResults()) {
+            Assert.assertEquals(totalCount, result.getCount());
+            Assert.assertEquals(map.size(), result.getBuckets().size());
+            for (FacetField.Bucket bucket : result.getBuckets()) {
+                Assert.assertEquals(1L * map.get(bucket.getValue()), bucket.getCount());
+            }
+        }
+    }
+
+    @Test
+    public void testFacetMaxDotNotation() throws CatalogException {
+        OpenCGAResult<Individual> results = catalogManager.getIndividualManager().search(studyFqn, new Query(), QueryOptions.empty(), normalToken1);
+        System.out.println("results.getResults() = " + results.getResults());
+        String accumulator = "max";
+        String facetName = "samples.version";
+        OpenCGAResult<FacetField> facets = catalogManager.getIndividualManager().facet(studyFqn, new Query(), accumulator + "(" + facetName + ")", normalToken1);
+
+        int maxVersion = 0;
+        for (Individual result : results.getResults()) {
+            for (Sample sample : result.getSamples()) {
+                if (sample.getVersion() > maxVersion) {
+                    maxVersion = sample.getVersion();
+                }
+            }
+        }
+
+        Assert.assertEquals(1, facets.getResults().size());
+        for (FacetField result : facets.getResults()) {
+            Assert.assertEquals(facetName, result.getName());
+            Assert.assertEquals(accumulator, result.getAggregationName());
+            Assert.assertEquals(1, result.getAggregationValues().size());
+            Assert.assertEquals(maxVersion, result.getAggregationValues().get(0), 0.0001);
+        }
+    }
 }

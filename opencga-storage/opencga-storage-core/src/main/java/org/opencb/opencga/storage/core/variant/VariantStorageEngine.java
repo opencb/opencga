@@ -34,7 +34,6 @@ import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
 import org.opencb.opencga.core.models.variant.VariantSetupParams;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngine;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -57,9 +56,11 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnno
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
+import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.executors.*;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
@@ -284,6 +285,53 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         return exporter.export(outputFile, outputFormat, variantsFile, parsedVariantQuery);
     }
 
+    public List<URI> walkData(URI outputFile, VariantWriterFactory.VariantOutputFormat format, Query query, QueryOptions queryOptions,
+                              String dockerImage, String commandLine)
+            throws IOException, StorageEngineException {
+        if (format == VariantWriterFactory.VariantOutputFormat.VCF || format == VariantWriterFactory.VariantOutputFormat.VCF_GZ) {
+            if (!isValidParam(query, VariantQueryParam.UNKNOWN_GENOTYPE)) {
+                query.put(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.");
+            }
+        }
+        commandLine = commandLine.replace("'", "'\"'\"'");
+
+        String memory = getOptions().getString(WALKER_DOCKER_MEMORY.key(), WALKER_DOCKER_MEMORY.defaultValue());
+        String cpu = getOptions().getString(WALKER_DOCKER_CPU.key(), WALKER_DOCKER_CPU.defaultValue());
+        String user = getOptions().getString(WALKER_DOCKER_USER.key(), WALKER_DOCKER_USER.defaultValue());
+        String envs = getOptions().getString(WALKER_DOCKER_ENV.key(), WALKER_DOCKER_ENV.defaultValue());
+        String volume = getOptions().getString(WALKER_DOCKER_MOUNT.key(), WALKER_DOCKER_MOUNT.defaultValue());
+        String opts = getOptions().getString(WALKER_DOCKER_OPTS.key(), WALKER_DOCKER_OPTS.defaultValue());
+
+        String dockerCommandLine = "docker run --rm -i "
+                + "--memory " + memory + " "
+                + "--cpus " + cpu + " ";
+
+        if (StringUtils.isNotEmpty(user)) {
+            dockerCommandLine += "--user " + user + " ";
+        }
+
+        if (StringUtils.isNotEmpty(volume)) {
+            dockerCommandLine += "-v " + volume + ":/data ";
+        }
+
+        if (StringUtils.isNotEmpty(envs)) {
+            for (String s : envs.split(",")) {
+                dockerCommandLine += "--env " + s + " ";
+            }
+        }
+        dockerCommandLine = dockerCommandLine
+                + opts
+                + dockerImage + " bash -ce '" + commandLine + "'";
+        return walkData(outputFile, format, query, queryOptions, dockerCommandLine);
+    }
+
+
+    public List<URI> walkData(URI outputFile, VariantOutputFormat format, Query query, QueryOptions queryOptions,
+                                       String commandLine)
+            throws StorageEngineException {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * Creates a new {@link VariantExporter} for the current backend.
      * The default implementation iterates locally through the database.
@@ -312,6 +360,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     @Override
     public List<StoragePipelineResult> index(List<URI> inputFiles, URI outdirUri, boolean doExtract, boolean doTransform, boolean doLoad)
             throws StorageEngineException {
+        if (!doLoad) {
+            options.put(VariantStorageOptions.TRANSFORM_ISOLATE.key(), true);
+        } else {
+            createStudyIfNeeded();
+        }
         List<StoragePipelineResult> results = super.index(inputFiles, outdirUri, doExtract, doTransform, doLoad);
         if (doLoad) {
             annotateLoadedFiles(outdirUri, inputFiles, results, getOptions());
@@ -656,9 +709,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @param study     Study
      * @param params    Aggregate Family params
      * @param options   Other options
+     * @param outdir    Output directory
      * @throws StorageEngineException if there is any error
      */
-    public void aggregateFamily(String study, VariantAggregateFamilyParams params, ObjectMap options) throws StorageEngineException {
+    public void aggregateFamily(String study, VariantAggregateFamilyParams params, ObjectMap options, URI outdir)
+            throws StorageEngineException {
         throw new UnsupportedOperationException();
     }
 
@@ -822,14 +877,16 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 // then, load variants
                 QueryOptions queryOptions = new QueryOptions();
                 Query query = new Query(VariantQueryParam.STUDY.key(), study)
-                        .append(VariantQueryParam.SAMPLE.key(), samples);
+                        .append(VariantQueryParam.SAMPLE.key(), samples)
+                        .append(VariantSearchManager.USE_SEARCH_INDEX, UseSearchIndex.NO);
 
-                VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions);
+                VariantDBIterator iterator = iterator(query, queryOptions);
 
-                variantSearchManager.load(collectionName, iterator,
+                VariantSearchLoadResult result = variantSearchManager.load(collectionName, iterator,
                         new SolrInputDocumentDataWriter(collectionName,
                                 variantSearchManager.getSolrClient(),
                                 variantSearchManager.getInsertBatchSize()));
+                logger.info("Loaded {} variants into Solr collection '{}'", result.getNumLoadedVariants(), collectionName);
             } else {
                 throw new StorageEngineException("Solr is not alive!");
             }
@@ -877,8 +934,21 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             sampleIds.add(sampleId);
             secIndexIdSet.addAll(secondaryIndexCohorts);
         }
+        int cohortsFound = secIndexIdSet.size();
+        for (Iterator<Integer> iterator = secIndexIdSet.iterator(); iterator.hasNext();) {
+            Integer cohortId = iterator.next();
+            CohortMetadata cohort = metadataManager.getCohortMetadata(sm.getId(), cohortId);
+            if (cohort.getSamples().size() != sampleIds.size() || !cohort.getSamples().containsAll(sampleIds)) {
+                // Discard those cohorts that don't contain all requested samples.
+                iterator.remove();
+            }
+        }
         if (secIndexIdSet.isEmpty() || secIndexIdSet.contains(null)) {
-            throw new StorageEngineException("Samples not in a secondary index");
+            if (cohortsFound == 1) {
+                throw new StorageEngineException("Need to delete all samples from the secondary index");
+            } else {
+                throw new StorageEngineException("Samples not in the same secondary index");
+            }
         } else if (secIndexIdSet.size() != 1) {
             throw new StorageEngineException("Samples in multiple secondary indexes");
         }
@@ -1047,12 +1117,12 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      *
      * @param study      Study
      * @param fileIds    Files to fully delete, including all their samples.
-     * @param sampleIds  Samples to remove, leaving partial files.
+     * @param samplesPartial  Samples to remove, leaving partial files.
      * @param taskId     Remove task id
      * @param error      If the remove operation succeeded
      * @throws StorageEngineException StorageEngineException
      */
-    protected void postRemoveFiles(String study, List<Integer> fileIds, List<Integer> sampleIds, int taskId, boolean error)
+    protected void postRemoveFiles(String study, List<Integer> fileIds, List<Integer> samplesPartial, int taskId, boolean error)
             throws StorageEngineException {
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         metadataManager.updateStudyMetadata(study, studyMetadata -> {
@@ -1060,59 +1130,19 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 metadataManager.setStatus(studyMetadata.getId(), taskId, TaskMetadata.Status.ERROR);
             } else {
                 metadataManager.setStatus(studyMetadata.getId(), taskId, TaskMetadata.Status.READY);
+
+                Set<Integer> samples = new HashSet<>(samplesPartial);
+                Set<Integer> samplesFromFiles = new HashSet<>();
+                for (Integer fileId : fileIds) {
+                    samplesFromFiles.addAll(metadataManager.getFileMetadata(studyMetadata.getId(), fileId).getSamples());
+                }
+                samples.addAll(samplesFromFiles);
+
+                // Remove files and belonging samples
                 metadataManager.removeIndexedFiles(studyMetadata.getId(), fileIds);
 
-                for (Integer fileId : metadataManager.getFileIdsFromSampleIds(studyMetadata.getId(), sampleIds)) {
-                    metadataManager.updateFileMetadata(studyMetadata.getId(), fileId, f -> {
-                        f.getSamples().removeAll(sampleIds);
-                    });
-                }
-                for (Integer sampleId : sampleIds) {
-                    metadataManager.updateSampleMetadata(studyMetadata.getId(), sampleId, s -> {
-                        s.setIndexStatus(TaskMetadata.Status.NONE);
-                        for (Integer v : s.getSampleIndexVersions()) {
-                            s.setSampleIndexStatus(TaskMetadata.Status.NONE, v);
-                        }
-                        for (Integer v : s.getSampleIndexAnnotationVersions()) {
-                            s.setSampleIndexAnnotationStatus(TaskMetadata.Status.NONE, v);
-                        }
-                        for (Integer v : s.getFamilyIndexVersions()) {
-                            s.setFamilyIndexStatus(TaskMetadata.Status.NONE, v);
-                        }
-                        s.setAnnotationStatus(TaskMetadata.Status.NONE);
-                        s.setMendelianErrorStatus(TaskMetadata.Status.NONE);
-                        s.setFiles(Collections.emptyList());
-                        s.setCohorts(Collections.emptySet());
-                        s.setAttributes(new ObjectMap());
-                    });
-                }
-
-                Set<Integer> removedSamples = new HashSet<>(sampleIds);
-                Set<Integer> removedSamplesFromFiles = new HashSet<>();
-                for (Integer fileId : fileIds) {
-                    removedSamplesFromFiles.addAll(metadataManager.getFileMetadata(studyMetadata.getId(), fileId).getSamples());
-                }
-                removedSamples.addAll(removedSamplesFromFiles);
-
-                List<Integer> cohortsToInvalidate = new LinkedList<>();
-                for (CohortMetadata cohort : metadataManager.getCalculatedCohorts(studyMetadata.getId())) {
-                    for (Integer removedSample : removedSamples) {
-                        if (cohort.getSamples().contains(removedSample)) {
-                            logger.info("Invalidating statistics of cohort "
-                                    + cohort.getName()
-                                    + " (" + cohort.getId() + ')');
-                            cohortsToInvalidate.add(cohort.getId());
-                            break;
-                        }
-                    }
-                }
-                for (Integer cohortId : cohortsToInvalidate) {
-                    metadataManager.updateCohortMetadata(studyMetadata.getId(), cohortId,
-                            cohort -> {
-                                cohort.getFiles().removeAll(fileIds);
-                                cohort.setStatsStatus(TaskMetadata.Status.ERROR);
-                            });
-                }
+                // Remove samples partial
+                metadataManager.removeSamples(studyMetadata.getId(), samplesPartial, fileIds, true);
 
                 // Restore default cohort with indexed samples
                 metadataManager.setSamplesToCohort(studyMetadata.getId(), StudyEntry.DEFAULT_COHORT,
@@ -1158,6 +1188,14 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     @Override
     public abstract void testConnection() throws StorageEngineException;
+
+    public void validateNewConfiguration(ObjectMap params) throws StorageEngineException {
+        for (VariantStorageOptions option : VariantStorageOptions.values()) {
+            if (option.isProtected() && params.get(option.key()) != null) {
+                throw new StorageEngineException("Unable to update protected option '" + option.key() + "'");
+            }
+        }
+    }
 
     public void reloadCellbaseConfiguration() {
         cellBaseUtils = null;
@@ -1356,7 +1394,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     public VariantQueryExecutor getVariantQueryExecutor(ParsedVariantQuery variantQuery) {
         try {
             for (VariantQueryExecutor executor : getVariantQueryExecutors()) {
-                if (executor.canUseThisExecutor(variantQuery, variantQuery.getInputOptions())) {
+                if (executor.acceptsQuery(variantQuery)) {
                     logger.info("Using VariantQueryExecutor : " + executor.getClass().getName());
                     logger.info("  Query : " + VariantQueryUtils.printQuery(variantQuery.getInputQuery()));
                     logger.info("  Options : " + variantQuery.getInputOptions().toJson());
@@ -1481,6 +1519,24 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             throw VariantQueryException.internalException(e);
         }
         return executors;
+    }
+
+    protected void createStudyIfNeeded() throws StorageEngineException {
+        String studyName = getOptions().getString(VariantStorageOptions.STUDY.key(), VariantStorageOptions.STUDY.defaultValue());
+        if (studyName == null || studyName.isEmpty()) {
+            throw new StorageEngineException("Missing study");
+        }
+        StudyMetadata studyMetadata = getMetadataManager().getStudyMetadata(studyName);
+        if (studyMetadata == null) {
+            logger.info("Creating a new StudyMetadata '{}'", studyName);
+            String cellbaseVersion;
+            try {
+                cellbaseVersion = getCellBaseUtils().getVersionFromServer();
+            } catch (IOException e) {
+                throw new StorageEngineException("Unable to get CellBase version", e);
+            }
+            getMetadataManager().createStudy(studyName, cellbaseVersion);
+        }
     }
 
     /**

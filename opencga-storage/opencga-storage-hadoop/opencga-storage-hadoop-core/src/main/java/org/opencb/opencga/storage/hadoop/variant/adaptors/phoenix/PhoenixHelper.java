@@ -36,10 +36,7 @@ import org.apache.phoenix.schema.ConcurrentTableMutationException;
 import org.apache.phoenix.schema.PTable;
 import org.apache.phoenix.schema.PTableType;
 import org.apache.phoenix.schema.TableNotFoundException;
-import org.apache.phoenix.schema.types.PArrayDataType;
-import org.apache.phoenix.schema.types.PDataType;
-import org.apache.phoenix.schema.types.PInteger;
-import org.apache.phoenix.schema.types.PhoenixArray;
+import org.apache.phoenix.schema.types.*;
 import org.apache.phoenix.util.*;
 import org.opencb.opencga.core.common.BatchUtils;
 import org.opencb.opencga.core.common.ExceptionUtils;
@@ -51,8 +48,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -75,37 +70,14 @@ public class PhoenixHelper {
 
     private final Configuration conf;
     private static Logger logger = LoggerFactory.getLogger(PhoenixHelper.class);
-    private static Method positionAtArrayElement;
     private TableName systemCatalog;
 
     public PhoenixHelper(Configuration conf) {
         this.conf = conf;
     }
 
-    static {
-        Class<?> decoder;
-        try {
-            decoder = Class.forName("org.apache.phoenix.schema.types.PArrayDataTypeDecoder");
-        } catch (ClassNotFoundException e) {
-            decoder = PArrayDataType.class;
-        }
-        try {
-            positionAtArrayElement = decoder.getMethod("positionAtArrayElement",
-                    ImmutableBytesWritable.class, Integer.TYPE, PDataType.class, Integer.class);
-        } catch (NoSuchMethodException e) {
-            // This should never happen!
-            throw new RuntimeException(e);
-        }
-    }
-
     public static boolean positionAtArrayElement(ImmutableBytesWritable ptr, int arrayIndex, PDataType pDataType, Integer byteSize) {
-//        return PArrayDataTypeDecoder.positionAtArrayElement(ptr, arrayIndex, instance, byteSize);
-        try {
-            Object o = positionAtArrayElement.invoke(null, ptr, arrayIndex, pDataType, byteSize);
-            return o == null || (boolean) o;
-        } catch (IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException(e);
-        }
+        return PArrayDataTypeDecoder.positionAtArrayElement(ptr, arrayIndex, pDataType, byteSize);
     }
 
     public boolean execute(Connection con, String sql) throws SQLException {

@@ -20,6 +20,7 @@ import org.opencb.commons.exec.Command;
 import org.opencb.commons.exec.RunnableProcess;
 import org.opencb.opencga.core.config.Execution;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.job.Job;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,7 +72,8 @@ public class LocalExecutor implements BatchExecutor {
     }
 
     @Override
-    public void execute(String jobId, String queue, String commandLine, Path stdout, Path stderr) throws Exception {
+    public void execute(Job job, String queue, String commandLine, Path stdout, Path stderr) throws Exception {
+        String jobId = job.getId();
         jobStatus.put(jobId, Enums.ExecutionStatus.QUEUED);
         Runnable runnable = () -> {
             try {

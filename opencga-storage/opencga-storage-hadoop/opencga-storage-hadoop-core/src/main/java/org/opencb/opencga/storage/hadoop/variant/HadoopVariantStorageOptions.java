@@ -42,6 +42,7 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     MR_HBASE_SCAN_CACHING("storage.hadoop.mr.scan.caching", 50),
     MR_HBASE_SCAN_MAX_COLUMNS("storage.hadoop.mr.scan.maxColumns", 25000),
     MR_HBASE_SCAN_MAX_FILTERS("storage.hadoop.mr.scan.maxFilters", 2000),
+    MR_HBASE_PHOENIX_SCAN_SPLIT("storage.hadoop.mr.phoenix.scanSplit", 5),
 
     /**
      * MapReduce executor. Could be either 'system' or 'ssh'.
@@ -59,6 +60,19 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     MR_EXECUTOR_SSH_HADOOP_SSH_BIN("storage.hadoop.mr.executor.ssh.hadoop-ssh.bin", "misc/scripts/hadoop-ssh.sh"),
     MR_EXECUTOR_SSH_HADOOP_SCP_BIN("storage.hadoop.mr.executor.ssh.hadoop-scp.bin", "misc/scripts/hadoop-scp.sh"),
     MR_EXECUTOR_SSH_HADOOP_TERMINATION_GRACE_PERIOD_SECONDS("storage.hadoop.mr.executor.ssh.terminationGracePeriodSeconds", 120),
+
+    MR_STREAM_DOCKER_HOST("storage.hadoop.mr.stream.docker.host", "", true),
+    MR_HEAP_MIN_MB("storage.hadoop.mr.heap.min-mb", 512),  // Min heap size for the JVM
+    MR_HEAP_MAX_MB("storage.hadoop.mr.heap.max-mb", 2048), // Max heap size for the JVM
+    MR_HEAP_MAP_OTHER_MB("storage.hadoop.mr.heap.map.other-mb", 0), // Other reserved memory. Not used by the JVM heap.
+    MR_HEAP_REDUCE_OTHER_MB("storage.hadoop.mr.heap.reduce.other-mb", 0), // Other reserved memory. Not used by the JVM heap.
+    MR_HEAP_MEMORY_MB_RATIO("storage.hadoop.mr.heap.memory-mb.ratio", 0.6), // Ratio of the memory to use for the JVM heap.
+    // Heap size for the map and reduce tasks.
+    // If not set, it will be calculated as:
+    //      (REQUIRED_MEMORY - MR_HEAP_OTHER_MB) * MR_HEAP_MEMORY_MB_RATIO
+    //      then caped between MR_HEAP_MIN_MB and MR_HEAP_MAX_MB
+    MR_HEAP_MAP_MB("storage.hadoop.mr.heap.map.mb"),
+    MR_HEAP_REDUCE_MB("storage.hadoop.mr.heap.reduce.mb"),
 
     /////////////////////////
     // Variant table configuration
@@ -116,6 +130,8 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     FILL_MISSING_SIMPLIFIED_MULTIALLELIC_VARIANTS("storage.hadoop.fill_missing.simplifiedMultiAllelicVariants", true),
     FILL_MISSING_GAP_GENOTYPE("storage.hadoop.fill_missing.gap_genotype", "0/0"),
     FILL_GAPS_GAP_GENOTYPE("storage.hadoop.fill_gaps.gap_genotype", "0/0"),
+    FILL_GAPS_GAP_LOCAL_BUFFER_SIZE("storage.hadoop.fill_gaps.local.bufferSize", 10000),
+    FILL_GAPS_GAP_LOCAL_ENABLED("storage.hadoop.fill_gaps.local.enabled", true),
 
     WRITE_MAPPERS_LIMIT_FACTOR("storage.hadoop.write.mappers.limit.factor", 1.5F),
 
@@ -134,6 +150,7 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
 
     private final String key;
     private final Object value;
+    private final boolean isProtected;
 
     HadoopVariantStorageOptions(String key) {
         this(key, null);
@@ -142,6 +159,13 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     HadoopVariantStorageOptions(String key, Object value) {
         this.key = key;
         this.value = value;
+        this.isProtected = false;
+    }
+
+    HadoopVariantStorageOptions(String key, Object value, boolean isProtected) {
+        this.key = key;
+        this.value = value;
+        this.isProtected = isProtected;
     }
 
     @Override
@@ -157,4 +181,11 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     public <T> T defaultValue() {
         return (T) value;
     }
+
+    @Override
+    public boolean isProtected() {
+        return isProtected;
+    }
+
+
 }

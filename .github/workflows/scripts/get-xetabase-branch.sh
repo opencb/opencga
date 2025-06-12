@@ -3,24 +3,25 @@
 # Function to calculate the corresponding branch of Xetabase project
 get_xetabase_branch() {
   # Input parameter (branch name)
-  input_branch="$1"
+  target_branch="$1"
+  current_branch="$2"
 
   # If the branch begins with 'TASK' and exists in the opencga-enterprise repository, I return it
-  if [[ $input_branch == TASK* ]]; then
-    if [ "$(git ls-remote "https://$ZETTA_REPO_ACCESS_TOKEN@github.com/zetta-genomics/opencga-enterprise.git" "$input_branch" )" ] ; then
-      echo $input_branch;
+  if [[ $current_branch == TASK* ]]; then
+    if [ "$(git ls-remote "https://$ZETTA_REPO_ACCESS_TOKEN@github.com/zetta-genomics/opencga-enterprise.git" "$current_branch" )" ] ; then
+      echo "$current_branch";
       return 0;
     fi
   fi
 
   # Check if the branch name is "develop" in that case return the same branch name
-  if [[ "$input_branch" == "develop" ]]; then
+  if [[ "$target_branch" == "develop" ]]; then
     echo "develop"
     return 0
   fi
 
   # Check if the branch name starts with "release-" and follows the patterns "release-a.x.x" or "release-a.b.x"
-  if [[ "$input_branch" =~ ^release-([0-9]+)\.x\.x$ ]] || [[ "$input_branch" =~ ^release-([0-9]+)\.([0-9]+)\.x$ ]]; then
+  if [[ "$target_branch" =~ ^release-([0-9]+)\.x\.x$ ]] || [[ "$target_branch" =~ ^release-([0-9]+)\.([0-9]+)\.x$ ]]; then
     # Extract the MAJOR part of the branch name
     MAJOR=${BASH_REMATCH[1]}
     # Calculate the XETABASE_MAJOR by subtracting 1 from MAJOR of opencga
@@ -31,7 +32,7 @@ get_xetabase_branch() {
       return 1
     fi
     # Construct and echo the new branch name
-    echo "release-$XETABASE_MAJOR.${input_branch#release-$MAJOR.}"
+    echo "release-$XETABASE_MAJOR.${target_branch#release-$MAJOR.}"
     return 0
   fi
 
@@ -41,10 +42,11 @@ get_xetabase_branch() {
 }
 
 # Check if the script receives exactly one argument
-if [ "$#" -ne 1 ]; then
-  echo "Usage: $0 <branch-name>"
+if [ "$#" -ne 2 ]; then
+  echo "Usage: $0 <target-branch> <current-branch>"
   exit 1
 fi
 
+
 # Call the function with the input branch name
-get_xetabase_branch "$1"
+get_xetabase_branch "$1" "$2"

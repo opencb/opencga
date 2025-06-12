@@ -1,10 +1,7 @@
 package org.opencb.opencga.analysis.clinical.exomiser;
 
 import org.apache.commons.lang3.StringUtils;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.variant.Variant;
@@ -16,8 +13,11 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.ClinicalAnalysisUtilsTest;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
+import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.ResourceException;
 import org.opencb.opencga.catalog.managers.AbstractClinicalManagerTest;
+import org.opencb.opencga.catalog.utils.ResourceManager;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -33,16 +33,14 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.mongodb.assertions.Assertions.assertFalse;
-import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeThat;
-import static org.junit.Assume.assumeTrue;
 
 @Category(MediumTests.class)
 public class ExomiserInterpretationAnalysisTest  {
 
     private static AbstractClinicalManagerTest clinicalTest;
+    private static ResourceManager resourceManager;
 
     Path outDir;
 
@@ -51,8 +49,9 @@ public class ExomiserInterpretationAnalysisTest  {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        opencga.clearStorageDB();
+        opencga.clear();
         clinicalTest = ClinicalAnalysisUtilsTest.getClinicalTest(opencga);
+        resourceManager = new ResourceManager(opencga.getOpencgaHome());
     }
 
     @AfterClass
@@ -77,12 +76,11 @@ public class ExomiserInterpretationAnalysisTest  {
 
     @Test
     public void singleExomiserAnalysis() throws IOException, CatalogException, ToolException {
-//        String exomiserVersion = "13.1";
+//        String exomiserVersion = "13.1.0";
 //        String resourceVersion = "2109";
-        String exomiserVersion = "14.0";
+        String exomiserVersion = "14.0.0";
         String resourceVersion = "2402";
-        assertTrue(opencga.getOpencgaHome().resolve("analysis").resolve("exomiser").resolve(exomiserVersion).toFile().exists());
-        assumeTrue(Paths.get("/opt/opencga/analysis/resources/exomiser/READY-" + resourceVersion).toFile().exists());
+        assertTrue(opencga.getOpencgaHome().resolve(ResourceManager.ANALYSIS_DIRNAME).resolve(ExomiserWrapperAnalysis.ID).resolve(exomiserVersion).toFile().exists());
 
         prepareExomiserData();
         outDir = Paths.get(opencga.createTmpOutdir("_interpretation_analysis_single"));
@@ -101,6 +99,11 @@ public class ExomiserInterpretationAnalysisTest  {
                 .setClinicalAnalysisId(clinicalTest.CA_ID2)
                 .setExomiserVersion(exomiserVersion);
 
+        try {
+            resourceManager.checkResourcePaths(ExomiserWrapperAnalysis.ID, exomiserVersion);
+        } catch (ResourceException e) {
+            Assume.assumeNoException(e);
+        }
         ExecutionResult result = exomiser.start();
 
         // Refresh clinical analysis
@@ -128,12 +131,11 @@ public class ExomiserInterpretationAnalysisTest  {
 
     @Test
     public void familyExomiserAnalysis() throws IOException, CatalogException, ToolException {
-//        String exomiserVersion = "13.1";
+//        String exomiserVersion = "13.1.0";
 //        String resourceVersion = "2109";
-        String exomiserVersion = "14.0";
+        String exomiserVersion = "14.0.0";
         String resourceVersion = "2402";
-        assertTrue(opencga.getOpencgaHome().resolve("analysis").resolve("exomiser").resolve(exomiserVersion).toFile().exists());
-        assumeTrue(Paths.get("/opt/opencga/analysis/resources/exomiser/READY-" + resourceVersion).toFile().exists());
+        assertTrue(opencga.getOpencgaHome().resolve(ResourceManager.ANALYSIS_DIRNAME).resolve(ExomiserWrapperAnalysis.ID).resolve(exomiserVersion).toFile().exists());
 
         prepareExomiserData();
         outDir = Paths.get(opencga.createTmpOutdir("_interpretation_analysis_trio_family"));
@@ -149,6 +151,11 @@ public class ExomiserInterpretationAnalysisTest  {
                 .setClinicalAnalysisId(clinicalTest.CA_ID3)
                 .setExomiserVersion(exomiserVersion);
 
+        try {
+            resourceManager.checkResourcePaths(ExomiserWrapperAnalysis.ID, exomiserVersion);
+        } catch (ResourceException e) {
+            Assume.assumeNoException(e);
+        }
         ExecutionResult result = exomiser.start();
 
         // Refresh clinical analysis
@@ -177,13 +184,12 @@ public class ExomiserInterpretationAnalysisTest  {
     }
 
     @Test
-    public void trioSingleExomiserAnalysis() throws IOException, CatalogException, ToolException {
-//        String exomiserVersion = "13.1";
+    public void trioSingleExomiserAnalysis() throws IOException, CatalogException, ToolException, ResourceException {
+//        String exomiserVersion = "13.1.0";
 //        String resourceVersion = "2109";
-        String exomiserVersion = "14.0";
+        String exomiserVersion = "14.0.0";
         String resourceVersion = "2402";
-        assertTrue(opencga.getOpencgaHome().resolve("analysis").resolve("exomiser").resolve(exomiserVersion).toFile().exists());
-        assumeTrue(Paths.get("/opt/opencga/analysis/resources/exomiser/READY-" + resourceVersion).toFile().exists());
+        assertTrue(opencga.getOpencgaHome().resolve(ResourceManager.ANALYSIS_DIRNAME).resolve(ExomiserWrapperAnalysis.ID).resolve(exomiserVersion).toFile().exists());
 
         prepareExomiserData();
         outDir = Paths.get(opencga.createTmpOutdir("_interpretation_analysis_trio_single"));
@@ -199,6 +205,11 @@ public class ExomiserInterpretationAnalysisTest  {
                 .setClinicalAnalysisId(clinicalTest.CA_ID4)
                 .setExomiserVersion(exomiserVersion);
 
+        try {
+            resourceManager.checkResourcePaths(ExomiserWrapperAnalysis.ID, exomiserVersion);
+        } catch (ResourceException e) {
+            Assume.assumeNoException(e);
+        }
         ExecutionResult result = exomiser.start();
 
         // Refresh clinical analysis

@@ -11,6 +11,7 @@ class RClientGenerator(RestClientGenerator):
         super().__init__(server_url, output_dir)
 
         self.categories = {
+        	'Federations': 'Federation',
         	'Organizations': 'Organization',
             'Users': 'User',
             'Projects': 'Project',
@@ -22,12 +23,14 @@ class RClientGenerator(RestClientGenerator):
             'Families': 'Family',
             'Cohorts': 'Cohort',
             'Disease Panels': 'Panel',
+            'Notes': 'Note',
+            'Workflows': 'Workflow',
             'Analysis - Alignment': 'Alignment',
             'Analysis - Variant': 'Variant',
             'Analysis - Clinical': 'Clinical',
             'Operations - Variant Storage': 'Operation',
             'Meta': 'Meta',
-            'Cvdb': 'Cvdb',
+            'Analysis - CVDB': 'CVDB',
             'GA4GH': 'GA4GH',
             'Admin': 'Admin'
         }

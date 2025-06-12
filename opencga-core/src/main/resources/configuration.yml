@@ -9,7 +9,7 @@ jobDir: ${OPENCGA.USER.WORKSPACE}/jobs
 # Maximum number of login attempts before banning a user account
 account:
   maxLoginAttempts: ${OPENCGA.ACCOUNT.MAX_LOGIN_ATTEMPTS}
-  passwordExpirationDays: 0
+  passwordExpirationDays: 90
 
 panel:
   host: "http://resources.opencb.org/opencb/opencga/disease-panels"
@@ -43,6 +43,12 @@ server:
   grpc:
     port: ${OPENCGA.SERVER.GRPC.PORT}
 
+quota:                             # Quotas per organisation
+  maxNumUsers: -1                  # Maximum number of users that an organisation can have. -1 to disable.
+  maxNumProjects: -1               # Maximum number of projects that an organisation can have. -1 to disable.
+  maxNumVariantIndexSamples: -1    # Maximum number of variant index samples that an organisation can have. -1 to disable.
+  maxNumJobHours: -1               # Maximum number of hours that the organisation can use in jobs on a monthly basis. -1 to disable.
+
 audit:
   manager: ""             # Java manager of the audit implementation to be used to audit. If empty, catalog database will be used.
   maxDocuments: 20000000  # Maximum number of documents that will be created in the audit collection.
@@ -70,31 +76,136 @@ analysis:
   # List of packages where to find analysis tools
   packages:
     - "org.opencb.opencga"
+  workflow:
+    # Minimum requirements to run a workflow
+    minRequirements:
+      cpu: 2
+      memory: 8GB
+      disk: 100GB
+    # List of supported workflow managers and the version to be launched by default
+    managers:
+      - id: "NEXTFLOW"
+        version: "24.04.4"
   # Scratch folder for the analysis.
   scratchDir: "${OPENCGA.ANALYSIS.SCRATCH.DIR}"
-  # Default URL for downloading analysis resources.
-  resourceUrl: "http://resources.opencb.org/opencb/opencga/analysis/"
+  resource:
+    # Base URL from fetching/downloading analysis resources.
+    baseUrl: "http://resources.opencb.org/opencb/opencga/analysis/resources/"
+    # Base path where to download the analysis resources.
+    basePath: "${OPENCGA.INSTALLATION.DIR}/analysis/resources"
+    # List of resources to fetch during initialization; the wildcard '*' can be used, e.g.: to fetch all resources, use '*';
+    # to fetch only Exomiser resources, use 'EXOMISER_*'
+    fetchOnInit: []
+    # List of resources
+    files:
+      # Exomiser resources
+      - id: "EXOMISER_13_1_0_HG38"
+        url: "exomiser/13.1.0/2109_hg38.zip"
+        md5: "6d4011146705ca7a28eba9df0bfdacd2"
+        path: "exomiser/13.1.0/2109_hg38"
+      - id: "EXOMISER_13_1_0_PHENOTYPE"
+        url: "exomiser/13.1.0/2109_phenotype.zip"
+        md5: "197d126e1b441674f5d5979ac2027591"
+        path: "exomiser/13.1.0/2109_phenotype"
+      - id: "EXOMISER_14_0_0_HG38"
+        url: "exomiser/14.0.0/2402_hg38.zip"
+        md5: "7f89dcf9221c7aa5d5471a2ffdb58303"
+        path: "exomiser/14.0.0/2402_hg38"
+      - id: "EXOMISER_14_0_0_PHENOTYPE"
+        url: "exomiser/14.0.0/2402_phenotype.zip"
+        md5: "3e7092c852c5f23373ccd465bf2fcd85"
+        path: "exomiser/14.0.0/2402_phenotype"
+
+      # Reference genomes
+      - id: "REFERENCE_GENOME_GRCH38_FA"
+        url: "reference-genomes/grch38/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz"
+        md5: "9732aa3c64469b25b73930db9c96a89f"
+        path: "reference-genomes/grch38/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz"
+      - id: "REFERENCE_GENOME_GRCH38_FAI"
+        url: "reference-genomes/grch38/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz.fai"
+        md5: "d527f3eb6b664020cf4d882b5820056f"
+        path: "reference-genomes/grch38/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz.fai"
+      - id: "REFERENCE_GENOME_GRCH38_GZI"
+        url: "reference-genomes/grch38/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz.gzi"
+        md5: "e904772fc5dfa2d69690aafda36332a4"
+        path: "reference-genomes/grch38/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz.gzi"
+      - id: "REFERENCE_GENOME_GRCH38_CHAIN"
+        url: "reference-genomes/grch38/GRCh37_to_GRCh38.chain.gz"
+        md5: "2a862e70fa1afc08f1f3e7a8cc5cda14"
+        path: "reference-genomes/grch38/GRCh37_to_GRCh38.chain.gz"
+      - id: "REFERENCE_GENOME_GRCH37_FA"
+        url: "reference-genomes/grch37/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz"
+        md5: "39a3fff4234a1268c937ec012b3cabb4"
+        path: "reference-genomes/grch37/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz"
+      - id: "REFERENCE_GENOME_GRCH37_FAI"
+        url: "reference-genomes/grch37/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz.fai"
+        md5: "15d081d2bdfe37d0fff6b753a4dcfef0"
+        path: "reference-genomes/grch37/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz.fai"
+      - id: "REFERENCE_GENOME_GRCH37_GZI"
+        url: "reference-genomes/grch37/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz.gzi"
+        md5: "bed234b55a30d624159e8577def7005c"
+        path: "reference-genomes/grch37/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz.gzi"
+      - id: "REFERENCE_GENOME_HG38_FA"
+        url: "reference-genomes/hg38/hg38.fa.gz"
+        md5: "56d2da608721db4d805279301ddc902d"
+        path: "reference-genomes/hg38/hg38.fa.gz"
+      - id: "REFERENCE_GENOME_HG38_CHAIN"
+        url: "reference-genomes/hg38/hg19ToHg38.over.chain.gz"
+        md5: "35887f73fe5e2231656504d1f6430900"
+        path: "reference-genomes/hg38/hg19ToHg38.over.chain.gz"
+      - id: "REFERENCE_GENOME_HG19_FA"
+        url: "reference-genomes/hg19/hg19.fa.gz"
+        md5: "b6631a1b3c6e1a5db6ee94c21a460ae7"
+        path: "reference-genomes/hg19/hg19.fa.gz"
+
+      # Relatedness resources
+      - id: "RELATEDNESS_VARIANTS_PRUNE_IN"
+        url: "relatedness/20221026_152242/variants.prune.in"
+        md5: "9d04ef8199108cfa1223f5217f96d144"
+        path: "relatedness/variants.prune.in"
+      - id: "RELATEDNESS_VARIANTS_FRQ"
+        url: "relatedness/20221026_152242/variants.frq"
+        md5: "30c42b1a87b5c028f1d8201fd47935e6"
+        path: "relatedness/variants.frq"
+
   # Docker used by OpenCGA analysis and containing external tools such as samtools, bcftools, tabix, fastqc, plink1.9, bwa and r-base
   # You can indicate the version, e.g: opencb/opencga-ext-tools:2.12.0, otherwise the current OpenCGA version will be used
   opencgaExtTools: "opencb/opencga-ext-tools"
   tools:
     - id: "exomiser"
-      version: "13.1"
+      version: "13.1.0"
       dockerId: "exomiser/exomiser-cli:13.1.0"
-      resources:
-        HG19: "exomiser/2109_hg19.zip"
-        HG38: "exomiser/2109_hg38.zip"
-        PHENOTYPE: "exomiser/2109_phenotype.zip"
+      resourceIds: ["EXOMISER_13_1_0_HG38", "EXOMISER_13_1_0_PHENOTYPE"]
+
     - id: "exomiser"
-      version: "14.0"
+      version: "14.0.0"
       defaultVersion: true
       dockerId: "exomiser/exomiser-cli:14.0.0"
-      resources:
-        HG19: "exomiser/2402_hg19.zip"
-        HG38: "exomiser/2402_hg38.zip"
-        PHENOTYPE: "exomiser/2402_phenotype.zip"
+      resourceIds: ["EXOMISER_14_0_0_HG38", "EXOMISER_14_0_0_PHENOTYPE"]
+
+    - id: "mutational-signature"
+      resourceIds:
+        - "REFERENCE_GENOME_GRCH38_FA"
+        - "REFERENCE_GENOME_GRCH38_FAI"
+        - "REFERENCE_GENOME_GRCH38_GZI"
+        - "REFERENCE_GENOME_GRCH37_FA"
+        - "REFERENCE_GENOME_GRCH37_FAI"
+        - "REFERENCE_GENOME_GRCH37_GZI"
+
+    - id: "relatedness"
+      resourceIds: ["RELATEDNESS_VARIANTS_PRUNE_IN", "RELATEDNESS_VARIANTS_FRQ"]
+
+    - id: "liftover"
+      resourceIds:
+        - "REFERENCE_GENOME_GRCH38_FA"
+        - "REFERENCE_GENOME_GRCH38_CHAIN"
+        - "REFERENCE_GENOME_GRCH37_FA"
+        - "REFERENCE_GENOME_HG38_FA"
+        - "REFERENCE_GENOME_HG38_CHAIN"
+        - "REFERENCE_GENOME_HG19_FA"
+
   execution:
-    # Accepted values are "local", "SGE", "azure-batch", "k8s"
+    # Accepted values are "local", "SGE", "k8s"
     # see org.opencb.opencga.master.monitor.executors.ExecutorFactory
     id: "${OPENCGA.EXECUTION.MODE}"
     defaultQueue: ""            # Default queue to be used to submit jobs
@@ -137,13 +248,6 @@ analysis:
         - "variant-secondary-sample-index"
       ## Local executor configuration
       local.maxConcurrentJobs: 2    # Max number of concurrent jobs to be executed locally in the master
-      ## Azure Batch Service configuration example
-      # azure.batchAccount : "batchAccount"
-      # azure.batchKey : "batchKey"
-      # azure.batchUri : "https://batchservice.uksouth.batch.azure.com"
-      # azure.batchPoolId : "poolId"
-      # azure.dockerImageName : "openCGADockerImageName"
-      # azure.dockerArgs : "dockerRunOptions"
 
       ## Kubernetes executor configuration example
       # k8s.masterUrl: "https://192.168.99.100:8443/"
@@ -170,14 +274,7 @@ analysis:
       k8s.nodeSelector:
         agentpool: jobs
         kubernetes.io/os: linux
-        kubernetes.io/role: agent
       # FOR ACI:
-      # k8s.requests:
-      #   cpu: 2
-      #   memory: "12G"
-      # k8s.limits:
-      #   cpu: 2
-      #   memory: "12G"
       # k8s.nodeSelector:
       #   kubernetes.io/role: agent
       #   kubernetes.io/os: linux

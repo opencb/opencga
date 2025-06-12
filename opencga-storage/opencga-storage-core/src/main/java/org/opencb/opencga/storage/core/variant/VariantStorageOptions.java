@@ -81,6 +81,10 @@ public enum VariantStorageOptions implements ConfigurationOption {
     ANNOTATOR_CELLBASE_VARIANT_LENGTH_THRESHOLD("annotator.cellbase.variantLengthThreshold", Integer.MAX_VALUE),
     ANNOTATOR_CELLBASE_IMPRECISE_VARIANTS("annotator.cellbase.impreciseVariants", true),
     ANNOTATOR_CELLBASE_STAR_ALTERNATE("annotator.cellbase.starAlternate", false),
+    ANNOTATOR_EXTENSION_PREFIX("annotator.extension."),
+    ANNOTATOR_EXTENSION_LIST("annotator.extension.list"),
+    ANNOTATOR_EXTENSION_COSMIC_FILE("annotator.extension.cosmic.file"),
+    ANNOTATOR_EXTENSION_COSMIC_VERSION("annotator.extension.cosmic.version"),
 
     INDEX_SEARCH("indexSearch", false), // Build secondary indexes using search engine.
 
@@ -95,6 +99,13 @@ public enum VariantStorageOptions implements ConfigurationOption {
     QUERY_LIMIT_MAX("query.limit.max", 5000),
     QUERY_SAMPLE_LIMIT_DEFAULT("query.sample.limit.default", 100),
     QUERY_SAMPLE_LIMIT_MAX("query.sample.limit.max", 1000),
+
+    WALKER_DOCKER_MEMORY("walker.docker.memory", "1024m", true),
+    WALKER_DOCKER_CPU("walker.docker.cpu", "1", true),
+    WALKER_DOCKER_USER("walker.docker.user", "", true),
+    WALKER_DOCKER_ENV("walker.docker.env", "", true),
+    WALKER_DOCKER_MOUNT("walker.docker.mount", "", true),
+    WALKER_DOCKER_OPTS("walker.docker.opts", "", true),
 
     // Search intersect options
     INTERSECT_ACTIVE("search.intersect.active", true),                       // Allow intersect queries with the SearchEngine (Solr)
@@ -129,15 +140,24 @@ public enum VariantStorageOptions implements ConfigurationOption {
 
     private final String key;
     private final Object value;
+    private final boolean isProtected;
 
     VariantStorageOptions(String key) {
         this.key = key;
         this.value = null;
+        this.isProtected = false;
     }
 
     VariantStorageOptions(String key, Object value) {
         this.key = key;
         this.value = value;
+        this.isProtected = false;
+    }
+
+    VariantStorageOptions(String key, Object value, boolean isProtected) {
+        this.key = key;
+        this.value = value;
+        this.isProtected = isProtected;
     }
 
     public String key() {
@@ -148,5 +168,11 @@ public enum VariantStorageOptions implements ConfigurationOption {
     public <T> T defaultValue() {
         return (T) value;
     }
+
+    @Override
+    public boolean isProtected() {
+        return isProtected;
+    }
+
 
 }

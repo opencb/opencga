@@ -105,7 +105,8 @@ public class ToolRunner {
      * @throws ToolException if the execution fails
      */
     public ExecutionResult execute(Job job, Path outDir, String token) throws CatalogException, ToolException {
-        return execute(job.getTool().getId(), new ObjectMap(job.getParams()), outDir, job.getId(), job.isDryRun(), token);
+        String toolId = ToolFactory.getToolId(job.getType(), job.getTool());
+        return execute(toolId, new ObjectMap(job.getParams()), outDir, job.getId(), job.isDryRun(), token);
     }
 
     /**

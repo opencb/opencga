@@ -21,13 +21,13 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.variant.julie.JulieTool;
-import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.operations.*;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.JobType;
 import org.opencb.opencga.core.models.operations.variant.*;
 import org.opencb.opencga.core.models.study.VariantSetupResult;
 import org.opencb.opencga.core.models.variant.*;
@@ -196,7 +196,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = VariantStorageMetadataSynchronizeParams.DESCRIPTION) VariantStorageMetadataSynchronizeParams params) {
-        return submitJobAdmin(VariantStorageMetadataSynchronizeOperationTool.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJobAdmin(JobType.NATIVE, VariantStorageMetadataSynchronizeOperationTool.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @POST
@@ -211,7 +211,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = VariantStorageMetadataRepairToolParams.DESCRIPTION) VariantStorageMetadataRepairToolParams params) {
-        return submitJobAdmin(VariantStorageMetadataRepairTool.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJobAdmin(JobType.NATIVE, VariantStorageMetadataRepairTool.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @POST
@@ -227,7 +227,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = VariantStatsAnalysisParams.DESCRIPTION, required = true) VariantStatsIndexParams params) {
-        return submitJob(VariantStatsIndexOperationTool.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE, VariantStatsIndexOperationTool.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @POST
@@ -243,7 +243,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = VariantStatsDeleteParams.DESCRIPTION, required = true) VariantStatsDeleteParams params) {
-        return submitJob(VariantStatsDeleteOperationTool.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE, VariantStatsDeleteOperationTool.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
 
@@ -259,7 +259,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
-            @ApiParam(value = VariantCatalogQueryUtils.PROJECT_DESC) @QueryParam(ParamConstants.PROJECT_PARAM) String project,
+            @ApiParam(value = VariantQueryParams.PROJECT_DESC) @QueryParam(ParamConstants.PROJECT_PARAM) String project,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = VariantSecondaryAnnotationIndexParams.DESCRIPTION) VariantSecondaryAnnotationIndexParams params) {
         return variantSecondaryAnnotationIndex(jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun, project, study, params);
@@ -276,7 +276,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
-            @ApiParam(value = VariantCatalogQueryUtils.PROJECT_DESC) @QueryParam(ParamConstants.PROJECT_PARAM) String project,
+            @ApiParam(value = VariantQueryParams.PROJECT_DESC) @QueryParam(ParamConstants.PROJECT_PARAM) String project,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = VariantSecondaryAnnotationIndexParams.DESCRIPTION) VariantSecondaryAnnotationIndexParams params) {
         return submitOperation(VariantSecondaryAnnotationIndexOperationTool.ID, project, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
@@ -329,7 +329,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
-            @ApiParam(value = VariantCatalogQueryUtils.PROJECT_DESC) @QueryParam(ParamConstants.PROJECT_PARAM) String project,
+            @ApiParam(value = VariantQueryParams.PROJECT_DESC) @QueryParam(ParamConstants.PROJECT_PARAM) String project,
             @ApiParam(value = "Annotation identifier") @QueryParam("annotationId") String annotationId
     ) {
         Map<String, Object> params = new HashMap<>();
@@ -350,7 +350,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
-            @ApiParam(value = VariantCatalogQueryUtils.PROJECT_DESC) @QueryParam(ParamConstants.PROJECT_PARAM) String project,
+            @ApiParam(value = VariantQueryParams.PROJECT_DESC) @QueryParam(ParamConstants.PROJECT_PARAM) String project,
             @ApiParam(value = VariantAnnotationSaveParams.DESCRIPTION) VariantAnnotationSaveParams params) {
         return submitOperationToProject(VariantAnnotationSaveOperationTool.ID, project, params, jobName, jobDescription, dependsOn,
                 jobTags, scheduledStartTime, jobPriority, dryRun);
@@ -593,7 +593,12 @@ public class VariantOperationWebService extends OpenCGAWSServer {
     public Response submitOperation(String toolId, String project, String study, ToolParams params, String jobName, String jobDescription,
                                     String jobDependsOn, String jobTags, String jobScheduledStartTime, String jobPriority, Boolean dryRun) {
         try {
-            Map<String, Object> paramsMap = params.toParams();
+            Map<String, Object> paramsMap;
+            if (params != null) {
+                paramsMap = params.toParams();
+            } else {
+                paramsMap = new HashMap<>();
+            }
             if (StringUtils.isNotEmpty(study)) {
                 paramsMap.put(ParamConstants.STUDY_PARAM, study);
             }
@@ -635,6 +640,6 @@ public class VariantOperationWebService extends OpenCGAWSServer {
         if (dynamicParamsMap.size() > 0) {
             paramsMap.put("dynamicParams", dynamicParamsMap);
         }
-        return submitJob(toolId, project, study, paramsMap, jobName, jobDescription, jobDependsOne, jobTags, jobScheduledStartTime, jobPriority, dryRun);
+        return submitJob(project, study, JobType.NATIVE, toolId, paramsMap, jobName, jobDescription, jobDependsOne, jobTags, jobScheduledStartTime, jobPriority, dryRun);
     }
 }

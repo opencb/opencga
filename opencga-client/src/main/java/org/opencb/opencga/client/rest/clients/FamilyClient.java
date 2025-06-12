@@ -17,10 +17,12 @@
 package org.opencb.opencga.client.rest.clients;
 
 import java.lang.Object;
+import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.*;
+import org.opencb.opencga.core.client.ParentClient;
+import org.opencb.opencga.core.config.client.ClientConfiguration;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyAclEntryList;
@@ -45,7 +47,7 @@ import org.opencb.opencga.core.response.RestResponse;
  * This class contains methods for the Family webservices.
  *    PATH: families
  */
-public class FamilyClient extends AbstractParentClient {
+public class FamilyClient extends ParentClient {
 
     public FamilyClient(String token, ClientConfiguration configuration) {
         super(token, configuration);
@@ -68,6 +70,44 @@ public class FamilyClient extends AbstractParentClient {
         params.putIfNotNull("action", action);
         params.put("body", data);
         return execute("families", null, "acl", members, "update", params, POST, FamilyAclEntryList.class);
+    }
+
+    /**
+     * Fetch catalog family stats.
+     * @param params Map containing any of the following optional parameters.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
+     *       id: Comma separated list family IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e.
+     *            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       name: Comma separated list family names up to a maximum of 100. Also admits basic regular expressions using the operator '~',
+     *            i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       uuid: Comma separated list family UUIDs up to a maximum of 100.
+     *       members: Comma separated list of family members.
+     *       expectedSize: Expected size of the family (number of members).
+     *       samples: Comma separated list of member's samples.
+     *       phenotypes: Comma separated list of phenotype ids or names. Also admits basic regular expressions using the operator '~', i.e.
+     *            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       disorders: Comma separated list of disorder ids or names. Also admits basic regular expressions using the operator '~', i.e.
+     *            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       creationDate: Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+     *       modificationDate: Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+     *       deleted: Boolean to retrieve deleted entries.
+     *       internalStatus: Filter by internal status.
+     *       status: Filter by status.
+     *       annotation: Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit
+     *            http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
+     *       acl: Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example:
+     *            acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS
+     *            permissions. Only study owners or administrators can query by this field. .
+     *       release: Release when it was created.
+     *       snapshot: Snapshot value (Latest version of the entry in the specified release).
+     *       field: Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.:
+     *            studies;type;numSamples[0..10]:1;format:sum(size).
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<FacetField> aggregationStats(ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("families", null, null, null, "aggregationStats", params, GET, FacetField.class);
     }
 
     /**

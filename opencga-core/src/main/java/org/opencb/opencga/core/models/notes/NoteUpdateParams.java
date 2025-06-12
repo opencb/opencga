@@ -10,6 +10,7 @@ import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 public class NoteUpdateParams {
 
+    private NoteType type;
     private List<String> tags;
     private Note.Visibility visibility;
     private Object value;
@@ -17,7 +18,8 @@ public class NoteUpdateParams {
     public NoteUpdateParams() {
     }
 
-    public NoteUpdateParams(List<String> tags, Note.Visibility visibility, Object value) {
+    public NoteUpdateParams(NoteType type, List<String> tags, Note.Visibility visibility, Object value) {
+        this.type = type;
         this.tags = tags;
         this.visibility = visibility;
         this.value = value;
@@ -30,12 +32,22 @@ public class NoteUpdateParams {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("NotesUpdateParams{");
-        sb.append("tags=").append(tags);
+        final StringBuilder sb = new StringBuilder("NoteUpdateParams{");
+        sb.append("type=").append(type);
+        sb.append(", tags=").append(tags);
         sb.append(", visibility=").append(visibility);
         sb.append(", value=").append(value);
         sb.append('}');
         return sb.toString();
+    }
+
+    public NoteType getType() {
+        return type;
+    }
+
+    public NoteUpdateParams setType(NoteType type) {
+        this.type = type;
+        return this;
     }
 
     public List<String> getTags() {

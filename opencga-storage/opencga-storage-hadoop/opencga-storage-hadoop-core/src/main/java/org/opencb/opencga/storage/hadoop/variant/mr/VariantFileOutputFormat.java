@@ -34,11 +34,15 @@ import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
+import org.opencb.opencga.storage.hadoop.variant.io.CountingOutputStream;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 
 import java.io.DataOutputStream;
+import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+
+import static org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper.COUNTER_GROUP_NAME;
 
 
 /**
@@ -49,6 +53,15 @@ import java.io.OutputStream;
  */
 public class VariantFileOutputFormat extends FileOutputFormat<Variant, NullWritable> {
 
+    private static Class<?> abfsOutputStreamClass;
+
+    static {
+        try {
+            abfsOutputStreamClass = Class.forName("org.apache.hadoop.fs.azurebfs.services.AbfsOutputStream");
+        } catch (ClassNotFoundException e) {
+            abfsOutputStreamClass = null;
+        }
+    }
 
     public static final String VARIANT_OUTPUT_FORMAT = "variant.output_format";
 
@@ -67,13 +80,28 @@ public class VariantFileOutputFormat extends FileOutputFormat<Variant, NullWrita
         }
         Path file = this.getDefaultWorkFile(job, extension);
         FileSystem fs = file.getFileSystem(conf);
-        FSDataOutputStream fileOut = fs.create(file, false);
-        if (isCompressed) {
-            DataOutputStream out = new DataOutputStream(codec.createOutputStream(fileOut));
-            return new VariantRecordWriter(configureWriter(job, out), out);
+        FSDataOutputStream fsOs = fs.create(file, false);
+        OutputStream out;
+        if (isAbfsOutputStream(fsOs)) {
+            // Disable flush on ABFS. See HADOOP-16548
+            out = new FilterOutputStream(fsOs) {
+                @Override
+                public void flush() throws IOException {
+                    // Do nothing
+                }
+            };
         } else {
-            return new VariantRecordWriter(configureWriter(job, fileOut), fileOut);
+            out = fsOs;
         }
+        if (isCompressed) {
+            out = new DataOutputStream(codec.createOutputStream(out));
+        }
+        CountingOutputStream countingOut = new CountingOutputStream(out);
+        return new VariantRecordWriter(configureWriter(job, countingOut), countingOut);
+    }
+
+    private static boolean isAbfsOutputStream(FSDataOutputStream fsOs) {
+        return abfsOutputStreamClass != null && abfsOutputStreamClass.isInstance(fsOs.getWrappedStream());
     }
 
     private DataWriter<Variant> configureWriter(final TaskAttemptContext job, OutputStream fileOut) throws IOException {
@@ -101,9 +129,9 @@ public class VariantFileOutputFormat extends FileOutputFormat<Variant, NullWrita
 
     protected static class VariantRecordWriter extends RecordWriter<Variant, NullWritable> {
         private final DataWriter<Variant> writer;
-        private final OutputStream outputStream;
+        private final CountingOutputStream outputStream;
 
-        public VariantRecordWriter(DataWriter<Variant> writer, OutputStream outputStream) {
+        public VariantRecordWriter(DataWriter<Variant> writer, CountingOutputStream outputStream) {
             this.writer = writer;
             this.outputStream = outputStream;
         }
@@ -118,6 +146,7 @@ public class VariantFileOutputFormat extends FileOutputFormat<Variant, NullWrita
             writer.post();
             writer.close();
             outputStream.close();
+            taskAttemptContext.getCounter(COUNTER_GROUP_NAME, "bytes_written").increment(outputStream.getByteCount());
         }
     }
 

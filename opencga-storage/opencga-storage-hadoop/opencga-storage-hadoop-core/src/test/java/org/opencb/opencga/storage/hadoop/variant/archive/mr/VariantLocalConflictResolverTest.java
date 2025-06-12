@@ -169,7 +169,7 @@ public class VariantLocalConflictResolverTest {
         se.setSampleDataKeys(Arrays.asList(GENOTYPE_KEY, GENOTYPE_FILTER_KEY));
         se.setSamplesPosition(asMap("S1", 0));
         se.addSampleData("S1", Arrays.asList("1/2", "LowGQXHetDel"));
-        se.getSecondaryAlternates().add(new AlternateCoordinate(null, 328, null, "CTT", "CTTTC", INDEL));
+        se.getSecondaryAlternates().add(new AlternateCoordinate(null, 328, 330, "CTT", "CTTTC", INDEL));
         addAttribute(v1, FILTER, "LowGQXHetDel");
 
 

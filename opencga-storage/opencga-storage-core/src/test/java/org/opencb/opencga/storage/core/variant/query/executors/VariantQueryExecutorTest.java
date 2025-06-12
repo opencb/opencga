@@ -242,19 +242,20 @@ public abstract class VariantQueryExecutorTest extends VariantStorageBaseTest {
         logger.info("## Allowed VariantQueryExecutors:");
         ParsedVariantQuery variantQuery = variantStorageEngine.parseQuery(query, options);
         for (VariantQueryExecutor variantQueryExecutor : variantQueryExecutors) {
-            if (variantQueryExecutor.canUseThisExecutor(variantQuery, options)) {
+            if (variantQueryExecutor.canUseThisExecutor(variantQuery)) {
                 logger.info("## - " + variantQueryExecutor.getClass().getSimpleName());
             }
         }
+
         VariantQueryResult<Variant> expected;
         if (expectDBAdaptorExecutor) {
             logger.info("## Using DBAdaptorVariantQueryExecutor for expected results");
-            Assert.assertTrue(dbQueryExecutor.canUseThisExecutor(variantQuery, options));
+            Assert.assertTrue(dbQueryExecutor.canUseThisExecutor(variantQuery));
 
             expected = dbQueryExecutor.get(variantQuery);
         } else {
             logger.info("## DBAdaptorVariantQueryExecutor can not be used for expected results");
-            Assert.assertFalse(dbQueryExecutor.canUseThisExecutor(variantQuery, options));
+            Assert.assertFalse(dbQueryExecutor.canUseThisExecutor(variantQuery));
             expected = null;
         }
 
@@ -301,7 +302,7 @@ public abstract class VariantQueryExecutorTest extends VariantStorageBaseTest {
         }
 
         for (VariantQueryExecutor variantQueryExecutor : variantQueryExecutors) {
-            if (variantQueryExecutor.canUseThisExecutor(variantQuery, options)) {
+            if (variantQueryExecutor.canUseThisExecutor(variantQuery)) {
                 logger.info("");
                 logger.info("###################");
                 logger.info("### Testing " + variantQueryExecutor.getClass().getSimpleName());

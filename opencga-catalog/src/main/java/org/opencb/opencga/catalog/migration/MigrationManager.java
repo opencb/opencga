@@ -19,6 +19,7 @@ import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -127,8 +128,10 @@ public class MigrationManager {
                              String token) throws CatalogException, IOException {
         runMigration(ParamConstants.ADMIN_ORGANIZATION, version, domains, languages, offline, appHome, params, token);
 
+        CatalogIOManager catalogIOManager = new CatalogIOManager(configuration);
         // ***** Starts code to remove in future versions. Reload MongoDBAdaptorFactory to avoid Notes migration issue. *****/
-        try (MongoDBAdaptorFactory mongoDBAdaptorFactory = new MongoDBAdaptorFactory(configuration, catalogManager.getIoManagerFactory())) {
+        try (MongoDBAdaptorFactory mongoDBAdaptorFactory = new MongoDBAdaptorFactory(configuration,
+                catalogManager.getIoManagerFactory(), catalogIOManager)) {
             for (String organizationId : mongoDBAdaptorFactory.getOrganizationIds()) {
                 // ***** Finish code to remove in future versions. Reload MongoDBAdaptorFactory to avoid Notes migration issue. *****/
 
@@ -210,6 +213,9 @@ public class MigrationManager {
         for (Class<? extends MigrationTool> migration : runnableMigrations) {
             run(organizationId, migration, appHomePath, params, token);
         }
+
+        // 5. Execute install indexes just in case there are new indexes
+        catalogManager.installIndexes(organizationId, token);
     }
 
     public List<Class<? extends MigrationTool>> getPendingMigrations(String organizationId, String version, String token)
@@ -239,7 +245,8 @@ public class MigrationManager {
                         p -> p.getValue().getStatus(),
                         () -> new EnumMap<>(MigrationRun.MigrationStatus.class),
                         Collectors.counting())))
-                .setVersionCount(runs.stream().collect(Collectors.groupingBy(p -> p.getKey().version(), Collectors.counting())));
+                .setVersionCount(runs.stream().collect(Collectors.groupingBy(p -> p.getKey().version(),
+                        TreeMap::new, Collectors.counting())));
 
         long toBeApplied = migrationSummary
                 .getStatusCount()
@@ -657,9 +664,16 @@ public class MigrationManager {
         }
         migrationTool.setup(configuration, catalogManager, dbAdaptorFactory, migrationRun, organizationId, appHome, params, token);
 
+        String userId;
+        try {
+            userId = catalogManager.getUserManager().validateToken(token).getUserId();
+        } catch (CatalogException e) {
+            throw new MigrationException(e);
+        }
         StopWatch stopWatch = StopWatch.createStarted();
         String path = Paths.get("JOBS")
-                .resolve("opencga")
+                .resolve(organizationId)
+                .resolve(userId)
                 .resolve(TimeUtils.getDay())
                 .resolve(annotation.id()).toString();
         String jobId = "migration"
@@ -744,7 +758,7 @@ public class MigrationManager {
                         .setCreationDate(TimeUtils.getTime(start))
                         .setCommandLine("opencga-admin.sh")
                         .setParams(params)
-                        .setTool(new ToolInfo(annotation.id(), annotation.description(), Tool.Scope.GLOBAL, null, null))
+                        .setTool(new ToolInfo(annotation.id(), annotation.description(), Tool.Scope.GLOBAL, null, null, null))
                         .setOutDir(outdir.first())
                         .setStderr(stderr.first())
                         .setInternal(new JobInternal()
