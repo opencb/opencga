@@ -25,7 +25,6 @@ import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.variant.regenie.RegenieStep2WrapperParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
@@ -52,41 +51,25 @@ public class RegenieStep2WrapperAnalysis extends OpenCgaToolScopeStudy {
     private String walkerDockerImage;
 
     @ToolParams
-    protected final RegenieStep2WrapperParams analysisParams = new RegenieStep2WrapperParams();
+    protected final RegenieStep2WrapperParams regenieParams = new RegenieStep2WrapperParams();
 
     @Override
     protected void check() throws Exception {
         // IMPORTANT: the first thing to do since it initializes "study" from params.get(STUDY_PARAM)
         super.check();
 
-        setUpStorageEngineExecutor(study);
-
         // Check input parameters
-        String step1JobId = checkRegenieInputParameter(analysisParams.getStep1JobId(), false, "Job ID");
-        String dockerName = checkRegenieInputParameter(analysisParams.getDocker().getName(), false, "Docker name");
-        String dockerTag = checkRegenieInputParameter(analysisParams.getDocker().getTag(), false, "Docker tag");
-        String dockerUsername = checkRegenieInputParameter(analysisParams.getDocker().getUsername(), true, "Docker Hub username");
-        String dockerPassword = checkRegenieInputParameter(analysisParams.getDocker().getPassword(), true, "Docker Hub password (or"
+        String dockerName = checkRegenieInputParameter(regenieParams.getDocker().getName(), false, "Docker name");
+        String dockerTag = checkRegenieInputParameter(regenieParams.getDocker().getTag(), false, "Docker tag");
+        String dockerUsername = checkRegenieInputParameter(regenieParams.getDocker().getUsername(), true, "Docker Hub username");
+        String dockerPassword = checkRegenieInputParameter(regenieParams.getDocker().getPassword(), true, "Docker Hub password (or"
                 + " personal access token)");
 
         if (StringUtils.isNotEmpty(dockerName) && StringUtils.isNotEmpty(dockerTag)) {
             walkerDockerImage = dockerName + ":" + dockerTag;
             logger.info("Using regenie-walker image {} to perform regenie step2", walkerDockerImage);
-        } else if (StringUtils.isNotEmpty(step1JobId)) {
-            logger.info("Using job ({}) results to perform regenie step2", step1JobId);
-
-            Job job = catalogManager.getJobManager().get(study, step1JobId, QueryOptions.empty(), token).first();
-            if (job.getExecution() == null || MapUtils.isEmpty(job.getExecution().getAttributes())
-                    || !job.getExecution().getAttributes().containsKey(OPENCGA_REGENIE_WALKER_DOCKER_IMAGE_KEY)) {
-                throw new ToolException("Missing regenie-walker docker image in job (" + step1JobId + ") execution attributes");
-            }
-            walkerDockerImage = (String) job.getExecution().getAttributes().get(OPENCGA_REGENIE_WALKER_DOCKER_IMAGE_KEY);
-            if (StringUtils.isEmpty(walkerDockerImage)) {
-                throw new ToolException("Empty regenie-walker docker image in job (" + step1JobId + ") attributes");
-            }
         } else {
-            throw new ToolException("Missing regenie-walker docker parameters (name, tag) or job ID that performed the regenie-step1"
-                    + " analysis.");
+            throw new ToolException("Missing regenie-walker docker parameters (name, tag)");
         }
 
         // Check docker image
@@ -94,6 +77,8 @@ public class RegenieStep2WrapperAnalysis extends OpenCgaToolScopeStudy {
         if (!dockerImageAvailable) {
             throw new ToolException("Regenie-walker docker image name " + walkerDockerImage + " not available.");
         }
+
+        addAttribute("OPENCGA_REGENIE_STEP2_PARAMETERS", regenieParams);
     }
 
     @Override
@@ -111,7 +96,7 @@ public class RegenieStep2WrapperAnalysis extends OpenCgaToolScopeStudy {
 
         // Create REGENIE command line from the user parameters
         StringBuilder regenieCmd = new StringBuilder("python3 /opt/app/python/variant_walker.py regenie_walker Regenie");
-        if (MapUtils.isNotEmpty(analysisParams.getRegenieParams())) {
+        if (MapUtils.isNotEmpty(regenieParams.getRegenieParams())) {
             addRegenieOptions(regenieCmd);
         }
 
@@ -152,7 +137,7 @@ public class RegenieStep2WrapperAnalysis extends OpenCgaToolScopeStudy {
     }
 
     private void addRegenieOptions(StringBuilder regenieCmd) {
-        ObjectMap options = analysisParams.getRegenieParams();
+        ObjectMap options = regenieParams.getRegenieParams();
         for (Map.Entry<String, Object> entry : options.entrySet()) {
             if (SKIP_OPTIONS.contains(entry.getKey())) {
                 continue;
