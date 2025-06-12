@@ -43,6 +43,7 @@ public class CvdbSolrEngineDbPrefixTest {
     protected CvdbSolrEngine cvdbEngine;
     protected String organizationId = "test";
     protected String projectId = "project1";
+    protected Project project;
     protected Study study;
 
     protected String CVDB_PREFIX = "opencga_prefix_in_cvdb_datastore";
@@ -80,7 +81,7 @@ public class CvdbSolrEngineDbPrefixTest {
         if (!cvdbEngine.existCollections(collectionPrefix)) {
             cvdbEngine.createCollections(projectId, collectionPrefix, userToken);
 
-            Project project = catalogManager.getProjectManager().get(projectId, QueryOptions.empty(), userToken).first();
+            project = catalogManager.getProjectManager().get(projectId, QueryOptions.empty(), userToken).first();
             System.out.println("project.getInternal().getDatastores().getCvdb().toString() = " + project.getInternal().getDatastores().getCvdb().toString());
             Assert.assertEquals("solr", project.getInternal().getDatastores().getCvdb().getStorageEngine());
         }
@@ -152,7 +153,7 @@ public class CvdbSolrEngineDbPrefixTest {
         TestUtilities.checkClinicalAnalysisIndexStatus(CvdbIndexStatus.READY, study, catalogManager, userToken);
 
 
-        DataStore cvdbDatastore = cvdbEngine.getCvdbDatastore(projectId, userToken);
+        DataStore cvdbDatastore = cvdbEngine.getCvdbDatastore(project.getFqn(), userToken);
         System.out.println("cvdbDatastore = " + cvdbDatastore);
         Assert.assertEquals("solr", cvdbDatastore.getStorageEngine());
         Assert.assertTrue(cvdbDatastore.getDbName().startsWith(CVDB_PREFIX));
