@@ -1,9 +1,0 @@
-name: Manual build R
-on:
-  workflow_dispatch:
-
-jobs:
-  call-build-r-docker:
-    name: Call Reusable Build r Docker Workflow
-    uses: opencb/opencga/.github/workflows/reusable-build-r.yml@develop
-    secrets: inherit
