@@ -265,6 +265,7 @@ function build_opencga() {
   if [ "$COMMAND" == "build" ];then
       log "Compiling opencga... $(pwd)"
       mvn clean install -DskipTests -P"$STORAGE_HADOOP_DEPS" -T 2 --no-transfer-progress
+      ./build_clients.sh -b
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND opencga build FAILED!!!!!"
         print_log_summary
