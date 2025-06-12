@@ -31,7 +31,7 @@ function print_usage() {
   echo "     -b     --skip-build-opencga       FLAG         Skip Build OpenCGA-enterprise"
   echo "     -p     --skip-python              FLAG         Skip Build OpenCGA Python client"
   echo "     -r     --skip-r                   FLAG         Skip Build OpenCGA R client"
-  echo "     -w     --skip-javascript          FLAG         Skip Build OpenCGA JavaScript client"
+  echo "     -j     --skip-javascript          FLAG         Skip Build OpenCGA JavaScript client"
   echo "     -h     --help                     FLAG         Print this help and exit"
   echo ""
 }
@@ -51,7 +51,7 @@ while [[ $# -gt 0 ]]; do
       SKIP_R=true
       shift
       ;;
-    -w|--skip-javascript)
+    -j|--skip-javascript)
       SKIP_JS=true
       shift
       ;;
@@ -60,7 +60,7 @@ while [[ $# -gt 0 ]]; do
       exit 0
       ;;
     *)
-      echo "Error: Opción no reconocida '$1'"
+      echo "Error: Unknown option '$1'"
       print_usage
       exit 1
       ;;
@@ -68,7 +68,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if ! $SKIP_BUILD_OPENCGA; then
-  echo ">> Building OpenCGA-enterprise..."
+  echo ">> Building OpenCGA Enterprise ..."
   ./build.sh
 fi
 

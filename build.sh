@@ -341,7 +341,7 @@ function build_opencga_enterprise() {
      SKIP_CLIENTS="$SKIP_CLIENTS --skip-javascript"
     fi
     #Do not put quotes in the following command or it will not work
-    ./build_clients.sh --skip-build-opencga $SKIP_CLIENTS
+    ./client-builder.sh --skip-build-opencga $SKIP_CLIENTS
   fi
 }
 
