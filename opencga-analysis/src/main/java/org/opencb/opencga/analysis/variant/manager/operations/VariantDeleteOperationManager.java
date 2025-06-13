@@ -22,6 +22,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.VariantIndexStatus;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
@@ -116,8 +117,15 @@ public class VariantDeleteOperationManager extends OperationManager {
 
         variantStorageEngine.removeSamples(study, samples, outdir);
         // Update study configuration to synchronize
-        synchronizeCatalogStudyFromStorage(study, token, true);
+        VariantStorageMetadataManager metadataManager = variantStorageEngine.getMetadataManager();
+        CatalogStorageMetadataSynchronizer metadataSynchronizer
+                = new CatalogStorageMetadataSynchronizer(catalogManager, metadataManager);
 
+        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
+
+        // Update Catalog file and cohort status.
+        metadataSynchronizer.synchronizeCatalogStudyFromStorage(studyMetadata, token);
+        metadataSynchronizer.synchronizeCatalogSamplesFromStorage(studyMetadata.getName(), samples, token);
     }
 
 

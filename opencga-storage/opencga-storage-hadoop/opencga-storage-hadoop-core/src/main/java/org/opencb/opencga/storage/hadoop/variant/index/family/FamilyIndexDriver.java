@@ -124,14 +124,14 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
                 trioList.clear();
             }
         } else if (StringUtils.isNotEmpty(triosCohort)) {
-            CohortMetadata cohortMetadata;
+            CohortMetadata cohortMetadata = getMetadataManager().getCohortMetadata(getStudyId(), triosCohort);
             try {
-                cohortMetadata = getMetadataManager().getCohortMetadata(getStudyId(), triosCohort);
-            } finally {
                 boolean triosCohortDelete = Boolean.parseBoolean(getParam(TRIOS_COHORT_DELETE));
                 if (triosCohortDelete) {
                     getMetadataManager().removeCohort(getStudyId(), triosCohort);
                 }
+            } catch (StorageEngineException e) {
+                throw new IOException(e);
             }
 
             for (Integer sample : cohortMetadata.getSamples()) {

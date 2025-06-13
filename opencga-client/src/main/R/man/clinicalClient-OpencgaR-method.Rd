@@ -6,38 +6,49 @@
 \usage{
 \S4method{clinicalClient}{OpencgaR}(
   OpencgaR,
-  members,
-  interpretations,
-  interpretation,
+  annotationSet,
   clinicalAnalyses,
   clinicalAnalysis,
+  interpretation,
+  interpretations,
+  members,
   endpointName,
   params = NULL,
   ...
 )
 }
 \arguments{
-\item{members}{Comma separated list of user or group IDs.}
-
-\item{interpretations}{Interpretation IDs of the Clinical Analysis.}
-
-\item{interpretation}{Interpretation ID.}
+\item{annotationSet}{AnnotationSet ID to be updated.}
 
 \item{clinicalAnalyses}{Comma separated list of clinical analysis IDs.}
 
 \item{clinicalAnalysis}{Clinical analysis ID.}
 
-\item{action}{Action to be performed \link{ADD, SET, REMOVE or RESET}.}
+\item{interpretation}{Interpretation ID.}
+
+\item{interpretations}{Interpretation IDs of the Clinical Analysis.}
+
+\item{members}{Comma separated list of user or group IDs.}
 
 \item{propagate}{Propagate permissions to related families, individuals, samples and files.}
+
+\item{variableSetId}{Variable set ID or name.}
+
+\item{path}{Path where the TSV file is located in OpenCGA or where it should be located.}
+
+\item{parents}{Flag indicating whether to create parent directories if they don't exist (only when TSV file was not previously associated).}
+
+\item{annotationSetId}{Annotation set id. If not provided, variableSetId will be used.}
 
 \item{skipCreateDefaultInterpretation}{Flag to skip creating and initialise an empty default primary interpretation (Id will be '{clinicalAnalysisId}.1'). This flag is only considered if no Interpretation object is passed.}
 
 \item{sort}{Sort the results.}
 
+\item{name}{Comma separated list of Interpretation names up to a maximum of 100.}
+
 \item{clinicalAnalysisId}{Clinical Analysis id.}
 
-\item{methodName}{Interpretation method name.}
+\item{methodName}{Interpretation method name. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.}
 
 \item{primaryFindings}{Interpretation primary findings.}
 
@@ -52,6 +63,12 @@
 \item{jobDependsOn}{Comma separated list of existing job IDs the job will depend on.}
 
 \item{jobTags}{Job tags.}
+
+\item{jobScheduledStartTime}{Time when the job is scheduled to start.}
+
+\item{jobPriority}{Priority of the job.}
+
+\item{jobDryRun}{Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.}
 
 \item{auxiliarIndex}{Index auxiliar collection to improve performance assuming RGA is completely indexed.}
 
@@ -97,7 +114,7 @@
 
 \item{uuid}{Comma separated list of Clinical Analysis UUIDs up to a maximum of 100.}
 
-\item{disorder}{Clinical Analysis disorder.}
+\item{disorder}{Clinical Analysis disorder. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.}
 
 \item{files}{Clinical Analysis files.}
 
@@ -123,13 +140,19 @@
 
 \item{modificationDate}{Clinical Analysis Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.}
 
+\item{dueDate}{Clinical Analysis due date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.}
+
 \item{qualityControlSummary}{Clinical Analysis quality control summary.}
 
 \item{release}{Release when it was created.}
 
+\item{snapshot}{Snapshot value (Latest version of the entry in the specified release).}
+
 \item{status}{Filter by status.}
 
 \item{internalStatus}{Filter by internal status.}
+
+\item{annotation}{Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.}
 
 \item{limit}{Number of results to be returned.}
 
@@ -143,7 +166,9 @@
 
 \item{savedFilter}{Use a saved filter at User level.}
 
-\item{id}{List of IDs, these can be rs IDs (dbSNP) or variants in the format chrom:start:ref:alt, e.g. rs116600158,19:7177679:C:T.}
+\item{includeInterpretation}{Interpretation ID to include the fields related to this interpretation.}
+
+\item{id}{List of variant IDs in the format chrom:start:ref:alt, e.g. 19:7177679:C:T.}
 
 \item{region}{List of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000.}
 
@@ -157,7 +182,7 @@
 
 \item{fileData}{Filter by file data (i.e. FILTER, QUAL and INFO columns from VCF file). [{file}:]{key}{op}{value}\link{,;}* . If no file is specified, will use all files from "file" filter. e.g. AN>200 or file_1.vcf:AN>200;file_2.vcf:AN<10 . Many fields can be combined. e.g. file_1.vcf:AN>200;DB=true;file_2.vcf:AN<10,FILTER=PASS,LowDP.}
 
-\item{sample}{Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND (;) and OR (,) operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,) operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: \link{ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, mendelianError, compoundHeterozygous }. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. .}
+\item{sample}{Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND (;) and OR (,) operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,) operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: \link{ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous }. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. .}
 
 \item{sampleData}{Filter by any SampleData field from samples. [{sample}:]{key}{op}{value}\link{,;}* . If no sample is specified, will use all samples from "sample" or "genotype" filter. e.g. DP>200 or HG0097:DP>200,HG0098:DP<10 . Many FORMAT fields can be combined. e.g. HG0097:DP>200;GT=1/1,0/1,HG0098:DP<10.}
 
@@ -185,7 +210,7 @@
 
 \item{familyDisorder}{Specify the disorder to use for the family segregation.}
 
-\item{familySegregation}{Filter by segregation mode from a given family. Accepted values: \link{ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, mendelianError, compoundHeterozygous }.}
+\item{familySegregation}{Filter by segregation mode from a given family. Accepted values: \link{ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous }.}
 
 \item{familyMembers}{Sub set of the members of a given family.}
 
@@ -195,7 +220,7 @@
 
 \item{ct}{List of SO consequence types, e.g. missense_variant,stop_lost or SO:0001583,SO:0001578. Accepts aliases 'loss_of_function' and 'protein_altering'.}
 
-\item{xref}{List of any external reference, these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, ...}
+\item{xref}{List of any external reference, these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, HGVS ...}
 
 \item{biotype}{List of biotypes, e.g. protein_coding.}
 
@@ -203,11 +228,11 @@
 
 \item{conservation}{Filter by conservation score: {conservation_score}[<|>|<=|>=]{number} e.g. phastCons>0.5,phylop<0.1,gerp>0.1.}
 
-\item{populationFrequencyAlt}{Alternate Population Frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1kG_phase3:ALL<0.01.}
+\item{populationFrequencyAlt}{Alternate Population Frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01.}
 
-\item{populationFrequencyRef}{Reference Population Frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1kG_phase3:ALL<0.01.}
+\item{populationFrequencyRef}{Reference Population Frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01.}
 
-\item{populationFrequencyMaf}{Population minor allele frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1kG_phase3:ALL<0.01.}
+\item{populationFrequencyMaf}{Population minor allele frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01.}
 
 \item{transcriptFlag}{List of transcript flags. e.g. canonical, CCDS, basic, LRG, MANE Select, MANE Plus Clinical, EGLH_HaemOnc, TSO500.}
 
@@ -251,9 +276,15 @@
 
 \item{force}{Force deletion if the ClinicalAnalysis contains interpretations or is locked.}
 
-\item{flagsAction}{Action to be performed if the array of flags is being updated. Allowed values: \link{'ADD', 'SET', 'REMOVE'}}
+\item{flagsAction}{Action to be performed if the array of flags is being updated. Allowed values: \link{'ADD SET REMOVE'}}
 
-\item{filesAction}{Action to be performed if the array of files is being updated. Allowed values: \link{'ADD', 'SET', 'REMOVE'}}
+\item{analystsAction}{Action to be performed if the array of analysts is being updated. Allowed values: \link{'ADD SET REMOVE'}}
+
+\item{annotationSetsAction}{Action to be performed if the array of annotationSets is being updated. Allowed values: \link{'ADD SET REMOVE'}}
+
+\item{action}{Action to be performed: ADD to add new annotations; REPLACE to replace the value of an already existing annotation; SET to set the new list of annotations removing any possible old annotations; REMOVE to remove some annotations; RESET to set some annotations to the default value configured in the corresponding variables of the VariableSet if any. Allowed values: \link{'ADD SET REMOVE RESET REPLACE'}}
+
+\item{flattenAnnotations}{Flatten the annotations?.}
 
 \item{deleted}{Boolean to retrieve deleted entries.}
 
@@ -261,68 +292,81 @@
 
 \item{version}{Version to revert to.}
 
+\item{primaryFindingsAction}{Action to be performed if the array of primary findings is being updated. Allowed values: \link{'ADD SET REMOVE REPLACE'}}
+
+\item{methodsAction}{Action to be performed if the array of methods is being updated. Allowed values: \link{'ADD SET REMOVE'}}
+
+\item{secondaryFindingsAction}{Action to be performed if the array of secondary findings is being updated. Allowed values: \link{'ADD SET REMOVE REPLACE'}}
+
+\item{panelsAction}{Action to be performed if the array of panels is being updated. Allowed values: \link{'ADD SET REMOVE'}}
+
+\item{setAs}{Set interpretation as. Allowed values: \link{'PRIMARY SECONDARY'}}
+
 \item{include}{Fields included in the response, whole JSON path must be provided.}
 
 \item{exclude}{Fields excluded in the response, whole JSON path must be provided.}
 
-\item{study}{[\link{user@}project:]study ID.}
+\item{study}{Study [\link{organization@}project:]study where study and project can be either the ID or UUID.}
 
-\item{primaryFindingsAction}{Action to be performed if the array of primary findings is being updated. Allowed values: \link{'ADD', 'SET', 'REMOVE', 'REPLACE'}}
+\item{commentsAction}{Action to be performed if the array of comments is being updated. Allowed values: \link{'ADD REMOVE REPLACE'}}
 
-\item{methodsAction}{Action to be performed if the array of methods is being updated. Allowed values: \link{'ADD', 'SET', 'REMOVE'}}
+\item{supportingEvidencesAction}{Action to be performed if the array of supporting evidences is being updated. Allowed values: \link{'ADD SET REMOVE'}}
 
-\item{secondaryFindingsAction}{Action to be performed if the array of secondary findings is being updated. Allowed values: \link{'ADD', 'SET', 'REMOVE', 'REPLACE'}}
-
-\item{commentsAction}{Action to be performed if the array of comments is being updated. To REMOVE or REPLACE, the date will need to be provided to identify the comment. Allowed values: \link{'ADD', 'REMOVE', 'REPLACE'}}
-
-\item{panelsAction}{Action to be performed if the array of panels is being updated. Allowed values: \link{'ADD', 'SET', 'REMOVE'}}
-
-\item{setAs}{Set interpretation as. Allowed values: \link{'PRIMARY', 'SECONDARY'}}
+\item{filesAction}{Action to be performed if the array of files is being updated. Allowed values: \link{'ADD SET REMOVE'}}
 
 \item{includeResult}{Flag indicating to include the created or updated document result in the response.}
 
-\item{data}{JSON containing clinical interpretation information.}
+\item{data}{JSON containing clinical report information.}
 }
 \description{
 This function implements the OpenCGA calls for managing Analysis - Clinical.
 The following table summarises the available \emph{actions} for this client:\tabular{llr}{
    endpointName \tab Endpoint WS \tab parameters accepted \cr
    updateAcl \tab /{apiVersion}/analysis/clinical/acl/{members}/update \tab study, members\link{*}, action\link{*}, propagate, body\link{*} \cr
+   loadAnnotationSets \tab /{apiVersion}/analysis/clinical/annotationSets/load \tab study, variableSetId\link{*}, path\link{*}, parents, annotationSetId, body \cr
    updateClinicalConfiguration \tab /{apiVersion}/analysis/clinical/clinical/configuration/update \tab study, body \cr
    create \tab /{apiVersion}/analysis/clinical/create \tab include, exclude, study, skipCreateDefaultInterpretation, includeResult, body\link{*} \cr
-   distinct \tab /{apiVersion}/analysis/clinical/distinct \tab study, id, uuid, type, disorder, files, sample, individual, proband, probandSamples, family, familyMembers, familyMemberSamples, panels, locked, analystId, priority, flags, creationDate, modificationDate, qualityControlSummary, release, status, internalStatus, deleted, field\link{*} \cr
-   distinctInterpretation \tab /{apiVersion}/analysis/clinical/interpretation/distinct \tab study, id, uuid, clinicalAnalysisId, analystId, methodName, panels, primaryFindings, secondaryFindings, creationDate, modificationDate, status, internalStatus, release, field\link{*} \cr
-   searchInterpretation \tab /{apiVersion}/analysis/clinical/interpretation/search \tab include, exclude, limit, skip, sort, study, id, uuid, clinicalAnalysisId, analystId, methodName, panels, primaryFindings, secondaryFindings, creationDate, modificationDate, status, internalStatus, release \cr
+   distinct \tab /{apiVersion}/analysis/clinical/distinct \tab study, id, uuid, type, disorder, files, sample, individual, proband, probandSamples, family, familyMembers, familyMemberSamples, panels, locked, analystId, priority, flags, creationDate, modificationDate, dueDate, qualityControlSummary, release, snapshot, status, internalStatus, annotation, deleted, field\link{*} \cr
+   distinctInterpretation \tab /{apiVersion}/analysis/clinical/interpretation/distinct \tab study, id, uuid, name, clinicalAnalysisId, analystId, methodName, panels, primaryFindings, secondaryFindings, creationDate, modificationDate, status, internalStatus, release, field\link{*} \cr
+   searchInterpretation \tab /{apiVersion}/analysis/clinical/interpretation/search \tab include, exclude, limit, skip, sort, study, id, uuid, name, clinicalAnalysisId, analystId, methodName, panels, primaryFindings, secondaryFindings, creationDate, modificationDate, status, internalStatus, release \cr
    infoInterpretation \tab /{apiVersion}/analysis/clinical/interpretation/{interpretations}/info \tab include, exclude, interpretations\link{*}, study, version, deleted \cr
-   runInterpreterCancerTiering \tab /{apiVersion}/analysis/clinical/interpreter/cancerTiering/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
-   runInterpreterTeam \tab /{apiVersion}/analysis/clinical/interpreter/team/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
-   runInterpreterTiering \tab /{apiVersion}/analysis/clinical/interpreter/tiering/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
-   runInterpreterZetta \tab /{apiVersion}/analysis/clinical/interpreter/zetta/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
+   runInterpreterCancerTiering \tab /{apiVersion}/analysis/clinical/interpreter/cancerTiering/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
+   runInterpreterExomiser \tab /{apiVersion}/analysis/clinical/interpreter/exomiser/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
+   runInterpreterTeam \tab /{apiVersion}/analysis/clinical/interpreter/team/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
+   runInterpreterTiering \tab /{apiVersion}/analysis/clinical/interpreter/tiering/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
+   runInterpreterZetta \tab /{apiVersion}/analysis/clinical/interpreter/zetta/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
+   load \tab /{apiVersion}/analysis/clinical/load \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
    aggregationStatsRga \tab /{apiVersion}/analysis/clinical/rga/aggregationStats \tab limit, skip, sampleId, individualId, sex, phenotypes, disorders, numParents, geneId, geneName, chromosome, start, end, transcriptId, variants, dbSnps, knockoutType, filter, type, clinicalSignificance, populationFrequency, consequenceType, study, field\link{*} \cr
    queryRgaGene \tab /{apiVersion}/analysis/clinical/rga/gene/query \tab include, exclude, limit, skip, count, includeIndividual, skipIndividual, limitIndividual, sampleId, individualId, sex, phenotypes, disorders, numParents, geneId, geneName, chromosome, start, end, transcriptId, variants, dbSnps, knockoutType, filter, type, clinicalSignificance, populationFrequency, consequenceType, study \cr
    summaryRgaGene \tab /{apiVersion}/analysis/clinical/rga/gene/summary \tab limit, skip, count, sampleId, individualId, sex, phenotypes, disorders, numParents, geneId, geneName, chromosome, start, end, transcriptId, variants, dbSnps, knockoutType, filter, type, clinicalSignificance, populationFrequency, consequenceType, study \cr
-   runRgaIndex \tab /{apiVersion}/analysis/clinical/rga/index/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, auxiliarIndex, body\link{*} \cr
+   runRgaIndex \tab /{apiVersion}/analysis/clinical/rga/index/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, auxiliarIndex, body\link{*} \cr
    queryRgaIndividual \tab /{apiVersion}/analysis/clinical/rga/individual/query \tab include, exclude, limit, skip, count, sampleId, individualId, sex, phenotypes, disorders, numParents, geneId, geneName, chromosome, start, end, transcriptId, variants, dbSnps, knockoutType, filter, type, clinicalSignificance, populationFrequency, consequenceType, study \cr
    summaryRgaIndividual \tab /{apiVersion}/analysis/clinical/rga/individual/summary \tab limit, skip, count, sampleId, individualId, sex, phenotypes, disorders, numParents, geneId, geneName, chromosome, start, end, transcriptId, variants, dbSnps, knockoutType, filter, type, clinicalSignificance, populationFrequency, consequenceType, study \cr
    queryRgaVariant \tab /{apiVersion}/analysis/clinical/rga/variant/query \tab include, exclude, limit, skip, count, includeIndividual, skipIndividual, limitIndividual, sampleId, individualId, sex, phenotypes, disorders, numParents, geneId, geneName, chromosome, start, end, transcriptId, variants, dbSnps, knockoutType, filter, type, clinicalSignificance, populationFrequency, consequenceType, study \cr
    summaryRgaVariant \tab /{apiVersion}/analysis/clinical/rga/variant/summary \tab limit, skip, count, sampleId, individualId, sex, phenotypes, disorders, numParents, geneId, geneName, chromosome, start, end, transcriptId, variants, dbSnps, knockoutType, filter, type, clinicalSignificance, populationFrequency, consequenceType, study \cr
-   search \tab /{apiVersion}/analysis/clinical/search \tab include, exclude, limit, skip, count, study, id, uuid, type, disorder, files, sample, individual, proband, probandSamples, family, familyMembers, familyMemberSamples, panels, locked, analystId, priority, flags, creationDate, modificationDate, qualityControlSummary, release, status, internalStatus, deleted \cr
-   actionableVariant \tab /{apiVersion}/analysis/clinical/variant/actionable \tab study, sample \cr
-   queryVariant \tab /{apiVersion}/analysis/clinical/variant/query \tab include, exclude, limit, skip, count, approximateCount, approximateCountSamplingSize, savedFilter, id, region, type, study, file, filter, qual, fileData, sample, sampleData, sampleAnnotation, cohort, cohortStatsRef, cohortStatsAlt, cohortStatsMaf, cohortStatsMgf, cohortStatsPass, missingAlleles, missingGenotypes, score, family, familyDisorder, familySegregation, familyMembers, familyProband, gene, ct, xref, biotype, proteinSubstitution, conservation, populationFrequencyAlt, populationFrequencyRef, populationFrequencyMaf, transcriptFlag, geneTraitId, go, expression, proteinKeyword, drug, functionalScore, clinical, clinicalSignificance, clinicalConfirmedStatus, customAnnotation, panel, panelModeOfInheritance, panelConfidence, panelRoleInCancer, panelFeatureType, panelIntersection, trait \cr
+   search \tab /{apiVersion}/analysis/clinical/search \tab include, exclude, limit, skip, count, flattenAnnotations, study, id, uuid, type, disorder, files, sample, individual, proband, probandSamples, family, familyMembers, familyMemberSamples, panels, locked, analystId, priority, flags, creationDate, modificationDate, dueDate, qualityControlSummary, release, snapshot, status, internalStatus, annotation, deleted \cr
+   queryVariant \tab /{apiVersion}/analysis/clinical/variant/query \tab include, exclude, limit, skip, count, approximateCount, approximateCountSamplingSize, savedFilter, includeInterpretation, id, region, type, study, file, filter, qual, fileData, sample, sampleData, sampleAnnotation, cohort, cohortStatsRef, cohortStatsAlt, cohortStatsMaf, cohortStatsMgf, cohortStatsPass, missingAlleles, missingGenotypes, score, family, familyDisorder, familySegregation, familyMembers, familyProband, gene, ct, xref, biotype, proteinSubstitution, conservation, populationFrequencyAlt, populationFrequencyRef, populationFrequencyMaf, transcriptFlag, geneTraitId, go, expression, proteinKeyword, drug, functionalScore, clinical, clinicalSignificance, clinicalConfirmedStatus, customAnnotation, panel, panelModeOfInheritance, panelConfidence, panelRoleInCancer, panelFeatureType, panelIntersection, trait \cr
    acl \tab /{apiVersion}/analysis/clinical/{clinicalAnalyses}/acl \tab clinicalAnalyses\link{*}, study, member, silent \cr
    delete \tab /{apiVersion}/analysis/clinical/{clinicalAnalyses}/delete \tab study, force, clinicalAnalyses\link{*} \cr
-   update \tab /{apiVersion}/analysis/clinical/{clinicalAnalyses}/update \tab include, exclude, clinicalAnalyses\link{*}, study, commentsAction, flagsAction, filesAction, panelsAction, includeResult, body\link{*} \cr
-   info \tab /{apiVersion}/analysis/clinical/{clinicalAnalysis}/info \tab include, exclude, clinicalAnalysis\link{*}, study, deleted \cr
+   update \tab /{apiVersion}/analysis/clinical/{clinicalAnalyses}/update \tab include, exclude, clinicalAnalyses\link{*}, study, commentsAction, flagsAction, analystsAction, filesAction, panelsAction, annotationSetsAction, includeResult, body\link{*} \cr
+   updateAnnotationSetsAnnotations \tab /{apiVersion}/analysis/clinical/{clinicalAnalysis}/annotationSets/{annotationSet}/annotations/update \tab clinicalAnalysis\link{*}, study, annotationSet\link{*}, action, body \cr
+   info \tab /{apiVersion}/analysis/clinical/{clinicalAnalysis}/info \tab include, exclude, flattenAnnotations, clinicalAnalysis\link{*}, study, version, deleted \cr
    createInterpretation \tab /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/create \tab include, exclude, clinicalAnalysis\link{*}, study, setAs, includeResult, body\link{*} \cr
    clearInterpretation \tab /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/{interpretations}/clear \tab study, interpretations\link{*}, clinicalAnalysis\link{*} \cr
    deleteInterpretation \tab /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/{interpretations}/delete \tab study, clinicalAnalysis\link{*}, interpretations\link{*}, setAsPrimary \cr
    revertInterpretation \tab /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/{interpretation}/revert \tab study, clinicalAnalysis\link{*}, interpretation\link{*}, version\link{*} \cr
    updateInterpretation \tab /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/{interpretation}/update \tab include, exclude, study, primaryFindingsAction, methodsAction, secondaryFindingsAction, commentsAction, panelsAction, setAs, clinicalAnalysis\link{*}, interpretation\link{*}, includeResult, body\link{*} \cr
+   updateReport \tab /{apiVersion}/analysis/clinical/{clinicalAnalysis}/report/update \tab include, exclude, clinicalAnalysis\link{*}, study, commentsAction, supportingEvidencesAction, filesAction, includeResult, body\link{*} \cr
 }
 }
 \section{Endpoint /{apiVersion}/analysis/clinical/acl/{members}/update}{
 
 Update the set of permissions granted for the member.
+}
+
+\section{Endpoint /{apiVersion}/analysis/clinical/annotationSets/load}{
+
+Load annotation sets from a TSV file.
 }
 
 \section{Endpoint /{apiVersion}/analysis/clinical/clinical/configuration/update}{
@@ -360,6 +404,11 @@ Clinical interpretation information.
 Run cancer tiering interpretation analysis.
 }
 
+\section{Endpoint /{apiVersion}/analysis/clinical/interpreter/exomiser/run}{
+
+Run exomiser interpretation analysis.
+}
+
 \section{Endpoint /{apiVersion}/analysis/clinical/interpreter/team/run}{
 
 Run TEAM interpretation analysis.
@@ -373,6 +422,11 @@ Run tiering interpretation analysis.
 \section{Endpoint /{apiVersion}/analysis/clinical/interpreter/zetta/run}{
 
 Run Zetta interpretation analysis.
+}
+
+\section{Endpoint /{apiVersion}/analysis/clinical/load}{
+
+Load clinical analyses from a file.
 }
 
 \section{Endpoint /{apiVersion}/analysis/clinical/rga/aggregationStats}{
@@ -420,11 +474,6 @@ RGA variant summary stats.
 Clinical analysis search.
 }
 
-\section{Endpoint /{apiVersion}/analysis/clinical/variant/actionable}{
-
-Fetch actionable clinical variants.
-}
-
 \section{Endpoint /{apiVersion}/analysis/clinical/variant/query}{
 
 Fetch clinical variants.
@@ -443,6 +492,11 @@ Delete clinical analyses.
 \section{Endpoint /{apiVersion}/analysis/clinical/{clinicalAnalyses}/update}{
 
 Update clinical analysis attributes.
+}
+
+\section{Endpoint /{apiVersion}/analysis/clinical/{clinicalAnalysis}/annotationSets/{annotationSet}/annotations/update}{
+
+Update annotations from an annotationSet.
 }
 
 \section{Endpoint /{apiVersion}/analysis/clinical/{clinicalAnalysis}/info}{
@@ -473,6 +527,11 @@ Revert to a previous interpretation version.
 \section{Endpoint /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/{interpretation}/update}{
 
 Update interpretation fields.
+}
+
+\section{Endpoint /{apiVersion}/analysis/clinical/{clinicalAnalysis}/report/update}{
+
+Update clinical analysis report.
 }
 
 \seealso{

@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.io;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -85,7 +86,7 @@ public class CatalogIOManager {
     }
 
     protected void checkParam(String param) throws CatalogIOException {
-        if (param == null || param.equals("")) {
+        if (StringUtils.isEmpty(param)) {
             throw new CatalogIOException("Parameter '" + param + "' not valid");
         }
     }
@@ -107,7 +108,7 @@ public class CatalogIOManager {
         return Paths.get(getProjectsUri(organizationId)).resolve(projectId.endsWith("/") ? projectId : (projectId + "/")).toUri();
     }
 
-    private URI getStudyUri(String organizationId, String projectId, String studyId) throws CatalogIOException {
+    public URI getStudyUri(String organizationId, String projectId, String studyId) throws CatalogIOException {
         checkParam(studyId);
         return Paths.get(getProjectUri(organizationId, projectId)).resolve(studyId.endsWith("/") ? studyId : (studyId + "/")).toUri();
     }

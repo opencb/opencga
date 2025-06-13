@@ -20,6 +20,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
+import org.opencb.opencga.analysis.resource.ResourceFetcherTool;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -28,6 +29,9 @@ import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.Acl;
 import org.opencb.opencga.core.models.admin.*;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.JobType;
+import org.opencb.opencga.core.models.resource.ResourceFetcherToolParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
@@ -35,7 +39,7 @@ import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.models.user.UserCreateParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.*;
-import org.opencb.opencga.server.rest.OpenCGAWSServer;
+import org.opencb.opencga.server.rest.analysis.AnalysisWebService;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -44,12 +48,13 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 
+import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 import static org.opencb.opencga.core.models.admin.UserImportParams.ResourceType.*;
 
 @Path("/{apiVersion}/admin")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Admin", position = 4, description = "Administrator webservices")
-public class AdminWSServer extends OpenCGAWSServer {
+public class AdminWSServer extends AnalysisWebService { //OpenCGAWSServer {
 
     public AdminWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
@@ -354,4 +359,23 @@ public class AdminWSServer extends OpenCGAWSServer {
         }
     }
 
+    //******************************** RESOURCES **********************************//
+
+    @POST
+    @Path("/resource/fetch")
+    @ApiOperation(value = ResourceFetcherTool.DESCRIPTION, response = Job.class)
+    public Response fetchResources(
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME)
+                    String scheduledStartTime,
+            @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM)
+                    String jobPriority,
+            @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
+            @ApiParam(value = ResourceFetcherToolParams.DESCRIPTION, required = true) ResourceFetcherToolParams params) {
+        return submitJob(ParamConstants.ADMIN_STUDY_FQN, JobType.NATIVE, ResourceFetcherTool.ID, params, jobName, jobDescription, dependsOn,
+                jobTags, scheduledStartTime, jobPriority, dryRun);
     }
+}

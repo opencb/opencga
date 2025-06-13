@@ -24,6 +24,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.config.DatabaseCredentials;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.config.storage.StorageEngineConfiguration;
+import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
@@ -46,8 +47,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created on 28/11/16.
@@ -162,6 +162,42 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
+    public void aggregateFamily(String study, VariantAggregateFamilyParams params, ObjectMap options, URI outdir) throws StorageEngineException {
+        logger.info("Running family aggregation!");
+        List<String> samples = params.getSamples();
+        if (samples == null || samples.size() < 2) {
+            throw new IllegalArgumentException("Aggregate family operation requires at least two samples.");
+        } else if (new HashSet<>(samples).size() != samples.size()) {
+            // Fail if duplicated samples
+            throw new IllegalArgumentException("Unable to execute aggregate-family operation with duplicated samples.");
+        }
+        StudyMetadata studyMetadata = getMetadataManager().getStudyMetadata(study);
+
+        // Try to register the cohort. It might fail if the cohort already exists.
+        int internalCohortId = getMetadataManager()
+                .registerAggregateFamilySamplesCohort(studyMetadata.getId(), samples, params.isResume(), params.isResume());
+
+
+        // Update family index status to NONE
+        for (String sample : samples) {
+            int sampleId = getMetadataManager().getSampleId(studyMetadata.getId(), sample);
+            getMetadataManager().updateSampleMetadata(studyMetadata.getId(), sampleId, sm -> {
+                Integer version = sm.getFamilyIndexVersion();
+                if (version != null) {
+                    logger.info("Updating family index status for sample '{}' to {}", sm.getName(), TaskMetadata.Status.NONE);
+                    sm.setFamilyIndexStatus(TaskMetadata.Status.NONE, version);
+                }
+            });
+        }
+
+
+        getMetadataManager().updateCohortMetadata(studyMetadata.getId(), internalCohortId, cohort -> {
+            cohort.setStatusByType(TaskMetadata.Status.READY);
+        });
+        getMetadataManager().removeExtraInternalCohorts(studyMetadata.getId(), internalCohortId);
+    }
+
+    @Override
     protected VariantImporter newVariantImporter() throws StorageEngineException {
         return new VariantImporter(getDBAdaptor()) {
             @Override
@@ -179,12 +215,31 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
     @Override
     public void removeFiles(String study, List<String> files, URI outdir) throws StorageEngineException {
         TaskMetadata task = preRemove(study, files, Collections.emptyList());
-        try {
-            Thread.sleep(1);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+        logger.info("Deleting files {} from study '{}'", files, study);
         postRemoveFiles(study, task.getFileIds(), Collections.emptyList(), task.getId(), false);
+    }
+
+    @Override
+    public void removeSamples(String study, List<String> samples, URI outdir) throws StorageEngineException {
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
+        int studyId = metadataManager.getStudyId(study);
+        List<Integer> sampleIds = metadataManager.getSampleIds(studyId, samples);
+
+        // Check if any file is being completely deleted
+        Set<Integer> partiallyDeletedFiles = metadataManager.getFileIdsFromSampleIds(studyId, sampleIds, true);
+        List<String> fullyDeletedFiles = new ArrayList<>();
+        List<Integer> fullyDeletedFileIds = new ArrayList<>();
+        for (Integer partiallyDeletedFile : partiallyDeletedFiles) {
+            LinkedHashSet<Integer> samplesFromFile = metadataManager.getSampleIdsFromFileId(studyId, partiallyDeletedFile);
+            if (sampleIds.containsAll(samplesFromFile)) {
+                fullyDeletedFileIds.add(partiallyDeletedFile);
+                fullyDeletedFiles.add(metadataManager.getFileName(studyId, partiallyDeletedFile));
+            }
+        }
+
+        TaskMetadata taskMetadata = preRemove(study, fullyDeletedFiles, samples);
+        logger.info("Deleting samples {} from study '{}'", samples, study);
+        postRemoveFiles(study, fullyDeletedFileIds, sampleIds, taskMetadata.getId(), false);
     }
 
     @Override

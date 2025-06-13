@@ -19,15 +19,14 @@ package org.opencb.opencga.analysis.alignment;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.tools.alignment.BamManager;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.alignment.AlignmentIndexParams;
-import org.opencb.opencga.core.models.alignment.CoverageIndexParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.InternalStatus;
-import org.opencb.opencga.core.models.file.*;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileInternalAlignmentIndex;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
@@ -40,7 +39,11 @@ import java.nio.file.Paths;
 public class AlignmentIndexOperation extends OpenCgaToolScopeStudy {
 
     public static final String ID = "alignment-index-run";
-    public static final String DESCRIPTION = "Index a given alignment file, e.g., create a .bai file from a .bam file";
+    public static final String DESCRIPTION = "Index a given alignment file BAM/CRAM, e.g., create a " + AlignmentConstants.BAI_EXTENSION
+            + " file from a " + AlignmentConstants.BAM_EXTENSION + " file";
+
+    private String inputFile;
+    private boolean overwrite = false;
 
     @ToolParams
     protected final AlignmentIndexParams indexParams = new AlignmentIndexParams();
@@ -79,6 +82,18 @@ public class AlignmentIndexOperation extends OpenCgaToolScopeStudy {
         // Check if the input file is .bam or .cram
         if (!filename.endsWith(AlignmentConstants.BAM_EXTENSION) && !filename.endsWith(AlignmentConstants.CRAM_EXTENSION)) {
             throw new ToolException("Invalid input alignment file '" + indexParams.getFileId() + "': it must be in BAM or CRAM format");
+        }
+
+        // Check overwrite
+        String baiFileId;
+        try {
+            baiFileId = inputCatalogFile.getInternal().getAlignment().getIndex().getFileId();
+        } catch (Exception e) {
+            baiFileId = null;
+        }
+        if (StringUtils.isNotEmpty(baiFileId) && !overwrite) {
+            throw new ToolException("Alignment index file ID '" + baiFileId + "' already exists for file ID '" + inputCatalogFile.getId()
+                    + "'. To overwrite the alignment index file use the flag --overwrite");
         }
 
         outputPath = getOutDir().resolve(filename + (filename.endsWith(AlignmentConstants.BAM_EXTENSION)
@@ -122,13 +137,31 @@ public class AlignmentIndexOperation extends OpenCgaToolScopeStudy {
             }
 
             // Link generated BAI file and update samples info, related file
-            File baiCatalogFile = AlignmentAnalysisUtils.linkAndUpdate(inputCatalogFile, outputPath, getJobId(), study, catalogManager,
-                    token);
+            File baiCatalogFile = AlignmentAnalysisUtils.linkAndUpdate(inputCatalogFile, outputPath, moveSuccessful ? null : getJobId(),
+                    study, catalogManager, token);
 
             // Update BAM file internal in order to set the alignment index (BAI)
             FileInternalAlignmentIndex fileAlignmentIndex = new FileInternalAlignmentIndex(new InternalStatus(InternalStatus.READY),
                     baiCatalogFile.getId(), "HTSJDK library");
             catalogManager.getFileManager().updateFileInternalAlignmentIndex(study, inputCatalogFile, fileAlignmentIndex, token);
         });
+    }
+
+    public String getInputFile() {
+        return inputFile;
+    }
+
+    public AlignmentIndexOperation setInputFile(String inputFile) {
+        this.inputFile = inputFile;
+        return this;
+    }
+
+    public boolean isOverwrite() {
+        return overwrite;
+    }
+
+    public AlignmentIndexOperation setOverwrite(boolean overwrite) {
+        this.overwrite = overwrite;
+        return this;
     }
 }

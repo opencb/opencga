@@ -33,7 +33,7 @@ on:
 jobs:
   analysis:
     name: Execute Sonar Analysis
-    runs-on: ubuntu-22.04
+    runs-on: ${{ vars.UBUNTU_VERSION }}
     if: ${{ inputs.sonar }}
     steps:
       - uses: actions/checkout@v4
@@ -61,7 +61,7 @@ jobs:
 
   test:
     name: Execute JUnit and Jacoco tests
-    runs-on: ubuntu-22.04
+    runs-on: ${{ vars.UBUNTU_VERSION }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -97,10 +97,11 @@ jobs:
             MODULE="opencga"
           fi
           TAGS=$(echo ${{ inputs.test_profile }} | sed -e 's/run\([^,]*\)Tests/\1/g'  | tr ',' '_' | tr '[:upper:]' '[:lower:]' )
-          echo "TESTS_LOG_FILE_NAME=junit_${{ inputs.hadoop }}_${TAGS}_${MODULE}.log" >> $GITHUB_OUTPUT
+          echo "TESTS_LOG_FILE_NAME=junit_${{ inputs.hadoop }}_${TAGS}_${MODULE}.log.gz" >> $GITHUB_OUTPUT
       - name: Run Junit tests
-        run: mvn -B verify surefire-report:report --fail-never -Dsurefire.testFailureIgnore=true -f ${{ (inputs.module == '' || inputs.module == 'all') && '.' || inputs.module }} -P ${{ inputs.hadoop }},${{ inputs.test_profile }} -Dcheckstyle.skip ${{ inputs.mvn_opts }}  |& tee ${{ steps.BuildJunitLogFileName.outputs.TESTS_LOG_FILE_NAME }} |& grep -P '^\[[^\]]*(INFO|WARNING|ERROR)' --colour=never --line-buffered
+        run: mvn -B verify surefire-report:report --fail-never -Dsurefire.testFailureIgnore=true -f ${{ (inputs.module == '' || inputs.module == 'all') && '.' || inputs.module }} -P ${{ inputs.hadoop }},${{ inputs.test_profile }} -Dcheckstyle.skip ${{ inputs.mvn_opts }}  |& tee >(gzip > ${{ steps.BuildJunitLogFileName.outputs.TESTS_LOG_FILE_NAME }} ) |& grep -a -P '^\[[^\]]*(INFO|WARNING|ERROR)' --colour=never --line-buffered
       - name: Upload Junit test logs
+        if: success() || failure()
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.BuildJunitLogFileName.outputs.TESTS_LOG_FILE_NAME }}

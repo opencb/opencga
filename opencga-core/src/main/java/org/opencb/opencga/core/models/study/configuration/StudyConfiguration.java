@@ -17,9 +17,10 @@ public class StudyConfiguration {
         this.variantEngine = variantEngine;
     }
 
-    public static StudyConfiguration init() {
+    public static StudyConfiguration init(String cellbaseVersion) {
         return new StudyConfiguration(ClinicalAnalysisStudyConfiguration.defaultConfiguration(),
-                new StudyVariantEngineConfiguration(new ObjectMap(), SampleIndexConfiguration.defaultConfiguration()));
+                new StudyVariantEngineConfiguration(new ObjectMap(),
+                        cellbaseVersion == null ? null : SampleIndexConfiguration.defaultConfiguration(cellbaseVersion)));
     }
 
     @Override

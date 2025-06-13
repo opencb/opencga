@@ -35,6 +35,53 @@ class Job(_ParentRestClient):
         options['action'] = action
         return self._post(category='jobs', resource='update', subcategory='acl', second_query_id=members, data=data, **options)
 
+    def aggregation_stats(self, **options):
+        """
+        Fetch catalog job stats.
+        PATH: /{apiVersion}/jobs/aggregationStats
+
+        :param str study: Study [[organization@]project:]study where study and
+            project can be either the ID or UUID.
+        :param bool other_studies: Flag indicating the entries being queried
+            can belong to any related study, not just the primary one.
+        :param str id: Comma separated list of job IDs up to a maximum of 100.
+            Also admits basic regular expressions using the operator '~', i.e.
+            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for
+            case insensitive search.
+        :param str uuid: Comma separated list of job UUIDs up to a maximum of
+            100.
+        :param str tool_id: Tool ID executed by the job. Also admits basic
+            regular expressions using the operator '~', i.e. '~{perl-regex}'
+            e.g. '~value' for case sensitive, '~/value/i' for case insensitive
+            search.
+        :param str tool_type: Tool type executed by the job [OPERATION,
+            ANALYSIS].
+        :param str user_id: User that created the job.
+        :param str priority: Priority of the job.
+        :param str status: Filter by status.
+        :param str internal_status: Filter by internal status.
+        :param str creation_date: Creation date. Format: yyyyMMddHHmmss.
+            Examples: >2018, 2017-2018, <201805.
+        :param str modification_date: Modification date. Format:
+            yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        :param bool visited: Visited status of job.
+        :param str tags: Job tags.
+        :param str input: Comma separated list of file IDs used as input.
+        :param str output: Comma separated list of file IDs used as output.
+        :param str acl: Filter entries for which a user has the provided
+            permissions. Format: acl={user}:{permissions}. Example:
+            acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which
+            user john has both WRITE and WRITE_ANNOTATIONS permissions. Only
+            study owners or administrators can query by this field. .
+        :param str release: Release when it was created.
+        :param bool deleted: Boolean to retrieve deleted entries.
+        :param str field: Field to apply aggregation statistics to (or a list
+            of fields separated by semicolons), e.g.:
+            studies;type;numSamples[0..10]:1;format:sum(size).
+        """
+
+        return self._get(category='jobs', resource='aggregationStats', **options)
+
     def create(self, data=None, **options):
         """
         Register an executed job with POST method.
@@ -64,12 +111,23 @@ class Job(_ParentRestClient):
             case insensitive search.
         :param str uuid: Comma separated list of job UUIDs up to a maximum of
             100.
+        :param str type: Job type (NATIVE, WORKFLOW, CUSTOM or WALKER).
         :param str tool_id: Tool ID executed by the job. Also admits basic
             regular expressions using the operator '~', i.e. '~{perl-regex}'
             e.g. '~value' for case sensitive, '~/value/i' for case insensitive
             search.
         :param str tool_type: Tool type executed by the job [OPERATION,
             ANALYSIS].
+        :param str tool.external_executor.id: Id of the external executor.
+            This field is only applicable for jobs executed by an external
+            executor.
+        :param str parent_id: Job id that generated this job (if any).
+        :param bool dry_run: Flag indicating that the job will be executed in
+            dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
+        :param bool internal.kill_job_requested: Flag indicating that the user
+            requested to kill the job.
         :param str user_id: User that created the job.
         :param str priority: Priority of the job.
         :param str status: Filter by status.
@@ -137,12 +195,23 @@ class Job(_ParentRestClient):
             case insensitive search.
         :param str uuid: Comma separated list of job UUIDs up to a maximum of
             100.
+        :param str type: Job type (NATIVE, WORKFLOW, CUSTOM or WALKER).
         :param str tool_id: Tool ID executed by the job. Also admits basic
             regular expressions using the operator '~', i.e. '~{perl-regex}'
             e.g. '~value' for case sensitive, '~/value/i' for case insensitive
             search.
         :param str tool_type: Tool type executed by the job [OPERATION,
             ANALYSIS].
+        :param str tool.external_executor.id: Id of the external executor.
+            This field is only applicable for jobs executed by an external
+            executor.
+        :param str parent_id: Job id that generated this job (if any).
+        :param bool dry_run: Flag indicating that the job will be executed in
+            dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
+        :param bool internal.kill_job_requested: Flag indicating that the user
+            requested to kill the job.
         :param str user_id: User that created the job.
         :param str priority: Priority of the job.
         :param str status: Filter by status.
@@ -165,6 +234,56 @@ class Job(_ParentRestClient):
         """
 
         return self._get(category='jobs', resource='search', **options)
+
+    def build_tool(self, data=None, **options):
+        """
+        Execute an analysis from a custom binary.
+        PATH: /{apiVersion}/jobs/tool/build
+
+        :param dict data: body. (REQUIRED)
+        :param str study: Study [[organization@]project:]study where study and
+            project can be either the ID or UUID.
+        :param str job_id: Job ID. It must be a unique string within the
+            study. An ID will be autogenerated automatically if not provided.
+        :param str job_description: Job description.
+        :param str job_depends_on: Comma separated list of existing job IDs
+            the job will depend on.
+        :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
+        """
+
+        return self._post(category='jobs', resource='build', subcategory='tool', data=data, **options)
+
+    def run_tool(self, data=None, **options):
+        """
+        Execute an analysis from a custom binary.
+        PATH: /{apiVersion}/jobs/tool/run
+
+        :param dict data: NextFlow run parameters. (REQUIRED)
+        :param str study: Study [[organization@]project:]study where study and
+            project can be either the ID or UUID.
+        :param str job_id: Job ID. It must be a unique string within the
+            study. An ID will be autogenerated automatically if not provided.
+        :param str job_description: Job description.
+        :param str job_depends_on: Comma separated list of existing job IDs
+            the job will depend on.
+        :param str job_tags: Job tags.
+        :param str job_scheduled_start_time: Time when the job is scheduled to
+            start.
+        :param str job_priority: Priority of the job.
+        :param bool job_dry_run: Flag indicating that the job will be executed
+            in dry-run mode. In this mode, OpenCGA will validate that all
+            parameters and prerequisites are correctly set for successful
+            execution, but the job will not actually run.
+        """
+
+        return self._post(category='jobs', resource='run', subcategory='tool', data=data, **options)
 
     def top(self, **options):
         """

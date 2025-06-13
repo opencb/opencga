@@ -53,7 +53,7 @@ export default class Alignment extends OpenCGAParentClass {
         return this._post("analysis", null, "alignment/bwa", null, "run", data, params);
     }
 
-    /** Compute coverage for a list of alignment files
+    /** Compute the coverage from a given BAM alignment file, e.g., create a .bw file from a .bam file
     * @param {Object} data - Coverage computation parameters.
     * @param {Object} [params] - The Object containing the following optional parameters:
     * @param {String} [params.study] - study.
@@ -179,7 +179,7 @@ export default class Alignment extends OpenCGAParentClass {
         return this._post("analysis", null, "alignment/fastqc", null, "run", data, params);
     }
 
-    /** Index alignment file
+    /** Index a given alignment file BAM/CRAM, e.g., create a .bai file from a .bam file
     * @param {Object} data - Alignment index params.
     * @param {Object} [params] - The Object containing the following optional parameters:
     * @param {String} [params.study] - study.

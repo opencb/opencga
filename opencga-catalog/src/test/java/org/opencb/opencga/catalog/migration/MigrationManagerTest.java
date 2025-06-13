@@ -18,6 +18,7 @@ import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobReferenceParam;
+import org.opencb.opencga.core.models.job.JobType;
 import org.opencb.opencga.core.models.migration.MigrationRun;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
@@ -125,7 +126,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
             String fqn = catalogManager.getProjectManager().search(organizationId, new Query(), new QueryOptions(), token).first().getFqn();
             getMigrationRun().getJobs().clear();
 
-            getMigrationRun().addJob(catalogManager.getJobManager().submitProject(fqn, "my-tool", null, Collections.emptyMap(), null, null,
+            getMigrationRun().addJob(catalogManager.getJobManager().submitProject(fqn, JobType.NATIVE, "my-tool", null, Collections.emptyMap(), null, null,
                     null, null, token).first());
         }
     }
@@ -135,7 +136,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
     public void setUp() throws Exception {
         super.setUp();
         try (MongoDBAdaptorFactory mongoDBAdaptorFactory = new MongoDBAdaptorFactory(catalogManager.getConfiguration(),
-                catalogManager.getIoManagerFactory())) {
+                catalogManager.getIoManagerFactory(), catalogManager.getCatalogIOManager())) {
             for (String organizationId : mongoDBAdaptorFactory.getOrganizationIds()) {
                 mongoDBAdaptorFactory.getMongoDataStore(organizationId)
                         .getCollection(OrganizationMongoDBAdaptorFactory.MIGRATION_COLLECTION)
@@ -151,7 +152,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
     @Test
     public void testMigration() throws Exception {
         MigrationManager migrationManager = catalogManager.getMigrationManager();
-        String token = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+        String token = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).first().getToken();
 
         List<Class<? extends MigrationTool>> pendingMigrations = migrationManager.getPendingMigrations(organizationId, "0.0.1", token);
         assertEquals(0, pendingMigrations.size());
@@ -225,7 +226,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
 
     @Test
     public void testManualMigrations() throws CatalogException, IOException {
-        String token = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+        String token = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).first().getToken();
 
         MigrationRun migrationRun = catalogManager.getMigrationManager().runManualMigration(organizationId, "0.2.1", "test4-1-manual",
                 catalogManagerResource.getOpencgaHome(), false, false, new ObjectMap("key", "OtherValue"), token);
@@ -238,7 +239,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
 
     @Test
     public void testMigrationsWithJobs() throws CatalogException, IOException {
-        String token = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+        String token = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).first().getToken();
 
         catalogManager.getMigrationManager().runManualMigration("0.2.1", "test4-1-manual",
                 catalogManagerResource.getOpencgaHome(), new ObjectMap("key", "value"), token);
@@ -293,7 +294,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
 
     @Test
     public void testMigrationWithStorageReadOnly() throws Exception {
-        String token = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
+        String token = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).first().getToken();
 
         try (OutputStream os = new FileOutputStream(catalogManagerResource.getOpencgaHome().resolve("conf").resolve("storage-configuration.yml").toFile())) {
             new StorageConfiguration().setMode(StorageConfiguration.Mode.READ_ONLY).serialize(os);

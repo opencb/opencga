@@ -79,7 +79,9 @@ public final class Enums {
         CLINICAL,
         EXPRESSION,
         RGA,
-        FUNCTIONAL;
+        FUNCTIONAL,
+        WORKFLOW,
+        RESOURCE;
 
         public List<String> getFullPermissionList() {
             switch (this) {
@@ -214,7 +216,6 @@ public final class Enums {
         RESET_USER_PASSWORD,
         CHANGE_USER_CONFIG,
         FETCH_USER_CONFIG,
-
         INCREMENT_PROJECT_RELEASE,
 
         FETCH_STUDY_GROUPS,
@@ -251,6 +252,7 @@ public final class Enums {
 
         VISIT,
         KILL_JOB,
+        RESCHEDULE_JOB,
 
         IMPORT,
 

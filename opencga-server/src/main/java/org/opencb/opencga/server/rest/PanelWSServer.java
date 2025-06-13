@@ -18,6 +18,7 @@ package org.opencb.opencga.server.rest;
 
 import org.apache.commons.lang3.ObjectUtils;
 import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.panel.PanelImportTask;
 import org.opencb.opencga.catalog.managers.PanelManager;
@@ -27,6 +28,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.JobType;
 import org.opencb.opencga.core.models.panel.*;
 import org.opencb.opencga.core.tools.annotations.*;
 
@@ -36,6 +38,7 @@ import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.List;
 
+import static org.opencb.opencga.core.api.ParamConstants.FACET_PARAM;
 import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 
 @Path("/{apiVersion}/panels")
@@ -86,7 +89,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(name = "body", value = "Panel parameters") PanelImportParams params) {
-        return submitJob(PanelImportTask.ID, studyStr, params, jobId, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(studyStr, JobType.NATIVE, PanelImportTask.ID, params, jobId, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
 //    @POST
@@ -289,6 +292,40 @@ public class PanelWSServer extends OpenCGAWSServer {
         } catch (Exception e) {
             return createErrorResponse(e);
         }
+    }
+
+    // TODO: Add panel fields to aggregation stats
+    @GET
+    @Path("/aggregationStats")
+    @ApiOperation(value = "Fetch catalog panel stats", response = FacetField.class)
+    public Response getAggregationStats(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.PANEL_ID_DESCRIPTION) @QueryParam(ParamConstants.PANEL_ID_PARAM) String id,
+            @ApiParam(value = ParamConstants.PANEL_UUID_DESCRIPTION) @QueryParam(ParamConstants.PANEL_UUID_PARAM) String uuid,
+            @ApiParam(value = ParamConstants.PANEL_NAME_DESCRIPTION) @QueryParam(ParamConstants.PANEL_NAME_PARAM) String name,
+            @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
+            @ApiParam(value = ParamConstants.PANEL_DISORDERS_DESCRIPTION) @QueryParam(ParamConstants.PANEL_DISORDERS_PARAM) String disorders,
+            @ApiParam(value = ParamConstants.PANEL_VARIANTS_DESCRIPTION) @QueryParam(ParamConstants.PANEL_VARIANTS_PARAM) String variants,
+            @ApiParam(value = ParamConstants.PANEL_GENES_DESCRIPTION) @QueryParam(ParamConstants.PANEL_GENES_PARAM) String genes,
+            @ApiParam(value = ParamConstants.PANEL_SOURCE_DESCRIPTION) @QueryParam(ParamConstants.PANEL_SOURCE_PARAM) String source,
+            @ApiParam(value = ParamConstants.PANEL_REGIONS_DESCRIPTION) @QueryParam(ParamConstants.PANEL_REGIONS_PARAM) String regions,
+            @ApiParam(value = ParamConstants.PANEL_CATEGORIES_DESCRIPTION) @QueryParam(ParamConstants.PANEL_CATEGORIES_PARAM) String categories,
+            @ApiParam(value = ParamConstants.PANEL_TAGS_DESCRIPTION) @QueryParam(ParamConstants.PANEL_TAGS_PARAM) String tags,
+            @ApiParam(value = ParamConstants.PANEL_DELETED_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.PANEL_DELETED_PARAM) boolean deleted,
+            @ApiParam(value = ParamConstants.PANEL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.PANEL_STATUS_PARAM) String status,
+            @ApiParam(value = ParamConstants.PANEL_CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.PANEL_CREATION_DATE_PARAM) String creationDate,
+            @ApiParam(value = ParamConstants.PANEL_MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.PANEL_MODIFICATION_DATE_PARAM) String modificationDate,
+            @ApiParam(value = ParamConstants.PANEL_ACL_DESCRIPTION) @QueryParam(ParamConstants.PANEL_ACL_PARAM) String acl,
+            @ApiParam(value = ParamConstants.PANEL_RELEASE_DESCRIPTION) @QueryParam(ParamConstants.PANEL_RELEASE_PARAM) String release,
+            @ApiParam(value = ParamConstants.PANEL_SNAPSHOT_DESCRIPTION) @QueryParam(ParamConstants.PANEL_SNAPSHOT_PARAM) int snapshot,
+
+            // Facet field
+            @ApiParam(value = ParamConstants.FACET_DESCRIPTION) @QueryParam(ParamConstants.FACET_PARAM) String facet) {
+        return run(() -> {
+            query.remove(ParamConstants.STUDY_PARAM);
+            query.remove(FACET_PARAM);
+            return catalogManager.getPanelManager().facet(studyStr, query, facet, token);
+        });
     }
 
 }

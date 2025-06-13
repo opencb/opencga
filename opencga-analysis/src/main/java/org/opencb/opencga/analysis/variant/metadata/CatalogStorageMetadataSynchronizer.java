@@ -37,6 +37,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.BatchUtils;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
+import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
@@ -48,6 +49,7 @@ import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.sample.*;
+import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -421,8 +423,26 @@ public class CatalogStorageMetadataSynchronizer {
         return modified;
     }
 
+    private boolean synchronizeSampleIndexConfiguration(StudyMetadata studyMetadata, String token) throws CatalogException {
+        Study study = catalogManager.getStudyManager().get(studyMetadata.getName(), new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION.key())), token).first();
+        SampleIndexConfiguration sampleIndexFromCatalog = study.getInternal().getConfiguration().getVariantEngine().getSampleIndex();
+        SampleIndexConfiguration sampleIndexFromStorage = studyMetadata.getSampleIndexConfigurationLatest().getConfiguration();
+        if (!sampleIndexFromStorage.equals(sampleIndexFromCatalog)) {
+            logger.info("Update sample index configuration from storage for study {}", studyMetadata.getName());
+            catalogManager.getStudyManager().setVariantEngineConfigurationSampleIndex(studyMetadata.getName(), sampleIndexFromStorage, token);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     protected boolean synchronizeFiles(StudyMetadata study, List<File> files, String token) throws CatalogException {
         boolean modified = false;
+
+        // FIXME: This method call should be relocated
+        modified |= synchronizeSampleIndexConfiguration(study, token);
+
         Map<String, Integer> fileNameMap = new HashMap<>();
         Map<Integer, String> filePathMap = new HashMap<>();
         Set<Integer> virtualFiles = new HashSet<>();
@@ -485,7 +505,7 @@ public class CatalogStorageMetadataSynchronizer {
                 fileMetadata.setSamples(new LinkedHashSet<>());
                 try {
                     VariantFileMetadata variantFileMetadata =
-                            metadataManager.getVariantFileMetadata(study.getId(), fileMetadata.getId(), new QueryOptions()).first();
+                            metadataManager.getVariantFileMetadataOrNull(study.getId(), fileMetadata.getId());
                     if (variantFileMetadata == null) {
                         logger.error("Missing VariantFileMetadata from file {}", fileMetadata.getName());
                     } else {
@@ -933,6 +953,65 @@ public class CatalogStorageMetadataSynchronizer {
                     .updateSampleInternalVariantSecondarySampleIndex(study.getName(), sample, catalogVariantSecondarySampleIndex, token);
             modified = true;
         }
+
+        List<SampleInternalVariantAggregateFamily> aggregateFamilies = secureGet(sample,
+                s -> s.getInternal().getVariant().getAggregateFamily(), Collections.emptyList());
+        if (aggregateFamilies == null) {
+            aggregateFamilies = Collections.emptyList();
+        }
+        if (!sampleMetadata.getInternalCohorts().isEmpty() || !aggregateFamilies.isEmpty()) {
+            List<SampleInternalVariantAggregateFamily> aggregateFamiliesUpdated = new ArrayList<>();
+            boolean aggregateFamilyModified = false;
+            for (Integer internalCohort : sampleMetadata.getInternalCohorts()) {
+                if (CohortMetadata.getType(metadataManager.getCohortName(study.getId(), internalCohort)) == CohortMetadata.Type.AGGREGATE_FAMILY) {
+                    CohortMetadata cohortMetadata = metadataManager.getCohortMetadata(study.getId(), internalCohort);
+                    String status;
+                    if (cohortMetadata.getAggregateFamilyStatus() == TaskMetadata.Status.READY) {
+                        status = IndexStatus.READY;
+                    } else {
+                        status = IndexStatus.NONE;
+                    }
+                    Set<String> samples = new LinkedHashSet<>(cohortMetadata.getSamples().size());
+                    for (Integer sampleId : cohortMetadata.getSamples()) {
+                        samples.add(metadataManager.getSampleName(study.getId(), sampleId));
+                    }
+                    SampleInternalVariantAggregateFamily aggregateFamily = null;
+                    for (SampleInternalVariantAggregateFamily thisAggregateFamily : aggregateFamilies) {
+                        if (samples.size() == thisAggregateFamily.getSampleIds().size()
+                                && samples.containsAll(thisAggregateFamily.getSampleIds())) {
+                            aggregateFamily = thisAggregateFamily;
+                            break;
+                        }
+                    }
+                    if (aggregateFamily == null) {
+                        aggregateFamily = new SampleInternalVariantAggregateFamily(new IndexStatus(status), new ArrayList<>(samples));
+                        modified = true;
+                        aggregateFamilyModified = true;
+                        aggregateFamiliesUpdated.add(aggregateFamily);
+                    } else {
+                        if (aggregateFamily.getStatus().getId().equals(status)) {
+                            // Same samples, same status. Nothing to update.
+                            aggregateFamiliesUpdated.add(aggregateFamily);
+                        } else {
+                            modified = true;
+                            aggregateFamilyModified = true;
+                            aggregateFamily.setStatus(new IndexStatus(status));
+                            aggregateFamiliesUpdated.add(aggregateFamily);
+                        }
+                    }
+                }
+            }
+            if (aggregateFamiliesUpdated.size() != aggregateFamilies.size()) {
+                // Deleted aggregate families. Force update
+                modified = true;
+                aggregateFamilyModified = true;
+            }
+            if (aggregateFamilyModified) {
+                catalogManager.getSampleManager()
+                        .updateSampleInternalVariantAggregateFamily(study.getName(), sample, aggregateFamiliesUpdated, token);
+            }
+        }
+
         return modified;
     }
 

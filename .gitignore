@@ -86,7 +86,7 @@ git.properties
 *.Rcheck*
 opencga-client/src/main/R_packages
 opencga-client/src/main/opencgaR_*.tar.gz
-opencga-client/src/main/R/vignettes/opencgaR.html
+#opencga-client/src/main/R/vignettes/opencgaR.html
 opencga-client/src/main/R/vignettes/opencgaR.md
 
 /opencga-catalog/src/test/java/org/opencb/opencga/catalog/config/CatalogConfigurationTest.java
