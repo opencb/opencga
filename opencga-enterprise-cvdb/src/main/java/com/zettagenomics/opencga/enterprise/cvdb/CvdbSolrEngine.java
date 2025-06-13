@@ -1653,6 +1653,24 @@ public class CvdbSolrEngine {
     }
 
     //----------------------------------------------------------------------
+
+    public void close() {
+        if (solrManager != null) {
+            try {
+                solrManager.close();
+            } catch (IOException e) {
+                logger.error("Error closing Solr manager", e);
+            }
+        }
+        if (catalogManager != null) {
+            catalogManager = null;
+        }
+        if (variantStorageMetadataManager != null) {
+            variantStorageMetadataManager = null;
+        }
+    }
+
+    //----------------------------------------------------------------------
     // G E T T E R S     A N D      S E T T E R S
     //----------------------------------------------------------------------
 

@@ -22,12 +22,18 @@ public class EnterpriseStorageCommandExecutor extends StorageCommandExecutor {
 
     protected DataStore getCvdbDatastore(String projectFqn, CatalogManager catalogManager)
             throws CatalogException, CvdbException, IOException {
-        return getCvdbEngine(catalogManager).getCvdbDatastore(projectFqn, token);
+        CvdbSolrEngine cvdbEngine = getCvdbEngine(catalogManager);
+        DataStore cvdbDatastore = cvdbEngine.getCvdbDatastore(projectFqn, token);
+        cvdbEngine.close();
+        return cvdbDatastore;
     }
 
     protected List<String> getCvdbProjects(List<String> organizationIds, CatalogManager catalogManager)
             throws CatalogException, CvdbException, IOException {
-        return getCvdbEngine(catalogManager).getCvdbProjects(organizationIds, token);
+        CvdbSolrEngine cvdbEngine = getCvdbEngine(catalogManager);
+        List<String> cvdbProjects = cvdbEngine.getCvdbProjects(organizationIds, token);
+        cvdbEngine.close();
+        return cvdbProjects;
     }
 
     private CvdbSolrEngine getCvdbEngine(CatalogManager catalogManager) throws IOException {
