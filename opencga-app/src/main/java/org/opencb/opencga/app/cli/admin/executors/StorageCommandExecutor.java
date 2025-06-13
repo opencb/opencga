@@ -72,7 +72,6 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
     private void status() throws Exception {
         StorageCommandOptions.StatusCommandOptions commandOptions = storageCommandOptions.getStatusCommandOptions();
         StorageEngineFactory factory = StorageEngineFactory.get(storageConfiguration);
-        Set<SolrClient> solrClients = new HashSet<>();
         try (CatalogManager catalogManager = new CatalogManager(configuration);
              VariantStorageManager variantStorageManager = new VariantStorageManager(catalogManager, factory)) {
             String adminPassword = getAdminPassword(true);
@@ -100,9 +99,17 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
             } catch (Exception e) {
                 logger.warn("Solr not alive", e);
                 solrAlive = false;
+            } finally {
+                logger.debug("Closing Solr client {}", solrClient);
+                if (solrClient != null) {
+                    try {
+                        solrClient.close();
+                        logger.debug("Solr client closed successfully");
+                    } catch (IOException e) {
+                        logger.warn("Ignore exception closing Solr", e);
+                    }
+                }
             }
-            solrClients.add(solrClient);
-
             ObjectMap solrStatus = new ObjectMap();
             solrStatus.put("alive", solrAlive);
             solrStatus.put("live_nodes", liveNodes);
@@ -133,11 +140,6 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
             status.put("dataStores", dataStores);
 
             System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(status));
-        }
-
-        // Close solr clients
-        for (SolrClient solrClient : solrClients) {
-            solrClient.close();
         }
     }
 
