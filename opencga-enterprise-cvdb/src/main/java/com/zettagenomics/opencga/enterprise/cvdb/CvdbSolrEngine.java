@@ -70,7 +70,6 @@ import org.opencb.opencga.core.models.clinical.CvdbIndexStatus;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.federation.FederationClientParams;
-import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.project.Project;
@@ -1655,9 +1654,11 @@ public class CvdbSolrEngine {
     //----------------------------------------------------------------------
 
     public void close() {
+        logger.debug("Closing CVDB engine (i.e., Solr client connection used by the solrManager = {})", solrManager);
         if (solrManager != null) {
             try {
                 solrManager.close();
+                logger.debug("CVDB engine closed successfully (i.e., the Solr client used by SolrManager)");
             } catch (IOException e) {
                 logger.error("Error closing Solr manager", e);
             }

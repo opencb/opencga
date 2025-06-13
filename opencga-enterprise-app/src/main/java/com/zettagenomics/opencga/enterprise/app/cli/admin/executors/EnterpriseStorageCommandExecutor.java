@@ -4,6 +4,7 @@ import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfigu
 import com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine;
 import com.zettagenomics.opencga.enterprise.cvdb.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.app.cli.admin.executors.StorageCommandExecutor;
 import org.opencb.opencga.app.cli.admin.options.StorageCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -25,6 +26,7 @@ public class EnterpriseStorageCommandExecutor extends StorageCommandExecutor {
         CvdbSolrEngine cvdbEngine = getCvdbEngine(catalogManager);
         DataStore cvdbDatastore = cvdbEngine.getCvdbDatastore(projectFqn, token);
         cvdbEngine.close();
+        logger.debug("Returning CVDB datastore: {}", cvdbDatastore);
         return cvdbDatastore;
     }
 
@@ -33,6 +35,7 @@ public class EnterpriseStorageCommandExecutor extends StorageCommandExecutor {
         CvdbSolrEngine cvdbEngine = getCvdbEngine(catalogManager);
         List<String> cvdbProjects = cvdbEngine.getCvdbProjects(organizationIds, token);
         cvdbEngine.close();
+        logger.debug("Returning CVDB project FQNs: {}", cvdbProjects == null ? "" : StringUtils.join(cvdbProjects, ", "));
         return cvdbProjects;
     }
 
