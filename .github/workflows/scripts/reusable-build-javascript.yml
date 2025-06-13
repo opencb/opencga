@@ -15,7 +15,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
       - name: Build R client
         run: |
-          ./build_clients.sh --skip-python --skip-javascript
+          ./client-builder.sh --skip-python --skip-javascript
       - name: Extract version from DESCRIPTION
         id: version
         run: |
