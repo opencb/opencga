@@ -23,9 +23,8 @@
 #' | api | /{apiVersion}/meta/api | category |
 #' | fail | /{apiVersion}/meta/fail |  |
 #' | model | /{apiVersion}/meta/model | model |
+#' | openapi | /{apiVersion}/meta/openapi | environment, host |
 #' | ping | /{apiVersion}/meta/ping |  |
-#' | loginSso | /{apiVersion}/meta/sso/login | url |
-#' | logoutSso | /{apiVersion}/meta/sso/logout | url |
 #' | status | /{apiVersion}/meta/status |  |
 #'
 #' @md
@@ -61,23 +60,18 @@ setMethod("metaClient", "OpencgaR", function(OpencgaR, endpointName, params=NULL
         model=fetchOpenCGA(object=OpencgaR, category="meta", categoryId=NULL, subcategory=NULL, subcategoryId=NULL,
                 action="model", params=params, httpMethod="GET", as.queryParam=NULL, ...),
 
+        #' @section Endpoint /{apiVersion}/meta/openapi:
+        #' Opencga openapi json.
+        #' @param environment Environment of the app.
+        #' @param host Opencga host without environment.
+        openapi=fetchOpenCGA(object=OpencgaR, category="meta", categoryId=NULL, subcategory=NULL, subcategoryId=NULL,
+                action="openapi", params=params, httpMethod="GET", as.queryParam=NULL, ...),
+
         #' @section Endpoint /{apiVersion}/meta/ping:
         #' Ping Opencga webservices.
 
         ping=fetchOpenCGA(object=OpencgaR, category="meta", categoryId=NULL, subcategory=NULL, subcategoryId=NULL,
                 action="ping", params=params, httpMethod="GET", as.queryParam=NULL, ...),
-
-        #' @section Endpoint /{apiVersion}/meta/sso/login:
-        #' Single Sign On.
-        #' @param url Callback URL.
-        loginSso=fetchOpenCGA(object=OpencgaR, category="meta", categoryId=NULL, subcategory="sso", subcategoryId=NULL,
-                action="login", params=params, httpMethod="GET", as.queryParam=NULL, ...),
-
-        #' @section Endpoint /{apiVersion}/meta/sso/logout:
-        #' Logout from Single Sign On.
-        #' @param url Callback URL.
-        logoutSso=fetchOpenCGA(object=OpencgaR, category="meta", categoryId=NULL, subcategory="sso",
-                subcategoryId=NULL, action="logout", params=params, httpMethod="GET", as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/meta/status:
         #' Database status.

@@ -34,6 +34,7 @@ public class DiseasePanelsCommandOptions {
         public CommonCommandOptions commonCommandOptions;
 
         public UpdateAclCommandOptions updateAclCommandOptions;
+        public AggregationStatsCommandOptions aggregationStatsCommandOptions;
         public CreateCommandOptions createCommandOptions;
         public DistinctCommandOptions distinctCommandOptions;
         public ImportCommandOptions importCommandOptions;
@@ -49,6 +50,7 @@ public class DiseasePanelsCommandOptions {
         this.jCommander = jCommander;
         this.commonCommandOptions = commonCommandOptions;
         this.updateAclCommandOptions = new UpdateAclCommandOptions();
+        this.aggregationStatsCommandOptions = new AggregationStatsCommandOptions();
         this.createCommandOptions = new CreateCommandOptions();
         this.distinctCommandOptions = new DistinctCommandOptions();
         this.importCommandOptions = new ImportCommandOptions();
@@ -86,6 +88,74 @@ public class DiseasePanelsCommandOptions {
     
         @Parameter(names = {"--panel"}, description = "The body web service panel parameter", required = false, arity = 1)
         public String panel;
+    
+    }
+
+    @Parameters(commandNames = {"aggregationstats"}, commandDescription ="Fetch catalog panel stats")
+    public class AggregationStatsCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--id"}, description = "Comma separated list of panel IDs  up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String id; 
+    
+        @Parameter(names = {"--uuid"}, description = "Comma separated list of panel UUIDs  up to a maximum of 100", required = false, arity = 1)
+        public String uuid; 
+    
+        @Parameter(names = {"--name", "-n"}, description = "Comma separated list of panel names  up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String name; 
+    
+        @Parameter(names = {"--internal-status"}, description = "Filter by internal status", required = false, arity = 1)
+        public String internalStatus; 
+    
+        @Parameter(names = {"--disorders"}, description = "Comma separated list of disorder ids or names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String disorders; 
+    
+        @Parameter(names = {"--variants"}, description = "Comma separated list of variant ids. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String variants; 
+    
+        @Parameter(names = {"--genes"}, description = "Comma separated list of gene ids. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String genes; 
+    
+        @Parameter(names = {"--source"}, description = "Comma separated list of source ids or names.", required = false, arity = 1)
+        public String source; 
+    
+        @Parameter(names = {"--regions"}, description = "Comma separated list of regions. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String regions; 
+    
+        @Parameter(names = {"--categories"}, description = "Comma separated list of category names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String categories; 
+    
+        @Parameter(names = {"--tags"}, description = "Panel tags. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String tags; 
+    
+        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, help = true, arity = 0)
+        public boolean deleted = false; 
+    
+        @Parameter(names = {"--status"}, description = "Filter by status", required = false, arity = 1)
+        public String status; 
+    
+        @Parameter(names = {"--creation-date", "--cd"}, description = "Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
+        public String creationDate; 
+    
+        @Parameter(names = {"--modification-date", "--md"}, description = "Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
+        public String modificationDate; 
+    
+        @Parameter(names = {"--acl"}, description = "Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators can query by this field. ", required = false, arity = 1)
+        public String acl; 
+    
+        @Parameter(names = {"--release"}, description = "Release when it was created", required = false, arity = 1)
+        public String release; 
+    
+        @Parameter(names = {"--snapshot"}, description = "Snapshot value (Latest version of the entry in the specified release)", required = false, arity = 1)
+        public Integer snapshot; 
+    
+        @Parameter(names = {"--field"}, description = "Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.: studies;type;numSamples[0..10]:1;format:sum(size)", required = false, arity = 1)
+        public String field; 
     
     }
 

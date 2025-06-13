@@ -139,7 +139,7 @@ class Study(_ParentRestClient):
         :param str resource: Resource involved. Allowed values: ['AUDIT NOTE
             ORGANIZATION USER PROJECT STUDY FILE SAMPLE JOB INDIVIDUAL COHORT
             DISEASE_PANEL FAMILY CLINICAL_ANALYSIS INTERPRETATION VARIANT
-            ALIGNMENT CLINICAL EXPRESSION RGA FUNCTIONAL']
+            ALIGNMENT CLINICAL EXPRESSION RGA FUNCTIONAL WORKFLOW RESOURCE']
         :param str resource_id: Resource ID.
         :param str resource_uuid: resource UUID.
         :param str status: Filter by status. Allowed values: ['SUCCESS ERROR']
@@ -229,6 +229,7 @@ class Study(_ParentRestClient):
         :param str modification_date: Modification date. Format:
             yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         :param str id: Note unique identifier.
+        :param str type: Note type.
         :param str uuid: Unique 32-character identifier assigned automatically
             by OpenCGA.
         :param str user_id: User that wrote that Note.

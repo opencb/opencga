@@ -2,6 +2,7 @@ categories:
   - name: catalog
     description: "Catalog commands:"
     options:
+      - federations
       - organizations
       - users
       - projects
@@ -14,13 +15,13 @@ categories:
       - samples
       - cohorts
       - meta
-      - cvdb
   - name: Analysis
     description: "Analysis commands:"
     options:
       - alignments
       - variant
       - clinical
+      - cvdb
   - name: Operation
     description: "Operation commands:"
     options:

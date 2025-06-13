@@ -21,7 +21,8 @@ public class CvdbConfiguration extends AbstractModuleConfiguration {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("CvdbConfiguration{");
-        sb.append("database=").append(database);
+        sb.append("active=").append(active);
+        sb.append(", database=").append(database);
         sb.append('}');
         return sb.toString();
     }

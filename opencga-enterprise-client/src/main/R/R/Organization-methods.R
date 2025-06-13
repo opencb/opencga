@@ -21,9 +21,10 @@
 #' | -- | :-- | --: |
 #' | create | /{apiVersion}/organizations/create | include, exclude, includeResult, body[*] |
 #' | createNotes | /{apiVersion}/organizations/notes/create | include, exclude, includeResult, body[*] |
-#' | searchNotes | /{apiVersion}/organizations/notes/search | include, exclude, creationDate, modificationDate, id, scope, visibility, uuid, userId, tags, version |
+#' | searchNotes | /{apiVersion}/organizations/notes/search | include, exclude, creationDate, modificationDate, id, type, scope, visibility, uuid, userId, tags, version |
 #' | deleteNotes | /{apiVersion}/organizations/notes/{id}/delete | id[*], includeResult |
 #' | updateNotes | /{apiVersion}/organizations/notes/{id}/update | include, exclude, id[*], tagsAction, includeResult, body[*] |
+#' | resetUserPassword | /{apiVersion}/organizations/user/password/reset | userId |
 #' | userUpdateStatus | /{apiVersion}/organizations/user/{user}/status/update | include, exclude, user[*], organization, includeResult, body[*] |
 #' | updateUser | /{apiVersion}/organizations/user/{user}/update | include, exclude, user[*], organization, includeResult, body[*] |
 #' | updateConfiguration | /{apiVersion}/organizations/{organization}/configuration/update | include, exclude, organization[*], includeResult, authenticationOriginsAction, body[*] |
@@ -64,6 +65,7 @@ setMethod("organizationClient", "OpencgaR", function(OpencgaR, id, organization,
         #' @param creationDate Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         #' @param modificationDate Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         #' @param id Note unique identifier.
+        #' @param type Note type.
         #' @param scope Scope of the Note.
         #' @param visibility Visibility of the Note.
         #' @param uuid Unique 32-character identifier assigned automatically by OpenCGA.
@@ -90,6 +92,13 @@ setMethod("organizationClient", "OpencgaR", function(OpencgaR, id, organization,
         #' @param data JSON containing the Note fields to be updated.
         updateNotes=fetchOpenCGA(object=OpencgaR, category="organizations", categoryId=NULL, subcategory="notes",
                 subcategoryId=id, action="update", params=params, httpMethod="POST", as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/organizations/user/password/reset:
+        #' Reset user's password.
+        #' @param userId User whose password needs to be reset.
+        resetUserPassword=fetchOpenCGA(object=OpencgaR, category="organizations", categoryId=NULL,
+                subcategory="user/password", subcategoryId=NULL, action="reset", params=params, httpMethod="POST",
+                as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/organizations/user/{user}/status/update:
         #' Update the user status.

@@ -20,6 +20,7 @@
 #' | endpointName | Endpoint WS | parameters accepted |
 #' | -- | :-- | --: |
 #' | updateAcl | /{apiVersion}/panels/acl/{members}/update | study, members[*], action[*], body[*] |
+#' | aggregationStats | /{apiVersion}/panels/aggregationStats | study, id, uuid, name, internalStatus, disorders, variants, genes, source, regions, categories, tags, deleted, status, creationDate, modificationDate, acl, release, snapshot, field |
 #' | create | /{apiVersion}/panels/create | include, exclude, study, includeResult, body |
 #' | distinct | /{apiVersion}/panels/distinct | study, id, uuid, name, internalStatus, disorders, variants, genes, source, regions, categories, tags, deleted, status, creationDate, modificationDate, acl, release, snapshot, field[*] |
 #' | importPanels | /{apiVersion}/panels/import | study, jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body |
@@ -46,6 +47,32 @@ setMethod("panelClient", "OpencgaR", function(OpencgaR, members, panels, endpoin
         #' @param data JSON containing the parameters to update the permissions.
         updateAcl=fetchOpenCGA(object=OpencgaR, category="panels", categoryId=NULL, subcategory="acl",
                 subcategoryId=members, action="update", params=params, httpMethod="POST", as.queryParam=c("action"),
+                ...),
+
+        #' @section Endpoint /{apiVersion}/panels/aggregationStats:
+        #' Fetch catalog panel stats.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param id Comma separated list of panel IDs  up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param uuid Comma separated list of panel UUIDs  up to a maximum of 100.
+        #' @param name Comma separated list of panel names  up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param internalStatus Filter by internal status.
+        #' @param disorders Comma separated list of disorder ids or names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param variants Comma separated list of variant ids. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param genes Comma separated list of gene ids. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param source Comma separated list of source ids or names.
+        #' @param regions Comma separated list of regions. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param categories Comma separated list of category names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param tags Panel tags. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param deleted Boolean to retrieve deleted entries.
+        #' @param status Filter by status.
+        #' @param creationDate Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        #' @param modificationDate Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        #' @param acl Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators can query by this field. .
+        #' @param release Release when it was created.
+        #' @param snapshot Snapshot value (Latest version of the entry in the specified release).
+        #' @param field Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.: studies;type;numSamples[0..10]:1;format:sum(size).
+        aggregationStats=fetchOpenCGA(object=OpencgaR, category="panels", categoryId=NULL, subcategory=NULL,
+                subcategoryId=NULL, action="aggregationStats", params=params, httpMethod="GET", as.queryParam=NULL,
                 ...),
 
         #' @section Endpoint /{apiVersion}/panels/create:

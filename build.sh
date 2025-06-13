@@ -41,6 +41,7 @@ function error() {
   log "=========================="
 }
 
+
 # Function to calculate the branch for dependencies
 function calculate_branch() {
   local EXISTS=""
@@ -48,41 +49,29 @@ function calculate_branch() {
     local EXISTS=$(git ls-remote origin "$TASK_REFERENCE")
   fi
   if [[ -n $EXISTS ]]; then
-    echo $TASK_REFERENCE
+    echo "$TASK_REFERENCE"
   else
     local TMP_DIR=$(pwd)
     cd "$OPENCGA_ENTERPRISE_HOME_DIR"
     ## This is opencga-enterprise
-    local CURRENT_BRANCH="$(git branch --show-current)"
+    ENTERPRISE_BRANCH="$(git branch --show-current)"
     cd "$TMP_DIR"
     ## If opencga-enterprise branch name is main, develop then we return the same name.
     ## Otherwise, we calculate the dependency branch from the dependency version.
-    if [[ "$CURRENT_BRANCH" == "TASK"* ]]; then
+    if [[ "$ENTERPRISE_BRANCH" == "TASK"* || "$ENTERPRISE_BRANCH" == "release"* ]]; then
       local VERSION=$(echo "$1" | cut -d "-" -f 1)
       local MAJOR=$(echo "$VERSION" | cut -d "." -f 1)
       local MINOR=$(echo "$VERSION" | cut -d "." -f 2)
       local PATCH=$(echo "$VERSION" | cut -d "." -f 3)
-      local HOTFIX=$(echo "$VERSION" | cut -d "." -f 4)
-      if [[ "$PATCH" == "0" ]]; then
+      if [ $PATCH -gt 0 ]; then ## It's a hotfix
+        echo "release-$MAJOR.$MINOR.x"
+      elif [ $MINOR -eq 0 ]; then ## It's a develop branch
         echo "develop"
-      elif [ -z "$HOTFIX" ]; then
-        echo "release-$MAJOR.$MINOR.x"
-      else
-        echo "release-$MAJOR.$MINOR.$PATCH.x"
-      fi
-    elif [[ "$CURRENT_BRANCH" == "release"* ]]; then
-      local VERSION=$(echo "$1" | cut -d "-" -f 1)
-      local MAJOR=$(echo "$VERSION" | cut -d "." -f 1)
-      local MINOR=$(echo "$VERSION" | cut -d "." -f 2)
-      local PATCH=$(echo "$VERSION" | cut -d "." -f 3)
-      local HOTFIX=$(echo "$VERSION" | cut -d "." -f 4)
-      if [ -z "$HOTFIX" ]; then
-        echo "release-$MAJOR.$MINOR.x"
-      else
-        echo "release-$MAJOR.$MINOR.$PATCH.x"
+      else  ## It's a release branch
+        echo "release-$MAJOR.x.x"
       fi
     else
-      echo "$CURRENT_BRANCH"
+      echo "$ENTERPRISE_BRANCH"
     fi
   fi
 }
@@ -98,16 +87,14 @@ function manage_dependency() {
       cd "$REPO" || exit 2
       local BRANCH_NAME="$(calculate_branch "$REPO_VERSION")"
   else
-   if [[ "$BRANCH_NAME" != "TASK"*  ]]; then
       log "The $REPO branch $BRANCH_NAME cloning process has failed!"
       exit 1
-   fi
   fi
   git checkout "$BRANCH_NAME"
   local VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -q -DforceStdout)
   if [ "$VERSION" == "$REPO_VERSION" ];then
-    log "Version of $REPO to download correct $VERSION should be in $BRANCH_NAME"
-    log_summary "Version of $REPO to download correct $VERSION should be in $BRANCH_NAME"
+    log "Version of $REPO downloaded is correct: version $VERSION in branch $BRANCH_NAME"
+    log_summary "Version of $REPO downloaded is correct: version $VERSION in branch $BRANCH_NAME"
     log_version_summary "$REPO,$VERSION,$BRANCH_NAME"
     if [ "$COMMAND" == "build" ];then
       log "Building $REPO branch $BRANCH_NAME."
@@ -134,7 +121,7 @@ function manage_dependency() {
       fi
     fi
   else
-      log "Version of $REPO to download correct $VERSION should be in $BRANCH_NAME"
+    log "Version of $REPO to download correct $VERSION should be in $BRANCH_NAME"
   fi
   cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
 }
@@ -169,7 +156,8 @@ function print_usage() {
   echo "     -f     --test-fail-never     FLAG           The process executes all tests even if some fail."
   echo "     -b     --prepare-branches    FLAG           Previous to run, it will download and compile all branches of the dependencies."
   echo "     -s     --test-save-reports   FLAG           Save OpenCGA JUnit test reports to XetaBase Report server (Quality Team)."
-  echo "     -d     --docker              FLAG           Publish dockers of OpenCGA and OpenCGA-enterprise."
+  echo "     -d     --docker              FLAG           Publish docker of OpenCGA-enterprise."
+  echo "     -p     --docker-tag          FLAG           Tag for docker of OpenCGA-enterprise."
   echo "     -c     --cellbase-db         STRING         Connection to mongodb to test cellbase (host:port)."
   echo "     -v     --verbose             FLAG           Print verbose logs"
   echo "     -h     --help                FLAG           Print this help and exit"
@@ -208,6 +196,17 @@ function validate() {
       REF_TYPE="branch"
       REF="$OPENCGA_EXPECTED_BRANCH"
     fi
+
+    cd "$OPENCGA_HOME_DIR" || exit 2
+    # Get the current branch name
+    branch=$(git branch --show-current)
+    cd - || exit 2
+    # Check if the command was successful
+    if [ $? -eq 0 ]; then
+      log "Opencga is on branch: \"$branch\""
+    else
+      log "Unable to determine the current branch."
+    fi
     log "OpenCGA version no match! You must checkout $REF_TYPE \"$REF\" to build from version \"$OPENCGA_DEPENDENCY_VERSION\" of opencga"
     log "Please, execute bellow command and retry:"
     log "  git -C \"$OPENCGA_HOME_DIR\" checkout $REF"
@@ -238,15 +237,19 @@ function validate() {
 
 # Function to download and compile java-common-libs, cellbase and biodata dependencies
 function prepare_branches() {
-  ## Only if you pass the parameter: --prepare-branch
+  ## Only if you pass the parameter: --prepare-branch -b
+
   if [ "$PREPARE_BRANCHES" == "true" ]; then
     JCL_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=java-common-libs.version -q -DforceStdout)"
+    echo "Downloading and compiling java-common-libs $JCL_DEPENDENCY_VERSION"
     manage_dependency "java-common-libs" "$JCL_DEPENDENCY_VERSION"
 
     BIODATA_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=biodata.version -q -DforceStdout)"
+    echo "Downloading and compiling biodata $BIODATA_DEPENDENCY_VERSION"
     manage_dependency "biodata" "$BIODATA_DEPENDENCY_VERSION"
 
     CELLBASE_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=cellbase.version -q -DforceStdout)"
+    echo "Downloading and compiling cellbase $CELLBASE_DEPENDENCY_VERSION"
     manage_dependency "cellbase" "$CELLBASE_DEPENDENCY_VERSION"
   else
     log_summary "Skipped prepare branches"
@@ -308,7 +311,7 @@ function build_opencga_enterprise() {
       local pwd=$(pwd)
       echo "${pwd} opencga-enterprise" >> "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
       mvn clean install -B surefire-report:report -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
-      -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" ${FAIL_NEVER} --no-transfer-progress
+      -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" ${FAIL_NEVER} -Dopencga.war.name=opencga --no-transfer-progress
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND opencga-enterprise test FAILED!!!!!"
         print_log_summary
@@ -402,7 +405,9 @@ function publish_dockers() {
   if [ "$DOCKER" == "true" ];then
     ## Move to opencga-enterprise to build or test
     cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
-    if [[ -n $TASK_REFERENCE ]]; then
+    if [[ -n "$DOCKER_TAG" ]]; then
+      TAG="${DOCKER_TAG}"
+    elif [[ -n $TASK_REFERENCE ]]; then
       TAG=$TASK_REFERENCE
     else
       TAG="$(mvn help:evaluate --file "${OPENCGA_ENTERPRISE_HOME_DIR}/pom.xml" -Dexpression=project.version -q -DforceStdout)"
@@ -648,6 +653,7 @@ OPENCGA_HOME_DIR="$PWD/opencga-home/"
 STORAGE_HADOOP_DEPS="hdp3.1"
 TEST_TAG="runShortTests"
 FAIL_NEVER=""
+DOCKER_TAG=""
 PREPARE_BRANCHES=""
 DEBUG=""
 SKIP_TESTS=false
@@ -698,6 +704,11 @@ while [[ $# -gt 0 ]]; do
       DOCKER="true"
       shift # past argument
       ;;
+  -p | --docker-tag)
+      DOCKER_TAG="$value"
+      shift # past argument
+      shift # past value
+      ;;
   -l | --test-level)
       if [ -z "$value" ];  then
             echo "Test level is empty. The test level must be any combination of these values runShortTests|runMediumTests|runLongTests separated by commas without spaces"
@@ -728,6 +739,7 @@ while [[ $# -gt 0 ]]; do
     ;;
   --debug)
     DEBUG="true"
+    set -x
     shift # past argument
     ;;
   *) # unknown option

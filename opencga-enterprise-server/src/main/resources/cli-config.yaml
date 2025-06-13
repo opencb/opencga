@@ -44,6 +44,8 @@ apiConfig:
     - name: name
       shortcut: n
   categoryConfigList:
+    - name: federations
+      key: Federation
     - name: organizations
       ignore: False
       key: Organization
@@ -59,6 +61,20 @@ apiConfig:
           executorExtended: True
           optionExtended: True
           executorExtendedClassName: com.zettagenomics.opencga.enterprise.app.cli.main.custom.EnterpriseCustomUsersCommandExecutor
+        - name: login-sso
+          executorExtended: True
+          executorExtendedClassName: com.zettagenomics.opencga.enterprise.app.cli.main.custom.EnterpriseCustomUsersCommandExecutor
+          subcommands:
+            - name: url
+              ignore: True
+        - name: logout-sso
+          executorExtended: True
+          executorExtendedClassName: com.zettagenomics.opencga.enterprise.app.cli.main.custom.EnterpriseCustomUsersCommandExecutor
+          subcommands:
+            - name: url
+              ignore: True
+            - name: logout
+              ignore: True
         - name: logout
           executorExtended: True
           optionExtended: True
@@ -203,11 +219,11 @@ apiConfig:
       commandName: meta
       ignore: False
       key: Meta
-    - name: cvdb
+    - name: analysisCvdb  # This is The path of api in camel case @Path("/{apiVersion}/analysis/cvdb")
       commandName: cvdb
       ignore: False
-      key: Cvdb
-#      analysis: True
+      key: CVDB
+      analysis: True
     - name: ga4gh
       ignore: True
       key: GA4GH

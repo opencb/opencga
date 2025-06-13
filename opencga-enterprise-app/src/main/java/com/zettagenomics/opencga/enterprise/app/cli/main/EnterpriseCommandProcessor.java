@@ -12,8 +12,8 @@ import org.opencb.opencga.app.cli.main.processors.CommandProcessor;
 import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.session.Session;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.opencb.opencga.catalog.utils.JwtUtils;
-import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.core.common.JwtUtils;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
@@ -185,6 +185,12 @@ public class EnterpriseCommandProcessor extends CommandProcessor{
     private EnterpriseOpencgaCommandExecutor getOpencgaCommandExecutor(EnterpriseCliOptionsParser cliOptionsParser, String parsedCommand) throws CatalogAuthenticationException {
         EnterpriseOpencgaCommandExecutor commandExecutor = null;
         switch (parsedCommand) {
+            case "federations":
+                commandExecutor = new FederationsCommandExecutor(cliOptionsParser.getFederationsCommandOptions());
+                break;
+            case "cvdb":
+                commandExecutor = new AnalysisCVDBCommandExecutor(cliOptionsParser.getAnalysisCVDBCommandOptions());
+                break;
             case "organizations":
                 commandExecutor = new OrganizationsCommandExecutor(cliOptionsParser.getOrganizationsCommandOptions());
                 break;

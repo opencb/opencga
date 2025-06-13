@@ -34,6 +34,7 @@ public class CohortsCommandOptions {
         public CommonCommandOptions commonCommandOptions;
 
         public UpdateAclCommandOptions updateAclCommandOptions;
+        public AggregationStatsCommandOptions aggregationStatsCommandOptions;
         public LoadAnnotationSetsCommandOptions loadAnnotationSetsCommandOptions;
         public CreateCommandOptions createCommandOptions;
         public DistinctCommandOptions distinctCommandOptions;
@@ -51,6 +52,7 @@ public class CohortsCommandOptions {
         this.jCommander = jCommander;
         this.commonCommandOptions = commonCommandOptions;
         this.updateAclCommandOptions = new UpdateAclCommandOptions();
+        this.aggregationStatsCommandOptions = new AggregationStatsCommandOptions();
         this.loadAnnotationSetsCommandOptions = new LoadAnnotationSetsCommandOptions();
         this.createCommandOptions = new CreateCommandOptions();
         this.distinctCommandOptions = new DistinctCommandOptions();
@@ -90,6 +92,62 @@ public class CohortsCommandOptions {
     
         @Parameter(names = {"--cohort"}, description = "The body web service cohort parameter", required = false, arity = 1)
         public String cohort;
+    
+    }
+
+    @Parameters(commandNames = {"aggregationstats"}, commandDescription ="Fetch catalog cohort stats")
+    public class AggregationStatsCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--id"}, description = "Comma separated list of cohort IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String id; 
+    
+        @Parameter(names = {"--name", "-n"}, description = "Comma separated list of cohort names up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String name; 
+    
+        @Parameter(names = {"--uuid"}, description = "Comma separated list of cohort IDs up to a maximum of 100", required = false, arity = 1)
+        public String uuid; 
+    
+        @Parameter(names = {"--type"}, description = "Cohort type", required = false, arity = 1)
+        public String type; 
+    
+        @Parameter(names = {"--creation-date", "--cd"}, description = "creationDate", required = false, arity = 1)
+        public String creationDate; 
+    
+        @Parameter(names = {"--modification-date", "--md"}, description = "modificationDate", required = false, arity = 1)
+        public String modificationDate; 
+    
+        @Parameter(names = {"--deleted"}, description = "deleted", required = false, help = true, arity = 0)
+        public boolean deleted = false; 
+    
+        @Parameter(names = {"--status"}, description = "status", required = false, arity = 1)
+        public String status; 
+    
+        @Parameter(names = {"--internal-status"}, description = "internalStatus", required = false, arity = 1)
+        public String internalStatus; 
+    
+        @Parameter(names = {"--annotation"}, description = "Cohort annotation", required = false, arity = 1)
+        public String annotation; 
+    
+        @Parameter(names = {"--acl"}, description = "acl", required = false, arity = 1)
+        public String acl; 
+    
+        @Parameter(names = {"--samples"}, description = "Cohort sample IDs", required = false, arity = 1)
+        public String samples; 
+    
+        @Parameter(names = {"--num-samples"}, description = "Number of samples", required = false, arity = 1)
+        public String numSamples; 
+    
+        @Parameter(names = {"--release"}, description = "release", required = false, arity = 1)
+        public String release; 
+    
+        @Parameter(names = {"--field"}, description = "Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.: studies;type;numSamples[0..10]:1;format:sum(size)", required = false, arity = 1)
+        public String field; 
     
     }
 

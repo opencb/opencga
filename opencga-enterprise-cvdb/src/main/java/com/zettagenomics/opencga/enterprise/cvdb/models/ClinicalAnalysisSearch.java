@@ -28,9 +28,6 @@ public class ClinicalAnalysisSearch {
     @Field("studyId")
     private String studyId;
 
-    @Field("viewers")
-    private List<String> viewers;
-
     // "Primary" and "foreign" keys
 
     @Field("id")
@@ -52,6 +49,12 @@ public class ClinicalAnalysisSearch {
 
     @Field("probandId")
     private String probandId;
+
+    @Field("probandDisorderIds")
+    private List<String> probandDisorderIds;
+
+    @Field("probandPhenotypeNames")
+    private List<String> probandPhenotypeNames;
 
     @Field("familyId")
     private String familyId;
@@ -84,8 +87,9 @@ public class ClinicalAnalysisSearch {
     private String maxJson;
 
     public ClinicalAnalysisSearch() {
-        viewers = new ArrayList<>();
         fileNames = new ArrayList<>();
+        probandDisorderIds = new ArrayList<>();
+        probandPhenotypeNames = new ArrayList<>();
         familyPhenotypeNames = new ArrayList<>();
         familyMemberIds = new ArrayList<>();
         panelIds = new ArrayList<>();
@@ -95,13 +99,14 @@ public class ClinicalAnalysisSearch {
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClinicalAnalysisSearch{");
         sb.append("studyId='").append(studyId).append('\'');
-        sb.append(", viewers=").append(viewers);
         sb.append(", id='").append(id).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", type='").append(type).append('\'');
         sb.append(", disorderId='").append(disorderId).append('\'');
         sb.append(", fileNames=").append(fileNames);
         sb.append(", probandId='").append(probandId).append('\'');
+        sb.append(", probandDisorderIds=").append(probandDisorderIds);
+        sb.append(", probandPhenotypeNames=").append(probandPhenotypeNames);
         sb.append(", familyId='").append(familyId).append('\'');
         sb.append(", familyPhenotypeNames=").append(familyPhenotypeNames);
         sb.append(", familyMemberIds=").append(familyMemberIds);
@@ -122,15 +127,6 @@ public class ClinicalAnalysisSearch {
 
     public ClinicalAnalysisSearch setStudyId(String studyId) {
         this.studyId = studyId;
-        return this;
-    }
-
-    public List<String> getViewers() {
-        return viewers;
-    }
-
-    public ClinicalAnalysisSearch setViewers(List<String> viewers) {
-        this.viewers = viewers;
         return this;
     }
 
@@ -185,6 +181,24 @@ public class ClinicalAnalysisSearch {
 
     public ClinicalAnalysisSearch setProbandId(String probandId) {
         this.probandId = probandId;
+        return this;
+    }
+
+    public List<String> getProbandDisorderIds() {
+        return probandDisorderIds;
+    }
+
+    public ClinicalAnalysisSearch setProbandDisorderIds(List<String> probandDisorderIds) {
+        this.probandDisorderIds = probandDisorderIds;
+        return this;
+    }
+
+    public List<String> getProbandPhenotypeNames() {
+        return probandPhenotypeNames;
+    }
+
+    public ClinicalAnalysisSearch setProbandPhenotypeNames(List<String> probandPhenotypeNames) {
+        this.probandPhenotypeNames = probandPhenotypeNames;
         return this;
     }
 

@@ -36,13 +36,11 @@
             <groupId>org.opencb.ga4gh</groupId>
             <artifactId>ga4gh</artifactId>
         </dependency>
-
-        <!-- TODO Review -->
         <dependency>
-            <groupId>com.zettagenomics.opencga-enterprise</groupId>
-            <artifactId>opencga-enterprise-server</artifactId>
-            <scope>test</scope>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
         </dependency>
+        <!-- TODO Review -->
         <dependency>
             <groupId>com.zettagenomics.opencga-enterprise</groupId>
             <artifactId>opencga-enterprise-cvdb</artifactId>
@@ -50,6 +48,11 @@
         <dependency>
             <groupId>com.zettagenomics.opencga-enterprise</groupId>
             <artifactId>opencga-enterprise-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.zettagenomics.opencga-enterprise</groupId>
+            <artifactId>opencga-enterprise-server</artifactId>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
 </project>

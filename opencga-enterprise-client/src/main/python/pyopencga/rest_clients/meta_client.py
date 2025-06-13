@@ -55,6 +55,17 @@ class Meta(_ParentRestClient):
 
         return self._get(category='meta', resource='model', **options)
 
+    def openapi(self, **options):
+        """
+        Opencga openapi json.
+        PATH: /{apiVersion}/meta/openapi
+
+        :param str environment: Environment of the app.
+        :param str host: Opencga host without environment.
+        """
+
+        return self._get(category='meta', resource='openapi', **options)
+
     def ping(self, **options):
         """
         Ping Opencga webservices.
@@ -62,26 +73,6 @@ class Meta(_ParentRestClient):
         """
 
         return self._get(category='meta', resource='ping', **options)
-
-    def login_sso(self, **options):
-        """
-        Single Sign On.
-        PATH: /{apiVersion}/meta/sso/login
-
-        :param str url: Callback URL.
-        """
-
-        return self._get(category='meta', resource='login', subcategory='sso', **options)
-
-    def logout_sso(self, **options):
-        """
-        Logout from Single Sign On.
-        PATH: /{apiVersion}/meta/sso/logout
-
-        :param str url: Callback URL.
-        """
-
-        return self._get(category='meta', resource='logout', subcategory='sso', **options)
 
     def status(self, **options):
         """

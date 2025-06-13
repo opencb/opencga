@@ -8,7 +8,6 @@ from flask import Flask, render_template, request
 app = Flask(__name__)
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
 
-
 def kill_execution(pid):
     time.sleep(0.1)
     os.kill(pid, signal.SIGKILL)
@@ -31,5 +30,9 @@ def secure():
     return render_template('successful.html')
 
 
+
 server = Process(target=app.run)
+print('You have now 1 minute to authenticate')
 server.start()
+server.join(60)
+server.kill()

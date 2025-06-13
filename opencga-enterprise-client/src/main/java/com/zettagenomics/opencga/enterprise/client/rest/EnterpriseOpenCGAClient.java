@@ -17,9 +17,9 @@
 package com.zettagenomics.opencga.enterprise.client.rest;
 
 import com.zettagenomics.opencga.enterprise.client.rest.clients.*;
-import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
+import org.opencb.opencga.core.config.client.ClientConfiguration;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 
 
@@ -36,6 +36,10 @@ public class EnterpriseOpenCGAClient extends OpenCGAClient {
 
     public EnterpriseOpenCGAClient(AuthenticationResponse authenticationTokens, ClientConfiguration clientConfiguration) {
         super(authenticationTokens, clientConfiguration);
+    }
+
+    public FederationClient getEnterpriseFederationClient() {
+        return this.getClient(FederationClient.class, () -> new FederationClient(this.token, this.clientConfiguration));
     }
 
     public OrganizationClient getEnterpriseOrganizationClient() {
@@ -109,8 +113,8 @@ public class EnterpriseOpenCGAClient extends OpenCGAClient {
         return this.getClient(MetaClient.class, () -> new MetaClient(this.token, this.clientConfiguration));
     }
 
-    public CvaClient getEnterpriseCvaClient() {
-        return getClient(CvaClient.class, () -> new CvaClient(token, clientConfiguration));
+    public CVDBClient getEnterpriseCVDBClient() {
+        return getClient(CVDBClient.class, () -> new CVDBClient(token, clientConfiguration));
     }
 
 }

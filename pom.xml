@@ -51,13 +51,22 @@
         <jakarta.version>2.1.6</jakarta.version>
         <javax.ws.rs-api.version>2.0.1</javax.ws.rs-api.version>
         <commons-io.version>2.8.0</commons-io.version>
+        <json-smart.version>2.3</json-smart.version>
 
         <!--        <opencga.war.name>opencga-enterprise</opencga.war.name>-->
         <opencga.env.file>opencga-env.sh</opencga.env.file>
+<<<<<<< HEAD
         <opencga-hadoop-shaded.id-default>hdp3.1</opencga-hadoop-shaded.id-default>
+=======
+
+        <opencga.hadoop.thirdparty.version>1.0.0-SNAPSHOT</opencga.hadoop.thirdparty.version>
+
+        <opencga-hadoop-shaded.id-default>hdi3.1</opencga-hadoop-shaded.id-default>
+>>>>>>> release-3.x.x
         <opencga-storage-hadoop-lib.artifactId-default>opencga-storage-hadoop-${opencga-hadoop-shaded.id-default}</opencga-storage-hadoop-lib.artifactId-default>
         <opencga-hadoop-shaded.id>${opencga-hadoop-shaded.id-default}</opencga-hadoop-shaded.id>
         <opencga-storage-hadoop-lib.artifactId>opencga-storage-hadoop-lib-${opencga-hadoop-shaded.id}</opencga-storage-hadoop-lib.artifactId>
+        <opencga-storage-hadoop-thirdparty.artifactId>opencga-hadoop-shaded-${opencga-hadoop-shaded.id}</opencga-storage-hadoop-thirdparty.artifactId>
 
 
         <sonar.organization>opencb</sonar.organization>
@@ -72,7 +81,7 @@
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <guava.version>28.0-jre</guava.version>
-        <commons-lang.version>2.6</commons-lang.version>
+<!--        <commons-lang.version>2.6</commons-lang.version>-->
         <bson.version>4.8.2</bson.version>
     </properties>
 
@@ -138,6 +147,13 @@
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-catalog</artifactId>
                 <version>${opencga.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-catalog</artifactId>
+                <version>${opencga.version}</version>
+                <type>test-jar</type>
+                <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
@@ -417,9 +433,19 @@
                 <scope>runtime</scope>
             </dependency>
             <dependency>
+                <groupId>net.minidev</groupId>
+                <artifactId>json-smart</artifactId>
+                <version>${json-smart.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>com.google.protobuf</groupId>
                 <artifactId>protobuf-java</artifactId>
                 <version>${protobuf.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.minidev</groupId>
+                <artifactId>json-smart</artifactId>
+                <version>${json-smart.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.google.protobuf</groupId>
@@ -561,11 +587,6 @@
                 <version>${commons-io.version}</version>
             </dependency>
             <dependency>
-                <groupId>commons-lang</groupId>
-                <artifactId>commons-lang</artifactId>
-                <version>${commons-lang.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.apache.logging.log4j</groupId>
                 <artifactId>log4j-api</artifactId>
                 <version>${log4j2.version}</version>
@@ -590,7 +611,6 @@
                 <ENTERPRISE.SSO.ACTIVE>false</ENTERPRISE.SSO.ACTIVE>
                 <ENTERPRISE.SSO.CAS.SERVER.PREFIX.URL>https://localhost:8443/cas</ENTERPRISE.SSO.CAS.SERVER.PREFIX.URL>
                 <ENTERPRISE.SSO.SERVER.NAME>http://localhost:9090</ENTERPRISE.SSO.SERVER.NAME>
-                <ENTERPRISE.SSO.PYTHON.BIN>python3</ENTERPRISE.SSO.PYTHON.BIN>
                 <ENTERPRISE.SSO.PROTOCOL>SAML1</ENTERPRISE.SSO.PROTOCOL>
                 <ENTERPRISE.SSO.ATTRIBUTES.NAME>name</ENTERPRISE.SSO.ATTRIBUTES.NAME>
                 <ENTERPRISE.SSO.ATTRIBUTES.SURNAME>surname</ENTERPRISE.SSO.ATTRIBUTES.SURNAME>

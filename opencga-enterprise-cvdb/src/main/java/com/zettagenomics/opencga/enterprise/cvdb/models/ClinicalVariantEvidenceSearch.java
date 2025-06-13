@@ -30,9 +30,6 @@ public class ClinicalVariantEvidenceSearch {
     @Field("studyId")
     private String studyId;
 
-    @Field("viewers")
-    private List<String> viewers;
-
     // "Primary" and "foreign" keys
 
     @Field("id")
@@ -52,14 +49,23 @@ public class ClinicalVariantEvidenceSearch {
 
     // Clinical variant evidence fields
 
+    @Field("primaryFinding")
+    private boolean primaryFinding;
+
+    @Field("primaryInterpretation")
+    private boolean primaryInterpretation;
+
     @Field("phenotypeNames")
     private List<String> phenotypeNames;
 
     @Field("geneName")
     private String geneName;
 
-    @Field("consequenceTypeIds")
-    private List<String> consequenceTypeIds;
+    @Field("transcriptId")
+    private String transcriptId;
+
+    @Field("soTermNames")
+    private List<String> soTermNames;
 
     @Field("xrefIds")
     private List<String> xrefIds;
@@ -100,6 +106,15 @@ public class ClinicalVariantEvidenceSearch {
     @Field("rolesInCancer")
     private List<String> rolesInCancer;
 
+    @Field("reviewAcmgs")
+    private List<String> reviewAcmgs;
+
+    @Field("reviewTier")
+    private String reviewTier;
+
+    @Field("reviewClinicalSignificance")
+    private String reviewClinicalSignificance;
+
     @Field("reviewText")
     private String reviewText;
 
@@ -111,14 +126,14 @@ public class ClinicalVariantEvidenceSearch {
     private String json;
 
     public ClinicalVariantEvidenceSearch() {
-        viewers = new ArrayList<>();
         phenotypeNames = new ArrayList<>();
-        consequenceTypeIds = new ArrayList<>();
+        soTermNames = new ArrayList<>();
         xrefIds = new ArrayList<>();
         mois = new ArrayList<>();
         acmgs = new ArrayList<>();
         otherClassifications = new ArrayList<>();
         rolesInCancer = new ArrayList<>();
+        reviewAcmgs = new ArrayList<>();
         scores = new HashMap<>();
     }
 
@@ -126,15 +141,17 @@ public class ClinicalVariantEvidenceSearch {
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClinicalVariantEvidenceSearch{");
         sb.append("studyId='").append(studyId).append('\'');
-        sb.append(", viewers=").append(viewers);
         sb.append(", id='").append(id).append('\'');
         sb.append(", caId='").append(caId).append('\'');
         sb.append(", ciId='").append(ciId).append('\'');
         sb.append(", cvId='").append(cvId).append('\'');
         sb.append(", variantId='").append(variantId).append('\'');
+        sb.append(", primaryFinding=").append(primaryFinding);
+        sb.append(", primaryInterpretation=").append(primaryInterpretation);
         sb.append(", phenotypeNames=").append(phenotypeNames);
         sb.append(", geneName='").append(geneName).append('\'');
-        sb.append(", consequenceTypeIds=").append(consequenceTypeIds);
+        sb.append(", transcriptId='").append(transcriptId).append('\'');
+        sb.append(", soTermNames=").append(soTermNames);
         sb.append(", xrefIds=").append(xrefIds);
         sb.append(", panelId='").append(panelId).append('\'');
         sb.append(", mois=").append(mois);
@@ -148,6 +165,9 @@ public class ClinicalVariantEvidenceSearch {
         sb.append(", tumorigenesis='").append(tumorigenesis).append('\'');
         sb.append(", otherClassifications=").append(otherClassifications);
         sb.append(", rolesInCancer=").append(rolesInCancer);
+        sb.append(", reviewAcmgs=").append(reviewAcmgs);
+        sb.append(", reviewTier='").append(reviewTier).append('\'');
+        sb.append(", reviewClinicalSignificance='").append(reviewClinicalSignificance).append('\'');
         sb.append(", reviewText='").append(reviewText).append('\'');
         sb.append(", scores=").append(scores);
         sb.append(", json='").append(json).append('\'');
@@ -161,15 +181,6 @@ public class ClinicalVariantEvidenceSearch {
 
     public ClinicalVariantEvidenceSearch setStudyId(String studyId) {
         this.studyId = studyId;
-        return this;
-    }
-
-    public List<String> getViewers() {
-        return viewers;
-    }
-
-    public ClinicalVariantEvidenceSearch setViewers(List<String> viewers) {
-        this.viewers = viewers;
         return this;
     }
 
@@ -218,6 +229,24 @@ public class ClinicalVariantEvidenceSearch {
         return this;
     }
 
+    public boolean isPrimaryFinding() {
+        return primaryFinding;
+    }
+
+    public ClinicalVariantEvidenceSearch setPrimaryFinding(boolean primaryFinding) {
+        this.primaryFinding = primaryFinding;
+        return this;
+    }
+
+    public boolean isPrimaryInterpretation() {
+        return primaryInterpretation;
+    }
+
+    public ClinicalVariantEvidenceSearch setPrimaryInterpretation(boolean primaryInterpretation) {
+        this.primaryInterpretation = primaryInterpretation;
+        return this;
+    }
+
     public List<String> getPhenotypeNames() {
         return phenotypeNames;
     }
@@ -236,12 +265,21 @@ public class ClinicalVariantEvidenceSearch {
         return this;
     }
 
-    public List<String> getConsequenceTypeIds() {
-        return consequenceTypeIds;
+    public String getTranscriptId() {
+        return transcriptId;
     }
 
-    public ClinicalVariantEvidenceSearch setConsequenceTypeIds(List<String> consequenceTypeIds) {
-        this.consequenceTypeIds = consequenceTypeIds;
+    public ClinicalVariantEvidenceSearch setTranscriptId(String transcriptId) {
+        this.transcriptId = transcriptId;
+        return this;
+    }
+
+    public List<String> getSoTermNames() {
+        return soTermNames;
+    }
+
+    public ClinicalVariantEvidenceSearch setSoTermNames(List<String> soTermNames) {
+        this.soTermNames = soTermNames;
         return this;
     }
 
@@ -359,6 +397,33 @@ public class ClinicalVariantEvidenceSearch {
 
     public ClinicalVariantEvidenceSearch setRolesInCancer(List<String> rolesInCancer) {
         this.rolesInCancer = rolesInCancer;
+        return this;
+    }
+
+    public List<String> getReviewAcmgs() {
+        return reviewAcmgs;
+    }
+
+    public ClinicalVariantEvidenceSearch setReviewAcmgs(List<String> reviewAcmgs) {
+        this.reviewAcmgs = reviewAcmgs;
+        return this;
+    }
+
+    public String getReviewTier() {
+        return reviewTier;
+    }
+
+    public ClinicalVariantEvidenceSearch setReviewTier(String reviewTier) {
+        this.reviewTier = reviewTier;
+        return this;
+    }
+
+    public String getReviewClinicalSignificance() {
+        return reviewClinicalSignificance;
+    }
+
+    public ClinicalVariantEvidenceSearch setReviewClinicalSignificance(String reviewClinicalSignificance) {
+        this.reviewClinicalSignificance = reviewClinicalSignificance;
         return this;
     }
 
