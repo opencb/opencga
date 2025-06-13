@@ -28,9 +28,6 @@ public class ClinicalVariantSearch extends VariantSearchModel {
     @Field("studyId")
     private String studyId;
 
-    @Field("viewers")
-    private List<String> viewers;
-
     // "Primary" and "foreign" keys
 
     @Field("caId")
@@ -41,8 +38,11 @@ public class ClinicalVariantSearch extends VariantSearchModel {
 
     // Clinical variant fields
 
-    @Field("primary")
-    private boolean primary;
+    @Field("primaryFinding")
+    private boolean primaryFinding;
+
+    @Field("primaryInterpretation")
+    private boolean primaryInterpretation;
 
 	// Comments are stores: author -- message -- tag1:tag2:.. -- date
     @Field("comments")
@@ -93,7 +93,6 @@ public class ClinicalVariantSearch extends VariantSearchModel {
     }
 
     private void init() {
-        viewers = new ArrayList<>();
         comments = new ArrayList<>();
         annotations = new HashMap<>();
         annotationScores = new HashMap<>();
@@ -104,10 +103,10 @@ public class ClinicalVariantSearch extends VariantSearchModel {
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClinicalVariantSearch{");
         sb.append("studyId='").append(studyId).append('\'');
-        sb.append(", viewers=").append(viewers);
         sb.append(", caId='").append(caId).append('\'');
         sb.append(", ciId='").append(ciId).append('\'');
-        sb.append(", primary=").append(primary);
+        sb.append(", primaryFinding=").append(primaryFinding);
+        sb.append(", primaryInterpretation=").append(primaryInterpretation);
         sb.append(", comments=").append(comments);
         sb.append(", annotations=").append(annotations);
         sb.append(", annotationScores=").append(annotationScores);
@@ -133,15 +132,6 @@ public class ClinicalVariantSearch extends VariantSearchModel {
         return this;
     }
 
-    public List<String> getViewers() {
-        return viewers;
-    }
-
-    public ClinicalVariantSearch setViewers(List<String> viewers) {
-        this.viewers = viewers;
-        return this;
-    }
-
     public String getCaId() {
         return caId;
     }
@@ -160,12 +150,21 @@ public class ClinicalVariantSearch extends VariantSearchModel {
         return this;
     }
 
-    public boolean isPrimary() {
-        return primary;
+    public boolean isPrimaryFinding() {
+        return primaryFinding;
     }
 
-    public ClinicalVariantSearch setPrimary(boolean primary) {
-        this.primary = primary;
+    public ClinicalVariantSearch setPrimaryFinding(boolean primaryFinding) {
+        this.primaryFinding = primaryFinding;
+        return this;
+    }
+
+    public boolean isPrimaryInterpretation() {
+        return primaryInterpretation;
+    }
+
+    public ClinicalVariantSearch setPrimaryInterpretation(boolean primaryInterpretation) {
+        this.primaryInterpretation = primaryInterpretation;
         return this;
     }
 

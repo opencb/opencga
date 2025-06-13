@@ -39,30 +39,27 @@ public class ClinicalInterpretationConverterTest {
 
         // Clinical analysis
         ClinicalAnalysisConverter caConverter = new ClinicalAnalysisConverter();
-        ClinicalAnalysisSearch caSearch = caConverter.toClinicalAnalysisSearch(ca, studyId, viewers);
+        ClinicalAnalysisSearch caSearch = caConverter.toClinicalAnalysisSearch(ca, studyId);
         assertEquals(ca.getType().name(), caSearch.getType());
         assertEquals(ca.getFamily().getId(), caSearch.getFamilyId());
         assertEquals(studyId, caSearch.getStudyId());
-        assertEquals(viewers.size(), caSearch.getViewers().size());
 
         // Interpretation
         Interpretation ci = ca.getInterpretation();
         ClinicalInterpretationConverter ciConverter = new ClinicalInterpretationConverter();
-        ClinicalInterpretationSearch ciSearch = ciConverter.toInterpretationSearch(ci, true, studyId, viewers);
+        ClinicalInterpretationSearch ciSearch = ciConverter.toInterpretationSearch(ci, true, studyId);
         assertEquals(ci.getId(), ciSearch.getId());
         assertTrue(ciSearch.isPrimary());
         assertEquals(ci.isLocked(), ciSearch.isLocked());
         assertEquals(studyId, ciSearch.getStudyId());
-        assertEquals(viewers.size(), ciSearch.getViewers().size());
 
 
         // Clinical variant
         ClinicalVariantConverter cvConverter = new ClinicalVariantConverter();
         List<ClinicalVariantSearch> cvsList = cvConverter.toClinicalVariantSearch(ci.getPrimaryFindings(), true,
-                ci.getId(), ca.getId(), studyId, viewers);
+                ci.getId(), true, ca.getId(), studyId);
         assertEquals(ci.getPrimaryFindings().size(), cvsList.size());
         assertEquals(studyId, cvsList.get(0).getStudyId());
-        assertEquals(viewers.size(), cvsList.get(0).getViewers().size());
 
         List<ClinicalVariant> cvList = cvConverter.toClinicalVariant(cvsList);
         assertEquals(ci.getPrimaryFindings().get(0).toStringSimple(), cvList.get(0).toStringSimple());
@@ -70,11 +67,15 @@ public class ClinicalInterpretationConverterTest {
 
         // Clinical variant evidence
         ClinicalVariantEvidenceConverter cveConverter = new ClinicalVariantEvidenceConverter();
-        List<ClinicalVariantEvidenceSearch> cvesList = cveConverter.toClinicalVariantEvidenceSearch(ci.getPrimaryFindings()
-                .get(0).getEvidences(), ci.getPrimaryFindings().get(0).toStringSimple(), ci.getId(), ca.getId(), studyId, viewers);
+        List<ClinicalVariantEvidenceSearch> cvesList = new ArrayList<>();
+        int evidenceIndex = 0;
+        for (ClinicalVariantEvidence cve : ci.getPrimaryFindings().get(0).getEvidences()) {
+            ClinicalVariantEvidenceSearch cves = cveConverter.toClinicalVariantEvidenceSearch(cve, evidenceIndex++,
+                    ci.getPrimaryFindings().get(0).toStringSimple(), true, ci.getId(), true, ca.getId(), studyId);
+            cvesList.add(cves);
+        }
         assertEquals(ci.getPrimaryFindings().get(0).getEvidences().size(), cvesList.size());
         assertEquals(studyId, cvesList.get(0).getStudyId());
-        assertEquals(viewers.size(), cvesList.get(0).getViewers().size());
 
         List<ClinicalVariantEvidence> cveList = cveConverter.toClinicalVariantEvidence(cvesList);
         assertEquals(ci.getPrimaryFindings().get(0).getEvidences().size(), cveList.size());

@@ -1,10 +1,6 @@
 package com.zettagenomics.opencga.enterprise.cvdb.models.mappings;
 
-import org.opencb.biodata.models.variant.annotation.exceptions.SOTermNotAvailableException;
-
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;

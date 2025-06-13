@@ -37,9 +37,8 @@ public class MetaCommandOptions {
         public ApiCommandOptions apiCommandOptions;
         public FailCommandOptions failCommandOptions;
         public ModelCommandOptions modelCommandOptions;
+        public OpenapiCommandOptions openapiCommandOptions;
         public PingCommandOptions pingCommandOptions;
-        public LoginSsoCommandOptions loginSsoCommandOptions;
-        public LogoutSsoCommandOptions logoutSsoCommandOptions;
         public StatusCommandOptions statusCommandOptions;
 
 
@@ -51,9 +50,8 @@ public class MetaCommandOptions {
         this.apiCommandOptions = new ApiCommandOptions();
         this.failCommandOptions = new FailCommandOptions();
         this.modelCommandOptions = new ModelCommandOptions();
+        this.openapiCommandOptions = new OpenapiCommandOptions();
         this.pingCommandOptions = new PingCommandOptions();
-        this.loginSsoCommandOptions = new LoginSsoCommandOptions();
-        this.logoutSsoCommandOptions = new LogoutSsoCommandOptions();
         this.statusCommandOptions = new StatusCommandOptions();
     
     }
@@ -96,33 +94,22 @@ public class MetaCommandOptions {
     
     }
 
+    @Parameters(commandNames = {"openapi"}, commandDescription ="Opencga openapi json")
+    public class OpenapiCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--token"}, description = "List of categories to get API from", required = false, arity = 1)
+        public String token; 
+    
+    }
+
     @Parameters(commandNames = {"ping"}, commandDescription ="Ping Opencga webservices.")
     public class PingCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
-    
-    }
-
-    @Parameters(commandNames = {"sso-login"}, commandDescription ="Single Sign On.")
-    public class LoginSsoCommandOptions {
-    
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
-    
-        @Parameter(names = {"--url"}, description = "Callback URL", required = false, arity = 1)
-        public String url; 
-    
-    }
-
-    @Parameters(commandNames = {"sso-logout"}, commandDescription ="Logout from Single Sign On.")
-    public class LogoutSsoCommandOptions {
-    
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
-    
-        @Parameter(names = {"--url"}, description = "Callback URL", required = false, arity = 1)
-        public String url; 
     
     }
 

@@ -91,6 +91,9 @@ opencga-client/src/main/R/vignettes/opencgaR.md
 opencga-test/fitnesse/FitNesseRoot/files/testResults
 opencga-test/fitnesse/FitNesseRoot/RecentChanges.wiki
 
+#Temporal file to generate CLI
+restApi.json
+
 # Python
 *.pyc
 venv

@@ -18,9 +18,10 @@ package com.zettagenomics.opencga.enterprise.client.rest.clients;
 
 import java.util.List;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.*;
+import org.opencb.opencga.core.client.ParentClient;
+import org.opencb.opencga.core.config.client.ClientConfiguration;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.response.RestResponse;
 
 
@@ -38,7 +39,7 @@ import org.opencb.opencga.core.response.RestResponse;
  * This class contains methods for the Meta webservices.
  *    PATH: meta
  */
-public class MetaClient extends AbstractParentClient {
+public class MetaClient extends ParentClient {
 
     public MetaClient(String token, ClientConfiguration configuration) {
         super(token, configuration);
@@ -89,6 +90,18 @@ public class MetaClient extends AbstractParentClient {
     }
 
     /**
+     * Opencga openapi json.
+     * @param params Map containing any of the following optional parameters.
+     *       token: List of categories to get API from.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<String> openapi(ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("meta", null, null, null, "openapi", params, GET, String.class);
+    }
+
+    /**
      * Ping Opencga webservices.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -96,30 +109,6 @@ public class MetaClient extends AbstractParentClient {
     public RestResponse<String> ping() throws ClientException {
         ObjectMap params = new ObjectMap();
         return execute("meta", null, null, null, "ping", params, GET, String.class);
-    }
-
-    /**
-     * Single Sign On.
-     * @param params Map containing any of the following optional parameters.
-     *       url: Callback URL.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<ObjectMap> loginSso(ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("meta", null, "sso", null, "login", params, GET, ObjectMap.class);
-    }
-
-    /**
-     * Logout from Single Sign On.
-     * @param params Map containing any of the following optional parameters.
-     *       url: Callback URL.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<ObjectMap> logoutSso(ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("meta", null, "sso", null, "logout", params, GET, ObjectMap.class);
     }
 
     /**

@@ -17,8 +17,8 @@ import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandExecutor;
 import org.opencb.opencga.app.cli.main.custom.CustomUsersCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveAction;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.ConfigUpdateParams;
@@ -80,6 +80,12 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
                 break;
             case "search":
                 queryResponse = search();
+                break;
+            case "sso-login":
+                queryResponse = loginSso();
+                break;
+            case "sso-logout":
+                queryResponse = logoutSso();
                 break;
             case "info":
                 queryResponse = info();
@@ -208,6 +214,24 @@ public class UsersCommandExecutor extends com.zettagenomics.opencga.enterprise.a
         queryParams.putIfNotEmpty("authenticationId", commandOptions.authenticationId);
 
         return enterpriseOpenCGAClient.getEnterpriseUserClient().search(queryParams);
+    }
+
+    private RestResponse<AuthenticationResponse> loginSso() throws Exception {
+        logger.debug("Executing loginSso in Users command line");
+
+        UsersCommandOptions.LoginSsoCommandOptions commandOptions = usersCommandOptions.loginSsoCommandOptions;
+        ObjectMap queryParams = new ObjectMap();
+        com.zettagenomics.opencga.enterprise.app.cli.main.custom.EnterpriseCustomUsersCommandExecutor customUsersCommandExecutor = new com.zettagenomics.opencga.enterprise.app.cli.main.custom.EnterpriseCustomUsersCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), appHome, getLogger());
+        return customUsersCommandExecutor.loginSso(commandOptions);
+    }
+
+    private RestResponse<AuthenticationResponse> logoutSso() throws Exception {
+        logger.debug("Executing logoutSso in Users command line");
+
+        UsersCommandOptions.LogoutSsoCommandOptions commandOptions = usersCommandOptions.logoutSsoCommandOptions;
+        ObjectMap queryParams = new ObjectMap();
+        com.zettagenomics.opencga.enterprise.app.cli.main.custom.EnterpriseCustomUsersCommandExecutor customUsersCommandExecutor = new com.zettagenomics.opencga.enterprise.app.cli.main.custom.EnterpriseCustomUsersCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), appHome, getLogger());
+        return customUsersCommandExecutor.logoutSso(commandOptions);
     }
 
     private RestResponse<User> info() throws Exception {

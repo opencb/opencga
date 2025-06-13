@@ -21,7 +21,7 @@ on:
 jobs:
   build:
     name: Build OpenCGA Enterprise app
-    runs-on: ubuntu-22.04
+    runs-on: ${{ vars.UBUNTU_VERSION }}
     outputs:
       version: ${{ steps.get_project_version.outputs.version }}
     steps:
@@ -55,16 +55,16 @@ jobs:
             ./.github/workflows/scripts/get_same_branch.sh ${{ steps.get_opencga_branch.outputs.opencga_branch }}
           fi
       - name: OpenCGA Enterprise Maven Build (skip tests)
-        run: ./build.sh --storage-hadoop ${{ inputs.storage_hadoop }}
+        run: |
+          branch_name=$(git rev-parse --abbrev-ref HEAD)
+          ./build.sh --storage-hadoop ${{ inputs.storage_hadoop }} -b -T "$branch_name"
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.artifact_name }}
           path: build
       - id: get_project_version
-        uses: avides/actions-project-version-check@v1.3.0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          file-to-check: pom.xml
-          only-return-version: true
+        name: Get project version
+        run: |
+          echo "version=`mvn help:evaluate -q -Dexpression=project.version -DforceStdout`" >> $GITHUB_OUTPUT
       - name: test-version-from-check
         run: echo "Project version is " ${{ steps.get_project_version.outputs.version }}

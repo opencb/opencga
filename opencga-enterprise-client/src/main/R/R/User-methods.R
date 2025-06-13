@@ -24,6 +24,8 @@
 #' | login | /{apiVersion}/users/login | body |
 #' | password | /{apiVersion}/users/password | body[*] |
 #' | search | /{apiVersion}/users/search | include, exclude, limit, skip, count, organization, id, authenticationId |
+#' | loginSso | /{apiVersion}/users/sso/login | url |
+#' | logoutSso | /{apiVersion}/users/sso/logout | url |
 #' | info | /{apiVersion}/users/{users}/info | include, exclude, organization, users[*] |
 #' | configs | /{apiVersion}/users/{user}/configs | user[*], name |
 #' | updateConfigs | /{apiVersion}/users/{user}/configs/update | user[*], action, body[*] |
@@ -80,6 +82,18 @@ setMethod("userClient", "OpencgaR", function(OpencgaR, filterId, user, users, en
         search=fetchOpenCGA(object=OpencgaR, category="users", categoryId=NULL, subcategory=NULL, subcategoryId=NULL,
                 action="search", params=params, httpMethod="GET", as.queryParam=NULL, ...),
 
+        #' @section Endpoint /{apiVersion}/users/sso/login:
+        #' Single Sign On.
+        #' @param url Callback URL.
+        loginSso=fetchOpenCGA(object=OpencgaR, category="users", categoryId=NULL, subcategory="sso",
+                subcategoryId=NULL, action="login", params=params, httpMethod="GET", as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/users/sso/logout:
+        #' Logout from Single Sign On.
+        #' @param url Callback URL.
+        logoutSso=fetchOpenCGA(object=OpencgaR, category="users", categoryId=NULL, subcategory="sso",
+                subcategoryId=NULL, action="logout", params=params, httpMethod="GET", as.queryParam=NULL, ...),
+
         #' @section Endpoint /{apiVersion}/users/{users}/info:
         #' Return the user information including its projects and studies.
         #' @param include Fields included in the response, whole JSON path must be provided.
@@ -128,7 +142,7 @@ setMethod("userClient", "OpencgaR", function(OpencgaR, filterId, user, users, en
                 subcategoryId=filterId, action="update", params=params, httpMethod="POST", as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/users/{user}/password/reset:
-        #' Reset password.
+        #' [DEPRECATED].
         #' @param user User ID.
         resetPassword=fetchOpenCGA(object=OpencgaR, category="users", categoryId=user, subcategory="password",
                 subcategoryId=NULL, action="reset", params=params, httpMethod="GET", as.queryParam=NULL, ...),

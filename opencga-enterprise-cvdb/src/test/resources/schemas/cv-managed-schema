@@ -580,7 +580,9 @@
 
 	<!-- ClinicalVariant -->
 
-    <field name="primary" type="boolean" indexed="true" stored="true" multiValued="false"/>
+    <field name="variantId" type="string" indexed="false" stored="true" multiValued="false"/>
+    <field name="primaryFinding" type="boolean" indexed="true" stored="true" multiValued="false"/>
+    <field name="primaryInterpretation" type="boolean" indexed="true" stored="true" multiValued="false"/>
 
 	<!-- Comments are stores: author == message == tag1:tag2:.. == date -->
     <field name="comments" type="text_en" indexed="true" stored="true" multiValued="true"/>
@@ -605,7 +607,6 @@
     <!-- Variant fields copied from OpenCGA -->
 
     <!-- Common variant and annotation fields -->
-    <field name="variantId" type="string" indexed="false" stored="true" multiValued="false"/>
     <field name="chromosome" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="start" type="int" indexed="true" stored="true" multiValued="false"/>
     <field name="end" type="int" indexed="true" stored="true" multiValued="false"/>

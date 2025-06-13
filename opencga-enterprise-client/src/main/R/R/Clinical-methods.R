@@ -20,19 +20,12 @@
 #' | endpointName | Endpoint WS | parameters accepted |
 #' | -- | :-- | --: |
 #' | updateAcl | /{apiVersion}/analysis/clinical/acl/{members}/update | study, members[*], action[*], propagate, body[*] |
+#' | aggregationStats | /{apiVersion}/analysis/clinical/aggregationStats | study, id, uuid, type, disorder, files, sample, individual, proband, probandSamples, family, familyMembers, familyMemberSamples, panels, locked, analystId, priority, flags, creationDate, modificationDate, dueDate, qualityControlSummary, release, snapshot, status, internalStatus, annotation, deleted, field |
 #' | loadAnnotationSets | /{apiVersion}/analysis/clinical/annotationSets/load | study, variableSetId[*], path[*], parents, annotationSetId, body |
 #' | updateClinicalConfiguration | /{apiVersion}/analysis/clinical/clinical/configuration/update | study, body |
 #' | create | /{apiVersion}/analysis/clinical/create | include, exclude, study, skipCreateDefaultInterpretation, includeResult, body[*] |
-#' | aggregationStatsCvdbCase | /{apiVersion}/analysis/clinical/cvdb/case/aggregationStats | projectId, studyId, caId, caDescription, caType, caDisorderId, caFilename, caProbandId, caFamilyId, caFamilyPhenotypeName, caFamilyMemberId, caReport, caStatus, caLocked, ciId, ciPrimary, ciDescription, ciPanelId, ciAnalystId, ciAnalystName, ciAnalystEmail, ciAnalystAssignedBy, ciAnalystDate, ciMethodName, ciMethodVersion, ciMethodCommit, ciMethodDependencies, ciComments, ciLocked, ciStatusId, ciStatusName, ciStatusDescription, ciStatusDate, ciCreationDate, ciModificationDate, ciVersion, cvId, cvPrimary, cvComments, cvDiscussionAuthor, cvDiscussionDate, cvDiscussionText, cvConfidenceValue, cvConfidenceAuthor, cvConfidenceDate, cvTag, cvStatus, cvRegion, cvBiotype, cvCt, cvTranscriptFlag, cvGene, cvXref, cvAnnotRoleInCancerGenes, cvType, cvProteinSubstitution, cvConservation, cvFunctionalScore, cvPopulationFrequencyAlt, cvPopulationFrequencyMaf, cvPopulationFrequencyRef, cvCohortStatsAlt, cvCohortStatsMaf, cvCohortStatsRef, cvCohortStatsPass, cvScore, cvAnnotGoGenes, cvAnnotExpressionGenes, cvGeneTraitId, cvTrait, cvProteinKeyword, cvePhenotypeName, cveGeneName, cveConsequenceTypeId, cveXrefId, cvePanelId, cveMoi, cvePenetrance, cveAcmg, cveTier, cveClinicalSignificance, cveDrugResponse, cveTraitAssociation, cveFunctionalEffect, cveTumorigenesis, cveOtherClassification, cveRolInCancer, cveReviewText, field |
-#' | queryCvdbCase | /{apiVersion}/analysis/clinical/cvdb/case/query | projectId, studyId, include, exclude, limit, skip, caId, caDescription, caType, caDisorderId, caFilename, caProbandId, caFamilyId, caFamilyPhenotypeName, caFamilyMemberId, caReport, caStatus, caLocked, ciId, ciPrimary, ciDescription, ciPanelId, ciAnalystId, ciAnalystName, ciAnalystEmail, ciAnalystAssignedBy, ciAnalystDate, ciMethodName, ciMethodVersion, ciMethodCommit, ciMethodDependencies, ciComments, ciLocked, ciStatusId, ciStatusName, ciStatusDescription, ciStatusDate, ciCreationDate, ciModificationDate, ciVersion, cvId, cvPrimary, cvComments, cvDiscussionAuthor, cvDiscussionDate, cvDiscussionText, cvConfidenceValue, cvConfidenceAuthor, cvConfidenceDate, cvTag, cvStatus, cvRegion, cvBiotype, cvCt, cvTranscriptFlag, cvGene, cvXref, cvAnnotRoleInCancerGenes, cvType, cvProteinSubstitution, cvConservation, cvFunctionalScore, cvPopulationFrequencyAlt, cvPopulationFrequencyMaf, cvPopulationFrequencyRef, cvCohortStatsAlt, cvCohortStatsMaf, cvCohortStatsRef, cvCohortStatsPass, cvScore, cvAnnotGoGenes, cvAnnotExpressionGenes, cvGeneTraitId, cvTrait, cvProteinKeyword, cvePhenotypeName, cveGeneName, cveConsequenceTypeId, cveXrefId, cvePanelId, cveMoi, cvePenetrance, cveAcmg, cveTier, cveClinicalSignificance, cveDrugResponse, cveTraitAssociation, cveFunctionalEffect, cveTumorigenesis, cveOtherClassification, cveRolInCancer |
-#' | runCvdbIndex | /{apiVersion}/analysis/clinical/cvdb/index/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
-#' | aggregationStatsCvdbInterpretation | /{apiVersion}/analysis/clinical/cvdb/interpretation/aggregationStats | projectId, studyId, caId, caDescription, caType, caDisorderId, caFilename, caProbandId, caFamilyId, caFamilyPhenotypeName, caFamilyMemberId, caReport, caStatus, caLocked, ciId, ciPrimary, ciDescription, ciPanelId, ciAnalystId, ciAnalystName, ciAnalystEmail, ciAnalystAssignedBy, ciAnalystDate, ciMethodName, ciMethodVersion, ciMethodCommit, ciMethodDependencies, ciComments, ciLocked, ciStatusId, ciStatusName, ciStatusDescription, ciStatusDate, ciCreationDate, ciModificationDate, ciVersion, cvId, cvPrimary, cvComments, cvDiscussionAuthor, cvDiscussionDate, cvDiscussionText, cvConfidenceValue, cvConfidenceAuthor, cvConfidenceDate, cvTag, cvStatus, cvRegion, cvBiotype, cvCt, cvTranscriptFlag, cvGene, cvXref, cvAnnotRoleInCancerGenes, cvType, cvProteinSubstitution, cvConservation, cvFunctionalScore, cvPopulationFrequencyAlt, cvPopulationFrequencyMaf, cvPopulationFrequencyRef, cvCohortStatsAlt, cvCohortStatsMaf, cvCohortStatsRef, cvCohortStatsPass, cvScore, cvAnnotGoGenes, cvAnnotExpressionGenes, cvGeneTraitId, cvTrait, cvProteinKeyword, cvePhenotypeName, cveGeneName, cveConsequenceTypeId, cveXrefId, cvePanelId, cveMoi, cvePenetrance, cveAcmg, cveTier, cveClinicalSignificance, cveDrugResponse, cveTraitAssociation, cveFunctionalEffect, cveTumorigenesis, cveOtherClassification, cveRolInCancer, cveReviewText, field |
-#' | queryCvdbInterpretation | /{apiVersion}/analysis/clinical/cvdb/interpretation/query | projectId, studyId, include, exclude, limit, skip, caId, caDescription, caType, caDisorderId, caFilename, caProbandId, caFamilyId, caFamilyPhenotypeName, caFamilyMemberId, caReport, caStatus, caLocked, ciId, ciPrimary, ciDescription, ciPanelId, ciAnalystId, ciAnalystName, ciAnalystEmail, ciAnalystAssignedBy, ciAnalystDate, ciMethodName, ciMethodVersion, ciMethodCommit, ciMethodDependencies, ciComments, ciLocked, ciStatusId, ciStatusName, ciStatusDescription, ciStatusDate, ciCreationDate, ciModificationDate, ciVersion, cvId, cvPrimary, cvComments, cvDiscussionAuthor, cvDiscussionDate, cvDiscussionText, cvConfidenceValue, cvConfidenceAuthor, cvConfidenceDate, cvTag, cvStatus, cvRegion, cvBiotype, cvCt, cvTranscriptFlag, cvGene, cvXref, cvAnnotRoleInCancerGenes, cvType, cvProteinSubstitution, cvConservation, cvFunctionalScore, cvPopulationFrequencyAlt, cvPopulationFrequencyMaf, cvPopulationFrequencyRef, cvCohortStatsAlt, cvCohortStatsMaf, cvCohortStatsRef, cvCohortStatsPass, cvScore, cvAnnotGoGenes, cvAnnotExpressionGenes, cvGeneTraitId, cvTrait, cvProteinKeyword, cvePhenotypeName, cveGeneName, cveConsequenceTypeId, cveXrefId, cvePanelId, cveMoi, cvePenetrance, cveAcmg, cveTier, cveClinicalSignificance, cveDrugResponse, cveTraitAssociation, cveFunctionalEffect, cveTumorigenesis, cveOtherClassification, cveRolInCancer |
-#' | aggregationStatsCvdbVariant | /{apiVersion}/analysis/clinical/cvdb/variant/aggregationStats | projectId, studyId, caId, caDescription, caType, caDisorderId, caFilename, caProbandId, caFamilyId, caFamilyPhenotypeName, caFamilyMemberId, caReport, caStatus, caLocked, ciId, ciPrimary, ciDescription, ciPanelId, ciAnalystId, ciAnalystName, ciAnalystEmail, ciAnalystAssignedBy, ciAnalystDate, ciMethodName, ciMethodVersion, ciMethodCommit, ciMethodDependencies, ciComments, ciLocked, ciStatusId, ciStatusName, ciStatusDescription, ciStatusDate, ciCreationDate, ciModificationDate, ciVersion, cvId, cvPrimary, cvComments, cvDiscussionAuthor, cvDiscussionDate, cvDiscussionText, cvConfidenceValue, cvConfidenceAuthor, cvConfidenceDate, cvTag, cvStatus, cvRegion, cvBiotype, cvCt, cvTranscriptFlag, cvGene, cvXref, cvAnnotRoleInCancerGenes, cvType, cvProteinSubstitution, cvConservation, cvFunctionalScore, cvPopulationFrequencyAlt, cvPopulationFrequencyMaf, cvPopulationFrequencyRef, cvCohortStatsAlt, cvCohortStatsMaf, cvCohortStatsRef, cvCohortStatsPass, cvScore, cvAnnotGoGenes, cvAnnotExpressionGenes, cvGeneTraitId, cvTrait, cvProteinKeyword, cvePhenotypeName, cveGeneName, cveConsequenceTypeId, cveXrefId, cvePanelId, cveMoi, cvePenetrance, cveAcmg, cveTier, cveClinicalSignificance, cveDrugResponse, cveTraitAssociation, cveFunctionalEffect, cveTumorigenesis, cveOtherClassification, cveRolInCancer, cveReviewText, field |
-#' | queryCvdbVariant | /{apiVersion}/analysis/clinical/cvdb/variant/query | projectId, studyId, include, exclude, limit, skip, caId, caDescription, caType, caDisorderId, caFilename, caProbandId, caFamilyId, caFamilyPhenotypeName, caFamilyMemberId, caReport, caStatus, caLocked, ciId, ciPrimary, ciDescription, ciPanelId, ciAnalystId, ciAnalystName, ciAnalystEmail, ciAnalystAssignedBy, ciAnalystDate, ciMethodName, ciMethodVersion, ciMethodCommit, ciMethodDependencies, ciComments, ciLocked, ciStatusId, ciStatusName, ciStatusDescription, ciStatusDate, ciCreationDate, ciModificationDate, ciVersion, cvId, cvPrimary, cvComments, cvDiscussionAuthor, cvDiscussionDate, cvDiscussionText, cvConfidenceValue, cvConfidenceAuthor, cvConfidenceDate, cvTag, cvStatus, cvRegion, cvBiotype, cvCt, cvTranscriptFlag, cvGene, cvXref, cvAnnotRoleInCancerGenes, cvType, cvProteinSubstitution, cvConservation, cvFunctionalScore, cvPopulationFrequencyAlt, cvPopulationFrequencyMaf, cvPopulationFrequencyRef, cvCohortStatsAlt, cvCohortStatsMaf, cvCohortStatsRef, cvCohortStatsPass, cvScore, cvAnnotGoGenes, cvAnnotExpressionGenes, cvGeneTraitId, cvTrait, cvProteinKeyword, cvePhenotypeName, cveGeneName, cveConsequenceTypeId, cveXrefId, cvePanelId, cveMoi, cvePenetrance, cveAcmg, cveTier, cveClinicalSignificance, cveDrugResponse, cveTraitAssociation, cveFunctionalEffect, cveTumorigenesis, cveOtherClassification, cveRolInCancer |
-#' | aggregationStatsCvdbVariantEvidence | /{apiVersion}/analysis/clinical/cvdb/variantEvidence/aggregationStats | projectId, studyId, caId, caDescription, caType, caDisorderId, caFilename, caProbandId, caFamilyId, caFamilyPhenotypeName, caFamilyMemberId, caReport, caStatus, caLocked, ciId, ciPrimary, ciDescription, ciPanelId, ciAnalystId, ciAnalystName, ciAnalystEmail, ciAnalystAssignedBy, ciAnalystDate, ciMethodName, ciMethodVersion, ciMethodCommit, ciMethodDependencies, ciComments, ciLocked, ciStatusId, ciStatusName, ciStatusDescription, ciStatusDate, ciCreationDate, ciModificationDate, ciVersion, cvId, cvPrimary, cvComments, cvDiscussionAuthor, cvDiscussionDate, cvDiscussionText, cvConfidenceValue, cvConfidenceAuthor, cvConfidenceDate, cvTag, cvStatus, cvRegion, cvBiotype, cvCt, cvTranscriptFlag, cvGene, cvXref, cvAnnotRoleInCancerGenes, cvType, cvProteinSubstitution, cvConservation, cvFunctionalScore, cvPopulationFrequencyAlt, cvPopulationFrequencyMaf, cvPopulationFrequencyRef, cvCohortStatsAlt, cvCohortStatsMaf, cvCohortStatsRef, cvCohortStatsPass, cvScore, cvAnnotGoGenes, cvAnnotExpressionGenes, cvGeneTraitId, cvTrait, cvProteinKeyword, cvePhenotypeName, cveGeneName, cveConsequenceTypeId, cveXrefId, cvePanelId, cveMoi, cvePenetrance, cveAcmg, cveTier, cveClinicalSignificance, cveDrugResponse, cveTraitAssociation, cveFunctionalEffect, cveTumorigenesis, cveOtherClassification, cveRolInCancer, cveReviewText, field |
-#' | queryCvdbVariantEvidence | /{apiVersion}/analysis/clinical/cvdb/variantEvidence/query | projectId, studyId, include, exclude, limit, skip, caId, caDescription, caType, caDisorderId, caFilename, caProbandId, caFamilyId, caFamilyPhenotypeName, caFamilyMemberId, caReport, caStatus, caLocked, ciId, ciPrimary, ciDescription, ciPanelId, ciAnalystId, ciAnalystName, ciAnalystEmail, ciAnalystAssignedBy, ciAnalystDate, ciMethodName, ciMethodVersion, ciMethodCommit, ciMethodDependencies, ciComments, ciLocked, ciStatusId, ciStatusName, ciStatusDescription, ciStatusDate, ciCreationDate, ciModificationDate, ciVersion, cvId, cvPrimary, cvComments, cvDiscussionAuthor, cvDiscussionDate, cvDiscussionText, cvConfidenceValue, cvConfidenceAuthor, cvConfidenceDate, cvTag, cvStatus, cvRegion, cvBiotype, cvCt, cvTranscriptFlag, cvGene, cvXref, cvAnnotRoleInCancerGenes, cvType, cvProteinSubstitution, cvConservation, cvFunctionalScore, cvPopulationFrequencyAlt, cvPopulationFrequencyMaf, cvPopulationFrequencyRef, cvCohortStatsAlt, cvCohortStatsMaf, cvCohortStatsRef, cvCohortStatsPass, cvScore, cvAnnotGoGenes, cvAnnotExpressionGenes, cvGeneTraitId, cvTrait, cvProteinKeyword, cvePhenotypeName, cveGeneName, cveConsequenceTypeId, cveXrefId, cvePanelId, cveMoi, cvePenetrance, cveAcmg, cveTier, cveClinicalSignificance, cveDrugResponse, cveTraitAssociation, cveFunctionalEffect, cveTumorigenesis, cveOtherClassification, cveRolInCancer |
 #' | distinct | /{apiVersion}/analysis/clinical/distinct | study, id, uuid, type, disorder, files, sample, individual, proband, probandSamples, family, familyMembers, familyMemberSamples, panels, locked, analystId, priority, flags, creationDate, modificationDate, dueDate, qualityControlSummary, release, snapshot, status, internalStatus, annotation, deleted, field[*] |
+#' | aggregationStatsInterpretation | /{apiVersion}/analysis/clinical/interpretation/aggregationStats | study, id, uuid, name, clinicalAnalysisId, analystId, methodName, panels, primaryFindings, secondaryFindings, creationDate, modificationDate, status, internalStatus, release, field |
 #' | distinctInterpretation | /{apiVersion}/analysis/clinical/interpretation/distinct | study, id, uuid, name, clinicalAnalysisId, analystId, methodName, panels, primaryFindings, secondaryFindings, creationDate, modificationDate, status, internalStatus, release, field[*] |
 #' | searchInterpretation | /{apiVersion}/analysis/clinical/interpretation/search | include, exclude, limit, skip, sort, study, id, uuid, name, clinicalAnalysisId, analystId, methodName, panels, primaryFindings, secondaryFindings, creationDate, modificationDate, status, internalStatus, release |
 #' | infoInterpretation | /{apiVersion}/analysis/clinical/interpretation/{interpretations}/info | include, exclude, interpretations[*], study, version, deleted |
@@ -51,7 +44,7 @@
 #' | queryRgaVariant | /{apiVersion}/analysis/clinical/rga/variant/query | include, exclude, limit, skip, count, includeIndividual, skipIndividual, limitIndividual, sampleId, individualId, sex, phenotypes, disorders, numParents, geneId, geneName, chromosome, start, end, transcriptId, variants, dbSnps, knockoutType, filter, type, clinicalSignificance, populationFrequency, consequenceType, study |
 #' | summaryRgaVariant | /{apiVersion}/analysis/clinical/rga/variant/summary | limit, skip, count, sampleId, individualId, sex, phenotypes, disorders, numParents, geneId, geneName, chromosome, start, end, transcriptId, variants, dbSnps, knockoutType, filter, type, clinicalSignificance, populationFrequency, consequenceType, study |
 #' | search | /{apiVersion}/analysis/clinical/search | include, exclude, limit, skip, count, flattenAnnotations, study, id, uuid, type, disorder, files, sample, individual, proband, probandSamples, family, familyMembers, familyMemberSamples, panels, locked, analystId, priority, flags, creationDate, modificationDate, dueDate, qualityControlSummary, release, snapshot, status, internalStatus, annotation, deleted |
-#' | queryVariant | /{apiVersion}/analysis/clinical/variant/query | include, exclude, limit, skip, count, approximateCount, approximateCountSamplingSize, savedFilter, includeInterpretation, id, region, type, study, file, filter, qual, fileData, sample, sampleData, sampleAnnotation, cohort, cohortStatsRef, cohortStatsAlt, cohortStatsMaf, cohortStatsMgf, cohortStatsPass, missingAlleles, missingGenotypes, score, family, familyDisorder, familySegregation, familyMembers, familyProband, gene, ct, xref, biotype, proteinSubstitution, conservation, populationFrequencyAlt, populationFrequencyRef, populationFrequencyMaf, transcriptFlag, geneTraitId, go, expression, proteinKeyword, drug, functionalScore, clinical, clinicalSignificance, clinicalConfirmedStatus, customAnnotation, panel, panelModeOfInheritance, panelConfidence, panelRoleInCancer, panelFeatureType, panelIntersection, trait |
+#' | queryVariant | /{apiVersion}/analysis/clinical/variant/query | include, exclude, limit, skip, count, approximateCount, approximateCountSamplingSize, savedFilter, includeInterpretation, id, region, type, study, file, filter, qual, fileData, sample, sampleData, sampleAnnotation, cohort, cohortStatsRef, cohortStatsAlt, cohortStatsMaf, cohortStatsMgf, cohortStatsPass, missingAlleles, missingGenotypes, score, family, familyDisorder, familySegregation, familyMembers, familyProband, gene, ct, xref, biotype, proteinSubstitution, conservation, populationFrequencyAlt, populationFrequencyRef, populationFrequencyMaf, transcriptFlag, geneTraitId, go, expression, proteinKeyword, drug, functionalScore, clinical, clinicalSignificance, clinicalConfirmedStatus, customAnnotation, panel, panelModeOfInheritance, panelConfidence, panelRoleInCancer, panelFeatureType, panelIntersection, trait, ciStatusId |
 #' | acl | /{apiVersion}/analysis/clinical/{clinicalAnalyses}/acl | clinicalAnalyses[*], study, member, silent |
 #' | delete | /{apiVersion}/analysis/clinical/{clinicalAnalyses}/delete | study, force, clinicalAnalyses[*] |
 #' | update | /{apiVersion}/analysis/clinical/{clinicalAnalyses}/update | include, exclude, clinicalAnalyses[*], study, commentsAction, flagsAction, analystsAction, filesAction, panelsAction, annotationSetsAction, includeResult, body[*] |
@@ -84,6 +77,41 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
                 subcategoryId=members, action="update", params=params, httpMethod="POST", as.queryParam=c("action"),
                 ...),
 
+        #' @section Endpoint /{apiVersion}/analysis/clinical/aggregationStats:
+        #' Fetch catalog clinical analysis aggregation stats.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param id Comma separated list of Clinical Analysis IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param uuid Comma separated list of Clinical Analysis UUIDs up to a maximum of 100.
+        #' @param type Clinical Analysis type.
+        #' @param disorder Clinical Analysis disorder. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param files Clinical Analysis files.
+        #' @param sample Sample associated to the proband or any member of a family.
+        #' @param individual Proband or any member of a family.
+        #' @param proband Clinical Analysis proband.
+        #' @param probandSamples Clinical Analysis proband samples.
+        #' @param family Clinical Analysis family.
+        #' @param familyMembers Clinical Analysis family members.
+        #' @param familyMemberSamples Clinical Analysis family members samples.
+        #' @param panels Clinical Analysis panels.
+        #' @param locked Locked Clinical Analyses.
+        #' @param analystId Clinical Analysis analyst id.
+        #' @param priority Clinical Analysis priority.
+        #' @param flags Clinical Analysis flags.
+        #' @param creationDate Clinical Analysis Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        #' @param modificationDate Clinical Analysis Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        #' @param dueDate Clinical Analysis due date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        #' @param qualityControlSummary Clinical Analysis quality control summary.
+        #' @param release Release when it was created.
+        #' @param snapshot Snapshot value (Latest version of the entry in the specified release).
+        #' @param status Filter by status.
+        #' @param internalStatus Filter by internal status.
+        #' @param annotation Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
+        #' @param deleted Boolean to retrieve deleted entries.
+        #' @param field Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.: studies;type;numSamples[0..10]:1;format:sum(size).
+        aggregationStats=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL, subcategory="clinical",
+                subcategoryId=NULL, action="aggregationStats", params=params, httpMethod="GET", as.queryParam=NULL,
+                ...),
+
         #' @section Endpoint /{apiVersion}/analysis/clinical/annotationSets/load:
         #' Load annotation sets from a TSV file.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
@@ -114,789 +142,6 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param data JSON containing clinical analysis information.
         create=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL, subcategory="clinical",
                 subcategoryId=NULL, action="create", params=params, httpMethod="POST", as.queryParam=NULL, ...),
-
-        #' @section Endpoint /{apiVersion}/analysis/clinical/cvdb/case/aggregationStats:
-        #' Calculate and fetch clinical analysis aggregation stats.
-        #' @param projectId Project ID.
-        #' @param studyId Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
-        #' @param caId Clinical analysis ID (or list of IDs separated by commas).
-        #' @param caDescription Clinical analysis description (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param caType Clinical analysis type (or list of types separated by commas).
-        #' @param caDisorderId Clinical analysis disorder ID (or list of IDs separated by commas).
-        #' @param caFilename Clinical analysis filename (or list of filenames separated by commas).
-        #' @param caProbandId Clinical analysis proband ID (or list of IDs separated by commas).
-        #' @param caFamilyId Clinical analysis family ID (or list of IDs separated by commas).
-        #' @param caFamilyPhenotypeName Clinical analysis family phenotype names (or list of names separated by commas).
-        #' @param caFamilyMemberId Clinical analysis family member ID (or list of IDs separated by commas).
-        #' @param caReport Clinical analysis report text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param caStatus Clinical analysis status (or list of status separated by commas).
-        #' @param caLocked Clinical analysis locked (true or false).
-        #' @param ciId Clinical interpretation ID (or list of IDs separated by commas).
-        #' @param ciPrimary Clinical interpretation primary (true or false).
-        #' @param ciDescription Clinical interpretation description (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param ciPanelId Clinical interpretation panel ID or name (or list of IDs or names separated by commas).
-        #' @param ciAnalystId Clinical interpretation analyst ID (or list of IDs separated by commas).
-        #' @param ciAnalystName Clinical interpretation analyst name (or list of names separated by commas).
-        #' @param ciAnalystEmail Clinical interpretation analyst e-mail (or list of e-mails separated by commas).
-        #' @param ciAnalystAssignedBy Clinical interpretation analyst assignee name (or list of names separated by commas).
-        #' @param ciAnalystDate Clinical interpretation analyst date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param ciMethodName Clinical interpretation method name (or list of names separated by commas).
-        #' @param ciMethodVersion Clinical interpretation method version (or list of versions separated by commas).
-        #' @param ciMethodCommit Clinical interpretation method commit (or list of commits separated by commas).
-        #' @param ciMethodDependencies Clinical interpretation method dependencies (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param ciComments Clinical interpretation comment text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param ciLocked Clinical interpretation locked (true or false).
-        #' @param ciStatusId Clinical interpretation status ID (or list of IDs separated by commas).
-        #' @param ciStatusName Clinical interpretation status name (or list of names separated by commas).
-        #' @param ciStatusDescription Clinical interpretation status description (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param ciStatusDate Clinical interpretation status date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param ciCreationDate Clinical interpretation creation date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param ciModificationDate Clinical interpretation modification date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param ciVersion Clinical interpretation version number (or list of versions separated by commas).
-        #' @param cvId Variant ID (or list of IDs separated by commas).
-        #' @param cvPrimary Clinical variant is a primary finding (true or false).
-        #' @param cvComments Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param cvDiscussionAuthor Clinical variant discussion author (or list of authors separated by commas).
-        #' @param cvDiscussionDate Clinical variant discussion date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param cvDiscussionText Clinical variant discussion text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param cvConfidenceValue Clinical variant confidence value (or list of values separated by commas).
-        #' @param cvConfidenceAuthor Clinical variant confidence author (or list of authors separated by commas).
-        #' @param cvConfidenceDate Clinical variant confidence date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param cvTag Clinical variant tag (or list of tags separated by commas).
-        #' @param cvStatus Clinical variant status (or list of status separated by commas).
-        #' @param cvRegion Variant region (or list of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000).
-        #' @param cvBiotype Variant biotype, e.g. protein_coding (or list of biotypes separated by commas).
-        #' @param cvCt Variant SO consequence type (or list of SOs separated by commas), e.g. missense_variant,stop_lost or SO:0001583,SO:0001578. Accepts aliases 'loss_of_function' and 'protein_altering'.
-        #' @param cvTranscriptFlag Variant transcript flag (or list of flags separated by commas), e.g. canonical, CCDS, basic, LRG, MANE Select, MANE Plus Clinical, EGLH_HaemOnc, TSO500.
-        #' @param cvGene Variant gene (or list genes separated by commas), most gene IDs are accepted (HGNC, Ensembl gene, ...).
-        #' @param cvXref Variant external reference (or list of references separated by commas), these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, ...
-        #' @param cvAnnotRoleInCancerGenes Variant rol in cancer genes (or list of roles separated by commas).
-        #' @param cvType Variant type or list of types, accepted values are SNV, MNV, INDEL, SV, COPY_NUMBER, COPY_NUMBER_LOSS, COPY_NUMBER_GAIN, INSERTION, DELETION, DUPLICATION, TANDEM_DUPLICATION, BREAKEND, e.g. SNV,INDEL.
-        #' @param cvProteinSubstitution Variant protein substitution score (or list of scores separated by commas), include SIFT and PolyPhen. You can query using the score {protein_score}[<|>|<=|>=]{number} or the description {protein_score}[~=|=]{description} e.g. polyphen>0.1,sift=tolerant.
-        #' @param cvConservation Variant conservation score (or list of scores separated by commas) with the format {conservation_score}[<|>|<=|>=]{number} e.g. phastCons>0.5,phylop<0.1,gerp>0.1.
-        #' @param cvFunctionalScore Variant functional score (or list of scores separated by commas) with the format {functional_score}[<|>|<=|>=]{number} e.g. cadd_scaled>5.2 , cadd_raw<=0.3.
-        #' @param cvPopulationFrequencyAlt Variant alternate population frequency (or list of frequencies separated by commas), with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01.
-        #' @param cvPopulationFrequencyMaf Variant population minor allele frequency (or list of frequencies separated by commas), with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01.
-        #' @param cvPopulationFrequencyRef Variant reference population frequency (or list of frequences separated by commas), with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01.
-        #' @param cvCohortStatsAlt Variant alternate allele frequency (or list of frequencies separated by commas), with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4.
-        #' @param cvCohortStatsMaf Variant minor allele frequency (or list of frequencies separated by commas), with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4.
-        #' @param cvCohortStatsRef Variant reference allele frequency (or list of frequencies separated by commas), with the foramt [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4.
-        #' @param cvCohortStatsPass Variant filter PASS frequency (or list of frequencies separated by commas), with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL>0.8.
-        #' @param cvScore Variant score (or list of scores separated by commas), with the format: [{study:}]{score}[<|>|<=|>=]{number}.
-        #' @param cvAnnotGoGenes Variant gene GO (or list of GOs separated by commas).
-        #' @param cvAnnotExpressionGenes Variant gene expression (or list of expressions separated by commas).
-        #' @param cvGeneTraitId Variant gene trait association ID (or list of trait IDs separated by commas), e.g. "umls:C0007222" , "OMIM:269600".
-        #' @param cvTrait Variant Trait (or list of traits separated by commas), based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...
-        #' @param cvProteinKeyword Uniprot protein variant annotation keyword (or list of keywords separated by commas).
-        #' @param cvePhenotypeName Clinical variant evidence phenotype name (or names separated by commas).
-        #' @param cveGeneName Clinical variant evidence gene name (or names separated by commas).
-        #' @param cveConsequenceTypeId Clinical variant evidence consequence type ID (or IDs separated by commas).
-        #' @param cveXrefId Clinical variant evidence Xref ID (or IDs separated by commas).
-        #' @param cvePanelId Clinical variant evidence panel ID (or IDs separated by commas).
-        #' @param cveMoi Clinical variant evidence mode of inheritance (or list of modes of inheritance separated by commas), valid values: AUTOSOMAL_DOMINANT, AUTOSOMAL_RECESSIVE, X_LINKED_DOMINANT, X_LINKED_RECESSIVE, Y_LINKED, MITOCHONDRIAL, DE_NOVO, MENDELIAN_ERROR, COMPOUND_HETEROZYGOUS, UNKNOWN.
-        #' @param cvePenetrance Clinical variant evidence penetrance (or list of penetrance values separated by commas), valid values: COMPLETE, INCOMPLETE, UNKNOWN.
-        #' @param cveAcmg Clinical variant evidence ACMG (or ACGMs separated by commas).
-        #' @param cveTier Clinical variant evidence tier (or list of tier values separated by commas).
-        #' @param cveClinicalSignificance Clinical variant evidence clinical significance (or list of clinical  significances separated by commas).
-        #' @param cveDrugResponse Clinical variant evidence drug response (or list of drug responses separated by commas).
-        #' @param cveTraitAssociation Clinical variant evidence trait association (or list of traits separated by commas).
-        #' @param cveFunctionalEffect Clinical variant evidence functional effect (or list of functional effects separated by commas).
-        #' @param cveTumorigenesis Clinical variant evidence tumorigenesis (or list of tumorigenesis values separated by commas).
-        #' @param cveOtherClassification Clinical variant evidence other-classification (or list of other  classification values separated by commas).
-        #' @param cveRolInCancer Clinical variant evidence rol in cancer (or roles in cancer separated by commas).
-        #' @param cveReviewText Clinical variant evidence review text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param field List of facet fields separated by semicolons, e.g.: caType;caDisorderId. For nested faceted fields use >>, e.g.: caType>>caDisorderId. Accepted values: caType, caDisorderId, caFilename, caProbandId, caFamilyId, caFamilyPhenotypeName, caFamilyMemberId, caStatus, caLocked.
-        aggregationStatsCvdbCase=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
-                subcategory="clinical/cvdb/case", subcategoryId=NULL, action="aggregationStats", params=params,
-                httpMethod="GET", as.queryParam=NULL, ...),
-
-        #' @section Endpoint /{apiVersion}/analysis/clinical/cvdb/case/query:
-        #' Filter and fetch clinical analyses from CVDB.
-        #' @param projectId Project ID.
-        #' @param studyId Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
-        #' @param include Fields included in the response, whole JSON path must be provided.
-        #' @param exclude Fields excluded in the response, whole JSON path must be provided.
-        #' @param limit Number of results to be returned.
-        #' @param skip Number of results to skip.
-        #' @param caId Clinical analysis ID (or list of IDs separated by commas).
-        #' @param caDescription Clinical analysis description (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param caType Clinical analysis type (or list of types separated by commas).
-        #' @param caDisorderId Clinical analysis disorder ID (or list of IDs separated by commas).
-        #' @param caFilename Clinical analysis filename (or list of filenames separated by commas).
-        #' @param caProbandId Clinical analysis proband ID (or list of IDs separated by commas).
-        #' @param caFamilyId Clinical analysis family ID (or list of IDs separated by commas).
-        #' @param caFamilyPhenotypeName Clinical analysis family phenotype names (or list of names separated by commas).
-        #' @param caFamilyMemberId Clinical analysis family member ID (or list of IDs separated by commas).
-        #' @param caReport Clinical analysis report text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param caStatus Clinical analysis status (or list of status separated by commas).
-        #' @param caLocked Clinical analysis locked (true or false).
-        #' @param ciId Clinical interpretation ID (or list of IDs separated by commas).
-        #' @param ciPrimary Clinical interpretation primary (true or false).
-        #' @param ciDescription Clinical interpretation description (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param ciPanelId Clinical interpretation panel ID or name (or list of IDs or names separated by commas).
-        #' @param ciAnalystId Clinical interpretation analyst ID (or list of IDs separated by commas).
-        #' @param ciAnalystName Clinical interpretation analyst name (or list of names separated by commas).
-        #' @param ciAnalystEmail Clinical interpretation analyst e-mail (or list of e-mails separated by commas).
-        #' @param ciAnalystAssignedBy Clinical interpretation analyst assignee name (or list of names separated by commas).
-        #' @param ciAnalystDate Clinical interpretation analyst date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param ciMethodName Clinical interpretation method name (or list of names separated by commas).
-        #' @param ciMethodVersion Clinical interpretation method version (or list of versions separated by commas).
-        #' @param ciMethodCommit Clinical interpretation method commit (or list of commits separated by commas).
-        #' @param ciMethodDependencies Clinical interpretation method dependencies (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param ciComments Clinical interpretation comment text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param ciLocked Clinical interpretation locked (true or false).
-        #' @param ciStatusId Clinical interpretation status ID (or list of IDs separated by commas).
-        #' @param ciStatusName Clinical interpretation status name (or list of names separated by commas).
-        #' @param ciStatusDescription Clinical interpretation status description (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param ciStatusDate Clinical interpretation status date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param ciCreationDate Clinical interpretation creation date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param ciModificationDate Clinical interpretation modification date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param ciVersion Clinical interpretation version number (or list of versions separated by commas).
-        #' @param cvId Variant ID (or list of IDs separated by commas).
-        #' @param cvPrimary Clinical variant is a primary finding (true or false).
-        #' @param cvComments Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param cvDiscussionAuthor Clinical variant discussion author (or list of authors separated by commas).
-        #' @param cvDiscussionDate Clinical variant discussion date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param cvDiscussionText Clinical variant discussion text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param cvConfidenceValue Clinical variant confidence value (or list of values separated by commas).
-        #' @param cvConfidenceAuthor Clinical variant confidence author (or list of authors separated by commas).
-        #' @param cvConfidenceDate Clinical variant confidence date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param cvTag Clinical variant tag (or list of tags separated by commas).
-        #' @param cvStatus Clinical variant status (or list of status separated by commas).
-        #' @param cvRegion Variant region (or list of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000).
-        #' @param cvBiotype Variant biotype, e.g. protein_coding (or list of biotypes separated by commas).
-        #' @param cvCt Variant SO consequence type (or list of SOs separated by commas), e.g. missense_variant,stop_lost or SO:0001583,SO:0001578. Accepts aliases 'loss_of_function' and 'protein_altering'.
-        #' @param cvTranscriptFlag Variant transcript flag (or list of flags separated by commas), e.g. canonical, CCDS, basic, LRG, MANE Select, MANE Plus Clinical, EGLH_HaemOnc, TSO500.
-        #' @param cvGene Variant gene (or list genes separated by commas), most gene IDs are accepted (HGNC, Ensembl gene, ...).
-        #' @param cvXref Variant external reference (or list of references separated by commas), these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, ...
-        #' @param cvAnnotRoleInCancerGenes Variant rol in cancer genes (or list of roles separated by commas).
-        #' @param cvType Variant type or list of types, accepted values are SNV, MNV, INDEL, SV, COPY_NUMBER, COPY_NUMBER_LOSS, COPY_NUMBER_GAIN, INSERTION, DELETION, DUPLICATION, TANDEM_DUPLICATION, BREAKEND, e.g. SNV,INDEL.
-        #' @param cvProteinSubstitution Variant protein substitution score (or list of scores separated by commas), include SIFT and PolyPhen. You can query using the score {protein_score}[<|>|<=|>=]{number} or the description {protein_score}[~=|=]{description} e.g. polyphen>0.1,sift=tolerant.
-        #' @param cvConservation Variant conservation score (or list of scores separated by commas) with the format {conservation_score}[<|>|<=|>=]{number} e.g. phastCons>0.5,phylop<0.1,gerp>0.1.
-        #' @param cvFunctionalScore Variant functional score (or list of scores separated by commas) with the format {functional_score}[<|>|<=|>=]{number} e.g. cadd_scaled>5.2 , cadd_raw<=0.3.
-        #' @param cvPopulationFrequencyAlt Variant alternate population frequency (or list of frequencies separated by commas), with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01.
-        #' @param cvPopulationFrequencyMaf Variant population minor allele frequency (or list of frequencies separated by commas), with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01.
-        #' @param cvPopulationFrequencyRef Variant reference population frequency (or list of frequences separated by commas), with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01.
-        #' @param cvCohortStatsAlt Variant alternate allele frequency (or list of frequencies separated by commas), with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4.
-        #' @param cvCohortStatsMaf Variant minor allele frequency (or list of frequencies separated by commas), with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4.
-        #' @param cvCohortStatsRef Variant reference allele frequency (or list of frequencies separated by commas), with the foramt [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4.
-        #' @param cvCohortStatsPass Variant filter PASS frequency (or list of frequencies separated by commas), with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL>0.8.
-        #' @param cvScore Variant score (or list of scores separated by commas), with the format: [{study:}]{score}[<|>|<=|>=]{number}.
-        #' @param cvAnnotGoGenes Variant gene GO (or list of GOs separated by commas).
-        #' @param cvAnnotExpressionGenes Variant gene expression (or list of expressions separated by commas).
-        #' @param cvGeneTraitId Variant gene trait association ID (or list of trait IDs separated by commas), e.g. "umls:C0007222" , "OMIM:269600".
-        #' @param cvTrait Variant Trait (or list of traits separated by commas), based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...
-        #' @param cvProteinKeyword Uniprot protein variant annotation keyword (or list of keywords separated by commas).
-        #' @param cvePhenotypeName Clinical variant evidence phenotype name (or names separated by commas).
-        #' @param cveGeneName Clinical variant evidence gene name (or names separated by commas).
-        #' @param cveConsequenceTypeId Clinical variant evidence consequence type ID (or IDs separated by commas).
-        #' @param cveXrefId Clinical variant evidence Xref ID (or IDs separated by commas).
-        #' @param cvePanelId Clinical variant evidence panel ID (or IDs separated by commas).
-        #' @param cveMoi Clinical variant evidence mode of inheritance (or list of modes of inheritance separated by commas), valid values: AUTOSOMAL_DOMINANT, AUTOSOMAL_RECESSIVE, X_LINKED_DOMINANT, X_LINKED_RECESSIVE, Y_LINKED, MITOCHONDRIAL, DE_NOVO, MENDELIAN_ERROR, COMPOUND_HETEROZYGOUS, UNKNOWN.
-        #' @param cvePenetrance Clinical variant evidence penetrance (or list of penetrance values separated by commas), valid values: COMPLETE, INCOMPLETE, UNKNOWN.
-        #' @param cveAcmg Clinical variant evidence ACMG (or ACGMs separated by commas).
-        #' @param cveTier Clinical variant evidence tier (or list of tier values separated by commas).
-        #' @param cveClinicalSignificance Clinical variant evidence clinical significance (or list of clinical  significances separated by commas).
-        #' @param cveDrugResponse Clinical variant evidence drug response (or list of drug responses separated by commas).
-        #' @param cveTraitAssociation Clinical variant evidence trait association (or list of traits separated by commas).
-        #' @param cveFunctionalEffect Clinical variant evidence functional effect (or list of functional effects separated by commas).
-        #' @param cveTumorigenesis Clinical variant evidence tumorigenesis (or list of tumorigenesis values separated by commas).
-        #' @param cveOtherClassification Clinical variant evidence other-classification (or list of other  classification values separated by commas).
-        #' @param cveRolInCancer Clinical variant evidence rol in cancer (or roles in cancer separated by commas).
-        queryCvdbCase=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
-                subcategory="clinical/cvdb/case", subcategoryId=NULL, action="query", params=params, httpMethod="GET",
-                as.queryParam=NULL, ...),
-
-        #' @section Endpoint /{apiVersion}/analysis/clinical/cvdb/index/run:
-        #' Index clinical analyses of a OpenCGA project, a study or a list of clinical analyses into CVDB.
-        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
-        #' @param jobId Job ID. It must be a unique string within the study. An ID will be autogenerated automatically if not provided.
-        #' @param jobDescription Job description.
-        #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
-        #' @param jobTags Job tags.
-        #' @param jobScheduledStartTime Time when the job is scheduled to start.
-        #' @param jobPriority Priority of the job.
-        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
-        #' @param data Parameters: Index clinical analyses of a OpenCGA project, a study or a list of clinical analyses into CVDB.
-        runCvdbIndex=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
-                subcategory="clinical/cvdb/index", subcategoryId=NULL, action="run", params=params, httpMethod="POST",
-                as.queryParam=NULL, ...),
-
-        #' @section Endpoint /{apiVersion}/analysis/clinical/cvdb/interpretation/aggregationStats:
-        #' Calculate and fetch clinical interpretation aggregation stats.
-        #' @param projectId Project ID.
-        #' @param studyId Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
-        #' @param caId Clinical analysis ID (or list of IDs separated by commas).
-        #' @param caDescription Clinical analysis description (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param caType Clinical analysis type (or list of types separated by commas).
-        #' @param caDisorderId Clinical analysis disorder ID (or list of IDs separated by commas).
-        #' @param caFilename Clinical analysis filename (or list of filenames separated by commas).
-        #' @param caProbandId Clinical analysis proband ID (or list of IDs separated by commas).
-        #' @param caFamilyId Clinical analysis family ID (or list of IDs separated by commas).
-        #' @param caFamilyPhenotypeName Clinical analysis family phenotype names (or list of names separated by commas).
-        #' @param caFamilyMemberId Clinical analysis family member ID (or list of IDs separated by commas).
-        #' @param caReport Clinical analysis report text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param caStatus Clinical analysis status (or list of status separated by commas).
-        #' @param caLocked Clinical analysis locked (true or false).
-        #' @param ciId Clinical interpretation ID (or list of IDs separated by commas).
-        #' @param ciPrimary Clinical interpretation primary (true or false).
-        #' @param ciDescription Clinical interpretation description (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param ciPanelId Clinical interpretation panel ID or name (or list of IDs or names separated by commas).
-        #' @param ciAnalystId Clinical interpretation analyst ID (or list of IDs separated by commas).
-        #' @param ciAnalystName Clinical interpretation analyst name (or list of names separated by commas).
-        #' @param ciAnalystEmail Clinical interpretation analyst e-mail (or list of e-mails separated by commas).
-        #' @param ciAnalystAssignedBy Clinical interpretation analyst assignee name (or list of names separated by commas).
-        #' @param ciAnalystDate Clinical interpretation analyst date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param ciMethodName Clinical interpretation method name (or list of names separated by commas).
-        #' @param ciMethodVersion Clinical interpretation method version (or list of versions separated by commas).
-        #' @param ciMethodCommit Clinical interpretation method commit (or list of commits separated by commas).
-        #' @param ciMethodDependencies Clinical interpretation method dependencies (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param ciComments Clinical interpretation comment text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param ciLocked Clinical interpretation locked (true or false).
-        #' @param ciStatusId Clinical interpretation status ID (or list of IDs separated by commas).
-        #' @param ciStatusName Clinical interpretation status name (or list of names separated by commas).
-        #' @param ciStatusDescription Clinical interpretation status description (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param ciStatusDate Clinical interpretation status date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param ciCreationDate Clinical interpretation creation date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param ciModificationDate Clinical interpretation modification date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param ciVersion Clinical interpretation version number (or list of versions separated by commas).
-        #' @param cvId Variant ID (or list of IDs separated by commas).
-        #' @param cvPrimary Clinical variant is a primary finding (true or false).
-        #' @param cvComments Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param cvDiscussionAuthor Clinical variant discussion author (or list of authors separated by commas).
-        #' @param cvDiscussionDate Clinical variant discussion date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param cvDiscussionText Clinical variant discussion text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param cvConfidenceValue Clinical variant confidence value (or list of values separated by commas).
-        #' @param cvConfidenceAuthor Clinical variant confidence author (or list of authors separated by commas).
-        #' @param cvConfidenceDate Clinical variant confidence date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param cvTag Clinical variant tag (or list of tags separated by commas).
-        #' @param cvStatus Clinical variant status (or list of status separated by commas).
-        #' @param cvRegion Variant region (or list of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000).
-        #' @param cvBiotype Variant biotype, e.g. protein_coding (or list of biotypes separated by commas).
-        #' @param cvCt Variant SO consequence type (or list of SOs separated by commas), e.g. missense_variant,stop_lost or SO:0001583,SO:0001578. Accepts aliases 'loss_of_function' and 'protein_altering'.
-        #' @param cvTranscriptFlag Variant transcript flag (or list of flags separated by commas), e.g. canonical, CCDS, basic, LRG, MANE Select, MANE Plus Clinical, EGLH_HaemOnc, TSO500.
-        #' @param cvGene Variant gene (or list genes separated by commas), most gene IDs are accepted (HGNC, Ensembl gene, ...).
-        #' @param cvXref Variant external reference (or list of references separated by commas), these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, ...
-        #' @param cvAnnotRoleInCancerGenes Variant rol in cancer genes (or list of roles separated by commas).
-        #' @param cvType Variant type or list of types, accepted values are SNV, MNV, INDEL, SV, COPY_NUMBER, COPY_NUMBER_LOSS, COPY_NUMBER_GAIN, INSERTION, DELETION, DUPLICATION, TANDEM_DUPLICATION, BREAKEND, e.g. SNV,INDEL.
-        #' @param cvProteinSubstitution Variant protein substitution score (or list of scores separated by commas), include SIFT and PolyPhen. You can query using the score {protein_score}[<|>|<=|>=]{number} or the description {protein_score}[~=|=]{description} e.g. polyphen>0.1,sift=tolerant.
-        #' @param cvConservation Variant conservation score (or list of scores separated by commas) with the format {conservation_score}[<|>|<=|>=]{number} e.g. phastCons>0.5,phylop<0.1,gerp>0.1.
-        #' @param cvFunctionalScore Variant functional score (or list of scores separated by commas) with the format {functional_score}[<|>|<=|>=]{number} e.g. cadd_scaled>5.2 , cadd_raw<=0.3.
-        #' @param cvPopulationFrequencyAlt Variant alternate population frequency (or list of frequencies separated by commas), with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01.
-        #' @param cvPopulationFrequencyMaf Variant population minor allele frequency (or list of frequencies separated by commas), with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01.
-        #' @param cvPopulationFrequencyRef Variant reference population frequency (or list of frequences separated by commas), with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01.
-        #' @param cvCohortStatsAlt Variant alternate allele frequency (or list of frequencies separated by commas), with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4.
-        #' @param cvCohortStatsMaf Variant minor allele frequency (or list of frequencies separated by commas), with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4.
-        #' @param cvCohortStatsRef Variant reference allele frequency (or list of frequencies separated by commas), with the foramt [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4.
-        #' @param cvCohortStatsPass Variant filter PASS frequency (or list of frequencies separated by commas), with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL>0.8.
-        #' @param cvScore Variant score (or list of scores separated by commas), with the format: [{study:}]{score}[<|>|<=|>=]{number}.
-        #' @param cvAnnotGoGenes Variant gene GO (or list of GOs separated by commas).
-        #' @param cvAnnotExpressionGenes Variant gene expression (or list of expressions separated by commas).
-        #' @param cvGeneTraitId Variant gene trait association ID (or list of trait IDs separated by commas), e.g. "umls:C0007222" , "OMIM:269600".
-        #' @param cvTrait Variant Trait (or list of traits separated by commas), based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...
-        #' @param cvProteinKeyword Uniprot protein variant annotation keyword (or list of keywords separated by commas).
-        #' @param cvePhenotypeName Clinical variant evidence phenotype name (or names separated by commas).
-        #' @param cveGeneName Clinical variant evidence gene name (or names separated by commas).
-        #' @param cveConsequenceTypeId Clinical variant evidence consequence type ID (or IDs separated by commas).
-        #' @param cveXrefId Clinical variant evidence Xref ID (or IDs separated by commas).
-        #' @param cvePanelId Clinical variant evidence panel ID (or IDs separated by commas).
-        #' @param cveMoi Clinical variant evidence mode of inheritance (or list of modes of inheritance separated by commas), valid values: AUTOSOMAL_DOMINANT, AUTOSOMAL_RECESSIVE, X_LINKED_DOMINANT, X_LINKED_RECESSIVE, Y_LINKED, MITOCHONDRIAL, DE_NOVO, MENDELIAN_ERROR, COMPOUND_HETEROZYGOUS, UNKNOWN.
-        #' @param cvePenetrance Clinical variant evidence penetrance (or list of penetrance values separated by commas), valid values: COMPLETE, INCOMPLETE, UNKNOWN.
-        #' @param cveAcmg Clinical variant evidence ACMG (or ACGMs separated by commas).
-        #' @param cveTier Clinical variant evidence tier (or list of tier values separated by commas).
-        #' @param cveClinicalSignificance Clinical variant evidence clinical significance (or list of clinical  significances separated by commas).
-        #' @param cveDrugResponse Clinical variant evidence drug response (or list of drug responses separated by commas).
-        #' @param cveTraitAssociation Clinical variant evidence trait association (or list of traits separated by commas).
-        #' @param cveFunctionalEffect Clinical variant evidence functional effect (or list of functional effects separated by commas).
-        #' @param cveTumorigenesis Clinical variant evidence tumorigenesis (or list of tumorigenesis values separated by commas).
-        #' @param cveOtherClassification Clinical variant evidence other-classification (or list of other  classification values separated by commas).
-        #' @param cveRolInCancer Clinical variant evidence rol in cancer (or roles in cancer separated by commas).
-        #' @param cveReviewText Clinical variant evidence review text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param field List of facet fields separated by semicolons, e.g.: ciPanelId;ciAnalystEmail. For nested faceted fields use >>, e.g.: ciAnalystEmail>>ciPanelId. Accepted values: ciId, ciPrimary, ciPanelId, ciAnalystId, ciAnalystName, ciAnalystEmail, ciAnalystAssignedBy, ciAnalystDate, ciMethodName, ciMethodVersion, ciMethodCommit, ciLocked, ciStatusId, ciStatusName, ciStatusDate, ciCreationDate, ciModificationDate, ciVersion.
-        aggregationStatsCvdbInterpretation=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
-                subcategory="clinical/cvdb/interpretation", subcategoryId=NULL, action="aggregationStats",
-                params=params, httpMethod="GET", as.queryParam=NULL, ...),
-
-        #' @section Endpoint /{apiVersion}/analysis/clinical/cvdb/interpretation/query:
-        #' Filter and fetch clinical interpretations from CVDB.
-        #' @param projectId Project ID.
-        #' @param studyId Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
-        #' @param include Fields included in the response, whole JSON path must be provided.
-        #' @param exclude Fields excluded in the response, whole JSON path must be provided.
-        #' @param limit Number of results to be returned.
-        #' @param skip Number of results to skip.
-        #' @param caId Clinical analysis ID (or list of IDs separated by commas).
-        #' @param caDescription Clinical analysis description (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param caType Clinical analysis type (or list of types separated by commas).
-        #' @param caDisorderId Clinical analysis disorder ID (or list of IDs separated by commas).
-        #' @param caFilename Clinical analysis filename (or list of filenames separated by commas).
-        #' @param caProbandId Clinical analysis proband ID (or list of IDs separated by commas).
-        #' @param caFamilyId Clinical analysis family ID (or list of IDs separated by commas).
-        #' @param caFamilyPhenotypeName Clinical analysis family phenotype names (or list of names separated by commas).
-        #' @param caFamilyMemberId Clinical analysis family member ID (or list of IDs separated by commas).
-        #' @param caReport Clinical analysis report text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param caStatus Clinical analysis status (or list of status separated by commas).
-        #' @param caLocked Clinical analysis locked (true or false).
-        #' @param ciId Clinical interpretation ID (or list of IDs separated by commas).
-        #' @param ciPrimary Clinical interpretation primary (true or false).
-        #' @param ciDescription Clinical interpretation description (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param ciPanelId Clinical interpretation panel ID or name (or list of IDs or names separated by commas).
-        #' @param ciAnalystId Clinical interpretation analyst ID (or list of IDs separated by commas).
-        #' @param ciAnalystName Clinical interpretation analyst name (or list of names separated by commas).
-        #' @param ciAnalystEmail Clinical interpretation analyst e-mail (or list of e-mails separated by commas).
-        #' @param ciAnalystAssignedBy Clinical interpretation analyst assignee name (or list of names separated by commas).
-        #' @param ciAnalystDate Clinical interpretation analyst date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param ciMethodName Clinical interpretation method name (or list of names separated by commas).
-        #' @param ciMethodVersion Clinical interpretation method version (or list of versions separated by commas).
-        #' @param ciMethodCommit Clinical interpretation method commit (or list of commits separated by commas).
-        #' @param ciMethodDependencies Clinical interpretation method dependencies (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param ciComments Clinical interpretation comment text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param ciLocked Clinical interpretation locked (true or false).
-        #' @param ciStatusId Clinical interpretation status ID (or list of IDs separated by commas).
-        #' @param ciStatusName Clinical interpretation status name (or list of names separated by commas).
-        #' @param ciStatusDescription Clinical interpretation status description (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param ciStatusDate Clinical interpretation status date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param ciCreationDate Clinical interpretation creation date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param ciModificationDate Clinical interpretation modification date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param ciVersion Clinical interpretation version number (or list of versions separated by commas).
-        #' @param cvId Variant ID (or list of IDs separated by commas).
-        #' @param cvPrimary Clinical variant is a primary finding (true or false).
-        #' @param cvComments Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param cvDiscussionAuthor Clinical variant discussion author (or list of authors separated by commas).
-        #' @param cvDiscussionDate Clinical variant discussion date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param cvDiscussionText Clinical variant discussion text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param cvConfidenceValue Clinical variant confidence value (or list of values separated by commas).
-        #' @param cvConfidenceAuthor Clinical variant confidence author (or list of authors separated by commas).
-        #' @param cvConfidenceDate Clinical variant confidence date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param cvTag Clinical variant tag (or list of tags separated by commas).
-        #' @param cvStatus Clinical variant status (or list of status separated by commas).
-        #' @param cvRegion Variant region (or list of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000).
-        #' @param cvBiotype Variant biotype, e.g. protein_coding (or list of biotypes separated by commas).
-        #' @param cvCt Variant SO consequence type (or list of SOs separated by commas), e.g. missense_variant,stop_lost or SO:0001583,SO:0001578. Accepts aliases 'loss_of_function' and 'protein_altering'.
-        #' @param cvTranscriptFlag Variant transcript flag (or list of flags separated by commas), e.g. canonical, CCDS, basic, LRG, MANE Select, MANE Plus Clinical, EGLH_HaemOnc, TSO500.
-        #' @param cvGene Variant gene (or list genes separated by commas), most gene IDs are accepted (HGNC, Ensembl gene, ...).
-        #' @param cvXref Variant external reference (or list of references separated by commas), these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, ...
-        #' @param cvAnnotRoleInCancerGenes Variant rol in cancer genes (or list of roles separated by commas).
-        #' @param cvType Variant type or list of types, accepted values are SNV, MNV, INDEL, SV, COPY_NUMBER, COPY_NUMBER_LOSS, COPY_NUMBER_GAIN, INSERTION, DELETION, DUPLICATION, TANDEM_DUPLICATION, BREAKEND, e.g. SNV,INDEL.
-        #' @param cvProteinSubstitution Variant protein substitution score (or list of scores separated by commas), include SIFT and PolyPhen. You can query using the score {protein_score}[<|>|<=|>=]{number} or the description {protein_score}[~=|=]{description} e.g. polyphen>0.1,sift=tolerant.
-        #' @param cvConservation Variant conservation score (or list of scores separated by commas) with the format {conservation_score}[<|>|<=|>=]{number} e.g. phastCons>0.5,phylop<0.1,gerp>0.1.
-        #' @param cvFunctionalScore Variant functional score (or list of scores separated by commas) with the format {functional_score}[<|>|<=|>=]{number} e.g. cadd_scaled>5.2 , cadd_raw<=0.3.
-        #' @param cvPopulationFrequencyAlt Variant alternate population frequency (or list of frequencies separated by commas), with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01.
-        #' @param cvPopulationFrequencyMaf Variant population minor allele frequency (or list of frequencies separated by commas), with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01.
-        #' @param cvPopulationFrequencyRef Variant reference population frequency (or list of frequences separated by commas), with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01.
-        #' @param cvCohortStatsAlt Variant alternate allele frequency (or list of frequencies separated by commas), with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4.
-        #' @param cvCohortStatsMaf Variant minor allele frequency (or list of frequencies separated by commas), with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4.
-        #' @param cvCohortStatsRef Variant reference allele frequency (or list of frequencies separated by commas), with the foramt [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4.
-        #' @param cvCohortStatsPass Variant filter PASS frequency (or list of frequencies separated by commas), with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL>0.8.
-        #' @param cvScore Variant score (or list of scores separated by commas), with the format: [{study:}]{score}[<|>|<=|>=]{number}.
-        #' @param cvAnnotGoGenes Variant gene GO (or list of GOs separated by commas).
-        #' @param cvAnnotExpressionGenes Variant gene expression (or list of expressions separated by commas).
-        #' @param cvGeneTraitId Variant gene trait association ID (or list of trait IDs separated by commas), e.g. "umls:C0007222" , "OMIM:269600".
-        #' @param cvTrait Variant Trait (or list of traits separated by commas), based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...
-        #' @param cvProteinKeyword Uniprot protein variant annotation keyword (or list of keywords separated by commas).
-        #' @param cvePhenotypeName Clinical variant evidence phenotype name (or names separated by commas).
-        #' @param cveGeneName Clinical variant evidence gene name (or names separated by commas).
-        #' @param cveConsequenceTypeId Clinical variant evidence consequence type ID (or IDs separated by commas).
-        #' @param cveXrefId Clinical variant evidence Xref ID (or IDs separated by commas).
-        #' @param cvePanelId Clinical variant evidence panel ID (or IDs separated by commas).
-        #' @param cveMoi Clinical variant evidence mode of inheritance (or list of modes of inheritance separated by commas), valid values: AUTOSOMAL_DOMINANT, AUTOSOMAL_RECESSIVE, X_LINKED_DOMINANT, X_LINKED_RECESSIVE, Y_LINKED, MITOCHONDRIAL, DE_NOVO, MENDELIAN_ERROR, COMPOUND_HETEROZYGOUS, UNKNOWN.
-        #' @param cvePenetrance Clinical variant evidence penetrance (or list of penetrance values separated by commas), valid values: COMPLETE, INCOMPLETE, UNKNOWN.
-        #' @param cveAcmg Clinical variant evidence ACMG (or ACGMs separated by commas).
-        #' @param cveTier Clinical variant evidence tier (or list of tier values separated by commas).
-        #' @param cveClinicalSignificance Clinical variant evidence clinical significance (or list of clinical  significances separated by commas).
-        #' @param cveDrugResponse Clinical variant evidence drug response (or list of drug responses separated by commas).
-        #' @param cveTraitAssociation Clinical variant evidence trait association (or list of traits separated by commas).
-        #' @param cveFunctionalEffect Clinical variant evidence functional effect (or list of functional effects separated by commas).
-        #' @param cveTumorigenesis Clinical variant evidence tumorigenesis (or list of tumorigenesis values separated by commas).
-        #' @param cveOtherClassification Clinical variant evidence other-classification (or list of other  classification values separated by commas).
-        #' @param cveRolInCancer Clinical variant evidence rol in cancer (or roles in cancer separated by commas).
-        queryCvdbInterpretation=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
-                subcategory="clinical/cvdb/interpretation", subcategoryId=NULL, action="query", params=params,
-                httpMethod="GET", as.queryParam=NULL, ...),
-
-        #' @section Endpoint /{apiVersion}/analysis/clinical/cvdb/variant/aggregationStats:
-        #' Calculate and fetch clinical variant aggregation stats.
-        #' @param projectId Project ID.
-        #' @param studyId Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
-        #' @param caId Clinical analysis ID (or list of IDs separated by commas).
-        #' @param caDescription Clinical analysis description (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param caType Clinical analysis type (or list of types separated by commas).
-        #' @param caDisorderId Clinical analysis disorder ID (or list of IDs separated by commas).
-        #' @param caFilename Clinical analysis filename (or list of filenames separated by commas).
-        #' @param caProbandId Clinical analysis proband ID (or list of IDs separated by commas).
-        #' @param caFamilyId Clinical analysis family ID (or list of IDs separated by commas).
-        #' @param caFamilyPhenotypeName Clinical analysis family phenotype names (or list of names separated by commas).
-        #' @param caFamilyMemberId Clinical analysis family member ID (or list of IDs separated by commas).
-        #' @param caReport Clinical analysis report text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param caStatus Clinical analysis status (or list of status separated by commas).
-        #' @param caLocked Clinical analysis locked (true or false).
-        #' @param ciId Clinical interpretation ID (or list of IDs separated by commas).
-        #' @param ciPrimary Clinical interpretation primary (true or false).
-        #' @param ciDescription Clinical interpretation description (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param ciPanelId Clinical interpretation panel ID or name (or list of IDs or names separated by commas).
-        #' @param ciAnalystId Clinical interpretation analyst ID (or list of IDs separated by commas).
-        #' @param ciAnalystName Clinical interpretation analyst name (or list of names separated by commas).
-        #' @param ciAnalystEmail Clinical interpretation analyst e-mail (or list of e-mails separated by commas).
-        #' @param ciAnalystAssignedBy Clinical interpretation analyst assignee name (or list of names separated by commas).
-        #' @param ciAnalystDate Clinical interpretation analyst date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param ciMethodName Clinical interpretation method name (or list of names separated by commas).
-        #' @param ciMethodVersion Clinical interpretation method version (or list of versions separated by commas).
-        #' @param ciMethodCommit Clinical interpretation method commit (or list of commits separated by commas).
-        #' @param ciMethodDependencies Clinical interpretation method dependencies (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param ciComments Clinical interpretation comment text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param ciLocked Clinical interpretation locked (true or false).
-        #' @param ciStatusId Clinical interpretation status ID (or list of IDs separated by commas).
-        #' @param ciStatusName Clinical interpretation status name (or list of names separated by commas).
-        #' @param ciStatusDescription Clinical interpretation status description (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param ciStatusDate Clinical interpretation status date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param ciCreationDate Clinical interpretation creation date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param ciModificationDate Clinical interpretation modification date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param ciVersion Clinical interpretation version number (or list of versions separated by commas).
-        #' @param cvId Variant ID (or list of IDs separated by commas).
-        #' @param cvPrimary Clinical variant is a primary finding (true or false).
-        #' @param cvComments Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param cvDiscussionAuthor Clinical variant discussion author (or list of authors separated by commas).
-        #' @param cvDiscussionDate Clinical variant discussion date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param cvDiscussionText Clinical variant discussion text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param cvConfidenceValue Clinical variant confidence value (or list of values separated by commas).
-        #' @param cvConfidenceAuthor Clinical variant confidence author (or list of authors separated by commas).
-        #' @param cvConfidenceDate Clinical variant confidence date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param cvTag Clinical variant tag (or list of tags separated by commas).
-        #' @param cvStatus Clinical variant status (or list of status separated by commas).
-        #' @param cvRegion Variant region (or list of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000).
-        #' @param cvBiotype Variant biotype, e.g. protein_coding (or list of biotypes separated by commas).
-        #' @param cvCt Variant SO consequence type (or list of SOs separated by commas), e.g. missense_variant,stop_lost or SO:0001583,SO:0001578. Accepts aliases 'loss_of_function' and 'protein_altering'.
-        #' @param cvTranscriptFlag Variant transcript flag (or list of flags separated by commas), e.g. canonical, CCDS, basic, LRG, MANE Select, MANE Plus Clinical, EGLH_HaemOnc, TSO500.
-        #' @param cvGene Variant gene (or list genes separated by commas), most gene IDs are accepted (HGNC, Ensembl gene, ...).
-        #' @param cvXref Variant external reference (or list of references separated by commas), these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, ...
-        #' @param cvAnnotRoleInCancerGenes Variant rol in cancer genes (or list of roles separated by commas).
-        #' @param cvType Variant type or list of types, accepted values are SNV, MNV, INDEL, SV, COPY_NUMBER, COPY_NUMBER_LOSS, COPY_NUMBER_GAIN, INSERTION, DELETION, DUPLICATION, TANDEM_DUPLICATION, BREAKEND, e.g. SNV,INDEL.
-        #' @param cvProteinSubstitution Variant protein substitution score (or list of scores separated by commas), include SIFT and PolyPhen. You can query using the score {protein_score}[<|>|<=|>=]{number} or the description {protein_score}[~=|=]{description} e.g. polyphen>0.1,sift=tolerant.
-        #' @param cvConservation Variant conservation score (or list of scores separated by commas) with the format {conservation_score}[<|>|<=|>=]{number} e.g. phastCons>0.5,phylop<0.1,gerp>0.1.
-        #' @param cvFunctionalScore Variant functional score (or list of scores separated by commas) with the format {functional_score}[<|>|<=|>=]{number} e.g. cadd_scaled>5.2 , cadd_raw<=0.3.
-        #' @param cvPopulationFrequencyAlt Variant alternate population frequency (or list of frequencies separated by commas), with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01.
-        #' @param cvPopulationFrequencyMaf Variant population minor allele frequency (or list of frequencies separated by commas), with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01.
-        #' @param cvPopulationFrequencyRef Variant reference population frequency (or list of frequences separated by commas), with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01.
-        #' @param cvCohortStatsAlt Variant alternate allele frequency (or list of frequencies separated by commas), with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4.
-        #' @param cvCohortStatsMaf Variant minor allele frequency (or list of frequencies separated by commas), with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4.
-        #' @param cvCohortStatsRef Variant reference allele frequency (or list of frequencies separated by commas), with the foramt [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4.
-        #' @param cvCohortStatsPass Variant filter PASS frequency (or list of frequencies separated by commas), with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL>0.8.
-        #' @param cvScore Variant score (or list of scores separated by commas), with the format: [{study:}]{score}[<|>|<=|>=]{number}.
-        #' @param cvAnnotGoGenes Variant gene GO (or list of GOs separated by commas).
-        #' @param cvAnnotExpressionGenes Variant gene expression (or list of expressions separated by commas).
-        #' @param cvGeneTraitId Variant gene trait association ID (or list of trait IDs separated by commas), e.g. "umls:C0007222" , "OMIM:269600".
-        #' @param cvTrait Variant Trait (or list of traits separated by commas), based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...
-        #' @param cvProteinKeyword Uniprot protein variant annotation keyword (or list of keywords separated by commas).
-        #' @param cvePhenotypeName Clinical variant evidence phenotype name (or names separated by commas).
-        #' @param cveGeneName Clinical variant evidence gene name (or names separated by commas).
-        #' @param cveConsequenceTypeId Clinical variant evidence consequence type ID (or IDs separated by commas).
-        #' @param cveXrefId Clinical variant evidence Xref ID (or IDs separated by commas).
-        #' @param cvePanelId Clinical variant evidence panel ID (or IDs separated by commas).
-        #' @param cveMoi Clinical variant evidence mode of inheritance (or list of modes of inheritance separated by commas), valid values: AUTOSOMAL_DOMINANT, AUTOSOMAL_RECESSIVE, X_LINKED_DOMINANT, X_LINKED_RECESSIVE, Y_LINKED, MITOCHONDRIAL, DE_NOVO, MENDELIAN_ERROR, COMPOUND_HETEROZYGOUS, UNKNOWN.
-        #' @param cvePenetrance Clinical variant evidence penetrance (or list of penetrance values separated by commas), valid values: COMPLETE, INCOMPLETE, UNKNOWN.
-        #' @param cveAcmg Clinical variant evidence ACMG (or ACGMs separated by commas).
-        #' @param cveTier Clinical variant evidence tier (or list of tier values separated by commas).
-        #' @param cveClinicalSignificance Clinical variant evidence clinical significance (or list of clinical  significances separated by commas).
-        #' @param cveDrugResponse Clinical variant evidence drug response (or list of drug responses separated by commas).
-        #' @param cveTraitAssociation Clinical variant evidence trait association (or list of traits separated by commas).
-        #' @param cveFunctionalEffect Clinical variant evidence functional effect (or list of functional effects separated by commas).
-        #' @param cveTumorigenesis Clinical variant evidence tumorigenesis (or list of tumorigenesis values separated by commas).
-        #' @param cveOtherClassification Clinical variant evidence other-classification (or list of other  classification values separated by commas).
-        #' @param cveRolInCancer Clinical variant evidence rol in cancer (or roles in cancer separated by commas).
-        #' @param cveReviewText Clinical variant evidence review text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param field List of facet fields separated by semicolons, e.g.: cvType;cvGene. For nested faceted fields use >>, e.g.: cvGene>>cvType. Accepted values: cvId, cvPrimary, cvDiscussionAuthor, cvDiscussionDate, cvConfidenceValue, cvConfidenceAuthor, cvConfidenceDate, cvTag, cvStatus, cvBiotype, cvCt, cvGene, cvXref, cvAnnotRoleInCancerGenes, cvType.
-        aggregationStatsCvdbVariant=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
-                subcategory="clinical/cvdb/variant", subcategoryId=NULL, action="aggregationStats", params=params,
-                httpMethod="GET", as.queryParam=NULL, ...),
-
-        #' @section Endpoint /{apiVersion}/analysis/clinical/cvdb/variant/query:
-        #' Filter and fetch clinical variants from CVDB.
-        #' @param projectId Project ID.
-        #' @param studyId Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
-        #' @param include Fields included in the response, whole JSON path must be provided.
-        #' @param exclude Fields excluded in the response, whole JSON path must be provided.
-        #' @param limit Number of results to be returned.
-        #' @param skip Number of results to skip.
-        #' @param caId Clinical analysis ID (or list of IDs separated by commas).
-        #' @param caDescription Clinical analysis description (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param caType Clinical analysis type (or list of types separated by commas).
-        #' @param caDisorderId Clinical analysis disorder ID (or list of IDs separated by commas).
-        #' @param caFilename Clinical analysis filename (or list of filenames separated by commas).
-        #' @param caProbandId Clinical analysis proband ID (or list of IDs separated by commas).
-        #' @param caFamilyId Clinical analysis family ID (or list of IDs separated by commas).
-        #' @param caFamilyPhenotypeName Clinical analysis family phenotype names (or list of names separated by commas).
-        #' @param caFamilyMemberId Clinical analysis family member ID (or list of IDs separated by commas).
-        #' @param caReport Clinical analysis report text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param caStatus Clinical analysis status (or list of status separated by commas).
-        #' @param caLocked Clinical analysis locked (true or false).
-        #' @param ciId Clinical interpretation ID (or list of IDs separated by commas).
-        #' @param ciPrimary Clinical interpretation primary (true or false).
-        #' @param ciDescription Clinical interpretation description (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param ciPanelId Clinical interpretation panel ID or name (or list of IDs or names separated by commas).
-        #' @param ciAnalystId Clinical interpretation analyst ID (or list of IDs separated by commas).
-        #' @param ciAnalystName Clinical interpretation analyst name (or list of names separated by commas).
-        #' @param ciAnalystEmail Clinical interpretation analyst e-mail (or list of e-mails separated by commas).
-        #' @param ciAnalystAssignedBy Clinical interpretation analyst assignee name (or list of names separated by commas).
-        #' @param ciAnalystDate Clinical interpretation analyst date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param ciMethodName Clinical interpretation method name (or list of names separated by commas).
-        #' @param ciMethodVersion Clinical interpretation method version (or list of versions separated by commas).
-        #' @param ciMethodCommit Clinical interpretation method commit (or list of commits separated by commas).
-        #' @param ciMethodDependencies Clinical interpretation method dependencies (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param ciComments Clinical interpretation comment text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param ciLocked Clinical interpretation locked (true or false).
-        #' @param ciStatusId Clinical interpretation status ID (or list of IDs separated by commas).
-        #' @param ciStatusName Clinical interpretation status name (or list of names separated by commas).
-        #' @param ciStatusDescription Clinical interpretation status description (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param ciStatusDate Clinical interpretation status date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param ciCreationDate Clinical interpretation creation date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param ciModificationDate Clinical interpretation modification date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param ciVersion Clinical interpretation version number (or list of versions separated by commas).
-        #' @param cvId Variant ID (or list of IDs separated by commas).
-        #' @param cvPrimary Clinical variant is a primary finding (true or false).
-        #' @param cvComments Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param cvDiscussionAuthor Clinical variant discussion author (or list of authors separated by commas).
-        #' @param cvDiscussionDate Clinical variant discussion date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param cvDiscussionText Clinical variant discussion text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param cvConfidenceValue Clinical variant confidence value (or list of values separated by commas).
-        #' @param cvConfidenceAuthor Clinical variant confidence author (or list of authors separated by commas).
-        #' @param cvConfidenceDate Clinical variant confidence date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param cvTag Clinical variant tag (or list of tags separated by commas).
-        #' @param cvStatus Clinical variant status (or list of status separated by commas).
-        #' @param cvRegion Variant region (or list of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000).
-        #' @param cvBiotype Variant biotype, e.g. protein_coding (or list of biotypes separated by commas).
-        #' @param cvCt Variant SO consequence type (or list of SOs separated by commas), e.g. missense_variant,stop_lost or SO:0001583,SO:0001578. Accepts aliases 'loss_of_function' and 'protein_altering'.
-        #' @param cvTranscriptFlag Variant transcript flag (or list of flags separated by commas), e.g. canonical, CCDS, basic, LRG, MANE Select, MANE Plus Clinical, EGLH_HaemOnc, TSO500.
-        #' @param cvGene Variant gene (or list genes separated by commas), most gene IDs are accepted (HGNC, Ensembl gene, ...).
-        #' @param cvXref Variant external reference (or list of references separated by commas), these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, ...
-        #' @param cvAnnotRoleInCancerGenes Variant rol in cancer genes (or list of roles separated by commas).
-        #' @param cvType Variant type or list of types, accepted values are SNV, MNV, INDEL, SV, COPY_NUMBER, COPY_NUMBER_LOSS, COPY_NUMBER_GAIN, INSERTION, DELETION, DUPLICATION, TANDEM_DUPLICATION, BREAKEND, e.g. SNV,INDEL.
-        #' @param cvProteinSubstitution Variant protein substitution score (or list of scores separated by commas), include SIFT and PolyPhen. You can query using the score {protein_score}[<|>|<=|>=]{number} or the description {protein_score}[~=|=]{description} e.g. polyphen>0.1,sift=tolerant.
-        #' @param cvConservation Variant conservation score (or list of scores separated by commas) with the format {conservation_score}[<|>|<=|>=]{number} e.g. phastCons>0.5,phylop<0.1,gerp>0.1.
-        #' @param cvFunctionalScore Variant functional score (or list of scores separated by commas) with the format {functional_score}[<|>|<=|>=]{number} e.g. cadd_scaled>5.2 , cadd_raw<=0.3.
-        #' @param cvPopulationFrequencyAlt Variant alternate population frequency (or list of frequencies separated by commas), with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01.
-        #' @param cvPopulationFrequencyMaf Variant population minor allele frequency (or list of frequencies separated by commas), with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01.
-        #' @param cvPopulationFrequencyRef Variant reference population frequency (or list of frequences separated by commas), with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01.
-        #' @param cvCohortStatsAlt Variant alternate allele frequency (or list of frequencies separated by commas), with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4.
-        #' @param cvCohortStatsMaf Variant minor allele frequency (or list of frequencies separated by commas), with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4.
-        #' @param cvCohortStatsRef Variant reference allele frequency (or list of frequencies separated by commas), with the foramt [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4.
-        #' @param cvCohortStatsPass Variant filter PASS frequency (or list of frequencies separated by commas), with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL>0.8.
-        #' @param cvScore Variant score (or list of scores separated by commas), with the format: [{study:}]{score}[<|>|<=|>=]{number}.
-        #' @param cvAnnotGoGenes Variant gene GO (or list of GOs separated by commas).
-        #' @param cvAnnotExpressionGenes Variant gene expression (or list of expressions separated by commas).
-        #' @param cvGeneTraitId Variant gene trait association ID (or list of trait IDs separated by commas), e.g. "umls:C0007222" , "OMIM:269600".
-        #' @param cvTrait Variant Trait (or list of traits separated by commas), based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...
-        #' @param cvProteinKeyword Uniprot protein variant annotation keyword (or list of keywords separated by commas).
-        #' @param cvePhenotypeName Clinical variant evidence phenotype name (or names separated by commas).
-        #' @param cveGeneName Clinical variant evidence gene name (or names separated by commas).
-        #' @param cveConsequenceTypeId Clinical variant evidence consequence type ID (or IDs separated by commas).
-        #' @param cveXrefId Clinical variant evidence Xref ID (or IDs separated by commas).
-        #' @param cvePanelId Clinical variant evidence panel ID (or IDs separated by commas).
-        #' @param cveMoi Clinical variant evidence mode of inheritance (or list of modes of inheritance separated by commas), valid values: AUTOSOMAL_DOMINANT, AUTOSOMAL_RECESSIVE, X_LINKED_DOMINANT, X_LINKED_RECESSIVE, Y_LINKED, MITOCHONDRIAL, DE_NOVO, MENDELIAN_ERROR, COMPOUND_HETEROZYGOUS, UNKNOWN.
-        #' @param cvePenetrance Clinical variant evidence penetrance (or list of penetrance values separated by commas), valid values: COMPLETE, INCOMPLETE, UNKNOWN.
-        #' @param cveAcmg Clinical variant evidence ACMG (or ACGMs separated by commas).
-        #' @param cveTier Clinical variant evidence tier (or list of tier values separated by commas).
-        #' @param cveClinicalSignificance Clinical variant evidence clinical significance (or list of clinical  significances separated by commas).
-        #' @param cveDrugResponse Clinical variant evidence drug response (or list of drug responses separated by commas).
-        #' @param cveTraitAssociation Clinical variant evidence trait association (or list of traits separated by commas).
-        #' @param cveFunctionalEffect Clinical variant evidence functional effect (or list of functional effects separated by commas).
-        #' @param cveTumorigenesis Clinical variant evidence tumorigenesis (or list of tumorigenesis values separated by commas).
-        #' @param cveOtherClassification Clinical variant evidence other-classification (or list of other  classification values separated by commas).
-        #' @param cveRolInCancer Clinical variant evidence rol in cancer (or roles in cancer separated by commas).
-        queryCvdbVariant=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
-                subcategory="clinical/cvdb/variant", subcategoryId=NULL, action="query", params=params,
-                httpMethod="GET", as.queryParam=NULL, ...),
-
-        #' @section Endpoint /{apiVersion}/analysis/clinical/cvdb/variantEvidence/aggregationStats:
-        #' Calculate and fetch clinical variant evidence aggregation stats.
-        #' @param projectId Project ID.
-        #' @param studyId Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
-        #' @param caId Clinical analysis ID (or list of IDs separated by commas).
-        #' @param caDescription Clinical analysis description (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param caType Clinical analysis type (or list of types separated by commas).
-        #' @param caDisorderId Clinical analysis disorder ID (or list of IDs separated by commas).
-        #' @param caFilename Clinical analysis filename (or list of filenames separated by commas).
-        #' @param caProbandId Clinical analysis proband ID (or list of IDs separated by commas).
-        #' @param caFamilyId Clinical analysis family ID (or list of IDs separated by commas).
-        #' @param caFamilyPhenotypeName Clinical analysis family phenotype names (or list of names separated by commas).
-        #' @param caFamilyMemberId Clinical analysis family member ID (or list of IDs separated by commas).
-        #' @param caReport Clinical analysis report text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param caStatus Clinical analysis status (or list of status separated by commas).
-        #' @param caLocked Clinical analysis locked (true or false).
-        #' @param ciId Clinical interpretation ID (or list of IDs separated by commas).
-        #' @param ciPrimary Clinical interpretation primary (true or false).
-        #' @param ciDescription Clinical interpretation description (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param ciPanelId Clinical interpretation panel ID or name (or list of IDs or names separated by commas).
-        #' @param ciAnalystId Clinical interpretation analyst ID (or list of IDs separated by commas).
-        #' @param ciAnalystName Clinical interpretation analyst name (or list of names separated by commas).
-        #' @param ciAnalystEmail Clinical interpretation analyst e-mail (or list of e-mails separated by commas).
-        #' @param ciAnalystAssignedBy Clinical interpretation analyst assignee name (or list of names separated by commas).
-        #' @param ciAnalystDate Clinical interpretation analyst date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param ciMethodName Clinical interpretation method name (or list of names separated by commas).
-        #' @param ciMethodVersion Clinical interpretation method version (or list of versions separated by commas).
-        #' @param ciMethodCommit Clinical interpretation method commit (or list of commits separated by commas).
-        #' @param ciMethodDependencies Clinical interpretation method dependencies (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param ciComments Clinical interpretation comment text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param ciLocked Clinical interpretation locked (true or false).
-        #' @param ciStatusId Clinical interpretation status ID (or list of IDs separated by commas).
-        #' @param ciStatusName Clinical interpretation status name (or list of names separated by commas).
-        #' @param ciStatusDescription Clinical interpretation status description (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param ciStatusDate Clinical interpretation status date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param ciCreationDate Clinical interpretation creation date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param ciModificationDate Clinical interpretation modification date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param ciVersion Clinical interpretation version number (or list of versions separated by commas).
-        #' @param cvId Variant ID (or list of IDs separated by commas).
-        #' @param cvPrimary Clinical variant is a primary finding (true or false).
-        #' @param cvComments Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param cvDiscussionAuthor Clinical variant discussion author (or list of authors separated by commas).
-        #' @param cvDiscussionDate Clinical variant discussion date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param cvDiscussionText Clinical variant discussion text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param cvConfidenceValue Clinical variant confidence value (or list of values separated by commas).
-        #' @param cvConfidenceAuthor Clinical variant confidence author (or list of authors separated by commas).
-        #' @param cvConfidenceDate Clinical variant confidence date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param cvTag Clinical variant tag (or list of tags separated by commas).
-        #' @param cvStatus Clinical variant status (or list of status separated by commas).
-        #' @param cvRegion Variant region (or list of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000).
-        #' @param cvBiotype Variant biotype, e.g. protein_coding (or list of biotypes separated by commas).
-        #' @param cvCt Variant SO consequence type (or list of SOs separated by commas), e.g. missense_variant,stop_lost or SO:0001583,SO:0001578. Accepts aliases 'loss_of_function' and 'protein_altering'.
-        #' @param cvTranscriptFlag Variant transcript flag (or list of flags separated by commas), e.g. canonical, CCDS, basic, LRG, MANE Select, MANE Plus Clinical, EGLH_HaemOnc, TSO500.
-        #' @param cvGene Variant gene (or list genes separated by commas), most gene IDs are accepted (HGNC, Ensembl gene, ...).
-        #' @param cvXref Variant external reference (or list of references separated by commas), these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, ...
-        #' @param cvAnnotRoleInCancerGenes Variant rol in cancer genes (or list of roles separated by commas).
-        #' @param cvType Variant type or list of types, accepted values are SNV, MNV, INDEL, SV, COPY_NUMBER, COPY_NUMBER_LOSS, COPY_NUMBER_GAIN, INSERTION, DELETION, DUPLICATION, TANDEM_DUPLICATION, BREAKEND, e.g. SNV,INDEL.
-        #' @param cvProteinSubstitution Variant protein substitution score (or list of scores separated by commas), include SIFT and PolyPhen. You can query using the score {protein_score}[<|>|<=|>=]{number} or the description {protein_score}[~=|=]{description} e.g. polyphen>0.1,sift=tolerant.
-        #' @param cvConservation Variant conservation score (or list of scores separated by commas) with the format {conservation_score}[<|>|<=|>=]{number} e.g. phastCons>0.5,phylop<0.1,gerp>0.1.
-        #' @param cvFunctionalScore Variant functional score (or list of scores separated by commas) with the format {functional_score}[<|>|<=|>=]{number} e.g. cadd_scaled>5.2 , cadd_raw<=0.3.
-        #' @param cvPopulationFrequencyAlt Variant alternate population frequency (or list of frequencies separated by commas), with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01.
-        #' @param cvPopulationFrequencyMaf Variant population minor allele frequency (or list of frequencies separated by commas), with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01.
-        #' @param cvPopulationFrequencyRef Variant reference population frequency (or list of frequences separated by commas), with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01.
-        #' @param cvCohortStatsAlt Variant alternate allele frequency (or list of frequencies separated by commas), with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4.
-        #' @param cvCohortStatsMaf Variant minor allele frequency (or list of frequencies separated by commas), with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4.
-        #' @param cvCohortStatsRef Variant reference allele frequency (or list of frequencies separated by commas), with the foramt [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4.
-        #' @param cvCohortStatsPass Variant filter PASS frequency (or list of frequencies separated by commas), with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL>0.8.
-        #' @param cvScore Variant score (or list of scores separated by commas), with the format: [{study:}]{score}[<|>|<=|>=]{number}.
-        #' @param cvAnnotGoGenes Variant gene GO (or list of GOs separated by commas).
-        #' @param cvAnnotExpressionGenes Variant gene expression (or list of expressions separated by commas).
-        #' @param cvGeneTraitId Variant gene trait association ID (or list of trait IDs separated by commas), e.g. "umls:C0007222" , "OMIM:269600".
-        #' @param cvTrait Variant Trait (or list of traits separated by commas), based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...
-        #' @param cvProteinKeyword Uniprot protein variant annotation keyword (or list of keywords separated by commas).
-        #' @param cvePhenotypeName Clinical variant evidence phenotype name (or names separated by commas).
-        #' @param cveGeneName Clinical variant evidence gene name (or names separated by commas).
-        #' @param cveConsequenceTypeId Clinical variant evidence consequence type ID (or IDs separated by commas).
-        #' @param cveXrefId Clinical variant evidence Xref ID (or IDs separated by commas).
-        #' @param cvePanelId Clinical variant evidence panel ID (or IDs separated by commas).
-        #' @param cveMoi Clinical variant evidence mode of inheritance (or list of modes of inheritance separated by commas), valid values: AUTOSOMAL_DOMINANT, AUTOSOMAL_RECESSIVE, X_LINKED_DOMINANT, X_LINKED_RECESSIVE, Y_LINKED, MITOCHONDRIAL, DE_NOVO, MENDELIAN_ERROR, COMPOUND_HETEROZYGOUS, UNKNOWN.
-        #' @param cvePenetrance Clinical variant evidence penetrance (or list of penetrance values separated by commas), valid values: COMPLETE, INCOMPLETE, UNKNOWN.
-        #' @param cveAcmg Clinical variant evidence ACMG (or ACGMs separated by commas).
-        #' @param cveTier Clinical variant evidence tier (or list of tier values separated by commas).
-        #' @param cveClinicalSignificance Clinical variant evidence clinical significance (or list of clinical  significances separated by commas).
-        #' @param cveDrugResponse Clinical variant evidence drug response (or list of drug responses separated by commas).
-        #' @param cveTraitAssociation Clinical variant evidence trait association (or list of traits separated by commas).
-        #' @param cveFunctionalEffect Clinical variant evidence functional effect (or list of functional effects separated by commas).
-        #' @param cveTumorigenesis Clinical variant evidence tumorigenesis (or list of tumorigenesis values separated by commas).
-        #' @param cveOtherClassification Clinical variant evidence other-classification (or list of other  classification values separated by commas).
-        #' @param cveRolInCancer Clinical variant evidence rol in cancer (or roles in cancer separated by commas).
-        #' @param cveReviewText Clinical variant evidence review text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param field List of facet fields separated by semicolons, e.g.: cveGeneName;cveTier. For nested faceted fields use >>, e.g.: cveGeneName>>cveTier. Accepted values: cvePhenotypeName, cveGeneName, cveConsequenceTypeId, cveXrefId, cvePanelId, cveMoi, cvePenetrance, cveAcmg, cveTier, cveClinicalSignificance, cveDrugResponse, cveTraitAssociation, cveFunctionalEffect, cveTumorigenesis, cveOtherClassification, cveRolInCancer.
-        aggregationStatsCvdbVariantEvidence=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
-                subcategory="clinical/cvdb/variantEvidence", subcategoryId=NULL, action="aggregationStats",
-                params=params, httpMethod="GET", as.queryParam=NULL, ...),
-
-        #' @section Endpoint /{apiVersion}/analysis/clinical/cvdb/variantEvidence/query:
-        #' Filter and fetch clinical variant evidences from CVDB.
-        #' @param projectId Project ID.
-        #' @param studyId Study ID (or list of study IDs separated by commas), or '*' for all studies of the current user.
-        #' @param include Fields included in the response, whole JSON path must be provided.
-        #' @param exclude Fields excluded in the response, whole JSON path must be provided.
-        #' @param limit Number of results to be returned.
-        #' @param skip Number of results to skip.
-        #' @param caId Clinical analysis ID (or list of IDs separated by commas).
-        #' @param caDescription Clinical analysis description (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param caType Clinical analysis type (or list of types separated by commas).
-        #' @param caDisorderId Clinical analysis disorder ID (or list of IDs separated by commas).
-        #' @param caFilename Clinical analysis filename (or list of filenames separated by commas).
-        #' @param caProbandId Clinical analysis proband ID (or list of IDs separated by commas).
-        #' @param caFamilyId Clinical analysis family ID (or list of IDs separated by commas).
-        #' @param caFamilyPhenotypeName Clinical analysis family phenotype names (or list of names separated by commas).
-        #' @param caFamilyMemberId Clinical analysis family member ID (or list of IDs separated by commas).
-        #' @param caReport Clinical analysis report text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param caStatus Clinical analysis status (or list of status separated by commas).
-        #' @param caLocked Clinical analysis locked (true or false).
-        #' @param ciId Clinical interpretation ID (or list of IDs separated by commas).
-        #' @param ciPrimary Clinical interpretation primary (true or false).
-        #' @param ciDescription Clinical interpretation description (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param ciPanelId Clinical interpretation panel ID or name (or list of IDs or names separated by commas).
-        #' @param ciAnalystId Clinical interpretation analyst ID (or list of IDs separated by commas).
-        #' @param ciAnalystName Clinical interpretation analyst name (or list of names separated by commas).
-        #' @param ciAnalystEmail Clinical interpretation analyst e-mail (or list of e-mails separated by commas).
-        #' @param ciAnalystAssignedBy Clinical interpretation analyst assignee name (or list of names separated by commas).
-        #' @param ciAnalystDate Clinical interpretation analyst date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param ciMethodName Clinical interpretation method name (or list of names separated by commas).
-        #' @param ciMethodVersion Clinical interpretation method version (or list of versions separated by commas).
-        #' @param ciMethodCommit Clinical interpretation method commit (or list of commits separated by commas).
-        #' @param ciMethodDependencies Clinical interpretation method dependencies (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param ciComments Clinical interpretation comment text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param ciLocked Clinical interpretation locked (true or false).
-        #' @param ciStatusId Clinical interpretation status ID (or list of IDs separated by commas).
-        #' @param ciStatusName Clinical interpretation status name (or list of names separated by commas).
-        #' @param ciStatusDescription Clinical interpretation status description (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param ciStatusDate Clinical interpretation status date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param ciCreationDate Clinical interpretation creation date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param ciModificationDate Clinical interpretation modification date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param ciVersion Clinical interpretation version number (or list of versions separated by commas).
-        #' @param cvId Variant ID (or list of IDs separated by commas).
-        #' @param cvPrimary Clinical variant is a primary finding (true or false).
-        #' @param cvComments Clinical variant comment text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param cvDiscussionAuthor Clinical variant discussion author (or list of authors separated by commas).
-        #' @param cvDiscussionDate Clinical variant discussion date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param cvDiscussionText Clinical variant discussion text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied).
-        #' @param cvConfidenceValue Clinical variant confidence value (or list of values separated by commas).
-        #' @param cvConfidenceAuthor Clinical variant confidence author (or list of authors separated by commas).
-        #' @param cvConfidenceDate Clinical variant confidence date (or list of dates separated by commas), with format YYYYMMDDhhmmss, e.g.: 20231026120345; range is available start_date-end_date, e.g.: 20231001000000-20231101000000.
-        #' @param cvTag Clinical variant tag (or list of tags separated by commas).
-        #' @param cvStatus Clinical variant status (or list of status separated by commas).
-        #' @param cvRegion Variant region (or list of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000).
-        #' @param cvBiotype Variant biotype, e.g. protein_coding (or list of biotypes separated by commas).
-        #' @param cvCt Variant SO consequence type (or list of SOs separated by commas), e.g. missense_variant,stop_lost or SO:0001583,SO:0001578. Accepts aliases 'loss_of_function' and 'protein_altering'.
-        #' @param cvTranscriptFlag Variant transcript flag (or list of flags separated by commas), e.g. canonical, CCDS, basic, LRG, MANE Select, MANE Plus Clinical, EGLH_HaemOnc, TSO500.
-        #' @param cvGene Variant gene (or list genes separated by commas), most gene IDs are accepted (HGNC, Ensembl gene, ...).
-        #' @param cvXref Variant external reference (or list of references separated by commas), these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, ...
-        #' @param cvAnnotRoleInCancerGenes Variant rol in cancer genes (or list of roles separated by commas).
-        #' @param cvType Variant type or list of types, accepted values are SNV, MNV, INDEL, SV, COPY_NUMBER, COPY_NUMBER_LOSS, COPY_NUMBER_GAIN, INSERTION, DELETION, DUPLICATION, TANDEM_DUPLICATION, BREAKEND, e.g. SNV,INDEL.
-        #' @param cvProteinSubstitution Variant protein substitution score (or list of scores separated by commas), include SIFT and PolyPhen. You can query using the score {protein_score}[<|>|<=|>=]{number} or the description {protein_score}[~=|=]{description} e.g. polyphen>0.1,sift=tolerant.
-        #' @param cvConservation Variant conservation score (or list of scores separated by commas) with the format {conservation_score}[<|>|<=|>=]{number} e.g. phastCons>0.5,phylop<0.1,gerp>0.1.
-        #' @param cvFunctionalScore Variant functional score (or list of scores separated by commas) with the format {functional_score}[<|>|<=|>=]{number} e.g. cadd_scaled>5.2 , cadd_raw<=0.3.
-        #' @param cvPopulationFrequencyAlt Variant alternate population frequency (or list of frequencies separated by commas), with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01.
-        #' @param cvPopulationFrequencyMaf Variant population minor allele frequency (or list of frequencies separated by commas), with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01.
-        #' @param cvPopulationFrequencyRef Variant reference population frequency (or list of frequences separated by commas), with the format {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01.
-        #' @param cvCohortStatsAlt Variant alternate allele frequency (or list of frequencies separated by commas), with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4.
-        #' @param cvCohortStatsMaf Variant minor allele frequency (or list of frequencies separated by commas), with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4.
-        #' @param cvCohortStatsRef Variant reference allele frequency (or list of frequencies separated by commas), with the foramt [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4.
-        #' @param cvCohortStatsPass Variant filter PASS frequency (or list of frequencies separated by commas), with the format [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL>0.8.
-        #' @param cvScore Variant score (or list of scores separated by commas), with the format: [{study:}]{score}[<|>|<=|>=]{number}.
-        #' @param cvAnnotGoGenes Variant gene GO (or list of GOs separated by commas).
-        #' @param cvAnnotExpressionGenes Variant gene expression (or list of expressions separated by commas).
-        #' @param cvGeneTraitId Variant gene trait association ID (or list of trait IDs separated by commas), e.g. "umls:C0007222" , "OMIM:269600".
-        #' @param cvTrait Variant Trait (or list of traits separated by commas), based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...
-        #' @param cvProteinKeyword Uniprot protein variant annotation keyword (or list of keywords separated by commas).
-        #' @param cvePhenotypeName Clinical variant evidence phenotype name (or names separated by commas).
-        #' @param cveGeneName Clinical variant evidence gene name (or names separated by commas).
-        #' @param cveConsequenceTypeId Clinical variant evidence consequence type ID (or IDs separated by commas).
-        #' @param cveXrefId Clinical variant evidence Xref ID (or IDs separated by commas).
-        #' @param cvePanelId Clinical variant evidence panel ID (or IDs separated by commas).
-        #' @param cveMoi Clinical variant evidence mode of inheritance (or list of modes of inheritance separated by commas), valid values: AUTOSOMAL_DOMINANT, AUTOSOMAL_RECESSIVE, X_LINKED_DOMINANT, X_LINKED_RECESSIVE, Y_LINKED, MITOCHONDRIAL, DE_NOVO, MENDELIAN_ERROR, COMPOUND_HETEROZYGOUS, UNKNOWN.
-        #' @param cvePenetrance Clinical variant evidence penetrance (or list of penetrance values separated by commas), valid values: COMPLETE, INCOMPLETE, UNKNOWN.
-        #' @param cveAcmg Clinical variant evidence ACMG (or ACGMs separated by commas).
-        #' @param cveTier Clinical variant evidence tier (or list of tier values separated by commas).
-        #' @param cveClinicalSignificance Clinical variant evidence clinical significance (or list of clinical  significances separated by commas).
-        #' @param cveDrugResponse Clinical variant evidence drug response (or list of drug responses separated by commas).
-        #' @param cveTraitAssociation Clinical variant evidence trait association (or list of traits separated by commas).
-        #' @param cveFunctionalEffect Clinical variant evidence functional effect (or list of functional effects separated by commas).
-        #' @param cveTumorigenesis Clinical variant evidence tumorigenesis (or list of tumorigenesis values separated by commas).
-        #' @param cveOtherClassification Clinical variant evidence other-classification (or list of other  classification values separated by commas).
-        #' @param cveRolInCancer Clinical variant evidence rol in cancer (or roles in cancer separated by commas).
-        queryCvdbVariantEvidence=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
-                subcategory="clinical/cvdb/variantEvidence", subcategoryId=NULL, action="query", params=params,
-                httpMethod="GET", as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/analysis/clinical/distinct:
         #' Clinical Analysis distinct method.
@@ -931,6 +176,28 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param field Comma separated list of fields for which to obtain the distinct values.
         distinct=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL, subcategory="clinical",
                 subcategoryId=NULL, action="distinct", params=params, httpMethod="GET", as.queryParam=c("field"), ...),
+
+        #' @section Endpoint /{apiVersion}/analysis/clinical/interpretation/aggregationStats:
+        #' Fetch catalog interpretation aggregation stats.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param id Comma separated list of Interpretation IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param uuid Comma separated list of Interpretation UUIDs up to a maximum of 100.
+        #' @param name Comma separated list of Interpretation names up to a maximum of 100.
+        #' @param clinicalAnalysisId Clinical Analysis id.
+        #' @param analystId Analyst ID.
+        #' @param methodName Interpretation method name. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param panels Interpretation panels.
+        #' @param primaryFindings Interpretation primary findings.
+        #' @param secondaryFindings Interpretation secondary findings.
+        #' @param creationDate Interpretation Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        #' @param modificationDate Interpretation Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+        #' @param status Filter by status.
+        #' @param internalStatus Filter by internal status.
+        #' @param release Release when it was created.
+        #' @param field Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.: studies;type;numSamples[0..10]:1;format:sum(size).
+        aggregationStatsInterpretation=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
+                subcategory="clinical/interpretation", subcategoryId=NULL, action="aggregationStats", params=params,
+                httpMethod="GET", as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/analysis/clinical/interpretation/distinct:
         #' Interpretation distinct method.
@@ -1377,7 +644,7 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param filter Specify the FILTER for any of the files. If 'file' filter is provided, will match the file and the filter. e.g.: PASS,LowGQX.
         #' @param qual Specify the QUAL for any of the files. If 'file' filter is provided, will match the file and the qual. e.g.: >123.4.
         #' @param fileData Filter by file data (i.e. FILTER, QUAL and INFO columns from VCF file). [{file}:]{key}{op}{value}[,;]* . If no file is specified, will use all files from "file" filter. e.g. AN>200 or file_1.vcf:AN>200;file_2.vcf:AN<10 . Many fields can be combined. e.g. file_1.vcf:AN>200;DB=true;file_2.vcf:AN<10,FILTER=PASS,LowDP.
-        #' @param sample Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND (;) and OR (,) operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,) operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. .
+        #' @param sample Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND ';' and OR ',' operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND ';' and OR ',' operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. .
         #' @param sampleData Filter by any SampleData field from samples. [{sample}:]{key}{op}{value}[,;]* . If no sample is specified, will use all samples from "sample" or "genotype" filter. e.g. DP>200 or HG0097:DP>200,HG0098:DP<10 . Many FORMAT fields can be combined. e.g. HG0097:DP>200;GT=1/1,0/1,HG0098:DP<10.
         #' @param sampleAnnotation Selects some samples using metadata information from Catalog. e.g. age>20;phenotype=hpo:123,hpo:456;name=smith.
         #' @param cohort Select variants with calculated stats for the selected cohorts.
@@ -1421,6 +688,7 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param panelFeatureType Filter elements from specific panels by type. Accepted values : [ gene, region, str, variant ].
         #' @param panelIntersection Intersect panel genes and regions with given genes and regions from que input query. This will prevent returning variants from regions out of the panel.
         #' @param trait List of traits, based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...
+        #' @param ciStatusId Clinical interpretation status ID (or list of IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE, CLOSED.
         queryVariant=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="clinical/variant", subcategoryId=NULL, action="query", params=params, httpMethod="GET",
                 as.queryParam=NULL, ...),

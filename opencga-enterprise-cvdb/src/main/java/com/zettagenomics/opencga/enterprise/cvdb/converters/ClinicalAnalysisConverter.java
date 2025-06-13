@@ -29,8 +29,6 @@ import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.panel.Panel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -42,28 +40,24 @@ public class ClinicalAnalysisConverter extends SearchConverter<ClinicalAnalysis,
 
     private ObjectReader clinicalAnalysisReader;
 
-    private static Logger logger = LoggerFactory.getLogger(ClinicalAnalysisConverter.class);
-
     public ClinicalAnalysisConverter() {
         this.clinicalAnalysisReader = mapper.readerFor(ClinicalAnalysis.class);
-        this.logger = LoggerFactory.getLogger(ClinicalAnalysisConverter.class);
     }
 
-    public ClinicalAnalysisSearch toClinicalAnalysisSearch(ClinicalAnalysis clinicalAnalysis, String studyId, List<String> users)
+    public ClinicalAnalysisSearch toClinicalAnalysisSearch(ClinicalAnalysis clinicalAnalysis, String studyId)
             throws CvdbException {
-        return toClinicalAnalysisSearch(Collections.singletonList(clinicalAnalysis), studyId, users).get(0);
+        return toClinicalAnalysisSearch(Collections.singletonList(clinicalAnalysis), studyId).get(0);
     }
 
-    public List<ClinicalAnalysisSearch> toClinicalAnalysisSearch(List<ClinicalAnalysis> clinicalAnalysisList, String studyId,
-                                                                 List<String> viewers) throws CvdbException {
+    public List<ClinicalAnalysisSearch> toClinicalAnalysisSearch(List<ClinicalAnalysis> clinicalAnalysisList, String studyId)
+            throws CvdbException {
         List<ClinicalAnalysisSearch> clinicalAnalysisSearchList = new ArrayList<>();
 
         for (ClinicalAnalysis ca : clinicalAnalysisList) {
             ClinicalAnalysisSearch cas = new ClinicalAnalysisSearch()
                     .setId(ca.getId())
                     .setDescription(ca.getDescription())
-                    .setStudyId(studyId)
-                    .setViewers(viewers);
+                    .setStudyId(studyId);
 
             if (ca.getType() != null) {
                 cas.setType(ca.getType().name());
@@ -74,11 +68,25 @@ public class ClinicalAnalysisConverter extends SearchConverter<ClinicalAnalysis,
             }
 
             if (CollectionUtils.isNotEmpty(ca.getFiles())) {
-                cas.setFileNames(ca.getFiles().stream().map(f -> f.getName()).collect(Collectors.toList()));
+                cas.setFileNames(ca.getFiles().stream().map(File::getName).collect(Collectors.toList()));
             }
 
             if (ca.getProband() != null) {
                 cas.setProbandId(ca.getProband().getId());
+
+                if (CollectionUtils.isNotEmpty(ca.getProband().getDisorders())) {
+                    List<String> ids = ca.getProband().getDisorders().stream().map(Disorder::getId).collect(Collectors.toList());
+                    if (CollectionUtils.isNotEmpty(ids)) {
+                        cas.setProbandDisorderIds(ids);
+                    }
+                }
+
+                if (CollectionUtils.isNotEmpty(ca.getProband().getPhenotypes())) {
+                    List<String> names = ca.getProband().getPhenotypes().stream().map(Phenotype::getName).collect(Collectors.toList());
+                    if (CollectionUtils.isNotEmpty(names)) {
+                        cas.setProbandPhenotypeNames(names);
+                    }
+                }
             }
 
             if (ca.getFamily() != null) {
@@ -204,9 +212,33 @@ public class ClinicalAnalysisConverter extends SearchConverter<ClinicalAnalysis,
                 }
                 ca.setFiles(files);
             }
+            ca.setProband(new Individual());
             if (StringUtils.isNotEmpty(cas.getProbandId())) {
-                ca.setProband(new Individual().setId(cas.getProbandId()));
+                ca.getProband().setId(cas.getProbandId());
             }
+            if (CollectionUtils.isNotEmpty(cas.getProbandDisorderIds())) {
+                List<Disorder> disorderList = new ArrayList<>();
+                for (String id : cas.getProbandDisorderIds()) {
+                    if (StringUtils.isNotEmpty(id)) {
+                        disorderList.add(new Disorder().setId(id));
+                    }
+                }
+                if (CollectionUtils.isNotEmpty(disorderList)) {
+                    ca.getProband().setDisorders(disorderList);
+                }
+            }
+            if (CollectionUtils.isNotEmpty(cas.getProbandPhenotypeNames())) {
+                List<Phenotype> phenotypeList = new ArrayList<>();
+                for (String name : cas.getProbandPhenotypeNames()) {
+                    if (StringUtils.isNotEmpty(name)) {
+                        phenotypeList.add(new Phenotype().setName(name));
+                    }
+                }
+                if (CollectionUtils.isNotEmpty(phenotypeList)) {
+                    ca.getProband().setPhenotypes(phenotypeList);
+                }
+            }
+
             if (StringUtils.isNotEmpty(cas.getFamilyId()) || CollectionUtils.isNotEmpty(cas.getFamilyPhenotypeNames())
                     || CollectionUtils.isNotEmpty(cas.getFamilyMemberIds())) {
                 Family family = new Family().setId(cas.getFamilyId());

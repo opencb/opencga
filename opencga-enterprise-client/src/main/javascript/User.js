@@ -84,6 +84,24 @@ export default class User extends OpenCGAParentClass {
         return this._get("users", null, null, null, "search", params);
     }
 
+    /** Single Sign On.
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.url] - Callback URL.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    loginSso(params) {
+        return this._get("users", null, "sso", null, "login", params);
+    }
+
+    /** Logout from Single Sign On.
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.url] - Callback URL.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    logoutSso(params) {
+        return this._get("users", null, "sso", null, "logout", params);
+    }
+
     /** Return the user information including its projects and studies
     * @param {String} users - Comma separated list of user IDs.
     * @param {Object} [params] - The Object containing the following optional parameters:
@@ -149,7 +167,7 @@ export default class User extends OpenCGAParentClass {
         return this._post("users", user, "filters", filterId, "update", data);
     }
 
-    /** Reset password
+    /** [DEPRECATED]
     * @param {String} user - User ID.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */

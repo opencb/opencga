@@ -38,7 +38,7 @@ import java.util.logging.Level;
 public class OpencgaEnterpriseMain {
 
     private static final String CLI_USAGE_FILE_NAME = "enterprise-cli-usage.yml";
-    private static final Logger logger = LoggerFactory.getLogger(OpencgaMain.class);
+    private static final Logger logger = LoggerFactory.getLogger(OpencgaEnterpriseMain.class);
     public static Mode mode = Mode.CLI;
     public static Shell shell;
     public static Level logLevel = Level.OFF;

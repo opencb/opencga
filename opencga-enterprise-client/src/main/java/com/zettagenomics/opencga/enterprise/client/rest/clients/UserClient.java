@@ -17,9 +17,10 @@
 package com.zettagenomics.opencga.enterprise.client.rest.clients;
 
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.*;
+import org.opencb.opencga.core.client.ParentClient;
+import org.opencb.opencga.core.config.client.ClientConfiguration;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.ConfigUpdateParams;
 import org.opencb.opencga.core.models.user.FilterUpdateParams;
@@ -46,7 +47,7 @@ import org.opencb.opencga.core.response.RestResponse;
  * This class contains methods for the User webservices.
  *    PATH: users
  */
-public class UserClient extends AbstractParentClient {
+public class UserClient extends ParentClient {
 
     public UserClient(String token, ClientConfiguration configuration) {
         super(token, configuration);
@@ -119,6 +120,30 @@ public class UserClient extends AbstractParentClient {
     public RestResponse<User> search(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         return execute("users", null, null, null, "search", params, GET, User.class);
+    }
+
+    /**
+     * Single Sign On.
+     * @param params Map containing any of the following optional parameters.
+     *       url: Callback URL.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<AuthenticationResponse> loginSso(ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("users", null, "sso", null, "login", params, GET, AuthenticationResponse.class);
+    }
+
+    /**
+     * Logout from Single Sign On.
+     * @param params Map containing any of the following optional parameters.
+     *       url: Callback URL.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<AuthenticationResponse> logoutSso(ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("users", null, "sso", null, "logout", params, GET, AuthenticationResponse.class);
     }
 
     /**
@@ -208,7 +233,7 @@ public class UserClient extends AbstractParentClient {
     }
 
     /**
-     * Reset password.
+     * [DEPRECATED].
      * @param user User ID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.

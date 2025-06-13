@@ -1,4 +1,9 @@
 # ##############################################################################
+## FederationClient
+setGeneric("federationClient", function(OpencgaR, id, endpointName, params=NULL, ...)
+    standardGeneric("federationClient"))
+
+# ##############################################################################
 ## OrganizationClient
 setGeneric("organizationClient", function(OpencgaR, id, organization, user, endpointName, params=NULL, ...)
     standardGeneric("organizationClient"))
@@ -27,6 +32,11 @@ setGeneric("fileClient", function(OpencgaR, annotationSet, file, files, folder, 
 ## JobClient
 setGeneric("jobClient", function(OpencgaR, job, jobs, members, endpointName, params=NULL, ...)
     standardGeneric("jobClient"))
+
+# ##############################################################################
+## WorkflowClient
+setGeneric("workflowClient", function(OpencgaR, members, workflowId, workflows, endpointName, params=NULL, ...)
+    standardGeneric("workflowClient"))
 
 # ##############################################################################
 ## SampleClient
@@ -77,6 +87,11 @@ setGeneric("metaClient", function(OpencgaR, endpointName, params=NULL, ...)
 ## ClinicalClient
 setGeneric("clinicalClient", function(OpencgaR, annotationSet, clinicalAnalyses, clinicalAnalysis, interpretation, interpretations, members, endpointName, params=NULL, ...)
     standardGeneric("clinicalClient"))
+
+# ##############################################################################
+## CVDBClient
+setGeneric("cvdbClient", function(OpencgaR, variantId, endpointName, params=NULL, ...)
+    standardGeneric("cvdbClient"))
 
 # ##############################################################################
 ## AdminClient

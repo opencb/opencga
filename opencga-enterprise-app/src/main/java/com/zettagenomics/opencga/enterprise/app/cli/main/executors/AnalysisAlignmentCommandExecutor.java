@@ -13,8 +13,8 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.alignment.AlignmentGeneCoverageStatsParams;
 import org.opencb.opencga.core.models.alignment.AlignmentIndexParams;
 import org.opencb.opencga.core.models.alignment.AlignmentQcParams;
@@ -184,9 +184,9 @@ public class AnalysisAlignmentCommandExecutor extends com.zettagenomics.opencga.
                     .readValue(new java.io.File(commandOptions.jsonFile), CoverageIndexParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "bamFileId", commandOptions.bamFileId, true);
-            putNestedIfNotEmpty(beanParams, "baiFileId", commandOptions.baiFileId, true);
+            putNestedIfNotEmpty(beanParams, "fileId", commandOptions.fileId, true);
             putNestedIfNotNull(beanParams, "windowSize", commandOptions.windowSize, true);
+            putNestedIfNotNull(beanParams, "overwrite", commandOptions.overwrite, true);
 
             coverageIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

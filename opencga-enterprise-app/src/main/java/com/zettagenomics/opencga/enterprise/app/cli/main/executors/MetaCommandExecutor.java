@@ -11,8 +11,8 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.opencga.core.response.RestResponse;
 
@@ -62,14 +62,11 @@ public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
             case "model":
                 queryResponse = model();
                 break;
+            case "openapi":
+                queryResponse = openapi();
+                break;
             case "ping":
                 queryResponse = ping();
-                break;
-            case "sso-login":
-                queryResponse = loginSso();
-                break;
-            case "sso-logout":
-                queryResponse = logoutSso();
                 break;
             case "status":
                 queryResponse = status();
@@ -119,33 +116,22 @@ public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         return enterpriseOpenCGAClient.getEnterpriseMetaClient().model(queryParams);
     }
 
+    private RestResponse<String> openapi() throws Exception {
+        logger.debug("Executing openapi in Meta command line");
+
+        MetaCommandOptions.OpenapiCommandOptions commandOptions = metaCommandOptions.openapiCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("token", commandOptions.token);
+
+        return enterpriseOpenCGAClient.getEnterpriseMetaClient().openapi(queryParams);
+    }
+
     private RestResponse<String> ping() throws Exception {
         logger.debug("Executing ping in Meta command line");
 
         MetaCommandOptions.PingCommandOptions commandOptions = metaCommandOptions.pingCommandOptions;
         return enterpriseOpenCGAClient.getEnterpriseMetaClient().ping();
-    }
-
-    private RestResponse<ObjectMap> loginSso() throws Exception {
-        logger.debug("Executing loginSso in Meta command line");
-
-        MetaCommandOptions.LoginSsoCommandOptions commandOptions = metaCommandOptions.loginSsoCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("url", commandOptions.url);
-
-        return enterpriseOpenCGAClient.getEnterpriseMetaClient().loginSso(queryParams);
-    }
-
-    private RestResponse<ObjectMap> logoutSso() throws Exception {
-        logger.debug("Executing logoutSso in Meta command line");
-
-        MetaCommandOptions.LogoutSsoCommandOptions commandOptions = metaCommandOptions.logoutSsoCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("url", commandOptions.url);
-
-        return enterpriseOpenCGAClient.getEnterpriseMetaClient().logoutSso(queryParams);
     }
 
     private RestResponse<ObjectMap> status() throws Exception {

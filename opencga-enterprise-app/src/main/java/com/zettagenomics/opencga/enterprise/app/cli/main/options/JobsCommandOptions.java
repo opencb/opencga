@@ -34,10 +34,13 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
 
 
         public UpdateAclCommandOptions updateAclCommandOptions;
+        public AggregationStatsCommandOptions aggregationStatsCommandOptions;
         public CreateCommandOptions createCommandOptions;
         public DistinctCommandOptions distinctCommandOptions;
         public RetryCommandOptions retryCommandOptions;
         public SearchCommandOptions searchCommandOptions;
+        public BuildToolCommandOptions buildToolCommandOptions;
+        public RunToolCommandOptions runToolCommandOptions;
         public TopCommandOptions topCommandOptions;
         public AclCommandOptions aclCommandOptions;
         public DeleteCommandOptions deleteCommandOptions;
@@ -52,10 +55,13 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
     
         super(commonCommandOptions,jCommander);
         this.updateAclCommandOptions = new UpdateAclCommandOptions();
+        this.aggregationStatsCommandOptions = new AggregationStatsCommandOptions();
         this.createCommandOptions = new CreateCommandOptions();
         this.distinctCommandOptions = new DistinctCommandOptions();
         this.retryCommandOptions = new RetryCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
+        this.buildToolCommandOptions = new BuildToolCommandOptions();
+        this.runToolCommandOptions = new RunToolCommandOptions();
         this.topCommandOptions = new TopCommandOptions();
         this.aclCommandOptions = new AclCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
@@ -93,6 +99,74 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
     
     }
 
+    @Parameters(commandNames = {"aggregationstats"}, commandDescription ="Fetch catalog job stats")
+    public class AggregationStatsCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--other-studies"}, description = "Flag indicating the entries being queried can belong to any related study, not just the primary one.", required = false, help = true, arity = 0)
+        public boolean otherStudies = false; 
+    
+        @Parameter(names = {"--id"}, description = "Comma separated list of job IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String id; 
+    
+        @Parameter(names = {"--uuid"}, description = "Comma separated list of job UUIDs up to a maximum of 100", required = false, arity = 1)
+        public String uuid; 
+    
+        @Parameter(names = {"--tool-id"}, description = "Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String toolId; 
+    
+        @Parameter(names = {"--tool-type"}, description = "Tool type executed by the job [OPERATION, ANALYSIS]", required = false, arity = 1)
+        public String toolType; 
+    
+        @Parameter(names = {"--user-id"}, description = "User that created the job", required = false, arity = 1)
+        public String userId; 
+    
+        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String priority; 
+    
+        @Parameter(names = {"--status"}, description = "Filter by status", required = false, arity = 1)
+        public String status; 
+    
+        @Parameter(names = {"--internal-status"}, description = "Filter by internal status", required = false, arity = 1)
+        public String internalStatus; 
+    
+        @Parameter(names = {"--creation-date", "--cd"}, description = "Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
+        public String creationDate; 
+    
+        @Parameter(names = {"--modification-date", "--md"}, description = "Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
+        public String modificationDate; 
+    
+        @Parameter(names = {"--visited"}, description = "Visited status of job", required = false, arity = 1)
+        public Boolean visited; 
+    
+        @Parameter(names = {"--tags"}, description = "Job tags", required = false, arity = 1)
+        public String tags; 
+    
+        @Parameter(names = {"--input"}, description = "Comma separated list of file IDs used as input.", required = false, arity = 1)
+        public String input; 
+    
+        @Parameter(names = {"--output"}, description = "Comma separated list of file IDs used as output.", required = false, arity = 1)
+        public String output; 
+    
+        @Parameter(names = {"--acl"}, description = "Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators can query by this field. ", required = false, arity = 1)
+        public String acl; 
+    
+        @Parameter(names = {"--release"}, description = "Release when it was created", required = false, arity = 1)
+        public String release; 
+    
+        @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, help = true, arity = 0)
+        public boolean deleted = false; 
+    
+        @Parameter(names = {"--field"}, description = "Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.: studies;type;numSamples[0..10]:1;format:sum(size)", required = false, arity = 1)
+        public String field; 
+    
+    }
+
     @Parameters(commandNames = {"create"}, commandDescription ="Register an executed job with POST method")
     public class CreateCommandOptions {
     
@@ -118,16 +192,19 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
         public String toolId;
     
         @Parameter(names = {"--tool-description"}, description = "Users may provide a description for the entry.", required = false, arity = 1)
-        public String toolDescription = "No description available";
+        public String toolDescription;
     
         @Parameter(names = {"--tool-scope"}, description = "Tool info scope can have the values GLOBAL, PROJECT and STUDY.", required = false, arity = 1)
-        public String toolScope = "No description available";
+        public String toolScope;
     
         @Parameter(names = {"--tool-type"}, description = "Tool info type can have the values OPERATION and ANALYSIS.", required = false, arity = 1)
-        public String toolType = "No description available";
+        public String toolType;
     
         @Parameter(names = {"--tool-resource"}, description = "Tool info resource can have the values AUDIT, USER, PROJECT, STUDY, FILE, SAMPLE, JOB, INDIVIDUAL, COHORT, DISEASE_PANEL, FAMILY, CLINICAL_ANALYSIS, INTERPRETATION, VARIANT, ALIGNMENT, CLINICAL, EXPRESSION, RGA and FUNCTIONAL.", required = false, arity = 1)
-        public String toolResource = "No description available";
+        public String toolResource;
+    
+        @Parameter(names = {"--type"}, description = "Enum param allowed values: NATIVE, WORKFLOW, CUSTOM, WALKER", required = false, arity = 1)
+        public String type;
     
         @Parameter(names = {"--priority"}, description = "The body web service priority parameter", required = false, arity = 1)
         public String priority;
@@ -185,11 +262,26 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
         @Parameter(names = {"--uuid"}, description = "Comma separated list of job UUIDs up to a maximum of 100", required = false, arity = 1)
         public String uuid; 
     
+        @Parameter(names = {"--type"}, description = "Job type (NATIVE, WORKFLOW, CUSTOM or WALKER)", required = false, arity = 1)
+        public String type; 
+    
         @Parameter(names = {"--tool-id"}, description = "Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String toolId; 
     
         @Parameter(names = {"--tool-type"}, description = "Tool type executed by the job [OPERATION, ANALYSIS]", required = false, arity = 1)
         public String toolType; 
+    
+        @Parameter(names = {"--tool.external-executor.id"}, description = "Id of the external executor. This field is only applicable for jobs executed by an external executor.", required = false, arity = 1)
+        public String toolExternalExecutorId; 
+    
+        @Parameter(names = {"--parent-id"}, description = "Job id that generated this job (if any).", required = false, arity = 1)
+        public String parentId; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
+    
+        @Parameter(names = {"--internal.kill-job-requested"}, description = "Flag indicating that the user requested to kill the job.", required = false, arity = 1)
+        public Boolean internalKillJobRequested; 
     
         @Parameter(names = {"--user-id"}, description = "User that created the job", required = false, arity = 1)
         public String userId; 
@@ -309,11 +401,26 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
         @Parameter(names = {"--uuid"}, description = "Comma separated list of job UUIDs up to a maximum of 100", required = false, arity = 1)
         public String uuid; 
     
+        @Parameter(names = {"--type"}, description = "Job type (NATIVE, WORKFLOW, CUSTOM or WALKER)", required = false, arity = 1)
+        public String type; 
+    
         @Parameter(names = {"--tool-id"}, description = "Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
         public String toolId; 
     
         @Parameter(names = {"--tool-type"}, description = "Tool type executed by the job [OPERATION, ANALYSIS]", required = false, arity = 1)
         public String toolType; 
+    
+        @Parameter(names = {"--tool.external-executor.id"}, description = "Id of the external executor. This field is only applicable for jobs executed by an external executor.", required = false, arity = 1)
+        public String toolExternalExecutorId; 
+    
+        @Parameter(names = {"--parent-id"}, description = "Job id that generated this job (if any).", required = false, arity = 1)
+        public String parentId; 
+    
+        @Parameter(names = {"--dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean dryRun; 
+    
+        @Parameter(names = {"--internal.kill-job-requested"}, description = "Flag indicating that the user requested to kill the job.", required = false, arity = 1)
+        public Boolean internalKillJobRequested; 
     
         @Parameter(names = {"--user-id"}, description = "User that created the job", required = false, arity = 1)
         public String userId; 
@@ -353,6 +460,124 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
     
         @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, help = true, arity = 0)
         public boolean deleted = false; 
+    
+    }
+
+    @Parameters(commandNames = {"tool-build"}, commandDescription ="Execute an analysis from a custom binary.")
+    public class BuildToolCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--job-id"}, description = "Job ID. It must be a unique string within the study. An ID will be autogenerated automatically if not provided.", required = false, arity = 1)
+        public String jobId; 
+    
+        @Parameter(names = {"--job-description"}, description = "Job description", required = false, arity = 1)
+        public String jobDescription; 
+    
+        @Parameter(names = {"--job-depends-on"}, description = "Comma separated list of existing job IDs the job will depend on.", required = false, arity = 1)
+        public String jobDependsOn; 
+    
+        @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
+        public String jobTags; 
+    
+        @Parameter(names = {"--job-scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String jobScheduledStartTime; 
+    
+        @Parameter(names = {"--job-priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String jobPriority; 
+    
+        @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean jobDryRun; 
+    
+        @Parameter(names = {"--git-repository"}, description = "The body web service gitRepository parameter", required = false, arity = 1)
+        public String gitRepository;
+    
+        @Parameter(names = {"--apt-get"}, description = "The body web service aptGet parameter", required = false, arity = 1)
+        public String aptGet;
+    
+        @Parameter(names = {"--install-r"}, description = "The body web service installR parameter", required = false, arity = 1)
+        public Boolean installR;
+    
+        @Parameter(names = {"--docker-organisation"}, description = "The body web service organisation parameter", required = false, arity = 1)
+        public String dockerOrganisation;
+    
+        @Parameter(names = {"--docker-name"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String dockerName;
+    
+        @Parameter(names = {"--docker-tag"}, description = "The body web service tag parameter", required = false, arity = 1)
+        public String dockerTag;
+    
+        @Parameter(names = {"--docker-user"}, description = "The body web service user parameter", required = false, arity = 1)
+        public String dockerUser;
+    
+        @Parameter(names = {"--docker-password"}, description = "The body web service password parameter", required = false, arity = 1)
+        public String dockerPassword;
+    
+    }
+
+    @Parameters(commandNames = {"tool-run"}, commandDescription ="Execute an analysis from a custom binary.")
+    public class RunToolCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--job-id"}, description = "Job ID. It must be a unique string within the study. An ID will be autogenerated automatically if not provided.", required = false, arity = 1)
+        public String jobId; 
+    
+        @Parameter(names = {"--job-description"}, description = "Job description", required = false, arity = 1)
+        public String jobDescription; 
+    
+        @Parameter(names = {"--job-depends-on"}, description = "Comma separated list of existing job IDs the job will depend on.", required = false, arity = 1)
+        public String jobDependsOn; 
+    
+        @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
+        public String jobTags; 
+    
+        @Parameter(names = {"--job-scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String jobScheduledStartTime; 
+    
+        @Parameter(names = {"--job-priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String jobPriority; 
+    
+        @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean jobDryRun; 
+    
+        @Parameter(names = {"--command-line"}, description = "The body web service commandLine parameter", required = false, arity = 1)
+        public String commandLine;
+    
+        @Parameter(names = {"--docker-id"}, description = "The body web service id parameter", required = false, arity = 1)
+        public String dockerId;
+    
+        @Parameter(names = {"--docker-tag"}, description = "The body web service tag parameter", required = false, arity = 1)
+        public String dockerTag;
+    
+        @Parameter(names = {"--docker-token"}, description = "The body web service token parameter", required = false, arity = 1)
+        public String dockerToken;
+    
+        @Parameter(names = {"--git-repository"}, description = "The body web service repository parameter", required = false, arity = 1)
+        public String gitRepository;
+    
+        @Parameter(names = {"--git-reference"}, description = "The body web service reference parameter", required = false, arity = 1)
+        public String gitReference;
     
     }
 
