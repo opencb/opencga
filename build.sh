@@ -299,13 +299,15 @@ function build_opencga() {
        SKIP_CLIENTS="--skip-python"
       fi
       if [ "$R_CLIENT" == "false" ]; then
-       SKIP_CLIENTS="$SKIP_CLIENTS --skip-rclient"
+       SKIP_CLIENTS="$SKIP_CLIENTS --skip-r"
       fi
       if [ "$JAVASCRIPT_CLIENT" == "false" ]; then
        SKIP_CLIENTS="$SKIP_CLIENTS --skip-javascript"
       fi
+      cd "$OPENCGA_HOME_DIR" || exit 2
+      echo "Working directory is: $(pwd)"
       #Do not put quotes in the following command or it will not work
-      ./build_clients.sh --skip-build-opencga $SKIP_CLIENTS
+      ./client-builder.sh --skip-build-opencga $SKIP_CLIENTS
     fi
 }
 
