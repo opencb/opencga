@@ -213,13 +213,7 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
 
 
         List<Integer> releases = new ArrayList<>();
-        VariantSearchSyncInfo searchSyncInfo;
         try {
-            if (includeIndexStatus) {
-                searchSyncInfo = HadoopVariantSearchIndexUtils.getSyncInformation(ts, resultSet);
-            } else {
-                searchSyncInfo = null;
-            }
             ResultSetMetaData metaData = resultSet.getMetaData();
             for (int i = 1; i <= metaData.getColumnCount(); i++) {
                 String columnName = metaData.getColumnName(i);
@@ -247,7 +241,7 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
             }
         }
 
-        return post(variantAnnotation, releases, searchSyncInfo, annotationId);
+        return post(variantAnnotation, releases, null, annotationId);
     }
 
     public VariantAnnotation convert(ImmutableBytesWritable bytes) {

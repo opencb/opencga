@@ -8,8 +8,9 @@ import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.variant.search.VariantSearchSyncInfo;
+import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.search.VariantSearchSyncInfo;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.HBaseToVariantStatsConverter;
@@ -55,14 +56,21 @@ public class SecondaryIndexPendingVariantsFileBasedDescriptor implements Pending
     public static class PendingVariantConverter {
         private final HBaseToVariantAnnotationConverter annotationConverter = new HBaseToVariantAnnotationConverter();
         private final HBaseToVariantStatsConverter statsConverter = new HBaseToVariantStatsConverter();
+        private final Map<Integer, Integer> cohortsSize;
         private final VariantStorageMetadataManager metadataManager;
 
         public PendingVariantConverter(VariantStorageMetadataManager metadataManager) {
             this.metadataManager = metadataManager;
+            this.cohortsSize = new HashMap<>();
+            for (Map.Entry<String, Integer> entry : metadataManager.getStudies().entrySet()) {
+                for (CohortMetadata cohort : metadataManager.getCalculatedOrPartialCohorts(entry.getValue())) {
+                    cohortsSize.put(cohort.getId(), cohort.getSamples().size());
+                }
+            }
         }
 
         private Variant checkAndConvert(Result value, long ts) {
-            VariantSearchSyncInfo.Status syncStatus = HadoopVariantSearchIndexUtils.getSyncStatusInfoResolved(ts, value);
+            VariantSearchSyncInfo.Status syncStatus = HadoopVariantSearchIndexUtils.getSyncStatusInfoResolved(ts, value, cohortsSize);
             if (syncStatus == VariantSearchSyncInfo.Status.SYNCHRONIZED) {
                 // Variant is already synchronized. Nothing to do!
                 return null;
@@ -83,6 +91,7 @@ public class SecondaryIndexPendingVariantsFileBasedDescriptor implements Pending
                 variant.addStudyEntry(studyEntry);
                 Map<Integer, VariantStats> cohortStats = entry.getValue();
                 for (Map.Entry<Integer, VariantStats> cohortEntry : cohortStats.entrySet()) {
+                    // TODO: TASK-6217 Include only modified variantStats
                     int cohortId = cohortEntry.getKey();
                     VariantStats variantStats = cohortEntry.getValue();
                     variantStats.setCohortId(metadataManager.getCohortName(studyId, cohortId));
@@ -98,8 +107,9 @@ public class SecondaryIndexPendingVariantsFileBasedDescriptor implements Pending
                 case STATS_NOT_SYNC:
                     annotation = null;
                     break;
-                case STATS_NOT_SYNC_AND_STUDIES_UNKNOWN:
-                case STUDIES_UNKNOWN_SYNC:
+                case STATS_AND_STUDIES_UNKNOWN:
+                case STUDIES_UNKNOWN:
+                case STATS_UNKNOWN:
                 case SYNCHRONIZED:
                 default:
                     throw new IllegalStateException("Unexpected sync status: " + syncStatus);

@@ -273,8 +273,9 @@ public class DiscoverPendingVariantsDriver extends AbstractVariantsTableDriver {
             if (variant == null) {
                 context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, READY_VARIANTS_COUNTER).increment(1);
             } else {
-                VariantSearchSyncInfo.Status syncStatus = VariantSearchSyncInfo.Status.from(variant.getAnnotation().getAdditionalAttributes()
-                                .get(GROUP_NAME.key()).getAttribute().get(VariantField.AdditionalAttributes.INDEX_SYNCHRONIZATION.key()));
+                VariantSearchSyncInfo.Status syncStatus = VariantSearchSyncInfo.Status.from(variant.getAnnotation()
+                        .getAdditionalAttributes().get(GROUP_NAME.key())
+                        .getAttribute().get(VariantField.AdditionalAttributes.INDEX_SYNCHRONIZATION.key()));
                 context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, syncStatus.name()).increment(1);
                 context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, PENDING_VARIANTS_COUNTER).increment(1);
                 mos.write(new VariantLocusKey(variant),

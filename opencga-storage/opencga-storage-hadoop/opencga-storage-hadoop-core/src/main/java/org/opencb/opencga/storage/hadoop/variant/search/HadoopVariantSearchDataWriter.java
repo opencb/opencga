@@ -5,21 +5,17 @@ import org.apache.hadoop.hbase.client.Mutation;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
-import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchUpdateDocument;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSolrInputDocumentDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseDataWriter;
-import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsFileCleaner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 
 /**
@@ -33,8 +29,6 @@ public class HadoopVariantSearchDataWriter extends VariantSolrInputDocumentDataW
     private final PendingVariantsFileCleaner cleaner;
     private final List<Variant> variantsToClean = new ArrayList<>();
     private final List<Mutation> rowsToUpdate = new ArrayList<>();
-    private final byte[] family = GenomeHelper.COLUMN_FAMILY_BYTES;
-    protected final Map<String, Integer> studiesMap;
 
     private long hbasePutTimeMs = 0;
     private long cleanTimeMs = 0;
@@ -47,10 +41,6 @@ public class HadoopVariantSearchDataWriter extends VariantSolrInputDocumentDataW
         super(variantSearchManager, indexMetadata);
         this.writer = new HBaseDataWriter<>(dbAdaptor.getHBaseManager(), dbAdaptor.getVariantTable());
         this.cleaner = cleaner;
-        this.studiesMap = new HashMap<>(dbAdaptor.getMetadataManager().getStudies());
-        for (String study : new ArrayList<>(studiesMap.keySet())) {
-            studiesMap.put(VariantSearchToVariantConverter.studyIdToSearchModel(study), studiesMap.get(study));
-        }
     }
 
     /**
@@ -79,7 +69,7 @@ public class HadoopVariantSearchDataWriter extends VariantSolrInputDocumentDataW
 
             for (VariantSearchUpdateDocument updateDocument : batch) {
                 variants.add(updateDocument.getVariant());
-                mutations.add(HadoopVariantSearchIndexUtils.updateSyncStatus(updateDocument, studiesMap));
+                mutations.add(HadoopVariantSearchIndexUtils.updateSyncStatus(updateDocument));
             }
             variantsToClean.addAll(variants);
             rowsToUpdate.addAll(mutations);

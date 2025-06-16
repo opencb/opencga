@@ -1050,17 +1050,18 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     // Alternate allele frequency
                     // AltFreq = AltAlleleCount / (2 * cohortSize) - alleleGap
                     // RefFreq = RefAlleleCount / (2 * cohortSize) - alleleGap
-                    float alleleGap = (cohortsSize.get(studyId + FIELD_SEPARATOR + cohortName) * 2) - stats.getAlleleCount();
+                    Integer cohortSize = cohortsSize.get(studyId + FIELD_SEPARATOR + cohortName);
+                    float alleleGap = getAlleleMissGapCount(stats, cohortSize);
                     float altAlleleCount = stats.getAltAlleleCount();
                     if (altAlleleCount == 0) {
                         // Avoid 0/0 division
                         // Instead, have a possible -0.00...000001/0 division, which would result in -Infinity
                         altAlleleCount = -0.0000000000000000001f;
                     }
-                    float nonRef = stats.getAlleleCount() - stats.getRefAlleleCount();
+                    float nonRef = getNonRefCount(stats);
 
-                    variantSearchModel.getAltStats().put("altStats" + FIELD_SEPARATOR + studyId + FIELD_SEPARATOR + cohortName,
-                            stats.getAltAlleleFreq());
+//                    variantSearchModel.getAltStats().put("altStats" + FIELD_SEPARATOR + studyId + FIELD_SEPARATOR + cohortName,
+//                            stats.getAltAlleleFreq());
                     variantSearchModel.getAltStats().put(buildStatsAltAlleleCountField(studyId, cohortName),
                             altAlleleCount);
                     variantSearchModel.getAltStats().put(buildStatsAlleleMissGapCountField(studyId, cohortName),
@@ -1068,12 +1069,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     variantSearchModel.getAltStats().put(buildStatsAlleleNonRefCountField(studyId, cohortName),
                             nonRef);
 
-                    float passFreq;
-                    if (stats.getFilterFreq() == null) {
-                        passFreq = 0f;
-                    } else {
-                        passFreq = stats.getFilterFreq().getOrDefault(VCFConstants.PASSES_FILTERS_v4, 0f);
-                    }
+                    float passFreq = getPassFreq(stats);
                     // PASS filter frequency
                     variantSearchModel.getPassStats()
                             .put("passStats" + FIELD_SEPARATOR + studyId + FIELD_SEPARATOR + cohortName, passFreq);
@@ -1100,6 +1096,24 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 }
             }
         }
+    }
+
+    public static int getNonRefCount(VariantStats stats) {
+        return stats.getAlleleCount() - stats.getRefAlleleCount();
+    }
+
+    public static int getAlleleMissGapCount(VariantStats stats, Integer cohortSize) {
+        return (cohortSize * 2) - stats.getAlleleCount();
+    }
+
+    public static float getPassFreq(VariantStats stats) {
+        float passFreq;
+        if (stats.getFilterFreq() == null) {
+            passFreq = 0f;
+        } else {
+            passFreq = stats.getFilterFreq().getOrDefault(VCFConstants.PASSES_FILTERS_v4, 0f);
+        }
+        return passFreq;
     }
 
     public static String buildStatsAlleleMissGapCountField(String studyId, String cohortName) {

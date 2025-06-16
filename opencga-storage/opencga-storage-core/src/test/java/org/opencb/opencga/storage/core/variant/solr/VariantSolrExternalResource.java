@@ -33,6 +33,7 @@ import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.SearchConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 
@@ -60,18 +61,28 @@ public class VariantSolrExternalResource extends ExternalResource {
     private MiniSolrCloudCluster miniSolrCloudCluster;
     protected boolean embeded = true;
     private ZkTestServer zkTestServer;
+    private Path rootDir;
 
     public VariantSolrExternalResource() {
         this(true);
     }
 
+    public VariantSolrExternalResource(VariantStorageBaseTest baseTest) {
+        this(true);
+        try {
+            rootDir = baseTest.getTmpRootDir().resolve("solr");
+        } catch (IOException e) {
+            throw new RuntimeException("Could not create temporary root directory", e);
+        }
+    }
+
     public VariantSolrExternalResource(boolean embeded) {
         this.embeded = embeded;
+        rootDir = Paths.get("target/test-data", "junit-variant-solr-" + TimeUtils.getTimeMillis());
     }
 
     @Override
     public void before() throws Exception {
-        Path rootDir = Paths.get("target/test-data", "junit-variant-solr-" + TimeUtils.getTimeMillis());
         Files.createDirectories(rootDir);
 
         String configSet = CONFIG_SET;

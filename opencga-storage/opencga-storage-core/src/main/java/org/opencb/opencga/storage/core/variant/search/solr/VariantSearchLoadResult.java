@@ -77,8 +77,8 @@ public class VariantSearchLoadResult {
                 .append("numProcessedVariants", numProcessedVariants)
                 .append("numLoadedVariants", numLoadedVariants)
                 .append("numDeletedVariants", numDeletedVariants)
-                .append("numLoadedVariantsMain", numInsertedVariants)
-                .append("numLoadedVariantsStats", numLoadedVariantsPartialStatsUpdate)
+                .append("numInsertedVariants", numInsertedVariants)
+                .append("numLoadedVariantsPartialStatsUpdate", numLoadedVariantsPartialStatsUpdate)
                 .toString();
     }
 }

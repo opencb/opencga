@@ -151,7 +151,8 @@ public final class VariantPhoenixSchema {
         INDEX_NOT_SYNC("_IDX_N", PBoolean.INSTANCE),
         INDEX_STATS_NOT_SYNC("_IDX_S", PBoolean.INSTANCE),
         INDEX_UNKNOWN("_IDX_U", PBoolean.INSTANCE),
-        INDEX_STUDIES("_IDX_ST_", PIntegerArray.INSTANCE);
+        INDEX_STUDIES("_IDX_ST_", PIntegerArray.INSTANCE),
+        INDEX_STATS("_IDX_SI", PVarchar.INSTANCE);
 
         private final String columnName;
         private final byte[] columnNameBytes;

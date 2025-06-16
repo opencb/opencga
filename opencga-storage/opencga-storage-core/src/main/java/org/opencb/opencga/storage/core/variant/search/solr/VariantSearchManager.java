@@ -211,6 +211,14 @@ public class VariantSearchManager {
     private boolean waitForReplicasInSync(String collectionName, int timeout, TimeUnit timeUnit, boolean throwException)
             throws VariantSearchException {
         long sleepMs = TimeUnit.SECONDS.toMillis(5);
+
+        // FIXME: TASK-6217 - Remove this hardcoded sleep. Check for the last _version of the core
+        try {
+            Thread.sleep(sleepMs * 2);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new VariantSearchException("Interrupted while waiting for TLOG replicas to be in sync", e);
+        }
         long timeoutMs = timeUnit.toMillis(timeout);
         while (!tlogReplicasInSync(collectionName)) {
             logger.info("Waiting for TLOG replicas in collection '{}' to be in sync...", collectionName);

@@ -9,6 +9,7 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchSyncInfo;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -18,6 +19,8 @@ import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchIndex
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Function;
 
 public class SecondaryIndexPendingVariantsDescriptor implements PendingVariantsTableBasedDescriptor {
@@ -57,8 +60,14 @@ public class SecondaryIndexPendingVariantsDescriptor implements PendingVariantsT
         } else {
             long ts = metadataManager.getProjectMetadata().getSecondaryAnnotationIndex()
                     .getLastStagingOrActiveIndex().getLastUpdateDateTimestamp();
+            Map<Integer, Integer> cohortsSize = new HashMap<>();
+            for (Map.Entry<String, Integer> entry : metadataManager.getStudies().entrySet()) {
+                for (CohortMetadata cohort : metadataManager.getCalculatedOrPartialCohorts(entry.getValue())) {
+                    cohortsSize.put(cohort.getId(), cohort.getSamples().size());
+                }
+            }
             return (value) -> {
-                VariantSearchSyncInfo.Status syncStatus = HadoopVariantSearchIndexUtils.getSyncStatusInfoResolved(ts, value);
+                VariantSearchSyncInfo.Status syncStatus = HadoopVariantSearchIndexUtils.getSyncStatusInfoResolved(ts, value, cohortsSize);
                 boolean pending = syncStatus != VariantSearchSyncInfo.Status.SYNCHRONIZED;
                 return getMutation(value, pending);
             };
