@@ -2,10 +2,13 @@ package org.opencb.opencga.storage.core.metadata.models.project;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class VariantSecondaryAnnotationIndexSets {
 
     private List<SearchIndexMetadata> values;
+    private long lastSolrUpdateTimestamp;
+    private long solrUpdateTimeoutMillis;
 
     public VariantSecondaryAnnotationIndexSets() {
         values = new LinkedList<>();
@@ -68,4 +71,43 @@ public class VariantSecondaryAnnotationIndexSets {
         }
         return null;
     }
+
+    public long getLastSolrUpdateTimestamp() {
+        return lastSolrUpdateTimestamp;
+    }
+
+    public VariantSecondaryAnnotationIndexSets setLastSolrUpdateTimestamp(long lastSolrUpdateTimestamp) {
+        this.lastSolrUpdateTimestamp = lastSolrUpdateTimestamp;
+        return this;
+    }
+
+    public long getSolrUpdateTimeoutMillis() {
+        return solrUpdateTimeoutMillis;
+    }
+
+    public VariantSecondaryAnnotationIndexSets setSolrUpdateTimeoutMillis(long solrUpdateTimeoutMillis) {
+        this.solrUpdateTimeoutMillis = solrUpdateTimeoutMillis;
+        return this;
+    }
+
+    public VariantSecondaryAnnotationIndexSets refreshSolrUpdateTimestamp(long timeout, TimeUnit timeUnit) {
+        this.lastSolrUpdateTimestamp = System.currentTimeMillis();
+        this.solrUpdateTimeoutMillis = timeUnit.toMillis(timeout);
+        return this;
+    }
+
+    public VariantSecondaryAnnotationIndexSets resetSolrUpdateTimestamp() {
+        this.lastSolrUpdateTimestamp = 0;
+        this.solrUpdateTimeoutMillis = 0;
+        return this;
+    }
+
+    public boolean isSolrUpdateExpired() {
+        return System.currentTimeMillis() > lastSolrUpdateTimestamp + solrUpdateTimeoutMillis;
+    }
+
+    public boolean isSolrUpdateInProgress() {
+        return lastSolrUpdateTimestamp > 0 && !isSolrUpdateExpired();
+    }
+
 }

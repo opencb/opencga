@@ -519,6 +519,7 @@ public class VariantSearchManager {
 
         VariantToSolrBeanConverterTask converterTask = new VariantToSolrBeanConverterTask(solrManager.getSolrClient().getBinder(),
                 metadataManager);
+        VariantSearchLoadingWatchdog watchdog = new VariantSearchLoadingWatchdog(metadataManager);
 
         ParallelTaskRunner<Variant, VariantSearchUpdateDocument> ptr = new ParallelTaskRunner<>(
                 new VariantDBReader(variantDBIterator),
@@ -535,9 +536,12 @@ public class VariantSearchManager {
 
         StopWatch stopWatch = StopWatch.createStarted();
         try {
+            watchdog.start();
             ptr.run();
         } catch (ExecutionException e) {
             throw new VariantSearchException("Error loading secondary index", e);
+        } finally {
+            watchdog.stopWatchdog();
         }
         int count = variantDBIterator.getCount();
         logger.info("Variant Search loading done. " + count + " variants indexed in " + TimeUtils.durationToString(stopWatch));

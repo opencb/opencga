@@ -3,13 +3,11 @@ package org.opencb.opencga.storage.core.variant.search;
 import com.google.common.collect.Iterators;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
@@ -87,7 +85,12 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
     protected Object getOrIterator(ParsedVariantQuery variantQuery, boolean iterator) {
         Query query = variantQuery.getQuery();
         QueryOptions options = variantQuery.getInputOptions();
-        SearchIndexMetadata indexMetadata = metadataManager.getProjectMetadata().getSecondaryAnnotationIndex()
+        ProjectMetadata projectMetadata = metadataManager.getProjectMetadata();
+        if (projectMetadata.getSecondaryAnnotationIndex().isSolrUpdateInProgress()) {
+            variantQuery.getEvents().add(new Event(Event.Type.WARNING, "Secondary annotation index (solr) is being updated. "
+                    + "Results may not be up to date, and some latency may be expected."));
+        }
+        SearchIndexMetadata indexMetadata = projectMetadata.getSecondaryAnnotationIndex()
                 .getLastStagingOrActiveIndex();
         if (indexMetadata == null) {
             throw new VariantQueryException("No search index available");
