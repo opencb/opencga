@@ -79,7 +79,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
-import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -848,20 +847,12 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 logger.info("Updating secondary annotation index status from {} to {}",
                         indexMetadata.getStatus(), SearchIndexMetadata.Status.ACTIVE);
             }
-            mm.updateProjectMetadata(projectMetadata -> {
-                for (SearchIndexMetadata value : projectMetadata.getSecondaryAnnotationIndex().getValues()) {
-                    if (value.getStatus() == SearchIndexMetadata.Status.ACTIVE) {
-                        // If there is an active index, update its status to DEPRECATED
-                        value.setStatus(SearchIndexMetadata.Status.DEPRECATED);
-                    }
-                }
-                projectMetadata.getSecondaryAnnotationIndex().getIndexMetadata(indexMetadata.getVersion())
-                        .setStatus(SearchIndexMetadata.Status.ACTIVE)
-                        .setLastUpdateDate(Date.from(Instant.ofEpochMilli(newTimestamp)));
-                return projectMetadata;
-            });
+            VariantSearchManager variantSearchManager = getVariantSearchManager();
+            ProjectMetadata projectMetadata = variantSearchManager.setActiveIndex(indexMetadata, newTimestamp);
 
-            // TODO: Remove deprecated indexes
+            for (SearchIndexMetadata deprecatedIndex : projectMetadata.getSecondaryAnnotationIndex().getDeprecatedIndexes()) {
+                variantSearchManager.delete(deprecatedIndex);
+            }
 
             for (Map.Entry<Integer, Set<Integer>> entry : filesToBeUpdated.entrySet()) {
                 Integer study = entry.getKey();

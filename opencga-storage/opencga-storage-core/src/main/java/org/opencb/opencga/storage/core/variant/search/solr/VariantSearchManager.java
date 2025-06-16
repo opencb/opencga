@@ -591,6 +591,27 @@ public class VariantSearchManager {
         return count;
     }
 
+    public void delete(SearchIndexMetadata indexMetadata) throws VariantSearchException {
+        String collection = buildCollectionName(indexMetadata);
+
+        logger.info("Removing secondary annotation index {} with configSet {} in status {}",
+                collection, indexMetadata.getConfigSetId(), indexMetadata.getStatus());
+        try {
+            if (solrManager.existsCollection(collection)) {
+                solrManager.removeCollection(collection);
+                logger.info("Deleted Solr collection '{}'", collection);
+            } else {
+                logger.warn("Solr collection '{}' does not exist. Nothing to delete.", collection);
+            }
+            metadataManager.updateProjectMetadata(projectMetadata -> {
+                projectMetadata.getSecondaryAnnotationIndex().getIndexMetadata(indexMetadata.getVersion()).setStatus(
+                        SearchIndexMetadata.Status.REMOVED);
+            });
+        } catch (SolrException | StorageEngineException e) {
+            throw new VariantSearchException("Error deleting Solr collection '" + collection + "'", e);
+        }
+    }
+
     /**
      * Return the list of Variant objects from a Solr core/collection
      * according a given query.
@@ -1071,6 +1092,21 @@ public class VariantSearchManager {
 
     public SearchIndexMetadata getSearchIndexMetadata() {
         return metadataManager.getProjectMetadata().getSecondaryAnnotationIndex().getLastStagingOrActiveIndex();
+    }
+
+    public ProjectMetadata setActiveIndex(SearchIndexMetadata indexMetadata, long newTimestamp) throws StorageEngineException {
+        return metadataManager.updateProjectMetadata(projectMetadata -> {
+            for (SearchIndexMetadata value : projectMetadata.getSecondaryAnnotationIndex().getValues()) {
+                if (value.getStatus() == SearchIndexMetadata.Status.ACTIVE) {
+                    // If there is an active index, update its status to DEPRECATED
+                    value.setStatus(SearchIndexMetadata.Status.DEPRECATED);
+                }
+            }
+            projectMetadata.getSecondaryAnnotationIndex().getIndexMetadata(indexMetadata.getVersion())
+                    .setStatus(SearchIndexMetadata.Status.ACTIVE)
+                    .setLastUpdateDate(Date.from(Instant.ofEpochMilli(newTimestamp)));
+            return projectMetadata;
+        });
     }
 
     private class Postprocessing implements SolrCollection.FacetPostprocessing {
