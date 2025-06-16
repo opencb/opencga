@@ -760,6 +760,9 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+if [[ $MVN_OPTS != *"-Dopencga.war.name="* ]]; then
+    MVN_OPTS="$MVN_OPTS -Dopencga.war.name=opencga"
+fi
 ## 3. Ensure where is the opencga-enterprise root directory and set it to a variable
 cd "$(dirname "$0")" || exit 2
 OPENCGA_ENTERPRISE_HOME_DIR=$PWD
