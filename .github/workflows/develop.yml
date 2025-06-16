@@ -13,6 +13,7 @@ jobs:
     with:
       maven_opts: -Phdp3.1,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
 
+
 ## TASK-4970: remove the test job from the develop.yml workflow because it is not needed anymore.
 #  test:
 #    uses: ./.github/workflows/test-analysis.yml
@@ -26,6 +27,7 @@ jobs:
     needs: build
     with:
       maven_opts: -P hdp3.1 -Dopencga.war.name=opencga
+
     secrets: inherit
 
   deploy-docker:
