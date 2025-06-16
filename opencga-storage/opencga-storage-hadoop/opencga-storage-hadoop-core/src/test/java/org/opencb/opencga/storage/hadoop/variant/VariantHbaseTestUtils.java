@@ -58,6 +58,7 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenix
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
+import org.opencb.opencga.storage.hadoop.variant.converters.HBaseVariantConverterConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.family.MendelianErrorSampleIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.*;
@@ -242,7 +243,7 @@ public class VariantHbaseTestUtils {
             return;
         }
         VariantDBIterator iterator = dbAdaptor.iterator(new VariantQuery().includeSampleId(true).includeSampleAll(),
-                new QueryOptions("simpleGenotypes", true));
+                new QueryOptions(HBaseVariantConverterConfiguration.SIMPLE_GENOTYPES, true));
         ObjectMapper mapper = new ObjectMapper().configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         while (iterator.hasNext()) {
             Variant variant = iterator.next();
