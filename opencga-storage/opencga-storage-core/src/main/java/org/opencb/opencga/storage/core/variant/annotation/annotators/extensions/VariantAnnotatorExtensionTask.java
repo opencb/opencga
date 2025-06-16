@@ -10,6 +10,9 @@ import java.util.List;
 
 public interface VariantAnnotatorExtensionTask extends Task<VariantAnnotation, VariantAnnotation> {
 
+    String NAME_KEY = "name";
+    String INDEX_CREATION_DATE_KEY = "indexCreationDate";
+
     /**
      * Get the variant annotator extension task ID.
      *
