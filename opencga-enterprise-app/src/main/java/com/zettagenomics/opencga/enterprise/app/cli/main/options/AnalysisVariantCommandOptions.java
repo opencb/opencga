@@ -494,7 +494,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--id"}, description = "List of variant IDs in the format chrom:start:ref:alt, e.g. 19:7177679:C:T", required = false, arity = 1)
         public String id;
     
-        @Parameter(names = {"--region"}, description = "Reference allele", required = false, arity = 1)
+        @Parameter(names = {"--region"}, description = "List of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000", required = false, arity = 1)
         public String region;
     
         @Parameter(names = {"--gene"}, description = "List of genes, most gene IDs are accepted (HGNC, Ensembl gene, ...). This is an alias to 'xref' parameter", required = false, arity = 1)
@@ -2290,7 +2290,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--vs-query-id"}, description = "List of variant IDs in the format chrom:start:ref:alt, e.g. 19:7177679:C:T", required = false, arity = 1)
         public String vsQueryId;
     
-        @Parameter(names = {"--vs-query-region"}, description = "Reference allele", required = false, arity = 1)
+        @Parameter(names = {"--vs-query-region"}, description = "List of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000", required = false, arity = 1)
         public String vsQueryRegion;
     
         @Parameter(names = {"--vs-query-gene"}, description = "List of genes, most gene IDs are accepted (HGNC, Ensembl gene, ...). This is an alias to 'xref' parameter", required = false, arity = 1)
@@ -2483,7 +2483,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--id"}, description = "List of variant IDs in the format chrom:start:ref:alt, e.g. 19:7177679:C:T", required = false, arity = 1)
         public String id;
     
-        @Parameter(names = {"--region"}, description = "Reference allele", required = false, arity = 1)
+        @Parameter(names = {"--region"}, description = "List of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000", required = false, arity = 1)
         public String region;
     
         @Parameter(names = {"--gene"}, description = "List of genes, most gene IDs are accepted (HGNC, Ensembl gene, ...). This is an alias to 'xref' parameter", required = false, arity = 1)
@@ -2670,7 +2670,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--variant-query-id"}, description = "List of variant IDs in the format chrom:start:ref:alt, e.g. 19:7177679:C:T", required = false, arity = 1)
         public String variantQueryId;
     
-        @Parameter(names = {"--variant-query-region"}, description = "Reference allele", required = false, arity = 1)
+        @Parameter(names = {"--variant-query-region"}, description = "List of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000", required = false, arity = 1)
         public String variantQueryRegion;
     
         @Parameter(names = {"--variant-query-gene"}, description = "List of genes, most gene IDs are accepted (HGNC, Ensembl gene, ...). This is an alias to 'xref' parameter", required = false, arity = 1)
@@ -2937,7 +2937,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--id"}, description = "List of variant IDs in the format chrom:start:ref:alt, e.g. 19:7177679:C:T", required = false, arity = 1)
         public String id;
     
-        @Parameter(names = {"--region"}, description = "Reference allele", required = false, arity = 1)
+        @Parameter(names = {"--region"}, description = "List of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000", required = false, arity = 1)
         public String region;
     
         @Parameter(names = {"--gene"}, description = "List of genes, most gene IDs are accepted (HGNC, Ensembl gene, ...). This is an alias to 'xref' parameter", required = false, arity = 1)

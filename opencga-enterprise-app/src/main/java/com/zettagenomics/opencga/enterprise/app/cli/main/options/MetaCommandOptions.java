@@ -100,8 +100,11 @@ public class MetaCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--token"}, description = "List of categories to get API from", required = false, arity = 1)
-        public String token; 
+        @Parameter(names = {"--environment"}, description = "Environment of the app", required = false, arity = 1)
+        public String environment; 
+    
+        @Parameter(names = {"--host"}, description = "Opencga host without environment", required = false, arity = 1)
+        public String host; 
     
     }
 
