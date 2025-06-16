@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.cosmic.CosmicVariantAnnotatorExtensionTask.COSMIC_ANNOTATOR_INDEX_NAME;
+import static org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.cosmic.CosmicVariantAnnotatorExtensionTask.*;
 
 @Category(ShortTests.class)
 public class CosmicVariantAnnotatorExtensionTaskTest {
@@ -57,9 +57,11 @@ public class CosmicVariantAnnotatorExtensionTaskTest {
         task.setup(params, outPath.toUri());
 
         ObjectMap metadata = task.getMetadata();
-        Assert.assertEquals(COSMIC_VERSION, metadata.get("version"));
-        Assert.assertEquals(CosmicVariantAnnotatorExtensionTask.ID, metadata.get("data"));
-        Assert.assertEquals(COSMIC_ASSEMBLY, metadata.get("assembly"));
+        Assert.assertEquals(COSMIC_VERSION, metadata.get(COSMIC_VERSION_KEY));
+        Assert.assertEquals(CosmicVariantAnnotatorExtensionTask.ID, metadata.get(NAME_KEY));
+        Assert.assertEquals(COSMIC_ASSEMBLY, metadata.get(COSMIC_ASSEMBLY_KEY));
+        Assert.assertTrue(metadata.containsKey(INDEX_CREATION_DATE_KEY));
+        Assert.assertTrue(StringUtils.isNotEmpty(metadata.getString(INDEX_CREATION_DATE_KEY)));
 
         Assert.assertEquals(true, task.isAvailable());
     }
@@ -101,7 +103,7 @@ public class CosmicVariantAnnotatorExtensionTaskTest {
 
         Assert.assertEquals(true, task.isAvailable());
 
-        options.put(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key(), cosmicFile.getParent().resolve(COSMIC_ANNOTATOR_INDEX_NAME));
+        options.put(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key(), outPath.resolve(COSMIC_ANNOTATOR_INDEX_NAME));
 
         task = (CosmicVariantAnnotatorExtensionTask) new VariantAnnotatorExtensionsFactory().getVariantAnnotatorExtensions(options).get(0);
         task.pre();

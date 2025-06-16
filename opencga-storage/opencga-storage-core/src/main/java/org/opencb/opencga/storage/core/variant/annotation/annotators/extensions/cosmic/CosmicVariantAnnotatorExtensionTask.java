@@ -175,22 +175,21 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
     @Override
     public ObjectMap getOptions() {
         checkAvailable();
-        ObjectMap options = new ObjectMap()
+        return new ObjectMap()
                 .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key(), dbLocation.toAbsolutePath().toString())
                 .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key(), cosmicVersion)
                 .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_ASSEMBLY.key(), cosmicAssembly)
                 .append(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_INDEX_CREATION_DATE.key(), cosmicIndexCreationDate);
-        return options;
     }
 
     @Override
     public ObjectMap getMetadata() {
         checkAvailable();
-        ObjectMap metadata = new ObjectMap().append("name", ID)
-                .append("version", cosmicVersion)
-                .append("assembly", cosmicAssembly)
-                .append("indexCreationDate", cosmicIndexCreationDate);
-        return metadata;
+        return new ObjectMap()
+                .append(NAME_KEY, ID)
+                .append(COSMIC_VERSION_KEY, cosmicVersion)
+                .append(COSMIC_ASSEMBLY_KEY, cosmicAssembly)
+                .append(INDEX_CREATION_DATE_KEY, cosmicIndexCreationDate);
     }
 
     @Override
