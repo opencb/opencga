@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.core.variant.query;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -15,6 +16,7 @@ import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.*;
@@ -151,6 +153,8 @@ public class VariantQueryParser {
     }
 
     public ParsedVariantQuery parseQuery(Query inputQuery, QueryOptions options, boolean skipPreProcess) {
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
         if (inputQuery == null) {
             inputQuery = new Query();
         }
@@ -222,7 +226,9 @@ public class VariantQueryParser {
             }
             studyQuery.setSampleDataQuery(sampleDataQueryWithMetadata);
         }
-
+        if (stopWatch.getTime() > 10000) {
+            logger.warn("Slow parsed query in {}", TimeUtils.durationToString(stopWatch));
+        }
         return variantQuery;
     }
 

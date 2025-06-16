@@ -19,6 +19,9 @@ package org.opencb.opencga.storage.hadoop.variant.executors;
 import org.apache.tools.ant.types.Commandline;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.exec.Command;
+import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDriver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.Charset;
@@ -32,12 +35,25 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOpti
  */
 public class SystemMRExecutor extends MRExecutor {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(SystemMRExecutor.class);
+
     @Override
     public Result run(String executable, String[] args) {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        Command command = new Command(buildCommandLine(executable, args), getEnv());
-        command.setErrorOutputStream(outputStream);
-        command.run();
+
+        String commandLine = buildCommandLine(executable, args);
+        Command command;
+        if (commandLine.length() > MAX_COMMAND_LINE_ARGS_LENGTH) {
+            LOGGER.info("Command line is too long. Passing args through stdin");
+            commandLine = buildCommandLine(executable, new String[]{AbstractHBaseDriver.ARGS_FROM_STDIN});
+            command = new Command(commandLine, getEnv());
+            command.setErrorOutputStream(outputStream);
+            runWithArgsToStdin(command, args);
+        } else {
+            command = new Command(commandLine, getEnv());
+            command.setErrorOutputStream(outputStream);
+            command.run();
+        }
         ObjectMap result = readResult(new String(outputStream.toByteArray(), Charset.defaultCharset()));
         return new Result(command.getExitValue(), result);
     }
