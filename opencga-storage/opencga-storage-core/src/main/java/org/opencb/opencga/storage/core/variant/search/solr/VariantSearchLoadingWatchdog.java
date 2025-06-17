@@ -10,7 +10,11 @@ public class VariantSearchLoadingWatchdog extends Watchdog {
     private final VariantStorageMetadataManager metadataManager;
 
     public VariantSearchLoadingWatchdog(VariantStorageMetadataManager metadataManager) {
-        super("VariantSearchLoadingWatchdog");
+        this(metadataManager, 1, TimeUnit.MINUTES);
+    }
+
+    public VariantSearchLoadingWatchdog(VariantStorageMetadataManager metadataManager, long timeout, TimeUnit timeUnit) {
+        super("VariantSearchLoadingWatchdog", timeout, timeUnit);
         this.metadataManager = metadataManager;
     }
 

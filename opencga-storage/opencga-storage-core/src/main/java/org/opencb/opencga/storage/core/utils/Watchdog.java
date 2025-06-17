@@ -14,6 +14,7 @@ public abstract class Watchdog extends Thread {
     private final AtomicBoolean active = new AtomicBoolean(true);
     private final Logger logger = LoggerFactory.getLogger(Watchdog.class);
     private final Thread hook;
+    private final Object lock = new Object();
 
     public Watchdog(String name) {
         this(name, 1, TimeUnit.MINUTES);
@@ -30,12 +31,21 @@ public abstract class Watchdog extends Thread {
     }
 
     public void stopWatchdog() {
-        active.set(false);
-        try {
-            Runtime.getRuntime().removeShutdownHook(hook);
-        } catch (Exception e) {
-            // Should not happen, but log it just in case
-            logger.warn("Error removing shutdown hook for Watchdog", e);
+        if (active.get()) {
+            synchronized (lock) {
+                active.set(false);
+                try {
+                    Runtime.getRuntime().removeShutdownHook(hook);
+                } catch (Exception e) {
+                    // Should not happen, but log it just in case
+                    logger.warn("Error removing shutdown hook for Watchdog", e);
+                }
+                try {
+                    onShutdown();
+                } catch (Exception e) {
+                    logger.error("Error updating status in Watchdog on shutdown", e);
+                }
+            }
         }
     }
 
@@ -45,7 +55,14 @@ public abstract class Watchdog extends Thread {
 
         while (active.get()) {
             try {
-                updateStatus();
+                // Synchronize to avoid concurrent calls to updateStatus and stopWatchdog
+                synchronized (lock) {
+                    // Check if the watchdog is still active before updating status
+                    if (!active.get()) {
+                        break;
+                    }
+                    updateStatus();
+                }
             } catch (Exception e) {
                 // Log the exception, but do not stop the watchdog
                 logger.error("Error updating status in IsLoadingWatchdog", e);
@@ -57,16 +74,9 @@ public abstract class Watchdog extends Thread {
             }
         }
         Runtime.getRuntime().removeShutdownHook(hook);
-        try {
-            onShutdown();
-        } catch (Exception e) {
-            logger.error("Error updating status in IsLoadingWatchdog on shutdown", e);
-        }
     }
 
     protected abstract void updateStatus() throws Exception;
 
-    protected void onShutdown() throws Exception{
-
-    }
+    protected abstract void onShutdown() throws Exception;
 }

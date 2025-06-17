@@ -31,16 +31,17 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageTest;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadingWatchdog;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
 
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 @Category(MediumTests.class)
 public class VariantSearchTest extends VariantStorageBaseTest implements DummyVariantStorageTest {
@@ -161,6 +162,35 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
         } else {
             System.out.println("Not found!!!!");
         }
+    }
+
+    @Test
+    public void testWhileLoadingEvent() throws Exception {
+        solr.configure(variantStorageEngine);
+        VariantSearchManager variantSearchManager = variantStorageEngine.getVariantSearchManager();
+
+        List<Variant> variants = annotatedVariants(getVariants(10));
+
+        SearchIndexMetadata indexMetadata = variantSearchManager.createIndexMetadataIfEmpty();
+        variantSearchManager.insert(indexMetadata, variants);
+
+        VariantQueryResult<Variant> result = variantStorageEngine.get(new Query(), new QueryOptions(VariantSearchManager.USE_SEARCH_INDEX, "YES"));
+        assertTrue(result.getSource().contains("solr"));
+        assertTrue(result.getEvents().isEmpty());
+
+        VariantSearchLoadingWatchdog watchdog = new VariantSearchLoadingWatchdog(variantStorageEngine.getMetadataManager(), 1, TimeUnit.MINUTES);
+        watchdog.start();
+
+        result = variantStorageEngine.get(new Query(), new QueryOptions(VariantSearchManager.USE_SEARCH_INDEX, "YES"));
+        assertTrue(result.getSource().contains("solr"));
+        assertFalse(result.getEvents().isEmpty());
+
+        watchdog.stopWatchdog();
+
+        result = variantStorageEngine.get(new Query(), new QueryOptions(VariantSearchManager.USE_SEARCH_INDEX, "YES"));
+        assertTrue(result.getSource().contains("solr"));
+        assertTrue(result.getEvents().isEmpty());
+
     }
 
     @Test
