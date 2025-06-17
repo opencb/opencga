@@ -10,6 +10,7 @@ import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchSyncInfo;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -58,8 +59,10 @@ public class SecondaryIndexPendingVariantsDescriptor implements PendingVariantsT
             // When overwriting mark all variants as pending
             return (value) -> getMutation(value, true);
         } else {
-            long ts = metadataManager.getProjectMetadata().getSecondaryAnnotationIndex()
-                    .getLastStagingOrActiveIndex().getLastUpdateDateTimestamp();
+            SearchIndexMetadata indexMetadata = metadataManager.getProjectMetadata().getSecondaryAnnotationIndex()
+                    .getLastStagingOrActiveIndex();
+            long creationDate = indexMetadata.getCreationDateTimestamp();
+            long lastUpdate = indexMetadata.getLastUpdateDateTimestamp();
             Map<Integer, Integer> cohortsSize = new HashMap<>();
             for (Map.Entry<String, Integer> entry : metadataManager.getStudies().entrySet()) {
                 for (CohortMetadata cohort : metadataManager.getCalculatedOrPartialCohorts(entry.getValue())) {
@@ -67,7 +70,8 @@ public class SecondaryIndexPendingVariantsDescriptor implements PendingVariantsT
                 }
             }
             return (value) -> {
-                VariantSearchSyncInfo.Status syncStatus = HadoopVariantSearchIndexUtils.getSyncStatusInfoResolved(ts, value, cohortsSize);
+                VariantSearchSyncInfo.Status syncStatus = HadoopVariantSearchIndexUtils
+                        .getSyncStatusInfoResolved(creationDate, lastUpdate, value, cohortsSize);
                 boolean pending = syncStatus != VariantSearchSyncInfo.Status.SYNCHRONIZED;
                 return getMutation(value, pending);
             };

@@ -9,6 +9,7 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchSyncInfo;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
@@ -42,9 +43,11 @@ public class SecondaryIndexPendingVariantsFileBasedDescriptor implements Pending
             // When overwriting mark all variants as pending
             return value -> converter.convert(value, VariantSearchSyncInfo.Status.NOT_SYNCHRONIZED);
         } else {
-            long ts = metadataManager.getProjectMetadata().getSecondaryAnnotationIndex()
-                    .getLastStagingOrActiveIndex().getLastUpdateDateTimestamp();
-            return (value) -> converter.checkAndConvert(value, ts);
+            SearchIndexMetadata indexMetadata = metadataManager.getProjectMetadata().getSecondaryAnnotationIndex()
+                    .getLastStagingOrActiveIndex();
+            long creationTs = indexMetadata.getCreationDateTimestamp();
+            long updateTs = indexMetadata.getLastUpdateDateTimestamp();
+            return (value) -> converter.checkAndConvert(value, creationTs, updateTs);
         }
     }
 
@@ -69,8 +72,9 @@ public class SecondaryIndexPendingVariantsFileBasedDescriptor implements Pending
             }
         }
 
-        private Variant checkAndConvert(Result value, long ts) {
-            VariantSearchSyncInfo.Status syncStatus = HadoopVariantSearchIndexUtils.getSyncStatusInfoResolved(ts, value, cohortsSize);
+        private Variant checkAndConvert(Result value, long creationDateTs, long lastUpdateTs) {
+            VariantSearchSyncInfo.Status syncStatus = HadoopVariantSearchIndexUtils
+                    .getSyncStatusInfoResolved(creationDateTs, lastUpdateTs, value, cohortsSize);
             if (syncStatus == VariantSearchSyncInfo.Status.SYNCHRONIZED) {
                 // Variant is already synchronized. Nothing to do!
                 return null;

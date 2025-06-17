@@ -1035,6 +1035,7 @@ public class VariantSearchManager {
                     projectMetadata.getSecondaryAnnotationIndex().getLastStagingOrActiveIndex().setLastUpdateDate(
                             Date.from(Instant.ofEpochMilli(projectMetadata
                                     .getAttributes().getLong("search.index.last.timestamp"))));
+                    projectMetadata.getAttributes().remove("search.index.last.timestamp");
                 }).getSecondaryAnnotationIndex().getIndexMetadata(indexMetadata.getVersion());
             }
             return indexMetadata;

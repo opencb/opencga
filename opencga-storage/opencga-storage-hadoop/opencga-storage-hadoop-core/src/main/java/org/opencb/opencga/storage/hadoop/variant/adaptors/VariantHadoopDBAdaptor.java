@@ -375,10 +375,8 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 .setIncludeSampleId(query.getBoolean(INCLUDE_SAMPLE_ID.key(), false));
         if (query.getBoolean(VariantQueryUtils.VARIANTS_TO_INDEX.key(), false)) {
             // Include index status
-            long indexStatusTimestamp = getMetadataManager().getProjectMetadata()
-                    .getSecondaryAnnotationIndex().getLastStagingOrActiveIndex()
-                    .getLastUpdateDateTimestamp();
-            builder.setIncludeIndexStatus(indexStatusTimestamp);
+            builder.setIncludeIndexStatus(getMetadataManager().getProjectMetadata()
+                    .getSecondaryAnnotationIndex().getLastStagingOrActiveIndex());
         }
         HBaseVariantConverterConfiguration converterConfiguration = builder.build();
 

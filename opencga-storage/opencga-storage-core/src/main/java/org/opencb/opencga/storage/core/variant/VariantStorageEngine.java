@@ -79,6 +79,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -741,12 +742,13 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             boolean collectionExists = variantSearchManager.exists(indexMetadata);
             if (!collectionExists) {
                 String collectionName = variantSearchManager.buildCollectionName(indexMetadata);
-                logger.info("Collection {} does not exist. Clearing 'lastUpdateDate' and 'status' for index metadata",
+                logger.info("Collection {} does not exist. Clearing 'lastUpdateDate', 'creationDate' and 'status' for index metadata",
                         collectionName);
                 int indexMetadataVersion = indexMetadata.getVersion();
                 indexMetadata = getMetadataManager().updateProjectMetadata(pm -> {
                     pm.getSecondaryAnnotationIndex().getIndexMetadata(indexMetadataVersion)
                             .setLastUpdateDate(null)
+                            .setCreationDate(Date.from(Instant.now()))
                             .setStatus(SearchIndexMetadata.Status.STAGING);
                 }).getSecondaryAnnotationIndex().getIndexMetadata(indexMetadataVersion);
             }

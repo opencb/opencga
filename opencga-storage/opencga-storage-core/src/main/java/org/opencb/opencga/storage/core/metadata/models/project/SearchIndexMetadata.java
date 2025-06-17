@@ -82,6 +82,10 @@ public class SearchIndexMetadata {
         return creationDate;
     }
 
+    public long getCreationDateTimestamp() {
+        return creationDate == null ? 0 : creationDate.toInstant().toEpochMilli();
+    }
+
     public SearchIndexMetadata setCreationDate(Date creationDate) {
         this.creationDate = creationDate;
         return this;

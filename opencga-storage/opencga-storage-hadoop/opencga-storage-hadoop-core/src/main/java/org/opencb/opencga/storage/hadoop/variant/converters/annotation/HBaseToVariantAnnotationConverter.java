@@ -68,7 +68,8 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
 
     private final ObjectMapper objectMapper;
     private final byte[] columnFamily;
-    private long ts;
+    private long searchIndexCreationTs;
+    private long searchIndexUpdateTs;
     private byte[] annotationColumn = VariantPhoenixSchema.VariantColumn.FULL_ANNOTATION.bytes();
     private String annotationColumnStr = Bytes.toString(annotationColumn);
     private String defaultAnnotationId = null;
@@ -78,7 +79,8 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
     public HBaseToVariantAnnotationConverter() {
         super(GenomeHelper.COLUMN_FAMILY_BYTES);
         this.columnFamily = GenomeHelper.COLUMN_FAMILY_BYTES;
-        ts = -1;
+        searchIndexCreationTs = -1;
+        searchIndexUpdateTs = -1;
         objectMapper = new ObjectMapper();
         JacksonUtils.addVariantMixIn(objectMapper);
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -153,8 +155,9 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
         return this;
     }
 
-    public void setIncludeIndexStatus(long indexStatusTimestamp) {
-        this.ts = indexStatusTimestamp;
+    public void setIncludeIndexStatus(long searchIndexCreationTs, long searchIndexUpdateTs) {
+        this.searchIndexCreationTs = searchIndexCreationTs;
+        this.searchIndexUpdateTs = searchIndexUpdateTs;
         includeIndexStatus = true;
     }
 
@@ -188,7 +191,7 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
 
         VariantSearchSyncInfo searchSyncInfo;
         if (includeIndexStatus) {
-            searchSyncInfo = HadoopVariantSearchIndexUtils.getSyncInformation(ts, result);
+            searchSyncInfo = HadoopVariantSearchIndexUtils.getSyncInformation(searchIndexCreationTs, searchIndexUpdateTs, result);
         } else {
             searchSyncInfo = null;
         }

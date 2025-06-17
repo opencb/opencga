@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 
@@ -28,12 +29,13 @@ public class HBaseVariantConverterConfiguration {
     private final boolean mutableSamplesPosition;
     private final List<String> sampleDataKeys;
     private final boolean includeSampleId;
-    private final long indexStatusTimestamp;
+    private final long searchIndexCreationTs;
+    private final long searchIndexUpdateTs;
 
     public HBaseVariantConverterConfiguration(VariantQueryProjection projection, boolean failOnWrongVariants, boolean failOnEmptyVariants,
                                               boolean studyNameAsStudyId, boolean simpleGenotypes, String unknownGenotype,
                                               boolean mutableSamplesPosition, List<String> sampleDataKeys, boolean includeSampleId,
-                                              long indexStatusTimestamp) {
+                                              long searchIndexCreationTs, long searchIndexUpdateTs) {
         this.projection = projection;
         this.failOnWrongVariants = failOnWrongVariants;
         this.failOnEmptyVariants = failOnEmptyVariants;
@@ -43,7 +45,8 @@ public class HBaseVariantConverterConfiguration {
         this.mutableSamplesPosition = mutableSamplesPosition;
         this.sampleDataKeys = sampleDataKeys;
         this.includeSampleId = includeSampleId;
-        this.indexStatusTimestamp = indexStatusTimestamp;
+        this.searchIndexCreationTs = searchIndexCreationTs;
+        this.searchIndexUpdateTs = searchIndexUpdateTs;
     }
 
     public static Builder builder() {
@@ -126,8 +129,12 @@ public class HBaseVariantConverterConfiguration {
         return includeSampleId;
     }
 
-    public long getIndexStatusTimestamp() {
-        return indexStatusTimestamp;
+    public long getSearchIndexCreationTs() {
+        return searchIndexCreationTs;
+    }
+
+    public long getSearchIndexUpdateTs() {
+        return searchIndexUpdateTs;
     }
 
     public static class Builder {
@@ -140,7 +147,8 @@ public class HBaseVariantConverterConfiguration {
         private boolean mutableSamplesPosition = true;
         private List<String> sampleDataKeys;
         private boolean includeSampleId;
-        private long indexStatusTimestamp;
+        private long searchIndexCreationTs;
+        private long searchIndexUpdateTs;
 
         public Builder setProjection(VariantQueryProjection projection) {
             this.projection = projection;
@@ -191,8 +199,9 @@ public class HBaseVariantConverterConfiguration {
             return this;
         }
 
-        public Builder setIncludeIndexStatus(long indexStatusTimestamp) {
-            this.indexStatusTimestamp = indexStatusTimestamp;
+        public Builder setIncludeIndexStatus(SearchIndexMetadata indexMetadata) {
+            this.searchIndexCreationTs = indexMetadata.getCreationDateTimestamp();
+            this.searchIndexUpdateTs = indexMetadata.getLastUpdateDateTimestamp();
             return this;
         }
 
@@ -206,7 +215,8 @@ public class HBaseVariantConverterConfiguration {
                     mutableSamplesPosition,
                     sampleDataKeys,
                     includeSampleId,
-                    indexStatusTimestamp);
+                    searchIndexCreationTs,
+                    searchIndexUpdateTs);
         }
     }
 }

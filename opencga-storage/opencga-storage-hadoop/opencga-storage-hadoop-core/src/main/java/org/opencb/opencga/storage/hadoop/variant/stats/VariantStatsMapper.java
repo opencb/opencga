@@ -119,7 +119,7 @@ public class VariantStatsMapper extends VariantMapper<ImmutableBytesWritable, Pu
             if (put == null) {
                 context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "stats.put.null").increment(1);
             } else {
-                HadoopVariantSearchIndexUtils.addStatsNotSyncStatus(put);
+                HadoopVariantSearchIndexUtils.addUnknownStatsSyncStatus(put);
                 context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "stats.put").increment(1);
                 List<Put> puts = AbstractHBaseDataWriter.splitDensePuts(put, limitColumnsPerPut);
                 for (Put p : puts) {

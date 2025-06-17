@@ -4,6 +4,7 @@ import org.apache.hadoop.hbase.client.Result;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
@@ -25,16 +26,15 @@ public class SecondaryIndexPendingVariantsReader extends PendingVariantsReader {
         VariantQueryProjection projection =
                 new VariantQueryProjectionParser(dbAdaptor.getMetadataManager()).parseVariantQueryProjection(query, qo);
 
-        long indexStatusTimestamp = dbAdaptor.getMetadataManager().getProjectMetadata()
+        SearchIndexMetadata indexMetadata = dbAdaptor.getMetadataManager().getProjectMetadata()
                 .getSecondaryAnnotationIndex()
-                .getLastStagingOrActiveIndex()
-                .getLastUpdateDateTimestamp();
+                .getLastStagingOrActiveIndex();
         converter = HBaseToVariantConverter.fromResult(dbAdaptor.getMetadataManager())
                 .configure(HBaseVariantConverterConfiguration.builder()
                         .setMutableSamplesPosition(false)
                         .setStudyNameAsStudyId(true)
                         .setProjection(projection)
-                        .setIncludeIndexStatus(indexStatusTimestamp)
+                        .setIncludeIndexStatus(indexMetadata)
                         .build());
     }
 
