@@ -30,6 +30,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -84,7 +85,7 @@ public class SolrQueryParser {
     static {
         includeMap = new HashMap<>();
 
-        includeMap.put("id", "id,variantId,attr_id");
+        includeMap.put("id", "id,attr_id,fullId");
         includeMap.put("chromosome", "chromosome");
         includeMap.put("start", "start");
         includeMap.put("end", "end");
@@ -107,19 +108,17 @@ public class SolrQueryParser {
         initChromosomeMap();
     }
 
+    private VariantSearchIdGenerator idGenerator;
+
     public SolrQueryParser(VariantStorageMetadataManager variantStorageMetadataManager) {
         this.variantStorageMetadataManager = variantStorageMetadataManager;
         this.functionQueryStats = true;
     }
 
-    public SolrQueryParser(VariantStorageMetadataManager variantStorageMetadataManager, String statsCollectionName) {
+    public SolrQueryParser(VariantStorageMetadataManager variantStorageMetadataManager, SearchIndexMetadata indexMetadata) {
         this.variantStorageMetadataManager = variantStorageMetadataManager;
-        this.functionQueryStats = true;
-    }
-
-    public SolrQueryParser(VariantStorageMetadataManager variantStorageMetadataManager, boolean functionQueryStats) {
-        this.variantStorageMetadataManager = variantStorageMetadataManager;
-        this.functionQueryStats = functionQueryStats;
+        this.functionQueryStats = VariantSearchManager.isStatsFunctionalQueryEnabled(indexMetadata);
+        idGenerator = VariantSearchIdGenerator.getGenerator(indexMetadata);
     }
 
     /**
@@ -480,9 +479,9 @@ public class SolrQueryParser {
         genes.addAll(variantQueryXref.getGenes());
         xrefs.addAll(variantQueryXref.getIds());
         xrefs.addAll(variantQueryXref.getOtherXrefs());
-        xrefs.addAll(variantQueryXref.getVariants().stream()
-                .map(VariantSearchToVariantConverter::getVariantId)
-                .collect(Collectors.toList()));
+        variantQueryXref.getVariants().stream()
+                .map(idGenerator::getId)
+                .forEach(xrefs::add);
 
         // Regions
         if (StringUtils.isNotEmpty(query.getString(REGION.key()))) {

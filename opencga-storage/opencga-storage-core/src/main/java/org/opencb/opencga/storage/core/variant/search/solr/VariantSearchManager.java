@@ -81,6 +81,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.SEARCH_STATS_FUNCTIONAL_QUERIES_ENABLED;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.SEARCH_STATS_VARIANT_ID_VERSION;
 
 
 /**
@@ -214,6 +215,7 @@ public class VariantSearchManager {
 
         // FIXME: TASK-6217 - Remove this hardcoded sleep. Check for the last _version of the core
         try {
+            logger.info("Waiting for TLOG replicas in collection '{}' to be in sync...", collectionName);
             Thread.sleep(sleepMs * 2);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -473,6 +475,7 @@ public class VariantSearchManager {
         if (CollectionUtils.isNotEmpty(variants)) {
             VariantToSolrBeanConverterTask converterTask = new VariantToSolrBeanConverterTask(
                     solrManager.getSolrClient().getBinder(),
+                    indexMetadata,
                     metadataManager);
 
             converterTask.pre();
@@ -486,6 +489,8 @@ public class VariantSearchManager {
             writer.post();
             writer.close();
         }
+
+        waitForReplicasInSync(indexMetadata, 5, TimeUnit.MINUTES, false);
     }
 
     /**
@@ -518,7 +523,7 @@ public class VariantSearchManager {
         ProgressLogger progressLogger = new ProgressLogger("Variants loaded in Solr:");
 
         VariantToSolrBeanConverterTask converterTask = new VariantToSolrBeanConverterTask(solrManager.getSolrClient().getBinder(),
-                metadataManager);
+                indexMetadata, metadataManager);
         VariantSearchLoadingWatchdog watchdog = new VariantSearchLoadingWatchdog(metadataManager);
 
         ParallelTaskRunner<Variant, VariantSearchUpdateDocument> ptr = new ParallelTaskRunner<>(
@@ -554,7 +559,7 @@ public class VariantSearchManager {
         return new VariantSearchLoadResult(count, count, 0, writer.getInsertedDocuments(), writer.getPartiallyUpdatedDocuments());
     }
 
-    public boolean isStatsFunctionalQueryEnabled(SearchIndexMetadata indexMetadata) {
+    public static boolean isStatsFunctionalQueryEnabled(SearchIndexMetadata indexMetadata) {
         return indexMetadata.getAttributes().getBoolean(SEARCH_STATS_FUNCTIONAL_QUERIES_ENABLED.key(), false);
     }
 
@@ -635,7 +640,7 @@ public class VariantSearchManager {
         DataResult<Variant> queryResult;
         try {
             queryResult = solrCollection.query(solrQuery, VariantSearchModel.class,
-                    new VariantSearchToVariantConverter(variantQuery.getProjection().getFields()));
+                    new VariantSearchToVariantConverter(variantQuery.getProjection().getFields(), indexMetadata));
         } catch (SolrServerException e) {
             throw new VariantSearchException("Error executing variant query", e);
         }
@@ -648,7 +653,7 @@ public class VariantSearchManager {
     }
 
     private SolrQuery parseQuery(SearchIndexMetadata indexMetadata, Query query, QueryOptions inputOptions) {
-        SolrQueryParser parser = new SolrQueryParser(metadataManager, isStatsFunctionalQueryEnabled(indexMetadata));
+        SolrQueryParser parser = new SolrQueryParser(metadataManager, indexMetadata);
         SolrQuery solrQuery = parser.parse(query, inputOptions);
 
         logger.info("Solr query collection: {}", buildCollectionName(indexMetadata));
@@ -712,7 +717,7 @@ public class VariantSearchManager {
         try {
             SolrQuery solrQuery = parseQuery(indexMetadata, query, queryOptions);
             return new SolrVariantDBIterator(solrManager.getSolrClient(), collection, solrQuery,
-                    new VariantSearchToVariantConverter(VariantField.getIncludeFields(queryOptions)));
+                    new VariantSearchToVariantConverter(VariantField.getIncludeFields(queryOptions), indexMetadata));
         } catch (SolrServerException e) {
             throw new VariantSearchException("Error getting variant iterator", e);
         }
@@ -1019,7 +1024,9 @@ public class VariantSearchManager {
             Map<String, Object>  collection = (Map<String, Object>) collections.get(collectionName);
             String configName = collection.get("configName").toString();
             SearchIndexMetadata indexMetadata = newIndexMetadata(configName, true, new ObjectMap()
-                    .append(SEARCH_STATS_FUNCTIONAL_QUERIES_ENABLED.key(), false));
+                    .append(SEARCH_STATS_FUNCTIONAL_QUERIES_ENABLED.key(), false)
+                    .append(SEARCH_STATS_VARIANT_ID_VERSION.key(), "v1")
+            );
             if (metadataManager.getProjectMetadata().getAttributes().containsKey("search.index.last.timestamp")) {
                 // If the project metadata has a "search.index.last.timestamp" attribute (old SEARCH_INDEX_LAST_TIMESTAMP),
                 // it means that the index was created before the introduction of the SearchIndexMetadata,
@@ -1046,8 +1053,12 @@ public class VariantSearchManager {
     private SearchIndexMetadata newIndexMetadata(boolean ifNotExists) throws StorageEngineException {
         boolean statsFuncQueryEnabled = options.getBoolean(SEARCH_STATS_FUNCTIONAL_QUERIES_ENABLED.key(),
                 SEARCH_STATS_FUNCTIONAL_QUERIES_ENABLED.defaultValue());
+        String idVersion = options.getString(VariantStorageOptions.SEARCH_STATS_VARIANT_ID_VERSION.key(),
+                VariantStorageOptions.SEARCH_STATS_VARIANT_ID_VERSION.defaultValue());
         return newIndexMetadata(defaultConfigSet, ifNotExists, new ObjectMap()
-                .append(VariantStorageOptions.SEARCH_STATS_FUNCTIONAL_QUERIES_ENABLED.key(), statsFuncQueryEnabled));
+                .append(VariantStorageOptions.SEARCH_STATS_FUNCTIONAL_QUERIES_ENABLED.key(), statsFuncQueryEnabled)
+                .append(VariantStorageOptions.SEARCH_STATS_VARIANT_ID_VERSION.key(), idVersion)
+        );
     }
 
     private SearchIndexMetadata newIndexMetadata(String configSetId, boolean ifNotExists, ObjectMap attributes)

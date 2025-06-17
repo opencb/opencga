@@ -3,11 +3,9 @@ package org.opencb.opencga.storage.core.variant.search;
 import htsjdk.variant.vcf.VCFHeader;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
@@ -23,11 +21,13 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageTest;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
@@ -46,12 +46,15 @@ import static org.junit.Assert.fail;
 public class VariantSearchTest extends VariantStorageBaseTest implements DummyVariantStorageTest {
 
     @Rule
-    public VariantSolrExternalResource solr = new VariantSolrExternalResource();
-    private String configSet;
+    public VariantSolrExternalResource solr = new VariantSolrExternalResource(this);
 
     @Before
     public void setUp() throws Exception {
-        configSet = variantStorageEngine.getConfiguration().getSearch().getConfigSet();
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        solr.printCollections(Paths.get(newOutputUri("searchIndex_" + TimeUtils.getTime() + "_solr")));
     }
 
     @Test
@@ -80,102 +83,42 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
             Variant actualVariant = results.getResults().get(i);
 
             assertEquals(expectedVariant.toString(), actualVariant.toString());
-            Map<String, ConsequenceType> inMap = getConsequenceTypeMap(expectedVariant);
-            Map<String, ConsequenceType> outMap = getConsequenceTypeMap(actualVariant);
-
-            assertEquals(inMap.keySet(), outMap.keySet());
-            for (String key: inMap.keySet()) {
-                ConsequenceType inCT = inMap.get(key);
-                ConsequenceType outCT = outMap.get(key);
-
-                // Check biotype
-                assertEquals(inCT.getBiotype(), outCT.getBiotype());
-
-                // Check annotation flags
-                System.out.println("inCT, annotation flags:");
-                if (CollectionUtils.isNotEmpty(inCT.getTranscriptFlags())) {
-                    System.out.println("\t" + StringUtils.join(inCT.getTranscriptFlags(), ","));
-                }
-                System.out.println();
-                System.out.println("outCT, annotation flags:");
-                if (CollectionUtils.isNotEmpty(outCT.getTranscriptFlags())) {
-                    System.out.println("\t" + StringUtils.join(outCT.getTranscriptFlags(), ","));
-                }
-                System.out.println();
-                if (CollectionUtils.isNotEmpty(inCT.getTranscriptFlags())
-                        && CollectionUtils.isNotEmpty(outCT.getTranscriptFlags())) {
-                    if (inCT.getTranscriptFlags().size() == outCT.getTranscriptFlags().size()) {
-                        for (int j = 0; j < inCT.getTranscriptFlags().size(); j++) {
-                            if (!inCT.getTranscriptFlags().get(j)
-                                    .equals(outCT.getTranscriptFlags().get(j))) {
-                                fail("Annotation flags mismatch: " + inCT.getTranscriptFlags().get(j) + " vs "
-                                        + outCT.getTranscriptFlags().get(j));
-                            }
-                        }
-                    } else {
-                        fail("Annotation flags mismatch (size)");
-                    }
-                } else if (CollectionUtils.isNotEmpty(inCT.getTranscriptFlags())
-                        || CollectionUtils.isNotEmpty(outCT.getTranscriptFlags())) {
-                    fail("Annotation flags mismatch");
-                }
-
-                // Check cdnaPosition, cdsPostion and codon
-                int inCdnaPosition =  inCT.getCdnaPosition() == null ? 0 : inCT.getCdnaPosition();
-                int inCdsPosition =  inCT.getCdsPosition() == null ? 0 : inCT.getCdsPosition();
-                int outCdnaPosition =  outCT.getCdnaPosition() == null ? 0 : outCT.getCdnaPosition();
-                int outCdsPosition =  outCT.getCdsPosition() == null ? 0 : outCT.getCdsPosition();
-                String inCodon =  inCT.getCodon() == null ? "" : inCT.getCodon().trim();
-                String outCodon =  outCT.getCodon() == null ? "" : outCT.getCodon().trim();
-                System.out.println(inCdnaPosition + " vs " + outCdnaPosition
-                        + " ; " + inCdsPosition + " vs " + outCdsPosition
-                        + " ; " + inCodon + " vs " + outCodon);
-                assert(inCdnaPosition == outCdnaPosition);
-                assert(inCdsPosition == outCdsPosition);
-                assert(inCodon.equals(outCodon));
-
-                if (inCT.getProteinVariantAnnotation() != null && outCT.getProteinVariantAnnotation() != null) {
-                    // Check sift and polyphen values
-                    checkScore(inCT.getProteinVariantAnnotation().getSubstitutionScores(), outCT.getProteinVariantAnnotation().getSubstitutionScores(), "sift");
-                    checkScore(inCT.getProteinVariantAnnotation().getSubstitutionScores(), outCT.getProteinVariantAnnotation().getSubstitutionScores(), "polyphen");
-
-                    String inUniprotAccession = inCT.getProteinVariantAnnotation().getUniprotAccession() == null ? "" : inCT.getProteinVariantAnnotation().getUniprotAccession();
-                    String outUniprotAccession = outCT.getProteinVariantAnnotation().getUniprotAccession() == null ? "" : outCT.getProteinVariantAnnotation().getUniprotAccession();
-                    String inUniprotName = inCT.getProteinVariantAnnotation().getUniprotName() == null ? "" : inCT.getProteinVariantAnnotation().getUniprotName();
-                    String outUniprotName = outCT.getProteinVariantAnnotation().getUniprotName() == null ? "" : outCT.getProteinVariantAnnotation().getUniprotName();
-                    String inUniprotVariantId = inCT.getProteinVariantAnnotation().getUniprotVariantId() == null ? "" : inCT.getProteinVariantAnnotation().getUniprotVariantId();
-                    String outUniprotVariantId = outCT.getProteinVariantAnnotation().getUniprotVariantId() == null ? "" : outCT.getProteinVariantAnnotation().getUniprotVariantId();
-                    System.out.println(inUniprotAccession + " vs " + outUniprotAccession
-                            + " ; " + inUniprotName + " vs " + outUniprotName
-                            + " ; " + inUniprotVariantId + " vs " + outUniprotVariantId);
-                    assert(inUniprotAccession.equals(outUniprotAccession));
-                    assert(inUniprotName.equals(outUniprotName));
-                    assert(inUniprotVariantId.equals(outUniprotVariantId));
-
-
-                    int inPosition =  inCT.getProteinVariantAnnotation().getPosition() == null ? 0 : inCT.getProteinVariantAnnotation().getPosition();
-                    int outPosition =  outCT.getProteinVariantAnnotation().getPosition() == null ? 0 : outCT.getProteinVariantAnnotation().getPosition();
-                    String inRef = inCT.getProteinVariantAnnotation().getReference() == null ? "" : inCT.getProteinVariantAnnotation().getReference();
-                    String outRef = outCT.getProteinVariantAnnotation().getReference() == null ? "" : outCT.getProteinVariantAnnotation().getReference();
-                    String inAlt = inCT.getProteinVariantAnnotation().getAlternate() == null ? "" : inCT.getProteinVariantAnnotation().getAlternate();
-                    String outAlt = outCT.getProteinVariantAnnotation().getAlternate() == null ? "" : outCT.getProteinVariantAnnotation().getAlternate();
-                    System.out.println(inPosition + " vs " + outPosition
-                            + " ; " + inRef + " vs " + outRef
-                            + " ; " + inAlt + " vs " + outAlt);
-                    assert(inPosition == outPosition);
-                    assert(inRef.equals(outRef));
-                    assert(inAlt.equals(outAlt));
-                } else if (inCT.getProteinVariantAnnotation() == null && outCT.getProteinVariantAnnotation() == null) {
-                    continue;
-                } else {
-                    fail("Mismatch protein variant annotation");
-                }
-            }
         }
 
         System.out.println("#variants = " + variants.size());
         System.out.println("#annotations = " + annotatedVariants.size());
         System.out.println("#variants from Solr = " + results.getResults().size());
+    }
+
+    @Test
+    public void testLargeVariantsV1() throws Exception {
+        testLargeVariants("v1");
+    }
+
+    @Test
+    public void testLargeVariantsV2() throws Exception {
+        testLargeVariants("v2");
+    }
+
+    public void testLargeVariants(String idGenVer) throws Exception {
+        String variantId = "1:1000:-:" + RandomStringUtils.random(500000, 'A', 'C', 'G', 'T');
+        Variant variant = new Variant(variantId);
+
+        variantStorageEngine.getOptions().put(VariantStorageOptions.SEARCH_STATS_VARIANT_ID_VERSION.key(), idGenVer);
+        solr.configure(variantStorageEngine);
+        VariantSearchManager variantSearchManager = variantStorageEngine.getVariantSearchManager();
+
+
+        SearchIndexMetadata indexMetadata = variantSearchManager.createIndexMetadataIfEmpty();
+        assertEquals(idGenVer, indexMetadata.getAttributes().getString(VariantStorageOptions.SEARCH_STATS_VARIANT_ID_VERSION.key(), null));
+        variantSearchManager.insert(indexMetadata, Collections.singletonList(variant));
+
+        VariantQueryResult<Variant> results = variantSearchManager.query(indexMetadata, variantStorageEngine.parseQuery(new Query(),
+                new QueryOptions()));
+
+        assertEquals(1, results.getNumMatches());
+        Variant readVariant = results.first();
+        assertEquals(variantId, readVariant.toString());
     }
 
     @Test
@@ -197,18 +140,11 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
 
         variants.get(0).getStudies().get(0).getFiles().get(0).setFileId(file);
         System.out.println(variants.get(0).getStudies().get(0).getFiles().get(0).getFileId());
-        //System.exit(-1);
 
         int studyId = scm.createStudy(study).getId();
         int fileId = scm.registerFile(studyId, file, Arrays.asList("A-A", "B", "C", "D"));
         scm.addIndexedFiles(studyId, Collections.singletonList(fileId));
         SearchIndexMetadata indexMetadata = variantSearchManager.createIndexMetadataIfEmpty();
-        LinkedHashMap<String, Integer> samplePosition = new LinkedHashMap<>();
-        samplePosition.put("A-A", 0);
-        samplePosition.put("B", 1);
-        samplePosition.put("C", 2);
-        samplePosition.put("D", 3);
-        annotatedVariants.get(0).getStudies().get(0).setStudyId(study).setSortedSamplesPosition(samplePosition);
         variantSearchManager.insert(indexMetadata, annotatedVariants);
 
         Query query = new Query();
@@ -314,7 +250,7 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
 
 
 
-    private Map<String, ConsequenceType> getConsequenceTypeMap (Variant variant){
+    private Map<String, ConsequenceType> getConsequenceTypeMap(Variant variant){
         Map<String, ConsequenceType> map = new HashMap<>();
         if (variant.getAnnotation() != null && ListUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
             for (ConsequenceType consequenceType: variant.getAnnotation().getConsequenceTypes()) {

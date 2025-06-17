@@ -32,10 +32,12 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.annotation.converters.VariantAnnotationModelUtils;
 import org.opencb.opencga.storage.core.variant.annotation.converters.VariantTraitAssociationToEvidenceEntryConverter;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchIdGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,17 +54,16 @@ import static org.opencb.opencga.storage.core.variant.search.VariantSearchUtils.
 public class VariantSearchToVariantConverter implements ComplexTypeConverter<Variant, VariantSearchModel> {
 
     public static final double MISSING_VALUE = -100.0;
-    private static final String LIST_SEP = "___";
     private static final String FIELD_SEP = " -- ";
-    static final String HASH_PREFIX = "#";
 
     private final Logger logger = LoggerFactory.getLogger(VariantSearchToVariantConverter.class);
     private final Set<VariantField> includeFields;
     private final Map<String, Integer> cohortsSize = new HashMap<>();
+    private final VariantSearchIdGenerator idGenerator;
 
     private final VariantAnnotationModelUtils variantAnnotationModelUtils = new VariantAnnotationModelUtils();
 
-    public VariantSearchToVariantConverter(VariantStorageMetadataManager metadataManager) {
+    public VariantSearchToVariantConverter(VariantStorageMetadataManager metadataManager, SearchIndexMetadata searchIndexMetadata) {
         this.includeFields = null;
         for (Map.Entry<String, Integer> entry : metadataManager.getStudies().entrySet()) {
             String studyName = entry.getKey();
@@ -73,15 +74,12 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 cohortsSize.put(studyName + VariantSearchUtils.FIELD_SEPARATOR + cohortName, cohort.getSamples().size());
             }
         }
+        idGenerator = VariantSearchIdGenerator.getGenerator(searchIndexMetadata);
     }
 
-    public VariantSearchToVariantConverter(Map<String, Integer> cohortsSize) {
-        this.includeFields = null;
-        this.cohortsSize.putAll(cohortsSize);
-    }
-
-    public VariantSearchToVariantConverter(Set<VariantField> includeFields) {
+    public VariantSearchToVariantConverter(Set<VariantField> includeFields, SearchIndexMetadata searchIndexMetadata) {
         this.includeFields = includeFields;
+        idGenerator = VariantSearchIdGenerator.getGenerator(searchIndexMetadata);
     }
 
     /**
@@ -93,7 +91,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
     @Override
     public Variant convertToDataModelType(VariantSearchModel variantSearchModel) {
         // set chromosome, start, end, ref, alt from ID
-        Variant variant = variantSearchModel.toVariantSimple();
+        Variant variant = idGenerator.getVariant(variantSearchModel);
 
         // set chromosome, start, end, ref, alt, type
 
@@ -144,7 +142,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         }
 
         // Process annotation (for performance purposes, variant scores are processed too)
-        variant.setAnnotation(getVariantAnnotation(variantSearchModel, variant, studyEntryMap, scoreStudyMap));
+        variant.setAnnotation(getVariantAnnotation(variantSearchModel, variant));
 
         // Set variant scores from score study map
         if (MapUtils.isNotEmpty(scoreStudyMap)) {
@@ -175,8 +173,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         return variantStats;
     }
 
-    public VariantAnnotation getVariantAnnotation(VariantSearchModel variantSearchModel, Variant variant,
-                                                  Map<String, StudyEntry> studyEntryMap, Map<String, VariantScore> scoreStudyMap) {
+    public VariantAnnotation getVariantAnnotation(VariantSearchModel variantSearchModel, Variant variant) {
 
         if (includeFields != null && !includeFields.contains(VariantField.ANNOTATION)) {
 //            updateScoreStudyMap(studyEntryMap, scoreStudyMap, variantSearchModel);
@@ -615,10 +612,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 //        List<String> other = new ArrayList<>();
 
         // Set general Variant attributes: id, dbSNP, chromosome, start, end, type
-        String variantId = getVariantId(variant);
-        variantSearchModel.setId(variantId);   // Internal unique ID e.g.  3:1000:AT:-
-        variantSearchModel.setVariantId(variantId);
-        variantSearchModel.getAttr().put("attr_id", variant.toString());
+        idGenerator.addId(variant, variantSearchModel);
         variantSearchModel.setChromosome(variant.getChromosome());
         variantSearchModel.setStart(variant.getStart());
         variantSearchModel.setEnd(variant.getEnd());
@@ -632,13 +626,13 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         }
 
         if (includeAnnotation) {
-            convertVariantAnnotation(variant, variantSearchModel, variantId);
+            convertVariantAnnotation(variant, variantSearchModel);
         }
 
         return variantSearchModel;
     }
 
-    private void convertVariantAnnotation(Variant variant, VariantSearchModel variantSearchModel, String variantId) {
+    private void convertVariantAnnotation(Variant variant, VariantSearchModel variantSearchModel) {
         // We init all annotation numeric values to MISSING_VALUE, this fixes two different scenarios:
         // 1. No Variant Annotation has been found, probably because it is a SV longer than 100bp.
         // 2. There are some conservation or CADD scores missing
@@ -991,7 +985,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         // This field contains all possible IDs: id, dbSNP, names, genes, transcripts, protein, clinvar, hpo, ...
         // This will help when searching by variant id. This is added at the end of the method after collecting all IDs
         Set<String> xrefs = variantAnnotationModelUtils.extractXRefs(variant.getAnnotation());
-        xrefs.add(variantId);
+        xrefs.add(variantSearchModel.getId());
         if (variant.getNames() != null && !variant.getNames().isEmpty()) {
             variant.getNames().forEach(name -> {
                 if (name != null) {
@@ -1000,20 +994,6 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             });
         }
         variantSearchModel.setXrefs(new ArrayList<>(xrefs));
-    }
-
-    public static String getVariantId(Variant variant) {
-        String variantString = variant.toString();
-        if (variantString.length() > 32766) {
-            // variantString.length() >= Short.MAX_VALUE
-            return hashVariantId(variant, variantString);
-        } else {
-            return variantString;
-        }
-    }
-
-    public static String hashVariantId(Variant variant, String variantString) {
-        return HASH_PREFIX + variant.getChromosome() + ":" + variant.getStart() + ":" + Integer.toString(variantString.hashCode());
     }
 
     private void convertStudyIds(Variant variant, VariantSearchModel variantSearchModel) {

@@ -17,14 +17,11 @@
 package org.opencb.opencga.storage.core.variant.search;
 
 import org.apache.solr.client.solrj.beans.Field;
-import org.opencb.biodata.models.variant.Variant;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter.HASH_PREFIX;
 
 /**
  * Created by wasim on 09/11/16.
@@ -38,8 +35,8 @@ public class VariantSearchModel {
     @Field("id")
     private String id;
 
-    @Field("variantId")
-    private String variantId;
+    @Field("fullId")
+    private String fullId;
 
     @Field("chromosome")
     private String chromosome;
@@ -144,7 +141,7 @@ public class VariantSearchModel {
 
     public VariantSearchModel(VariantSearchModel init) {
         this.id = init.getId();
-        this.variantId = init.getVariantId();
+        this.fullId = init.getFullId();
         this.chromosome = init.getChromosome();
         this.start = init.getStart();
         this.end = init.getEnd();
@@ -179,7 +176,7 @@ public class VariantSearchModel {
     public String toString() {
         final StringBuilder sb = new StringBuilder("VariantSearchModel{");
         sb.append("id='").append(id).append('\'');
-        sb.append(", variantId='").append(variantId).append('\'');
+        sb.append(", fullId='").append(fullId).append('\'');
         sb.append(", chromosome='").append(chromosome).append('\'');
         sb.append(", start=").append(start);
         sb.append(", end=").append(end);
@@ -216,28 +213,17 @@ public class VariantSearchModel {
         return id;
     }
 
-    public Variant toVariantSimple() {
-        String variantId = getId();
-        if (variantId.startsWith(HASH_PREFIX)) {
-            Object o = getAttr().get("attr_id");
-            variantId = o instanceof String ? (String) o : ((List<String>) o).get(0);
-        }
-        Variant variant = new Variant(variantId);
-        variant.setId(variantId);
-        return variant;
-    }
-
     public VariantSearchModel setId(String id) {
         this.id = id;
         return this;
     }
 
-    public String getVariantId() {
-        return variantId;
+    public String getFullId() {
+        return fullId;
     }
 
-    public VariantSearchModel setVariantId(String variantId) {
-        this.variantId = variantId;
+    public VariantSearchModel setFullId(String fullId) {
+        this.fullId = fullId;
         return this;
     }
 

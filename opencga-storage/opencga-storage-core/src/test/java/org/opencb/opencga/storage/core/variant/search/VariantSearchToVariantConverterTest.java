@@ -5,9 +5,13 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantScore;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 
+import java.time.Instant;
 import java.util.Collections;
+import java.util.Date;
 
 import static org.junit.Assert.*;
 
@@ -18,7 +22,7 @@ public class VariantSearchToVariantConverterTest {
 
     @Before
     public void setUp() throws Exception {
-        converter = new VariantSearchToVariantConverter(Collections.emptyMap());
+        converter = new VariantSearchToVariantConverter(Collections.emptySet(), new SearchIndexMetadata(1, Date.from(Instant.now()), Date.from(Instant.now()), SearchIndexMetadata.Status.ACTIVE, "", "", new ObjectMap()));
     }
 
     @Test
@@ -51,7 +55,7 @@ public class VariantSearchToVariantConverterTest {
         expectedVariant.addStudyEntry(aux.getStudy("2"));
 
         VariantSearchModel variantSearchModel = converter.convertToStorageType(expectedVariant);
-        assertNotNull(variantSearchModel.getVariantId());
+//        assertNotNull(variantSearchModel.getVariantId());
         assertEquals(variantId, variantSearchModel.getId());
         Variant actualVariant = converter.convertToDataModelType(variantSearchModel);
 

@@ -577,7 +577,7 @@
 <!--    <fieldType name="long" class="solr.LongPointField" docValues="true"/>-->
 
     <!-- Common variant and annotation fields -->
-    <field name="variantId" type="string" indexed="false" stored="true"/>
+    <field name="fullId" type="string" indexed="false" stored="true" multiValued="false" docValues="false"/>
     <field name="chromosome" type="string" indexed="true" stored="false"/>
     <field name="start" type="pint" indexed="true" stored="false"/>
     <field name="end" type="pint" indexed="true" stored="false"/>
@@ -597,7 +597,7 @@
     <field name="genes" type="string" indexed="false" stored="false" multiValued="true"/>
     <field name="biotypes" type="string" indexed="true" stored="false" multiValued="true"/>
     <field name="soAcc" type="pint" indexed="true" stored="false" multiValued="true"/>
-    <field name="geneToSoAcc" type="string" indexed="true" stored="false" multiValued="true"/>
+    <field name="geneToSoAcc" type="string" indexed="true" stored="false" multiValued="true" docValues="false"/>
 
     <!-- Clinical significance -->
     <field name="clinicalSig" type="string" indexed="true" stored="false" multiValued="true"/>
@@ -621,28 +621,6 @@
             ...
     -->
     <field name="traits" type="text_en" indexed="true" stored="false" multiValued="true"/>
-
-    <!--
-       The field 'other' contains info about display consequence type, HGVS, cytobands, repeats, score and trancripts:
-            DCT - displayConsequenceType
-            HGVS - hgvs1
-            HGVS - hgvs2
-            ...
-            CB - cytobandName1 - stain1 - start1 - end1
-            CB - cytobandName2 - stain2 - start2 - end2
-            ...
-            RP - repeatName1 - id1 - source1 - copyNumber1 - percentageMatch1 - start1 - end1
-            RP - repeatName2 - id2 - source2 - copyNumber2 - percentageMatch2 - start2 - end2
-            ...
-            SC - studyId - scoreId - score - pvalue - cohort1 - cohort2
-            SC - studyId - scoreId - score - pvalue - cohort1 - cohort2
-            ...
-            TRANS - transcriptId1 - biotype1 - cdnaPostion1 - cdsPosition1 - codon1 - uniprotAccession1 - uniprotAccession1 - uniprotVariantId1 - annotationFlags1 - position1 - aaChange1 - siftScore1 - siftDescr1 - poliphenScore1 - poliphenDescr1
-            TRANS - transcriptId2 - biotype2 - cdnaPostion2 - cdsPosition2 - codon2 - uniprotAccession2 - uniprotAccession2 - uniprotVariantId2 - annotationFlags2 - position2 - aaChange2 - siftScore2 - siftDescr2 - poliphenScore2 - poliphenDescr2
-            ...
-       For TRANS, transcript annotation flags are separated by , (e.g.: CCDS,basic)
-    -->
-    <field name="other" type="string" indexed="false" stored="false" multiValued="true"/>
 
     <dynamicField name="passStats_*" type="pfloat" indexed="true" stored="false"/>
     <dynamicField name="altStats_*" type="pfloat" indexed="true" stored="false"/>

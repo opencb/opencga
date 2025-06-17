@@ -6,6 +6,7 @@ import org.apache.solr.common.SolrInputField;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.commons.Converter;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.search.solr.SolrInputDocumentDataWriter;
 
 import java.util.ArrayList;
@@ -17,10 +18,11 @@ public class VariantToSolrBeanConverterTask implements Converter<Variant, Varian
     private final DocumentObjectBinder binder;
     private final VariantSecondaryIndexFilter filter;
 
-    public VariantToSolrBeanConverterTask(DocumentObjectBinder binder, VariantStorageMetadataManager metadataManager) {
+    public VariantToSolrBeanConverterTask(DocumentObjectBinder binder, SearchIndexMetadata indexMetadata,
+                                          VariantStorageMetadataManager metadataManager) {
         this.binder = binder;
         this.filter = new VariantSecondaryIndexFilter(metadataManager);
-        this.converter = new VariantSearchToVariantConverter(metadataManager);
+        this.converter = new VariantSearchToVariantConverter(metadataManager, indexMetadata);
     }
 
     @Override

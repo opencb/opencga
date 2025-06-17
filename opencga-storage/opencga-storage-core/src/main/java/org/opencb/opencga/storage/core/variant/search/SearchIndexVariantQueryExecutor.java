@@ -15,6 +15,7 @@ import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.search.solr.SolrNativeIterator;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchIdGenerator;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -177,6 +178,7 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
     public VariantQueryResult<Long> approximateCount(SearchIndexMetadata indexMetadata, ParsedVariantQuery variantQuery) {
         Query query = variantQuery.getQuery();
         QueryOptions options = variantQuery.getInputOptions();
+        VariantSearchIdGenerator idGenerator = VariantSearchIdGenerator.getGenerator(indexMetadata);
         long count;
         boolean approxCount = true;
         int sampling = 0;
@@ -196,7 +198,7 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
                 DataResult<VariantSearchModel> nativeResult = searchManager
                         .nativeQuery(indexMetadata, searchEngineQuery, queryOptions);
                 List<Variant> variantIds = nativeResult.getResults().stream()
-                        .map(VariantSearchModel::toVariantSimple)
+                        .map(idGenerator::getVariant)
                         .collect(Collectors.toList());
                 // Adjust numSamples if the results from SearchManager is smaller than numSamples
                 // If this happens, the count is not approximated
@@ -309,6 +311,7 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
 
     protected Iterator<Variant> variantIdIteratorFromSearch(SearchIndexMetadata indexMetadata, Query query, int limit, int skip,
                                                             AtomicLong numTotalResults) {
+        VariantSearchIdGenerator idGenerator = VariantSearchIdGenerator.getGenerator(indexMetadata);
         Iterator<Variant> variantsIterator;
         QueryOptions queryOptions = new QueryOptions()
                 .append(QueryOptions.LIMIT, limit)
@@ -323,14 +326,14 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
                 }
                 variantsIterator = nativeResult.getResults()
                         .stream()
-                        .map(VariantSearchModel::toVariantSimple)
+                        .map(idGenerator::getVariant)
                         .iterator();
             } else {
                 SolrNativeIterator nativeIterator = searchManager.nativeIterator(indexMetadata, query, queryOptions);
                 if (numTotalResults != null) {
                     numTotalResults.set(nativeIterator.getNumFound());
                 }
-                variantsIterator = Iterators.transform(nativeIterator, VariantSearchModel::toVariantSimple);
+                variantsIterator = Iterators.transform(nativeIterator, idGenerator::getVariant);
             }
         } catch (VariantSearchException | IOException e) {
             throw new VariantQueryException("Error querying " + VariantSearchManager.SEARCH_ENGINE_ID, e);
