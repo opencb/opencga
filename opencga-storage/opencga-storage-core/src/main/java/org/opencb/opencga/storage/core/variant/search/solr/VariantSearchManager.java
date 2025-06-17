@@ -198,8 +198,8 @@ public class VariantSearchManager {
         logger.info("REBALANCELEADERS({}) = {}", collection, rebalanceResponse);
     }
 
-    public void waitForReplicasInSync(SearchIndexMetadata indexMetadata, int timeout, TimeUnit timeUnit) throws VariantSearchException {
-        waitForReplicasInSync(indexMetadata, timeout, timeUnit, true);
+    public void waitForReplicasInSync(SearchIndexMetadata indexMetadata) throws VariantSearchException {
+        waitForReplicasInSync(indexMetadata, 5, TimeUnit.MINUTES, false);
     }
 
     public boolean waitForReplicasInSync(SearchIndexMetadata indexMetadata, int timeout, TimeUnit timeUnit, boolean throwException)

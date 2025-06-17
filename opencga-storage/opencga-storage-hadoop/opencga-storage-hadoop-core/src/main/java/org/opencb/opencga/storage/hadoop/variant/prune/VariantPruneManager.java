@@ -20,6 +20,7 @@ import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchIdGenerator;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
@@ -269,13 +270,20 @@ public class VariantPruneManager {
         ParallelTaskRunner<Variant, Variant> ptr = new ParallelTaskRunner<>(
                 manager.reader(new Query()),
                 progressTask,
-                new HadoopVariantSearchDataDeleter(collection, searchManager.getSolrClient(), cleaner),
+                new HadoopVariantSearchDataDeleter(collection, VariantSearchIdGenerator.getGenerator(indexMetadata),
+                        searchManager.getSolrClient(), cleaner),
                 ParallelTaskRunner.Config.builder().setNumTasks(1).setBatchSize(searchManager.getInsertBatchSize()).build());
 
         try {
             ptr.run();
         } catch (ExecutionException e) {
             throw new StorageEngineException("Error checking variant prune report", e);
+        }
+
+        try {
+            searchManager.waitForReplicasInSync(indexMetadata);
+        } catch (VariantSearchException e) {
+            throw new StorageEngineException("Error waiting for replicas in sync after pruning from secondary index", e);
         }
     }
 
