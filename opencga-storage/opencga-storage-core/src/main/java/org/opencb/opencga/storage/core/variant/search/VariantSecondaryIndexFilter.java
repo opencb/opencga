@@ -9,7 +9,9 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -21,8 +23,9 @@ public class VariantSecondaryIndexFilter implements Task<Variant, Variant> {
     protected final Map<String, Integer> studiesMap;
     private final Map<String, Integer> cohortsIds = new HashMap<>();
     private final Map<Integer, Integer> cohortsSize = new HashMap<>();
+    private final boolean functionalStatsEnabled;
 
-    public VariantSecondaryIndexFilter(VariantStorageMetadataManager metadataManager) {
+    public VariantSecondaryIndexFilter(VariantStorageMetadataManager metadataManager, SearchIndexMetadata indexMetadata) {
         this.studiesMap = metadataManager.getStudies();
         for (Map.Entry<String, Integer> entry : metadataManager.getStudies().entrySet()) {
             for (CohortMetadata cohort : metadataManager.getCalculatedOrPartialCohorts(entry.getValue())) {
@@ -30,6 +33,7 @@ public class VariantSecondaryIndexFilter implements Task<Variant, Variant> {
                 cohortsSize.put(cohort.getId(), cohort.getSamples().size());
             }
         }
+        this.functionalStatsEnabled = VariantSearchManager.isStatsFunctionalQueryEnabled(indexMetadata);
     }
 
     @Override
@@ -104,6 +108,10 @@ public class VariantSecondaryIndexFilter implements Task<Variant, Variant> {
     }
 
     private Map<Integer, Long> getCurrentStatsHash(Variant variant) {
+        if (!functionalStatsEnabled) {
+            // Stats hash only available if functional stats are enabled
+            return Collections.emptyMap();
+        }
         Map<Integer, Long> currentStatsHash = new HashMap<>();
         for (StudyEntry study : variant.getStudies()) {
             Integer studyId = studiesMap.get(study.getStudyId());

@@ -21,7 +21,7 @@ public class VariantToSolrBeanConverterTask implements Converter<Variant, Varian
     public VariantToSolrBeanConverterTask(DocumentObjectBinder binder, SearchIndexMetadata indexMetadata,
                                           VariantStorageMetadataManager metadataManager) {
         this.binder = binder;
-        this.filter = new VariantSecondaryIndexFilter(metadataManager);
+        this.filter = new VariantSecondaryIndexFilter(metadataManager, indexMetadata);
         this.converter = new VariantSearchToVariantConverter(metadataManager, indexMetadata);
     }
 

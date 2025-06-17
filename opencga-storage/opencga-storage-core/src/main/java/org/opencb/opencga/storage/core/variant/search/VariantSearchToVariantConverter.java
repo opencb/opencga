@@ -38,6 +38,7 @@ import org.opencb.opencga.storage.core.variant.annotation.converters.VariantAnno
 import org.opencb.opencga.storage.core.variant.annotation.converters.VariantTraitAssociationToEvidenceEntryConverter;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchIdGenerator;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,6 +63,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
     private final VariantSearchIdGenerator idGenerator;
 
     private final VariantAnnotationModelUtils variantAnnotationModelUtils = new VariantAnnotationModelUtils();
+    private final boolean functionQueryStats;
 
     public VariantSearchToVariantConverter(VariantStorageMetadataManager metadataManager, SearchIndexMetadata searchIndexMetadata) {
         this.includeFields = null;
@@ -75,11 +77,13 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             }
         }
         idGenerator = VariantSearchIdGenerator.getGenerator(searchIndexMetadata);
+        functionQueryStats = VariantSearchManager.isStatsFunctionalQueryEnabled(searchIndexMetadata);
     }
 
     public VariantSearchToVariantConverter(Set<VariantField> includeFields, SearchIndexMetadata searchIndexMetadata) {
         this.includeFields = includeFields;
         idGenerator = VariantSearchIdGenerator.getGenerator(searchIndexMetadata);
+        functionQueryStats = VariantSearchManager.isStatsFunctionalQueryEnabled(searchIndexMetadata);
     }
 
     /**
@@ -1040,14 +1044,17 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     }
                     float nonRef = getNonRefCount(stats);
 
-//                    variantSearchModel.getAltStats().put("altStats" + FIELD_SEPARATOR + studyId + FIELD_SEPARATOR + cohortName,
-//                            stats.getAltAlleleFreq());
-                    variantSearchModel.getAltStats().put(buildStatsAltAlleleCountField(studyId, cohortName),
-                            altAlleleCount);
-                    variantSearchModel.getAltStats().put(buildStatsAlleleMissGapCountField(studyId, cohortName),
-                            alleleGap);
-                    variantSearchModel.getAltStats().put(buildStatsAlleleNonRefCountField(studyId, cohortName),
-                            nonRef);
+                    if (functionQueryStats) {
+                        variantSearchModel.getAltStats().put(buildStatsAltAlleleCountField(studyId, cohortName),
+                                altAlleleCount);
+                        variantSearchModel.getAltStats().put(buildStatsAlleleMissGapCountField(studyId, cohortName),
+                                alleleGap);
+                        variantSearchModel.getAltStats().put(buildStatsAlleleNonRefCountField(studyId, cohortName),
+                                nonRef);
+                    } else {
+                        variantSearchModel.getAltStats().put("altStats" + FIELD_SEPARATOR + studyId + FIELD_SEPARATOR + cohortName,
+                                stats.getAltAlleleFreq());
+                    }
 
                     float passFreq = getPassFreq(stats);
                     // PASS filter frequency
