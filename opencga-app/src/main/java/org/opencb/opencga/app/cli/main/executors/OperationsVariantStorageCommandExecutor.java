@@ -453,6 +453,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .readValue(new java.io.File(commandOptions.jsonFile), VariantAggregateFamilyParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "family", commandOptions.family, true);
             putNestedIfNotNull(beanParams, "samples", commandOptions.samples, true);
             putNestedIfNotEmpty(beanParams, "gapsGenotype", commandOptions.gapsGenotype, true);
             putNestedIfNotNull(beanParams, "resume", commandOptions.resume, true);
