@@ -88,8 +88,10 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
         QueryOptions options = variantQuery.getInputOptions();
         ProjectMetadata projectMetadata = metadataManager.getProjectMetadata();
         if (projectMetadata.getSecondaryAnnotationIndex().isSolrUpdateInProgress()) {
-            variantQuery.getEvents().add(new Event(Event.Type.WARNING, "Secondary annotation index (solr) is being updated. "
-                    + "Results may not be up to date, and some latency may be expected."));
+            String message = "Secondary annotation index (solr) is being updated. "
+                    + "Results may not be up to date, and some latency may be expected.";
+            logger.info(message);
+            variantQuery.getEvents().add(new Event(Event.Type.WARNING, message));
         }
         SearchIndexMetadata indexMetadata = projectMetadata.getSecondaryAnnotationIndex()
                 .getLastStagingOrActiveIndex();
@@ -170,6 +172,7 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
                     queryResult.setNumMatches(numTotalResults.longValue());
                 }
                 queryResult.setSource(SEARCH_ENGINE_ID + '+' + getStorageEngineId());
+                queryResult.addEvents(variantQuery);
                 return queryResult;
             }
         }
