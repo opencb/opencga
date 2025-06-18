@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.core.variant.search.solr;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+import org.opencb.commons.datastore.core.ObjectMap;
 
 /**
  * Created on 23/04/18.
@@ -42,6 +43,11 @@ public class VariantSearchLoadResult {
      */
     private final long numLoadedVariantsPartialStatsUpdate;
 
+    /**
+     * Additional attributes that may be used to store extra information about the load operation.
+     */
+    private ObjectMap attributes;
+
     public VariantSearchLoadResult(long numProcessedVariants, long numLoadedVariants, long numDeletedVariants,
                                    long numInsertedVariants, long numLoadedVariantsPartialStatsUpdate) {
         this.numProcessedVariants = numProcessedVariants;
@@ -49,6 +55,7 @@ public class VariantSearchLoadResult {
         this.numDeletedVariants = numDeletedVariants;
         this.numInsertedVariants = numInsertedVariants;
         this.numLoadedVariantsPartialStatsUpdate = numLoadedVariantsPartialStatsUpdate;
+        this.attributes = new ObjectMap();
     }
 
     public long getNumProcessedVariants() {
@@ -71,6 +78,10 @@ public class VariantSearchLoadResult {
         return numLoadedVariantsPartialStatsUpdate;
     }
 
+    public ObjectMap getAttributes() {
+        return attributes;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this, ToStringStyle.JSON_STYLE)
@@ -79,6 +90,7 @@ public class VariantSearchLoadResult {
                 .append("numDeletedVariants", numDeletedVariants)
                 .append("numInsertedVariants", numInsertedVariants)
                 .append("numLoadedVariantsPartialStatsUpdate", numLoadedVariantsPartialStatsUpdate)
+                .append("attributes", attributes.toJson())
                 .toString();
     }
 }

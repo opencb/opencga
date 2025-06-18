@@ -54,6 +54,8 @@ import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsReader;
 import java.io.IOException;
 import java.util.*;
 
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.LAST_VARIANT_ANNOTATION_TS;
+
 /**
  * Created on 23/11/16.
  *
@@ -125,15 +127,16 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
                 long lastLoadedFileTs = projectMetadata.getAttributes()
                         .getLong(HadoopVariantStorageEngine.LAST_LOADED_FILE_TS);
                 long lastVariantsToAnnotateUpdateTs = projectMetadata.getAttributes()
-                        .getLong(HadoopVariantStorageEngine.LAST_VARIANTS_TO_ANNOTATE_UPDATE_TS);
+                        .getLong(HadoopVariantStorageEngine.LAST_PENDING_VARIANTS_TO_ANNOTATE_UPDATE_TS);
 
                 boolean tableExists = pendingVariantsManager.exists();
                 if (!tableExists && lastVariantsToAnnotateUpdateTs > 0) {
                     lastVariantsToAnnotateUpdateTs = 0;
                     logger.info("Table with pending variants to annotate not found. Force MapReduce. "
-                            + "Remove old '" + HadoopVariantStorageEngine.LAST_VARIANTS_TO_ANNOTATE_UPDATE_TS + "' from project manager");
+                            + "Remove old '" + HadoopVariantStorageEngine.LAST_PENDING_VARIANTS_TO_ANNOTATE_UPDATE_TS
+                            + "' from project manager");
                     dbAdaptor.getMetadataManager().updateProjectMetadata(p -> {
-                        p.getAttributes().remove(HadoopVariantStorageEngine.LAST_VARIANTS_TO_ANNOTATE_UPDATE_TS);
+                        p.getAttributes().remove(HadoopVariantStorageEngine.LAST_PENDING_VARIANTS_TO_ANNOTATE_UPDATE_TS);
                         return p;
                     });
                 }
@@ -150,7 +153,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
 
                     if (annotateAll) {
                         dbAdaptor.getMetadataManager().updateProjectMetadata(pm -> {
-                            pm.getAttributes().put(HadoopVariantStorageEngine.LAST_VARIANTS_TO_ANNOTATE_UPDATE_TS, ts);
+                            pm.getAttributes().put(HadoopVariantStorageEngine.LAST_PENDING_VARIANTS_TO_ANNOTATE_UPDATE_TS, ts);
                             return pm;
                         });
                         updateCurrentAnnotation(variantAnnotator, projectMetadata, overwrite);
@@ -216,6 +219,11 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
             throws VariantAnnotatorException, StorageEngineException, IOException {
         super.postAnnotate(query, doCreate, doLoad, params);
         updateSampleIndexAnnotation(params);
+
+        dbAdaptor.getMetadataManager().updateProjectMetadata(projectMetadata -> {
+            projectMetadata.getAttributes().put(LAST_VARIANT_ANNOTATION_TS, System.currentTimeMillis());
+            return projectMetadata;
+        });
     }
 
     protected void updateSampleIndexAnnotation(ObjectMap params) throws IOException, StorageEngineException {

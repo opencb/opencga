@@ -74,7 +74,7 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
 
     private final JsonFactory jsonFactory;
     protected final ObjectMapper jsonObjectMapper;
-    private final VariantDBAdaptor dbAdaptor;
+    protected final VariantDBAdaptor dbAdaptor;
     protected long numStatsToLoad = 0;
     private static Logger logger = LoggerFactory.getLogger(DefaultVariantStatisticsManager.class);
     private final IOConnectorProvider ioConnectorProvider;

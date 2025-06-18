@@ -143,8 +143,14 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     // Project attributes
     // Last time (in millis from epoch) that a file was loaded
     public static final String LAST_LOADED_FILE_TS = "lastLoadedFileTs";
-    // Last time (in millis from epoch) that the list of "pendingVariantsToAnnotate" was updated
-    public static final String LAST_VARIANTS_TO_ANNOTATE_UPDATE_TS = "lastVariantsToAnnotateUpdateTs";
+    // Last time (in millis from epoch) that a variant annotation was executed
+    public static final String LAST_VARIANT_ANNOTATION_TS = "lastVariantAnnotationTs";
+    // Last time (in millis from epoch) that a variant stats index was executed
+    public static final String LAST_VARIANT_STATS_INDEX_TS = "lastVariantStatsIndexTs";
+    // Last time (in millis from epoch) that the list of "pendingVariantsToAnnotate" was updated. Timestamp at operation start!
+    public static final String LAST_PENDING_VARIANTS_TO_ANNOTATE_UPDATE_TS = "lastVariantsToAnnotateUpdateTs";
+    // Last time (in millis from epoch) that the list of "pendingVariantsToSearchIndex" was updated. Timestamp at operation start!
+    public static final String LAST_PENDING_VARIANTS_TO_SEARCH_INDEX_UPDATE_TS = "lastPendingVariantsToSearchIndexUpdateTs";
 
     // Study attributes
     // Specify if all missing genotypes from the study are updated. Set to true after fill_missings / aggregation
@@ -491,12 +497,6 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             shouldRunDiscover = true;
         }
 
-        // TODO: Check if there has been any change since last time discover was run
-        //     : Check if the indexMetadata is new. Should run "discover" with indexMetadata creation timestamp?
-//        int lastUpdateTimestamp = indexMetadata.getAttributes().getInt("pendingVariantsToSecondaryIndexTimestamp", 0);
-//        ProjectMetadata projectMetadata = getMetadataManager().getProjectMetadata();
-        shouldRunDiscover = true; // TODO: Remove this line when the above is implemented
-
         if (!shouldRunDiscover) {
             // Check pending variant files integrity
             logger.info("Checking pending variants files integrity");
@@ -504,14 +504,38 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                     new SecondaryIndexPendingVariantsFileBasedManager(getVariantTableName(), getConf());
             try {
                 if (!pendingVariantsFileBasedManager.checkFilesIntegrity()) {
-                    logger.warn("Pending variants files integrity check failed. Running discover pending variants to secondary index.");
+                    logger.warn("Pending variants files integrity check failed. Running discover pending variants to secondary index. "
+                            + "Remove old '" + HadoopVariantStorageEngine.LAST_PENDING_VARIANTS_TO_SEARCH_INDEX_UPDATE_TS + "'");
                     shouldRunDiscover = true;
+
+                    int indexMetadataVersion = indexMetadata.getVersion();
+                    getMetadataManager().updateProjectMetadata(pm -> {
+                        pm.getSecondaryAnnotationIndex().getIndexMetadata(indexMetadataVersion)
+                                .getAttributes().remove(LAST_PENDING_VARIANTS_TO_SEARCH_INDEX_UPDATE_TS);
+                    });
                 }
             } catch (IOException e) {
                 throw new StorageEngineException("Error checking pending variants files integrity", e);
             }
         }
 
+        if (!shouldRunDiscover) {
+            long lastUpdateTimestamp = indexMetadata.getAttributes().getLong(LAST_PENDING_VARIANTS_TO_SEARCH_INDEX_UPDATE_TS);
+            ProjectMetadata projectMetadata = getMetadataManager().getProjectMetadata();
+            long lastVariantIndexTs = projectMetadata.getAttributes().getLong(LAST_LOADED_FILE_TS);
+            long lastAnnotationTs = projectMetadata.getAttributes().getLong(LAST_VARIANT_ANNOTATION_TS);
+            long lastStatsTs = projectMetadata.getAttributes().getLong(LAST_VARIANT_STATS_INDEX_TS);
+
+            if (lastUpdateTimestamp == 0
+                    || lastUpdateTimestamp < lastVariantIndexTs
+                    || lastUpdateTimestamp < lastAnnotationTs
+                    || lastUpdateTimestamp < lastStatsTs) {
+                logger.info("Pending variants to secondary index not up to date. Running discover pending variants to secondary index.");
+                shouldRunDiscover = true;
+            } else {
+                logger.info("Pending variants to secondary index is up to date. Skip MapReduce job.");
+            }
+        }
 
 
         if (getOptions().getBoolean("skipDiscoverPendingVariantsToSecondaryIndex", false)) {
@@ -526,6 +550,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             shouldRunDiscover = true;
             logger.info("Force discover pending variants to secondary index.");
         }
+        final ObjectMap mrResult;
         if (shouldRunDiscover) {
             long updateTimestamp = System.currentTimeMillis();
             boolean partialLoad = isValidParam(query, VariantQueryParam.REGION);
@@ -533,19 +558,28 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             if (partialLoad) {
                 mrOptions.put(VariantQueryParam.REGION.key(), query.getString(VariantQueryParam.REGION.key()));
             }
-            ObjectMap result = new SecondaryIndexPendingVariantsFileBasedManager(getVariantTableName(), getConf())
+            mrResult = new SecondaryIndexPendingVariantsFileBasedManager(getVariantTableName(), getConf())
                     .discoverPending(getMRExecutor(), getVariantTableName(), overwrite, mrOptions.appendAll(query));
             if (!partialLoad) {
                 int version = indexMetadata.getVersion();
                 indexMetadata = getMetadataManager().updateProjectMetadata(pm -> {
                     SearchIndexMetadata im = pm.getSecondaryAnnotationIndex().getIndexMetadata(version);
-                    im.getAttributes().put("pendingVariantsToSecondaryIndex", result);
-                    im.getAttributes().put("pendingVariantsToSecondaryIndexTimestamp", updateTimestamp);
+                    im.getAttributes().put("pendingVariantsToSecondaryIndex", mrResult);
+                    im.getAttributes().put(LAST_PENDING_VARIANTS_TO_SEARCH_INDEX_UPDATE_TS, updateTimestamp);
                 }).getSecondaryAnnotationIndex().getIndexMetadata(version);
             }
+        } else {
+            mrResult = null;
         }
 
-        return super.secondaryIndex(query, queryOptions, overwrite, indexMetadata);
+        VariantSearchLoadResult loadResult = super.secondaryIndex(query, queryOptions, overwrite, indexMetadata);
+        if (mrResult == null) {
+            loadResult.getAttributes().put("runDiscoverPendingVariantsToSecondaryIndexMr", false);
+        } else {
+            loadResult.getAttributes().put("runDiscoverPendingVariantsToSecondaryIndexMr", true);
+            loadResult.getAttributes().put("pendingVariantsToSecondaryIndexResult", mrResult);
+        }
+        return loadResult;
     }
 
     @Override
