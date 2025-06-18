@@ -8,7 +8,6 @@ set -o nounset
 SKIP_BUILD_OPENCGA=false
 SKIP_PYTHON=false
 SKIP_R=false
-SKIP_JAVA=false
 SKIP_JS=false
 
 # Get the OpenCGA version from the Maven project
