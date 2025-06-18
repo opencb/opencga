@@ -1455,6 +1455,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                     case ID:
                     case UUID:
                     case INTERNAL_VARIANT_INDEX_STATUS_ID:
+                    case INTERNAL_QUALITY_CONTROL_STATUS_ID:
                     case PROCESSING_PRODUCT_ID:
                     case PROCESSING_PREPARATION_METHOD:
                     case PROCESSING_EXTRACTION_METHOD:

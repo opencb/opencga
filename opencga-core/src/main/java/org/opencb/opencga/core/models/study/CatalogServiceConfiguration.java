@@ -3,18 +3,25 @@ package org.opencb.opencga.core.models.study;
 public class CatalogServiceConfiguration {
 
     private boolean active;
+    private int concurrentJobs;
 
     public CatalogServiceConfiguration() {
     }
 
-    public CatalogServiceConfiguration(boolean active) {
+    public CatalogServiceConfiguration(boolean active, int concurrentJobs) {
         this.active = active;
+        this.concurrentJobs = concurrentJobs;
+    }
+
+    public static CatalogServiceConfiguration defaultConfiguration() {
+        return new CatalogServiceConfiguration(false, 5);
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("CatalogServiceConfiguration{");
         sb.append("active=").append(active);
+        sb.append(", concurrentJobs=").append(concurrentJobs);
         sb.append('}');
         return sb.toString();
     }
@@ -25,6 +32,15 @@ public class CatalogServiceConfiguration {
 
     public CatalogServiceConfiguration setActive(boolean active) {
         this.active = active;
+        return this;
+    }
+
+    public int getConcurrentJobs() {
+        return concurrentJobs;
+    }
+
+    public CatalogServiceConfiguration setConcurrentJobs(int concurrentJobs) {
+        this.concurrentJobs = concurrentJobs;
         return this;
     }
 }

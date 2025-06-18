@@ -1523,6 +1523,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                     case RELEASE:
                     case VERSION:
                     case SAMPLE_UIDS:
+                    case INTERNAL_QUALITY_CONTROL_STATUS_ID:
                     case PHENOTYPES_ID:
                     case PHENOTYPES_NAME:
                     case DISORDERS_ID:

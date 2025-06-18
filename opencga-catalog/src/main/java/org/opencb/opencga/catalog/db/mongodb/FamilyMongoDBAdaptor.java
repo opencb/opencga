@@ -1298,6 +1298,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                     case EXPECTED_SIZE:
                     case RELEASE:
                     case VERSION:
+                    case INTERNAL_QUALITY_CONTROL_STATUS_ID:
                     case PHENOTYPES_ID:
                     case PHENOTYPES_NAME:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);

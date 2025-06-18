@@ -15,8 +15,8 @@ public class CatalogStudyConfiguration {
 
     public static CatalogStudyConfiguration defaultConfiguration() {
         return new CatalogStudyConfiguration(
-                new CatalogServiceConfiguration(false), // cvdb
-                new CatalogServiceConfiguration(false)  // variantQualityControl
+                CatalogServiceConfiguration.defaultConfiguration(), // cvdb
+                CatalogServiceConfiguration.defaultConfiguration()  // variantQualityControl
         );
     }
 

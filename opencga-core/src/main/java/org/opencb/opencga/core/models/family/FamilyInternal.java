@@ -18,29 +18,36 @@ package org.opencb.opencga.core.models.family;
 
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Internal;
+import org.opencb.opencga.core.models.common.QualityControlStatus;
 
 public class FamilyInternal extends Internal {
 
     private FamilyStatus status;
+    private QualityControlStatus qualityControlStatus;
 
     public FamilyInternal() {
     }
 
-    public FamilyInternal(String registrationDate, String modificationDate, FamilyStatus status) {
+    public FamilyInternal(String registrationDate, String modificationDate, FamilyStatus status,
+                          QualityControlStatus qualityControlStatus) {
         super(null, registrationDate, modificationDate);
         this.status = status;
+        this.qualityControlStatus = qualityControlStatus;
     }
 
     public static FamilyInternal init() {
-        return new FamilyInternal(TimeUtils.getTime(), TimeUtils.getTime(), new FamilyStatus());
+        return new FamilyInternal(TimeUtils.getTime(), TimeUtils.getTime(), new FamilyStatus(),
+                QualityControlStatus.init());
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("FamilyInternal{");
-        sb.append("registrationDate='").append(registrationDate).append('\'');
-        sb.append(", modificationDate='").append(lastModified).append('\'');
+        sb.append("status=").append(status);
+        sb.append(", qualityControlStatus=").append(qualityControlStatus);
         sb.append(", status=").append(status);
+        sb.append(", registrationDate='").append(registrationDate).append('\'');
+        sb.append(", lastModified='").append(lastModified).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -51,6 +58,15 @@ public class FamilyInternal extends Internal {
 
     public FamilyInternal setStatus(FamilyStatus status) {
         this.status = status;
+        return this;
+    }
+
+    public QualityControlStatus getQualityControlStatus() {
+        return qualityControlStatus;
+    }
+
+    public FamilyInternal setQualityControlStatus(QualityControlStatus qualityControlStatus) {
+        this.qualityControlStatus = qualityControlStatus;
         return this;
     }
 

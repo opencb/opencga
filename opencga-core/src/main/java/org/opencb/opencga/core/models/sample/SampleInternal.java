@@ -21,6 +21,7 @@ import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Internal;
 import org.opencb.opencga.core.models.common.InternalStatus;
+import org.opencb.opencga.core.models.common.QualityControlStatus;
 import org.opencb.opencga.core.models.common.RgaIndex;
 
 import java.util.Objects;
@@ -35,20 +36,22 @@ public class SampleInternal extends Internal {
             description = FieldConstants.SAMPLE_INTERNAL_RGA_DESCRIPTION)
     private RgaIndex rga;
     private SampleInternalVariant variant;
+    private QualityControlStatus qualityControlStatus;
 
     public SampleInternal() {
     }
 
     public SampleInternal(String registrationDate, String modificationDate, InternalStatus status, RgaIndex rga,
-                          SampleInternalVariant variant) {
+                          SampleInternalVariant variant, QualityControlStatus qualityControlStatus) {
         super(status, registrationDate, modificationDate);
         this.rga = rga;
         this.variant = variant;
+        this.qualityControlStatus = qualityControlStatus;
     }
 
     public static SampleInternal init() {
         return new SampleInternal(TimeUtils.getTime(), TimeUtils.getTime(), new InternalStatus(InternalStatus.READY), RgaIndex.init(),
-                SampleInternalVariant.init());
+                SampleInternalVariant.init(), QualityControlStatus.init());
     }
 
     @Override
@@ -59,6 +62,7 @@ public class SampleInternal extends Internal {
         sb.append(", lastModified='").append(lastModified).append('\'');
         sb.append(", rga=").append(rga);
         sb.append(", variant=").append(variant);
+        sb.append(", qualityControlStatus=").append(qualityControlStatus);
         sb.append('}');
         return sb.toString();
     }
@@ -105,6 +109,15 @@ public class SampleInternal extends Internal {
 
     public SampleInternal setLastModified(String lastModified) {
         this.lastModified = lastModified;
+        return this;
+    }
+
+    public QualityControlStatus getQualityControlStatus() {
+        return qualityControlStatus;
+    }
+
+    public SampleInternal setQualityControlStatus(QualityControlStatus qualityControlStatus) {
+        this.qualityControlStatus = qualityControlStatus;
         return this;
     }
 
