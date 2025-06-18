@@ -2,7 +2,10 @@ name: Build opencga python-client
 
 on:
   workflow_call:
-
+    inputs:
+      branch:
+        type: string
+        required: true
 jobs:
   build-python-client:
     runs-on: ${{ vars.UBUNTU_VERSION }}
@@ -10,6 +13,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.branch }}
           fetch-depth: '10'
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
