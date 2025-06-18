@@ -154,4 +154,7 @@ public abstract class PendingVariantsFileBasedManager {
         return true;
     }
 
+    public URI getPendingVariantsDir() {
+        return pendingVariantsDir;
+    }
 }
