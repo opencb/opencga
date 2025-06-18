@@ -2,15 +2,20 @@ name: Build and Test opencga-r-builder Docker Image
 
 on:
   workflow_call:
+    inputs:
+      branch:
+        description: "The branch, tag or SHA of the source code to build client."
+        type: string
+        required: true
 
 jobs:
-
   build-test-publish:
     runs-on: ${{ vars.UBUNTU_VERSION }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: '10'
+          ref: ${{ inputs.branch }}
       - id: get_opencga_branch
         name: Get OpenCGA branch from pom.xml property
         run: |

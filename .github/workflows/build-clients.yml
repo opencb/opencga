@@ -2,6 +2,11 @@ name: Build clients for opencga-enterprise
 
 on:
   workflow_dispatch:
+    inputs:
+      branch:
+        description: "The branch, tag or SHA of the source code to build client."
+        type: string
+        required: true
 
 jobs:
   build-clients:
@@ -10,6 +15,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: '10'
+          ref: ${{ github.event.inputs.branch }}
       - id: get_opencga_branch
         name: Get OpenCGA branch from pom.xml property
         run: |
