@@ -108,15 +108,15 @@ if ! $SKIP_PYTHON; then
   cp -r "$OPENCGA_BUILD_DIR/clients/python" "$CLIENTS_DIR"
   echo "Copying Python to $CLIENTS_DIR"
   cp -r "opencga-enterprise-client/src/main/python" "$CLIENTS_DIR"
-  echo "Updating imports from pyopencga to pyopencga_enterprise"
-  find "$CLIENTS_DIR/python/pyopencga" -type f -name "*.py" -exec sed -i.bak 's/from pyopencga/from pyopencga_enterprise/g' {} \;
+  echo "Updating imports from pyopencga to pyxetabase"
+  find "$CLIENTS_DIR/python/pyopencga" -type f -name "*.py" -exec sed -i.bak 's/from pyopencga/from pyxetabase/g' {} \;
   find "$CLIENTS_DIR/python/pyopencga" -name "*.bak" -delete
   echo "Calculating Python version"
   PYTHON_VERSION=$(python3 "opencga-enterprise-app/app/scripts/calculate_pypi_version.py" "$VERSION")
   echo "Updating setup.py with version $PYTHON_VERSION"
-  sed -i "s/PYOPENCGA_ENTERPRISE_VERSION/${PYTHON_VERSION}/" "$CLIENTS_DIR/python/setup.py"
-  echo "Renaming folder pyopencga to pyopencga_enterprise"
-  mv "$CLIENTS_DIR/python/pyopencga" "$CLIENTS_DIR/python/pyopencga_enterprise"
+  sed -i "s/PYXETABASE_VERSION/${PYTHON_VERSION}/" "$CLIENTS_DIR/python/setup.py"
+  echo "Renaming folder pyopencga to pyxetabase"
+  mv "$CLIENTS_DIR/python/pyopencga" "$CLIENTS_DIR/python/pyxetabase"
   python3 -m pip install --upgrade pip
   pip install --upgrade setuptools packaging
   ./build/clients/python/python-build.sh build

@@ -1,6 +1,6 @@
 .. contents::
 
-PyOpenCGA_enterprise
+PyXetabase
 ====================
 
 This Python client package makes use of the comprehensive RESTful web services API implemented for the `OpenCGA`_ platform.
@@ -14,30 +14,30 @@ More info about this project in `OpenCGA Docs`_
 Installation
 ------------
 
-PyOpenCGA-enterprise can be installed from the Pypi repository. Make sure you have pip available in your machine. You can check this by running::
+PyXetabase can be installed from the Pypi repository. Make sure you have pip available in your machine. You can check this by running::
 
    $ python3 -m pip --version
 
 
 If you don't have Python or pip, please refer to https://packaging.python.org/en/latest/tutorials/installing-packages/
 
-To install pyOpenCGA-enterprise, run the following command in the shell::
+To install pyXetabase, run the following command in the shell::
 
-   $ pip install pyopencga-enterprise
+   $ pip install pyxetabase
 
 
 Usage
 -----
 
-Import pyOpenCGA-enterprise package
+Import pyXetabase package
 ```````````````````````````````````
 
-The first step is to import the ClientConfiguration and OpencgaClient from pyOpenCGA-enterprise:
+The first step is to import the ClientConfiguration and OpencgaClient from pyXetabase:
 
 .. code-block:: python
 
-    >>> from pyopencga_enterprise.opencga_config import ClientConfiguration
-    >>> from pyopencga_enterprise.opencga_client import OpencgaClient
+    >>> from pyxetabase.opencga_config import ClientConfiguration
+    >>> from pyxetabase.opencga_client import OpencgaClient
 
 Setting up server host configuration
 ````````````````````````````````````
@@ -76,7 +76,7 @@ The first step is to get an instance of the clients we may want to use:
     >>> individuals = oc.individuals  # Individual client
     >>> cohorts = oc.cohorts  # Cohort client
 
-Now you can start querying with pyOpenCGA-enterprise:
+Now you can start querying with pyXetabase:
 
 .. code-block:: python
 

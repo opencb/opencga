@@ -2,7 +2,7 @@ import requests
 import sys
 import re
 
-PACKAGE_NAME = "pyopencga-enterprise"
+PACKAGE_NAME = "pyxetabase"
 TESTPYPI_URL = f"https://pypi.org/pypi/{PACKAGE_NAME}/json"
 
 def fetch_existing_versions():
