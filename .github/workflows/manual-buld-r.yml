@@ -5,5 +5,5 @@ on:
 jobs:
   call-build-r-docker:
     name: Call Reusable Build r Docker Workflow
-    uses: zetta-genomics/opencga-enterprise/.github/workflows/reusable-build-r-clientyml@develop
+    uses: zetta-genomics/opencga-enterprise/.github/workflows/reusable-build-r-client.yml@develop
     secrets: inherit
