@@ -60,7 +60,8 @@ class Meta(_ParentRestClient):
         Opencga openapi json.
         PATH: /{apiVersion}/meta/openapi
 
-        :param str token: List of categories to get API from.
+        :param str environment: Environment of the app.
+        :param str host: Opencga host without environment.
         """
 
         return self._get(category='meta', resource='openapi', **options)
