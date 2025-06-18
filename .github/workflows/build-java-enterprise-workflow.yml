@@ -34,7 +34,7 @@ on:
 jobs:
   build:
     name: Build OpenCGA Enterprise app
-    runs-on: ubuntu-22.04
+    runs-on: ${{ vars.UBUNTU_VERSION }}
     outputs:
       version: ${{ steps.get_project_version.outputs.version }}
     steps:

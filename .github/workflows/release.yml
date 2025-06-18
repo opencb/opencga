@@ -77,7 +77,7 @@ jobs:
 
   release:
     name: Create GitHub Release
-    runs-on: ubuntu-22.04
+    runs-on: ${{ vars.UBUNTU_VERSION }}
     needs: [ build-hdp, deploy-hdp-docker, build-emr, deploy-emr-docker, build-hdi, deploy-hdi-docker, build-emr13, deploy-emr13-docker ]
     steps:
       - uses: actions/download-artifact@v4

@@ -8,7 +8,6 @@ import org.opencb.opencga.core.tools.ToolParams;
 import java.util.List;
 
 public class CvdbIndexTaskParams extends ToolParams {
-    public static final String DESCRIPTION = "Parameters: " + CvdbIndexTask.DESCRIPTION;
 
     @DataField(id = "clinicalAnalysisIds", description = "List of clinical analyses, separated by commas, for a specific study. To index"
             + " all clinical analyses for a given study, leave this parameter empty")

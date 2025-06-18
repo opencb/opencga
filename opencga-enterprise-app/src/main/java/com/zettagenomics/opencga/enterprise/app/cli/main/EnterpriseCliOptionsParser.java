@@ -257,6 +257,7 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         analysisCVDBCommandOptions = new AnalysisCVDBCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("cvdb", analysisCVDBCommandOptions);
         JCommander analysisCVDBSubCommands = jCommander.getCommands().get("cvdb");
+        analysisCVDBSubCommands.addCommand("acl-update", analysisCVDBCommandOptions.updateAclCommandOptions);
         analysisCVDBSubCommands.addCommand("analysis-aggregate", analysisCVDBCommandOptions.aggregateAnalysisCommandOptions);
         analysisCVDBSubCommands.addCommand("analysis-query", analysisCVDBCommandOptions.queryAnalysisCommandOptions);
         analysisCVDBSubCommands.addCommand("evidence-aggregate", analysisCVDBCommandOptions.aggregateEvidenceCommandOptions);
@@ -304,6 +305,7 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         organizationsSubCommands.addCommand("notes-search", organizationsCommandOptions.searchNotesCommandOptions);
         organizationsSubCommands.addCommand("notes-delete", organizationsCommandOptions.deleteNotesCommandOptions);
         organizationsSubCommands.addCommand("notes-update", organizationsCommandOptions.updateNotesCommandOptions);
+        organizationsSubCommands.addCommand("user-password-reset", organizationsCommandOptions.resetUserPasswordCommandOptions);
         organizationsSubCommands.addCommand("update-status-user", organizationsCommandOptions.userUpdateStatusCommandOptions);
         organizationsSubCommands.addCommand("user-update", organizationsCommandOptions.updateUserCommandOptions);
         organizationsSubCommands.addCommand("configuration-update", organizationsCommandOptions.updateConfigurationCommandOptions);

@@ -21,7 +21,7 @@ jobs:
 
   deploy-docker-hub:
     name: Push Docker image
-    runs-on: ubuntu-22.04
+    runs-on: ${{ vars.UBUNTU_VERSION }}
     needs: build
     steps:
       - name: Download build dir

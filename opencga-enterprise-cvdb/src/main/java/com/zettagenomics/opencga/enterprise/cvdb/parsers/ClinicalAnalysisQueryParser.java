@@ -77,6 +77,9 @@ public class ClinicalAnalysisQueryParser extends ClinicalQueryParser {
                 CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX) + "}";
         addStringFilters(filters, join, solrQuery);
 
+        // Viewers
+        addViewerFilter(query, "id", projectId, solrQuery);
+
         // Log queries
         logQueries(query, queryOptions, solrQuery, "Clinical analysis");
 
