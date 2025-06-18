@@ -67,17 +67,13 @@ while [[ $# -gt 0 ]]; do
 done
 
 if ! $SKIP_BUILD_OPENCGA; then
-  echo ">> Building OpenCGA Enterprise ..."
+   echo ">> Building OpenCGA Enterprise ..."
   ./build.sh
 fi
-
 # Check if the build directory exists, and delete it to create a new one total clean
 [ -d "${DIST_DIR}" ] && rm -rf "${DIST_DIR}"
 # Create the directory for the clients distribution
 mkdir -p ${DIST_DIR}
-
-
-
 
 if ! $SKIP_R; then
   echo "Building R library"
@@ -101,6 +97,12 @@ fi
 if ! $SKIP_PYTHON; then
   echo "Building python library"
   echo "============================="
+  echo "Checking for OpenCGA Python client directory... If it does not exist, it will be compiled."
+  if [ ! -d "$OPENCGA_BUILD_DIR/clients/python" ]; then
+    cd opencga-home
+    ./client-builder.sh --skip-javascript --skip-r
+    cd ..
+  fi
   echo "Prepare directory: Python"
   rm -rf "$CLIENTS_DIR/python"
   echo "Copying OpenCGA python client files to $CLIENTS_DIR"
