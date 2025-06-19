@@ -38,6 +38,10 @@ public class JsonOpenApiGeneratorTest {
         Files.createDirectories(dir);
         FileUtils.writeStringToFile(dir.resolve("swagger.json").toFile(), swaggerJson, StandardCharsets.UTF_8);
         System.out.println("dir.toAbsolutePath() = " + dir.toAbsolutePath());
+
+        for (String key : swagger.getPaths().keySet()) {
+            System.out.println(key);
+        }
     }
 
 }

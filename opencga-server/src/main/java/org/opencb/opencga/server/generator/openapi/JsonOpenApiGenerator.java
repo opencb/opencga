@@ -18,9 +18,11 @@ import java.util.stream.Collectors;
 public class JsonOpenApiGenerator {
 
     private final Set<Class<?>> beansDefinitions = new LinkedHashSet<>();
+    private String study;
 
     public Swagger generateJsonOpenApi(ApiCommons apiCommons, String token, String environment, String host, String apiVersion, String study) {
 
+        this.study = study;
         List<Class<?>> classes = apiCommons.getApiClasses();
         Swagger swagger = new Swagger();
         Info info = new Info();
@@ -163,9 +165,15 @@ public class JsonOpenApiGenerator {
                         }))
                         .thenComparing(Map.Entry.comparingByKey()))
                 .forEachOrdered(entry -> orderedPaths.put(entry.getKey(), entry.getValue()));
-        swagger.setPaths(orderedPaths);
+
+
+        Map<String, Map<String, Method>> sortedPaths = sortPathsByKey(orderedPaths);
+        swagger.setPaths(sortedPaths);
         swagger.setDefinitions(definitions);
         return swagger;
+    }
+    public static Map<String, Map<String, Method>> sortPathsByKey(Map<String, Map<String, Method>> input) {
+        return new TreeMap<>(input);
     }
 
     private Map<String, Response> getStringResponseMap(ApiOperation apiOperation) {
@@ -233,6 +241,9 @@ public class JsonOpenApiGenerator {
                 parameter.setType(implicitParam.dataType());
                 parameter.setFormat(implicitParam.format());
                 parameter.setDefault(implicitParam.defaultValue());
+                if(parameter.getName() != null && parameter.getName().equals("study") && StringUtils.isNotEmpty(study)) {
+                    parameter.setDefault(study);
+                }
                 parameters.add(parameter);
             }
         }
@@ -303,6 +314,9 @@ public class JsonOpenApiGenerator {
                 parameter.setDescription(formatParameterDescription(apiParam, parameter));
             }
             if (parameter.getName() != null) {
+                if(parameter.getName().equals("study") && StringUtils.isNotEmpty(study)) {
+                    parameter.setDefault(study);
+                }
                 parameters.add(parameter);
             }
         }
