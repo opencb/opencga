@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -42,7 +43,7 @@ public class MultiQueryGenerator extends QueryGenerator {
     private List<QueryGenerator> generators;
     private RandomQueries randomQueries;
     private Map<String, String> baseQueriesFromCLI;
-    private Pattern pattern = Pattern.compile("(?<param>[^(]+)(\\((?<extraParam>[^)]+)\\))?");
+    private Pattern pattern = Pattern.compile("(?<param>[^,(]+)(\\((?<extraParam>[^)]+)\\))?");
     private Logger logger = LoggerFactory.getLogger(getClass());
     private String query;
 
@@ -63,18 +64,27 @@ public class MultiQueryGenerator extends QueryGenerator {
         randomQueries = readRandomQueriesConfig(queryFilePath);
         baseQueriesFromCLI = getBaseQueryFromCLI(params);
 
-        for (String param : query.split(",")) {
-            String extraParam = null;
-            Integer arity = 1;
+        Matcher matcher = pattern.matcher(query);
+        while (matcher.find()) {
+            String param = matcher.group("param");
+            String extraParam = matcher.group("extraParam");
 
-            Matcher matcher = pattern.matcher(param);
-            if (matcher.find()) {
-                param = matcher.group("param");
-                extraParam = matcher.group("extraParam");
-            }
-
-            if (StringUtils.isNumeric(extraParam)) {
-                arity = Integer.parseInt(extraParam);
+            Map<String, String> extraParamsMap = new HashMap<>();
+            if (extraParam != null) {
+                if (StringUtils.isNumeric(extraParam)) {
+                    int arity = Integer.parseInt(extraParam);
+                    extraParamsMap.put(ARITY, String.valueOf(arity));
+                } else {
+                    for (String s : extraParam.split(",")) {
+                        String[] split = s.split("=", 2);
+                        if (split.length != 2) {
+                            int arity = Integer.parseInt(extraParam);
+                            extraParamsMap.put(ARITY, String.valueOf(arity));
+                        } else {
+                            extraParamsMap.put(split[0].trim(), split.length > 1 ? split[1].trim() : "");
+                        }
+                    }
+                }
             }
 
             ConfiguredQueryGenerator queryGenerator;
@@ -164,9 +174,10 @@ public class MultiQueryGenerator extends QueryGenerator {
                 default:
                     throw new IllegalArgumentException("Unknwon query param " + param);
             }
-            logger.debug("Using sub query generator: " + queryGenerator.getClass() + " , arity = " + arity);
-            params.put(ARITY, arity.toString());
-            queryGenerator.setUp(params, randomQueries);
+            logger.debug("Using sub query generator: " + queryGenerator.getClass() + " , " + extraParamsMap);
+            Map<String, String> thisQueryGeneratorParams = new HashMap<>(params);
+            params.putAll(extraParamsMap);
+            queryGenerator.setUp(thisQueryGeneratorParams, randomQueries);
             generators.add(queryGenerator);
         }
     }

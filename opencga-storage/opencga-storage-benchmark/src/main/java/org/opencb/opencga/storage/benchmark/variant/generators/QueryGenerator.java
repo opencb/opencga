@@ -47,10 +47,12 @@ public abstract class QueryGenerator {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
     private int arity;
+    private Map<String, String> params;
 
     public void setUp(Map<String, String> params) {
         random = new Random(System.nanoTime());
         arity = Integer.parseInt(params.getOrDefault(ARITY, "1"));
+        this.params = params;
     }
 
     public RandomQueries readRandomQueriesConfig(Path path) {
@@ -88,6 +90,15 @@ public abstract class QueryGenerator {
 
     public QueryGenerator setArity(int arity) {
         this.arity = arity;
+        return this;
+    }
+
+    public Map<String, String> getParams() {
+        return params;
+    }
+
+    public QueryGenerator setParams(Map<String, String> params) {
+        this.params = params;
         return this;
     }
 

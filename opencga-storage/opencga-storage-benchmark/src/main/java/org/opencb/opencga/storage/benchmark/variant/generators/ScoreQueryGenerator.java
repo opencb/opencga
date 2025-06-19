@@ -20,6 +20,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.benchmark.variant.queries.RandomQueries;
 import org.opencb.opencga.storage.benchmark.variant.queries.Score;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +36,7 @@ public abstract class ScoreQueryGenerator extends ConfiguredQueryGenerator {
     private List<Score> scores;
     private String queryKey;
     private Logger logger = LoggerFactory.getLogger(getClass());
+    private char op;
 
     public ScoreQueryGenerator(String queryKey) {
         this(new ArrayList<>(), queryKey);
@@ -53,6 +55,14 @@ public abstract class ScoreQueryGenerator extends ConfiguredQueryGenerator {
             logger.warn("Only " + scores.size() + " scores available for " + getClass() + ". Adjusting arity.");
             setArity(scores.size());
         }
+        String op = getParams().get("op");
+        if (op == null || op.equalsIgnoreCase("OR")) {
+            this.op = VariantQueryUtils.OR_CHAR;
+        } else if (op.equalsIgnoreCase("AND")) {
+            this.op = VariantQueryUtils.AND_CHAR;
+        } else {
+            throw new IllegalArgumentException("Unknown operator '" + op + "'. Use 'OR' or 'AND'.");
+        }
     }
 
     @Override
@@ -65,7 +75,7 @@ public abstract class ScoreQueryGenerator extends ConfiguredQueryGenerator {
         for (int i = 0; i < getArity(); i++) {
             Score score = scores.get(i);
             if (sb.length() > 0) {
-                sb.append(',');
+                sb.append(op);
             }
             sb.append(score.getId());
             sb.append(getOperators(score));

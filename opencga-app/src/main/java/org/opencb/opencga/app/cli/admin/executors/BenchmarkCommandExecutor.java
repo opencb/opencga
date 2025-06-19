@@ -20,11 +20,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.app.cli.admin.options.BenchmarkCommandOptions;
+import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.client.rest.OpenCGAClient;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.storage.BenchmarkConfiguration;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
@@ -156,13 +159,21 @@ public class BenchmarkCommandExecutor extends AdminCommandExecutor {
                 randomQueries.setIncludeStudy(new LinkedList<>());
                 randomQueries.setCohortStats(new LinkedList<>());
                 if (projectFqn != null) {
-                    sessionManager.getSession().getStudies().forEach(study -> {
+                    for (String study : sessionManager.getSession().getStudies()) {
                         if (study.startsWith(projectFqn + ":")) {
                             randomQueries.getStudy().add(study);
                             randomQueries.getIncludeStudy().add(study);
+
+                            openCGAClient.getCohortClient().search(new Query(ParamConstants.STUDY_PARAM, study)
+                                            .append(CohortDBAdaptor.QueryParams.INTERNAL_STATUS.key(), "READY")
+                                            .append(QueryOptions.INCLUDE, "id,internal"))
+                                    .allResults().forEach(cohort -> {
+                                        randomQueries.getCohortStats()
+                                                .add(new Score(study + ":" + cohort.getId(), 0, 0.15));
+                                    });
                             randomQueries.getCohortStats().add(new Score(study + ":" + StudyEntry.DEFAULT_COHORT, 0, 0.15));
                         }
-                    });
+                    }
                 }
 
                 randomQueries.setBaseQuery(baseQuery);
