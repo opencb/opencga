@@ -97,7 +97,7 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
         ObjectMapper mapper = new ObjectMapper();
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         try {
-            swaggerJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(swagger).replace("{apiVersion}", "v2");
+            swaggerJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(swagger);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
