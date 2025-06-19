@@ -100,6 +100,7 @@ if ! $SKIP_PYTHON; then
   echo "Checking for OpenCGA Python client directory... If it does not exist, it should be compiled."
   if [ ! -d "$OPENCGA_BUILD_DIR/clients/python" ]; then
    echo "ERROR: To generate the Python client, OpenCGA must be compiled first."
+   exit 1
   fi
   echo "Prepare directory: Python"
   rm -rf "$CLIENTS_DIR/python"
