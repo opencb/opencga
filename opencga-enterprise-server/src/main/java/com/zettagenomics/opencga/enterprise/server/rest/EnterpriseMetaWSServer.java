@@ -89,9 +89,10 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
     @Path("/openapi")
     @ApiOperation(value = "Opencga openapi json", response = String.class)
     public String openApi(@ApiParam(value = EnterpriseParamConstants.META_ENVIRONMENT_DESCRIPTION) @QueryParam("environment") String environment,
-                          @ApiParam(value = EnterpriseParamConstants.META_HOST_DESCRIPTION) @QueryParam("host") String host) {
+                          @ApiParam(value = EnterpriseParamConstants.META_HOST_DESCRIPTION) @QueryParam("host") String host,
+                          @ApiParam(value = "Opencga study to be default in queries.") @QueryParam("study") String study) {
         JsonOpenApiGenerator generator = new JsonOpenApiGenerator();
-        Swagger swagger = generator.generateJsonOpenApi(new EnterpriseApiCommonsImpl(), token, environment, host, apiVersion);
+        Swagger swagger = generator.generateJsonOpenApi(new EnterpriseApiCommonsImpl(), token, environment, host, apiVersion, study);
         String swaggerJson ="ERROR: openapi schema for swagger could not be generated";
         ObjectMapper mapper = new ObjectMapper();
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);

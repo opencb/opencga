@@ -106,6 +106,9 @@ public class MetaCommandOptions {
         @Parameter(names = {"--host"}, description = "Opencga host without environment", required = false, arity = 1)
         public String host; 
     
+        @Parameter(names = {"--study", "-s"}, description = "Opencga study to be default in queries.", required = false, arity = 1)
+        public String study; 
+    
     }
 
     @Parameters(commandNames = {"ping"}, commandDescription ="Ping Opencga webservices.")
