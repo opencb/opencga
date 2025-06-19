@@ -27,7 +27,7 @@ public class JsonOpenApiGeneratorTest {
                 "<some_valid_token>",
                 "reference",
                 "test.app.zettagenomics.com",
-                "v2");
+                "v2", "OpencgaStudy");
 
         ObjectMapper mapper = new ObjectMapper();
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);

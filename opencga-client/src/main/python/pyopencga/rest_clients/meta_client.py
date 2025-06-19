@@ -62,6 +62,7 @@ class Meta(_ParentRestClient):
 
         :param str environment: Environment of the app.
         :param str host: Opencga host without environment.
+        :param str study: Opencga study to be default in queries.
         """
 
         return self._get(category='meta', resource='openapi', **options)

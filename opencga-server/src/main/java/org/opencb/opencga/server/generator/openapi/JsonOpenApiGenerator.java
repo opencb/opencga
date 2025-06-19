@@ -19,7 +19,7 @@ public class JsonOpenApiGenerator {
 
     private final Set<Class<?>> beansDefinitions = new LinkedHashSet<>();
 
-    public Swagger generateJsonOpenApi(ApiCommons apiCommons, String token, String environment, String host, String apiVersion) {
+    public Swagger generateJsonOpenApi(ApiCommons apiCommons, String token, String environment, String host, String apiVersion, String study) {
 
         List<Class<?>> classes = apiCommons.getApiClasses();
         Swagger swagger = new Swagger();
