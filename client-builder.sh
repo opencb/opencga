@@ -69,10 +69,6 @@ done
 if ! $SKIP_BUILD_OPENCGA; then
    echo ">> Building OpenCGA Enterprise ..."
   ./build.sh
-  echo "Preparing python opencga client directory"
-  cd opencga-home
-  ./client-builder.sh --skip-javascript --skip-r --skip-build-opencga
-  cd ..
 fi
 # Check if the build directory exists, and delete it to create a new one total clean
 [ -d "${DIST_DIR}" ] && rm -rf "${DIST_DIR}"
@@ -101,11 +97,9 @@ fi
 if ! $SKIP_PYTHON; then
   echo "Building python library"
   echo "============================="
-  echo "Checking for OpenCGA Python client directory... If it does not exist, it will be compiled."
+  echo "Checking for OpenCGA Python client directory... If it does not exist, it should be compiled."
   if [ ! -d "$OPENCGA_BUILD_DIR/clients/python" ]; then
-    cd opencga-home
-    ./client-builder.sh --skip-javascript --skip-r
-    cd ..
+   echo "ERROR: To generate the Python client, OpenCGA must be compiled first."
   fi
   echo "Prepare directory: Python"
   rm -rf "$CLIENTS_DIR/python"
