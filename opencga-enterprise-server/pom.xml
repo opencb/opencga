@@ -33,6 +33,10 @@
             <artifactId>opencga-server</artifactId>
         </dependency>
         <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-analysis</artifactId>
         </dependency>
