@@ -214,3 +214,7 @@ def get_reverse_complement(seq):
     complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'}
     reverse_complement = "".join(complement.get(base, base) for base in reversed(seq))
     return reverse_complement
+
+
+def list_dir_files(path):
+    return [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]

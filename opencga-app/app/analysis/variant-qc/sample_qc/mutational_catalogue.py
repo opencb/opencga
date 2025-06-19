@@ -1,15 +1,12 @@
 #!/usr/bin/env python3
-
-import sys
+import json
 import os
 import logging
-import json
-import gzip
 import re
 
 import pysam
 
-from utils import create_output_dir, execute_bash_command, bgzip_vcf, get_reverse_complement, generate_results_json
+from utils import execute_bash_command, bgzip_vcf, get_reverse_complement, generate_results_json, list_dir_files
 
 LOGGER = logging.getLogger('variant_qc_logger')
 
@@ -165,7 +162,10 @@ class MutationalCatalogueAnalysis:
             counts[context_key] += 1
 
         # Creating results
-        results = {'signatures': [{'counts': [{'context': k, 'total': counts[k]} for k in counts]}]}
+        results = {'signatures': [{'counts': [{'context': k, 'total': counts[k]} for k in counts],
+                                   'id': self.config_json['signatures']['msId'],
+                                       'query': self.config_json['signatures']['msQuery'],
+                                   'type': self.get_ms_type()}]}
         generate_results_json(results=results, outdir_path=self.output_dir)
 
     @staticmethod
@@ -321,16 +321,109 @@ class MutationalCatalogueAnalysis:
             counts[context_key] += 1
 
         # Creating results
-        results = {'signatures': [{'counts': [{'context': k, 'total': counts[k]} for k in counts]}]}
+        results = {'signatures': [{'counts': [{'context': k, 'total': counts[k]} for k in counts],
+                                   'id': self.config_json['signatures']['msId'],
+                                       'query': self.config_json['signatures']['msQuery'],
+                                   'type': self.get_ms_type()}]}
         generate_results_json(results=results, outdir_path=self.output_dir)
+
+    def get_fitting_command(self):
+
+        # Creating basic CMD
+        cmd = 'R CMD Rscript --vanilla'
+        cmd += ' /opt/opencga/signature.tools.lib/scripts/signatureFit'
+        cmd += ' --commonsigtier=T2'
+        cmd += ' --genomev=hg38'
+
+        # Creating mutational catalogue counts file and adding it as parameter
+        if 'results.json' in list_dir_files(self.output_dir):
+            # Opening input/output files
+            results_fhand = open(os.path.join(self.output_dir, 'results.json'), 'r')
+            catalogues_fpath = os.path.join(self.output_dir, 'catalogues.tsv')
+            catalogues_fhand = open(catalogues_fpath, 'w')
+            # Creating catalogue file
+            results_json = json.loads(results_fhand.read())
+            for count in results_json['signatures'][0]['counts']:
+                catalogues_fhand.write('{}\t{}\n'.format(count['context'], count['total']))
+        elif 'catalogues.tsv' in list_dir_files(self.resource_dir):
+            catalogues_fpath = os.path.join(self.resource_dir, 'catalogues.tsv')
+        else:
+            raise ValueError('No catalogue file found for fitting analysis')
+        cmd += ' --catalogues={}'.format(catalogues_fpath)
+
+        # Adding output dir
+        cmd += ' --outdir={}'.format(self.output_dir)
+
+        # Adding extra analysis parameters
+        # --fitmethod
+        try:
+            cmd += ' --fitmethod={}'.format(self.config_json['signatures']['msQuery']['msFitMethod'])
+        except KeyError:
+            pass
+        # --sigversion
+        try:
+            cmd += ' --sigversion={}'.format(self.config_json['signatures']['msQuery']['msFitSigVersion'])
+        except KeyError:
+            pass
+        # --organ
+        try:
+            cmd += ' --organ={}'.format(self.config_json['signatures']['msQuery']['msFitOrgan'])
+        except KeyError:
+            pass
+        # --thresholdperc
+        try:
+            cmd += ' --thresholdperc={}'.format(self.config_json['signatures']['msQuery']['msFitThresholdPerc'])
+        except KeyError:
+            pass
+        # --thresholdpval
+        try:
+            cmd += ' --thresholdpval={}'.format(self.config_json['signatures']['msQuery']['msFitThresholdPval'])
+        except KeyError:
+            pass
+        # --maxraresigs
+        try:
+            cmd += ' --maxraresigs={}'.format(self.config_json['signatures']['msQuery']['msFitMaxRareSigs'])
+        except KeyError:
+            pass
+        # --nboot
+        try:
+            cmd += ' --nboot={}'.format(self.config_json['signatures']['msQuery']['msFitNBoot'])
+        except KeyError:
+            pass
+        # --signaturesfile
+        try:
+            signatures_file_fpath = os.path.join(self.resource_dir,
+                                                 self.config_json['signatures']['msQuery']['msFitSignaturesFile'])
+            cmd += ' --signaturesfile={}'.format(signatures_file_fpath)
+        except KeyError:
+            pass
+        # --raresignaturesfile
+        try:
+            rare_signatures_file_fpath = os.path.join(self.resource_dir,
+                                                      self.config_json['signatures']['msQuery']['msFitRareSignaturesFile'])
+            cmd += ' --raresignaturesfile={}'.format(rare_signatures_file_fpath)
+        except KeyError:
+            pass
+
+        return cmd
+
+    def create_signature_fitting(self):
+        cmd = self.get_fitting_command()
+        execute_bash_command(cmd)
+
+
+        # TODO Write results
+
 
     def run(self):
         # Creating mutational signature catalogue
         if self.ms_type == 'SNV':
             self.create_snv_genome_context_file()
             self.create_snv_signature_catalogue()
+            self.create_signature_fitting()
         elif self.ms_type == 'SV':
             self.create_sv_signature_catalogue()
+            self.create_signature_fitting()
             pass
         else:
             msg = 'Mutational signature for type "{}" not implemented'.format(self.ms_type)
