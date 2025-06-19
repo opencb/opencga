@@ -145,7 +145,9 @@ public class JsonOpenApiGenerator {
             }
         }
         Map<String, Definition> definitions = SwaggerDefinitionGenerator.getDefinitions(beansDefinitions);
-        swagger.setTags(tags);
+
+        swagger.setTags(sortTagsByName(tags));
+
         Map<String, Map<String, Method>> orderedPaths = new LinkedHashMap<>();
         paths.entrySet().stream()
                 .sorted(Map.Entry.<String, Map<String, Method>>comparingByValue(Comparator.comparing(o -> {
@@ -166,14 +168,14 @@ public class JsonOpenApiGenerator {
                         .thenComparing(Map.Entry.comparingByKey()))
                 .forEachOrdered(entry -> orderedPaths.put(entry.getKey(), entry.getValue()));
 
-
-        Map<String, Map<String, Method>> sortedPaths = sortPathsByKey(orderedPaths);
-        swagger.setPaths(sortedPaths);
+        swagger.setPaths(orderedPaths);
         swagger.setDefinitions(definitions);
         return swagger;
     }
-    public static Map<String, Map<String, Method>> sortPathsByKey(Map<String, Map<String, Method>> input) {
-        return new TreeMap<>(input);
+
+    public List<Tag> sortTagsByName(List<Tag> tags) {
+        tags.sort(Comparator.comparing(tag -> tag.getName().toLowerCase()));
+        return tags;
     }
 
     private Map<String, Response> getStringResponseMap(ApiOperation apiOperation) {
