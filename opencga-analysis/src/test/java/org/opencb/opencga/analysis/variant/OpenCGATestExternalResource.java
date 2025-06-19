@@ -290,33 +290,41 @@ public class OpenCGATestExternalResource extends ExternalResource {
         }
 
         // QC commons
-        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/qc")).toAbsolutePath();
-        List<String> qcFiles = Arrays.asList("variant_qc.main.py", "utils.py", "quality_control.py", "__init__.py");
+        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/variant-qc")).toAbsolutePath();
+        List<String> qcFiles = Arrays.asList("main.py", "utils.py", "quality_control.py", "__init__.py");
         for (String qcFile : qcFiles) {
-            try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/qc/" + qcFile)) {
+            try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/variant-qc/" + qcFile)) {
                 Files.copy(inputStream, analysisPath.resolve(qcFile), StandardCopyOption.REPLACE_EXISTING);
             }
         }
-        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/qc/common")).toAbsolutePath();
+        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/variant-qc/common")).toAbsolutePath();
         qcFiles = Arrays.asList("relatedness.py", "relatedness_analysis.py", "__init__.py");
         for (String qcFile : qcFiles) {
-            try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/qc/common/" + qcFile)) {
+            try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/variant-qc/common/" + qcFile)) {
                 Files.copy(inputStream, analysisPath.resolve(qcFile), StandardCopyOption.REPLACE_EXISTING);
             }
         }
         // Family QC
-        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/qc/family_qc")).toAbsolutePath();
+        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/variant-qc/family_qc")).toAbsolutePath();
         qcFiles = Arrays.asList("family_qc_executor.py", "family_quality_control.py", "__init__.py");
         for (String qcFile : qcFiles) {
-            try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/qc/family_qc/" + qcFile)) {
+            try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/variant-qc/family_qc/" + qcFile)) {
                 Files.copy(inputStream, analysisPath.resolve(qcFile), StandardCopyOption.REPLACE_EXISTING);
             }
         }
         // Individual QC
-        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/qc/individual_qc")).toAbsolutePath();
+        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/variant-qc/individual_qc")).toAbsolutePath();
         qcFiles = Arrays.asList("coverage_based_inferred_sex_analysis.py", "individual_qc_executor.py", "individual_quality_control.py", "mendelian_errors_analysis.py", "plot_inferred_sex.R", "plot_karyotypic_sex.R", "plot_mendelian_errors.R", "variant_based_inferred_sex_analysis.py", "__init__.py");
         for (String qcFile : qcFiles) {
-            try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/qc/individual_qc/" + qcFile)) {
+            try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/variant-qc/individual_qc/" + qcFile)) {
+                Files.copy(inputStream, analysisPath.resolve(qcFile), StandardCopyOption.REPLACE_EXISTING);
+            }
+        }
+        // Individual QC
+        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/variant-qc/sample_qc")).toAbsolutePath();
+        qcFiles = Arrays.asList("mutational_catalogue.py", "plot_bfctools_stats.py", "sample_qc_executor.py", "sv_clustering.R", "__init__.py");
+        for (String qcFile : qcFiles) {
+            try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/variant-qc/sample_qc/" + qcFile)) {
                 Files.copy(inputStream, analysisPath.resolve(qcFile), StandardCopyOption.REPLACE_EXISTING);
             }
         }

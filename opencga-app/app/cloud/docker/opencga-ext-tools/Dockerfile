@@ -14,7 +14,7 @@ RUN apt-get update -y && \
     libssl-dev libssh-dev libxml2-dev libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev \
     gnuplot pandoc tabix fastqc plink1.9 bwa r-base wget libopenblas0-openmp libcholmod3 libsuitesparse-dev python3 python3-pip && \
     apt-get remove libopenblas0-pthread && \
-    pip3 install numpy pyBigWig pydantic && \
+    pip3 install numpy pyBigWig pydantic pysam && \
 
     ## 2. Install samtools and bcftools 1.21 and plugins
     wget https://github.com/samtools/samtools/releases/download/1.21/samtools-1.21.tar.bz2 && \

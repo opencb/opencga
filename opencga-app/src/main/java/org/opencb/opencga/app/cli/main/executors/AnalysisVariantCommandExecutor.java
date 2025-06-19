@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import org.opencb.biodata.models.clinical.ClinicalProperty.ModeOfInheritance;
 import org.opencb.biodata.models.clinical.ClinicalProperty.Penetrance;
-import org.opencb.biodata.models.clinical.qc.Signature;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
@@ -39,7 +38,6 @@ import org.opencb.opencga.core.models.variant.GwasAnalysisParams;
 import org.opencb.opencga.core.models.variant.HRDetectAnalysisParams;
 import org.opencb.opencga.core.models.variant.KnockoutAnalysisParams;
 import org.opencb.opencga.core.models.variant.LiftoverWrapperParams;
-import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
 import org.opencb.opencga.core.models.variant.PlinkWrapperParams;
 import org.opencb.opencga.core.models.variant.RvtestsWrapperParams;
 import org.opencb.opencga.core.models.variant.SampleEligibilityAnalysisParams;
@@ -57,7 +55,6 @@ import org.opencb.opencga.core.models.variant.qc.SampleQcSignatureFittingAnalysi
 import org.opencb.opencga.core.models.variant.qc.SampleQcVariantStatsAnalysisParams;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.opencga.core.response.RestResponse;
-import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
 
 
@@ -148,9 +145,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             case "individual-qc-run":
                 queryResponse = runIndividualQc();
                 break;
-            case "inferred-sex-run":
-                queryResponse = runInferredSex();
-                break;
             case "knockout-gene-query":
                 queryResponse = queryKnockoutGene();
                 break;
@@ -163,17 +157,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             case "liftover-run":
                 queryResponse = runLiftover();
                 break;
-            case "mendelian-error-run":
-                queryResponse = runMendelianError();
-                break;
             case "metadata":
                 queryResponse = metadata();
-                break;
-            case "mutational-signature-query":
-                queryResponse = queryMutationalSignature();
-                break;
-            case "mutational-signature-run":
-                queryResponse = runMutationalSignature();
                 break;
             case "plink-run":
                 queryResponse = runPlink();
@@ -597,7 +582,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getVariantClient().genotypesFamily(commandOptions.modeOfInheritance, queryParams);
     }
 
-    private RestResponse<Job> runFamilyQc() throws Exception {
+    private RestResponse<List> runFamilyQc() throws Exception {
         logger.debug("Executing runFamilyQc in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunFamilyQcCommandOptions commandOptions = analysisVariantCommandOptions.runFamilyQcCommandOptions;
@@ -618,7 +603,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
         FamilyQcAnalysisParams familyQcAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
-            RestResponse<Job> res = new RestResponse<>();
+            RestResponse<List> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/family/qc/run"));
             return res;
@@ -966,38 +951,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getVariantClient().runIndividualQc(individualQcAnalysisParams, queryParams);
     }
 
-    private RestResponse<Job> runInferredSex() throws Exception {
-        logger.debug("Executing runInferredSex in Analysis - Variant command line");
-
-        AnalysisVariantCommandOptions.RunInferredSexCommandOptions commandOptions = analysisVariantCommandOptions.runInferredSexCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
-        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
-        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
-        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
-        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
-        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
-
-
-        ToolParams toolParams = null;
-        if (commandOptions.jsonDataModel) {
-            RestResponse<Job> res = new RestResponse<>();
-            res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/inferredSex/run"));
-            return res;
-        } else if (commandOptions.jsonFile != null) {
-            toolParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), ToolParams.class);
-        }
-        return openCGAClient.getVariantClient().runInferredSex(toolParams, queryParams);
-    }
-
     private RestResponse<KnockoutByGene> queryKnockoutGene() throws Exception {
         logger.debug("Executing queryKnockoutGene in Analysis - Variant command line");
 
@@ -1122,38 +1075,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getVariantClient().runLiftover(liftoverWrapperParams, queryParams);
     }
 
-    private RestResponse<Job> runMendelianError() throws Exception {
-        logger.debug("Executing runMendelianError in Analysis - Variant command line");
-
-        AnalysisVariantCommandOptions.RunMendelianErrorCommandOptions commandOptions = analysisVariantCommandOptions.runMendelianErrorCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
-        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
-        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
-        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
-        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
-        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
-
-
-        ToolParams toolParams = null;
-        if (commandOptions.jsonDataModel) {
-            RestResponse<Job> res = new RestResponse<>();
-            res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/mendelianError/run"));
-            return res;
-        } else if (commandOptions.jsonFile != null) {
-            toolParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), ToolParams.class);
-        }
-        return openCGAClient.getVariantClient().runMendelianError(toolParams, queryParams);
-    }
-
     private RestResponse<VariantMetadata> metadata() throws Exception {
         logger.debug("Executing metadata in Analysis - Variant command line");
 
@@ -1174,91 +1095,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
         return openCGAClient.getVariantClient().metadata(queryParams);
-    }
-
-    private RestResponse<Signature> queryMutationalSignature() throws Exception {
-        logger.debug("Executing queryMutationalSignature in Analysis - Variant command line");
-
-        AnalysisVariantCommandOptions.QueryMutationalSignatureCommandOptions commandOptions = analysisVariantCommandOptions.queryMutationalSignatureCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotEmpty("sample", commandOptions.sample);
-        queryParams.putIfNotEmpty("type", commandOptions.type);
-        queryParams.putIfNotEmpty("ct", commandOptions.ct);
-        queryParams.putIfNotEmpty("biotype", commandOptions.biotype);
-        queryParams.putIfNotEmpty("fileData", commandOptions.fileData);
-        queryParams.putIfNotEmpty("filter", commandOptions.filter);
-        queryParams.putIfNotEmpty("qual", commandOptions.qual);
-        queryParams.putIfNotEmpty("region", commandOptions.region);
-        queryParams.putIfNotEmpty("gene", commandOptions.gene);
-        queryParams.putIfNotEmpty("panel", commandOptions.panel);
-        queryParams.putIfNotEmpty("panelModeOfInheritance", commandOptions.panelModeOfInheritance);
-        queryParams.putIfNotEmpty("panelConfidence", commandOptions.panelConfidence);
-        queryParams.putIfNotEmpty("panelFeatureType", commandOptions.panelFeatureType);
-        queryParams.putIfNotEmpty("panelRoleInCancer", commandOptions.panelRoleInCancer);
-        queryParams.putIfNotNull("panelIntersection", commandOptions.panelIntersection);
-        queryParams.putIfNotEmpty("msId", commandOptions.msId);
-        queryParams.putIfNotEmpty("msDescription", commandOptions.msDescription);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
-
-        return openCGAClient.getVariantClient().queryMutationalSignature(queryParams);
-    }
-
-    private RestResponse<Job> runMutationalSignature() throws Exception {
-        logger.debug("Executing runMutationalSignature in Analysis - Variant command line");
-
-        AnalysisVariantCommandOptions.RunMutationalSignatureCommandOptions commandOptions = analysisVariantCommandOptions.runMutationalSignatureCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
-        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
-        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
-        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
-        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
-        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
-
-
-        MutationalSignatureAnalysisParams mutationalSignatureAnalysisParams = null;
-        if (commandOptions.jsonDataModel) {
-            RestResponse<Job> res = new RestResponse<>();
-            res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/mutationalSignature/run"));
-            return res;
-        } else if (commandOptions.jsonFile != null) {
-            mutationalSignatureAnalysisParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), MutationalSignatureAnalysisParams.class);
-        } else {
-            ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
-            putNestedIfNotEmpty(beanParams, "description", commandOptions.description, true);
-            putNestedIfNotEmpty(beanParams, "sample", commandOptions.sample, true);
-            putNestedIfNotEmpty(beanParams, "query", commandOptions.query, true);
-            putNestedIfNotEmpty(beanParams, "fitId", commandOptions.fitId, true);
-            putNestedIfNotEmpty(beanParams, "fitMethod", commandOptions.fitMethod, true);
-            putNestedIfNotNull(beanParams, "fitNBoot", commandOptions.fitNBoot, true);
-            putNestedIfNotEmpty(beanParams, "fitSigVersion", commandOptions.fitSigVersion, true);
-            putNestedIfNotEmpty(beanParams, "fitOrgan", commandOptions.fitOrgan, true);
-            putNestedIfNotNull(beanParams, "fitThresholdPerc", commandOptions.fitThresholdPerc, true);
-            putNestedIfNotNull(beanParams, "fitThresholdPval", commandOptions.fitThresholdPval, true);
-            putNestedIfNotNull(beanParams, "fitMaxRareSigs", commandOptions.fitMaxRareSigs, true);
-            putNestedIfNotEmpty(beanParams, "fitSignaturesFile", commandOptions.fitSignaturesFile, true);
-            putNestedIfNotEmpty(beanParams, "fitRareSignaturesFile", commandOptions.fitRareSignaturesFile, true);
-            putNestedIfNotEmpty(beanParams, "skip", commandOptions.skip, true);
-            putNestedIfNotEmpty(beanParams, "outdir", commandOptions.outdir, true);
-
-            mutationalSignatureAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
-                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), MutationalSignatureAnalysisParams.class);
-        }
-        return openCGAClient.getVariantClient().runMutationalSignature(mutationalSignatureAnalysisParams, queryParams);
     }
 
     private RestResponse<Job> runPlink() throws Exception {

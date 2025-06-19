@@ -16,17 +16,16 @@
 
 package org.opencb.opencga.server.rest.analysis;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
-import org.opencb.biodata.models.clinical.qc.Signature;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantSetStats;
-import org.opencb.cellbase.core.exception.CellBaseException;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.analysis.family.qc.FamilyVariantQcAnalysis;
 import org.opencb.opencga.analysis.individual.qc.IndividualVariantQcAnalysis;
@@ -42,7 +41,6 @@ import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysisResultReader;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
-import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.operations.VariantFileDeleteOperationTool;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
 import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
@@ -59,10 +57,7 @@ import org.opencb.opencga.analysis.wrappers.rvtests.RvtestsWrapperAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
@@ -90,8 +85,8 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManag
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.*;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.File;
 import java.io.FileInputStream;
@@ -991,124 +986,6 @@ public class VariantWebService extends AnalysisWebService {
 //    }
 
     @POST
-    @Path("/mutationalSignature/run")
-    @ApiOperation(value = MutationalSignatureAnalysis.DESCRIPTION, response = Job.class)
-    public Response mutationalSignatureRun(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
-            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
-            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
-            @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
-            @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
-            @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
-            @ApiParam(value = MutationalSignatureAnalysisParams.DESCRIPTION, required = true) MutationalSignatureAnalysisParams params) {
-        return submitJob(study, JobType.NATIVE, MutationalSignatureAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
-    }
-
-    @GET
-    @Path("/mutationalSignature/query")
-    @ApiOperation(value = MutationalSignatureAnalysis.DESCRIPTION + " Use context index.", response = Signature.class)
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "study", value = VariantQueryParams.STUDY_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "sample", value = "Sample name", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "type", value = "Variant type. Valid values: SNV, SV", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "ct", value = VariantQueryParams.ANNOT_CONSEQUENCE_TYPE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "biotype", value = VariantQueryParams.ANNOT_BIOTYPE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "fileData", value = VariantQueryParams.FILE_DATA_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "filter", value = VariantQueryParams.FILTER_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "qual", value = VariantQueryParams.QUAL_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "region", value = VariantQueryParams.REGION_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "gene", value = VariantQueryParams.GENE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "panel", value = VariantQueryParams.PANEL_DESC, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "panelModeOfInheritance", value = VariantQueryParams.PANEL_MOI_DESC, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "panelConfidence", value = VariantQueryParams.PANEL_CONFIDENCE_DESC, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "panelFeatureType", value = VariantQueryParams.PANEL_FEATURE_TYPE_DESC, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "panelRoleInCancer", value = VariantQueryParams.PANEL_ROLE_IN_CANCER_DESC, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "panelIntersection", value = VariantQueryParams.PANEL_INTERSECTION_DESC, dataType = "boolean", paramType = "query"),
-    })
-    public Response mutationalSignatureQuery(
-            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_ID_DESCRIPTION) @QueryParam("msId") String msId,
-            @ApiParam(value = FieldConstants.MUTATIONAL_SIGNATURE_DESCRIPTION_DESCRIPTION) @QueryParam("msDescription") String msDescription
-    ) {
-        java.nio.file.Path outDir = null;
-        try {
-            QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
-            Query query = getVariantQuery(queryOptions);
-
-            if (!query.containsKey(STUDY.key())) {
-                return createErrorResponse(new Exception("Missing study name"));
-            }
-
-            if (!query.containsKey(SAMPLE.key())) {
-                return createErrorResponse(new Exception("Missing sample name"));
-            }
-
-            // Check for genome context index
-            File genomeContextFile = MutationalSignatureAnalysis.getGenomeContextFile(query.getString(SAMPLE.key()),
-                    query.getString(STUDY.key()), catalogManager, token);
-            if (genomeContextFile == null || !genomeContextFile.exists()) {
-                return createErrorResponse(new Exception("Build the genome context file for sample " + query.getString(SAMPLE.key())
-                        + " before running mutational signature queries. To create the genome context file you can use the command"
-                        + " mutational-signature-run."));
-            }
-
-            // Create temporal directory
-            outDir = Paths.get(configuration.getAnalysis().getScratchDir(), "mutational-signature-" + TimeUtils.getTimeMillis());
-            try {
-                FileUtils.forceMkdir(outDir.toFile());
-                Runtime.getRuntime().exec("chmod 777 " + outDir.toAbsolutePath());
-            } catch (IOException e) {
-                throw new IOException("Error creating temporal directory for mutational-signature/query analysis. " + e.getMessage(), e);
-            }
-
-            MutationalSignatureAnalysisParams params = new MutationalSignatureAnalysisParams();
-            params.setId(msId)
-                    .setDescription(msDescription)
-                    .setQuery(query.toJson())
-                    .setSample(query.getString(SAMPLE.key()))
-                    .setSkip(MutationalSignatureAnalysisParams.SIGNATURE_FITTING_SKIP_VALUE);
-
-            logger.info("MutationalSignatureAnalysisParams: {}", params);
-
-            MutationalSignatureAnalysis mutationalSignatureAnalysis = new MutationalSignatureAnalysis();
-            mutationalSignatureAnalysis.setUp(opencgaHome.toString(), catalogManager, storageEngineFactory, new ObjectMap(), outDir, null,
-                    false, token);
-            mutationalSignatureAnalysis.setStudy(query.getString(STUDY.key()));
-            mutationalSignatureAnalysis.setSignatureParams(params);
-
-            StopWatch watch = StopWatch.createStarted();
-            mutationalSignatureAnalysis.start();
-            watch.stop();
-
-            logger.info("Parsing mutational signature catalogue results from {}", outDir);
-            File signatureFile = outDir.resolve(MutationalSignatureAnalysis.MUTATIONAL_SIGNATURE_DATA_MODEL_FILENAME).toFile();
-            if (outDir.resolve(MutationalSignatureAnalysis.MUTATIONAL_SIGNATURE_DATA_MODEL_FILENAME).toFile().exists()) {
-                Signature signature = JacksonUtils.getDefaultObjectMapper().readerFor(Signature.class).readValue(signatureFile);
-                OpenCGAResult<Signature> result = new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1,
-                        Collections.singletonList(signature), 1);
-                return createOkResponse(result);
-            } else {
-                return createErrorResponse(new ToolException("Something wrong happened: it could not find the signature output file"));
-            }
-        } catch (ToolException | IOException | CatalogException e) {
-            return createErrorResponse(e);
-        } finally {
-            if (outDir != null) {
-                // Delete temporal directory
-                try {
-                    if (outDir.toFile().exists()) {
-                        logger.info("Deleting scratch directory {}", outDir);
-                        FileUtils.deleteDirectory(outDir.toFile());
-                    }
-                } catch (IOException e) {
-                    logger.warn("Error cleaning scratch directory {}", outDir, e);
-                }
-            }
-        }
-    }
-
-    @POST
     @Path("/hrDetect/run")
     @ApiOperation(value = HRDetectAnalysis.DESCRIPTION, response = Job.class)
     public Response hrDetectRun(
@@ -1124,61 +1001,9 @@ public class VariantWebService extends AnalysisWebService {
         return submitJob(study, JobType.NATIVE, HRDetectAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
-
-    @Deprecated
-    @POST
-    @Path("/mendelianError/run")
-    @ApiOperation(value = DEPRECATED + "Mendelian error analysis", response = Job.class)
-    public Response mendelianErrorRun(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
-            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
-            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
-            @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
-            @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
-            @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
-            @ApiParam(value = "Mendelian error analysis parameters", required = true) ToolParams params) {
-        return createErrorResponse(new CellBaseException("Deprecated method"));
-    }
-
-    @Deprecated
-    @POST
-    @Path("/inferredSex/run")
-    @ApiOperation(value = DEPRECATED + "Inferred sex analysis", response = Job.class)
-    public Response inferredSexRun(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
-            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
-            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
-            @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
-            @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
-            @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
-            @ApiParam(value = "Inferred sex analysis parameters", required = true) ToolParams params) {
-        return createErrorResponse(new CellBaseException("Deprecated method"));
-    }
-
-    @Deprecated
-    @POST
-    @Path("/relatedness/run")
-    @ApiOperation(value = DEPRECATED + "Relatedness analysis", response = Job.class, hidden = true)
-    public Response relatednessRun(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
-            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
-            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
-            @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
-            @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
-            @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
-            @ApiParam(value = "Relatedness analysis parameters", required = true) ToolParams params) {
-        return createErrorResponse(new CellBaseException("Deprecated method"));
-    }
-
     @POST
     @Path("/family/qc/run")
-    @ApiOperation(value = FamilyVariantQcAnalysis.DESCRIPTION, response = Job.class)
+    @ApiOperation(value = FamilyVariantQcAnalysis.DESCRIPTION, response = List.class)
     public Response familyQcRun(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
@@ -1189,14 +1014,57 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = FAMILY_QC_PARAMS_DESCRIPTION, required = true) FamilyQcAnalysisParams params) {
-        return run(() -> {
-            // Check before submitting the job
-            FamilyVariantQcAnalysis.checkParameters(params, study, catalogManager, token);
 
-            // Submit the family QC analysis
-            return submitJobRaw(null, study, JobType.NATIVE, FamilyVariantQcAnalysis.ID, params, jobName, jobDescription, dependsOn,
-                    jobTags, scheduledStartTime, jobPriority, dryRun);
-        });
+        if (StringUtils.isEmpty(params.getFamily()) || CollectionUtils.isEmpty(params.getFamilies())) {
+            return createErrorResponse(new Exception("Missing family IDs."));
+        }
+        List<String> familyIds = params.getFamilies();
+        if (CollectionUtils.isEmpty(familyIds)) {
+            familyIds = Collections.singletonList(params.getFamily());
+        }
+        StopWatch watch = StopWatch.createStarted();
+        List<String> failedFamilyIds = new ArrayList<>(familyIds.size());
+        List<Job> jobList = new ArrayList<>(familyIds.size());
+        List<Event> eventList = new ArrayList<>();
+
+        // Check
+        for (String familyId : familyIds) {
+            FamilyQcAnalysisParams updatedParams = (FamilyQcAnalysisParams) params.toParams();
+            updatedParams.setFamilies(Collections.singletonList(familyId));
+            try {
+                FamilyVariantQcAnalysis.checkParameters(updatedParams, study, catalogManager, token);
+            } catch (ToolException e) {
+                failedFamilyIds.add(familyId);
+                String msg = "Family check failed for family ID " + familyId + " before submitting QC job : " + e.getMessage();
+                Event event = new Event(Event.Type.ERROR, msg);
+                eventList.add(event);
+                logger.error(msg, e);
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(eventList)) {
+            OpenCGAResult<Job> result = new OpenCGAResult<>(((int) watch.getTime()), eventList, 0, Collections.emptyList(), 0);
+            return createErrorResponse("Some family checks failed for IDs: " + StringUtils.join(failedFamilyIds, ","), result);
+        }
+
+        // Submit QC job for each checked family
+        for (String familyId : familyIds) {
+            FamilyQcAnalysisParams updatedParams = (FamilyQcAnalysisParams) params.toParams();
+            updatedParams.setFamilies(Collections.singletonList(familyId));
+            try {
+                DataResult<Job> jobResult = submitJobRaw(null, study, JobType.NATIVE, FamilyVariantQcAnalysis.ID, updatedParams,
+                        jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+                jobList.add(jobResult.first());
+            } catch (CatalogException e) {
+                String msg = "Error submitting family QC job for family ID " + familyId + ": " + e.getMessage();
+                Event event = new Event(Event.Type.WARNING, msg);
+                eventList.add(event);
+                logger.error(msg, e);
+            }
+        }
+
+        OpenCGAResult<Job> result = new OpenCGAResult<>(((int) watch.getTime()), eventList, jobList.size(), jobList, jobList.size());
+        return createOkResponse(result);
     }
 
     @POST

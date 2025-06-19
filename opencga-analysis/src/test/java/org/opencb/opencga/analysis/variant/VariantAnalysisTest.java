@@ -58,6 +58,7 @@ import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.analysis.wrappers.liftover.LiftoverWrapperAnalysis;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.ResourceException;
 import org.opencb.opencga.catalog.managers.AnnotationSetManager;
@@ -137,6 +138,7 @@ public class VariantAnalysisTest {
 
     public static final String ORGANIZATION = "test";
     public static final String USER = "user";
+    public static final String USER_STD = "user-std";
     public static final String PASSWORD = TestParamConstants.PASSWORD;
     public static final String PROJECT = "project";
     public static final String STUDY = "study";
@@ -183,6 +185,7 @@ public class VariantAnalysisTest {
     private static String storageEngine;
     private static boolean indexed = false;
     private static String token;
+    private static String token_std;
     private static File file;
 
     @Before
@@ -284,7 +287,8 @@ public class VariantAnalysisTest {
         variantStorageManager = opencga.getVariantStorageManager();
         variantStorageManager.getStorageConfiguration().setMode(StorageConfiguration.Mode.READ_ONLY);
         toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantStorageManager.getStorageConfiguration()));
-        token = catalogManager.getUserManager().login(ORGANIZATION, "user", PASSWORD).first().getToken();
+        token = catalogManager.getUserManager().login(ORGANIZATION, USER, PASSWORD).first().getToken();
+        token_std = catalogManager.getUserManager().login(ORGANIZATION, USER_STD, PASSWORD).first().getToken();
     }
 
     @AfterClass
@@ -298,10 +302,12 @@ public class VariantAnalysisTest {
     public void setUpCatalogManager() throws IOException, CatalogException {
         catalogManager.getOrganizationManager().create(new OrganizationCreateParams().setId(ORGANIZATION), QueryOptions.empty(), opencga.getAdminToken());
         catalogManager.getUserManager().create(USER, "User Name", "mail@ebi.ac.uk", PASSWORD, ORGANIZATION, null, opencga.getAdminToken());
+        catalogManager.getUserManager().create(USER_STD, "User Name (standard)", "mail@ebi.ac.uk", PASSWORD, ORGANIZATION, null, opencga.getAdminToken());
         catalogManager.getOrganizationManager().update(ORGANIZATION, new OrganizationUpdateParams().setAdmins(Collections.singletonList(USER)),
                 null,
                 opencga.getAdminToken());
-        token = catalogManager.getUserManager().login(ORGANIZATION, "user", PASSWORD).first().getToken();
+        token = catalogManager.getUserManager().login(ORGANIZATION, USER, PASSWORD).first().getToken();
+        token_std = catalogManager.getUserManager().login(ORGANIZATION, USER_STD, PASSWORD).first().getToken();
 
         String projectId = catalogManager.getProjectManager().create(new ProjectCreateParams()
                         .setId(PROJECT)
@@ -341,6 +347,7 @@ public class VariantAnalysisTest {
             toolRunner.execute(VariantIndexOperationTool.class,
                     new VariantIndexParams().setFile(file.getId()).setAnnotate(true),
                     Paths.get(opencga.createTmpOutdir()), null, false, token);
+            Assert.fail();
         } catch (ToolException e) {
             System.out.println(ExceptionUtils.prettyExceptionMessage(e, true, true));
         }
@@ -1154,14 +1161,10 @@ public class VariantAnalysisTest {
     }
 
     @Test
-    public void testFamilyQC() throws Exception {
+    public void testFamilyQcAdmin() throws Exception {
         assumeResources(RELATEDNESS_ANALYSIS_ID);
 
         Path outDir = Paths.get(opencga.createTmpOutdir("_family_qc"));
-
-        Family familyObj = catalogManager.getFamilyManager().get(STUDY, family, QueryOptions.empty(), token).first();
-        JacksonUtils.getDefaultObjectMapper().writerFor(Family.class).writeValue(Paths.get("/tmp/" + family + "_info.json").toFile(), familyObj);
-
 
         // To be sure, all samples are no-somatic
         SampleUpdateParams sampleUpdateParams = new SampleUpdateParams().setSomatic(false);
@@ -1176,6 +1179,8 @@ public class VariantAnalysisTest {
         params.setFamilies(Arrays.asList(family));
 
         String jobId = "test-family-qc-" + TimeUtils.getTimeMillis();
+
+        // Execute the analysis with admin permissions (token)
         toolRunner.execute(FamilyVariantQcAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY),
                 outDir, jobId, false, token);
 
@@ -1194,7 +1199,164 @@ public class VariantAnalysisTest {
         assertEquals(fam.getInternal().getQualityControlStatus().getId(), QualityControlStatus.READY);
         assertNotNull(fam.getQualityControl());
         assertEquals(1, fam.getQualityControl().getRelatedness().size());
-        assertEquals(jobId, fam.getQualityControl().getRelatedness().get(0).getAttributes().get(OPENCGA_JOB_ID_ATTR));
+        assertEquals("PLINK/IBD", fam.getQualityControl().getRelatedness().get(0).getMethod());
+        assertEquals(jobId, fam.getQualityControl().getAttributes().get(OPENCGA_JOB_ID_ATTR));
+    }
+
+    @Test
+    public void testFamilyQcAdminNoOverwriteREADY() throws Exception {
+        assumeResources(RELATEDNESS_ANALYSIS_ID);
+
+        Path outDir = Paths.get(opencga.createTmpOutdir("_family_qc"));
+
+        // To be sure, all samples are no-somatic
+        SampleUpdateParams sampleUpdateParams = new SampleUpdateParams().setSomatic(false);
+        catalogManager.getSampleManager().update(STUDY, son, sampleUpdateParams, null, token);
+
+        // Update quality control for the family
+        QualityControlStatus qualityControlStatus = new QualityControlStatus(QualityControlStatus.READY, "Computed");
+        catalogManager.getFamilyManager().updateQualityControl(STUDY, family, new FamilyQualityControl(), qualityControlStatus,
+                token);
+
+        // Family QC analysis params (not setting overwrite)
+        FamilyQcAnalysisParams params = new FamilyQcAnalysisParams();
+        params.setFamilies(Arrays.asList(family));
+
+        String jobId = "test-family-qc-" + TimeUtils.getTimeMillis();
+        try {
+            // Execute the analysis with admin permissions (token) but without overwrite
+            toolRunner.execute(FamilyVariantQcAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY),
+                    outDir, jobId, false, token);
+            fail();
+        } catch (ToolException e) {
+            // Restore
+            sampleUpdateParams = new SampleUpdateParams().setSomatic(true);
+            catalogManager.getSampleManager().update(STUDY, son, sampleUpdateParams, null, token);
+
+            // Expected exception, since the family already has a quality control status and no overwrite was requested
+            Assert.assertTrue(e.getMessage().contains(HAS_ALREADY_BEEN_COMPUTED_WITH_A_READY_STATUS));
+        }
+    }
+
+    @Test
+    public void testFamilyQcAdminNoOverwriteERROR() throws Exception {
+        assumeResources(RELATEDNESS_ANALYSIS_ID);
+
+        Path outDir = Paths.get(opencga.createTmpOutdir("_family_qc"));
+
+        // To be sure, all samples are no-somatic
+        SampleUpdateParams sampleUpdateParams = new SampleUpdateParams().setSomatic(false);
+        catalogManager.getSampleManager().update(STUDY, son, sampleUpdateParams, null, token);
+
+        // Update quality control for the family
+        QualityControlStatus qualityControlStatus = new QualityControlStatus(QualityControlStatus.ERROR, "Computed");
+        catalogManager.getFamilyManager().updateQualityControl(STUDY, family, new FamilyQualityControl(), qualityControlStatus,
+                token);
+
+        // Family QC analysis params (setting overwrite to true)
+        FamilyQcAnalysisParams params = new FamilyQcAnalysisParams();
+        params.setFamilies(Arrays.asList(family));
+
+        String jobId = "test-family-qc-" + TimeUtils.getTimeMillis();
+        // Execute the analysis with admin permissions (token) but with overwrite
+        toolRunner.execute(FamilyVariantQcAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY),
+                outDir, jobId, false, token);
+
+        Family fam = catalogManager.getFamilyManager().get(STUDY, family, QueryOptions.empty(), token).first();
+
+        // Some output to check
+        System.out.println("fam.getInternal().getQualityControlStatus() = " + fam.getInternal().getQualityControlStatus());
+        System.out.println("fam.getQualityControl() = " + fam.getQualityControl());
+        System.out.println("outDir = " + outDir);
+
+        // Restore
+        sampleUpdateParams = new SampleUpdateParams().setSomatic(true);
+        catalogManager.getSampleManager().update(STUDY, son, sampleUpdateParams, null, token);
+
+        // Asserts
+        assertEquals(fam.getInternal().getQualityControlStatus().getId(), QualityControlStatus.READY);
+        assertNotNull(fam.getQualityControl());
+        assertEquals(1, fam.getQualityControl().getRelatedness().size());
+        assertEquals("PLINK/IBD", fam.getQualityControl().getRelatedness().get(0).getMethod());
+        assertEquals(jobId, fam.getQualityControl().getAttributes().get(OPENCGA_JOB_ID_ATTR));
+    }
+
+    @Test
+    public void testFamilyQcAdminOverwriteREADY() throws Exception {
+        assumeResources(RELATEDNESS_ANALYSIS_ID);
+
+        Path outDir = Paths.get(opencga.createTmpOutdir("_family_qc"));
+
+        // To be sure, all samples are no-somatic
+        SampleUpdateParams sampleUpdateParams = new SampleUpdateParams().setSomatic(false);
+        catalogManager.getSampleManager().update(STUDY, son, sampleUpdateParams, null, token);
+
+        // Update quality control for the family
+        QualityControlStatus qualityControlStatus = new QualityControlStatus(QualityControlStatus.READY, "Computed");
+        catalogManager.getFamilyManager().updateQualityControl(STUDY, family, new FamilyQualityControl(), qualityControlStatus,
+                token);
+
+        // Family QC analysis params (setting overwrite to true)
+        FamilyQcAnalysisParams params = new FamilyQcAnalysisParams();
+        params.setFamilies(Arrays.asList(family));
+        params.setOverwrite(true);
+
+        String jobId = "test-family-qc-" + TimeUtils.getTimeMillis();
+        // Execute the analysis with admin permissions (token) but with overwrite
+        toolRunner.execute(FamilyVariantQcAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY),
+                outDir, jobId, false, token);
+
+        Family fam = catalogManager.getFamilyManager().get(STUDY, family, QueryOptions.empty(), token).first();
+
+        // Some output to check
+        System.out.println("fam.getInternal().getQualityControlStatus() = " + fam.getInternal().getQualityControlStatus());
+        System.out.println("fam.getQualityControl() = " + fam.getQualityControl());
+        System.out.println("outDir = " + outDir);
+
+        // Restore
+        sampleUpdateParams = new SampleUpdateParams().setSomatic(true);
+        catalogManager.getSampleManager().update(STUDY, son, sampleUpdateParams, null, token);
+
+        // Asserts
+        assertEquals(fam.getInternal().getQualityControlStatus().getId(), QualityControlStatus.READY);
+        assertNotNull(fam.getQualityControl());
+        assertEquals(1, fam.getQualityControl().getRelatedness().size());
+        assertEquals("PLINK/IBD", fam.getQualityControl().getRelatedness().get(0).getMethod());
+        assertEquals(jobId, fam.getQualityControl().getAttributes().get(OPENCGA_JOB_ID_ATTR));
+    }
+
+    @Test
+    public void testFamilyQcNoAdmin() throws Exception {
+        assumeResources(RELATEDNESS_ANALYSIS_ID);
+
+        Path outDir = Paths.get(opencga.createTmpOutdir("_family_qc"));
+
+        // To be sure, all samples are no-somatic
+        SampleUpdateParams sampleUpdateParams = new SampleUpdateParams().setSomatic(false);
+        catalogManager.getSampleManager().update(STUDY, son, sampleUpdateParams, null, token);
+
+        // Update quality control for the cancer sample
+        catalogManager.getFamilyManager().updateQualityControl(STUDY, family, new FamilyQualityControl(), new QualityControlStatus(),
+                token);
+
+        // Family QC analysis
+        FamilyQcAnalysisParams params = new FamilyQcAnalysisParams();
+        params.setFamilies(Arrays.asList(family));
+
+        String jobId = "test-family-qc-" + TimeUtils.getTimeMillis();
+        try {
+            // Execute the analysis without admin permissions (token_std)
+            toolRunner.execute(FamilyVariantQcAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY),
+                    outDir, jobId, false, token_std);
+            fail();
+        } catch (ToolException e) {
+            // Restore
+            sampleUpdateParams = new SampleUpdateParams().setSomatic(true);
+            catalogManager.getSampleManager().update(STUDY, son, sampleUpdateParams, null, token);
+
+            // Expected exception, since the user does not have permissions to run the analysis
+            Assert.assertEquals(e.getCause().getClass(), CatalogAuthorizationException.class);
+        }
     }
 
     @Test
@@ -1385,7 +1547,9 @@ public class VariantAnalysisTest {
         Assume.assumeTrue(CollectionUtils.isNotEmpty(resourceIds));
         for (String resourceId : resourceIds) {
             String filename = resourceManager.getResourceFilename(resourceId);
-            Assume.assumeTrue(Files.exists(Paths.get("/opt/opencga/analysis/resources/" + analysisId + "/" + filename)));
+            Path resourcePath = Paths.get("/opt/opencga/analysis/resources/" + analysisId + "/" + filename);
+            System.out.println("Checking resource ID " + resourceId + " and if resource file exists: " + filename + " at " + resourcePath);
+            Assume.assumeTrue(Files.exists(resourcePath));
         }
     }
 
@@ -1405,6 +1569,12 @@ public class VariantAnalysisTest {
     }
 
     private boolean areLiftoverResourcesReady() throws IOException {
+        // We can't download this for each test! It takes too long, and it might fill up the disk in small runners
+        return false;
+    }
+
+    // TODO: Decide what to do with this
+    private boolean areLiftoverResourcesReady_invalid() throws IOException {
         Configuration configuration = opencga.getConfiguration();
         configuration.getAnalysis().getResource().setBasePath(opencga.getOpencgaHome().resolve(ResourceManager.ANALYSIS_DIRNAME).resolve(ResourceManager.RESOURCES_DIRNAME));
         configuration.getAnalysis().getResource().setBaseUrl("http://resources.opencb.org/opencb/opencga/analysis/resources/");

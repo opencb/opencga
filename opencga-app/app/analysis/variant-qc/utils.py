@@ -8,6 +8,7 @@ import subprocess
 from pydantic import BaseModel, Field
 from typing import Dict, List
 import pysam
+import gzip
 
 LOGGER = logging.getLogger('variant_qc_logger')
 
@@ -114,7 +115,12 @@ def create_parents_file(path, samples_info):
     LOGGER.info(f"Generating text file to update parents information: '{parents_fpath}'")
     with open(parents_fpath, 'w') as file:
         for sample_info in samples_info.values():
-            file.write('\t'.join([sample_info.familyIds[0], sample_info.sampleId, sample_info.fatherSampleId, sample_info.motherSampleId]) + '\n')
+            file.write('\t'.join([
+                sample_info.familyIds[0],
+                sample_info.sampleId,
+                sample_info.fatherSampleId if sample_info.fatherSampleId is not None else "0",
+                sample_info.motherSampleId if sample_info.motherSampleId is not None else "0"
+            ]) + '\n')
     return parents_fpath
 
 def create_phenotype_file(path, samples_info):
@@ -182,6 +188,20 @@ def get_base64_image(image_fpath: str):
 
         # Encode the binary data as a Base64 string
         return base64.b64encode(binary_data).decode('utf-8')
+
+def get_contig_prefix(vcf_file: str):
+    with gzip.open(vcf_file, 'rt') as f:
+        for line in f:
+            if line.startswith('##contig'):
+                contig_id = line.split('ID=')[1].split(',')[0]
+                if contig_id.startswith('chr'):
+                    return 'chr'
+                else:
+                    return ''
+            elif not line.startswith('#'):  # Reached first data line
+                chrom = line.split('\t')[0]
+                return 'chr' if chrom.startswith('chr') else ''
+        return ''
 
 def bgzip_vcf(vcf_fpath, delete_original=False):
     """
