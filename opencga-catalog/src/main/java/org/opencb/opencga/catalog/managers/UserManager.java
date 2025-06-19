@@ -1591,7 +1591,7 @@ public class UserManager extends AbstractManager {
         }
     }
 
-    private String getAuthenticationOriginId(String organizationId, String userId) throws CatalogException {
+    String getAuthenticationOriginId(String organizationId, String userId) throws CatalogException {
         OpenCGAResult<User> user = getUserDBAdaptor(organizationId).get(userId, new QueryOptions());
         if (user == null || user.getNumResults() == 0) {
             throw new CatalogException(userId + " user not found");

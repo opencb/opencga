@@ -38,6 +38,7 @@ public class OrganizationsCommandOptions {
         public SearchNotesCommandOptions searchNotesCommandOptions;
         public DeleteNotesCommandOptions deleteNotesCommandOptions;
         public UpdateNotesCommandOptions updateNotesCommandOptions;
+        public ResetUserPasswordCommandOptions resetUserPasswordCommandOptions;
         public UserUpdateStatusCommandOptions userUpdateStatusCommandOptions;
         public UpdateUserCommandOptions updateUserCommandOptions;
         public UpdateConfigurationCommandOptions updateConfigurationCommandOptions;
@@ -54,6 +55,7 @@ public class OrganizationsCommandOptions {
         this.searchNotesCommandOptions = new SearchNotesCommandOptions();
         this.deleteNotesCommandOptions = new DeleteNotesCommandOptions();
         this.updateNotesCommandOptions = new UpdateNotesCommandOptions();
+        this.resetUserPasswordCommandOptions = new ResetUserPasswordCommandOptions();
         this.userUpdateStatusCommandOptions = new UserUpdateStatusCommandOptions();
         this.updateUserCommandOptions = new UpdateUserCommandOptions();
         this.updateConfigurationCommandOptions = new UpdateConfigurationCommandOptions();
@@ -231,6 +233,23 @@ public class OrganizationsCommandOptions {
     
         @Parameter(names = {"--visibility"}, description = "Enum param allowed values: PUBLIC, PRIVATE", required = false, arity = 1)
         public String visibility;
+    
+    }
+
+    @Parameters(commandNames = {"user-password-reset"}, commandDescription ="Reset user's password")
+    public class ResetUserPasswordCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--user-id"}, description = "User whose password needs to be reset", required = false, arity = 1)
+        public String userId; 
     
     }
 
