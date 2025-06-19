@@ -320,8 +320,14 @@ public class JsonOpenApiGenerator {
                 parameters.add(parameter);
             }
         }
+        return sortParameters(parameters);
+    }
 
-        return parameters;
+    public List<Parameter> sortParameters(List<Parameter> parameters) {
+        parameters.sort(Comparator
+                .comparing(Parameter::isRequired).reversed() // Required=true first and alphabetical order
+                .thenComparing(p -> p.getName().toLowerCase()));
+        return parameters;// Alphabetically by name
     }
 
     public String formatParameterDescription(ApiParam apiParam, Parameter parameter) {
