@@ -69,6 +69,10 @@ done
 if ! $SKIP_BUILD_OPENCGA; then
    echo ">> Building OpenCGA Enterprise ..."
   ./build.sh
+  echo "Preparing python opencga client directory"
+  cd opencga-home
+  ./client-builder.sh --skip-javascript --skip-r --skip-build-opencga
+  cd ..
 fi
 # Check if the build directory exists, and delete it to create a new one total clean
 [ -d "${DIST_DIR}" ] && rm -rf "${DIST_DIR}"
