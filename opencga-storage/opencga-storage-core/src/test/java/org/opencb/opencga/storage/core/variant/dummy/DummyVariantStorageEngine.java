@@ -19,6 +19,8 @@ package org.opencb.opencga.storage.core.variant.dummy;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.config.DatabaseCredentials;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.config.storage.StorageEngineConfiguration;
@@ -26,12 +28,18 @@ import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
+import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
+import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -107,6 +115,30 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
+    protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator) throws StorageEngineException {
+        return new DefaultVariantAnnotationManager(annotator, getDBAdaptor(), getIOManagerProvider()){
+            @Override
+            public void saveAnnotation(String name, ObjectMap options) throws StorageEngineException, VariantAnnotatorException {
+                dbAdaptor.getMetadataManager().updateProjectMetadata(project -> {
+                    registerNewAnnotationSnapshot(name, variantAnnotator, project);
+                    return project;
+                });
+            }
+
+            @Override
+            public void deleteAnnotation(String name, ObjectMap options) throws StorageEngineException, VariantAnnotatorException {
+                ProjectMetadata.VariantAnnotationMetadata saved = dbAdaptor.getMetadataManager().getProjectMetadata()
+                        .getAnnotation().getSaved(name);
+
+                dbAdaptor.getMetadataManager().updateProjectMetadata(project -> {
+                    removeAnnotationSnapshot(name, project);
+                    return project;
+                });
+            }
+        };
+    }
+
+    @Override
     public DataResult<Trio> familyIndex(String study, List<Trio> trios, ObjectMap options) throws StorageEngineException {
         logger.info("Running family index!");
         VariantStorageMetadataManager metadataManager = getMetadataManager();
@@ -137,6 +169,11 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
                     throws StorageEngineException, IOException {
             }
         };
+    }
+
+    @Override
+    public List<URI> walkData(URI outputFile, VariantWriterFactory.VariantOutputFormat format, Query query, QueryOptions queryOptions, String commandLine) throws StorageEngineException {
+        throw new UnsupportedOperationException("Unable to walk data in " + getStorageEngineId());
     }
 
     @Override

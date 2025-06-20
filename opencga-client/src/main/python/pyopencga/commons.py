@@ -176,23 +176,28 @@ def _fetch(config, sid, category, resource, method, subcategory=None, query_id=N
             raise OpencgaInvalidToken(r.content)
         elif r.status_code == 403:
             raise OpencgaAuthorisationError(r.content)
-
         elif r.status_code != 200:
             raise Exception(r.content)
 
-        try:
-            response = r.json()
+        if r.headers['Content-Type'] == 'application/json':
+            try:
+                response = r.json()
 
-            # TODO Remove deprecated response and result in future release. Added for backwards compatibility
-            if 'response' in response:
-                response['responses'] = response['response']
-            for query_result in response['responses']:
-                if 'result' in query_result:
-                    query_result['results'] = query_result['result']
+                # TODO Remove deprecated response and result in future release. Added for backwards compatibility
+                if 'response' in response:
+                    response['responses'] = response['response']
+                for query_result in response['responses']:
+                    if 'result' in query_result:
+                        query_result['results'] = query_result['result']
 
-        except ValueError:
-            msg = 'Bad JSON format retrieved from server'
-            raise ValueError(msg)
+            except ValueError:
+                raise ValueError('Bad JSON format retrieved from server')
+        elif r.headers['Content-Type'] == 'application/octet-stream':
+            return r.content
+        else:
+            raise ValueError('Unexpected content type retrieved from server ("{}"): "{}"'.format(
+                r.headers['Content-Type'], r.content)
+            )
 
         # Setting up final_response
         if final_response is None:
@@ -324,7 +329,7 @@ def execute(config, sid, category, resource, method, subcategory=None, query_id=
                                          'options': options})
             # Setting threads as "daemon" allows main program to exit eventually
             # even if these do not finish correctly
-            t.setDaemon(True)
+            t.daemon = True
             t.start()
 
         # Loading up the queue with index and id batches for each job

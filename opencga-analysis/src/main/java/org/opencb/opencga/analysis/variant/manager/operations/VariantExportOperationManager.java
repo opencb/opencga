@@ -30,6 +30,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
@@ -48,6 +49,17 @@ public class VariantExportOperationManager extends OperationManager {
 
     public List<URI> export(String outputFileStr, VariantWriterFactory.VariantOutputFormat outputFormat, String variantsFile,
                       Query query, QueryOptions queryOptions, String token) throws Exception {
+        URI outputFile = getOutputUri(outputFileStr, outputFormat, query, token);
+
+        VariantMetadataFactory metadataExporter =
+                new CatalogVariantMetadataFactory(catalogManager, variantStorageEngine.getDBAdaptor(), token);
+
+        URI variantsFileUri = StringUtils.isEmpty(variantsFile) ? null : UriUtils.createUri(variantsFile);
+        return variantStorageEngine.exportData(outputFile, outputFormat, variantsFileUri, query, queryOptions, metadataExporter);
+    }
+
+    public URI getOutputUri(String outputFileStr, VariantWriterFactory.VariantOutputFormat format, Query query, String token)
+            throws CatalogException, IOException {
         URI outputFile;
         if (!VariantWriterFactory.isStandardOutput(outputFileStr)) {
             URI outdirUri;
@@ -71,19 +83,14 @@ public class VariantExportOperationManager extends OperationManager {
                     outputFileName = buildOutputFileName(query, token);
                 }
                 outputFile = outdirUri.resolve(outputFileName);
-                outputFile = VariantWriterFactory.checkOutput(outputFile, outputFormat);
+                outputFile = VariantWriterFactory.checkOutput(outputFile, format);
             } else {
                 outputFile = outdirUri;
             }
         } else {
             outputFile = null;
         }
-
-        VariantMetadataFactory metadataExporter =
-                new CatalogVariantMetadataFactory(catalogManager, variantStorageEngine.getDBAdaptor(), token);
-
-        URI variantsFileUri = StringUtils.isEmpty(variantsFile) ? null : UriUtils.createUri(variantsFile);
-        return variantStorageEngine.exportData(outputFile, outputFormat, variantsFileUri, query, queryOptions, metadataExporter);
+        return outputFile;
     }
 
     private String buildOutputFileName(Query query, String token) throws CatalogException {

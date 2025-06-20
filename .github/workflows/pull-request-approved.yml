@@ -7,8 +7,9 @@ on:
 
 jobs:
   calculate-xetabase-branch:
+    if: github.event.review.state == 'approved'
     name: Calculate Xetabase branch
-    runs-on: ubuntu-22.04
+    runs-on: ${{ vars.UBUNTU_VERSION }}
     outputs:
       xetabase_branch: ${{ steps.get_xetabase_branch.outputs.xetabase_branch }}
     steps:
@@ -24,13 +25,15 @@ jobs:
           chmod +x ./.github/workflows/scripts/get-xetabase-branch.sh
           echo "github.event.pull_request.base.ref: ${{ github.event.pull_request.base.ref }}"
           echo "github.event.pull_request.head.ref: ${{ github.event.pull_request.head.ref }}"
-          xetabase_branch=$(./.github/workflows/scripts/get-xetabase-branch.sh ${{ github.event.pull_request.base.ref }})
+          xetabase_branch=$(./.github/workflows/scripts/get-xetabase-branch.sh ${{ github.event.pull_request.base.ref }} ${{ github.event.pull_request.head.ref }})
           echo "__Xetabase ref:__ \"${xetabase_branch}\"" | tee -a ${GITHUB_STEP_SUMMARY}
+          echo "xetabase_branch: ${xetabase_branch}"
           echo "xetabase_branch=${xetabase_branch}" >> $GITHUB_OUTPUT
         env:
           ZETTA_REPO_ACCESS_TOKEN: ${{ secrets.ZETTA_REPO_ACCESS_TOKEN }}
 
   test:
+    if: github.event.review.state == 'approved'
     name: "Run all tests before merging"
     needs: calculate-xetabase-branch
     uses: opencb/java-common-libs/.github/workflows/test-xetabase-workflow.yml@develop
@@ -38,4 +41,3 @@ jobs:
       branch: ${{ needs.calculate-xetabase-branch.outputs.xetabase_branch }}
       task: ${{ github.event.pull_request.head.ref }}
     secrets: inherit
-

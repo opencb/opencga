@@ -14,6 +14,7 @@ import java.util.function.Function;
 
 public abstract class AbstractHBaseVariantTableInputFormat<KEYOUT> extends TransformInputFormat<ImmutableBytesWritable, Result, KEYOUT> {
 
+    public static final String SAMPLE_INDEX_TABLE = "hbase_variant_table_input_format.sample_index_table";
     public static final String USE_SAMPLE_INDEX_TABLE_INPUT_FORMAT = "hbase_variant_table_input_format.use_sample_index_table_input_format";
     public static final String MULTI_SCANS = "hbase_variant_table_input_format.multi_scans";
     private Function<Result, KEYOUT> converter;
