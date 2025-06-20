@@ -53,8 +53,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 @RunWith(Parameterized.class)
-//@Category(MediumTests.class)
-@Ignore
+@Category(MediumTests.class)
 public class HadoopVariantExporterTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
     private final boolean exportToLocal;
