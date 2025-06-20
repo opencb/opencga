@@ -1,8 +1,8 @@
 package org.opencb.opencga.storage.hadoop.variant.mr;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
+import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.phoenix.jdbc.PhoenixDriver;
@@ -15,12 +15,12 @@ public class PhoenixVariantRowTableInputFormat
         extends TransformInputFormat<NullWritable, ExposedResultSetDBWritable, VariantRow> {
 
     @Override
-    protected void init(Configuration configuration) throws IOException {
+    protected void init(JobContext context) throws IOException {
         // Ensure PhoenixDriver is registered
         if (PhoenixDriver.INSTANCE == null) {
             throw new IOException("Error registering PhoenixDriver");
         }
-        PhoenixConfigurationUtil.setInputClass(configuration, ExposedResultSetDBWritable.class);
+        PhoenixConfigurationUtil.setInputClass(context.getConfiguration(), ExposedResultSetDBWritable.class);
         inputFormat = new CustomPhoenixInputFormat<>();
     }
 
@@ -28,7 +28,7 @@ public class PhoenixVariantRowTableInputFormat
     public RecordReader<NullWritable, VariantRow> createRecordReader(InputSplit split, TaskAttemptContext context)
             throws IOException, InterruptedException {
         if (inputFormat == null) {
-            init(context.getConfiguration());
+            init(context);
         }
         RecordReader<NullWritable, ExposedResultSetDBWritable> recordReader = inputFormat.createRecordReader(split, context);
 
