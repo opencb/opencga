@@ -57,7 +57,7 @@ public class ClinicalInterpretationConverterTest {
 
 
         // Clinical variant
-        ClinicalVariantConverter cvConverter = new ClinicalVariantConverter();
+        ClinicalVariantConverter cvConverter = new ClinicalVariantConverter(null, null);
         List<ClinicalVariantSearch> cvsList = cvConverter.toClinicalVariantSearch(ci.getPrimaryFindings(), true,
                 ci.getId(), true, ca.getId(), studyId, viewers);
         assertEquals(ci.getPrimaryFindings().size(), cvsList.size());

@@ -9,6 +9,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalDiscussion;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantConfidence;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchModel;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
 import org.slf4j.Logger;
@@ -27,8 +29,8 @@ public class ClinicalVariantConverter extends SearchConverter<ClinicalVariant, C
 
     protected Logger logger = LoggerFactory.getLogger(ClinicalVariantConverter.class);
 
-    public ClinicalVariantConverter() {
-        this.variantSearchToVariantConverter = new VariantSearchToVariantConverter();
+    public ClinicalVariantConverter(VariantStorageMetadataManager metadataManager, SearchIndexMetadata searchIndexMetadata) {
+        this.variantSearchToVariantConverter = new VariantSearchToVariantConverter(metadataManager, searchIndexMetadata);
         this.clinicalVariantReader = mapper.readerFor(ClinicalVariant.class);
     }
 
@@ -50,7 +52,7 @@ public class ClinicalVariantConverter extends SearchConverter<ClinicalVariant, C
             VariantSearchModel variantSearchModel = variantSearchToVariantConverter.convertToStorageType(cv);
             ClinicalVariantSearch cvs = new ClinicalVariantSearch(variantSearchModel);
 
-            cvs.setId(interpretationId + "-" + variantSearchModel.getVariantId());
+            cvs.setId(interpretationId + "-" + variantSearchModel.getFullId());
 
             cvs.setPrimaryFinding(isPrimaryFinding)
                     .setCiId(interpretationId)
@@ -160,7 +162,7 @@ public class ClinicalVariantConverter extends SearchConverter<ClinicalVariant, C
                 // Add to the list
                 cvList.add(cv);
             } catch (JsonProcessingException e) {
-                throw new CvdbException("Error when converting to clinical variant " + cvs.getVariantId(), e);
+                throw new CvdbException("Error when converting to clinical variant " + cvs.getFullId(), e);
             }
         }
         return cvList;

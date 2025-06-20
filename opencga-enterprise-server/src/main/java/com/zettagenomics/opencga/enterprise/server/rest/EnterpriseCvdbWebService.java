@@ -6,13 +6,17 @@ import com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine;
 import com.zettagenomics.opencga.enterprise.cvdb.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.CvdbIndexTask;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbIndexTaskParams;
+import com.zettagenomics.opencga.enterprise.server.CvdbWSUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.biodata.models.clinical.interpretation.stats.ClinicalVariantSummaryStats;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
+import org.opencb.opencga.catalog.exceptions.CatalogRuntimeException;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.opencga.core.config.storage.StorageEngineConfiguration;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
@@ -20,12 +24,21 @@ import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobType;
 import org.opencb.opencga.core.tools.annotations.*;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
+import org.opencb.opencga.storage.core.StorageEngine;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.*;
@@ -51,13 +64,14 @@ public class EnterpriseCvdbWebService extends OpenCGAWSServer {
         CvdbSolrEngine cvdbEngine = cvdbEngineAtomicRef.get();
         if (cvdbEngine == null) {
             synchronized(cvdbEngineAtomicRef) {
-                cvdbEngine = cvdbEngineAtomicRef.get();
-                if (cvdbEngine == null) {
-                    logger.info("Initializing CVDB Solr Engine");
-                    EnterpriseConfiguration enterpriseConfiguration = EnterpriseConfiguration.load(opencgaHome);
-                    cvdbEngine = new CvdbSolrEngine(enterpriseConfiguration.getCvdb(), catalogManager, new VariantStorageMetadataManager(
-                            new DummyVariantStorageMetadataDBAdaptorFactory()));
-                    cvdbEngineAtomicRef.set(cvdbEngine);
+                try {
+                    cvdbEngine = cvdbEngineAtomicRef.get();
+                    if (cvdbEngine == null) {
+                        cvdbEngine = CvdbWSUtils.getCvdbSolrEngine(catalogManager, opencgaHome);
+                        cvdbEngineAtomicRef.set(cvdbEngine);
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException("Unable to initialize CVDB engine", e);
                 }
             }
         }
@@ -1424,7 +1438,7 @@ public class EnterpriseCvdbWebService extends OpenCGAWSServer {
     public Response getClinicalVariantSummaryStats(
             @ApiParam(value = "Variant ID (or comma separated list of variant IDs)") @PathParam(value = "variantId") String variantId,
             @ApiParam(value = PROJECT_PARAM_DESCRIPTION + "(or command separated list of project IDs)") @QueryParam(PROJECT_PARAM_NAME)
-                    String projectId) {
+            String projectId) {
         return run(() -> {
             return getCvdbEngine().getClinicalVariantSummaryStats(variantId, projectId, token);
         });

@@ -1,10 +1,9 @@
 package com.zettagenomics.opencga.enterprise.server.rest;
 
 import com.zettagenomics.opencga.enterprise.catalog.managers.EnterpriseFactory;
-import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine;
 import com.zettagenomics.opencga.enterprise.cvdb.CvdbUtils;
-import com.zettagenomics.opencga.enterprise.cvdb.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
+import com.zettagenomics.opencga.enterprise.server.CvdbWSUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.commons.datastore.core.Query;
@@ -18,7 +17,6 @@ import org.opencb.opencga.core.tools.annotations.ApiImplicitParams;
 import org.opencb.opencga.core.tools.annotations.ApiOperation;
 import org.opencb.opencga.server.rest.analysis.ClinicalWebService;
 import org.opencb.opencga.server.rest.analysis.VariantWebService;
-import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
@@ -53,11 +51,12 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             synchronized(cvdbEngineAtomicRef) {
                 cvdbEngine = cvdbEngineAtomicRef.get();
                 if (cvdbEngine == null) {
-                    logger.info("Initializing CVDB Solr Engine");
-                    EnterpriseConfiguration enterpriseConfiguration = EnterpriseConfiguration.load(opencgaHome);
-                    cvdbEngine = new CvdbSolrEngine(enterpriseConfiguration.getCvdb(), catalogManager, new VariantStorageMetadataManager(
-                            new DummyVariantStorageMetadataDBAdaptorFactory()));
-                    cvdbEngineAtomicRef.set(cvdbEngine);
+                    try {
+                        cvdbEngine = CvdbWSUtils.getCvdbSolrEngine(catalogManager, opencgaHome);
+                        cvdbEngineAtomicRef.set(cvdbEngine);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Unable to initialize CVDB engine", e);
+                    }
                 }
             }
         }

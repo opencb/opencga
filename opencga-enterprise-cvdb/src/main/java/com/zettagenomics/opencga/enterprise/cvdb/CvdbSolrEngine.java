@@ -77,6 +77,7 @@ import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,6 +102,7 @@ public class CvdbSolrEngine {
     private SolrManager solrManager;
     private CatalogManager catalogManager;
     private VariantStorageMetadataManager variantStorageMetadataManager;
+    private SearchIndexMetadata searchIndexMetadata;
 
     private Configuration configuration;
     private CvdbConfiguration cvdbConfiguration;
@@ -157,7 +159,8 @@ public class CvdbSolrEngine {
         init();
     }
 
-    public CvdbSolrEngine(CvdbConfiguration cvdbConfig, CatalogManager catalogManager, VariantStorageMetadataManager variantStorageMetadataManager) {
+    public CvdbSolrEngine(CvdbConfiguration cvdbConfig, CatalogManager catalogManager,
+                          VariantStorageMetadataManager variantStorageMetadataManager, SearchIndexMetadata searchIndexMetadata) {
         this.configuration = catalogManager.getConfiguration();
         this.cvdbConfiguration = cvdbConfig;
 
@@ -165,6 +168,7 @@ public class CvdbSolrEngine {
                 cvdbConfig.getDatabase().getTimeout());
         this.catalogManager = catalogManager;
         this.variantStorageMetadataManager = variantStorageMetadataManager;
+        this.searchIndexMetadata = searchIndexMetadata;
 
         init();
     }
@@ -172,7 +176,7 @@ public class CvdbSolrEngine {
     private void init() {
         this.caConverter = new ClinicalAnalysisConverter();
         this.ciConverter = new ClinicalInterpretationConverter();
-        this.cvConverter = new ClinicalVariantConverter();
+        this.cvConverter = new ClinicalVariantConverter(variantStorageMetadataManager, searchIndexMetadata);
         this.cveConverter = new ClinicalVariantEvidenceConverter();
 
         this.logger = LoggerFactory.getLogger(CvdbSolrEngine.class);

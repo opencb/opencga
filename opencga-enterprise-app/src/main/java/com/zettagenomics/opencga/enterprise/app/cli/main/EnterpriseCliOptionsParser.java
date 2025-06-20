@@ -292,9 +292,6 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         organizationsSubCommands.addCommand("update-status-user", organizationsCommandOptions.userUpdateStatusCommandOptions);
         organizationsSubCommands.addCommand("user-update", organizationsCommandOptions.updateUserCommandOptions);
         organizationsSubCommands.addCommand("configuration-update", organizationsCommandOptions.updateConfigurationCommandOptions);
-        organizationsSubCommands.addCommand("events-query", organizationsCommandOptions.queryEventsCommandOptions);
-        organizationsSubCommands.addCommand("events-archive", organizationsCommandOptions.archiveEventsCommandOptions);
-        organizationsSubCommands.addCommand("events-retry", organizationsCommandOptions.retryEventsCommandOptions);
         organizationsSubCommands.addCommand("info", organizationsCommandOptions.infoCommandOptions);
         organizationsSubCommands.addCommand("update", organizationsCommandOptions.updateCommandOptions);
 
@@ -397,7 +394,6 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         operationsVariantStorageSubCommands.addCommand("variant-secondary-sample-index", operationsVariantStorageCommandOptions.variantSecondarySampleIndexCommandOptions);
         operationsVariantStorageSubCommands.addCommand("configure-variant-secondary-sample-index", operationsVariantStorageCommandOptions.configureVariantSecondarySampleIndexCommandOptions);
         operationsVariantStorageSubCommands.addCommand("variant-secondary-index", operationsVariantStorageCommandOptions.secondaryIndexVariantCommandOptions);
-        operationsVariantStorageSubCommands.addCommand("variant-secondary-index-delete", operationsVariantStorageCommandOptions.deleteVariantSecondaryIndexCommandOptions);
         operationsVariantStorageSubCommands.addCommand("variant-setup", operationsVariantStorageCommandOptions.setupVariantCommandOptions);
         operationsVariantStorageSubCommands.addCommand("variant-stats-delete", operationsVariantStorageCommandOptions.deleteVariantStatsCommandOptions);
         operationsVariantStorageSubCommands.addCommand("variant-stats-index", operationsVariantStorageCommandOptions.indexVariantStatsCommandOptions);
