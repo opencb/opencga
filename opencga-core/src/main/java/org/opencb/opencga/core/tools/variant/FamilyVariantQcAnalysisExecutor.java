@@ -24,28 +24,28 @@ import java.util.LinkedList;
 
 public abstract class FamilyVariantQcAnalysisExecutor extends OpenCgaToolExecutor {
 
-    protected LinkedList<Path> vcfPaths;
-    protected LinkedList<Path> jsonPaths;
+    protected Path vcfPath;
+    protected Path jsonPath;
     protected FamilyQcAnalysisParams qcParams;
 
     public FamilyVariantQcAnalysisExecutor() {
     }
 
-    public LinkedList<Path> getVcfPaths() {
-        return vcfPaths;
+    public Path getVcfPath() {
+        return vcfPath;
     }
 
-    public FamilyVariantQcAnalysisExecutor setVcfPaths(LinkedList<Path> vcfPaths) {
-        this.vcfPaths = vcfPaths;
+    public FamilyVariantQcAnalysisExecutor setVcfPath(Path vcfPath) {
+        this.vcfPath = vcfPath;
         return this;
     }
 
-    public LinkedList<Path> getJsonPaths() {
-        return jsonPaths;
+    public Path getJsonPath() {
+        return jsonPath;
     }
 
-    public FamilyVariantQcAnalysisExecutor setJsonPaths(LinkedList<Path> jsonPaths) {
-        this.jsonPaths = jsonPaths;
+    public FamilyVariantQcAnalysisExecutor setJsonPath(Path jsonPath) {
+        this.jsonPath = jsonPath;
         return this;
     }
 

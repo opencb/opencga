@@ -582,7 +582,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getVariantClient().genotypesFamily(commandOptions.modeOfInheritance, queryParams);
     }
 
-    private RestResponse<List> runFamilyQc() throws Exception {
+    private RestResponse<Job> runFamilyQc() throws Exception {
         logger.debug("Executing runFamilyQc in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.RunFamilyQcCommandOptions commandOptions = analysisVariantCommandOptions.runFamilyQcCommandOptions;
@@ -603,7 +603,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
         FamilyQcAnalysisParams familyQcAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
-            RestResponse<List> res = new RestResponse<>();
+            RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/family/qc/run"));
             return res;
@@ -612,7 +612,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), FamilyQcAnalysisParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotNull(beanParams, "families", commandOptions.families, true);
             putNestedIfNotEmpty(beanParams, "family", commandOptions.family, true);
             putNestedIfNotEmpty(beanParams, "relatednessMethod", commandOptions.relatednessMethod, true);
             putNestedIfNotEmpty(beanParams, "relatednessMaf", commandOptions.relatednessMaf, true);
@@ -934,7 +933,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), IndividualQcAnalysisParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotNull(beanParams, "individuals", commandOptions.individuals, true);
             putNestedIfNotEmpty(beanParams, "individual", commandOptions.individual, true);
             putNestedIfNotEmpty(beanParams, "sample", commandOptions.sample, true);
             putNestedIfNotEmpty(beanParams, "inferredSexMethod", commandOptions.inferredSexMethod, true);
@@ -1376,7 +1374,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "sample", commandOptions.sample, true);
-            putNestedIfNotNull(beanParams, "samples", commandOptions.samples, true);
             putNestedIfNotEmpty(beanParams, "statsParams.id", commandOptions.statsParamsId, true);
             putNestedIfNotEmpty(beanParams, "statsParams.description", commandOptions.statsParamsDescription, true);
             putNestedIfNotEmpty(beanParams, "vsId", commandOptions.vsId, true);

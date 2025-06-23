@@ -1001,9 +1001,75 @@ public class VariantWebService extends AnalysisWebService {
         return submitJob(study, JobType.NATIVE, HRDetectAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
+//    @POST
+//    @Path("/family/qc/launcher")
+//    @ApiOperation(value = FamilyVariantQcAnalysis.DESCRIPTION, response = List.class)
+//    public Response familyQcLauncher(
+//            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+//            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+//            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+//            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+//            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+//            @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
+//            @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
+//            @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
+//            @ApiParam(value = FAMILY_QC_PARAMS_DESCRIPTION, required = true) FamilyQcAnalysisParams params) {
+//
+//        if (StringUtils.isEmpty(params.getFamily()) || CollectionUtils.isEmpty(params.getFamilies())) {
+//            return createErrorResponse(new Exception("Missing family IDs."));
+//        }
+//        List<String> familyIds = params.getFamilies();
+//        if (CollectionUtils.isEmpty(familyIds)) {
+//            familyIds = Collections.singletonList(params.getFamily());
+//        }
+//        StopWatch watch = StopWatch.createStarted();
+//        List<String> failedFamilyIds = new ArrayList<>(familyIds.size());
+//        List<Job> jobList = new ArrayList<>(familyIds.size());
+//        List<Event> eventList = new ArrayList<>();
+//
+//        // Check
+//        for (String familyId : familyIds) {
+//            FamilyQcAnalysisParams updatedParams = (FamilyQcAnalysisParams) params.toParams();
+//            updatedParams.setFamilies(Collections.singletonList(familyId));
+//            try {
+//                FamilyVariantQcAnalysis.checkParameters(updatedParams, study, catalogManager, token);
+//            } catch (ToolException e) {
+//                failedFamilyIds.add(familyId);
+//                String msg = "Family check failed for family ID " + familyId + " before submitting QC job : " + e.getMessage();
+//                Event event = new Event(Event.Type.ERROR, msg);
+//                eventList.add(event);
+//                logger.error(msg, e);
+//            }
+//        }
+//
+//        if (CollectionUtils.isNotEmpty(eventList)) {
+//            OpenCGAResult<Job> result = new OpenCGAResult<>(((int) watch.getTime()), eventList, 0, Collections.emptyList(), 0);
+//            return createErrorResponse("Some family checks failed for IDs: " + StringUtils.join(failedFamilyIds, ","), result);
+//        }
+//
+//        // Submit QC job for each checked family
+//        for (String familyId : familyIds) {
+//            FamilyQcAnalysisParams updatedParams = (FamilyQcAnalysisParams) params.toParams();
+//            updatedParams.setFamilies(Collections.singletonList(familyId));
+//            try {
+//                DataResult<Job> jobResult = submitJobRaw(null, study, JobType.NATIVE, FamilyVariantQcAnalysis.ID, updatedParams,
+//                        jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+//                jobList.add(jobResult.first());
+//            } catch (CatalogException e) {
+//                String msg = "Error submitting family QC job for family ID " + familyId + ": " + e.getMessage();
+//                Event event = new Event(Event.Type.WARNING, msg);
+//                eventList.add(event);
+//                logger.error(msg, e);
+//            }
+//        }
+//
+//        OpenCGAResult<Job> result = new OpenCGAResult<>(((int) watch.getTime()), eventList, jobList.size(), jobList, jobList.size());
+//        return createOkResponse(result);
+//    }
+
     @POST
     @Path("/family/qc/run")
-    @ApiOperation(value = FamilyVariantQcAnalysis.DESCRIPTION, response = List.class)
+    @ApiOperation(value = FamilyVariantQcAnalysis.DESCRIPTION, response = Job.class)
     public Response familyQcRun(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
@@ -1014,62 +1080,19 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = FAMILY_QC_PARAMS_DESCRIPTION, required = true) FamilyQcAnalysisParams params) {
+        return run(() -> {
+            // Check before submitting the job
+            FamilyVariantQcAnalysis.checkParameters(params, study, catalogManager, token);
 
-        if (StringUtils.isEmpty(params.getFamily()) || CollectionUtils.isEmpty(params.getFamilies())) {
-            return createErrorResponse(new Exception("Missing family IDs."));
-        }
-        List<String> familyIds = params.getFamilies();
-        if (CollectionUtils.isEmpty(familyIds)) {
-            familyIds = Collections.singletonList(params.getFamily());
-        }
-        StopWatch watch = StopWatch.createStarted();
-        List<String> failedFamilyIds = new ArrayList<>(familyIds.size());
-        List<Job> jobList = new ArrayList<>(familyIds.size());
-        List<Event> eventList = new ArrayList<>();
-
-        // Check
-        for (String familyId : familyIds) {
-            FamilyQcAnalysisParams updatedParams = (FamilyQcAnalysisParams) params.toParams();
-            updatedParams.setFamilies(Collections.singletonList(familyId));
-            try {
-                FamilyVariantQcAnalysis.checkParameters(updatedParams, study, catalogManager, token);
-            } catch (ToolException e) {
-                failedFamilyIds.add(familyId);
-                String msg = "Family check failed for family ID " + familyId + " before submitting QC job : " + e.getMessage();
-                Event event = new Event(Event.Type.ERROR, msg);
-                eventList.add(event);
-                logger.error(msg, e);
-            }
-        }
-
-        if (CollectionUtils.isNotEmpty(eventList)) {
-            OpenCGAResult<Job> result = new OpenCGAResult<>(((int) watch.getTime()), eventList, 0, Collections.emptyList(), 0);
-            return createErrorResponse("Some family checks failed for IDs: " + StringUtils.join(failedFamilyIds, ","), result);
-        }
-
-        // Submit QC job for each checked family
-        for (String familyId : familyIds) {
-            FamilyQcAnalysisParams updatedParams = (FamilyQcAnalysisParams) params.toParams();
-            updatedParams.setFamilies(Collections.singletonList(familyId));
-            try {
-                DataResult<Job> jobResult = submitJobRaw(null, study, JobType.NATIVE, FamilyVariantQcAnalysis.ID, updatedParams,
-                        jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
-                jobList.add(jobResult.first());
-            } catch (CatalogException e) {
-                String msg = "Error submitting family QC job for family ID " + familyId + ": " + e.getMessage();
-                Event event = new Event(Event.Type.WARNING, msg);
-                eventList.add(event);
-                logger.error(msg, e);
-            }
-        }
-
-        OpenCGAResult<Job> result = new OpenCGAResult<>(((int) watch.getTime()), eventList, jobList.size(), jobList, jobList.size());
-        return createOkResponse(result);
+            // Submit the individual QC analysis
+            return submitJobRaw(null, study, JobType.NATIVE, FamilyVariantQcAnalysis.ID, params, jobName, jobDescription, dependsOn,
+                    jobTags, scheduledStartTime, jobPriority, dryRun);
+        });
     }
 
     @POST
     @Path("/individual/qc/run")
-    @ApiOperation(value = IndividualVariantQcAnalysis.DESCRIPTION, response = Job.class)
+    @ApiOperation(value = FamilyVariantQcAnalysis.DESCRIPTION, response = Job.class)
     public Response individualQcRun(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,

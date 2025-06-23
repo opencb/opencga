@@ -220,16 +220,12 @@ public class FieldConstants {
 
     // Family QC parameters
     public static final String FAMILY_QC_PARAMS_DESCRIPTION = "Family QC analysis params.";
-    public static final String FAMILY_QC_FAMILY_ID_LIST_DESCRIPTION = "List of family IDs";
-    @Deprecated
-    public static final String FAMILY_QC_FAMILY_ID_DESCRIPTION = "[DEPRECATED] Family ID";
+    public static final String FAMILY_QC_FAMILY_ID_DESCRIPTION = "Family ID";
     @Deprecated
     public static final String FAMILY_QUALITY_CONTROL_RELATEDNESS_REPORT_DESCRIPTION = "[DEPRECATED] Relatedness report for family QC";
 
     // Individual QC parameters
-    public static final String INDIVIDUAL_QC_INDIVIDUAL_ID_LIST_DESCRIPTION = "List of individual IDs";
-    @Deprecated
-    public static final String INDIVIDUAL_QC_INDIVIDUAL_ID_DESCRIPTION = "[DEPRECATED] Individual ID";
+    public static final String INDIVIDUAL_QC_INDIVIDUAL_ID_DESCRIPTION = "Individual ID";
     @Deprecated
     public static final String INDIVIDUAL_QC_SAMPLE_ID_DESCRIPTION = "[DEPRECATED] Sample ID (required when the individual has multiple samples)";
     @Deprecated

@@ -20,16 +20,11 @@ import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
-import java.util.Arrays;
 import java.util.List;
 
 public class IndividualQcAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Individual QC analysis params";
 
-    @DataField(id = "individuals", description = FieldConstants.INDIVIDUAL_QC_INDIVIDUAL_ID_LIST_DESCRIPTION, deprecated = true)
-    private List<String> individuals;
-
-    @Deprecated
     @DataField(id = "individual", description = FieldConstants.INDIVIDUAL_QC_INDIVIDUAL_ID_DESCRIPTION, deprecated = true)
     private String individual;
 
@@ -64,9 +59,8 @@ public class IndividualQcAnalysisParams extends ToolParams {
     }
 
     @Deprecated
-    public IndividualQcAnalysisParams(List<String> individuals, String individual, String sample, String inferredSexMethod,
+    public IndividualQcAnalysisParams(String individual, String sample, String inferredSexMethod,
                                       String resourcesDir, List<String> skipAnalysis, Boolean skipIndex, Boolean overwrite, String outdir) {
-        this.individuals = individuals;
         this.individual = individual;
         this.sample = sample;
         this.inferredSexMethod = inferredSexMethod;
@@ -77,8 +71,8 @@ public class IndividualQcAnalysisParams extends ToolParams {
         this.outdir = outdir;
     }
 
-    public IndividualQcAnalysisParams(List<String> individuals, Boolean skipIndex, Boolean overwrite, String resourcesDir, String outdir) {
-        this.individuals = individuals;
+    public IndividualQcAnalysisParams(String individual, Boolean skipIndex, Boolean overwrite, String resourcesDir, String outdir) {
+        this.individual = individual;
         this.skipIndex = skipIndex;
         this.overwrite = overwrite;
         this.resourcesDir = resourcesDir;
@@ -88,7 +82,7 @@ public class IndividualQcAnalysisParams extends ToolParams {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("IndividualQcAnalysisParams{");
-        sb.append("individuals=").append(individuals);
+        sb.append("individual=").append(individual);
         sb.append(", skipIndex=").append(skipIndex);
         sb.append(", overwrite=").append(overwrite);
         sb.append(", resourcesDir='").append(resourcesDir).append('\'');
@@ -97,23 +91,12 @@ public class IndividualQcAnalysisParams extends ToolParams {
         return sb.toString();
     }
 
-    public List<String> getIndividuals() {
-        return individuals;
-    }
-
-    public IndividualQcAnalysisParams setIndividuals(List<String> individuals) {
-        this.individuals = individuals;
-        return this;
-    }
-
-    @Deprecated
     public String getIndividual() {
-        return individuals.get(0);
+        return individual;
     }
 
-    @Deprecated
     public IndividualQcAnalysisParams setIndividual(String individual) {
-        this.individuals = Arrays.asList(individual);
+        this.individual = individual;
         return this;
     }
 

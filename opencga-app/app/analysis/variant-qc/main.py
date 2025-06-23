@@ -204,16 +204,17 @@ def main():
         sample_ids, id_ = check_input(vcf_files[i], info_jsons[i], qc_type)
 
         # Creating parent output dirs
-        LOGGER.debug('Preparing output dirs for files "{}" and "{}"'.format(vcf_files[i], info_jsons[i]))
-        qc_outdir_fpath = create_output_dir([output_dir, id_])
+        #LOGGER.debug('Preparing output dirs for files "{}" and "{}"'.format(vcf_files[i], info_jsons[i]))
+        #qc_outdir_fpath = create_output_dir([output_dir, id_])
+        qc_outdir_fpath = output_dir
 
         # Copying VCF file and info JSON file in output directory
-        LOGGER.debug('Copying VCF file "{}" in output directory "{}"'.format(vcf_files[i], qc_outdir_fpath))
-        shutil.copy(vcf_files[i], qc_outdir_fpath)
-        LOGGER.debug('Copying info JSON file "{}" in output directory "{}"'.format(info_jsons[i], qc_outdir_fpath))
-        shutil.copy(info_jsons[i], qc_outdir_fpath)
-        LOGGER.debug('Copying config JSON file "{}" in output directory "{}"'.format(config, qc_outdir_fpath))
-        shutil.copy(config, qc_outdir_fpath)
+        #LOGGER.debug('Copying VCF file "{}" in output directory "{}"'.format(vcf_files[i], qc_outdir_fpath))
+        #shutil.copy(vcf_files[i], qc_outdir_fpath)
+        #LOGGER.debug('Copying info JSON file "{}" in output directory "{}"'.format(info_jsons[i], qc_outdir_fpath))
+        #shutil.copy(info_jsons[i], qc_outdir_fpath)
+        #LOGGER.debug('Copying config JSON file "{}" in output directory "{}"'.format(config, qc_outdir_fpath))
+        #shutil.copy(config, qc_outdir_fpath)
 
         # Execute QC
         qc_executor(

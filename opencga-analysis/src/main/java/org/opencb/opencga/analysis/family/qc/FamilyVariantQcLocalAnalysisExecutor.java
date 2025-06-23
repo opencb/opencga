@@ -51,6 +51,6 @@ public class FamilyVariantQcLocalAnalysisExecutor extends FamilyVariantQcAnalysi
         Path scriptPath = getOpencgaHome().resolve(ResourceManager.ANALYSIS_DIRNAME).resolve(VARIANT_QC_FOLDER);
         String dockerImage = ConfigurationUtils.getDockerImage(getConfiguration());
 
-        VariantQcAnalysisExecutorUtils.run(FAMILY_QC_TYPE, getVcfPaths(), getJsonPaths(), configPath, scriptPath, getOutDir(), dockerImage);
+        VariantQcAnalysisExecutorUtils.run(FAMILY_QC_TYPE, getVcfPath(), getJsonPath(), configPath, scriptPath, getOutDir(), dockerImage);
     }
 }

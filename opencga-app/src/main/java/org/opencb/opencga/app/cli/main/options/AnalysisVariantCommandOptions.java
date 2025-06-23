@@ -806,10 +806,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean jobDryRun; 
     
-        @Parameter(names = {"--families"}, description = "List of family IDs", required = false, arity = 1)
-        public String families;
-    
-        @Parameter(names = {"--family"}, description = "[DEPRECATED] Family ID", required = false, arity = 1)
+        @Parameter(names = {"--family"}, description = "Family ID", required = false, arity = 1)
         public String family;
     
         @Parameter(names = {"--relatedness-method"}, description = "[DEPRECATED] Relatedness method", required = false, arity = 1)
@@ -1249,7 +1246,7 @@ public class AnalysisVariantCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"individual-qc-run"}, commandDescription ="Run quality control (QC) for a given individual. This includes inferred sex, and if parents  are present, Mendelian errors (UDP) and relatedness analyses are also performed")
+    @Parameters(commandNames = {"individual-qc-run"}, commandDescription ="Run quality control (QC) for a given family. It computes the relatedness scores among the family members")
     public class RunIndividualQcCommandOptions {
     
         @ParametersDelegate
@@ -1285,10 +1282,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean jobDryRun; 
     
-        @Parameter(names = {"--individuals"}, description = "List of individual IDs", required = false, arity = 1)
-        public String individuals;
-    
-        @Parameter(names = {"--individual"}, description = "[DEPRECATED] Individual ID", required = false, arity = 1)
+        @Parameter(names = {"--individual"}, description = "Individual ID", required = false, arity = 1)
         public String individual;
     
         @Parameter(names = {"--sample"}, description = "[DEPRECATED] Sample ID (required when the individual has multiple samples)", required = false, arity = 1)
@@ -1999,9 +1993,6 @@ public class AnalysisVariantCommandOptions {
     
         @Parameter(names = {"--sample"}, description = "Sample ID.", required = false, arity = 1)
         public String sample;
-    
-        @Parameter(names = {"--samples"}, description = "List of sample IDs", required = false, arity = 1)
-        public String samples;
     
         @Parameter(names = {"--stats-params-id"}, description = "Sample variant stats ID", required = false, arity = 1)
         public String statsParamsId;

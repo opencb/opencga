@@ -41,17 +41,17 @@ RUN apt-get update -y && \
     R -e "BiocManager::install('BiocStyle')" && \
     R -e "BiocManager::install('BSgenome.Hsapiens.UCSC.hg38')" && \
 
-    ## 4. Install signature.tools.lib installation \
-    R -e "install.packages(c('devtools', 'getopt'), repos=c('http://cran.rstudio.com/', 'https://www.stats.bris.ac.uk/R/'))" && \
-    git clone https://github.com/Nik-Zainal-Group/signature.tools.lib.git /opt/opencga/signature.tools.lib && \
-    cd /opt/opencga/signature.tools.lib && \
-    git fetch origin --tags && \
-    git checkout tags/v2.4.4 && \
-    sed -i '/Mmusculus/d' DESCRIPTION && \
-    sed -i '/Cfamiliaris/d' DESCRIPTION && \
-    sed -i '/1000genomes/d' DESCRIPTION && \
-    R -e "options(timeout = 3600);devtools::install(repos='https://www.stats.bris.ac.uk/R/')" && \
-    cd .. && \
+#    ## 4. Install signature.tools.lib installation \
+#    R -e "install.packages(c('devtools', 'getopt'), repos=c('http://cran.rstudio.com/', 'https://www.stats.bris.ac.uk/R/'))" && \
+#    git clone https://github.com/Nik-Zainal-Group/signature.tools.lib.git /opt/opencga/signature.tools.lib && \
+#    cd /opt/opencga/signature.tools.lib && \
+#    git fetch origin --tags && \
+#    git checkout tags/v2.4.4 && \
+#    sed -i '/Mmusculus/d' DESCRIPTION && \
+#    sed -i '/Cfamiliaris/d' DESCRIPTION && \
+#    sed -i '/1000genomes/d' DESCRIPTION && \
+#    R -e "options(timeout = 3600);devtools::install(repos='https://www.stats.bris.ac.uk/R/')" && \
+#    cd .. && \
 
     ## 5. Clean up
     rm -rf samtools-1.21 bcftools-1.21 /var/lib/apt/lists/* /tmp/* /opt/opencga/signature.tools.lib/.git && \
