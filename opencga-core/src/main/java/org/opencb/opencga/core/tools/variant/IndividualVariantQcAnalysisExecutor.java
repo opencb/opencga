@@ -20,32 +20,31 @@ import org.opencb.opencga.core.models.variant.qc.IndividualQcAnalysisParams;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 
 import java.nio.file.Path;
-import java.util.LinkedList;
 
 public abstract class IndividualVariantQcAnalysisExecutor extends OpenCgaToolExecutor {
 
-    protected LinkedList<Path> vcfPaths;
-    protected LinkedList<Path> jsonPaths;
+    protected Path vcfPath;
+    protected Path jsonPath;
     protected IndividualQcAnalysisParams qcParams;
 
     public IndividualVariantQcAnalysisExecutor() {
     }
 
-    public LinkedList<Path> getVcfPaths() {
-        return vcfPaths;
+    public Path getVcfPath() {
+        return vcfPath;
     }
 
-    public IndividualVariantQcAnalysisExecutor setVcfPaths(LinkedList<Path> vcfPaths) {
-        this.vcfPaths = vcfPaths;
+    public IndividualVariantQcAnalysisExecutor setVcfPath(Path vcfPath) {
+        this.vcfPath = vcfPath;
         return this;
     }
 
-    public LinkedList<Path> getJsonPaths() {
-        return jsonPaths;
+    public Path getJsonPath() {
+        return jsonPath;
     }
 
-    public IndividualVariantQcAnalysisExecutor setJsonPaths(LinkedList<Path> jsonPaths) {
-        this.jsonPaths = jsonPaths;
+    public IndividualVariantQcAnalysisExecutor setJsonPath(Path jsonPath) {
+        this.jsonPath = jsonPath;
         return this;
     }
 
