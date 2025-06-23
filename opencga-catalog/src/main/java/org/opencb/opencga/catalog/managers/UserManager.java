@@ -922,12 +922,13 @@ public class UserManager extends AbstractManager {
                 new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
         if (!CatalogAuthenticationManager.OPENCGA.equals(authId) && !CatalogAuthenticationManager.INTERNAL.equals(authId)) {
             // External authorization
+            String userId = authenticationFactory.getUserId(organizationId, authId, response.getToken());
             try {
                 // If the user is not registered, an exception will be raised
                 getUserDBAdaptor(organizationId).checkId(userId);
             } catch (CatalogDBException e) {
                 // The user does not exist so we register it
-                User user = authenticationFactory.getRemoteUserInformation(organizationId, authId, Collections.singletonList(userId))
+                user = authenticationFactory.getRemoteUserInformation(organizationId, authId, Collections.singletonList(userId))
                         .get(0);
                 user.setOrganization(organizationId);
                 // Generate a super admin token to be able to create the user even if the installation is private
