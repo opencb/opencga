@@ -1,8 +1,9 @@
 package org.opencb.opencga.storage.hadoop.variant.mr;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.mapreduce.filecache.DistributedCache;
+import org.apache.hadoop.mapreduce.JobContext;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -19,6 +20,7 @@ import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMet
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.function.Function;
 
 import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.*;
@@ -30,13 +32,21 @@ import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.
  */
 public class HBaseVariantTableInputFormat extends AbstractHBaseVariantTableInputFormat<Variant> {
 
-    protected Function<Result, Variant> initConverter(Configuration configuration) throws IOException {
+    protected Function<Result, Variant> initConverter(JobContext context) throws IOException {
+        Configuration configuration = context.getConfiguration();
         VariantQueryProjection projection;
 
 
         VariantStorageMetadataDBAdaptorFactory dbAdaptorFactory;
         if (configuration.getBoolean(METADATA_MANAGER_LOCAL, false)) {
-            URI[] cacheFiles = DistributedCache.getCacheFiles(configuration);
+            Path[] cacheFilesPaths = context.getLocalCacheFiles();
+            URI[] cacheFiles;
+            if (cacheFilesPaths != null) {
+                cacheFiles = Arrays.stream(cacheFilesPaths)
+                        .map(Path::toUri).toArray(URI[]::new);
+            } else {
+                cacheFiles = context.getCacheFiles();
+            }
             dbAdaptorFactory = new LocalVariantStorageMetadataDBAdaptorFactory(cacheFiles, new HDFSIOConnector(configuration));
         } else {
             VariantTableHelper helper = new VariantTableHelper(configuration);

@@ -298,6 +298,7 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
                         variantTsvMap.get(variantId).add(fields);
                     } catch (NonStandardCompliantSampleField e) {
                         logger.warn("Skipping variant {}, it could not be normalized", variant);
+
                     }
 
                     // Next line
