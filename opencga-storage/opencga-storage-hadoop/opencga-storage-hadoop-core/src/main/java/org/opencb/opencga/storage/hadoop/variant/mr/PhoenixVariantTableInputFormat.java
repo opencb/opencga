@@ -2,8 +2,10 @@ package org.opencb.opencga.storage.hadoop.variant.mr;
 
 import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
+import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.filecache.DistributedCache;
@@ -31,6 +33,7 @@ import java.net.URI;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 
 import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.*;
 
@@ -43,12 +46,12 @@ public class PhoenixVariantTableInputFormat
         extends TransformInputFormat<NullWritable, PhoenixVariantTableInputFormat.VariantDBWritable, Variant> {
 
     @Override
-    protected void init(Configuration configuration) throws IOException {
+    protected void init(JobContext context) throws IOException {
         // Ensure PhoenixDriver is registered
         if (PhoenixDriver.INSTANCE == null) {
             throw new IOException("Error registering PhoenixDriver");
         }
-        PhoenixConfigurationUtil.setInputClass(configuration, VariantDBWritable.class);
+        PhoenixConfigurationUtil.setInputClass(context.getConfiguration(), VariantDBWritable.class);
         inputFormat = new CustomPhoenixInputFormat<>();
     }
 
@@ -56,7 +59,7 @@ public class PhoenixVariantTableInputFormat
     public RecordReader<NullWritable, Variant> createRecordReader(InputSplit split, TaskAttemptContext context)
             throws IOException, InterruptedException {
         if (inputFormat == null) {
-            init(context.getConfiguration());
+            init(context);
         }
         RecordReader<NullWritable, VariantDBWritable> recordReader = inputFormat.createRecordReader(split, context);
 
@@ -93,7 +96,14 @@ public class PhoenixVariantTableInputFormat
             VariantStorageMetadataDBAdaptorFactory dbAdaptorFactory;
             if (conf.getBoolean(METADATA_MANAGER_LOCAL, false)) {
                 try {
-                    URI[] cacheFiles = DistributedCache.getCacheFiles(conf);
+                    URI[] cacheFiles;
+                    Path[] cacheFilesPaths = DistributedCache.getLocalCacheFiles(conf);
+                    if (cacheFilesPaths != null) {
+                        cacheFiles = Arrays.stream(cacheFilesPaths)
+                                .map(Path::toUri).toArray(URI[]::new);
+                    } else {
+                        cacheFiles = DistributedCache.getCacheFiles(conf);
+                    }
                     dbAdaptorFactory = new LocalVariantStorageMetadataDBAdaptorFactory(cacheFiles, new HDFSIOConnector(conf));
                 } catch (IOException e) {
                     throw new UncheckedIOException("Error initializing local metadata manager", e);
