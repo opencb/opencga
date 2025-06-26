@@ -59,7 +59,7 @@ class ClientConfiguration(object):
 
     def _validate_host(self):
         try:
-            r = requests.head(self.host, timeout=2, verify=self.tlsAllowInvalidCertificates)
+            r = requests.head(self.host, timeout=2, verify=not self.tlsAllowInvalidCertificates)
             if r.status_code == 302:
                 return
         except requests.exceptions.SSLError:
@@ -82,10 +82,11 @@ class ClientConfiguration(object):
 
     @property
     def tlsAllowInvalidCertificates(self):
-        if 'tlsAllowInvalidCertificates' in self._config['rest']:
+        if ('tlsAllowInvalidCertificates' in self._config['rest'] and
+                self._config['rest']['tlsAllowInvalidCertificates'] is not None):
             return self._config['rest']['tlsAllowInvalidCertificates']
         else:
-            return None
+            return False
 
     @tlsAllowInvalidCertificates.setter
     def tlsAllowInvalidCertificates(self, tlsAllowInvalidCertificates):
