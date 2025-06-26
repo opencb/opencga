@@ -16,6 +16,7 @@ import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.LazyOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
@@ -52,6 +53,7 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
     public static final String ERROR_MESSAGE = "ERROR_MESSAGE";
     public static final String OUTPUT_PARAM = "output";
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractHBaseDriver.class);
+    public static final String ARGS_FROM_STDIN = "STDIN";
     protected String table;
 
     public AbstractHBaseDriver() {
@@ -119,6 +121,14 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
 
     }
 
+    /**
+     * Called after the job is submitted, but before it starts.
+     * @param job The job that was submitted.
+     * @throws       IOException on error
+     */
+    protected void postSubmit(Job job) throws IOException {
+    }
+
     protected void postExecution(Job job) throws IOException, StorageEngineException {
         postExecution(job.isSuccessful());
     }
@@ -136,6 +146,19 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         Configuration conf = getConf();
         HBaseConfiguration.addHbaseResources(conf);
         getConf().setClassLoader(AbstractHBaseDriver.class.getClassLoader());
+        if (args.length == 1 && args[0].equals(ARGS_FROM_STDIN)) {
+            // Read args from STDIN
+            List<String> argsFromStdin = new LinkedList<>();
+            Scanner scanner = new Scanner(System.in);
+            while (scanner.hasNextLine()) {
+                String arg = scanner.nextLine();
+                LOGGER.debug("Read arg from STDIN: " + arg);
+                argsFromStdin.add(arg);
+            }
+            LOGGER.info("Read " + argsFromStdin.size() + " args from STDIN");
+            scanner.close();
+            args = argsFromStdin.toArray(new String[0]);
+        }
         if (configFromArgs(args)) {
             return 1;
         }
@@ -189,8 +212,14 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         } else {
             LOGGER.info("   * Reducer       : (no reducer)");
         }
-        LOGGER.info("   * OutputFormat  : " + job.getOutputFormatClass().getName());
-        if (job.getOutputFormatClass().equals(TableOutputFormat.class)
+        Class<? extends OutputFormat<?, ?>> outputFormatClass = job.getOutputFormatClass();
+        LOGGER.info("   * OutputFormat  : " + outputFormatClass.getName());
+        if (outputFormatClass.equals(LazyOutputFormat.class)) {
+            outputFormatClass = (Class<? extends OutputFormat<?, ?>>) job.getConfiguration()
+                    .getClass(LazyOutputFormat.OUTPUT_FORMAT, null, OutputFormat.class);
+            LOGGER.info("     - BaseOutputFormat  : " + outputFormatClass.getName());
+        }
+        if (outputFormatClass.equals(TableOutputFormat.class)
                 && StringUtils.isNotEmpty(job.getConfiguration().get(TableOutputFormat.OUTPUT_TABLE))) {
             LOGGER.info("     - OutputTable : " + job.getConfiguration().get(TableOutputFormat.OUTPUT_TABLE));
         } else if (StringUtils.isNotEmpty(job.getConfiguration().get(FileOutputFormat.OUTDIR))) {
@@ -203,6 +232,7 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         }
         LOGGER.info("=================================================");
         LOGGER.info("tmpjars=" + Arrays.toString(job.getConfiguration().getStrings("tmpjars")));
+        LOGGER.info("tmpfiles=" + Arrays.toString(job.getConfiguration().getStrings("tmpfiles")));
         reportRunningJobs();
         boolean succeed = executeJob(job);
         if (!succeed) {
@@ -297,7 +327,6 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
     private boolean configFromArgs(String[] args) {
         int fixedSizeArgs = getFixedSizeArgs();
 
-        LOGGER.info(Arrays.toString(args));
         boolean help = ArrayUtils.contains(args, "-h") || ArrayUtils.contains(args, "--help");
         if (args.length < fixedSizeArgs || (args.length - fixedSizeArgs) % 2 != 0 || help) {
             System.err.println(getUsage());
@@ -309,9 +338,26 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
             return true;
         }
 
+        for (int i = 0; i < fixedSizeArgs; i++) {
+            LOGGER.info("Fixed arg " + i + ": " + args[i]);
+        }
         // Get first other args to avoid overwrite the fixed position args.
         for (int i = fixedSizeArgs; i < args.length; i = i + 2) {
-            getConf().set(args[i], args[i + 1]);
+            String key = args[i];
+            String value = args[i + 1];
+            getConf().set(key, value);
+            float maxLineLength = 300f;
+            for (int batch = 0; batch < Math.ceil(value.length() / maxLineLength); batch++) {
+                String prefix;
+                if (batch == 0) {
+                    prefix = "- " + key + ": ";
+                } else {
+                    prefix = StringUtils.repeat(' ', 6 + key.length());
+                }
+                int start = (int) (batch * maxLineLength);
+                int end = (int) Math.min(value.length(), (batch + 1) * maxLineLength);
+                LOGGER.info(prefix + value.substring(start, end));
+            }
         }
 
         parseFixedParams(args);
@@ -342,6 +388,7 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         });
         try {
             job.submit();
+            postSubmit(job);
             // Add shutdown hook after successfully submitting the job.
             Runtime.getRuntime().addShutdownHook(hook);
             JobID jobID = job.getJobID();

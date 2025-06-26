@@ -28,7 +28,7 @@ function print_usage() {
   echo "  Options:"
   echo "     -b     --skip-build-opencga       FLAG         Skip Build OpenCGA"
   echo "     -p     --skip-python              FLAG         Skip Build OpenCGA Python client"
-  echo "     -r     --skip-rclient             FLAG         Skip Build OpenCGA R client"
+  echo "     -r     --skip-r                   FLAG         Skip Build OpenCGA R client"
   echo "     -w     --skip-javascript          FLAG         Skip Build OpenCGA JavaScript client"
   echo "     -h     --help                     FLAG         Print this help and exit"
   echo ""
@@ -45,7 +45,7 @@ while [[ $# -gt 0 ]]; do
       SKIP_PYTHON=true
       shift
       ;;
-    -r|--skip-rclient)
+    -r|--skip-r)
       SKIP_RCLIENT=true
       shift
       ;;
