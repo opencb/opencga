@@ -55,9 +55,13 @@ public class MigrationTask7756Test {
     }
 
     private void runMigration(Class<? extends MigrationTool> migration) throws CatalogException {
+        runMigration(migration, false);
+    }
+
+    private void runMigration(Class<? extends MigrationTool> migration, boolean force) throws CatalogException {
         Migration annotation = migration.getAnnotation(Migration.class);
         catalogManager.getMigrationManager()
-                .runManualMigration(annotation.version(), annotation.id(), externalResource.getOpencgaHome(), new ObjectMap(),
+                .runManualMigration(annotation.version(), annotation.id(), externalResource.getOpencgaHome(), force, false, new ObjectMap(),
                         externalResource.getAdminToken());
     }
 
@@ -177,6 +181,11 @@ public class MigrationTask7756Test {
         assertEquals("Variant Quality Control configuration should match default",
                 defaultConfig.getVariantQualityControl().isActive(),
                 study.getInternal().getConfiguration().getCatalog().getVariantQualityControl().isActive());
+    }
+
+    @Test
+    public void idempotentMigration() throws CatalogException {
+        runMigration(ClinicalMigrationTask7756.class, true);
     }
 
 }
