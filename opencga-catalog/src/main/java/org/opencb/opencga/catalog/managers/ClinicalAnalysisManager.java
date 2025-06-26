@@ -615,10 +615,10 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
                             logger.info(msg);
                             clinicalAnalysis.setLocked(true);
 
-                            CvdbIndexStatus cvdbIndexStatus = new CvdbIndexStatus(CvdbIndexStatus.PENDING, "User '" + userId
+                            CvdbIndexStatus cvdbIndexStatus = new CvdbIndexStatus(CvdbIndexStatus.PENDING_INDEX, "User '" + userId
                                     + "' created case with status '" + clinicalAnalysis.getStatus().getId() + "', which is of type"
-                                    + " CLOSED. Automatically setting CVDB index status to " + CvdbIndexStatus.PENDING);
-                            clinicalAnalysis.getInternal().setCvdbIndex(cvdbIndexStatus);
+                                    + " CLOSED. Automatically setting CVDB index status to " + CvdbIndexStatus.PENDING_INDEX);
+                            clinicalAnalysis.getInternal().setCvdbIndex(new CvdbIndex("", cvdbIndexStatus));
 
                             events.add(new Event(Event.Type.INFO, clinicalAnalysis.getId(), msg));
                         }
@@ -1473,7 +1473,7 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
                     CvdbIndexStatus cvdbIndexStatus = new CvdbIndexStatus(CvdbIndexStatus.PENDING_REMOVE, "User '" + userId
                             + "' requested to remove the status '" + clinicalAnalysis.getStatus().getId() + "' of type "
                             + ClinicalStatusValue.ClinicalStatusType.CLOSED + " to set it to '" + updateParams.getStatus().getId() + "'");
-                    parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_CVDB_INDEX.key(), cvdbIndexStatus);
+                    parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_CVDB_INDEX_STATUS.key(), cvdbIndexStatus);
                 }
             }
 
@@ -1764,22 +1764,23 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
                             parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(), true);
                             events.add(new Event(Event.Type.INFO, clinicalAnalysis.getId(), msg));
 
-                            if (StringUtils.isEmpty(clinicalAnalysis.getInternal().getCvdbIndex().getId())
-                                    || clinicalAnalysis.getInternal().getCvdbIndex().getId().equals(CvdbIndexStatus.NONE)) {
-                                CvdbIndexStatus cvdbIndexStatus = new CvdbIndexStatus(CvdbIndexStatus.PENDING, "User '" + userId
+                            if (StringUtils.isEmpty(clinicalAnalysis.getInternal().getCvdbIndex().getStatus().getId())
+                                    || clinicalAnalysis.getInternal().getCvdbIndex().getStatus().getId().equals(CvdbIndexStatus.NONE)) {
+                                CvdbIndexStatus cvdbIndexStatus = new CvdbIndexStatus(CvdbIndexStatus.PENDING_INDEX, "User '" + userId
                                         + "' changed case to status '" + updateParamsClone.getStatus().getId() + "', which is of type"
-                                        + " CLOSED. Automatically changing CVDB index status to " + CvdbIndexStatus.PENDING);
-                                parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_CVDB_INDEX.key(), cvdbIndexStatus);
-                            } else if (clinicalAnalysis.getInternal().getCvdbIndex().getId().equals(CvdbIndexStatus.PENDING_REMOVE)) {
+                                        + " CLOSED. Automatically changing CVDB index status to " + CvdbIndexStatus.PENDING_INDEX);
+                                parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_CVDB_INDEX_STATUS.key(), cvdbIndexStatus);
+                            } else if (clinicalAnalysis.getInternal().getCvdbIndex().getStatus().getId()
+                                    .equals(CvdbIndexStatus.PENDING_REMOVE)) {
                                 CvdbIndexStatus cvdbIndexStatus = new CvdbIndexStatus(CvdbIndexStatus.PENDING_OVERWRITE, "User '" + userId
                                         + "' changed case to status '" + updateParamsClone.getStatus().getId() + "', which is of type"
                                         + " CLOSED. CVDB index was already in " + CvdbIndexStatus.PENDING_REMOVE + ", so automatically"
                                         + " changing CVDB index status to " + CvdbIndexStatus.PENDING_OVERWRITE);
-                                parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_CVDB_INDEX.key(), cvdbIndexStatus);
+                                parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_CVDB_INDEX_STATUS.key(), cvdbIndexStatus);
                             } else {
                                 logger.warn("CVDB index status is unexpectedly set to '{}'. Although the user is closing the case, OpenCGA"
                                         + " cannot automatically infer which should be the new CVDB index status.",
-                                        clinicalAnalysis.getInternal().getCvdbIndex().getId());
+                                        clinicalAnalysis.getInternal().getCvdbIndex().getStatus().getId());
                             }
                         }
                     }
@@ -1891,7 +1892,7 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
         }
     }
 
-    public OpenCGAResult<?> updateCvdbIndex(String studyFqn, ClinicalAnalysis clinical, CvdbIndexStatus index, String token)
+    public OpenCGAResult<?> updateCvdbIndex(String studyFqn, ClinicalAnalysis clinical, CvdbIndex index, String token)
             throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         CatalogFqn catalogFqn = CatalogFqn.extractFqnFromStudy(studyFqn, tokenPayload);
@@ -1912,8 +1913,15 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
             studyId = study.getFqn();
             studyUuid = study.getUuid();
 
-            ObjectMap valueAsMap = new ObjectMap(getUpdateObjectMapper().writeValueAsString(index));
-            ObjectMap params = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_CVDB_INDEX.key(), valueAsMap);
+            ObjectMap params = new ObjectMap();
+            if (index.getStatus() != null) {
+                validateCvdbStatusTransition(clinical, index.getStatus().getId());
+                ObjectMap valueAsMap = new ObjectMap(getUpdateObjectMapper().writeValueAsString(index.getStatus()));
+                params.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_CVDB_INDEX_STATUS.key(), valueAsMap);
+            }
+            if (StringUtils.isNotEmpty(index.getJobId())) {
+                params.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_CVDB_INDEX_JOB_ID.key(), index.getJobId());
+            }
 
             OpenCGAResult<?> update = getClinicalAnalysisDBAdaptor(organizationId).update(clinical.getUid(), params,
                     Collections.emptyList(), Collections.emptyList(), QueryOptions.empty());
@@ -1925,6 +1933,71 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
                     clinical.getUuid(), studyId, studyUuid, auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                             new Error().setName(e.getMessage())));
             throw new CatalogException("Could not update CVDB Index status: " + e.getMessage(), e);
+        }
+    }
+
+    private void validateCvdbStatusTransition(ClinicalAnalysis clinical, String newStatus) throws CatalogException {
+        if (clinical == null || clinical.getInternal() == null || clinical.getInternal().getCvdbIndex() == null
+                || clinical.getInternal().getCvdbIndex().getStatus() == null
+                || StringUtils.isEmpty(clinical.getInternal().getCvdbIndex().getStatus().getId())) {
+            throw new CatalogException("Cannot validate CVDB Index status transition. CVDB Index status is null.");
+        }
+        switch (clinical.getInternal().getCvdbIndex().getStatus().getId()) {
+            case CvdbIndexStatus.NONE:
+                if (!Arrays.asList(CvdbIndexStatus.PENDING_INDEX, CvdbIndexStatus.READY, CvdbIndexStatus.ERROR).contains(newStatus)) {
+                    throw new CatalogException("CVDB Index status cannot be changed from NONE to " + newStatus);
+                }
+                break;
+            case CvdbIndexStatus.PENDING_INDEX:
+                if (!Arrays.asList(CvdbIndexStatus.QUEUED_INDEX, CvdbIndexStatus.ERROR, CvdbIndexStatus.READY, CvdbIndexStatus.NONE,
+                        CvdbIndexStatus.PENDING_REMOVE).contains(newStatus)) {
+                    throw new CatalogException("CVDB Index status cannot be changed from PENDING_INDEX to " + newStatus);
+                }
+                break;
+            case CvdbIndexStatus.PENDING_OVERWRITE:
+                if (!Arrays.asList(CvdbIndexStatus.QUEUED_OVERWRITE, CvdbIndexStatus.ERROR, CvdbIndexStatus.READY,
+                        CvdbIndexStatus.PENDING_REMOVE).contains(newStatus)) {
+                    throw new CatalogException("CVDB Index status cannot be changed from PENDING_OVERWRITE to " + newStatus);
+                }
+                break;
+            case CvdbIndexStatus.PENDING_REMOVE:
+                if (!Arrays.asList(CvdbIndexStatus.QUEUED_REMOVE, CvdbIndexStatus.ERROR, CvdbIndexStatus.READY, CvdbIndexStatus.NONE,
+                        CvdbIndexStatus.PENDING_INDEX).contains(newStatus)) {
+                    throw new CatalogException("CVDB Index status cannot be changed from PENDING_REMOVE to " + newStatus);
+                }
+                break;
+            case CvdbIndexStatus.QUEUED_INDEX:
+                if (!Arrays.asList(CvdbIndexStatus.ERROR, CvdbIndexStatus.READY, CvdbIndexStatus.NONE, CvdbIndexStatus.PENDING_REMOVE)
+                        .contains(newStatus)) {
+                    throw new CatalogException("CVDB Index status cannot be changed from QUEUED_INDEX to " + newStatus);
+                }
+                break;
+            case CvdbIndexStatus.QUEUED_OVERWRITE:
+                if (!Arrays.asList(CvdbIndexStatus.ERROR, CvdbIndexStatus.READY, CvdbIndexStatus.PENDING_REMOVE).contains(newStatus)) {
+                    throw new CatalogException("CVDB Index status cannot be changed from QUEUED_OVERWRITE to " + newStatus);
+                }
+                break;
+            case CvdbIndexStatus.QUEUED_REMOVE:
+                if (!Arrays.asList(CvdbIndexStatus.NONE, CvdbIndexStatus.ERROR, CvdbIndexStatus.READY, CvdbIndexStatus.PENDING_INDEX)
+                        .contains(newStatus)) {
+                    throw new CatalogException("CVDB Index status cannot be changed from QUEUED_REMOVE to " + newStatus);
+                }
+                break;
+            case CvdbIndexStatus.READY:
+                if (!Arrays.asList(CvdbIndexStatus.ERROR, CvdbIndexStatus.PENDING_REMOVE, CvdbIndexStatus.PENDING_OVERWRITE)
+                        .contains(newStatus)) {
+                    throw new CatalogException("CVDB Index status cannot be changed from READY to " + newStatus);
+                }
+                break;
+            case CvdbIndexStatus.ERROR:
+                if (!Arrays.asList(CvdbIndexStatus.PENDING_REMOVE, CvdbIndexStatus.PENDING_OVERWRITE, CvdbIndexStatus.PENDING_INDEX)
+                        .contains(newStatus)) {
+                    throw new CatalogException("CVDB Index status cannot be changed from ERROR to " + newStatus);
+                }
+                break;
+            default:
+                throw new CatalogException("CVDB Index status cannot be changed from "
+                        + clinical.getInternal().getCvdbIndex().getStatus().getId() + " to " + newStatus);
         }
     }
 

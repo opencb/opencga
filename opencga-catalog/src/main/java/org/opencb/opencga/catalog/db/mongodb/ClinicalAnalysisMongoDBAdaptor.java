@@ -439,7 +439,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
         String[] acceptedBooleanParams = {LOCKED.key(), PANEL_LOCKED.key()};
         filterBooleanParams(parameters, document.getSet(), acceptedBooleanParams);
 
-        String[] acceptedParams = {QueryParams.DESCRIPTION.key()};
+        String[] acceptedParams = {QueryParams.DESCRIPTION.key(), INTERNAL_CVDB_INDEX_JOB_ID.key(), };
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
         if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
@@ -464,7 +464,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
         String[] acceptedObjectParams = {QueryParams.FAMILY.key(), QueryParams.DISORDER.key(), QUALITY_CONTROL.key(),
                 QueryParams.PROBAND.key(), QueryParams.ALERTS.key(), QueryParams.INTERNAL_STATUS.key(), QueryParams.PRIORITY.key(),
                 QueryParams.CONSENT.key(), QueryParams.STATUS.key(), QueryParams.INTERPRETATION.key(), REPORT.key(),
-                INTERNAL_CVDB_INDEX.key(), REQUEST.key(), RESPONSIBLE.key(), ATTRIBUTES.key(), };
+                INTERNAL_CVDB_INDEX_STATUS.key(), REQUEST.key(), RESPONSIBLE.key(), ATTRIBUTES.key(), };
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
 
         if (parameters.containsKey(INTERPRETATION.key()) && parameters.get(INTERPRETATION.key()) == null) {
@@ -1413,6 +1413,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
                     case PRIORITY_ID:
                     case FLAGS_ID:
                     case QUALITY_CONTROL_SUMMARY:
+                    case INTERNAL_CVDB_INDEX_STATUS_ID:
                     case VERSION:
                     case RELEASE:
                     case COMMENTS_DATE:

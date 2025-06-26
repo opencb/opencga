@@ -22,18 +22,18 @@ import org.opencb.opencga.core.models.common.InternalStatus;
 
 public class ClinicalAnalysisInternal extends Internal {
 
-    private CvdbIndexStatus cvdbIndex;
+    private CvdbIndex cvdbIndex;
 
     public ClinicalAnalysisInternal() {
     }
 
-    public ClinicalAnalysisInternal(InternalStatus status, String registrationDate, String lastModified, CvdbIndexStatus cvdbIndex) {
+    public ClinicalAnalysisInternal(InternalStatus status, String registrationDate, String lastModified, CvdbIndex cvdbIndex) {
         super(status, registrationDate, lastModified);
         this.cvdbIndex = cvdbIndex;
     }
 
     public static ClinicalAnalysisInternal init() {
-        return new ClinicalAnalysisInternal(new InternalStatus(), TimeUtils.getTime(), TimeUtils.getTime(), new CvdbIndexStatus());
+        return new ClinicalAnalysisInternal(new InternalStatus(), TimeUtils.getTime(), TimeUtils.getTime(), CvdbIndex.init());
     }
 
     @Override
@@ -74,11 +74,11 @@ public class ClinicalAnalysisInternal extends Internal {
         return this;
     }
 
-    public CvdbIndexStatus getCvdbIndex() {
+    public CvdbIndex getCvdbIndex() {
         return cvdbIndex;
     }
 
-    public ClinicalAnalysisInternal setCvdbIndex(CvdbIndexStatus cvdbIndex) {
+    public ClinicalAnalysisInternal setCvdbIndex(CvdbIndex cvdbIndex) {
         this.cvdbIndex = cvdbIndex;
         return this;
     }
