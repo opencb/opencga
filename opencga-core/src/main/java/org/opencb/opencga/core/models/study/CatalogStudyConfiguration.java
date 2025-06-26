@@ -22,7 +22,7 @@ public class CatalogStudyConfiguration {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("StudyCatalogConfiguration{");
+        final StringBuilder sb = new StringBuilder("CatalogStudyConfiguration{");
         sb.append("cvdb=").append(cvdb);
         sb.append(", variantQualityControl=").append(variantQualityControl);
         sb.append('}');
