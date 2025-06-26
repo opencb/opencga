@@ -83,10 +83,10 @@ public class ClinicalMigrationTask7756 extends MigrationTool {
     private void migrateClinicalAnalysisCvdbIndex() throws CatalogDBException {
         //        ClinicalAnalysis
         //                - internal.cvdbIndex
-        //                + internal.cvdb: {
-        //            status: {},
-        //            job: ""
-        //        }
+        //                + internal.cvdbIndex: {
+        //                      status: // old internal.cvdbIndex
+        //                      jobId: ""
+        //                  }
 
         logger.info("Starting migration of clinical analysis CVDB index");
 
@@ -97,7 +97,7 @@ public class ClinicalMigrationTask7756 extends MigrationTool {
         );
         logger.debug("Processing clinical collections: {}", clinicalCollections);
 
-        migrateCollection(clinicalCollections, Filters.exists("internal.cvdb", false), Projections.include("_id", "internal"), (document, bulk) -> {
+        migrateCollection(clinicalCollections, Filters.exists("internal.cvdbIndex.jobId", false), Projections.include("_id", "internal"), (document, bulk) -> {
             MongoDBAdaptor.UpdateDocument updateDocument = new MongoDBAdaptor.UpdateDocument();
 
             Document internalDoc = document.get("internal", Document.class);
@@ -106,12 +106,12 @@ public class ClinicalMigrationTask7756 extends MigrationTool {
             } else {
                 Document cvdbIndexStatus = internalDoc.get("cvdbIndex", Document.class);
                 if (cvdbIndexStatus == null) {
-                    updateDocument.getSet().put("internal.cvdb", convertToDocument(CvdbIndex.init()));
+                    updateDocument.getSet().put("internal.cvdbIndex", convertToDocument(CvdbIndex.init()));
                 } else {
                     Document cvdbIndex = new Document()
                             .append("jobId", "")
                             .append("status", cvdbIndexStatus);
-                    updateDocument.getSet().put("internal.cvdb", cvdbIndex);
+                    updateDocument.getSet().put("internal.cvdbIndex", cvdbIndex);
                 }
             }
 
