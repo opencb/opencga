@@ -58,8 +58,9 @@ public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
     // Individuals to perform QC and VCF and JSON files
     private Individual individual;
 
-    // Is a trio?
-    private boolean isTrio = false;
+    // If trio mother and father are present
+    private Individual mother;
+    private Individual father;
 
 
     @Override
@@ -76,7 +77,16 @@ public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
         // Get individual and check for the presence of trios to compute relatedness, and then prepare relatedness resource files
         individual = catalogManager.getIndividualManager().get(study, analysisParams.getIndividual(), QueryOptions.empty(), token).first();
         if (individual.getFather() != null && individual.getMother() != null) {
-            isTrio = true;
+            Individual mother = catalogManager.getIndividualManager().get(study, individual.getMother().getId(), QueryOptions.empty(),
+                    token).first();
+            Individual father = catalogManager.getIndividualManager().get(study, individual.getFather().getId(), QueryOptions.empty(),
+                    token).first();
+            if (CollectionUtils.isNotEmpty(individual.getSamples())
+                    && CollectionUtils.isNotEmpty(mother.getSamples())
+                    && CollectionUtils.isNotEmpty(father.getSamples())) {
+                this.mother = mother;
+                this.father = father;
+            }
         }
 
         // Check custom relatedness resources: prune-in, frq and thresholds files
@@ -123,14 +133,14 @@ public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
             // Export individual variants (VCF format)
             // Create the query based on whether a trio is present or not
             Query query;
-            if (isTrio) {
+            if (mother != null && father != null) {
                 // Create variant query for trio
-                String child = individual.getSamples().get(0).getId();
-                String father = individual.getFather().getSamples().get(0).getId();
-                String mother = individual.getMother().getSamples().get(0).getId();
+                String childSample = individual.getSamples().get(0).getId();
+                String fatherSample = father.getSamples().get(0).getId();
+                String motherSample = mother.getSamples().get(0).getId();
                 query = new Query()
-                        .append(VariantQueryParam.SAMPLE.key(), child + ":0/1,1/1")
-                        .append(VariantQueryParam.INCLUDE_SAMPLE.key(), child + "," + father + "," + mother)
+                        .append(VariantQueryParam.SAMPLE.key(), childSample + ":0/1,1/1")
+                        .append(VariantQueryParam.INCLUDE_SAMPLE.key(), childSample + "," + fatherSample + "," + motherSample)
                         .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT");
             } else {
                 // Create variant query
@@ -259,7 +269,7 @@ public class IndividualVariantQcAnalysis extends VariantQcAnalysis {
         }
 
         // Check and parse the relatedness results, if trio is present
-        if (isTrio) {
+        if (mother != null && father != null) {
             qcPath = getOutDir().resolve(RELATEDNESS_ANALYSIS_ID).resolve(QC_RESULTS_FILENAME);
             if (!Files.exists(qcPath)) {
                 failedAnalysis.add(RELATEDNESS_ANALYSIS_ID);
