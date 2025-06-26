@@ -55,16 +55,17 @@ class ClientConfiguration(object):
         if 'host' not in self._config['rest'] or not self._config['rest']['host']:
             raise ValueError('Missing configuration field "host".')
 
-        self._validate_host(self._config['rest']['host'])
+        self._validate_host()
 
-    @staticmethod
-    def _validate_host(host):
+    def _validate_host(self):
         try:
-            r = requests.head(host, timeout=2)
+            r = requests.head(self.host, timeout=2, verify=self.tlsAllowInvalidCertificates)
             if r.status_code == 302:
                 return
+        except requests.exceptions.SSLError:
+            raise Exception('Invalid SSL certificate from "{}"'.format(self.host))
         except requests.ConnectionError:
-            raise Exception('Unreachable host "{}"'.format(host))
+            raise Exception('Unreachable host "{}"'.format(self.host))
 
     @property
     def configuration(self):
@@ -77,7 +78,18 @@ class ClientConfiguration(object):
     @host.setter
     def host(self, host):
         self._config['rest']['host'] = host
-        self._validate_host(host)
+        self._validate_host()
+
+    @property
+    def tlsAllowInvalidCertificates(self):
+        if 'tlsAllowInvalidCertificates' in self._config['rest']:
+            return self._config['rest']['tlsAllowInvalidCertificates']
+        else:
+            return None
+
+    @tlsAllowInvalidCertificates.setter
+    def tlsAllowInvalidCertificates(self, tlsAllowInvalidCertificates):
+        self._config['rest']['tlsAllowInvalidCertificates'] = tlsAllowInvalidCertificates
 
     @property
     def version(self):
