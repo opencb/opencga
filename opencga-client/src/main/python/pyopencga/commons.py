@@ -145,22 +145,22 @@ def _fetch(config, sid, category, resource, method, subcategory=None, query_id=N
         # Getting REST response
         if method == 'get':
             try:
-                r = requests.get(url, headers=header, cookies=config.cookies)
+                r = requests.get(url, headers=header, cookies=config.cookies, verify=config.tlsAllowInvalidCertificates)
             except requests.exceptions.ConnectionError:
                 sleep(1)
-                r = requests.get(url, headers=header, cookies=config.cookies)
+                r = requests.get(url, headers=header, cookies=config.cookies, verify=config.tlsAllowInvalidCertificates)
         elif method == 'post':
             try:
-                r = requests.post(url, json=data, headers=header, cookies=config.cookies)
+                r = requests.post(url, json=data, headers=header, cookies=config.cookies, verify=config.tlsAllowInvalidCertificates)
             except requests.exceptions.ConnectionError:
                 sleep(1)
-                r = requests.post(url, json=data, headers=header, cookies=config.cookies)
+                r = requests.post(url, json=data, headers=header, cookies=config.cookies, verify=config.tlsAllowInvalidCertificates)
         elif method == 'delete':
             try:
-                r = requests.delete(url, headers=header, cookies=config.cookies)
+                r = requests.delete(url, headers=header, cookies=config.cookies, verify=config.tlsAllowInvalidCertificates)
             except requests.exceptions.ConnectionError:
                 sleep(1)
-                r = requests.delete(url, headers=header, cookies=config.cookies)
+                r = requests.delete(url, headers=header, cookies=config.cookies, verify=config.tlsAllowInvalidCertificates)
         else:
             raise NotImplementedError('method: ' + method + ' not implemented.')
 

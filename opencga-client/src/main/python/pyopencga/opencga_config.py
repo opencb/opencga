@@ -49,18 +49,17 @@ class ClientConfiguration(object):
         if 'host' not in config['rest'] or not config['rest']['host']:
             raise ValueError('Missing or empty "host" in OpenCGA configuration')
 
-        self._validate_host(config['rest']['host'])
+        self._validate_host()
 
-    @staticmethod
-    def _validate_host(host):
-        if not (host.startswith('http://') or host.startswith('https://')):
-            host = 'http://' + host
+    def _validate_host(self):
         try:
-            r = requests.head(host, timeout=2)
+            r = requests.head(self.host, timeout=2, verify=self.tlsAllowInvalidCertificates)
             if r.status_code == 302:
                 return
+        except requests.exceptions.SSLError:
+            raise Exception('Invalid SSL certificate from "{}"'.format(self.host))
         except requests.ConnectionError:
-            raise Exception('Unreachable host ' + host)
+            raise Exception('Unreachable host "{}"'.format(self.host))
 
     @property
     def host(self):
@@ -68,9 +67,14 @@ class ClientConfiguration(object):
 
     @host.setter
     def host(self, new_host):
-        if not (new_host.startswith('http://') or new_host.startswith('https://')):
-            new_host = 'http://' + new_host
         self._config['rest']['host'] = new_host
+
+    @property
+    def tlsAllowInvalidCertificates(self):
+        if 'tlsAllowInvalidCertificates' in self._config['rest']:
+            return self._config['rest']['tlsAllowInvalidCertificates']
+        else:
+            return None
 
     @property
     def version(self):
