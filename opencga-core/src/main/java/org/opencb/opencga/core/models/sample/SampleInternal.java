@@ -130,11 +130,12 @@ public class SampleInternal extends Internal {
             return false;
         }
         SampleInternal that = (SampleInternal) o;
-        return Objects.equals(rga, that.rga) && Objects.equals(variant, that.variant);
+        return Objects.equals(rga, that.rga) && Objects.equals(variant, that.variant)
+                && Objects.equals(qualityControlStatus, that.qualityControlStatus);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(rga, variant);
+        return Objects.hash(rga, variant, qualityControlStatus);
     }
 }

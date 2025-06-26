@@ -28,11 +28,6 @@ public class QualityControlStatus extends InternalStatus {
         this(PENDING, "");
     }
 
-    @Override
-    public String getId() {
-        return super.getId();
-    }
-
     public static QualityControlStatus init() {
         return new QualityControlStatus();
     }

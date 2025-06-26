@@ -45,7 +45,6 @@ public class FamilyInternal extends Internal {
         final StringBuilder sb = new StringBuilder("FamilyInternal{");
         sb.append("status=").append(status);
         sb.append(", qualityControlStatus=").append(qualityControlStatus);
-        sb.append(", status=").append(status);
         sb.append(", registrationDate='").append(registrationDate).append('\'');
         sb.append(", lastModified='").append(lastModified).append('\'');
         sb.append('}');
