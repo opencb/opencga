@@ -24,7 +24,6 @@
         <biodata.version>4.1.0-SNAPSHOT</biodata.version>
         <java-common-libs.version>6.1.0-SNAPSHOT</java-common-libs.version>
         <iva.version>4.1.0-SNAPSHOT</iva.version>
-
         <oskar.version>0.2.0</oskar.version>
 
         <jackson.version>2.14.3</jackson.version>
@@ -54,14 +53,14 @@
 
         <!--        <opencga.war.name>opencga-enterprise</opencga.war.name>-->
         <opencga.env.file>opencga-env.sh</opencga.env.file>
-
         <opencga.hadoop.thirdparty.version>1.0.0-SNAPSHOT</opencga.hadoop.thirdparty.version>
+        <opencga-hadoop-shaded.id-default>hdi3.1</opencga-hadoop-shaded.id-default>
 
-        <opencga-hadoop-shaded.id-default>hdp3.1</opencga-hadoop-shaded.id-default>
         <opencga-storage-hadoop-lib.artifactId-default>opencga-storage-hadoop-${opencga-hadoop-shaded.id-default}</opencga-storage-hadoop-lib.artifactId-default>
         <opencga-hadoop-shaded.id>${opencga-hadoop-shaded.id-default}</opencga-hadoop-shaded.id>
         <opencga-storage-hadoop-lib.artifactId>opencga-storage-hadoop-lib-${opencga-hadoop-shaded.id}</opencga-storage-hadoop-lib.artifactId>
         <opencga-storage-hadoop-thirdparty.artifactId>opencga-hadoop-shaded-${opencga-hadoop-shaded.id}</opencga-storage-hadoop-thirdparty.artifactId>
+
 
         <sonar.organization>opencb</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
@@ -153,6 +152,12 @@
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-analysis</artifactId>
                 <version>${opencga.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.opencb.opencga</groupId>
+                        <artifactId>${opencga-storage-hadoop-deps.artifactId-default}</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>

@@ -38,6 +38,7 @@ on:
         required: false
         default: "false"
 
+
 jobs:
   build:
     name: Build OpenCGA Enterprise app
