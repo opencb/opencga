@@ -47,6 +47,7 @@
         <biodata.version>4.1.0-SNAPSHOT</biodata.version>
         <java-common-libs.version>6.1.0-SNAPSHOT</java-common-libs.version>
         <iva.version>4.1.0-SNAPSHOT</iva.version>
+
         <oskar.version>0.2.0</oskar.version>
 
         <jackson.version>2.14.3</jackson.version>
@@ -282,6 +283,19 @@
                 <version>${project.version}</version>
                 <type>test-jar</type>
                 <scope>test</scope>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.opencb.opencga</groupId>
+                        <artifactId>${opencga-storage-hadoop-deps.artifactId-default}</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-storage-hadoop-deps-emr6.1</artifactId>
+                <version>${project.version}</version>
+                <classifier>shaded</classifier>
+
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>

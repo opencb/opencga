@@ -45,7 +45,7 @@ jobs:
             ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }} ${{ inputs.hadoop }}
           fi
       - name: Maven Build (skip tests)
-        run: mvn -T 2 clean install -DskipTests -P${{ inputs.hadoop }} -Dopencga.war.name=opencga -Dcheckstyle.skip  --no-transfer-progress
+        run: mvn -T 2 clean install -DskipTests -P${{ inputs.hadoop }} -Dopencga.war.name=opencga -Dcheckstyle.skip  --no-transfer-progress -pl ':opencga-app' --also-make
       - uses: actions/upload-artifact@v4
         with:
           name: build-folder
