@@ -619,7 +619,7 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
         String params = "bash " + virtualScriptPath
                 + " " + INPUT_VIRTUAL_PATH
                 + " " + vcfFilename
-                + " " + OUTPUT_VIRTUAL_PATH;
+                + " " + basename;
 
         // Execute Pythong script in docker
         String dockerImage = executor.getDockerImageName() + ":" + executor.getDockerImageVersion();
@@ -629,13 +629,12 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
         executor.runCommandLine(dockerCli);
 
         // Check result files
-        String suffix = ".annotated.pruned.in";
         for (String extension: Arrays.asList(".bed", ".bim", ".fam")) {
-            Path file = Paths.get(resourcePath.toString(), basename + suffix + extension);
+            Path file = Paths.get(resourcePath.toString(), basename + extension);
             if (!Files.exists(file)) {
                 throw new ToolException("Expected file " + file + " not found.");
             }
         }
-        regenieOptions.put(BED_OPTION, Paths.get(resourcePath.toString(), basename + suffix + ".bed").toAbsolutePath().toString());
+        regenieOptions.put(BED_OPTION, Paths.get(resourcePath.toString(), basename + ".bed").toAbsolutePath().toString());
     }
 }
