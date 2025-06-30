@@ -10,45 +10,24 @@ on:
         description: "The tag for the new docker."
         type: string
         required: true
-      hadoop:
-        type: string
-        description: 'Hadoop flavour. Any of: [hdp3.1, hdi5.1, emr6.1, emr6.13]'
-        required: false
-        default: "hdp3.1"
+
 
 jobs:
-  build:
-    name: Build Java app
+  deploy-ext-tools-hub:
+    name: Push Docker image
     runs-on: ${{ vars.UBUNTU_VERSION }}
-    outputs:
-      version: ${{ steps.get_project_version.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - name: "Checkout optional repo"
+        uses: actions/checkout@v4
         with:
-          fetch-depth: '10'
-          ref: "${{ inputs.branch }}"
-      - name: Set up JDK 8
-        uses: actions/setup-java@v4
+          repository: ${{ inputs.repository }}
+          ref: ${{ inputs.branch }}
+      - name: Chmod
+        run: "find build -regex '.*sh' | while read file ; do chmod u+x $file ; done"
+      - uses: docker/login-action@v3
         with:
-          distribution: 'temurin'
-          java-version: '8'
-          cache: 'maven'
-      - name: Install dependencies branches
-        run: |
-          if [ -f "./.github/workflows/scripts/get_same_branch.sh" ]; then
-            chmod +x ./.github/workflows/scripts/get_same_branch.sh
-            ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }} ${{ inputs.hadoop }}
-          fi
-      - name: Maven Build (skip tests)
-        run: mvn -T 2 clean install -DskipTests  --no-transfer-progress
-      - uses: actions/upload-artifact@v4
-        with:
-          name: build-folder
-          path: build
-
-  deploy-docker-ext-tools:
-    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
-    needs: build
-    with:
-      cli: python3 ./build/cloud/docker/docker-build.py push --images ext-tools --tag ${{ inputs.tag }}
-    secrets: inherit
+          username: ${{ secrets.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+          logout: true
+      - name: Deploy in Docker Hub
+        run: python3 ./opencga-app/app/cloud/docker/docker-build.py push --images ext-tools --tag ${{ inputs.tag }} --org opencb
