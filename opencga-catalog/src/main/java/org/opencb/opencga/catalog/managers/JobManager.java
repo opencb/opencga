@@ -435,39 +435,65 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     public List<File> getJobInputFilesFromParams(String study, Job job, String token) throws CatalogException {
+        InputFileUtils inputFileUtils = new InputFileUtils(catalogManager);
+
         // Look for input files
         String fileParamSuffix = "file";
         List<File> inputFiles = new ArrayList<>();
         if (job.getParams() != null) {
             for (Map.Entry<String, Object> entry : job.getParams().entrySet()) {
-                // We assume that every variable ending in 'file' corresponds to input files that need to be accessible in catalog
-                if (entry.getKey().toLowerCase().endsWith(fileParamSuffix)) {
-                    for (String fileStr : StringUtils.split((String) entry.getValue(), ',')) {
+                // First, check the valid OpenCGA file patterns; and then, the fileParamSuffix
+                if (entry.getValue() instanceof String) {
+                    String fileStr = (String) entry.getValue();
+                    if (inputFileUtils.isValidOpenCGAFile(fileStr)) {
                         try {
-                            // Validate the user has access to the file
-                            File file = catalogManager.getFileManager().get(study, fileStr,
-                                    FileManager.INCLUDE_FILE_URI_PATH, token).first();
+                            File file = inputFileUtils.findOpenCGAFileFromPattern(study, fileStr, token);
                             inputFiles.add(file);
                         } catch (CatalogException e) {
-                            throw new CatalogException("Cannot find file '" + entry.getValue() + "' "
-                                    + "from job param '" + entry.getKey() + "'; (study = " + study + ") :" + e.getMessage(), e);
+                            throw new CatalogException("Cannot find file '" + entry.getValue() + "' from job param '" + entry.getKey()
+                                    + "'; (study = " + study + ") :" + e.getMessage(), e);
+                        }
+                    } else if (entry.getKey().toLowerCase().endsWith(fileParamSuffix)) {
+                        // We assume that every variable ending in 'file' corresponds to input files that need to be accessible in catalog
+                        for (String fileStr0 : StringUtils.split((String) entry.getValue(), ',')) {
+                            try {
+                                // Validate the user has access to the file
+                                File file = catalogManager.getFileManager().get(study, fileStr0, FileManager.INCLUDE_FILE_URI_PATH, token)
+                                        .first();
+                                inputFiles.add(file);
+                            } catch (CatalogException e) {
+                                throw new CatalogException("Cannot find file '" + entry.getValue() + "' "
+                                        + "from job param '" + entry.getKey() + "'; (study = " + study + ") :" + e.getMessage(), e);
+                            }
                         }
                     }
                 } else if (entry.getValue() instanceof Map) {
                     // We look for files in the dynamic params
+                    // and again, first, check the valid OpenCGA file patterns; and then, the fileParamSuffix
                     Map<String, Object> dynamicParams = (Map<String, Object>) entry.getValue();
                     for (Map.Entry<String, Object> subEntry : dynamicParams.entrySet()) {
-                        if (subEntry.getKey().toLowerCase().endsWith(fileParamSuffix)) {
-                            // We assume that every variable ending in 'file' corresponds to input files that need to be accessible in
-                            // catalog
-                            try {
-                                // Validate the user has access to the file
-                                File file = catalogManager.getFileManager().get(study, (String) subEntry.getValue(),
-                                        FileManager.INCLUDE_FILE_URI_PATH, token).first();
-                                inputFiles.add(file);
-                            } catch (CatalogException e) {
-                                throw new CatalogException("Cannot find file '" + subEntry.getValue() + "' from variable '"
-                                        + entry.getKey() + "." + subEntry.getKey() + "'. ", e);
+                        if (subEntry.getValue() instanceof String) {
+                            String fileStr = (String) subEntry.getValue();
+                            if (inputFileUtils.isValidOpenCGAFile(fileStr)) {
+                                try {
+                                    File file = inputFileUtils.findOpenCGAFileFromPattern(study, fileStr, token);
+                                    inputFiles.add(file);
+                                } catch (CatalogException e) {
+                                    throw new CatalogException("Cannot find file '" + subEntry.getValue() + "' from variable '"
+                                            + entry.getKey() + "." + subEntry.getKey() + "'. ", e);
+                                }
+                            } else if (subEntry.getKey().toLowerCase().endsWith(fileParamSuffix)) {
+                                // We assume that every variable ending in 'file' corresponds to input files that need to be accessible in
+                                // catalog
+                                try {
+                                    // Validate the user has access to the file
+                                    File file = catalogManager.getFileManager().get(study, (String) subEntry.getValue(),
+                                            FileManager.INCLUDE_FILE_URI_PATH, token).first();
+                                    inputFiles.add(file);
+                                } catch (CatalogException e) {
+                                    throw new CatalogException("Cannot find file '" + subEntry.getValue() + "' from variable '"
+                                            + entry.getKey() + "." + subEntry.getKey() + "'. ", e);
+                                }
                             }
                         }
                     }

@@ -47,6 +47,8 @@ import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.InternalStatus;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileCreateParams;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.job.*;
@@ -1061,6 +1063,31 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 () -> catalogManager.getJobManager().rescheduleJobs(studyFqn, Collections.singletonList(job.getUid()), scheduleStartTime,
                         "My message", normalToken1));
         assertTrue(authException.getMessage().contains("OPENCGA ADMINISTRATOR"));
+    }
+
+    @Test
+    public void testGetJobInputFilesFromParams() throws CatalogException {
+        FileCreateParams fileCreateParams = new FileCreateParams()
+                .setType(File.Type.FILE)
+                .setPath("data/test/folder/fileAAA.txt")
+                .setResource(true)
+                .setDescription("My description")
+                .setContent("blabla");
+        File fileAAA = catalogManager.getFileManager().create(studyFqn, fileCreateParams, true, ownerToken).first();
+        Map<String, Object> params = new HashMap<>();
+        params.put("hello", "world");
+        params.put("fileAAA", "file://" + fileAAA.getPath());
+        params.put("aaafile", fileAAA.getPath());
+        Map<String, Object> subParams = new HashMap<>();
+        subParams.put("fileAAA", "file://" + fileAAA.getPath());
+        subParams.put("aaafile", fileAAA.getPath());
+        subParams.put("hello", "world");
+        params.put("subParams", subParams);
+        Job job111 = catalogManager.getJobManager().submit(studyFqn, JobType.NATIVE, "command-subcommand-111", null, params, ownerToken)
+                .first();
+
+        List<File> job111InputFiles = catalogManager.getJobManager().getJobInputFilesFromParams(studyFqn, job111, ownerToken);
+        assertEquals(4, job111InputFiles.size());
     }
 
     /**
