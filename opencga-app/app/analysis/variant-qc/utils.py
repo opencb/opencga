@@ -150,7 +150,7 @@ def execute_bash_command(cmd):
     :param str cmd: Command line
     :returns: Return code, stdout, stderr
     """
-    LOGGER.debug('Executing in bash: "{}"'.format(cmd))
+    LOGGER.info('Executing in bash: "{}"'.format(cmd))
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
 
     stdout, stderr = p.communicate()

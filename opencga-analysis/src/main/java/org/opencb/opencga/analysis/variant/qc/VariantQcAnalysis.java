@@ -52,9 +52,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.utils.ResourceManager.RESOURCES_DIRNAME;
@@ -107,11 +106,10 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
     // Common attributes
     public static final String OPENCGA_JOB_ID_ATTR = "OPENCGA_JOB_ID";
 
-    protected LinkedList<Path> vcfPaths = new LinkedList<>();
-    protected LinkedList<Path> jsonPaths = new LinkedList<>();
+    protected Path vcfPath;
+    protected Path jsonPath;
 
     protected Path userResourcesPath;
-    protected Set<String> failedQcSet;
 
     @Override
     protected void check() throws Exception {
@@ -143,8 +141,7 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
     //-------------------------------------------------------------------------
 
     protected void clean() {
-        deleteFiles(vcfPaths);
-        deleteFiles(jsonPaths);
+        deleteFiles(Arrays.asList(vcfPath, jsonPath));
     }
 
     private void deleteFiles(List<Path> paths) {
@@ -224,14 +221,6 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
         }
     }
 
-    protected void checkFailedQcCounter(int size, String individualQcType) throws ToolException {
-        if (CollectionUtils.isNotEmpty(failedQcSet) && failedQcSet.size() == size) {
-            // If all QC fail, then the job fails
-            clean();
-            throw new ToolException("All " + individualQcType + " QCs fail. Please, check job results and logs for more details.");
-        }
-    }
-
     //-------------------------------------------------------------------------
     // QC resources management
     //-------------------------------------------------------------------------
@@ -252,7 +241,7 @@ public class VariantQcAnalysis extends OpenCgaToolScopeStudy {
         }
 
         // Check if the user provided a custom resources folder
-        if (Files.exists(userResourcesPath) && Files.isDirectory(userResourcesPath)
+        if (userResourcesPath != null && Files.exists(userResourcesPath) && Files.isDirectory(userResourcesPath)
                 && configuration.getAnalysis() != null
                 && configuration.getAnalysis().getResource() != null
                 && configuration.getAnalysis().getResource().getFiles() != null) {

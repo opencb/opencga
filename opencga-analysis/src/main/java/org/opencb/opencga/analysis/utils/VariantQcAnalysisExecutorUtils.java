@@ -16,10 +16,7 @@
 
 package org.opencb.opencga.analysis.utils;
 
-import org.apache.commons.lang.StringUtils;
 import org.opencb.commons.utils.DockerUtils;
-import org.opencb.opencga.catalog.utils.ResourceManager;
-import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 
 import java.io.IOException;
@@ -27,11 +24,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Collectors;
 
-import static org.opencb.opencga.analysis.variant.qc.VariantQcAnalysis.VARIANT_QC_FOLDER;
 import static org.opencb.opencga.analysis.variant.qc.VariantQcAnalysis.RESOURCES_FOLDER;
 
 public class VariantQcAnalysisExecutorUtils {
@@ -42,7 +36,7 @@ public class VariantQcAnalysisExecutorUtils {
     private static String SCRIPT_VIRTUAL_FOLDER = "/script";
     private static String JOB_VIRTUAL_FOLDER = "/jobdir";
 
-    public static void run(String qcType, LinkedList<Path> vcfPaths, LinkedList<Path> jsonPaths, Path configPath, Path scriptPath,
+    public static void run(String qcType, Path vcfPath, Path jsonPath, Path configPath, Path scriptPath,
                            Path outDir, String dockerImage) throws ToolExecutorException {
         // Run the Python script responsible for performing the family QC analyses
         //   variant_qc.main.py --vcf-file xxx --info-json xxx --bam-file xxx --qc-type xxx --config xxx --resource-dir xxx --output-dir xxx
@@ -58,10 +52,8 @@ public class VariantQcAnalysisExecutorUtils {
                     JOB_VIRTUAL_FOLDER);
 
             String params = "python3 " + SCRIPT_VIRTUAL_FOLDER + "/main.py"
-                    + " --vcf-file " + StringUtils.join(vcfPaths.stream().map(p -> p.toAbsolutePath().toString().replace(
-                    outDir.toAbsolutePath().toString(), JOB_VIRTUAL_FOLDER)).collect(Collectors.toList()), ",")
-                    + " --info-json " + StringUtils.join(jsonPaths.stream().map(p -> p.toAbsolutePath().toString().replace(
-                    outDir.toAbsolutePath().toString(), JOB_VIRTUAL_FOLDER)).collect(Collectors.toList()), ",")
+                    + " --vcf-file " + vcfPath.toAbsolutePath().toString().replace(outDir.toAbsolutePath().toString(), JOB_VIRTUAL_FOLDER)
+                    + " --info-json " + jsonPath.toAbsolutePath().toString().replace(outDir.toAbsolutePath().toString(), JOB_VIRTUAL_FOLDER)
                     + " --config " + Paths.get(JOB_VIRTUAL_FOLDER).resolve(configPath.getFileName())
                     + " --resource-dir " + Paths.get(JOB_VIRTUAL_FOLDER).resolve(RESOURCES_FOLDER)
                     + " --output-dir " + JOB_VIRTUAL_FOLDER

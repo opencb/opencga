@@ -12,14 +12,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 
 public class FamilyQcAnalysisParamsTest {
 
     @Test
     public void testObjectWriter() throws IOException {
         FamilyQcAnalysisParams params = new FamilyQcAnalysisParams();
-        params.setFamilies(Arrays.asList("f1", "f2"));
+        params.setFamily("f1");
         params.setOverwrite(true);
 
         ObjectMapper objectMapper = JacksonUtils.getDefaultObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL);

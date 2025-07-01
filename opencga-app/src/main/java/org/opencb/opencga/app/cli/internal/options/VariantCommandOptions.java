@@ -1492,8 +1492,8 @@ public class VariantCommandOptions {
         @Parameter(names = {"--study"}, description = STUDY_DESCRIPTION)
         public String study;
 
-        @Parameter(names = {"--families"}, description = FAMILY_QC_FAMILY_ID_LIST_DESCRIPTION, required = true)
-        public List<String> families;
+        @Parameter(names = {"--family"}, description = FAMILY_QC_FAMILY_ID_DESCRIPTION, required = true)
+        public String family;
 
         @Parameter(names = {"--skip-index"}, description = QC_SKIP_INDEX_DESCRIPTION, arity = 1)
         public Boolean skipIndex;

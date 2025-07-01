@@ -830,7 +830,7 @@ public class VariantAnalysisTest {
         catalogManager.getSampleManager().update(CANCER_STUDY, cancer_sample, updateParams, null, token);
 
         SampleQcAnalysisParams params = new SampleQcAnalysisParams();
-        params.setSamples(Collections.singletonList(cancer_sample));
+        params.setSample(cancer_sample);
         params.setVsId("test");
         params.setVsDescription("Description test");
         params.setVsQuery(new AnnotationVariantQueryParams());
@@ -1176,7 +1176,7 @@ public class VariantAnalysisTest {
 
         // Family QC analysis
         FamilyQcAnalysisParams params = new FamilyQcAnalysisParams();
-        params.setFamilies(Arrays.asList(family));
+        params.setFamily(family);
 
         String jobId = "test-family-qc-" + TimeUtils.getTimeMillis();
 
@@ -1220,7 +1220,7 @@ public class VariantAnalysisTest {
 
         // Family QC analysis params (not setting overwrite)
         FamilyQcAnalysisParams params = new FamilyQcAnalysisParams();
-        params.setFamilies(Arrays.asList(family));
+        params.setFamily(family);
 
         String jobId = "test-family-qc-" + TimeUtils.getTimeMillis();
         try {
@@ -1255,7 +1255,7 @@ public class VariantAnalysisTest {
 
         // Family QC analysis params (setting overwrite to true)
         FamilyQcAnalysisParams params = new FamilyQcAnalysisParams();
-        params.setFamilies(Arrays.asList(family));
+        params.setFamily(family);
 
         String jobId = "test-family-qc-" + TimeUtils.getTimeMillis();
         // Execute the analysis with admin permissions (token) but with overwrite
@@ -1298,7 +1298,7 @@ public class VariantAnalysisTest {
 
         // Family QC analysis params (setting overwrite to true)
         FamilyQcAnalysisParams params = new FamilyQcAnalysisParams();
-        params.setFamilies(Arrays.asList(family));
+        params.setFamily(family);
         params.setOverwrite(true);
 
         String jobId = "test-family-qc-" + TimeUtils.getTimeMillis();
@@ -1341,7 +1341,7 @@ public class VariantAnalysisTest {
 
         // Family QC analysis
         FamilyQcAnalysisParams params = new FamilyQcAnalysisParams();
-        params.setFamilies(Arrays.asList(family));
+        params.setFamily(family);
 
         String jobId = "test-family-qc-" + TimeUtils.getTimeMillis();
         try {
@@ -1383,7 +1383,7 @@ public class VariantAnalysisTest {
 
         // Individual QC analysis
         IndividualQcAnalysisParams params = new IndividualQcAnalysisParams();
-        params.setIndividuals(Arrays.asList(son));
+        params.setIndividual(son);
 
         String jobId = "test-individual-qc-" + TimeUtils.getTimeMillis();
         toolRunner.execute(IndividualVariantQcAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY),

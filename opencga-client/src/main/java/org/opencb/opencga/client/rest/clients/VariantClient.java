@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.client.rest.clients;
 
-import java.util.List;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
@@ -311,10 +310,10 @@ public class VariantClient extends ParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<List> runFamilyQc(FamilyQcAnalysisParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Job> runFamilyQc(FamilyQcAnalysisParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
-        return execute("analysis", null, "variant/family/qc", null, "run", params, POST, List.class);
+        return execute("analysis", null, "variant/family/qc", null, "run", params, POST, Job.class);
     }
 
     /**
@@ -452,8 +451,7 @@ public class VariantClient extends ParentClient {
     }
 
     /**
-     * Run quality control (QC) for a given individual. This includes inferred sex, and if parents  are present, Mendelian errors (UDP) and
-     *     relatedness analyses are also performed.
+     * Run quality control (QC) for a given family. It computes the relatedness scores among the family members.
      * @param data Individual QC analysis params.
      * @param params Map containing any of the following optional parameters.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.

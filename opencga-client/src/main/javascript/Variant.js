@@ -362,8 +362,7 @@ export default class Variant extends OpenCGAParentClass {
         return this._post("analysis", null, "variant/index", null, "run", data, params);
     }
 
-    /** Run quality control (QC) for a given individual. This includes inferred sex, and if parents  are present, Mendelian errors (UDP) and
-    * relatedness analyses are also performed
+    /** Run quality control (QC) for a given family. It computes the relatedness scores among the family members
     * @param {Object} data - Individual QC analysis params.
     * @param {Object} [params] - The Object containing the following optional parameters:
     * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.

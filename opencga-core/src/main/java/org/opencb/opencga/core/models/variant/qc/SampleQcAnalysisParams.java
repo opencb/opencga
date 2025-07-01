@@ -35,12 +35,8 @@ public class SampleQcAnalysisParams extends ToolParams {
             + ", " + SIGNATURE_SKIP_VALUE  + ", " + SIGNATURE_CATALOGUE_SKIP_VALUE + ", " + SIGNATURE_FITTING_SKIP_VALUE + ", "
             + GENOME_PLOT_SKIP_VALUE;
 
-    @Deprecated
     @DataField(id = "sample", description = FieldConstants.SAMPLE_ID_DESCRIPTION, deprecated = true)
     private String sample;
-
-    @DataField(id = "samples", description = FieldConstants.SAMPLE_QC_SAMPLE_ID_LIST_DESCRIPTION)
-    private List<String> samples;
 
     // Variant stats params
     @DataField(id = "statsParams", description = FieldConstants.SAMPLE_QC_VARIANT_STATS_PARAMS_DESCRIPTION)
@@ -160,14 +156,13 @@ public class SampleQcAnalysisParams extends ToolParams {
     public SampleQcAnalysisParams() {
     }
 
-    public SampleQcAnalysisParams(String sample, List<String> samples, String vsId, String vsDescription,
+    public SampleQcAnalysisParams(String sample, String vsId, String vsDescription,
                                   AnnotationVariantQueryParams vsQuery, String msId, String msDescription, String msQuery, String msFitId,
                                   String msFitMethod, Integer msFitNBoot, String msFitSigVersion, String msFitOrgan,
                                   Float msFitThresholdPerc, Float msFitThresholdPval, Integer msFitMaxRareSigs, String msFitSignaturesFile,
                                   String msFitRareSignaturesFile, String gpId, String gpDescription, String gpConfigFile,
                                   List<String> skipAnalysis, Boolean skipIndex, Boolean overwrite, String resourcesDir, String outdir) {
         this.sample = sample;
-        this.samples = samples;
         this.vsId = vsId;
         this.vsDescription = vsDescription;
         this.vsQuery = vsQuery;
@@ -194,10 +189,10 @@ public class SampleQcAnalysisParams extends ToolParams {
         this.outdir = outdir;
     }
 
-    public SampleQcAnalysisParams(List<String> samples, SampleQcVariantStatsAnalysisParams statsParams,
+    public SampleQcAnalysisParams(String sample, SampleQcVariantStatsAnalysisParams statsParams,
                                   SampleQcSignatureAnalysisParams signatureParams, SampleQcGenomePlotAnalysisParams genomePlotParams,
                                   List<String> skipAnalysis, Boolean skipIndex, Boolean overwrite, String resourcesDir, String outdir) {
-        this.samples = samples;
+        this.sample = sample;
         this.statsParams = statsParams;
         this.signatureParams = signatureParams;
         this.genomePlotParams = genomePlotParams;
@@ -212,7 +207,6 @@ public class SampleQcAnalysisParams extends ToolParams {
     public String toString() {
         final StringBuilder sb = new StringBuilder("SampleQcAnalysisParams{");
         sb.append("sample='").append(sample).append('\'');
-        sb.append(", samples=").append(samples);
         sb.append(", statsParams=").append(statsParams);
         sb.append(", vsId='").append(vsId).append('\'');
         sb.append(", vsDescription='").append(vsDescription).append('\'');
@@ -251,15 +245,6 @@ public class SampleQcAnalysisParams extends ToolParams {
 
     public SampleQcAnalysisParams setSample(String sample) {
         this.sample = sample;
-        return this;
-    }
-
-    public List<String> getSamples() {
-        return samples;
-    }
-
-    public SampleQcAnalysisParams setSamples(List<String> samples) {
-        this.samples = samples;
         return this;
     }
 
