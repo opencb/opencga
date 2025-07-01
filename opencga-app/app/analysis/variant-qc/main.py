@@ -12,7 +12,7 @@ from datetime import datetime
 from family_qc.family_qc_executor import FamilyQCExecutor
 from sample_qc.sample_qc_executor import SampleQCExecutor
 from individual_qc.individual_qc_executor import IndividualQCExecutor
-from utils import create_output_dir
+
 
 VERSION = '0.0.1'
 LOGGER = logging.getLogger('variant_qc_logger')
@@ -27,9 +27,9 @@ def get_parser():
     parser = argparse.ArgumentParser(description='This program runs variant QC on sample/individual/family')
 
     parser.add_argument("action", help="QC to execute", choices=['sample', 'individual', 'family'])
-    parser.add_argument('-i', '--vcf-file', dest='vcf_file', required=True, help='comma-separated VCF file paths')
-    parser.add_argument('-j', '--info-json', dest='info_json', required=True, help='comma-separated info JSON file paths')
-    parser.add_argument('-b', '--bam-file', dest='bam_file', help='comma-separated BAM file paths')
+    parser.add_argument('-i', '--vcf-file', dest='vcf_file', required=True, help='VCF file path')
+    parser.add_argument('-j', '--info-json', dest='info_json', required=True, help='info JSON file path')
+    parser.add_argument('-b', '--bam-file', dest='bam_file', help='BAM file path', default=None)
     parser.add_argument('-c', '--config', dest='config', required=True, help='configuration file path')
     parser.add_argument('-r', '--resource-dir', dest='resource_dir', default='resources', help='resources directory path')
     parser.add_argument('-o', '--output-dir', dest='output_dir', help='output directory path')
@@ -38,29 +38,6 @@ def get_parser():
     parser.add_argument('-v', '--version', dest='version', action='version', version=VERSION, help='outputs the program version')
 
     return parser
-
-
-def check_args(args):
-    """Check input arguments
-
-    :param Namespace args: Input arguments
-    """
-
-    # Checking we have the same number of VCF files and info JSON files
-    num_vcf_files = len(args.vcf_file.split(','))
-    num_info_jsons = len(args.info_json.split(','))
-    if num_vcf_files != num_info_jsons:
-        msg = 'Different number of VCF files ({}) and info JSON files ({})'.format(num_vcf_files, num_info_jsons)
-        LOGGER.error(msg)
-        raise ValueError(msg)
-
-    # Checking we have the same number of VCF files and BAM files
-    if args.bam_file:
-        num_bam_files = len(args.bam_file.split(','))
-        if num_vcf_files != num_bam_files:
-            msg = 'Different number of VCF files ({}) and BAM files ({})'.format(num_vcf_files, num_bam_files)
-            LOGGER.error(msg)
-            raise ValueError(msg)
 
 
 def check_input(vcf_fpath, info_fpath, qc_type):
@@ -177,14 +154,11 @@ def create_logger(level, output_dir):
 def main():
     """The main function"""
 
-    # Checking arguments
-    args = get_parser().parse_args()
-    check_args(args)
-
     # Getting arguments
-    vcf_files = args.vcf_file.split(',')
-    info_jsons = args.info_json.split(',')
-    bam_files = args.bam_file.split(',') if args.bam_file else [None]*len(vcf_files)
+    args = get_parser().parse_args()
+    vcf_file = args.vcf_file
+    info_json = args.info_json
+    bam_file = args.bam_file
     qc_type = args.action
     config = args.config
     resource_dir = os.path.realpath(args.resource_dir)
@@ -197,35 +171,29 @@ def main():
     # Getting executor
     qc_executor = get_qc_executor(qc_type)
 
-    # Running QC
-    for i in range(len(vcf_files)):
-        # Checking input
-        LOGGER.debug('Checking input files "{}" and "{}"'.format(vcf_files[i], info_jsons[i]))
-        sample_ids, id_ = check_input(vcf_files[i], info_jsons[i], qc_type)
+    # Checking input
+    LOGGER.debug('Checking input files "{}" and "{}"'.format(vcf_file, info_json))
+    sample_ids, id_ = check_input(vcf_file, info_json, qc_type)
 
-        # Creating parent output dirs
-        LOGGER.debug('Preparing output dirs for files "{}" and "{}"'.format(vcf_files[i], info_jsons[i]))
-        qc_outdir_fpath = create_output_dir([output_dir, id_])
+    # Copying VCF file and info JSON file in output directory
+    LOGGER.debug('Copying VCF file "{}" in output directory "{}"'.format(vcf_file, output_dir))
+    shutil.copy(vcf_file, output_dir)
+    LOGGER.debug('Copying info JSON file "{}" in output directory "{}"'.format(info_json, output_dir))
+    shutil.copy(info_json, output_dir)
+    LOGGER.debug('Copying config JSON file "{}" in output directory "{}"'.format(config, output_dir))
+    shutil.copy(config, output_dir)
 
-        # Copying VCF file and info JSON file in output directory
-        LOGGER.debug('Copying VCF file "{}" in output directory "{}"'.format(vcf_files[i], qc_outdir_fpath))
-        shutil.copy(vcf_files[i], qc_outdir_fpath)
-        LOGGER.debug('Copying info JSON file "{}" in output directory "{}"'.format(info_jsons[i], qc_outdir_fpath))
-        shutil.copy(info_jsons[i], qc_outdir_fpath)
-        LOGGER.debug('Copying config JSON file "{}" in output directory "{}"'.format(config, qc_outdir_fpath))
-        shutil.copy(config, qc_outdir_fpath)
-
-        # Execute QC
-        qc_executor(
-            vcf_file=vcf_files[i],
-            info_file=info_jsons[i],
-            bam_file=bam_files[i],
-            config=config,
-            resource_dir=resource_dir,
-            output_parent_dir=qc_outdir_fpath,
-            sample_ids=sample_ids,
-            id_=id_
-        ).run()
+    # Execute QC
+    qc_executor(
+        vcf_file=vcf_file,
+        info_file=info_json,
+        bam_file=bam_file,
+        config=config,
+        resource_dir=resource_dir,
+        output_parent_dir=output_dir,
+        sample_ids=sample_ids,
+        id_=id_
+    ).run()
 
 if __name__ == '__main__':
     sys.exit(main())
