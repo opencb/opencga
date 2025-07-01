@@ -60,28 +60,12 @@ class MutationalCatalogueAnalysis:
             self.output_dir, 'OPENCGA_{}_{}_genome_context.csv'.format(self.sample_id, ASSEMBLY)
         )
 
-        # CONFIG
-        #     "msId": "",
-        #     "msDescription": "",
-        #     "msQuery": "",    # "query": "{\"fileData\":\"" + INDIVIDUALS[i] + ".annot.muts.caveman.vcf.gz:FILTER=PASS;CLPM<=0;ASMD>=140\", \"region\": \"1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y\", \"type\":\"SNV\"}",
-        #
-        #     "msFitId": "",
-        #     "msFitMethod": "",
-        #     "msFitNBoot": 0,
-        #     "msFitSigVersion": "",
-        #     "msFitOrgan": "",
-        #     "msFitThresholdPerc": {},
-        #     "msFitThresholdPval": {},
-        #     "msFitMaxRareSigs": 0,
-        #     "msFitSignaturesFile": "",
-        #     "msFitRareSignaturesFile": "",
-
     def get_ms_type(self):
+        """Get mutation type"""
         ms_type = None
-        if ('signatures' in self.config_json and self.config_json['signatures']
-                and 'msQuery' in self.config_json['signatures'] and self.config_json['signatures']['msQuery']
-                and 'type' in self.config_json['signatures']['msQuery'] and self.config_json['signatures']['msQuery']['type']):
-            ms_type = self.config_json['signatures']['msQuery']['type']
+        if ('msQuery' in self.config_json and self.config_json['msQuery']
+                and 'type' in self.config_json['msQuery'] and self.config_json['msQuery']['type']):
+            ms_type = self.config_json['msQuery']['type']
         return ms_type
 
     def create_snv_genome_context_file(self):
@@ -92,6 +76,7 @@ class MutationalCatalogueAnalysis:
             1:10120:T:A     CTA
             1:10126:T:A     CTA
         """
+        LOGGER.info('Creating the SNV genome context file "{}"'.format(self.snv_genome_context_fpath))
 
         # Opening ALL SNV VCF file (BGZIP VCF file)
         snv_all_vcf_fpath = bgzip_vcf(self.snv_all_vcf_fpath)  # BGZIPping VCF (pysam requirement)
@@ -127,6 +112,7 @@ class MutationalCatalogueAnalysis:
                     {'context': 'T[T>G]T', 'total': 480}]
         }
         """
+        LOGGER.info('Creating the SNV signature catalogue context file')
 
         # Getting variant contexts
         snv_genome_context_fhand = open(self.snv_genome_context_fpath, 'r')
@@ -163,8 +149,8 @@ class MutationalCatalogueAnalysis:
 
         # Creating results
         results = {'signatures': [{'counts': [{'context': k, 'total': counts[k]} for k in counts],
-                                   'id': self.config_json['signatures']['msId'],
-                                       'query': self.config_json['signatures']['msQuery'],
+                                   'id': self.config_json['msId'],
+                                       'query': self.config_json['msQuery'],
                                    'type': self.get_ms_type()}]}
         generate_results_json(results=results, outdir_path=self.output_dir)
 
@@ -194,7 +180,7 @@ class MutationalCatalogueAnalysis:
         elif var_type in ['TR', 'TRANS', 'TRANSLOCATION']:
             return TYPE_TRANS
         else:
-            LOGGER.debug('Skipping variant with unknown type "{}" for the SV mutational catalogue'.format(var_type))
+            LOGGER.warning('Skipping variant with unknown type "{}" for the SV mutational catalogue'.format(var_type))
             return None
 
     @staticmethod
@@ -293,6 +279,7 @@ class MutationalCatalogueAnalysis:
                     {'context': 'non-clustered_trans', 'total': 49}]
         }
         """
+        LOGGER.info('Creating the SV signature catalogue context file')
 
         # Creating context keys
         counts = {}
@@ -322,12 +309,16 @@ class MutationalCatalogueAnalysis:
 
         # Creating results
         results = {'signatures': [{'counts': [{'context': k, 'total': counts[k]} for k in counts],
-                                   'id': self.config_json['signatures']['msId'],
-                                       'query': self.config_json['signatures']['msQuery'],
+                                   'id': self.config_json['msId'],
+                                       'query': self.config_json['msQuery'],
                                    'type': self.get_ms_type()}]}
         generate_results_json(results=results, outdir_path=self.output_dir)
 
     def get_fitting_command(self):
+        """Create the CMD to run mutational signature fitting
+
+        :returns: The CMD to run the signature fitting
+        """
 
         # Creating basic CMD
         cmd = 'R CMD Rscript --vanilla'
@@ -343,6 +334,7 @@ class MutationalCatalogueAnalysis:
             catalogues_fhand = open(catalogues_fpath, 'w')
             # Creating catalogue file
             results_json = json.loads(results_fhand.read())
+            catalogues_fhand.write('{}\n'.format(self.sample_id))
             for count in results_json['signatures'][0]['counts']:
                 catalogues_fhand.write('{}\t{}\n'.format(count['context'], count['total']))
         elif 'catalogues.tsv' in list_dir_files(self.resource_dir):
@@ -356,58 +348,41 @@ class MutationalCatalogueAnalysis:
 
         # Adding extra analysis parameters
         # --fitmethod
-        try:
-            cmd += ' --fitmethod={}'.format(self.config_json['signatures']['msQuery']['msFitMethod'])
-        except KeyError:
-            pass
+        if 'msFitMethod' in self.config_json and self.config_json['msFitMethod']:
+            cmd += ' --fitmethod={}'.format(self.config_json['msFitMethod'])
         # --sigversion
-        try:
-            cmd += ' --sigversion={}'.format(self.config_json['signatures']['msQuery']['msFitSigVersion'])
-        except KeyError:
-            pass
+        if 'msFitSigVersion' in self.config_json and self.config_json['msFitSigVersion']:
+            cmd += ' --sigversion={}'.format(self.config_json['msFitSigVersion'])
         # --organ
-        try:
-            cmd += ' --organ={}'.format(self.config_json['signatures']['msQuery']['msFitOrgan'])
-        except KeyError:
-            pass
+        if 'msFitOrgan' in self.config_json and self.config_json['msFitOrgan']:
+            cmd += ' --organ={}'.format(self.config_json['msFitOrgan'])
         # --thresholdperc
-        try:
-            cmd += ' --thresholdperc={}'.format(self.config_json['signatures']['msQuery']['msFitThresholdPerc'])
-        except KeyError:
-            pass
+        if 'msFitThresholdPerc' in self.config_json and self.config_json['msFitThresholdPerc']:
+            cmd += ' --thresholdperc={}'.format(self.config_json['msFitThresholdPerc'])
         # --thresholdpval
-        try:
-            cmd += ' --thresholdpval={}'.format(self.config_json['signatures']['msQuery']['msFitThresholdPval'])
-        except KeyError:
-            pass
+        if 'msFitThresholdPval' in self.config_json and self.config_json['msFitThresholdPval']:
+            cmd += ' --thresholdpval={}'.format(self.config_json['msFitThresholdPval'])
         # --maxraresigs
-        try:
-            cmd += ' --maxraresigs={}'.format(self.config_json['signatures']['msQuery']['msFitMaxRareSigs'])
-        except KeyError:
-            pass
+        if 'msFitMaxRareSigs' in self.config_json and self.config_json['msFitMaxRareSigs']:
+            cmd += ' --maxraresigs={}'.format(self.config_json['msFitMaxRareSigs'])
         # --nboot
-        try:
-            cmd += ' --nboot={}'.format(self.config_json['signatures']['msQuery']['msFitNBoot'])
-        except KeyError:
-            pass
+        if 'msFitNBoot' in self.config_json and self.config_json['msFitNBoot']:
+            cmd += ' -b --nboot={}'.format(self.config_json['msFitNBoot'])
         # --signaturesfile
-        try:
-            signatures_file_fpath = os.path.join(self.resource_dir,
-                                                 self.config_json['signatures']['msQuery']['msFitSignaturesFile'])
+        if 'msFitSignaturesFile' in self.config_json and self.config_json['msFitSignaturesFile']:
+            signatures_file_fpath = os.path.join(self.resource_dir, self.config_json['msFitSignaturesFile'])
             cmd += ' --signaturesfile={}'.format(signatures_file_fpath)
-        except KeyError:
-            pass
         # --raresignaturesfile
-        try:
-            rare_signatures_file_fpath = os.path.join(self.resource_dir,
-                                                      self.config_json['signatures']['msQuery']['msFitRareSignaturesFile'])
+        if 'msFitRareSignaturesFile' in self.config_json and self.config_json['msFitRareSignaturesFile']:
+            rare_signatures_file_fpath = os.path.join(self.resource_dir, self.config_json['msFitRareSignaturesFile'])
             cmd += ' --raresignaturesfile={}'.format(rare_signatures_file_fpath)
-        except KeyError:
-            pass
 
         return cmd
 
     def create_signature_fitting(self):
+        """Create the mutational signature fitting"""
+        LOGGER.info('Creating the signature fitting')
+
         cmd = self.get_fitting_command()
         execute_bash_command(cmd)
 
@@ -418,17 +393,15 @@ class MutationalCatalogueAnalysis:
     def run(self):
         # Creating mutational signature catalogue
         if self.ms_type == 'SNV':
-            self.create_snv_genome_context_file()
+            LOGGER.info('Running mutational signature analysis for SNV')
+            if os.path.basename(self.snv_genome_context_fpath) not in list_dir_files(self.resource_dir):
+                self.create_snv_genome_context_file()
             self.create_snv_signature_catalogue()
             self.create_signature_fitting()
         elif self.ms_type == 'SV':
+            LOGGER.info('Running mutational signature analysis for SV')
             self.create_sv_signature_catalogue()
             self.create_signature_fitting()
-            pass
         else:
             msg = 'Mutational signature for type "{}" not implemented'.format(self.ms_type)
             raise ValueError(msg)
-
-
-
-

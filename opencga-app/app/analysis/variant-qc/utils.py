@@ -139,7 +139,7 @@ def create_output_dir(path_elements):
     :returns: The created output dir path
     """
     outdir_fpath = os.path.join(*path_elements)
-    LOGGER.debug('Creating output directory: "{}"'.format(outdir_fpath))
+    LOGGER.info('Creating output directory: "{}"'.format(outdir_fpath))
     os.makedirs(outdir_fpath, exist_ok=True)  # Creating output dir if it does not exist
 
     return outdir_fpath
@@ -175,7 +175,7 @@ def generate_results_json(results: dict, outdir_path: str):
     """
     results_file_name = 'results.json'
     results_fpath = os.path.join(outdir_path, results_file_name)
-    LOGGER.debug('Generating JSON file with results. File path: "{}"'.format(results_fpath))
+    LOGGER.info('Generating JSON file with results. File path: "{}"'.format(results_fpath))
 
     with open(results_fpath, 'w') as file:
         json.dump(results, file, indent=2)

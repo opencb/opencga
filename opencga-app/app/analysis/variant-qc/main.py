@@ -9,12 +9,11 @@ import shutil
 import sys
 from datetime import datetime
 
-from family_qc.family_qc_executor import FamilyQCExecutor
+# from family_qc.family_qc_executor import FamilyQCExecutor
 from sample_qc.sample_qc_executor import SampleQCExecutor
-from individual_qc.individual_qc_executor import IndividualQCExecutor
+# from individual_qc.individual_qc_executor import IndividualQCExecutor
 
 
-VERSION = '0.0.1'
 LOGGER = logging.getLogger('variant_qc_logger')
 
 
@@ -35,7 +34,6 @@ def get_parser():
     parser.add_argument('-o', '--output-dir', dest='output_dir', help='output directory path')
     parser.add_argument('-l', '--log-level', dest='log_level', default='INFO', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
         help='provide logging level')
-    parser.add_argument('-v', '--version', dest='version', action='version', version=VERSION, help='outputs the program version')
 
     return parser
 
@@ -88,7 +86,7 @@ def check_input(vcf_fpath, info_fpath, qc_type):
 
     # Checking whether input file and info file have the same samples
     LOGGER.debug('Sample IDs found in VCF file: "{}"'.format(vcf_sample_ids))
-    LOGGER.debug('Sample IDs found in JSON file: "{}"'.format(info_sample_ids))
+    LOGGER.debug('Sample IDs found in info JSON file: "{}"'.format(info_sample_ids))
     if not vcf_sample_ids == info_sample_ids and qc_type != 'individual':
         msg = 'Different samples in VCF file ("{}") and info JSON file ("{}")'.format(vcf_sample_ids, info_sample_ids)
         LOGGER.error(msg)
@@ -113,10 +111,10 @@ def get_qc_executor(qc_type):
     qc_executor = None
     if qc_type == 'sample':
         qc_executor = SampleQCExecutor
-    elif qc_type == 'individual':
-        qc_executor = IndividualQCExecutor
-    elif qc_type == 'family':
-        qc_executor = FamilyQCExecutor
+    # elif qc_type == 'individual':
+    #     qc_executor = IndividualQCExecutor
+    # elif qc_type == 'family':
+    #     qc_executor = FamilyQCExecutor
     return qc_executor
 
 def create_logger(level, output_dir):
@@ -166,21 +164,20 @@ def main():
 
     # Setting up logger
     logger = create_logger(args.log_level, output_dir)
-    logger.debug('Version: {}'.format(VERSION))
 
     # Getting executor
     qc_executor = get_qc_executor(qc_type)
 
     # Checking input
-    LOGGER.debug('Checking input files "{}" and "{}"'.format(vcf_file, info_json))
+    LOGGER.info('Checking input files "{}" and "{}"'.format(vcf_file, info_json))
     sample_ids, id_ = check_input(vcf_file, info_json, qc_type)
 
     # Copying VCF file and info JSON file in output directory
-    LOGGER.debug('Copying VCF file "{}" in output directory "{}"'.format(vcf_file, output_dir))
+    LOGGER.info('Copying VCF file "{}" in output directory "{}"'.format(vcf_file, output_dir))
     shutil.copy(vcf_file, output_dir)
-    LOGGER.debug('Copying info JSON file "{}" in output directory "{}"'.format(info_json, output_dir))
+    LOGGER.info('Copying info JSON file "{}" in output directory "{}"'.format(info_json, output_dir))
     shutil.copy(info_json, output_dir)
-    LOGGER.debug('Copying config JSON file "{}" in output directory "{}"'.format(config, output_dir))
+    LOGGER.info('Copying config JSON file "{}" in output directory "{}"'.format(config, output_dir))
     shutil.copy(config, output_dir)
 
     # Execute QC
