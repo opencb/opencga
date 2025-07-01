@@ -24,6 +24,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 /**
  * Created by imedina on 16/06/16.
@@ -87,6 +90,24 @@ public abstract class MonitorParentDaemon implements Runnable, Closeable {
         } catch (IOException e) {
             logger.error("Error closing daemon", e);
         }
+    }
+
+    protected static boolean isNightTime() {
+        boolean isNightTime = false;
+        // Check date time is between 00:00 and 05:00
+        //TODO: Define night time in configuration
+        LocalTime now = LocalTime.now();
+        int hour = now.getHour();
+        if (hour < 5) {
+            isNightTime = true;
+        }
+        return isNightTime;
+    }
+
+    protected static boolean isWeekend() {
+        LocalDate today = LocalDate.now();
+        DayOfWeek dayOfWeek = today.getDayOfWeek();
+        return dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY;
     }
 
     public void init() throws Exception {

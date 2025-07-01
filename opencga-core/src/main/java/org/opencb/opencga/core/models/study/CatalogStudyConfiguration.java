@@ -2,22 +2,20 @@ package org.opencb.opencga.core.models.study;
 
 public class CatalogStudyConfiguration {
 
-    private CatalogServiceConfiguration cvdb;
-    private CatalogServiceConfiguration variantQualityControl;
+    private CvdbCatalogServiceConfiguration cvdb;
+    private QualityControlServiceConfiguration variantQualityControl;
 
     public CatalogStudyConfiguration() {
     }
 
-    public CatalogStudyConfiguration(CatalogServiceConfiguration cvdb, CatalogServiceConfiguration variantQualityControl) {
+    public CatalogStudyConfiguration(CvdbCatalogServiceConfiguration cvdb, QualityControlServiceConfiguration variantQualityControl) {
         this.cvdb = cvdb;
         this.variantQualityControl = variantQualityControl;
     }
 
     public static CatalogStudyConfiguration defaultConfiguration() {
-        return new CatalogStudyConfiguration(
-                CatalogServiceConfiguration.defaultConfiguration(), // cvdb
-                CatalogServiceConfiguration.defaultConfiguration()  // variantQualityControl
-        );
+        return new CatalogStudyConfiguration(CvdbCatalogServiceConfiguration.defaultConfiguration(),
+                QualityControlServiceConfiguration.defaultConfiguration());
     }
 
     @Override
@@ -29,20 +27,20 @@ public class CatalogStudyConfiguration {
         return sb.toString();
     }
 
-    public CatalogServiceConfiguration getCvdb() {
+    public CvdbCatalogServiceConfiguration getCvdb() {
         return cvdb;
     }
 
-    public CatalogStudyConfiguration setCvdb(CatalogServiceConfiguration cvdb) {
+    public CatalogStudyConfiguration setCvdb(CvdbCatalogServiceConfiguration cvdb) {
         this.cvdb = cvdb;
         return this;
     }
 
-    public CatalogServiceConfiguration getVariantQualityControl() {
+    public QualityControlServiceConfiguration getVariantQualityControl() {
         return variantQualityControl;
     }
 
-    public CatalogStudyConfiguration setVariantQualityControl(CatalogServiceConfiguration variantQualityControl) {
+    public CatalogStudyConfiguration setVariantQualityControl(QualityControlServiceConfiguration variantQualityControl) {
         this.variantQualityControl = variantQualityControl;
         return this;
     }

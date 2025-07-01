@@ -3,24 +3,27 @@ package org.opencb.opencga.core.models.clinical;
 public class CvdbIndex {
 
     private String jobId;
+    private CvdbIndexStatus previousStatus;
     private CvdbIndexStatus status;
 
     public CvdbIndex() {
     }
 
-    public CvdbIndex(String jobId, CvdbIndexStatus status) {
+    public CvdbIndex(String jobId, CvdbIndexStatus previousStatus, CvdbIndexStatus status) {
         this.jobId = jobId;
+        this.previousStatus = previousStatus;
         this.status = status;
     }
 
     public static CvdbIndex init() {
-        return new CvdbIndex("", CvdbIndexStatus.init());
+        return new CvdbIndex("", CvdbIndexStatus.init(), CvdbIndexStatus.init());
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("CvdbIndex{");
         sb.append("jobId='").append(jobId).append('\'');
+        sb.append(", previousStatus=").append(previousStatus);
         sb.append(", status=").append(status);
         sb.append('}');
         return sb.toString();
@@ -32,6 +35,15 @@ public class CvdbIndex {
 
     public CvdbIndex setJobId(String jobId) {
         this.jobId = jobId;
+        return this;
+    }
+
+    public CvdbIndexStatus getPreviousStatus() {
+        return previousStatus;
+    }
+
+    public CvdbIndex setPreviousStatus(CvdbIndexStatus previousStatus) {
+        this.previousStatus = previousStatus;
         return this;
     }
 

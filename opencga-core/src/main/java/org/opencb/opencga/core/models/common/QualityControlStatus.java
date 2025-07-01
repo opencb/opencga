@@ -6,11 +6,11 @@ import java.util.List;
 public class QualityControlStatus extends InternalStatus {
 
     public static final String ERROR = "ERROR";
+    public static final String NONE = "NONE";
     public static final String PENDING = "PENDING";
-    public static final String PENDING_REMOVE = "PENDING_REMOVE";
-    public static final String PENDING_OVERWRITE = "PENDING_OVERWRITE";
+    public static final String QUEUED = "QUEUED";
 
-    public static final List<String> STATUS_LIST = Arrays.asList(PENDING, PENDING_REMOVE, PENDING_OVERWRITE, READY, ERROR);
+    public static final List<String> STATUS_LIST = Arrays.asList(NONE, PENDING, QUEUED, READY, ERROR);
 
     public QualityControlStatus(String status, String message) {
         if (isValid(status)) {
@@ -25,7 +25,7 @@ public class QualityControlStatus extends InternalStatus {
     }
 
     public QualityControlStatus() {
-        this(PENDING, "");
+        this(NONE, "");
     }
 
     public static QualityControlStatus init() {
@@ -34,9 +34,9 @@ public class QualityControlStatus extends InternalStatus {
 
     public static boolean isValid(String status) {
         return status != null
-                && (status.equals(PENDING)
-                || status.equals(PENDING_REMOVE)
-                || status.equals(PENDING_OVERWRITE)
+                && (status.equals(NONE)
+                || status.equals(PENDING)
+                || status.equals(QUEUED)
                 || status.equals(READY)
                 || status.equals(ERROR));
     }

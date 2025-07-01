@@ -1,6 +1,6 @@
 package org.opencb.opencga.core.models.study;
 
-public class CatalogServiceConfiguration {
+public abstract class CatalogServiceConfiguration {
 
     private boolean active;
     private int concurrentJobs;
@@ -11,10 +11,6 @@ public class CatalogServiceConfiguration {
     public CatalogServiceConfiguration(boolean active, int concurrentJobs) {
         this.active = active;
         this.concurrentJobs = concurrentJobs;
-    }
-
-    public static CatalogServiceConfiguration defaultConfiguration() {
-        return new CatalogServiceConfiguration(false, 5);
     }
 
     @Override

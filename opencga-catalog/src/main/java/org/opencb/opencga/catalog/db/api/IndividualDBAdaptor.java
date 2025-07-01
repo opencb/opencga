@@ -68,6 +68,7 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         INTERNAL_STATUS_ID("internal.status.id", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         INTERNAL_RGA("internal.rga", OBJECT, ""),
+        INTERNAL_QUALITY_CONTROL_STATUS("internal.qualityControlStatus", OBJECT, ""),
         INTERNAL_QUALITY_CONTROL_STATUS_ID("internal.qualityControlStatus.id", TEXT, ""),
         POPULATION_NAME("population.name", TEXT, ""),
         POPULATION_SUBPOPULATION("population.subpopulation", TEXT, ""),

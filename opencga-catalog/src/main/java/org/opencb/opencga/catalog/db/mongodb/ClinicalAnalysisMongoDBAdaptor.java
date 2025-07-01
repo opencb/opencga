@@ -464,7 +464,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
         String[] acceptedObjectParams = {QueryParams.FAMILY.key(), QueryParams.DISORDER.key(), QUALITY_CONTROL.key(),
                 QueryParams.PROBAND.key(), QueryParams.ALERTS.key(), QueryParams.INTERNAL_STATUS.key(), QueryParams.PRIORITY.key(),
                 QueryParams.CONSENT.key(), QueryParams.STATUS.key(), QueryParams.INTERPRETATION.key(), REPORT.key(),
-                INTERNAL_CVDB_INDEX_STATUS.key(), REQUEST.key(), RESPONSIBLE.key(), ATTRIBUTES.key(), };
+                INTERNAL_CVDB_INDEX_PREVIOUS_STATUS.key(), INTERNAL_CVDB_INDEX_STATUS.key(), REQUEST.key(), RESPONSIBLE.key(),
+                ATTRIBUTES.key(), };
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
 
         if (parameters.containsKey(INTERPRETATION.key()) && parameters.get(INTERPRETATION.key()) == null) {

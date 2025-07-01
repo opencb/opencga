@@ -63,8 +63,8 @@ import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyPermissions;
 import org.opencb.opencga.core.models.study.VariableSet;
-import org.opencb.opencga.core.models.study.configuration.ClinicalConsent;
 import org.opencb.opencga.core.models.study.configuration.*;
+import org.opencb.opencga.core.models.study.configuration.ClinicalConsent;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
@@ -618,7 +618,7 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
                             CvdbIndexStatus cvdbIndexStatus = new CvdbIndexStatus(CvdbIndexStatus.PENDING_INDEX, "User '" + userId
                                     + "' created case with status '" + clinicalAnalysis.getStatus().getId() + "', which is of type"
                                     + " CLOSED. Automatically setting CVDB index status to " + CvdbIndexStatus.PENDING_INDEX);
-                            clinicalAnalysis.getInternal().setCvdbIndex(new CvdbIndex("", cvdbIndexStatus));
+                            clinicalAnalysis.getInternal().getCvdbIndex().setStatus(cvdbIndexStatus);
 
                             events.add(new Event(Event.Type.INFO, clinicalAnalysis.getId(), msg));
                         }
@@ -1473,6 +1473,10 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
                     CvdbIndexStatus cvdbIndexStatus = new CvdbIndexStatus(CvdbIndexStatus.PENDING_REMOVE, "User '" + userId
                             + "' requested to remove the status '" + clinicalAnalysis.getStatus().getId() + "' of type "
                             + ClinicalStatusValue.ClinicalStatusType.CLOSED + " to set it to '" + updateParams.getStatus().getId() + "'");
+                    // Update previous status with the current status
+                    parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_CVDB_INDEX_PREVIOUS_STATUS.key(),
+                            clinicalAnalysis.getInternal().getCvdbIndex().getStatus());
+                    // And set the new status
                     parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_CVDB_INDEX_STATUS.key(), cvdbIndexStatus);
                 }
             }
@@ -1769,6 +1773,10 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
                                 CvdbIndexStatus cvdbIndexStatus = new CvdbIndexStatus(CvdbIndexStatus.PENDING_INDEX, "User '" + userId
                                         + "' changed case to status '" + updateParamsClone.getStatus().getId() + "', which is of type"
                                         + " CLOSED. Automatically changing CVDB index status to " + CvdbIndexStatus.PENDING_INDEX);
+                                // Update previous status with the current status
+                                parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_CVDB_INDEX_PREVIOUS_STATUS.key(),
+                                        clinicalAnalysis.getInternal().getCvdbIndex().getStatus());
+                                // And set the new status
                                 parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_CVDB_INDEX_STATUS.key(), cvdbIndexStatus);
                             } else if (clinicalAnalysis.getInternal().getCvdbIndex().getStatus().getId()
                                     .equals(CvdbIndexStatus.PENDING_REMOVE)) {
@@ -1776,6 +1784,10 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
                                         + "' changed case to status '" + updateParamsClone.getStatus().getId() + "', which is of type"
                                         + " CLOSED. CVDB index was already in " + CvdbIndexStatus.PENDING_REMOVE + ", so automatically"
                                         + " changing CVDB index status to " + CvdbIndexStatus.PENDING_OVERWRITE);
+                                // Update previous status with the current status
+                                parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_CVDB_INDEX_PREVIOUS_STATUS.key(),
+                                        clinicalAnalysis.getInternal().getCvdbIndex().getStatus());
+                                // And set the new status
                                 parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_CVDB_INDEX_STATUS.key(), cvdbIndexStatus);
                             } else {
                                 logger.warn("CVDB index status is unexpectedly set to '{}'. Although the user is closing the case, OpenCGA"
@@ -1917,6 +1929,9 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
             if (index.getStatus() != null) {
                 validateCvdbStatusTransition(clinical, index.getStatus().getId());
                 ObjectMap valueAsMap = new ObjectMap(getUpdateObjectMapper().writeValueAsString(index.getStatus()));
+                ObjectMap previousStatus = new ObjectMap(getUpdateObjectMapper()
+                        .writeValueAsString(clinical.getInternal().getCvdbIndex().getStatus()));
+                params.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_CVDB_INDEX_PREVIOUS_STATUS.key(), previousStatus);
                 params.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_CVDB_INDEX_STATUS.key(), valueAsMap);
             }
             if (StringUtils.isNotEmpty(index.getJobId())) {
