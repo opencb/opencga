@@ -11,15 +11,13 @@ jobs:
   build:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      maven_opts: -P storage-hadoop,${{ vars.HADOOP_FLAVOUR }},RClient,opencga-storage-hadoop-deps -Dopencga.war.name=opencga -Dcheckstyle.skip -pl ':opencga-app' --also-make
+      maven_opts: -P storage-hadoop,${{ vars.HADOOP_FLAVOUR }} -Dopencga.war.name=opencga
 
   deploy-maven:
     uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
     needs: build
     with:
       maven_opts: -P storage-hadoop,${{ vars.HADOOP_FLAVOUR }} -Dopencga.war.name=opencga
-
-
     secrets: inherit
 
   deploy-zetta-docker:
