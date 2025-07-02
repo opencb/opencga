@@ -11,6 +11,7 @@ import org.opencb.opencga.server.rest.ga4gh.Ga4ghWSServer;
 import org.opencb.opencga.server.rest.operations.VariantOperationWebService;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class EnterpriseApiCommonsImpl implements ApiCommons {
@@ -49,5 +50,32 @@ public class EnterpriseApiCommonsImpl implements ApiCommons {
         classes.add(EnterpriseCvdbWebService.class);
 
         return classes;
+    }
+
+
+    @Override
+    public List<String> getOrderCategories() {
+        return Arrays.asList(
+                "Federations",
+                "Organizations",
+                "Users",
+                "Projects",
+                "Studies",
+                "Files",
+                "Jobs",
+                "Workflows",
+                "Samples",
+                "Individuals",
+                "Families",
+                "Cohorts",
+                "Disease Panels",
+                "Analysis - Alignment",
+                "Analysis - Variant",
+                "Operations - Variant Storage",
+                "Meta",
+                "Analysis - Clinical",
+                "CVDB",
+                "Admin"
+        );
     }
 }
