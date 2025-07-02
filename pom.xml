@@ -295,7 +295,6 @@
                 <artifactId>opencga-storage-hadoop-deps-emr6.1</artifactId>
                 <version>${project.version}</version>
                 <classifier>shaded</classifier>
-
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
