@@ -1,7 +1,11 @@
 package org.opencb.opencga.core.models.study;
 
+import org.opencb.commons.annotations.DataField;
+
 public class QualityControlServiceConfiguration extends CatalogServiceConfiguration {
 
+    @DataField(id = "policy", description = "Policy for running the quality control services. WEEKLY to process them only during weekends, "
+            + "NIGHTLY to process them only during night time (00-05AM) and IMMEDIATELY to process them as soon as possible.")
     private Policy policy;
 
     public QualityControlServiceConfiguration() {

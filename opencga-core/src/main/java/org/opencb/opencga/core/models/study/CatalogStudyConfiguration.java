@@ -1,8 +1,13 @@
 package org.opencb.opencga.core.models.study;
 
+import org.opencb.commons.annotations.DataField;
+
 public class CatalogStudyConfiguration {
 
+    @DataField(id = "cvdb", description = "Configuration for the CVDB catalog service")
     private CvdbCatalogServiceConfiguration cvdb;
+
+    @DataField(id = "variantQualityControl", description = "Configuration for the variant quality control service")
     private QualityControlServiceConfiguration variantQualityControl;
 
     public CatalogStudyConfiguration() {

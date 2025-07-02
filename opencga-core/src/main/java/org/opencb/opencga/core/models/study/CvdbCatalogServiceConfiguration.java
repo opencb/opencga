@@ -1,7 +1,10 @@
 package org.opencb.opencga.core.models.study;
 
+import org.opencb.commons.annotations.DataField;
+
 public class CvdbCatalogServiceConfiguration extends CatalogServiceConfiguration {
 
+    @DataField(id = "batchSize", description = "Maximum number of cases that can be launched per job")
     private int batchSize;
 
     public CvdbCatalogServiceConfiguration() {

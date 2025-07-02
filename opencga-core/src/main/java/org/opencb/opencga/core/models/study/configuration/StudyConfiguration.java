@@ -1,5 +1,6 @@
 package org.opencb.opencga.core.models.study.configuration;
 
+import org.opencb.commons.annotations.DataField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.study.CatalogStudyConfiguration;
@@ -9,6 +10,8 @@ public class StudyConfiguration {
 
     private ClinicalAnalysisStudyConfiguration clinical;
     private StudyVariantEngineConfiguration variantEngine;
+
+    @DataField(id = "catalog", description = "Configuration for the catalog services running in the background related to the study")
     private CatalogStudyConfiguration catalog;
 
 

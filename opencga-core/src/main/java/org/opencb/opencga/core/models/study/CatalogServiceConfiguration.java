@@ -1,8 +1,13 @@
 package org.opencb.opencga.core.models.study;
 
+import org.opencb.commons.annotations.DataField;
+
 public abstract class CatalogServiceConfiguration {
 
+    @DataField(id = "active", description = "Indicates whether the service is active or not")
     private boolean active;
+
+    @DataField(id = "concurrentJobs", description = "Number of concurrent jobs that can be run by this service")
     private int concurrentJobs;
 
     public CatalogServiceConfiguration() {
