@@ -9,6 +9,8 @@ import org.opencb.opencga.server.rest.ga4gh.Ga4ghWSServer;
 import org.opencb.opencga.server.rest.operations.VariantOperationWebService;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class ApiCommonsImpl implements ApiCommons {
@@ -36,5 +38,30 @@ public class ApiCommonsImpl implements ApiCommons {
         classes.add(AdminWSServer.class);
 
         return classes;
+    }
+
+    @Override
+    public List<String> getOrderCategories() {
+        return Arrays.asList(
+                "Organizations",
+                "Users",
+                "Projects",
+                "Studies",
+                "Files",
+                "Jobs",
+                "Workflows",
+                "Samples",
+                "Individuals",
+                "Families",
+                "Cohorts",
+                "Disease Panels",
+                "Analysis - Alignment",
+                "Analysis - Variant",
+                "Analysis - Clinical",
+                "Operations - Variant Storage",
+                "Meta",
+                "Ga4gh",
+                "Admin"
+        );
     }
 }
