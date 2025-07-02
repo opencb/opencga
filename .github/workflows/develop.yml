@@ -17,7 +17,7 @@ jobs:
     uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
     needs: build
     with:
-      maven_opts: -P storage-hadoop,${{ vars.HADOOP_FLAVOUR }} -Dopencga.war.name=opencga
+      maven_opts: -P storage-hadoop,${{ vars.HADOOP_FLAVOUR }} -Dopencga.war.name=opencga -U -DskipTests
     secrets: inherit
 
   deploy-zetta-docker:
