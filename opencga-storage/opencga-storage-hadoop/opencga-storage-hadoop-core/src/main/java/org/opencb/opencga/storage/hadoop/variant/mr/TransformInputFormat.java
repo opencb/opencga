@@ -1,6 +1,5 @@
 package org.opencb.opencga.storage.hadoop.variant.mr;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.*;
 
 import java.io.IOException;
@@ -19,12 +18,12 @@ public abstract class TransformInputFormat<KEYIN, VALUEIN, VALUEOUT> extends Inp
     @Override
     public List<InputSplit> getSplits(JobContext context) throws IOException, InterruptedException {
         if (inputFormat == null) {
-            init(context.getConfiguration());
+            init(context);
         }
         return inputFormat.getSplits(context);
     }
 
-    protected abstract void init(Configuration configuration) throws IOException;
+    protected abstract void init(JobContext context) throws IOException;
 
     protected static class RecordReaderTransform<KEYIN, VALUEIN, VALUEOUT> extends RecordReader<KEYIN, VALUEOUT> {
 
