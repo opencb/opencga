@@ -19,6 +19,7 @@ jobs:
     with:
       maven_opts: -P storage-hadoop,${{ vars.HADOOP_FLAVOUR }} -Dopencga.war.name=opencga
 
+
     secrets: inherit
 
   deploy-zetta-docker:
