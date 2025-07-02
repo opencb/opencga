@@ -146,7 +146,7 @@ public class JsonOpenApiGenerator {
         }
         Map<String, Definition> definitions = SwaggerDefinitionGenerator.getDefinitions(beansDefinitions);
 
-        swagger.setTags(sortTagsByName(tags));
+        swagger.setTags(sortTagsByName(tags, apiCommons));
 
         Map<String, Map<String, Method>> orderedPaths = new LinkedHashMap<>();
         paths.entrySet().stream()
