@@ -39,11 +39,21 @@ class SampleQCExecutor:
 
     def run(self):
 
-        # TODO check if sample is somatic
+        # Run the next analyses if sample is somatic
+        if self.sample_is_somatic():
+            # Mutational signatures
+            if 'skip' not in self.config_json or 'mutationalCatalog' not in self.config_json['skip']:
+                self.create_mutational_catalogue()
 
-        # Mutational signatures
-        if 'skip' not in self.config_json or 'mutationalCatalog' not in self.config_json['skip']:
-            self.create_mutational_catalogue()
+    def sample_is_somatic(self):
+        info_fhand = open(self.info_file, 'r')
+        info_json = json.load(info_fhand)
+        info_fhand.close()
+        if info_json['somatic']:
+            return True
+        else:
+            return False
+
 
     def create_mutational_catalogue(self):
         # Create output dir for this analysis
