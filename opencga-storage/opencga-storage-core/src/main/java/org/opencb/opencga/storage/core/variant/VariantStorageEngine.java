@@ -773,11 +773,19 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                     }
                     if (!shouldCreateNewIndex) {
                         ObjectMap defaultAttributes = getVariantSearchManager().getDefaultIndexMetadataAttributes();
-                        if (!indexMetadata.getAttributes().equals(defaultAttributes)) {
+                        ObjectMap attributes = new ObjectMap();
+                        for (String key : defaultAttributes.keySet()) {
+                            String defaultValue = defaultAttributes.getString(key);
+                            String value = indexMetadata.getAttributes().getString(key);
+                            attributes.put(key, value);
+                            if (!defaultValue.equals(value)) {
+                                shouldCreateNewIndex = true;
+                            }
+                        }
+                        if (shouldCreateNewIndex) {
                             logger.info("Index metadata attributes '{}' do not match default attributes '{}'. "
                                             + "Creating new secondary annotation index to match new attributes",
-                                    indexMetadata.getAttributes().toJson(), defaultAttributes.toJson());
-                            shouldCreateNewIndex = true;
+                                    attributes.toJson(), defaultAttributes.toJson());
                         }
                     }
                 }
