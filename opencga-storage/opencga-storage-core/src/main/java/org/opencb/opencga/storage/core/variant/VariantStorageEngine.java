@@ -771,17 +771,26 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                                 numShards, numNodes * shardsPerNode, numNodes, shardsPerNode);
                         shouldCreateNewIndex = true;
                     }
+                    if (!shouldCreateNewIndex) {
+                        ObjectMap defaultAttributes = getVariantSearchManager().getDefaultIndexMetadataAttributes();
+                        if (!indexMetadata.getAttributes().equals(defaultAttributes)) {
+                            logger.info("Index metadata attributes '{}' do not match default attributes '{}'. "
+                                            + "Creating new secondary annotation index to match new attributes",
+                                    indexMetadata.getAttributes().toJson(), defaultAttributes.toJson());
+                            shouldCreateNewIndex = true;
+                        }
+                    }
                 }
             }
 
             if (shouldCreateNewIndex) {
                 logger.info("Create new secondary annotation index collection.");
-                logger.info(" Prev : '{}' , configSetId:'{}'", variantSearchManager.buildCollectionName(indexMetadata),
-                        indexMetadata.getConfigSetId());
+                logger.info(" Prev : '{}' , configSetId:'{}', attributes:'{}'", variantSearchManager.buildCollectionName(indexMetadata),
+                        indexMetadata.getConfigSetId(), indexMetadata.getAttributes().toJson());
                 indexMetadata = variantSearchManager.newIndexMetadata();
-                logger.info(" New : '{}' , configSetId:'{}'",
+                logger.info(" New : '{}' , configSetId:'{}', attributes:'{}'",
                         variantSearchManager.buildCollectionName(indexMetadata),
-                        indexMetadata.getConfigSetId());
+                        indexMetadata.getConfigSetId(), indexMetadata.getAttributes().toJson());
             }
         }
 

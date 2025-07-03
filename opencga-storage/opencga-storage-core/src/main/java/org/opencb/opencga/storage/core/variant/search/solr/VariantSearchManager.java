@@ -1052,14 +1052,20 @@ public class VariantSearchManager {
     }
 
     private SearchIndexMetadata newIndexMetadata(boolean ifNotExists) throws StorageEngineException {
+        ObjectMap attributes = getDefaultIndexMetadataAttributes();
+        return newIndexMetadata(defaultConfigSet, ifNotExists, attributes
+        );
+    }
+
+    public ObjectMap getDefaultIndexMetadataAttributes() {
         boolean statsFuncQueryEnabled = options.getBoolean(SEARCH_STATS_FUNCTIONAL_QUERIES_ENABLED.key(),
                 SEARCH_STATS_FUNCTIONAL_QUERIES_ENABLED.defaultValue());
         String idVersion = options.getString(VariantStorageOptions.SEARCH_STATS_VARIANT_ID_VERSION.key(),
                 VariantStorageOptions.SEARCH_STATS_VARIANT_ID_VERSION.defaultValue());
-        return newIndexMetadata(defaultConfigSet, ifNotExists, new ObjectMap()
-                .append(VariantStorageOptions.SEARCH_STATS_FUNCTIONAL_QUERIES_ENABLED.key(), statsFuncQueryEnabled)
-                .append(VariantStorageOptions.SEARCH_STATS_VARIANT_ID_VERSION.key(), idVersion)
-        );
+        ObjectMap attributes = new ObjectMap()
+                .append(SEARCH_STATS_FUNCTIONAL_QUERIES_ENABLED.key(), statsFuncQueryEnabled)
+                .append(SEARCH_STATS_VARIANT_ID_VERSION.key(), idVersion);
+        return attributes;
     }
 
     private SearchIndexMetadata newIndexMetadata(String configSetId, boolean ifNotExists, ObjectMap attributes)
