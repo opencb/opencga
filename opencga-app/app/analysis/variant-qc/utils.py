@@ -238,3 +238,6 @@ def get_reverse_complement(seq):
 
 def list_dir_files(path):
     return [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+
+def list_dir_dirs(path):
+    return [f for f in os.listdir(path) if os.path.isdir(os.path.join(path, f))]

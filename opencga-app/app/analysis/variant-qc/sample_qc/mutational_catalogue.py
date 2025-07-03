@@ -6,7 +6,7 @@ import re
 
 import pysam
 
-from utils import execute_bash_command, bgzip_vcf, get_reverse_complement, generate_results_json, list_dir_files
+from utils import execute_bash_command, bgzip_vcf, get_reverse_complement, generate_results_json, list_dir_files, list_dir_dirs
 
 LOGGER = logging.getLogger('variant_qc_logger')
 
@@ -24,6 +24,8 @@ LENGTH_1Mb_10Mb = "1Mb-10Mb"
 LENGTH_10Mb = ">10Mb"
 CLUSTERED = 'clustered'
 NON_CLUSTERED = 'non-clustered'
+CATALOGUES_FILENAME_DEFAULT = 'catalogues.tsv'
+SIGNATURE_COEFFS_FILENAME = 'exposures.tsv'
 
 class MutationalCatalogueAnalysis:
     def __init__(self, vcf_file, resource_dir, config_json, output_dir, sample_id):
@@ -148,10 +150,10 @@ class MutationalCatalogueAnalysis:
             counts[context_key] += 1
 
         # Creating results
-        results = {'signatures': [{'counts': [{'context': k, 'total': counts[k]} for k in counts],
-                                   'id': self.config_json['msId'],
-                                       'query': self.config_json['msQuery'],
-                                   'type': self.get_ms_type()}]}
+        results = {'id': self.config_json['msId'],
+                   'query': self.config_json['msQuery'],
+                   'type': self.get_ms_type(),
+                   'counts': [{'context': k, 'total': counts[k]} for k in counts]}
         generate_results_json(results=results, outdir_path=self.output_dir)
 
     @staticmethod
@@ -308,14 +310,20 @@ class MutationalCatalogueAnalysis:
             counts[context_key] += 1
 
         # Creating results
-        results = {'signatures': [{'counts': [{'context': k, 'total': counts[k]} for k in counts],
-                                   'id': self.config_json['msId'],
-                                       'query': self.config_json['msQuery'],
-                                   'type': self.get_ms_type()}]}
+        results = {'id': self.config_json['msId'],
+                   'query': self.config_json['msQuery'],
+                   'type': self.get_ms_type(),
+                   'counts': [{'context': k, 'total': counts[k]} for k in counts]}
         generate_results_json(results=results, outdir_path=self.output_dir)
 
     def get_fitting_command(self):
         """Create the CMD to run mutational signature fitting
+
+        Running this CMD will generate a file named 'exposures.tsv' with coefficient keys in the first row and their
+        values in the second. NOTE: the second row (values) starts with the name of the sample.
+        e.g.
+        SBS3    unassigned
+        HCC1954 70.6666249913731        29.3333750086269
 
         :returns: The CMD to run the signature fitting
         """
@@ -330,17 +338,20 @@ class MutationalCatalogueAnalysis:
         if 'results.json' in list_dir_files(self.output_dir):
             # Opening input/output files
             results_fhand = open(os.path.join(self.output_dir, 'results.json'), 'r')
-            catalogues_fpath = os.path.join(self.output_dir, 'catalogues.tsv')
+            catalogues_fpath = os.path.join(self.output_dir, CATALOGUES_FILENAME_DEFAULT)
             catalogues_fhand = open(catalogues_fpath, 'w')
             # Creating catalogue file
             results_json = json.loads(results_fhand.read())
             catalogues_fhand.write('{}\n'.format(self.sample_id))
-            for count in results_json['signatures'][0]['counts']:
+            for count in results_json['counts']:
                 catalogues_fhand.write('{}\t{}\n'.format(count['context'], count['total']))
-        elif 'catalogues.tsv' in list_dir_files(self.resource_dir):
-            catalogues_fpath = os.path.join(self.resource_dir, 'catalogues.tsv')
+            # Closing input/output files
+            results_fhand.close()
+            catalogues_fhand.close()
+        elif CATALOGUES_FILENAME_DEFAULT in list_dir_files(self.resource_dir):
+            catalogues_fpath = os.path.join(self.resource_dir, CATALOGUES_FILENAME_DEFAULT)
         else:
-            raise ValueError('No catalogue file found for fitting analysis')
+            raise ValueError('No catalogue file "{}" found for fitting analysis'.format(CATALOGUES_FILENAME_DEFAULT))
         cmd += ' --catalogues={}'.format(catalogues_fpath)
 
         # Adding output dir
@@ -383,12 +394,67 @@ class MutationalCatalogueAnalysis:
         """Create the mutational signature fitting"""
         LOGGER.info('Creating the signature fitting')
 
+        # Runnning fitting
         cmd = self.get_fitting_command()
         execute_bash_command(cmd)
 
+        # Getting fitting scores
+        if SIGNATURE_COEFFS_FILENAME not in list_dir_files(self.output_dir):
+            msg = 'Signature fitting coefficients file "{}" could not be generated'.format(SIGNATURE_COEFFS_FILENAME)
+            raise ValueError(msg)
+        fitting_coeffs_fhand = open(os.path.join(self.output_dir, SIGNATURE_COEFFS_FILENAME), 'r')
+        fitting_coeffs_keys = fitting_coeffs_fhand.readline().strip().split()
+        fitting_coeffs_values = fitting_coeffs_fhand.readline().strip().split()[1:]  # Skip first value (sample name)
+        fitting_scores = ([{'signatureId': k, 'value': float(v)}
+                           for k, v in zip(fitting_coeffs_keys, fitting_coeffs_values)])
 
-        # TODO Write results
+        # Getting signature source
+        if self.config_json['msFitSigVersion'].startswith('RefSig'):
+            source = 'RefSig'
+        elif self.config_json['msFitSigVersion'].startswith('COSMIC'):
+            source = 'COSMIC'
+        else:
+            source = None
 
+        # Getting output files
+        files = []
+        for f in list_dir_files(self.output_dir):
+            if (f.endswith('.pdf') and f != 'catalogues.pdf') or f.startswith('fitData'):
+                files.append(os.path.join(self.output_dir, f))
+        for d in list_dir_dirs(self.output_dir):
+            if d.startswith('selectedSolution'):
+                for f in list_dir_files(os.path.join(self.output_dir, d)):
+                    if f.endswith('.pdf'):
+                        files.append(os.path.join(self.output_dir, f))
+
+        # Getting params
+        params = {}
+        for param in ['msFitOrgan', 'msFitThresholdPerc', 'msFitThresholdPval', 'msFitMaxRareSigs', 'msFitNBoot']:
+            if param in self.config_json and self.config_json[param]:
+                param_name = re.sub(r'^msFit', '', param)  # Removing leading "msFit"
+                params[param_name[0].lower() + param_name[1:]] = self.config_json[param]
+
+        # Getting fitting results
+        fitting_results = {
+            'id': self.config_json['msFitId'],
+            'method': self.config_json['msFitMethod'],
+            'signatureSource': source,
+            'signatureVersion': self.config_json['msFitSigVersion'],
+            'scores': fitting_scores,
+            'files': files,
+            'params': params}
+
+        # Creating results
+        if 'results.json' in list_dir_files(self.output_dir):
+            # Getting signature counts
+            results_fhand = open(os.path.join(self.output_dir, 'results.json'), 'r')
+            results_json = json.loads(results_fhand.read())
+            results_fhand.close()
+            # Adding fitting results
+            results_json['fittings'] = fitting_results
+            generate_results_json(results=results_json, outdir_path=self.output_dir)
+        else:
+            generate_results_json(results=fitting_results, outdir_path=self.output_dir)
 
     def run(self):
         # Creating mutational signature catalogue

@@ -38,7 +38,6 @@ class SampleQCExecutor:
 
 
     def run(self):
-
         # Run the next analyses if sample is somatic
         if self.sample_is_somatic():
             # Mutational signatures
