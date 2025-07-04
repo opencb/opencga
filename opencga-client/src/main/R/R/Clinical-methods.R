@@ -47,7 +47,7 @@
 #' | queryVariant | /{apiVersion}/analysis/clinical/variant/query | include, exclude, limit, skip, count, approximateCount, approximateCountSamplingSize, savedFilter, includeInterpretation, id, region, type, study, file, filter, qual, fileData, sample, sampleData, sampleAnnotation, cohort, cohortStatsRef, cohortStatsAlt, cohortStatsMaf, cohortStatsMgf, cohortStatsPass, missingAlleles, missingGenotypes, score, family, familyDisorder, familySegregation, familyMembers, familyProband, gene, ct, xref, biotype, proteinSubstitution, conservation, populationFrequencyAlt, populationFrequencyRef, populationFrequencyMaf, transcriptFlag, geneTraitId, go, expression, proteinKeyword, drug, functionalScore, clinical, clinicalSignificance, clinicalConfirmedStatus, customAnnotation, panel, panelModeOfInheritance, panelConfidence, panelRoleInCancer, panelFeatureType, panelIntersection, source, trait |
 #' | acl | /{apiVersion}/analysis/clinical/{clinicalAnalyses}/acl | clinicalAnalyses[*], study, member, silent |
 #' | delete | /{apiVersion}/analysis/clinical/{clinicalAnalyses}/delete | study, force, clinicalAnalyses[*] |
-#' | update | /{apiVersion}/analysis/clinical/{clinicalAnalyses}/update | include, exclude, clinicalAnalyses[*], study, commentsAction, flagsAction, analystsAction, filesAction, panelsAction, annotationSetsAction, includeResult, body[*] |
+#' | update | /{apiVersion}/analysis/clinical/{clinicalAnalyses}/update | include, exclude, clinicalAnalyses[*], study, commentsAction, flagsAction, analystsAction, filesAction, reportedFilesAction, panelsAction, annotationSetsAction, includeResult, body[*] |
 #' | updateAnnotationSetsAnnotations | /{apiVersion}/analysis/clinical/{clinicalAnalysis}/annotationSets/{annotationSet}/annotations/update | clinicalAnalysis[*], study, annotationSet[*], action, body |
 #' | info | /{apiVersion}/analysis/clinical/{clinicalAnalysis}/info | include, exclude, flattenAnnotations, clinicalAnalysis[*], study, version, deleted |
 #' | createInterpretation | /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/create | include, exclude, clinicalAnalysis[*], study, setAs, includeResult, body[*] |
@@ -55,7 +55,7 @@
 #' | deleteInterpretation | /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/{interpretations}/delete | study, clinicalAnalysis[*], interpretations[*], setAsPrimary |
 #' | revertInterpretation | /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/{interpretation}/revert | study, clinicalAnalysis[*], interpretation[*], version[*] |
 #' | updateInterpretation | /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/{interpretation}/update | include, exclude, study, primaryFindingsAction, methodsAction, secondaryFindingsAction, commentsAction, panelsAction, setAs, clinicalAnalysis[*], interpretation[*], includeResult, body[*] |
-#' | updateReport | /{apiVersion}/analysis/clinical/{clinicalAnalysis}/report/update | include, exclude, clinicalAnalysis[*], study, commentsAction, supportingEvidencesAction, filesAction, includeResult, body[*] |
+#' | updateReport | /{apiVersion}/analysis/clinical/{clinicalAnalysis}/report/update | include, exclude, clinicalAnalysis[*], study, commentsAction, signaturesAction, referencesAction, includeResult, body[*] |
 #'
 #' @md
 #' @seealso \url{http://docs.opencb.org/display/opencga/Using+OpenCGA} and the RESTful API documentation
@@ -721,6 +721,7 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param flagsAction Action to be performed if the array of flags is being updated. Allowed values: ['ADD SET REMOVE']
         #' @param analystsAction Action to be performed if the array of analysts is being updated. Allowed values: ['ADD SET REMOVE']
         #' @param filesAction Action to be performed if the array of files is being updated. Allowed values: ['ADD SET REMOVE']
+        #' @param reportedFilesAction Action to be performed if the array of reported files is being updated. Allowed values: ['ADD SET REMOVE']
         #' @param panelsAction Action to be performed if the array of panels is being updated. Allowed values: ['ADD SET REMOVE']
         #' @param annotationSetsAction Action to be performed if the array of annotationSets is being updated. Allowed values: ['ADD SET REMOVE']
         #' @param includeResult Flag indicating to include the created or updated document result in the response.
@@ -821,8 +822,8 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param clinicalAnalysis Clinical analysis ID.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
         #' @param commentsAction Action to be performed if the array of comments is being updated. Allowed values: ['ADD REMOVE REPLACE']
-        #' @param supportingEvidencesAction Action to be performed if the array of supporting evidences is being updated. Allowed values: ['ADD SET REMOVE']
-        #' @param filesAction Action to be performed if the array of files is being updated. Allowed values: ['ADD SET REMOVE']
+        #' @param signaturesAction Action to be performed if the array of signatures is being updated. Allowed values: ['ADD SET REMOVE']
+        #' @param referencesAction Action to be performed if the array of references is being updated. Allowed values: ['ADD SET REMOVE']
         #' @param includeResult Flag indicating to include the created or updated document result in the response.
         #' @param data JSON containing clinical report information.
         updateReport=fetchOpenCGA(object=OpencgaR, category="analysis/clinical", categoryId=clinicalAnalysis,

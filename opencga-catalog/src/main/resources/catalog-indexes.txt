@@ -210,6 +210,7 @@
 {"collections": ["clinical", "clinical_archive"], "fields": {"uid": 1}, "options": {"unique": true}}
 {"collections": ["clinical", "clinical_archive"], "fields": {"type": 1, "studyUid": 1}, "options": {}}
 {"collections": ["clinical", "clinical_archive"], "fields": {"files.uid": 1, "studyUid": 1}, "options": {}}
+{"collections": ["clinical", "clinical_archive"], "fields": {"reportedFiles.uid": 1, "studyUid": 1}, "options": {}}
 {"collections": ["clinical", "clinical_archive"], "fields": {"proband.uid": 1, "studyUid": 1}, "options": {}}
 {"collections": ["clinical", "clinical_archive"], "fields": {"proband.samples.uid": 1, "studyUid": 1}, "options": {}}
 {"collections": ["clinical", "clinical_archive"], "fields": {"family.uid": 1, "studyUid": 1}, "options": {}}

@@ -957,6 +957,7 @@ public class ClinicalAnalysisClient extends ParentClient {
      *       flagsAction: Action to be performed if the array of flags is being updated.
      *       analystsAction: Action to be performed if the array of analysts is being updated.
      *       filesAction: Action to be performed if the array of files is being updated.
+     *       reportedFilesAction: Action to be performed if the array of reported files is being updated.
      *       panelsAction: Action to be performed if the array of panels is being updated.
      *       annotationSetsAction: Action to be performed if the array of annotationSets is being updated.
      *       includeResult: Flag indicating to include the created or updated document result in the response.
@@ -1120,8 +1121,8 @@ public class ClinicalAnalysisClient extends ParentClient {
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       commentsAction: Action to be performed if the array of comments is being updated.
-     *       supportingEvidencesAction: Action to be performed if the array of supporting evidences is being updated.
-     *       filesAction: Action to be performed if the array of files is being updated.
+     *       signaturesAction: Action to be performed if the array of signatures is being updated.
+     *       referencesAction: Action to be performed if the array of references is being updated.
      *       includeResult: Flag indicating to include the created or updated document result in the response.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.

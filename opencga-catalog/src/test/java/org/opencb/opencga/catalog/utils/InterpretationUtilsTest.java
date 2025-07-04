@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.utils;
 
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.opencb.biodata.models.clinical.ClinicalDiscussion;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationStats;
@@ -104,6 +105,7 @@ public class InterpretationUtilsTest {
             variantEvidenceList.add(evidence);
         }
 
-        return new ClinicalVariant(variantAvro, variantEvidenceList, null, null, null, null, status, Collections.emptyList(), null);
+        return new ClinicalVariant(variantAvro, variantEvidenceList, null, null, "", null, new ClinicalDiscussion(), null, null, status,
+                Collections.emptyList(), Collections.emptyList(), null);
     }
 }

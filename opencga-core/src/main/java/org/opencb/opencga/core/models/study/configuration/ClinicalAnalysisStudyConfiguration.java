@@ -13,7 +13,11 @@ public class ClinicalAnalysisStudyConfiguration {
     private InterpretationStudyConfiguration interpretation;
     private List<ClinicalPriorityValue> priorities;
     private List<FlagValue> flags;
+    @Deprecated
     private ClinicalConsentConfiguration consent;
+    private List<ClinicalConsent> consents;
+    private List<ClinicalTierConfiguration> tiers;
+    private ClinicalReportConfiguration report;
 
 
     public ClinicalAnalysisStudyConfiguration() {
@@ -21,12 +25,15 @@ public class ClinicalAnalysisStudyConfiguration {
 
     public ClinicalAnalysisStudyConfiguration(List<ClinicalStatusValue> status, InterpretationStudyConfiguration interpretation,
                                               List<ClinicalPriorityValue> priorities, List<FlagValue> flags,
-                                              ClinicalConsentConfiguration consent) {
+                                              List<ClinicalConsent> consents, List<ClinicalTierConfiguration> tiers,
+                                              ClinicalReportConfiguration report) {
         this.status = status;
         this.interpretation = interpretation;
         this.priorities = priorities;
         this.flags = flags;
-        this.consent = consent;
+        this.consents = consents;
+        this.tiers = tiers;
+        this.report = report;
     }
 
     public static ClinicalAnalysisStudyConfiguration defaultConfiguration() {
@@ -52,12 +59,17 @@ public class ClinicalAnalysisStudyConfiguration {
         clinicalStatusValueList.add(
                 new ClinicalStatusValue("REJECTED", "The Clinical Analysis is rejected", ClinicalStatusValue.ClinicalStatusType.CLOSED)
         );
+        clinicalStatusValueList.add(
+                new ClinicalStatusValue("INCONCLUSIVE", "No conclusions can be extracted from the Clinical Analysis",
+                        ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE)
+        );
 
         interpretationStatusList.add(new ClinicalStatusValue("NOT_STARTED", "Interpretation not started", ClinicalStatusValue.ClinicalStatusType.NOT_STARTED));
         interpretationStatusList.add(new ClinicalStatusValue("IN_PROGRESS", "Interpretation in progress", ClinicalStatusValue.ClinicalStatusType.ACTIVE));
         interpretationStatusList.add(new ClinicalStatusValue("DONE", "Interpretation done", ClinicalStatusValue.ClinicalStatusType.DONE));
         interpretationStatusList.add(new ClinicalStatusValue("READY", "Interpretation ready", ClinicalStatusValue.ClinicalStatusType.CLOSED));
         interpretationStatusList.add(new ClinicalStatusValue("REJECTED", "Interpretation rejected", ClinicalStatusValue.ClinicalStatusType.CLOSED));
+        interpretationStatusList.add(new ClinicalStatusValue("INCONCLUSIVE", "Interpretation inconclusive", ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE));
 
         priorities.add(new ClinicalPriorityValue("URGENT", "Highest priority of all", 1, false));
         priorities.add(new ClinicalPriorityValue("HIGH", "Second highest priority of all", 2, false));
@@ -81,7 +93,8 @@ public class ClinicalAnalysisStudyConfiguration {
 
         return new ClinicalAnalysisStudyConfiguration(clinicalStatusValueList,
                 new InterpretationStudyConfiguration(interpretationStatusList, Collections.emptyList(), Collections.emptyMap(),
-                        Collections.emptyList()), priorities, flagValueList, new ClinicalConsentConfiguration(clinicalConsentList));
+                        Collections.emptyList()), priorities, flagValueList, clinicalConsentList, Collections.emptyList(),
+                ClinicalReportConfiguration.defaultClinicalReportConfiguration());
     }
 
     @Override
@@ -91,7 +104,9 @@ public class ClinicalAnalysisStudyConfiguration {
         sb.append(", interpretation=").append(interpretation);
         sb.append(", priorities=").append(priorities);
         sb.append(", flags=").append(flags);
-        sb.append(", consent=").append(consent);
+        sb.append(", consents=").append(consents);
+        sb.append(", tiers=").append(tiers);
+        sb.append(", report=").append(report);
         sb.append('}');
         return sb.toString();
     }
@@ -132,12 +147,41 @@ public class ClinicalAnalysisStudyConfiguration {
         return this;
     }
 
+    @Deprecated
     public ClinicalConsentConfiguration getConsent() {
-        return consent;
+        return new ClinicalConsentConfiguration(consents);
     }
 
+    @Deprecated
     public ClinicalAnalysisStudyConfiguration setConsent(ClinicalConsentConfiguration consent) {
-        this.consent = consent;
+        this.consents = consent.getConsents();
+        return this;
+    }
+
+    public List<ClinicalConsent> getConsents() {
+        return consents;
+    }
+
+    public ClinicalAnalysisStudyConfiguration setConsents(List<ClinicalConsent> consents) {
+        this.consents = consents;
+        return this;
+    }
+
+    public List<ClinicalTierConfiguration> getTiers() {
+        return tiers;
+    }
+
+    public ClinicalAnalysisStudyConfiguration setTiers(List<ClinicalTierConfiguration> tiers) {
+        this.tiers = tiers;
+        return this;
+    }
+
+    public ClinicalReportConfiguration getReport() {
+        return report;
+    }
+
+    public ClinicalAnalysisStudyConfiguration setReport(ClinicalReportConfiguration report) {
+        this.report = report;
         return this;
     }
 }

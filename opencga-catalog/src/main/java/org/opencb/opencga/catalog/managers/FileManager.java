@@ -3358,6 +3358,16 @@ public class FileManager extends AnnotationSetManager<File> {
             throw new CatalogException("The file " + file.getName() + " is part of " + count.getNumMatches() + " clinical analyses");
         }
 
+        clinicalQuery = new Query()
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.REPORTED_FILES_UID.key(), file.getUid())
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(), true);
+        count = getClinicalAnalysisDBAdaptor(organizationId).count(clinicalQuery);
+        if (count.getNumMatches() > 0) {
+            throw new CatalogException("The file " + file.getName() + " is part of the reported files of " + count.getNumMatches()
+                    + " clinical analyses");
+        }
+
 
         // Check the original files are not being indexed at the moment
         if (!indexFiles.isEmpty()) {

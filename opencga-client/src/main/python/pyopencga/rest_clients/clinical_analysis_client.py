@@ -1092,6 +1092,9 @@ class ClinicalAnalysis(_ParentRestClient):
             analysts is being updated. Allowed values: ['ADD SET REMOVE']
         :param str files_action: Action to be performed if the array of files
             is being updated. Allowed values: ['ADD SET REMOVE']
+        :param str reported_files_action: Action to be performed if the array
+            of reported files is being updated. Allowed values: ['ADD SET
+            REMOVE']
         :param str panels_action: Action to be performed if the array of
             panels is being updated. Allowed values: ['ADD SET REMOVE']
         :param str annotation_sets_action: Action to be performed if the array
@@ -1266,11 +1269,10 @@ class ClinicalAnalysis(_ParentRestClient):
             project can be either the ID or UUID.
         :param str comments_action: Action to be performed if the array of
             comments is being updated. Allowed values: ['ADD REMOVE REPLACE']
-        :param str supporting_evidences_action: Action to be performed if the
-            array of supporting evidences is being updated. Allowed values:
-            ['ADD SET REMOVE']
-        :param str files_action: Action to be performed if the array of files
-            is being updated. Allowed values: ['ADD SET REMOVE']
+        :param str signatures_action: Action to be performed if the array of
+            signatures is being updated. Allowed values: ['ADD SET REMOVE']
+        :param str references_action: Action to be performed if the array of
+            references is being updated. Allowed values: ['ADD SET REMOVE']
         :param bool include_result: Flag indicating to include the created or
             updated document result in the response.
         """

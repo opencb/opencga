@@ -5,10 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalAcmg;
 import org.opencb.biodata.models.clinical.ClinicalDiscussion;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
-import org.opencb.biodata.models.clinical.interpretation.GenomicFeature;
-import org.opencb.biodata.models.clinical.interpretation.VariantClassification;
+import org.opencb.biodata.models.clinical.interpretation.*;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.GeneCancerAssociation;
@@ -36,8 +33,10 @@ public class ExomiserClinicalVariantCreator {
             return null;
         }
 
-        return new ClinicalVariant(variant.getImpl(), new ArrayList<>(), new ArrayList<>(), new HashMap<>(), new ClinicalDiscussion(),
-                null, ClinicalVariant.Status.NOT_REVIEWED, new ArrayList<>(), new HashMap<>());
+        return new ClinicalVariant(variant.getImpl(), new ArrayList<>(), new ArrayList<>(),
+                new ClinicalVariantFilter(new HashMap<>(), "", ""), "", new ArrayList<>(), new ClinicalDiscussion(),
+                new ClinicalVariantConfidence(), new ArrayList<>(), ClinicalVariant.Status.NOT_REVIEWED, new ArrayList<>(),
+                new ArrayList<>(), new HashMap<>());
     }
 
     public void addClinicalVariantEvidences(ClinicalVariant clinicalVariant, List<ExomiserTranscriptAnnotation> exomiserTranscripts,

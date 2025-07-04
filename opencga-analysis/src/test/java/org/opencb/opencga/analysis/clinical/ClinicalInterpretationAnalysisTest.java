@@ -182,8 +182,9 @@ public class ClinicalInterpretationAnalysisTest {
                 null);
 
         ClinicalVariantEvidence evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method2");
-        ClinicalVariant cv3 = new ClinicalVariant(variant, Collections.singletonList(evidence), null, null,
-                new ClinicalDiscussion(null, null, "helllooooo"), null, ClinicalVariant.Status.REVIEWED, Collections.emptyList(), null);
+        ClinicalVariant cv3 = new ClinicalVariant(variant, Collections.singletonList(evidence), null, null, "", null,
+                new ClinicalDiscussion(null, null, "helllooooo"), null, null, ClinicalVariant.Status.REVIEWED, Collections.emptyList(),
+                Collections.emptyList(), null);
         findingList.add(cv3);
 
         InterpretationUpdateParams updateParams = new InterpretationUpdateParams().setPrimaryFindings(findingList);

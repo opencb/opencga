@@ -845,6 +845,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     *     default value is ADD.
     * @param {"ADD SET REMOVE"} [params.filesAction = "ADD"] - Action to be performed if the array of files is being updated. The default
     *     value is ADD.
+    * @param {"ADD SET REMOVE"} [params.reportedFilesAction = "ADD"] - Action to be performed if the array of reported files is being
+    *     updated. The default value is ADD.
     * @param {"ADD SET REMOVE"} [params.panelsAction = "ADD"] - Action to be performed if the array of panels is being updated. The default
     *     value is ADD.
     * @param {"ADD SET REMOVE"} [params.annotationSetsAction = "ADD"] - Action to be performed if the array of annotationSets is being
@@ -979,10 +981,10 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
     * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
     * @param {"ADD REMOVE REPLACE"} [params.commentsAction = "ADD"] - Action to be performed if the array of comments is being updated. The
     *     default value is ADD.
-    * @param {"ADD SET REMOVE"} [params.supportingEvidencesAction = "ADD"] - Action to be performed if the array of supporting evidences is
-    *     being updated. The default value is ADD.
-    * @param {"ADD SET REMOVE"} [params.filesAction = "ADD"] - Action to be performed if the array of files is being updated. The default
-    *     value is ADD.
+    * @param {"ADD SET REMOVE"} [params.signaturesAction = "ADD"] - Action to be performed if the array of signatures is being updated. The
+    *     default value is ADD.
+    * @param {"ADD SET REMOVE"} [params.referencesAction = "ADD"] - Action to be performed if the array of references is being updated. The
+    *     default value is ADD.
     * @param {Boolean} [params.includeResult = "false"] - Flag indicating to include the created or updated document result in the response.
     *     The default value is false.
     * @returns {Promise} Promise object in the form of RestResponse instance.

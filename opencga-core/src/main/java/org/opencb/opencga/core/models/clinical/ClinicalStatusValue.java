@@ -10,7 +10,8 @@ public class ClinicalStatusValue {
         NOT_STARTED,
         ACTIVE,
         DONE,
-        CLOSED
+        CLOSED,
+        INCONCLUSIVE
     }
 
     public ClinicalStatusValue() {
