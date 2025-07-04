@@ -192,10 +192,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     public ArchiveTableHelper getArchiveHelper(int studyId, int fileId) throws StorageEngineException {
-        VariantFileMetadata fileMetadata = getMetadataManager().getVariantFileMetadata(studyId, fileId, null).first();
-        if (fileMetadata == null) {
-            throw VariantQueryException.fileNotFound(fileId, studyId);
-        }
+        VariantFileMetadata fileMetadata = getMetadataManager().getVariantFileMetadata(studyId, fileId);
         return new ArchiveTableHelper(configuration, studyId, fileMetadata);
 
     }
@@ -281,7 +278,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         } else {
             ProjectMetadata.VariantAnnotationMetadata saved = getMetadataManager().getProjectMetadata().
                     getAnnotation().getSaved(name);
-
             annotationColumn = Bytes.toBytes(VariantPhoenixSchema.getAnnotationSnapshotColumn(saved.getId()));
             query.put(ANNOT_NAME.key(), saved.getId());
         }
@@ -301,15 +297,17 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 .setIncludeFields(selectElements.getFields());
         converter.setAnnotationColumn(annotationColumn, name);
         Iterator<Result> iterator = Iterators.concat(iterators);
+        Iterator<VariantAnnotation> varAnnotIterator = Iterators.transform(iterator, converter::convert);
+        varAnnotIterator = Iterators.filter(varAnnotIterator, Objects::nonNull);
         int skip = options.getInt(QueryOptions.SKIP);
         if (skip > 0) {
-            Iterators.advance(iterator, skip);
+            Iterators.advance(varAnnotIterator, skip);
         }
         int limit = options.getInt(QueryOptions.LIMIT);
         if (limit >= 0) {
-            iterator = Iterators.limit(iterator, limit);
+            varAnnotIterator = Iterators.limit(varAnnotIterator, limit);
         }
-        return Iterators.transform(iterator, converter::convert);
+        return varAnnotIterator;
     }
 
     @Override
@@ -364,7 +362,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         if (isValidParam(query, UNKNOWN_GENOTYPE)) {
             unknownGenotype = query.getString(UNKNOWN_GENOTYPE.key());
         }
-        List<String> formats = getIncludeSampleData(query);
 
         HBaseVariantConverterConfiguration converterConfiguration = HBaseVariantConverterConfiguration.builder()
                 .setMutableSamplesPosition(false)
@@ -372,9 +369,10 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 .setSimpleGenotypes(options.getBoolean(HBaseVariantConverterConfiguration.SIMPLE_GENOTYPES, true))
                 .setUnknownGenotype(unknownGenotype)
                 .setProjection(variantQuery.getProjection())
-                .setSampleDataKeys(formats)
+                .setSampleDataKeys(getIncludeSampleData(query))
                 .setIncludeSampleId(query.getBoolean(INCLUDE_SAMPLE_ID.key(), false))
                 .setIncludeIndexStatus(query.getBoolean(VariantQueryUtils.VARIANTS_TO_INDEX.key(), false))
+                .setSparse(query.getBoolean(SPARSE_SAMPLES.key(), false))
                 .build();
 
         if (hbaseIterator) {

@@ -5,6 +5,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import org.opencb.cellbase.core.models.DataRelease;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 
 import java.util.*;
@@ -45,6 +46,14 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
         public VariantAnnotationSets(VariantAnnotationMetadata current, List<VariantAnnotationMetadata> saved) {
             this.current = current;
             this.saved = saved;
+        }
+
+        public VariantAnnotationSets(VariantAnnotationSets other) {
+            this.current = other.current == null ? null : new VariantAnnotationMetadata(other.current);
+            this.saved = new ArrayList<>(other.saved.size());
+            for (VariantAnnotationMetadata saved : other.saved) {
+                this.saved.add(new VariantAnnotationMetadata(saved));
+            }
         }
 
         public VariantAnnotationMetadata getCurrent() {
@@ -119,6 +128,19 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
             this.sourceVersion = sourceVersion != null ? sourceVersion : new ArrayList<>();
             this.dataRelease = dataRelease;
             this.privateSources = privateSources;
+        }
+
+        public VariantAnnotationMetadata(VariantAnnotationMetadata other) {
+            this.id = other.id;
+            this.name = other.name;
+            this.creationDate = other.creationDate;
+            this.annotator = other.annotator;
+            this.sourceVersion = new ArrayList<>(other.sourceVersion.size());
+            for (ObjectMap source : other.sourceVersion) {
+                this.sourceVersion.add(new ObjectMap(source));
+            }
+            this.dataRelease = other.dataRelease == null ? null : JacksonUtils.copySafe(other.dataRelease, DataRelease.class);
+            this.privateSources = other.privateSources != null ? new ArrayList<>(other.privateSources) : null;
         }
 
         public int getId() {
@@ -300,10 +322,18 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
         this.counters = counters != null ? counters : new HashMap<>();
     }
 
+    public ProjectMetadata(ProjectMetadata other) {
+        this.species = other.species;
+        this.assembly = other.assembly;
+        this.dataRelease = other.dataRelease;
+        this.release = other.release;
+        setAttributes(other.getAttributes() != null ? new ObjectMap(other.getAttributes()) : new ObjectMap());
+        this.annotation = other.annotation != null ? new VariantAnnotationSets(other.annotation) : new VariantAnnotationSets();
+        this.counters = other.counters != null ? new HashMap<>(other.counters) : new HashMap<>();
+    }
+
     public ProjectMetadata copy() {
-        return new ProjectMetadata(species, assembly, dataRelease, release, new ObjectMap(getAttributes()), new HashMap<>(counters),
-                annotation)
-                .setStatus(new HashMap<>(getStatus()));
+        return new ProjectMetadata(this);
     }
 
     public String getSpecies() {

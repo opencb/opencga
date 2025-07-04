@@ -61,7 +61,6 @@ import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.utils.CellBaseUtils.toCellBaseSpeciesName;
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
@@ -72,7 +71,6 @@ import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.re
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
 public class VariantStorageMetadataManager implements AutoCloseable {
-    public static final String SECONDARY_INDEX_PREFIX = "__SECONDARY_INDEX_COHORT_";
 
     protected static Logger logger = LoggerFactory.getLogger(VariantStorageMetadataManager.class);
 
@@ -722,9 +720,20 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         }
     }
 
-    public DataResult<VariantFileMetadata> getVariantFileMetadata(int studyId, int fileId, QueryOptions options)
+    public VariantFileMetadata getVariantFileMetadataOrNull(int studyId, int fileId)
             throws StorageEngineException {
-        return fileDBAdaptor.getVariantFileMetadata(studyId, fileId, options);
+        return fileDBAdaptor.getVariantFileMetadata(studyId, fileId, null).first();
+    }
+
+    public VariantFileMetadata getVariantFileMetadata(int studyId, int fileId)
+            throws StorageEngineException {
+        VariantFileMetadata fileMetadata = getVariantFileMetadataOrNull(studyId, fileId);
+        if (fileMetadata == null) {
+            String studyName = getStudyName(studyId);
+            String fileName = getFileName(studyId, fileId);
+            throw VariantQueryException.variantFileMetadataNotFound(fileName, studyName);
+        }
+        return fileMetadata;
     }
 
     public Iterator<VariantFileMetadata> variantFileMetadataIterator(int studyId, QueryOptions options)
@@ -948,21 +957,77 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             });
 //            deleteVariantFileMetadata(studyId, fileId);
         }
-        for (Integer sample : samples) {
-            updateSampleMetadata(studyId, sample, sampleMetadata -> {
-                boolean indexed = false;
-                for (Integer fileId : sampleMetadata.getFiles()) {
-                    if (!fileIds.contains(fileId)) {
-                        if (getFileMetadata(studyId, fileId).isIndexed()) {
-                            indexed = true;
+        removeSamples(studyId, samples, fileIds, false);
+    }
+
+    public void removeSamples(int studyId, Collection<Integer> sampleId) throws StorageEngineException {
+        removeSamples(studyId, sampleId, Collections.emptyList(), true);
+    }
+
+    public void removeSamples(int studyId, Collection<Integer> sampleIds, Collection<Integer> removedFileIds, boolean removeFromAllFiles)
+            throws StorageEngineException {
+        Set<Integer> fileIdsToCleanSamples = new HashSet<>();
+        Set<Integer> cohortIds = new HashSet<>();
+        List<Integer> removedSampleIds = new ArrayList<>(sampleIds.size());
+        for (Integer sampleId : sampleIds) {
+            updateSampleMetadata(studyId, sampleId, sample -> {
+                boolean totalRemove = true;
+
+                for (Integer fileId : sample.getFiles()) {
+                    if (!removedFileIds.contains(fileId)) {
+                        if (removeFromAllFiles) {
+                            fileIdsToCleanSamples.add(fileId);
+                        } else {
+                            if (isFileIndexed(studyId, fileId)) {
+                                // There is a file from the sample that is still indexed. Sample is partially removed.
+                                totalRemove = false;
+                            } else {
+                                fileIdsToCleanSamples.add(fileId);
+                            }
                         }
                     }
                 }
-                if (!indexed) {
-                    sampleMetadata.setIndexStatus(TaskMetadata.Status.NONE);
+                cohortIds.addAll(sample.getCohorts());
+                cohortIds.addAll(sample.getInternalCohorts());
+                cohortIds.addAll(sample.getSecondaryIndexCohorts());
+                if (removeFromAllFiles || totalRemove) {
+                    removedSampleIds.add(sampleId);
+                    sample.setIndexStatus(TaskMetadata.Status.NONE);
+                    sample.setIndexStatus(TaskMetadata.Status.NONE);
+                    for (Integer v : sample.getSampleIndexVersions()) {
+                        sample.setSampleIndexStatus(TaskMetadata.Status.NONE, v);
+                    }
+                    for (Integer v : sample.getSampleIndexAnnotationVersions()) {
+                        sample.setSampleIndexAnnotationStatus(TaskMetadata.Status.NONE, v);
+                    }
+                    for (Integer v : sample.getFamilyIndexVersions()) {
+                        sample.setFamilyIndexStatus(TaskMetadata.Status.NONE, v);
+                    }
+
+                    sample.setAnnotationStatus(TaskMetadata.Status.NONE);
+                    sample.setMendelianErrorStatus(TaskMetadata.Status.NONE);
+                    sample.setFiles(new ArrayList<>());
+                    sample.setCohorts(new HashSet<>());
+                    sample.setInternalCohorts(new HashSet<>());
+                    sample.setSecondaryIndexCohorts(new HashSet<>());
+                    sample.setAttributes(new ObjectMap());
                 }
+                // else {
+                //      WARN: Do not remove files from sample.files list!
+                //            ORDER MUST BE KEPT!!
+                //     >>>  sample.getFiles().removeAll(removedFileIds); <<< NOT ALLOWED
+                //  }
             });
         }
+
+        // Remove from files
+        for (Integer fileId : fileIdsToCleanSamples) {
+            updateFileMetadata(studyId, fileId, file -> {
+                file.getSamples().removeAll(sampleIds);
+            });
+        }
+
+        removeSamplesFromCohorts(studyId, cohortIds, removedFileIds, removedSampleIds);
     }
 
     public Iterable<FileMetadata> fileMetadataIterable(int studyId) {
@@ -1030,13 +1095,14 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return getSampleIds(studyId, samples);
     }
 
-    public List<Integer> getSampleIds(int studyId, List<String> samples) {
+    public List<Integer> getSampleIds(int studyId, Collection<String> samples) {
         List<Integer> sampleIds = new ArrayList<>(samples.size());
         for (String sample : samples) {
             Integer sampleId = getSampleId(studyId, sample);
             if (sampleId == null) {
                 throw VariantQueryException.sampleNotFound(sample, getStudyName(studyId));
             }
+            sampleIds.add(sampleId);
         }
         return sampleIds;
     }
@@ -1184,12 +1250,36 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         }
     }
 
-    public void removeCohort(int studyId, Object cohort) {
+    public void removeCohort(int studyId, Object cohort) throws StorageEngineException {
         Integer cohortId = getCohortId(studyId, cohort);
         if (cohortId == null) {
             throw VariantQueryException.cohortNotFound(cohort.toString(), studyId, this);
         }
+        CohortMetadata cohortMetadata = getCohortMetadata(studyId, cohortId);
+        for (Integer sample : cohortMetadata.getSamples()) {
+            updateSampleMetadata(studyId, sample, sampleMetadata -> {
+                sampleMetadata.getCohorts().remove(cohortId);
+                sampleMetadata.getInternalCohorts().remove(cohortId);
+            });
+        }
         cohortDBAdaptor.removeCohort(studyId, cohortId);
+    }
+
+    public void removeSamplesFromCohorts(int studyId, Collection<Integer> cohortIds,
+                                         Collection<Integer> fileIds, Collection<Integer> samples)
+            throws StorageEngineException {
+        for (Integer cohortId : cohortIds) {
+            updateCohortMetadata(studyId, cohortId, cohort -> {
+                boolean modified = cohort.getSamples().removeAll(samples);
+                modified |= cohort.getFiles().removeAll(fileIds);
+                if (modified && cohort.isStatsReady()) {
+                    logger.info("Invalidating statistics of cohort "
+                            + cohort.getName()
+                            + " (" + cohort.getId() + ')');
+                    cohort.setStatsStatus(TaskMetadata.Status.ERROR);
+                }
+            });
+        }
     }
 
     public Integer getCohortId(int studyId, String cohortName) {
@@ -1243,7 +1333,8 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     public Iterator<CohortMetadata> secondaryIndexCohortIterator(int studyId) {
-        return Iterators.filter(cohortDBAdaptor.cohortIterator(studyId), cohort -> cohort.getName().startsWith(SECONDARY_INDEX_PREFIX));
+        return Iterators.filter(cohortDBAdaptor.cohortIterator(studyId),
+                cohort -> cohort.getName().startsWith(CohortMetadata.SECONDARY_INDEX_PREFIX));
     }
 
     public Iterable<CohortMetadata> getCalculatedCohorts(int studyId) {
@@ -1257,10 +1348,14 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     public Iterable<CohortMetadata> getCalculatedOrPartialCohorts(int studyId) {
         return () -> Iterators.filter(cohortIterator(studyId),
                 cohortMetadata -> {
-                    TaskMetadata.Status status = cohortMetadata.getStatsStatus();
-                    return status == TaskMetadata.Status.READY
-                            || status == TaskMetadata.Status.RUNNING
-                            || status == TaskMetadata.Status.ERROR;
+                    if (cohortMetadata.getType() == CohortMetadata.Type.USER_DEFINED) {
+                        TaskMetadata.Status status = cohortMetadata.getStatsStatus();
+                        return status == TaskMetadata.Status.READY
+                                || status == TaskMetadata.Status.RUNNING
+                                || status == TaskMetadata.Status.ERROR;
+                    } else {
+                        return false;
+                    }
                 });
     }
 
@@ -1275,7 +1370,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     private CohortMetadata updateCohortSamples(int studyId, String cohortName, Collection<Integer> sampleIds,
                                                boolean addSamples)
             throws StorageEngineException {
-        boolean secondaryIndexCohort = cohortName.startsWith(SECONDARY_INDEX_PREFIX);
+        CohortMetadata.Type cohortType = CohortMetadata.getType(cohortName);
 
         boolean newCohort;
         Integer cohortId = getCohortId(studyId, cohortName);
@@ -1306,21 +1401,12 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
         // Register cohort in samples
         for (Integer sampleId : sampleIds) {
-            Integer finalCohortId = cohortId;
-            if (secondaryIndexCohort) {
-                if (!getSampleMetadata(studyId, sampleId).getSecondaryIndexCohorts().contains(finalCohortId)) {
-                    // Avoid unnecessary updates
-                    updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
-                        sampleMetadata.addSecondaryIndexCohort(finalCohortId);
-                    });
-                }
-            } else {
-                if (!getSampleMetadata(studyId, sampleId).getCohorts().contains(finalCohortId)) {
-                    // Avoid unnecessary updates
-                    updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
-                        sampleMetadata.addCohort(finalCohortId);
-                    });
-                }
+            if (!getSampleMetadata(studyId, sampleId).containsCohort(cohortType, cohortId)) {
+                int finalCohortId = cohortId;
+                // Avoid unnecessary updates
+                updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
+                    sampleMetadata.addCohort(cohortType, finalCohortId);
+                });
             }
         }
 
@@ -1330,22 +1416,13 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             CohortMetadata cohortMetadata = getCohortMetadata(studyId, cohortId);
 
             for (Integer sampleFromCohort : cohortMetadata.getSamples()) {
-                Integer finalCohortId = cohortId;
                 if (!sampleIds.contains(sampleFromCohort)) {
-                    if (secondaryIndexCohort) {
-                        if (getSampleMetadata(studyId, sampleFromCohort).getSecondaryIndexCohorts().contains(finalCohortId)) {
-                            // Avoid unnecessary updates
-                            updateSampleMetadata(studyId, sampleFromCohort, sampleMetadata -> {
-                                sampleMetadata.getSecondaryIndexCohorts().remove(finalCohortId);
-                            });
-                        }
-                    } else {
-                        if (getSampleMetadata(studyId, sampleFromCohort).getCohorts().contains(finalCohortId)) {
-                            // Avoid unnecessary updates
-                            updateSampleMetadata(studyId, sampleFromCohort, sampleMetadata -> {
-                                sampleMetadata.getCohorts().remove(finalCohortId);
-                            });
-                        }
+                    if (getSampleMetadata(studyId, sampleFromCohort).containsCohort(cohortType, cohortId)) {
+                        Integer finalCohortId = cohortId;
+                        // Avoid unnecessary updates
+                        updateSampleMetadata(studyId, sampleFromCohort, sampleMetadata -> {
+                            sampleMetadata.removeCohort(cohortType, finalCohortId);
+                        });
                     }
                 }
             }
@@ -1770,74 +1847,107 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return sampleId;
     }
 
+    public int registerAggregateFamilySamplesCohort(int studyId, List<String> samples, boolean resume, boolean force)
+            throws StorageEngineException {
+        return registerInternalCohort(studyId, samples, resume, force,
+                CohortMetadata.Type.AGGREGATE_FAMILY, CohortMetadata.AGGREGATE_FAMILY_PREFIX);
+    }
+
     public int registerSecondaryIndexSamples(int studyId, List<String> samples, boolean resume)
             throws StorageEngineException {
+        return registerInternalCohort(studyId, samples, resume, false,
+                CohortMetadata.Type.SECONDARY_INDEX, CohortMetadata.SECONDARY_INDEX_PREFIX);
+    }
+
+    public int registerInternalCohort(int studyId, List<String> samples, boolean resume, boolean force,
+                                      CohortMetadata.Type type, String cohortNamePrefix)
+            throws StorageEngineException {
         if (samples == null || samples.isEmpty()) {
-            throw new StorageEngineException("Missing samples to index");
+            throw new StorageEngineException("Missing samples!");
+        }
+        if (type == null || type == CohortMetadata.Type.USER_DEFINED) {
+            throw new StorageEngineException("Invalid cohort type '" + type + "'");
         }
 
-        List<Integer> sampleIds = new ArrayList<>(samples.size());
+        List<Integer> sampleIds = getSampleIds(studyId, samples);
+        Set<Integer> existingCohorts = new HashSet<>();
 
-        List<String> alreadyIndexedSamples = new ArrayList<>();
-        Set<Integer> searchIndexSampleSets = new HashSet<>();
-        StudyMetadata studyMetadata = getStudyMetadata(studyId);
-
-        for (String sample : samples) {
-            Integer sampleId = getSampleId(studyId, sample);
-            if (sampleId == null) {
-                throw VariantQueryException.sampleNotFound(sample, studyMetadata.getName());
-            }
-            sampleIds.add(sampleId);
+        for (int sampleId : sampleIds) {
             SampleMetadata sampleMetadata = getSampleMetadata(studyId, sampleId);
-            Set<Integer> sampleCohorts = sampleMetadata.getSecondaryIndexCohorts();
+            Set<Integer> sampleCohorts;
+            if (type == CohortMetadata.Type.SECONDARY_INDEX) {
+                sampleCohorts = sampleMetadata.getSecondaryIndexCohorts();
+            } else {
+                sampleCohorts = sampleMetadata.getInternalCohorts();
+            }
             if (!sampleCohorts.isEmpty()) {
-                searchIndexSampleSets.addAll(sampleCohorts);
-                alreadyIndexedSamples.add(sample);
+                existingCohorts.addAll(sampleCohorts);
             }
         }
 
-        final int id;
-        if (!alreadyIndexedSamples.isEmpty()) {
-            // All samples are already indexed, and in the same collection
-            if (alreadyIndexedSamples.size() == samples.size() && searchIndexSampleSets.size() == 1) {
-                id = searchIndexSampleSets.iterator().next();
-                CohortMetadata secondaryIndexCohort = getCohortMetadata(studyId, id);
-                if (secondaryIndexCohort.getSamples().size() != sampleIds.size()
-                        || !secondaryIndexCohort.getSamples().containsAll(sampleIds)) {
-                    throw new StorageEngineException("Must provide all the samples from the secondary index: "
-                            + secondaryIndexCohort.getSamples()
-                            .stream()
-                            .map(sampleId -> getSampleName(studyId, sampleId))
-                            .collect(Collectors.joining("\", \"", "\"", "\"")));
+        // Check if we can reuse any cohort
+        Integer cohortId = null;
+        boolean reuseCohort = false;
+        for (Integer thisCohortId : existingCohorts) {
+            CohortMetadata internalCohort = getCohortMetadata(studyId, thisCohortId);
+            if (internalCohort.getType() == type) {
+                if (internalCohort.getSamples().size() == sampleIds.size()
+                        && new HashSet<>(internalCohort.getSamples()).containsAll(sampleIds)) {
+                    reuseCohort = true;
+                    cohortId = thisCohortId;
                 }
+            }
+        }
 
-                TaskMetadata.Status status = secondaryIndexCohort.getSecondaryIndexStatus();
-                switch (status) {
-                    case DONE:
-                    case READY:
-                        throw new StorageEngineException("Samples already in search index.");
-                    case RUNNING:
-                        // Resume if resume=true
-                        if (!resume) {
-                            throw new StorageEngineException("Samples already being indexed. Resume operation to continue.");
-                        }
-                    case ERROR:
-                        // Resume
-                        logger.info("Resume load of secondary index in status " + status);
-                        break;
-                    default:
-                        throw new IllegalStateException("Unknown status " + status);
-                }
-
-            } else {
-                throw new StorageEngineException("Samples " + alreadyIndexedSamples + " already in search index");
+        if (reuseCohort) {
+            CohortMetadata internalCohort = getCohortMetadata(studyId, cohortId);
+            TaskMetadata.Status status = internalCohort.getStatusByType();
+            switch (status) {
+                case DONE:
+                case READY:
+                    if (force) {
+                        logger.info("Force load of " + type + " cohort " + internalCohort.getName() + " with status " + status);
+                    } else {
+                        throw new StorageEngineException("Operation " + type + " already executed for cohort "
+                                + internalCohort.getName() + " with status " + status);
+                    }
+                case RUNNING:
+                    // Resume if resume=true
+                    if (!resume) {
+                        throw new StorageEngineException("Samples already being processed. Resume operation to continue.");
+                    }
+                case ERROR:
+                    // Resume
+                    logger.info("Resume operation " + type + " index in status " + status);
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown status " + status);
             }
         } else {
-            id = setSamplesToCohort(studyId, SECONDARY_INDEX_PREFIX + newSecondaryIndexSampleSetId(studyId), sampleIds).getId();
-            updateCohortMetadata(studyId, id, cohortMetadata -> cohortMetadata.setSecondaryIndexStatus(TaskMetadata.Status.RUNNING));
+            // New cohort
+            cohortId = setSamplesToCohort(studyId, cohortNamePrefix + newSecondaryIndexSampleSetId(studyId), sampleIds).getId();
+            updateCohortMetadata(studyId, cohortId, cohortMetadata -> cohortMetadata.setStatusByType(TaskMetadata.Status.RUNNING));
         }
 
-        return id;
+        return cohortId;
+    }
+
+    public void removeExtraInternalCohorts(int studyId, int cohortId) throws StorageEngineException {
+        // Remove all internal cohorts by the same type that contain a subset of samples of the input cohort
+        CohortMetadata cohortMetadata = getCohortMetadata(studyId, cohortId);
+        CohortMetadata.Type type = cohortMetadata.getType();
+        List<Integer> samples = cohortMetadata.getSamples();
+        Iterator<CohortMetadata> iterator = cohortIterator(studyId);
+        while (iterator.hasNext()) {
+            CohortMetadata internalCohort = iterator.next();
+            if (internalCohort.getType() == type && internalCohort.getSamples().size() < samples.size()
+                    && new HashSet<>(samples).containsAll(internalCohort.getSamples())) {
+                logger.info("Removing cohort " + internalCohort.getName() + " with id " + internalCohort.getId());
+                removeCohort(studyId, internalCohort.getId());
+            }
+        }
+
+
     }
 
     public int registerFile(int studyId, VariantFileMetadata variantFileMetadata) throws StorageEngineException {
@@ -2106,8 +2216,8 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         }
     }
 
-    public Integer registerCohort(String study, String cohortName, Collection<String> samples) throws StorageEngineException {
-        return registerCohorts(study, Collections.singletonMap(cohortName, samples)).get(cohortName);
+    public int registerCohort(String study, String cohortName, Collection<String> samples) throws StorageEngineException {
+        return registerCohorts(study, Collections.singletonMap(cohortName, samples)).get(cohortName).intValue();
     }
 
     public CohortMetadata registerTemporaryCohort(String study, String alias, List<String> samples) throws StorageEngineException {

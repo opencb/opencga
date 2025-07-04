@@ -131,6 +131,10 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         return new ResultSetToVariantConverter(scm);
     }
 
+    public static HBaseToVariantConverter<VariantRow> fromVariantRow(VariantStorageMetadataManager vsmm, Set<String> scanColumns) {
+        return new VariantRowToVariantConverter(vsmm, scanColumns);
+    }
+
     protected Variant convert(Variant variant, Map<Integer, StudyEntry> studies,
                               VariantAnnotation annotation) {
 
@@ -206,6 +210,36 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
                     studies = Collections.emptyMap();
                 } else {
                     studies = studyEntryConverter.convert(result);
+                }
+                return convert(variant, studies, annotation);
+            } catch (RuntimeException e) {
+                throw new IllegalStateException("Fail to parse variant: " + variant, e);
+            }
+        }
+    }
+
+    private static class VariantRowToVariantConverter extends HBaseToVariantConverter<VariantRow> {
+        private final Set<String> scanColumns;
+
+        VariantRowToVariantConverter(VariantStorageMetadataManager scm, Set<String> scanColumns) {
+            super(scm);
+            this.scanColumns = scanColumns;
+        }
+
+        @Override
+        public Variant convert(VariantRow variantRow) {
+            if (scanColumns != null) {
+                variantRow = variantRow.withColumnsFilter(scanColumns);
+            }
+            Variant variant = variantRow.getVariant();
+            try {
+                variant.setType(variantRow.getType());
+                VariantAnnotation annotation = variantRow.getVariantAnnotation(annotationConverter);
+                Map<Integer, StudyEntry> studies;
+                if (configuration.getProjection() != null && configuration.getProjection().getStudyIds().isEmpty()) {
+                    studies = Collections.emptyMap();
+                } else {
+                    studies = studyEntryConverter.convert(variantRow);
                 }
                 return convert(variant, studies, annotation);
             } catch (RuntimeException e) {

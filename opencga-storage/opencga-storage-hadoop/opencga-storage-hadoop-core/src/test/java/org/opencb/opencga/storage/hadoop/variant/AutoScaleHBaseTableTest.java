@@ -46,6 +46,7 @@ public class AutoScaleHBaseTableTest extends VariantStorageBaseTest implements H
                 .append(VariantStorageOptions.STUDY.key(), STUDY_NAME)
                 .append(VariantStorageOptions.ANNOTATE.key(), false)
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
+                .append(VariantStorageOptions.LOAD_ARCHIVE.key(), true)
                 .append(HadoopVariantStorageOptions.SAMPLE_INDEX_TABLE_PRESPLIT_SIZE.key(), samplesPerSplit)
                 .append(HadoopVariantStorageOptions.SAMPLE_INDEX_TABLE_PRESPLIT_EXTRA_SPLITS.key(), extraSplits)
                 .append(HadoopVariantStorageOptions.ARCHIVE_TABLE_PRESPLIT_SIZE.key(), archiveSplitsPerBatch)

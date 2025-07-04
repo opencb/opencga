@@ -2,10 +2,13 @@ package org.opencb.opencga.storage.hadoop.variant.mr;
 
 import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
+import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.apache.hadoop.mapreduce.filecache.DistributedCache;
 import org.apache.hadoop.mapreduce.lib.db.DBWritable;
 import org.apache.phoenix.jdbc.PhoenixDriver;
 import org.apache.phoenix.mapreduce.util.PhoenixConfigurationUtil;
@@ -13,20 +16,26 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.adaptors.VariantStorageMetadataDBAdaptorFactory;
+import org.opencb.opencga.storage.core.metadata.local.LocalVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
+import org.opencb.opencga.storage.hadoop.io.HDFSIOConnector;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseVariantConverterConfiguration;
+import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.net.URI;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 
-import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.getQueryFromConfig;
-import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.getQueryOptionsFromConfig;
+import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.*;
 
 /**
  * Created on 27/10/17.
@@ -37,12 +46,12 @@ public class PhoenixVariantTableInputFormat
         extends TransformInputFormat<NullWritable, PhoenixVariantTableInputFormat.VariantDBWritable, Variant> {
 
     @Override
-    protected void init(Configuration configuration) throws IOException {
+    protected void init(JobContext context) throws IOException {
         // Ensure PhoenixDriver is registered
         if (PhoenixDriver.INSTANCE == null) {
             throw new IOException("Error registering PhoenixDriver");
         }
-        PhoenixConfigurationUtil.setInputClass(configuration, VariantDBWritable.class);
+        PhoenixConfigurationUtil.setInputClass(context.getConfiguration(), VariantDBWritable.class);
         inputFormat = new CustomPhoenixInputFormat<>();
     }
 
@@ -50,7 +59,7 @@ public class PhoenixVariantTableInputFormat
     public RecordReader<NullWritable, Variant> createRecordReader(InputSplit split, TaskAttemptContext context)
             throws IOException, InterruptedException {
         if (inputFormat == null) {
-            init(context.getConfiguration());
+            init(context);
         }
         RecordReader<NullWritable, VariantDBWritable> recordReader = inputFormat.createRecordReader(split, context);
 
@@ -59,7 +68,7 @@ public class PhoenixVariantTableInputFormat
 
     public static class VariantDBWritable implements DBWritable, Configurable, Closeable {
         private Configuration conf;
-        private HBaseToVariantConverter<ResultSet> converter;
+        private HBaseToVariantConverter<VariantRow> converter;
         private Variant variant;
         private VariantStorageMetadataManager metadataManager;
 
@@ -70,7 +79,7 @@ public class PhoenixVariantTableInputFormat
 
         @Override
         public void readFields(ResultSet resultSet) throws SQLException {
-            variant = converter.convert(resultSet);
+            variant = converter.convert(new VariantRow(resultSet));
         }
 
         public Variant getVariant() {
@@ -84,8 +93,25 @@ public class PhoenixVariantTableInputFormat
         }
 
         private void initConverter(Configuration conf) {
-            VariantTableHelper helper = new VariantTableHelper(conf);
-            HBaseVariantStorageMetadataDBAdaptorFactory dbAdaptorFactory = new HBaseVariantStorageMetadataDBAdaptorFactory(helper);
+            VariantStorageMetadataDBAdaptorFactory dbAdaptorFactory;
+            if (conf.getBoolean(METADATA_MANAGER_LOCAL, false)) {
+                try {
+                    URI[] cacheFiles;
+                    Path[] cacheFilesPaths = DistributedCache.getLocalCacheFiles(conf);
+                    if (cacheFilesPaths != null) {
+                        cacheFiles = Arrays.stream(cacheFilesPaths)
+                                .map(Path::toUri).toArray(URI[]::new);
+                    } else {
+                        cacheFiles = DistributedCache.getCacheFiles(conf);
+                    }
+                    dbAdaptorFactory = new LocalVariantStorageMetadataDBAdaptorFactory(cacheFiles, new HDFSIOConnector(conf));
+                } catch (IOException e) {
+                    throw new UncheckedIOException("Error initializing local metadata manager", e);
+                }
+            } else {
+                VariantTableHelper helper = new VariantTableHelper(conf);
+                dbAdaptorFactory = new HBaseVariantStorageMetadataDBAdaptorFactory(helper);
+            }
             Query query = getQueryFromConfig(conf);
             QueryOptions queryOptions = getQueryOptionsFromConfig(conf);
             metadataManager = new VariantStorageMetadataManager(dbAdaptorFactory);
@@ -93,7 +119,7 @@ public class PhoenixVariantTableInputFormat
                     .parseVariantQueryProjection(query, queryOptions);
 
 
-            converter = HBaseToVariantConverter.fromResultSet(metadataManager)
+            converter = HBaseToVariantConverter.fromVariantRow(metadataManager, getScanColumns(conf))
                     .configure(HBaseVariantConverterConfiguration.builder(conf)
                             .setProjection(projection)
                             .build());

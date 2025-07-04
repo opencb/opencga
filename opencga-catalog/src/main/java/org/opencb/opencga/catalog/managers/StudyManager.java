@@ -466,14 +466,22 @@ public class StudyManager extends AbstractManager {
 
             // Get organization owner and admins
             Organization organization = catalogManager.getOrganizationManager().get(organizationId,
-                    OrganizationManager.INCLUDE_ORGANIZATION_ADMINS, token).first();
-            Set<String> users = new HashSet<>();
-            users.add(organization.getOwner());
-            users.addAll(organization.getAdmins());
+                    OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION, token).first();
+            Set<String> admins = new HashSet<>();
+            admins.add(organization.getOwner());
+            admins.addAll(organization.getAdmins());
+
+            Set<String> members = new HashSet<>(admins);
+            if (organization.getConfiguration().getUser() != null && organization.getConfiguration().getUser().isAddToStudyMembers()) {
+                // Fetch all users
+                List<User> userList = getUserDBAdaptor(organizationId).get(new Query(),
+                        new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.ID.key())).getResults();
+                userList.forEach(u -> members.add(u.getId()));
+            }
 
             List<Group> groups = Arrays.asList(
-                    new Group(MEMBERS, new ArrayList<>(users)),
-                    new Group(ADMINS, new ArrayList<>(users))
+                    new Group(MEMBERS, new ArrayList<>(members)),
+                    new Group(ADMINS, new ArrayList<>(admins))
             );
             study.setGroups(groups);
 
@@ -1194,6 +1202,15 @@ public class StudyManager extends AbstractManager {
             if (study.getInternal().isFederated()) {
                 if (!groupId.equals(MEMBERS)) {
                     throw new CatalogException("Cannot modify groups other than the '" + MEMBERS + "' group in federated studies.");
+                }
+            }
+
+            if (MEMBERS.equals(groupId) && action == ParamUtils.BasicUpdateAction.REMOVE) {
+                Organization organization = catalogManager.getOrganizationManager().get(organizationId,
+                        OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION, token).first();
+                if (organization.getConfiguration().getUser() != null && organization.getConfiguration().getUser().isAddToStudyMembers()) {
+                    throw new CatalogException("Cannot remove users from the '" + MEMBERS + "' group. The organization configuration "
+                            + "is set to add all users to the members group.");
                 }
             }
 
@@ -2180,6 +2197,16 @@ public class StudyManager extends AbstractManager {
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                             new Error(-1, "template delete", e.getMessage())));
             throw e;
+        }
+    }
+
+    List<Study> listStudies(String organizationId) throws CatalogDBException {
+        return getStudyDBAdaptor(organizationId).get(new Query(), INCLUDE_STUDY_IDS).getResults();
+    }
+
+    void addToMembersGroup(String organizationId, List<Study> studyList, List<String> userIds) throws CatalogDBException {
+        for (Study study : studyList) {
+            getStudyDBAdaptor(organizationId).addUsersToGroup(study.getUid(), MEMBERS, userIds);
         }
     }
 

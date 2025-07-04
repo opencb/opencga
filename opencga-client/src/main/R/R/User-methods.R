@@ -128,7 +128,7 @@ setMethod("userClient", "OpencgaR", function(OpencgaR, filterId, user, users, en
                 subcategoryId=filterId, action="update", params=params, httpMethod="POST", as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/users/{user}/password/reset:
-        #' Reset password.
+        #' [DEPRECATED].
         #' @param user User ID.
         resetPassword=fetchOpenCGA(object=OpencgaR, category="users", categoryId=user, subcategory="password",
                 subcategoryId=NULL, action="reset", params=params, httpMethod="GET", as.queryParam=NULL, ...),

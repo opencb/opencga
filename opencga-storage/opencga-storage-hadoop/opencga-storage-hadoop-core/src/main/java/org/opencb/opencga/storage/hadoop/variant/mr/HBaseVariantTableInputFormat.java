@@ -1,22 +1,29 @@
 package org.opencb.opencga.storage.hadoop.variant.mr;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.mapreduce.JobContext;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.adaptors.VariantStorageMetadataDBAdaptorFactory;
+import org.opencb.opencga.storage.core.metadata.local.LocalVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
+import org.opencb.opencga.storage.hadoop.io.HDFSIOConnector;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseVariantConverterConfiguration;
+import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 
 import java.io.IOException;
+import java.net.URI;
+import java.util.Arrays;
 import java.util.function.Function;
 
-import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.getQueryFromConfig;
-import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.getQueryOptionsFromConfig;
+import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.*;
 
 /**
  * Created on 27/10/17.
@@ -25,22 +32,38 @@ import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.
  */
 public class HBaseVariantTableInputFormat extends AbstractHBaseVariantTableInputFormat<Variant> {
 
-    protected Function<Result, Variant> initConverter(Configuration configuration) throws IOException {
-        VariantTableHelper helper = new VariantTableHelper(configuration);
+    protected Function<Result, Variant> initConverter(JobContext context) throws IOException {
+        Configuration configuration = context.getConfiguration();
         VariantQueryProjection projection;
 
-        HBaseVariantStorageMetadataDBAdaptorFactory dbAdaptorFactory = new HBaseVariantStorageMetadataDBAdaptorFactory(helper);
-        VariantStorageMetadataManager scm = new VariantStorageMetadataManager(dbAdaptorFactory);
+
+        VariantStorageMetadataDBAdaptorFactory dbAdaptorFactory;
+        if (configuration.getBoolean(METADATA_MANAGER_LOCAL, false)) {
+            Path[] cacheFilesPaths = context.getLocalCacheFiles();
+            URI[] cacheFiles;
+            if (cacheFilesPaths != null) {
+                cacheFiles = Arrays.stream(cacheFilesPaths)
+                        .map(Path::toUri).toArray(URI[]::new);
+            } else {
+                cacheFiles = context.getCacheFiles();
+            }
+            dbAdaptorFactory = new LocalVariantStorageMetadataDBAdaptorFactory(cacheFiles, new HDFSIOConnector(configuration));
+        } else {
+            VariantTableHelper helper = new VariantTableHelper(configuration);
+            dbAdaptorFactory = new HBaseVariantStorageMetadataDBAdaptorFactory(helper);
+        }
+
+        VariantStorageMetadataManager vsmm = new VariantStorageMetadataManager(dbAdaptorFactory);
         Query query = getQueryFromConfig(configuration);
         QueryOptions queryOptions = getQueryOptionsFromConfig(configuration);
-        projection = VariantQueryProjectionParser.parseVariantQueryFields(query, queryOptions, scm);
+        projection = new VariantQueryProjectionParser(vsmm).parseVariantQueryProjection(query, queryOptions);
 
-        HBaseToVariantConverter<Result> converter = HBaseToVariantConverter.fromResult(scm)
+        HBaseToVariantConverter<VariantRow> converter = HBaseToVariantConverter.fromVariantRow(vsmm, getScanColumns(configuration))
                 .configure(HBaseVariantConverterConfiguration
                         .builder(configuration)
                         .setProjection(projection)
                         .build());
-        return converter::convert;
+        return from -> converter.convert(new VariantRow(from));
     }
 
 }
