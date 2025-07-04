@@ -29,11 +29,16 @@ import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
+import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
@@ -107,6 +112,30 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
                 new DummyVariantStoragePipeline(getConfiguration(), STORAGE_ENGINE_ID, getDBAdaptor(), getIOManagerProvider());
         pipeline.init(getOptions());
         return pipeline;
+    }
+
+    @Override
+    protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator) throws StorageEngineException {
+        return new DefaultVariantAnnotationManager(annotator, getDBAdaptor(), getIOManagerProvider()){
+            @Override
+            public void saveAnnotation(String name, ObjectMap options) throws StorageEngineException, VariantAnnotatorException {
+                dbAdaptor.getMetadataManager().updateProjectMetadata(project -> {
+                    registerNewAnnotationSnapshot(name, variantAnnotator, project);
+                    return project;
+                });
+            }
+
+            @Override
+            public void deleteAnnotation(String name, ObjectMap options) throws StorageEngineException, VariantAnnotatorException {
+                ProjectMetadata.VariantAnnotationMetadata saved = dbAdaptor.getMetadataManager().getProjectMetadata()
+                        .getAnnotation().getSaved(name);
+
+                dbAdaptor.getMetadataManager().updateProjectMetadata(project -> {
+                    removeAnnotationSnapshot(name, project);
+                    return project;
+                });
+            }
+        };
     }
 
     @Override
