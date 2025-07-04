@@ -320,8 +320,7 @@ public class VariantOperationJanitor extends MonitorParentDaemon {
         @Override
         public void addSpecificParams(Map<String, Object> params) {
             VariantSecondarySampleIndexParams variantSecondarySampleIndexParams = new VariantSecondarySampleIndexParams()
-                    .setSample(Collections.singletonList(ParamConstants.ALL))
-                    .setFamilyIndex(true);
+                    .setSample(Collections.singletonList(ParamConstants.ALL));
             params.putAll(variantSecondarySampleIndexParams.toParams());
         }
     }
