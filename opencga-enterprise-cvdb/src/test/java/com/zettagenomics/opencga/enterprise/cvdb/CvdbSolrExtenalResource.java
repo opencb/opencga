@@ -69,10 +69,12 @@ public class CvdbSolrExtenalResource extends ExternalResource {
         String ciConfigSet = "opencga-ci-configset-" + GitUtils.getEnterprise().getBuildVersion();
         String cvConfigSet = "opencga-cv-configset-" + GitUtils.getEnterprise().getBuildVersion();
         String cveConfigSet = "opencga-cve-configset-" + GitUtils.getEnterprise().getBuildVersion();
+        String viewersConfigSet = "opencga-viewers-configset-" + GitUtils.getEnterprise().getBuildVersion();
         copyConfigSetConfiguration(caConfigSet, "ca-managed-schema");
         copyConfigSetConfiguration(ciConfigSet, "ci-managed-schema");
         copyConfigSetConfiguration(cvConfigSet, "cv-managed-schema");
         copyConfigSetConfiguration(cveConfigSet, "cve-managed-schema");
+        copyConfigSetConfiguration(viewersConfigSet, "viewers-managed-schema");
 
         String solrHome = rootDir.resolve("solr").toString();
 
@@ -81,7 +83,8 @@ public class CvdbSolrExtenalResource extends ExternalResource {
                     CvdbUtils.getCollectionName(configuration.getDatabasePrefix(), organizationId, projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX)
                             + "," + CvdbUtils.getCollectionName(configuration.getDatabasePrefix(), organizationId, projectId, INTERPRETATIONS_COLLECTION_SUFFIX)
                             + "," + CvdbUtils.getCollectionName(configuration.getDatabasePrefix(), organizationId, projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX)
-                            + "," + CvdbUtils.getCollectionName(configuration.getDatabasePrefix(), organizationId, projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX));
+                            + "," + CvdbUtils.getCollectionName(configuration.getDatabasePrefix(), organizationId, projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX)
+                            + "," + CvdbUtils.getCollectionName(configuration.getDatabasePrefix(), organizationId, projectId, CLINICAL_VIEWERS_COLLECTION_SUFFIX));
         } else {
             SolrManager solrManager = new SolrManager(solrHost, solrMode, solrTimeout);
             this.solrClient = solrManager.getSolrClient();

@@ -16,6 +16,7 @@
 
 package com.zettagenomics.opencga.enterprise.cvdb.parsers;
 
+import com.zettagenomics.opencga.enterprise.cvdb.CvdbUtils;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -35,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import java.text.ParseException;
 import java.util.*;
 
+import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.CLINICAL_VIEWERS_COLLECTION_SUFFIX;
 import static com.zettagenomics.opencga.enterprise.cvdb.converters.SearchConverter.simpleDateFormat;
 import static com.zettagenomics.opencga.enterprise.cvdb.converters.SearchConverter.solrDateFormat;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
@@ -875,10 +877,17 @@ public class ClinicalQueryParser {
 //        }
 //    }
 
+    protected void addViewerFilter(Query query, String toValue, String projectId, SolrQuery solrQuery) {
+        List<String> filters = new ArrayList<>();
+        addStringFilters("viewers", query.getString(ClinicalQueryParam.VIEWER_NAME), filters);
+        addStringFilters("studyId", query.getString(ClinicalQueryParam.STUDY_ID.key()), filters);
+        String join = "{!join from=id to=" + toValue + " fromIndex=" + CvdbUtils.getCollectionName(collectionPrefix, projectId,
+                CLINICAL_VIEWERS_COLLECTION_SUFFIX) + "}";
+        addStringFilters(filters, join, solrQuery);
+    }
+
     protected void addCommonFilters(Query query, List<String> filters) {
         // <field name="studyId" type="text_en" indexed="true" stored="true" multiValued="false"/>
         addStringFilters("studyId", query.getString(ClinicalQueryParam.STUDY_ID.key()), filters);
-        // <field name="viewers" type="string" indexed="true" stored="true" multiValued="true"/>
-        addStringFilters("viewers", query.getString(ClinicalQueryParam.VIEWER_NAME), filters);
     }
 }

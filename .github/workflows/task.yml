@@ -15,12 +15,12 @@ jobs:
   build:
     uses: ./.github/workflows/build-java-enterprise-workflow.yml
     with:
-      storage_hadoop: hdp3.1
+      storage_hadoop: emr6.1
       artifact_name: build-folder
 
   deploy-docker-hub:
     name: Push Docker image
-    runs-on: ubuntu-22.04
+    runs-on: ${{ vars.UBUNTU_VERSION }}
     needs: build
     steps:
       - name: Download build dir

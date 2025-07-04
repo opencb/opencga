@@ -16,6 +16,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.UpdateAction;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.Optimizations;
+import org.opencb.opencga.core.config.UserOrganizationConfiguration;
 import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.notes.Note;
 import org.opencb.opencga.core.models.notes.NoteCreateParams;
@@ -82,6 +83,9 @@ public class OrganizationsCommandExecutor extends com.zettagenomics.opencga.ente
             case "notes-update":
                 queryResponse = updateNotes();
                 break;
+            case "user-password-reset":
+                queryResponse = resetUserPassword();
+                break;
             case "update-status-user":
                 queryResponse = userUpdateStatus();
                 break;
@@ -132,7 +136,6 @@ public class OrganizationsCommandExecutor extends com.zettagenomics.opencga.ente
             putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
             putNestedIfNotEmpty(beanParams, "creationDate", commandOptions.creationDate, true);
             putNestedIfNotEmpty(beanParams, "modificationDate", commandOptions.modificationDate, true);
-            putNestedIfNotEmpty(beanParams, "configuration.defaultUserExpirationDate", commandOptions.configurationDefaultUserExpirationDate, true);
             putNestedMapIfNotEmpty(beanParams, "attributes", commandOptions.attributes, true);
 
             organizationCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
@@ -244,6 +247,17 @@ public class OrganizationsCommandExecutor extends com.zettagenomics.opencga.ente
         return enterpriseOpenCGAClient.getEnterpriseOrganizationClient().updateNotes(commandOptions.id, noteUpdateParams, queryParams);
     }
 
+    private RestResponse<ObjectMap> resetUserPassword() throws Exception {
+        logger.debug("Executing resetUserPassword in Organizations command line");
+
+        OrganizationsCommandOptions.ResetUserPasswordCommandOptions commandOptions = organizationsCommandOptions.resetUserPasswordCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("userId", commandOptions.userId);
+
+        return enterpriseOpenCGAClient.getEnterpriseOrganizationClient().resetUserPassword(queryParams);
+    }
+
     private RestResponse<User> userUpdateStatus() throws Exception {
         logger.debug("Executing userUpdateStatus in Organizations command line");
 
@@ -337,7 +351,8 @@ public class OrganizationsCommandExecutor extends com.zettagenomics.opencga.ente
                     .readValue(new java.io.File(commandOptions.jsonFile), OrganizationConfiguration.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "defaultUserExpirationDate", commandOptions.defaultUserExpirationDate, true);
+            putNestedIfNotEmpty(beanParams, "user.defaultExpirationDate", commandOptions.userDefaultExpirationDate, true);
+            putNestedIfNotNull(beanParams, "user.addToStudyMembers", commandOptions.userAddToStudyMembers, true);
             putNestedIfNotNull(beanParams, "optimizations.simplifyPermissions", commandOptions.optimizationsSimplifyPermissions, true);
             putNestedIfNotEmpty(beanParams, "token.algorithm", commandOptions.tokenAlgorithm, true);
             putNestedIfNotEmpty(beanParams, "token.secretKey", commandOptions.tokenSecretKey, true);
