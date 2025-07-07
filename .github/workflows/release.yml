@@ -10,15 +10,8 @@ jobs:
     uses: ./.github/workflows/build-java-enterprise-workflow.yml
     with:
       storage_hadoop: hdp3.1
-      artifact_name: build-folder
+      artifact_name: hdp-build-folder
       release: true
-
-  deploy-hdp-docker:
-    uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
-    needs: build-hdp
-    secrets: inherit
-    with:
-      artifact_name: build-folder
 
   build-emr:
     uses: ./.github/workflows/build-java-enterprise-workflow.yml
@@ -26,6 +19,14 @@ jobs:
       storage_hadoop: emr6.1
       artifact_name: emr-build-folder
       release: true
+
+  deploy-hdp-docker:
+    uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
+    needs: build-hdp
+    secrets: inherit
+    with:
+      artifact_name: hdp-build-folder
+
 
   deploy-emr-docker:
     uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
@@ -64,12 +65,12 @@ jobs:
 
   release:
     name: Create GitHub Release
-    runs-on: ${{ vars.UBUNTU_VERSION }}
+    runs-on: ubuntu-22.04
     needs: [ build-hdp, deploy-hdp-docker, build-emr, deploy-emr-docker, build-hdi, deploy-hdi-docker, build-emr13, deploy-emr13-docker ]
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: build-folder
+          name: emr-build-folder
       - name: GitHub Release
         uses: softprops/action-gh-release@v1
         with:
@@ -77,9 +78,9 @@ jobs:
           tag_name: ${{ github.ref }}
           generate_release_notes: true
           files: |
-            opencga-enterprise-client-${{ needs.build-hdp.outputs.version }}.tar.gz
+            opencga-enterprise-client-${{ needs.build-emr.outputs.version }}.tar.gz
       - id: echo_result
         name: Results
         run: |
-          echo "### The release of __Xetabase ${{ needs.build-hdp.outputs.version }}__ has been successful!!!! :heavy_check_mark: " | tee -a ${GITHUB_STEP_SUMMARY}
+          echo "### The release of __Xetabase ${{ needs.build-emr.outputs.version }}__ has been successful!!!! :heavy_check_mark: " | tee -a ${GITHUB_STEP_SUMMARY}
 
