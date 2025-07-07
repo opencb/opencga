@@ -293,6 +293,15 @@ public class AnalysisClinicalCommandOptions {
         @DynamicParameter(names = {"--interpretation-default-filter"}, description = "The body web service defaultFilter parameter. Use: --interpretation-default-filter key=value", required = false)
         public java.util.Map<java.lang.String,java.lang.Object> interpretationDefaultFilter = new HashMap<>(); //Dynamic parameters must be initialized;
     
+        @Parameter(names = {"--report-title"}, description = "Title of the clinical report", required = false, arity = 1)
+        public String reportTitle;
+    
+        @Parameter(names = {"--report-logo"}, description = "Base64 logo image for the clinical report", required = false, arity = 1)
+        public String reportLogo;
+    
+        @DynamicParameter(names = {"--report-library"}, description = "Map of library identifiers to their corresponding names or descriptions. Use: --report-library key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.String> reportLibrary = new HashMap<>(); //Dynamic parameters must be initialized;
+    
     }
 
     @Parameters(commandNames = {"create"}, commandDescription ="Create a new clinical analysis")
@@ -346,11 +355,29 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--analyst-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String analystId;
     
-        @Parameter(names = {"--report-title"}, description = "Report title.", required = false, arity = 1)
-        public String reportTitle;
-    
         @Parameter(names = {"--report-overview"}, description = "Report overview.", required = false, arity = 1)
         public String reportOverview;
+    
+        @Parameter(names = {"--report-recommendation"}, description = "Recommendation for the report", required = false, arity = 1)
+        public String reportRecommendation;
+    
+        @Parameter(names = {"--report-methodology"}, description = "Methodology used to generate the report", required = false, arity = 1)
+        public String reportMethodology;
+    
+        @Parameter(names = {"--report-limitations"}, description = "Limitations of the report", required = false, arity = 1)
+        public String reportLimitations;
+    
+        @Parameter(names = {"--report-date"}, description = "Report date.", required = false, arity = 1)
+        public String reportDate;
+    
+        @Parameter(names = {"--report-images"}, description = "Images related to the report", required = false, arity = 1)
+        public String reportImages;
+    
+        @DynamicParameter(names = {"--report-attributes"}, description = "You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.. Use: --report-attributes key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> reportAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
+    
+        @Parameter(names = {"--report-title"}, description = "Report title.", required = false, arity = 1)
+        public String reportTitle;
     
         @Parameter(names = {"--report-logo"}, description = "Report logo.", required = false, arity = 1)
         public String reportLogo;
@@ -361,19 +388,16 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--report-signature"}, description = "Report signature.", required = false, arity = 1)
         public String reportSignature;
     
-        @Parameter(names = {"--report-date"}, description = "Report date.", required = false, arity = 1)
-        public String reportDate;
-    
-        @Parameter(names = {"--request-id"}, description = "The body web service id parameter", required = false, arity = 1)
+        @Parameter(names = {"--request-id"}, description = "Unique identifier for the clinical request", required = false, arity = 1)
         public String requestId;
     
-        @Parameter(names = {"--request-justification"}, description = "The body web service justification parameter", required = false, arity = 1)
+        @Parameter(names = {"--request-justification"}, description = "Justification for the clinical request", required = false, arity = 1)
         public String requestJustification;
     
-        @Parameter(names = {"--request-date"}, description = "The body web service date parameter", required = false, arity = 1)
+        @Parameter(names = {"--request-date"}, description = "Date of the clinical request", required = false, arity = 1)
         public String requestDate;
     
-        @DynamicParameter(names = {"--request-attributes"}, description = "The body web service attributes parameter. Use: --request-attributes key=value", required = false)
+        @DynamicParameter(names = {"--request-attributes"}, description = "Additional attributes for the clinical request. Use: --request-attributes key=value", required = false)
         public java.util.Map<java.lang.String,java.lang.Object> requestAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
         @Parameter(names = {"--responsible-id"}, description = "The body web service id parameter", required = false, arity = 1)
@@ -421,7 +445,7 @@ public class AnalysisClinicalCommandOptions {
         @DynamicParameter(names = {"--interpretation-attributes"}, description = "The body web service attributes parameter. Use: --interpretation-attributes key=value", required = false)
         public java.util.Map<java.lang.String,java.lang.Object> interpretationAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
-        @Parameter(names = {"--quality-control-summary"}, description = "Enum param allowed values: HIGH, MEDIUM, LOW, DISCARD, NEEDS_REVIEW, UNKNOWN", required = false, arity = 1)
+        @Parameter(names = {"--quality-control-summary"}, description = "Enum param allowed values: HIGH, MEDIUM, LOW, CRITICAL, UNKNOWN", required = false, arity = 1)
         public String qualityControlSummary;
     
         @Parameter(names = {"--quality-control-comments"}, description = "The body web service comments parameter", required = false, arity = 1)
@@ -2182,6 +2206,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--analysts-action"}, description = "Action to be performed if the array of analysts is being updated.", required = false, arity = 1)
         public String analystsAction = "ADD"; 
     
+        @Parameter(names = {"--reported-files-action"}, description = "Action to be performed if the array of reported files is being updated.", required = false, arity = 1)
+        public String reportedFilesAction = "ADD"; 
+    
         @Parameter(names = {"--annotation-sets-action"}, description = "Action to be performed if the array of annotationSets is being updated.", required = false, arity = 1)
         public String annotationSetsAction = "ADD"; 
     
@@ -2215,11 +2242,29 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--analyst-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String analystId;
     
-        @Parameter(names = {"--report-title"}, description = "Report title.", required = false, arity = 1)
-        public String reportTitle;
-    
         @Parameter(names = {"--report-overview"}, description = "Report overview.", required = false, arity = 1)
         public String reportOverview;
+    
+        @Parameter(names = {"--report-recommendation"}, description = "Recommendation for the report", required = false, arity = 1)
+        public String reportRecommendation;
+    
+        @Parameter(names = {"--report-methodology"}, description = "Methodology used to generate the report", required = false, arity = 1)
+        public String reportMethodology;
+    
+        @Parameter(names = {"--report-limitations"}, description = "Limitations of the report", required = false, arity = 1)
+        public String reportLimitations;
+    
+        @Parameter(names = {"--report-date"}, description = "Report date.", required = false, arity = 1)
+        public String reportDate;
+    
+        @Parameter(names = {"--report-images"}, description = "Images related to the report", required = false, arity = 1)
+        public String reportImages;
+    
+        @DynamicParameter(names = {"--report-attributes"}, description = "You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.. Use: --report-attributes key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> reportAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
+    
+        @Parameter(names = {"--report-title"}, description = "Report title.", required = false, arity = 1)
+        public String reportTitle;
     
         @Parameter(names = {"--report-logo"}, description = "Report logo.", required = false, arity = 1)
         public String reportLogo;
@@ -2230,19 +2275,16 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--report-signature"}, description = "Report signature.", required = false, arity = 1)
         public String reportSignature;
     
-        @Parameter(names = {"--report-date"}, description = "Report date.", required = false, arity = 1)
-        public String reportDate;
-    
-        @Parameter(names = {"--request-id"}, description = "The body web service id parameter", required = false, arity = 1)
+        @Parameter(names = {"--request-id"}, description = "Unique identifier for the clinical request", required = false, arity = 1)
         public String requestId;
     
-        @Parameter(names = {"--request-justification"}, description = "The body web service justification parameter", required = false, arity = 1)
+        @Parameter(names = {"--request-justification"}, description = "Justification for the clinical request", required = false, arity = 1)
         public String requestJustification;
     
-        @Parameter(names = {"--request-date"}, description = "The body web service date parameter", required = false, arity = 1)
+        @Parameter(names = {"--request-date"}, description = "Date of the clinical request", required = false, arity = 1)
         public String requestDate;
     
-        @DynamicParameter(names = {"--request-attributes"}, description = "The body web service attributes parameter. Use: --request-attributes key=value", required = false)
+        @DynamicParameter(names = {"--request-attributes"}, description = "Additional attributes for the clinical request. Use: --request-attributes key=value", required = false)
         public java.util.Map<java.lang.String,java.lang.Object> requestAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
         @Parameter(names = {"--responsible-id"}, description = "The body web service id parameter", required = false, arity = 1)
@@ -2269,7 +2311,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--responsible-postcode"}, description = "The body web service postcode parameter", required = false, arity = 1)
         public String responsiblePostcode;
     
-        @Parameter(names = {"--quality-control-summary"}, description = "Enum param allowed values: HIGH, MEDIUM, LOW, DISCARD, NEEDS_REVIEW, UNKNOWN", required = false, arity = 1)
+        @Parameter(names = {"--quality-control-summary"}, description = "Enum param allowed values: HIGH, MEDIUM, LOW, CRITICAL, UNKNOWN", required = false, arity = 1)
         public String qualityControlSummary;
     
         @Parameter(names = {"--quality-control-comments"}, description = "The body web service comments parameter", required = false, arity = 1)
@@ -2585,14 +2627,14 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--supporting-evidences-action"}, description = "Action to be performed if the array of supporting evidences is being updated.", required = false, arity = 1)
-        public String supportingEvidencesAction = "ADD"; 
+        @Parameter(names = {"--signatures-action"}, description = "Action to be performed if the array of signatures is being updated.", required = false, arity = 1)
+        public String signaturesAction = "ADD"; 
+    
+        @Parameter(names = {"--references-action"}, description = "Action to be performed if the array of references is being updated.", required = false, arity = 1)
+        public String referencesAction = "ADD"; 
     
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
         public boolean includeResult = false; 
-    
-        @Parameter(names = {"--title"}, description = "Report title.", required = false, arity = 1)
-        public String title;
     
         @Parameter(names = {"--overview"}, description = "Report overview.", required = false, arity = 1)
         public String overview;
@@ -2606,6 +2648,27 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--discussion-text"}, description = "The body web service text parameter", required = false, arity = 1)
         public String discussionText;
     
+        @Parameter(names = {"--recommendation"}, description = "Recommendation for the report", required = false, arity = 1)
+        public String recommendation;
+    
+        @Parameter(names = {"--methodology"}, description = "Methodology used to generate the report", required = false, arity = 1)
+        public String methodology;
+    
+        @Parameter(names = {"--limitations"}, description = "Limitations of the report", required = false, arity = 1)
+        public String limitations;
+    
+        @Parameter(names = {"--date"}, description = "Report date.", required = false, arity = 1)
+        public String date;
+    
+        @Parameter(names = {"--images"}, description = "Images related to the report", required = false, arity = 1)
+        public String images;
+    
+        @DynamicParameter(names = {"--attributes"}, description = "You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.. Use: --attributes key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
+    
+        @Parameter(names = {"--title"}, description = "Report title.", required = false, arity = 1)
+        public String title;
+    
         @Parameter(names = {"--logo"}, description = "Report logo.", required = false, arity = 1)
         public String logo;
     
@@ -2614,9 +2677,6 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--signature"}, description = "Report signature.", required = false, arity = 1)
         public String signature;
-    
-        @Parameter(names = {"--date"}, description = "Report date.", required = false, arity = 1)
-        public String date;
     
     }
 
