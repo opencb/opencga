@@ -71,11 +71,12 @@ public class EnterpriseApiCommonsImpl implements ApiCommons {
                 "Disease Panels",
                 "Analysis - Alignment",
                 "Analysis - Variant",
-                "Operations - Variant Storage",
-                "Meta",
                 "Analysis - Clinical",
                 "CVDB",
-                "Admin"
+                "Operations - Variant Storage",
+                "Meta",
+                "Admin",
+                "Ga4gh"
         );
     }
 }
