@@ -23,10 +23,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.ClinicalAudit;
 import org.opencb.biodata.models.clinical.ClinicalComment;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
-import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
-import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
-import org.opencb.biodata.models.clinical.interpretation.InterpretationStats;
+import org.opencb.biodata.models.clinical.interpretation.*;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
@@ -47,11 +44,14 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.clinical.*;
+import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.StatusParam;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelReferenceParam;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
+import org.opencb.opencga.core.models.study.configuration.ClinicalTierConfiguration;
 import org.opencb.opencga.core.models.study.configuration.InterpretationStudyConfiguration;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -1099,48 +1099,11 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         }
 
         // Check for repeated ids
-        if (updateParams != null && updateParams.getPrimaryFindings() != null && !updateParams.getPrimaryFindings().isEmpty()) {
-            ParamUtils.UpdateAction action = ParamUtils.UpdateAction.from(actionMap,
-                    InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key(), ParamUtils.UpdateAction.ADD);
-
-            Set<String> findingIds;
-            if (action == ParamUtils.UpdateAction.ADD && interpretation.getPrimaryFindings() != null) {
-                findingIds = interpretation.getPrimaryFindings().stream().map(ClinicalVariant::getId).collect(Collectors.toSet());
-            } else {
-                findingIds = new HashSet<>();
-            }
-
-            for (ClinicalVariant primaryFinding : updateParams.getPrimaryFindings()) {
-                if (StringUtils.isEmpty(primaryFinding.getId())) {
-                    throw new CatalogException("Missing primary finding id.");
-                }
-                if (findingIds.contains(primaryFinding.getId())) {
-                    throw new CatalogException("Primary finding ids should be unique. Found repeated id '" + primaryFinding.getId() + "'");
-                }
-                findingIds.add(primaryFinding.getId());
-            }
-        }
-        if (updateParams != null && updateParams.getSecondaryFindings() != null && !updateParams.getSecondaryFindings().isEmpty()) {
-            ParamUtils.UpdateAction action = ParamUtils.UpdateAction.from(actionMap,
-                    InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS.key(), ParamUtils.UpdateAction.ADD);
-
-            Set<String> findingIds;
-            if (action == ParamUtils.UpdateAction.ADD && interpretation.getSecondaryFindings() != null) {
-                findingIds = interpretation.getSecondaryFindings().stream().map(ClinicalVariant::getId).collect(Collectors.toSet());
-            } else {
-                findingIds = new HashSet<>();
-            }
-
-            for (ClinicalVariant finding : updateParams.getSecondaryFindings()) {
-                if (StringUtils.isEmpty(finding.getId())) {
-                    throw new CatalogException("Missing secondary finding id.");
-                }
-                if (findingIds.contains(finding.getId())) {
-                    throw new CatalogException("Secondary finding ids should be unique. Found repeated id '" + finding.getId() + "'");
-                }
-                findingIds.add(finding.getId());
-            }
-        }
+        ClinicalAnalysisStudyConfiguration clinicalConfiguration = study.getInternal().getConfiguration().getClinical();
+        validateFindings(interpretation.getPrimaryFindings(), updateParams.getPrimaryFindings(), actionMap,
+                clinicalConfiguration, InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key());
+        validateFindings(interpretation.getSecondaryFindings(), updateParams.getSecondaryFindings(), actionMap,
+                clinicalConfiguration, InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS.key());
 
         if (parameters.containsKey(InterpretationDBAdaptor.QueryParams.ID.key())) {
             ParamUtils.checkIdentifier(parameters.getString(InterpretationDBAdaptor.QueryParams.ID.key()),
@@ -1179,6 +1142,45 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             update.setResults(result.getResults());
         }
         return update;
+    }
+
+    private void validateFindings(List<ClinicalVariant> currentFindings, List<ClinicalVariant> newFindings, Map<String, Object> actionMap,
+                                  ClinicalAnalysisStudyConfiguration clinicalConfiguration, String key) throws CatalogException {
+        if (CollectionUtils.isNotEmpty(newFindings)) {
+            ParamUtils.UpdateAction action = ParamUtils.UpdateAction.from(actionMap, key, ParamUtils.UpdateAction.ADD);
+
+            Set<String> findingIds;
+            if (action == ParamUtils.UpdateAction.ADD && CollectionUtils.isNotEmpty(currentFindings)) {
+                findingIds = currentFindings.stream().map(ClinicalVariant::getId).collect(Collectors.toSet());
+            } else {
+                findingIds = new HashSet<>();
+            }
+
+            Set<String> tierIds = clinicalConfiguration.getTiers().stream()
+                    .map(ClinicalTierConfiguration::getId)
+                    .collect(Collectors.toSet());
+            for (ClinicalVariant finding : newFindings) {
+                if (StringUtils.isEmpty(finding.getId())) {
+                    throw new CatalogException("Missing " + key + " id.");
+                }
+                if (findingIds.contains(finding.getId())) {
+                    throw new CatalogException(key + " ids should be unique. Found repeated id '" + finding.getId() + "'");
+                }
+                findingIds.add(finding.getId());
+
+                if (CollectionUtils.isNotEmpty(finding.getEvidences())) {
+                    for (ClinicalVariantEvidence evidence : finding.getEvidences()) {
+                        if (evidence.getReview() != null && StringUtils.isNotEmpty(evidence.getReview().getTier())) {
+                            // Check Tier is one of the valid tier values defined in the configuration
+                            if (!tierIds.contains(evidence.getReview().getTier())) {
+                                throw new CatalogException("Tier '" + evidence.getReview().getTier() + "' is not a valid tier. "
+                                        + "Valid tiers are: " + String.join(", ", tierIds));
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     public OpenCGAResult<Interpretation> revert(String studyStr, String clinicalAnalysisId, String interpretationId,
