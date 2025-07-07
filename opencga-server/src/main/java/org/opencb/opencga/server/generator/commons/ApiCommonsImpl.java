@@ -60,8 +60,8 @@ public class ApiCommonsImpl implements ApiCommons {
                 "Analysis - Clinical",
                 "Operations - Variant Storage",
                 "Meta",
-                "Ga4gh",
-                "Admin"
+                "Admin",
+                "Ga4gh"
         );
     }
 }
