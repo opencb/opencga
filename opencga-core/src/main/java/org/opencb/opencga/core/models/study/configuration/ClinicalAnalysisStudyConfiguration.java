@@ -41,6 +41,7 @@ public class ClinicalAnalysisStudyConfiguration {
         List<ClinicalStatusValue> interpretationStatusList = new ArrayList<>(3);
         List<ClinicalPriorityValue> priorities = new ArrayList<>(5);
         List<ClinicalConsent> clinicalConsentList = new ArrayList<>();
+        List<ClinicalTierConfiguration> clinicalTierConfigurationList = new ArrayList<>(3);
 
         clinicalStatusValueList.add(
                 new ClinicalStatusValue("READY_FOR_INTERPRETATION", "The Clinical Analysis is ready for interpretations",
@@ -91,9 +92,16 @@ public class ClinicalAnalysisStudyConfiguration {
         clinicalConsentList.add(new ClinicalConsent("CARRIER_FINDINGS", "Carrier findings", ""));
         clinicalConsentList.add(new ClinicalConsent("RESEARCH_FINDINGS", "Research findings", ""));
 
+        clinicalTierConfigurationList.add(new ClinicalTierConfiguration("TIER_1", "The most relevant findings,"
+                + " usually related to the main clinical question", 1));
+        clinicalTierConfigurationList.add(new ClinicalTierConfiguration("TIER_2", "Relevant findings, but not related to the main"
+                + " clinical question", 2));
+        clinicalTierConfigurationList.add(new ClinicalTierConfiguration("TIER_3", "Findings that are not relevant for the clinical question"
+                + " and not related to the main clinical question", 3));
+
         return new ClinicalAnalysisStudyConfiguration(clinicalStatusValueList,
                 new InterpretationStudyConfiguration(interpretationStatusList, Collections.emptyList(), Collections.emptyMap(),
-                        Collections.emptyList()), priorities, flagValueList, clinicalConsentList, Collections.emptyList(),
+                        Collections.emptyList()), priorities, flagValueList, clinicalConsentList, clinicalTierConfigurationList,
                 ClinicalReportConfiguration.defaultClinicalReportConfiguration());
     }
 
