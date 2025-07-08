@@ -91,6 +91,7 @@ public class RegenieUtils {
     public static final String REGENIE_HEADER_PREFIX = "CHROM GENPOS ";
 
     public static final String FILE_PREFIX = "file://";
+    public static final String DOCKER_FILE_PREFIX = "docker://";
     public static final String COHORT_PREFIX = "cohort:";
     public static final String PHENOTYPE_PREFIX = "phenotype:";
     public static final String FLAG_TRUE = "flag:true";

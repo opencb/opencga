@@ -217,7 +217,7 @@ public class RegenieStep1WrapperAnalysis extends OpenCgaToolScopeStudy {
         }
         if (StringUtils.isEmpty(variantsSource) && StringUtils.isNotEmpty(regenieParams.getVcfFile())) {
             vcfFile = checkRegenieInputFile(regenieParams.getVcfFile(), false, "VCF", study, catalogManager, token);
-            logger.info("Variants from the BGEN file {}", vcfFile);
+            logger.info("Variants from the VCF file {}", vcfFile);
             variantsSource = "vcf";
         }
         if (StringUtils.isEmpty(variantsSource)) {

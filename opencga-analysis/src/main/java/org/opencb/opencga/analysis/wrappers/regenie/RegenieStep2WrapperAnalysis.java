@@ -106,6 +106,11 @@ public class RegenieStep2WrapperAnalysis extends OpenCgaToolScopeStudy {
                 .includeSampleData("GT")
                 .unknownGenotype("./.");
 
+        Path exportedVcfPath = getOutDir().resolve("tmp-regenie-step2.vcf").toAbsolutePath();
+        variantStorageManager.exportData(exportedVcfPath.toString(), VariantWriterFactory.VariantOutputFormat.VCF, null, variantQuery,
+                QueryOptions.empty(), token);
+        logger.info("Exported variants to VCF file for regenie step2 at {}", exportedVcfPath);
+
         Path resultsPath = getOutDir().resolve("tmp-results-regenie-step2.txt");
         variantStorageManager.walkData(resultsPath.toString(), VariantWriterFactory.VariantOutputFormat.VCF,
                 variantQuery, new QueryOptions(), walkerDockerImage, regenieCmd.toString(), getToken());
@@ -146,7 +151,9 @@ public class RegenieStep2WrapperAnalysis extends OpenCgaToolScopeStudy {
                 regenieCmd.append(" ").append(entry.getKey());
             } else if (entry.getValue() instanceof String) {
                 String value = entry.getValue().toString();
-                if (FLAG_TRUE.equalsIgnoreCase(value)) {
+                if (value.startsWith(DOCKER_FILE_PREFIX)) {
+                    regenieCmd.append(" ").append(entry.getKey()).append(" ").append(value.substring(DOCKER_FILE_PREFIX.length()));
+                } else if (FLAG_TRUE.equalsIgnoreCase(value)) {
                     regenieCmd.append(" ").append(entry.getKey());
                 } else if (!FLAG_FALSE.equalsIgnoreCase(value)) {
                     regenieCmd.append(" ").append(entry.getKey()).append(" ").append(value);

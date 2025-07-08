@@ -9,7 +9,10 @@ class Regenie(VariantWalker):
         self.args = args;
         self.vcf_file = self.get_tempfile(prefix="data_", suffix=".vcf")
         self.vcf_annotated_file = self.get_tempfile(prefix="data_", suffix=".vcf.gz")
-        self.gwas_results = self.getTmpdir() + "/gwas_results"
+        self.regenie_results = self.getTmpdir() + "/regenie_results"
+        # print(f"setup: {self.vcf_file}", file=sys.stderr)
+        # print(f"setup: {self.vcf_annotated_file}", file=sys.stderr)
+        # print(f"setup: {self.regenie_results}", file=sys.stderr)
 
     def header(self, header):
         self.fwrite_lines(self.vcf_file, header, "w")
@@ -21,7 +24,8 @@ class Regenie(VariantWalker):
 
     def cleanup(self):
         self.run_regenie_step2()
-        out_file = self.gwas_results + "_PHENO.regenie"
+        out_file = self.regenie_results + "_PHENO.regenie"
+        # print(f"cleanup: {out_file}", file=sys.stderr)
         for line in self.fread_lines(out_file):
             self.write(line.rstrip())
         pass
@@ -35,6 +39,7 @@ class Regenie(VariantWalker):
                 self.vcf_file,
                 "-Oz", "-o", self.vcf_annotated_file
             ]
+            # print(f"Command: {bcftools_cmd}", file=sys.stderr)
             subprocess.run(bcftools_cmd, check=True, stderr=subprocess.PIPE)
 
             # 2. plink1.9 --vcf to --bed
@@ -46,6 +51,7 @@ class Regenie(VariantWalker):
                 "--out", plink_file,
                 "--silent"  # Suppress plink's verbose output
             ]
+            # print(f"Command: {plink_cmd}", file=sys.stderr)
             subprocess.run(plink_cmd, check=True, stderr=subprocess.PIPE)
 
             # 3. regenie step 2
@@ -53,9 +59,10 @@ class Regenie(VariantWalker):
                 "regenie",
                 "--step", "2",
                 "--bed", plink_file,
-                "--out", self.gwas_results
+                "--out", self.regenie_results
             ]
             regenie_cmd.extend(self.args)
+            # print(f"Command: {regenie_cmd}", file=sys.stderr)
 
             #self.write(f"Running regenie {regenie_cmd}...")
             subprocess.run(regenie_cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
