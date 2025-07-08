@@ -146,7 +146,7 @@ public class JsonOpenApiGenerator {
         }
         Map<String, Definition> definitions = SwaggerDefinitionGenerator.getDefinitions(beansDefinitions);
 
-        swagger.setTags(sortTagsByName(tags, apiCommons));
+        swagger.setTags(tags);
 
         Map<String, Map<String, Method>> orderedPaths = new LinkedHashMap<>();
         paths.entrySet().stream()
@@ -173,37 +173,37 @@ public class JsonOpenApiGenerator {
         return swagger;
     }
 
-    public List<Tag> sortTagsByName(List<Tag> tags,ApiCommons apiCommons) {
-        // Build a lookup map from tag name to Tag instance
-        List<String> fixedOrder = apiCommons.getOrderCategories();
-        Map<String, Tag> nameToTag = new HashMap<>();
-        for (Tag tag : tags) {
-            String name = tag.getName();
-            if (!fixedOrder.contains(name)) {
-                // Unknown name → error out immediately
-                throw new IllegalArgumentException(
-                        "Unsupported tag name: '" + name + "'. Allowed values are: " + fixedOrder
-                );
-            }
-            // If there are duplicates, the last one wins; adjust if needed
-            nameToTag.put(name, tag);
-        }
-
-        // Build the result list by walking FIXED_ORDER exactly once
-        List<Tag> sorted = new ArrayList<>(tags.size());
-        for (String expectedName : fixedOrder) {
-            Tag t = nameToTag.get(expectedName);
-            if (t == null) {
-                // A required tag is missing → error out
-                throw new IllegalArgumentException(
-                        "Missing required tag: '" + expectedName + "'. All FIXED_ORDER entries must be present."
-                );
-            }
-            sorted.add(t);
-        }
-
-        return sorted;
-    }
+//    public List<Tag> sortTagsByName(List<Tag> tags,ApiCommons apiCommons) {
+//        // Build a lookup map from tag name to Tag instance
+//        List<String> fixedOrder = apiCommons.getOrderCategories();
+//        Map<String, Tag> nameToTag = new HashMap<>();
+//        for (Tag tag : tags) {
+//            String name = tag.getName();
+//            if (!fixedOrder.contains(name)) {
+//                // Unknown name → error out immediately
+//                throw new IllegalArgumentException(
+//                        "Unsupported tag name: '" + name + "'. Allowed values are: " + fixedOrder
+//                );
+//            }
+//            // If there are duplicates, the last one wins; adjust if needed
+//            nameToTag.put(name, tag);
+//        }
+//
+//        // Build the result list by walking FIXED_ORDER exactly once
+//        List<Tag> sorted = new ArrayList<>(tags.size());
+//        for (String expectedName : fixedOrder) {
+//            Tag t = nameToTag.get(expectedName);
+//            if (t == null) {
+//                // A required tag is missing → error out
+//                throw new IllegalArgumentException(
+//                        "Missing required tag: '" + expectedName + "'. All FIXED_ORDER entries must be present."
+//                );
+//            }
+//            sorted.add(t);
+//        }
+//
+//        return sorted;
+//    }
 
     private Map<String, Response> getStringResponseMap(ApiOperation apiOperation) {
         Map<String,Response> responses=new HashMap<>();

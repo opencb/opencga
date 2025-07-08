@@ -5,5 +5,5 @@ import java.util.List;
 public interface ApiCommons {
 
     List<Class<?>> getApiClasses();
-    List<String> getOrderCategories();
+   // List<String> getOrderCategories();
 }

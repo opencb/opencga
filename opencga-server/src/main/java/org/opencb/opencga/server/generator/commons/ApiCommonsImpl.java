@@ -16,6 +16,8 @@ import java.util.List;
 public class ApiCommonsImpl implements ApiCommons {
 
     public List<Class<?>> getApiClasses(){
+
+        //The order of the classes is important for the order of the categories in the swagger.
         List<Class<?>> classes = new ArrayList<>();
         classes.add(OrganizationWSServer.class);
         classes.add(UserWSServer.class);
@@ -34,12 +36,12 @@ public class ApiCommonsImpl implements ApiCommons {
         classes.add(ClinicalWebService.class);
         classes.add(VariantOperationWebService.class);
         classes.add(MetaWSServer.class);
-        classes.add(Ga4ghWSServer.class);
         classes.add(AdminWSServer.class);
+        classes.add(Ga4ghWSServer.class);
 
         return classes;
     }
-
+/*
     @Override
     public List<String> getOrderCategories() {
         return Arrays.asList(
@@ -63,5 +65,5 @@ public class ApiCommonsImpl implements ApiCommons {
                 "Admin",
                 "Ga4gh"
         );
-    }
+    }*/
 }
