@@ -6,10 +6,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.ToolFactory;
-import org.opencb.opencga.analysis.variant.operations.VariantAnnotationIndexOperationTool;
-import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
-import org.opencb.opencga.analysis.variant.operations.VariantSecondaryAnnotationIndexOperationTool;
-import org.opencb.opencga.analysis.variant.operations.VariantSecondarySampleIndexOperationTool;
+import org.opencb.opencga.analysis.variant.operations.*;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.api.OrganizationDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -70,7 +67,9 @@ public class VariantOperationJanitor extends MonitorParentDaemon {
         chores = Arrays.asList(
                 new VariantAnnotationIndexOperationChore(operationConfig),
                 new VariantSecondaryAnnotationIndexOperationChore(operationConfig),
-                new VariantSecondarySampleIndexOperationChore(operationConfig));
+                new VariantSecondarySampleIndexOperationChore(operationConfig)
+                // new VariantStatsIndexOperationChore(operationConfig)
+                );
     }
 
     @Override
@@ -341,12 +340,19 @@ public class VariantOperationJanitor extends MonitorParentDaemon {
         @Override
         public boolean isOperationRequired(Project project, Study study) {
             return project.getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId()
-                    .equals(OperationIndexStatus.PENDING);
+                    .equals(OperationIndexStatus.PENDING)
+                    && project.getInternal().getVariant().getAnnotationIndex().getStatus().getId()
+                    .equals(OperationIndexStatus.READY);
+            // TODO: Wait for variant-stats-index READY
         }
 
         @Override
         public List<String> dependantTools() {
-            return Collections.unmodifiableList(Arrays.asList(VariantIndexOperationTool.ID, VariantAnnotationIndexOperationTool.ID));
+            return Collections.unmodifiableList(Arrays.asList(
+                    VariantIndexOperationTool.ID,
+                    VariantStatsIndexOperationTool.ID,
+                    VariantAnnotationIndexOperationTool.ID
+            ));
         }
 
         @Override
