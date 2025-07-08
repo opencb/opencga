@@ -104,9 +104,9 @@ public class JobManager extends ResourceManager<Job> {
 //        } else {
 //            queryCopy.put(JobDBAdaptor.QueryParams.ID.key(), entry);
 //        }
-////        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-////                JobDBAdaptor.QueryParams.UUID.key(), JobDBAdaptor.QueryParams.UID.key(), JobDBAdaptor.QueryParams.STUDY_UID.key(),
-////                JobDBAdaptor.QueryParams.ID.key(), JobDBAdaptor.QueryParams.STATUS.key()));
+    ////        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+    ////                JobDBAdaptor.QueryParams.UUID.key(), JobDBAdaptor.QueryParams.UID.key(), JobDBAdaptor.QueryParams.STUDY_UID.key(),
+    ////                JobDBAdaptor.QueryParams.ID.key(), JobDBAdaptor.QueryParams.STATUS.key()));
 //        OpenCGAResult<Job> jobDataResult = getJobDBAdaptor(organizationId).get(studyUid, queryCopy, options, user);
 //        if (jobDataResult.getNumResults() == 0) {
 //            jobDataResult = getJobDBAdaptor(organizationId).get(queryCopy, options);
@@ -445,7 +445,10 @@ public class JobManager extends ResourceManager<Job> {
                 // First, check the valid OpenCGA file patterns; and then, the fileParamSuffix
                 if (entry.getValue() instanceof String) {
                     String fileStr = (String) entry.getValue();
-                    if (inputFileUtils.isValidOpenCGAFile(fileStr)) {
+                    if (inputFileUtils.isDockerFile(fileStr)) {
+                        // Do nothing. Docker files are not considered input files.
+                        logger.info("Skipping docker file '{}'", fileStr);
+                    } else if (inputFileUtils.isValidOpenCGAFile(fileStr)) {
                         try {
                             File file = inputFileUtils.findOpenCGAFileFromPattern(study, fileStr, token);
                             inputFiles.add(file);
@@ -474,7 +477,10 @@ public class JobManager extends ResourceManager<Job> {
                     for (Map.Entry<String, Object> subEntry : dynamicParams.entrySet()) {
                         if (subEntry.getValue() instanceof String) {
                             String fileStr = (String) subEntry.getValue();
-                            if (inputFileUtils.isValidOpenCGAFile(fileStr)) {
+                            if (inputFileUtils.isDockerFile(fileStr)) {
+                                // Do nothing. Docker files are not considered input files.
+                                logger.info("Skipping docker file '{}'", fileStr);
+                            } else if (inputFileUtils.isValidOpenCGAFile(fileStr)) {
                                 try {
                                     File file = inputFileUtils.findOpenCGAFileFromPattern(study, fileStr, token);
                                     inputFiles.add(file);
@@ -511,7 +517,10 @@ public class JobManager extends ResourceManager<Job> {
             for (Map.Entry<String, Object> entry : job.getParams().entrySet()) {
                 if (entry.getValue() instanceof String) {
                     String fileStr = (String) entry.getValue();
-                    if (inputFileUtils.isValidOpenCGAFile(fileStr)) {
+                    if (inputFileUtils.isDockerFile(fileStr)) {
+                        // Do nothing. Docker files are not considered input files.
+                        logger.info("Skipping docker file '{}'", fileStr);
+                    } else if (inputFileUtils.isValidOpenCGAFile(fileStr)) {
                         try {
                             File file = inputFileUtils.findOpenCGAFileFromPattern(study, fileStr, token);
                             inputFiles.add(file);
@@ -526,7 +535,10 @@ public class JobManager extends ResourceManager<Job> {
                     for (Map.Entry<String, Object> subEntry : dynamicParams.entrySet()) {
                         if (subEntry.getValue() instanceof String) {
                             String fileStr = (String) subEntry.getValue();
-                            if (inputFileUtils.isValidOpenCGAFile(fileStr)) {
+                            if (inputFileUtils.isDockerFile(fileStr)) {
+                                // Do nothing. Docker files are not considered input files.
+                                logger.info("Skipping docker file '{}'", fileStr);
+                            } else if (inputFileUtils.isValidOpenCGAFile(fileStr)) {
                                 try {
                                     File file = inputFileUtils.findOpenCGAFileFromPattern(study, fileStr, token);
                                     inputFiles.add(file);
@@ -1577,7 +1589,7 @@ public class JobManager extends ResourceManager<Job> {
         if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
             // Fetch updated job
             OpenCGAResult<Job> result = getJobDBAdaptor(organizationId).get(study.getUid(), new Query(JobDBAdaptor.QueryParams.UID.key(),
-                            job.getUid()), options, userId);
+                    job.getUid()), options, userId);
             update.setResults(result.getResults());
         }
         return update;

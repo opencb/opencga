@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.utils;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
@@ -21,6 +22,7 @@ public class InputFileUtils {
 
     private final CatalogManager catalogManager;
 
+    private static final String DOCKER_PATH_PREFIX = "docker://";
     private static final Pattern OPENCGA_PATH_PATTERN = Pattern.compile("^(?i)(ocga://|opencga://|file://)(.+)$");
     private static final Pattern OPENCGA_PATH_IN_LINE_PATTERN = Pattern.compile("(?i)(ocga://|opencga://|file://)([^\\s,;]+)");
     private static final String OUTPUT = "$OUTPUT";
@@ -30,6 +32,10 @@ public class InputFileUtils {
 
     public InputFileUtils(CatalogManager catalogManager) {
         this.catalogManager = catalogManager;
+    }
+
+    public boolean isDockerFile(String content) {
+        return StringUtils.isNotEmpty(content) && content.startsWith(DOCKER_PATH_PREFIX);
     }
 
     public boolean isValidOpenCGAFile(String content) {
