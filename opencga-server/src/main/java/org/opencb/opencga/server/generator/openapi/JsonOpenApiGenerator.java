@@ -1,5 +1,6 @@
 package org.opencb.opencga.server.generator.openapi;
 
+import com.sun.xml.internal.ws.util.StringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.opencga.core.common.GitRepositoryState;
@@ -31,12 +32,10 @@ public class JsonOpenApiGenerator {
         info.setVersion(GitRepositoryState.getInstance().getBuildVersion());
         swagger.setInfo(info);
         swagger.setHost(StringUtils.isEmpty(host) ? "test.app.zettagenomics.com" : host);
-        environment = StringUtils.removeStart(environment, "/");
-        environment = StringUtils.removeEnd(environment, "/");
-        if (environment.isEmpty()) {
-            swagger.setBasePath("/opencga/webservices/rest");
-        } else {
+        if (StringUtils.isNotEmpty(environment)) {
             swagger.setBasePath("/" + environment + "/opencga/webservices/rest");
+        }else{
+            swagger.setBasePath("/opencga/webservices/rest");
         }
         List<String> schemes = new ArrayList<>();
         schemes.add("https");
