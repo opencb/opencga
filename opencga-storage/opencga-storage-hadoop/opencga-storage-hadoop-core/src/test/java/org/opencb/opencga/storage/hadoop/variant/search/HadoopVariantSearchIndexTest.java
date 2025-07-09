@@ -76,4 +76,50 @@ public class HadoopVariantSearchIndexTest extends VariantSearchIndexTest impleme
 
     }
 
+    @Test
+    public void testSearchIndexWhileStatsIndex() throws Exception {
+        // Test what would happen if a variantStats or variantAnnotation were being executed while running the variant-secondary-annotation-index
+
+        URI file = getPlatinumFile(1);
+        runETL(variantStorageEngine, file, "study", new ObjectMap());
+        HadoopVariantStorageEngine variantStorageEngine = (HadoopVariantStorageEngine) this.variantStorageEngine;
+        VariantHadoopDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
+        Long variants = dbAdaptor.count().first();
+
+        // Create empty search index
+        SearchIndexMetadata indexMetadata = variantStorageEngine.getVariantSearchManager().newIndexMetadata();
+        variantStorageEngine.getVariantSearchManager().createCollections(indexMetadata);
+
+        // Run DiscoverPendingVariants and update timestamp
+        SecondaryIndexPendingVariantsFileBasedManager pendingVariantsFileBasedManager = new SecondaryIndexPendingVariantsFileBasedManager(dbAdaptor.getVariantTable(), dbAdaptor.getConfiguration());
+        pendingVariantsFileBasedManager.discoverPending(variantStorageEngine.getMRExecutor(),
+                dbAdaptor.getVariantTable(), false, new ObjectMap());
+        Assert.assertTrue(variantStorageEngine.shouldRunDiscoverPendingVariantsSecondaryAnnotationIndex(variantStorageEngine.getVariantSearchManager().getSearchIndexMetadata(), false));
+
+        variantStorageEngine.getMetadataManager().updateProjectMetadata(pm -> {
+            SearchIndexMetadata im = pm.getSecondaryAnnotationIndex().getLastStagingOrActiveIndex();
+            im.getAttributes().put(HadoopVariantStorageEngine.LAST_PENDING_VARIANTS_TO_SEARCH_INDEX_UPDATE_TS, System.currentTimeMillis());
+        });
+        Assert.assertFalse(variantStorageEngine.shouldRunDiscoverPendingVariantsSecondaryAnnotationIndex(variantStorageEngine.getVariantSearchManager().getSearchIndexMetadata(), false));
+
+        // Update variant stats. This stats won't be included in the DiscoverPendingVariants files.
+        variantStorageEngine.calculateStats("study", Collections.singletonList(StudyEntry.DEFAULT_COHORT), new QueryOptions());
+        Assert.assertTrue(variantStorageEngine.shouldRunDiscoverPendingVariantsSecondaryAnnotationIndex(variantStorageEngine.getVariantSearchManager().getSearchIndexMetadata(), false));
+
+        // Run secondaryAnnotationIndex but skip DiscoverPendingVariants. Should load search index without stats.
+        variantStorageEngine.getOptions().put("skipDiscoverPendingVariantsToSecondaryIndex", true);
+        VariantSearchLoadResult result = searchIndex();
+        variantStorageEngine.getOptions().put("skipDiscoverPendingVariantsToSecondaryIndex", false);
+        System.out.println("result = " + result);
+        Assert.assertEquals(variants.longValue(), result.getNumInsertedVariants());
+        Assert.assertFalse(result.getAttributes().getBoolean("runDiscoverPendingVariantsToSecondaryIndexMr"));
+
+        // It should still need to run the DiscoverPendingVariants
+        Assert.assertTrue(variantStorageEngine.shouldRunDiscoverPendingVariantsSecondaryAnnotationIndex(variantStorageEngine.getVariantSearchManager().getSearchIndexMetadata(), false));
+        result = searchIndex();
+        System.out.println("result = " + result);
+        Assert.assertEquals(variants.longValue(), result.getNumLoadedVariantsPartialStatsUpdate());
+        Assert.assertTrue(result.getAttributes().getBoolean("runDiscoverPendingVariantsToSecondaryIndexMr"));
+    }
+
 }

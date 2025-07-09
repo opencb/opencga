@@ -802,11 +802,12 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             }
         }
 
-        return secondaryIndex(inputQuery, inputQueryOptions, overwrite, indexMetadata);
+        long updateTimestamp = System.currentTimeMillis();
+        return secondaryIndex(inputQuery, inputQueryOptions, overwrite, indexMetadata, updateTimestamp);
     }
 
     protected VariantSearchLoadResult secondaryIndex(Query inputQuery, QueryOptions inputQueryOptions, boolean overwrite,
-                                                     SearchIndexMetadata indexMetadata)
+                                                     SearchIndexMetadata indexMetadata, long updateStartTimestamp)
             throws StorageEngineException, IOException, VariantSearchException {
         Query query = VariantQueryUtils.copy(inputQuery);
         if (query.keySet().stream().anyMatch(key -> !VariantQueryParam.REGION.key().equals(key))) {
@@ -818,7 +819,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
         // check files and samples that will be affected
         boolean partialLoad = isValidParam(query, VariantQueryParam.REGION);
-        long newTimestamp = System.currentTimeMillis();
         VariantStorageMetadataManager mm = getMetadataManager();
         Map<Integer, Set<Integer>> filesToBeUpdated = new HashMap<>();
         Map<Integer, Set<Integer>> samplesToBeUpdated = new HashMap<>();
@@ -854,7 +854,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
 
         // then, load variants
-        VariantSearchLoadResult load = secondaryIndexLoad(overwrite, indexMetadata, query, queryOptions);
+        VariantSearchLoadResult load = secondaryIndexLoad(overwrite, indexMetadata, query, queryOptions, updateStartTimestamp);
 
         if (partialLoad) {
             logger.info("Partial secondary annotation index. Do not update modificationDate nor status");
@@ -867,7 +867,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                         indexMetadata.getStatus(), SearchIndexMetadata.Status.ACTIVE);
             }
             VariantSearchManager variantSearchManager = getVariantSearchManager();
-            ProjectMetadata projectMetadata = variantSearchManager.setActiveIndex(indexMetadata, newTimestamp);
+            ProjectMetadata projectMetadata = variantSearchManager.setActiveIndex(indexMetadata, updateStartTimestamp);
 
             for (SearchIndexMetadata deprecatedIndex : projectMetadata.getSecondaryAnnotationIndex().getDeprecatedIndexes()) {
                 variantSearchManager.delete(deprecatedIndex);
@@ -896,14 +896,16 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     protected VariantSearchLoadResult secondaryIndexLoad(boolean overwrite, SearchIndexMetadata indexMetadata,
-                                                       Query query, QueryOptions queryOptions) throws StorageEngineException, IOException {
+                                                         Query query, QueryOptions queryOptions, long updateStartTimestamp)
+            throws StorageEngineException, IOException {
         VariantSearchManager variantSearchManager = getVariantSearchManager();
         VariantDBAdaptor dbAdaptor = getDBAdaptor();
 
         if (!overwrite) {
             query.put(VARIANTS_TO_INDEX.key(), true);
         }
-        VariantSolrInputDocumentDataWriter writer = new VariantSolrInputDocumentDataWriter(getVariantSearchManager(), indexMetadata);
+        VariantSolrInputDocumentDataWriter writer = new VariantSolrInputDocumentDataWriter(
+                getVariantSearchManager(), indexMetadata);
 
         try (VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions)) {
             return variantSearchManager.load(indexMetadata, iterator, writer);

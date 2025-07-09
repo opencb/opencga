@@ -528,10 +528,9 @@ public class VariantSearchManager {
 
         ParallelTaskRunner<Variant, VariantSearchUpdateDocument> ptr = new ParallelTaskRunner<>(
                 new VariantDBReader(variantDBIterator),
-                progressLogger
-                        .<Variant>asTask(d -> "up to position " + d)
-                        .then(converterTask),
-                writer,
+                converterTask,
+                writer.then(progressLogger
+                        .asTask(d -> "up to position " + d.getVariant() + " -> " + d.getDocument().jsonStr())),
                 ParallelTaskRunner.Config.builder()
                         .setSorted(true)
                         .setBatchSize(batchSize)
@@ -549,9 +548,13 @@ public class VariantSearchManager {
             watchdog.stopWatchdog();
         }
         int count = variantDBIterator.getCount();
-        logger.info("Variant Search loading done. " + count + " variants indexed in " + TimeUtils.durationToString(stopWatch));
+        logger.info("Variant Search loading done. " + (writer.getInsertedDocuments() + writer.getPartiallyUpdatedDocuments())
+                + " variants indexed in " + TimeUtils.durationToString(stopWatch));
+        logger.info(" - Processed variants: " + count);
+        logger.info(" - Inserted documents: " + writer.getInsertedDocuments());
+        logger.info(" - Partially updated documents: " + writer.getPartiallyUpdatedDocuments());
         float ratePerHour = count / (stopWatch.getTime() / 1000f) * 3600;
-        logger.info("Insertion rate: " + String.format("%.2f", ratePerHour) + " variants/hour "
+        logger.info(" - Insert/Update rate: " + String.format("%.2f", ratePerHour) + " variants/hour "
                 + "(" + String.format("%.2f", ratePerHour / 1000000) + " M/h)");
 
         waitForReplicasInSync(indexMetadata, 5, TimeUnit.MINUTES, false);
@@ -1119,14 +1122,16 @@ public class VariantSearchManager {
     public ProjectMetadata setActiveIndex(SearchIndexMetadata indexMetadata, long newTimestamp) throws StorageEngineException {
         return metadataManager.updateProjectMetadata(projectMetadata -> {
             for (SearchIndexMetadata value : projectMetadata.getSecondaryAnnotationIndex().getValues()) {
-                if (value.getStatus() == SearchIndexMetadata.Status.ACTIVE) {
-                    // If there is an active index, update its status to DEPRECATED
-                    value.setStatus(SearchIndexMetadata.Status.DEPRECATED);
+                if (value.getVersion() == indexMetadata.getVersion()) {
+                    value.setStatus(SearchIndexMetadata.Status.ACTIVE);
+                    value.setLastUpdateDate(Date.from(Instant.ofEpochMilli(newTimestamp)));
+                } else {
+                    if (value.getStatus() == SearchIndexMetadata.Status.ACTIVE || value.getStatus() == SearchIndexMetadata.Status.STAGING) {
+                        // If there is an older active or staging index, update its status to DEPRECATED
+                        value.setStatus(SearchIndexMetadata.Status.DEPRECATED);
+                    }
                 }
             }
-            projectMetadata.getSecondaryAnnotationIndex().getIndexMetadata(indexMetadata.getVersion())
-                    .setStatus(SearchIndexMetadata.Status.ACTIVE)
-                    .setLastUpdateDate(Date.from(Instant.ofEpochMilli(newTimestamp)));
             return projectMetadata;
         });
     }

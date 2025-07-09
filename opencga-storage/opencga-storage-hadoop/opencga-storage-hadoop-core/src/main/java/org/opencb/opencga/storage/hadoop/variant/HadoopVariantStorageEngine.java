@@ -141,11 +141,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     public static final String STUDY_ID = "studyId";
 
     // Project attributes
-    // Last time (in millis from epoch) that a file was loaded
+    // Last time (in millis from epoch) that a file was loaded. Timestamp at operation end!
     public static final String LAST_LOADED_FILE_TS = "lastLoadedFileTs";
-    // Last time (in millis from epoch) that a variant annotation was executed
+    // Last time (in millis from epoch) that a variant annotation was executed. Timestamp at operation end!
     public static final String LAST_VARIANT_ANNOTATION_TS = "lastVariantAnnotationTs";
-    // Last time (in millis from epoch) that a variant stats index was executed
+    // Last time (in millis from epoch) that a variant stats index was executed. Timestamp at operation end!
     public static final String LAST_VARIANT_STATS_INDEX_TS = "lastVariantStatsIndexTs";
     // Last time (in millis from epoch) that the list of "pendingVariantsToAnnotate" was updated. Timestamp at operation start!
     public static final String LAST_PENDING_VARIANTS_TO_ANNOTATE_UPDATE_TS = "lastVariantsToAnnotateUpdateTs";
@@ -485,12 +485,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                 false, params.isOverwrite(), options);
     }
 
-    @Override
-    public VariantSearchLoadResult secondaryIndex(Query query, QueryOptions queryOptions, final boolean overwrite,
-                                                  SearchIndexMetadata indexMetadata)
-            throws StorageEngineException, IOException, VariantSearchException {
-        queryOptions = queryOptions == null ? new QueryOptions() : new QueryOptions(queryOptions);
-
+    public boolean shouldRunDiscoverPendingVariantsSecondaryAnnotationIndex(SearchIndexMetadata indexMetadata, boolean overwrite)
+            throws IOException, StorageEngineException {
         boolean shouldRunDiscover = false;
         if (overwrite) {
             logger.info("Overwrite is true, running discover pending variants to secondary annotation index");
@@ -550,9 +546,18 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             shouldRunDiscover = true;
             logger.info("Force discover pending variants to secondary index.");
         }
+        return shouldRunDiscover;
+    }
+
+    @Override
+    public VariantSearchLoadResult secondaryIndex(Query query, QueryOptions queryOptions, final boolean overwrite,
+                                                  SearchIndexMetadata indexMetadata, long updateStartTimestamp)
+            throws StorageEngineException, IOException, VariantSearchException {
+        queryOptions = queryOptions == null ? new QueryOptions() : new QueryOptions(queryOptions);
+
+        boolean shouldRunDiscover = shouldRunDiscoverPendingVariantsSecondaryAnnotationIndex(indexMetadata, overwrite);
         final ObjectMap mrResult;
         if (shouldRunDiscover) {
-            long updateTimestamp = System.currentTimeMillis();
             boolean partialLoad = isValidParam(query, VariantQueryParam.REGION);
             ObjectMap mrOptions = getMergedOptions(queryOptions);
             if (partialLoad) {
@@ -561,18 +566,25 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             mrResult = new SecondaryIndexPendingVariantsFileBasedManager(getVariantTableName(), getConf())
                     .discoverPending(getMRExecutor(), getVariantTableName(), overwrite, mrOptions.appendAll(query));
             if (!partialLoad) {
+                // Update pending variants timestamp if this is not a partial load
+                long pendingVariantsUpdateTimestamp = updateStartTimestamp;
                 int version = indexMetadata.getVersion();
                 indexMetadata = getMetadataManager().updateProjectMetadata(pm -> {
                     SearchIndexMetadata im = pm.getSecondaryAnnotationIndex().getIndexMetadata(version);
                     im.getAttributes().put("pendingVariantsToSecondaryIndex", mrResult);
-                    im.getAttributes().put(LAST_PENDING_VARIANTS_TO_SEARCH_INDEX_UPDATE_TS, updateTimestamp);
+                    im.getAttributes().put(LAST_PENDING_VARIANTS_TO_SEARCH_INDEX_UPDATE_TS, pendingVariantsUpdateTimestamp);
                 }).getSecondaryAnnotationIndex().getIndexMetadata(version);
             }
         } else {
             mrResult = null;
+            // Discover pending variants to secondary index not run.
+            // Use the "lastPendingVariantsToSecondaryIndexUpdateTs" attribute as the updateStartTimestamp.
+            // This is the timestamp of the last time we ran discover pending variants to secondary index
+            updateStartTimestamp = indexMetadata.getAttributes().getLong(LAST_PENDING_VARIANTS_TO_SEARCH_INDEX_UPDATE_TS);
         }
 
-        VariantSearchLoadResult loadResult = super.secondaryIndex(query, queryOptions, overwrite, indexMetadata);
+
+        VariantSearchLoadResult loadResult = super.secondaryIndex(query, queryOptions, overwrite, indexMetadata, updateStartTimestamp);
         if (mrResult == null) {
             loadResult.getAttributes().put("runDiscoverPendingVariantsToSecondaryIndexMr", false);
         } else {
@@ -584,7 +596,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
 
     @Override
     protected VariantSearchLoadResult secondaryIndexLoad(boolean overwrite, SearchIndexMetadata indexMetadata,
-                                                         Query query, QueryOptions queryOptions)
+                                                         Query query, QueryOptions queryOptions, long updateStartTimestamp)
             throws StorageEngineException, IOException {
         VariantSearchManager variantSearchManager = getVariantSearchManager();
 
@@ -599,7 +611,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         HadoopVariantSearchDataWriter writer = new HadoopVariantSearchDataWriter(
                 variantSearchManager, indexMetadata,
                 getDBAdaptor(),
-                cleaner
+                cleaner,
+                updateStartTimestamp
         );
 
         try (VariantDBIterator iterator = VariantDBIterator.wrapper(reader.iterator())) {

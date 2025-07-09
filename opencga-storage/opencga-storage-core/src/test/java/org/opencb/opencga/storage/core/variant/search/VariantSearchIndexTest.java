@@ -37,6 +37,7 @@ import static org.junit.Assert.*;
 @Ignore
 public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
 
+    private int i = 0;
     @Rule
     public VariantSolrExternalResource solr = new VariantSolrExternalResource(this);
 
@@ -55,7 +56,8 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
     public void testIncrementalIndex() throws Exception {
         VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
 
-        QueryOptions options = new QueryOptions();
+        QueryOptions options = new QueryOptions()
+                .append(VariantStorageOptions.SEARCH_STATS_FUNCTIONAL_QUERIES_ENABLED.key(), false);
 
         int maxStudies = 2;
         int studyCounter = 0;
@@ -145,6 +147,16 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
             checkVariantSearchIndex(dbAdaptor);
             assertTrue(loadResult.getAttributes().getBoolean("runDiscoverPendingVariantsToSecondaryIndexMr"));
 
+            // Stats update (no actual changes on stats). Still, all variants should be updated
+            statsOptions.append(VariantStorageOptions.STATS_OVERWRITE.key(), true);
+            variantStorageEngine.calculateStats(studyMetadata.getName(), Collections.singletonList("ALL"), statsOptions);
+            loadResult = searchIndex();
+            System.out.println("Load result after stats calculate overwrite: = " + loadResult + " , at study : " + studyId);
+            // Only stats updates are expected
+            checkLoadResult(expected, 0, expected, loadResult);
+            checkVariantSearchIndex(dbAdaptor);
+            assertTrue(loadResult.getAttributes().getBoolean("runDiscoverPendingVariantsToSecondaryIndexMr"));
+
             //////////////////////
             expected = dbAdaptor.count((Query) null).first();
             loadResult = searchIndex(true);
@@ -181,7 +193,9 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
         for (int i = 0; i < 17; i++) {
             URI platinumFile = getPlatinumFile(i);
 
-            QueryOptions options = new QueryOptions().append(VariantStorageOptions.STUDY.key(), study);
+            QueryOptions options = new QueryOptions()
+                    .append(VariantStorageOptions.STUDY.key(), study)
+                    .append(VariantStorageOptions.SEARCH_STATS_FUNCTIONAL_QUERIES_ENABLED.key(), true);
             variantStorageEngine.getOptions().putAll(options);
             variantStorageEngine.index(Collections.singletonList(platinumFile), outputUri, true, true, true);
         }
@@ -330,9 +344,10 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
     }
 
     public VariantSearchLoadResult searchIndex(boolean overwrite) throws Exception {
+        i++;
         solr.configure(variantStorageEngine);
         VariantSearchLoadResult result = variantStorageEngine.secondaryIndex(new Query(), new QueryOptions(), overwrite);
-        solr.printCollections(Paths.get(newOutputUri("searchIndex_" + TimeUtils.getTime() + "_solr")));
+        solr.printCollections(Paths.get(newOutputUri("searchIndex_" + TimeUtils.getTime() + "_" + i + "_solr")));
         return result;
     }
 }

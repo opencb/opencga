@@ -29,6 +29,7 @@ public class HadoopVariantSearchDataWriter extends VariantSolrInputDocumentDataW
     private final PendingVariantsFileCleaner cleaner;
     private final List<Variant> variantsToClean = new ArrayList<>();
     private final List<Mutation> rowsToUpdate = new ArrayList<>();
+    private final long updateTs;
 
     private long hbasePutTimeMs = 0;
     private long cleanTimeMs = 0;
@@ -37,10 +38,11 @@ public class HadoopVariantSearchDataWriter extends VariantSolrInputDocumentDataW
 
 
     public HadoopVariantSearchDataWriter(VariantSearchManager variantSearchManager, SearchIndexMetadata indexMetadata,
-                                         VariantHadoopDBAdaptor dbAdaptor, PendingVariantsFileCleaner cleaner) {
+                                         VariantHadoopDBAdaptor dbAdaptor, PendingVariantsFileCleaner cleaner, long updateStartTimestamp) {
         super(variantSearchManager, indexMetadata);
         this.writer = new HBaseDataWriter<>(dbAdaptor.getHBaseManager(), dbAdaptor.getVariantTable());
         this.cleaner = cleaner;
+        this.updateTs = updateStartTimestamp;
     }
 
     /**
@@ -69,7 +71,7 @@ public class HadoopVariantSearchDataWriter extends VariantSolrInputDocumentDataW
 
             for (VariantSearchUpdateDocument updateDocument : batch) {
                 variants.add(updateDocument.getVariant());
-                mutations.add(HadoopVariantSearchIndexUtils.updateSyncStatus(updateDocument));
+                mutations.add(HadoopVariantSearchIndexUtils.updateSyncStatus(updateDocument, updateTs));
             }
             variantsToClean.addAll(variants);
             rowsToUpdate.addAll(mutations);

@@ -72,7 +72,17 @@ public class HadoopVariantSearchIndexUtils {
         }
     }
 
-    public static Put updateSyncStatus(VariantSearchUpdateDocument updateDocument) {
+    /**
+     * Set variant as "synchronized" in variant-search-index.
+     *
+     * Column INDEX_STUDIES contains the list of studies existing on this variant.
+     *
+     * @param updateDocument VariantSearchUpdateDocument containing the variant and the sync information.
+     * @param updateTs Timestamp of the update operation.
+     *                       See {@link org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata#getLastUpdateDate()}
+     * @return Put mutation to update the variant row in the search index.
+     */
+    public static Put updateSyncStatus(VariantSearchUpdateDocument updateDocument, long updateTs) {
         byte[] row = VariantPhoenixKeyFactory.generateVariantRowKey(updateDocument.getVariant());
         Put put = new Put(row);
 
@@ -87,11 +97,11 @@ public class HadoopVariantSearchIndexUtils {
                 sb.append(cohortId).append(":").append(hash).append(",");
             }
             put.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.INDEX_STATS.bytes(),
-                    Bytes.toBytes(sb.substring(0, sb.length() - 1)));
+                    updateTs, Bytes.toBytes(sb.substring(0, sb.length() - 1)));
         }
 
         byte[] bytes = PhoenixHelper.toBytes(studyIds, PIntegerArray.INSTANCE);
-        put.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.INDEX_STUDIES.bytes(), bytes);
+        put.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.INDEX_STUDIES.bytes(), updateTs, bytes);
 
         return put;
     }
@@ -212,9 +222,9 @@ public class HadoopVariantSearchIndexUtils {
                                                               Cell statsUnknownCell, Cell studiesUnknownCell) {
         // Don't need to check the value. If present, only check the timestamp.
         // Timestamp must be newer than lastUpdateTs to be valid.
-        boolean notSync = notSyncCell != null && notSyncCell.getTimestamp() > lastUpdateTs;
-        boolean statsUnknown = statsUnknownCell != null && statsUnknownCell.getTimestamp() > lastUpdateTs;
-        boolean studiesUnknown = studiesUnknownCell != null && studiesUnknownCell.getTimestamp() > lastUpdateTs;
+        boolean notSync = notSyncCell != null && notSyncCell.getTimestamp() >= lastUpdateTs;
+        boolean statsUnknown = statsUnknownCell != null && statsUnknownCell.getTimestamp() >= lastUpdateTs;
+        boolean studiesUnknown = studiesUnknownCell != null && studiesUnknownCell.getTimestamp() >= lastUpdateTs;
 
         // If studiesCell is null, then the variant has never been loaded into solr.
         // If studiesCell is not null, then the variant has been loaded into solr.
@@ -230,7 +240,7 @@ public class HadoopVariantSearchIndexUtils {
                 studiesUnknown = studiesUnknownCell.getTimestamp() > studiesCell.getTimestamp();
             }
             if (statsUnknown) {
-                // StatsNotSyncCell must have a newer timestamp than studiesCell to be valid
+                // StatsUnknownCell must have a newer timestamp than studiesCell to be valid
                 statsUnknown = statsUnknownCell.getTimestamp() > studiesCell.getTimestamp();
             }
         }
