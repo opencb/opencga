@@ -1,15 +1,26 @@
 package org.opencb.opencga.storage.hadoop.variant.search;
 
+import org.junit.Assert;
 import org.junit.ClassRule;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchIndexTest;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.search.pending.index.file.SecondaryIndexPendingVariantsFileBasedManager;
+
+import java.net.URI;
+import java.util.Collections;
 
 /**
  * Created on 19/04/18.
@@ -40,4 +51,29 @@ public class HadoopVariantSearchIndexTest extends VariantSearchIndexTest impleme
         VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri("searchIndex_" + TimeUtils.getTime() + "_" + i + "_post"));
         return loadResult;
     }
+
+    @Test
+    public void testRunDiscoverPendingTwice() throws Exception {
+
+        URI file = getPlatinumFile(1);
+        runETL(variantStorageEngine, file, "study", new ObjectMap());
+        VariantHadoopDBAdaptor dbAdaptor = ((HadoopVariantStorageEngine) variantStorageEngine).getDBAdaptor();
+
+        SearchIndexMetadata indexMetadata = variantStorageEngine.getVariantSearchManager().newIndexMetadata();
+        SecondaryIndexPendingVariantsFileBasedManager pendingVariantsFileBasedManager = new SecondaryIndexPendingVariantsFileBasedManager(dbAdaptor.getVariantTable(), dbAdaptor.getConfiguration());
+
+        pendingVariantsFileBasedManager.discoverPending(((HadoopVariantStorageEngine) variantStorageEngine).getMRExecutor(),
+                dbAdaptor.getVariantTable(), false, new ObjectMap(VariantQueryParam.REGION.key(), "1"));
+
+        pendingVariantsFileBasedManager.discoverPending(((HadoopVariantStorageEngine) variantStorageEngine).getMRExecutor(),
+                dbAdaptor.getVariantTable(), false, new ObjectMap(VariantQueryParam.REGION.key(), "2"));
+
+        pendingVariantsFileBasedManager.discoverPending(((HadoopVariantStorageEngine) variantStorageEngine).getMRExecutor(),
+                dbAdaptor.getVariantTable(), false, new ObjectMap(VariantQueryParam.REGION.key(), "3"));
+
+        pendingVariantsFileBasedManager.discoverPending(((HadoopVariantStorageEngine) variantStorageEngine).getMRExecutor(),
+                dbAdaptor.getVariantTable(), false, new ObjectMap());
+
+    }
+
 }

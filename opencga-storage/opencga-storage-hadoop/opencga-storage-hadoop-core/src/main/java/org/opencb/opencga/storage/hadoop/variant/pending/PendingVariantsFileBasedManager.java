@@ -98,7 +98,13 @@ public abstract class PendingVariantsFileBasedManager {
                         }
                         throw new StorageEngineException("Duplicated file name " + cleanName + " in pending variants directory");
                     }
-                    fs.rename(file.getPath(), new Path(pendingVariantsDir.resolve(cleanName)));
+                    Path dst = new Path(pendingVariantsDir.resolve(cleanName));
+                    if (fs.exists(dst)) {
+                        fs.delete(dst, true);
+                    }
+                    if (!fs.rename(file.getPath(), dst)) {
+                        throw new StorageEngineException("Unable to move file " + file.getPath() + " to " + dst);
+                    }
                 } catch (IOException e) {
                     throw new StorageEngineException("Unable to move file " + file.getPath() + " to " + pendingVariantsDir, e);
                 }
