@@ -51,31 +51,4 @@ public class EnterpriseApiCommonsImpl implements ApiCommons {
         return classes;
     }
 
-/*
-    @Override
-    public List<String> getOrderCategories() {
-        return Arrays.asList(
-                "Federations",
-                "Organizations",
-                "Users",
-                "Projects",
-                "Studies",
-                "Files",
-                "Jobs",
-                "Workflows",
-                "Samples",
-                "Individuals",
-                "Families",
-                "Cohorts",
-                "Disease Panels",
-                "Analysis - Alignment",
-                "Analysis - Variant",
-                "Analysis - Clinical",
-                "CVDB",
-                "Operations - Variant Storage",
-                "Meta",
-                "Admin",
-                "Ga4gh"
-        );
-    }*/
 }
