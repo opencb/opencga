@@ -106,11 +106,6 @@ public class RegenieStep2WrapperAnalysis extends OpenCgaToolScopeStudy {
                 .includeSampleData("GT")
                 .unknownGenotype("./.");
 
-        Path exportedVcfPath = getOutDir().resolve("tmp-regenie-step2.vcf").toAbsolutePath();
-        variantStorageManager.exportData(exportedVcfPath.toString(), VariantWriterFactory.VariantOutputFormat.VCF, null, variantQuery,
-                QueryOptions.empty(), token);
-        logger.info("Exported variants to VCF file for regenie step2 at {}", exportedVcfPath);
-
         Path resultsPath = getOutDir().resolve("tmp-results-regenie-step2.txt");
         variantStorageManager.walkData(resultsPath.toString(), VariantWriterFactory.VariantOutputFormat.VCF,
                 variantQuery, new QueryOptions(), walkerDockerImage, regenieCmd.toString(), getToken());
