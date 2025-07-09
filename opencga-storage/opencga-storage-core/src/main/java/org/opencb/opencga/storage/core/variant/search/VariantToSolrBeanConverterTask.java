@@ -71,8 +71,11 @@ public class VariantToSolrBeanConverterTask implements Converter<Variant, Varian
                     if (fieldName.equals("id")) {
                         // uniqueKey field should not be modified.
                         continue;
-                    } else {
+                    } else if (fieldName.startsWith("altStats_") || fieldName.startsWith("passStats_")) {
                         SolrInputDocumentDataWriter.toSetValue(field);
+                    } else {
+                        // Remove all other fields, as they should not be updated
+                        updateDocument.removeField(fieldName);
                     }
                 }
 
