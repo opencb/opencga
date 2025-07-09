@@ -12,6 +12,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchSyncInfo;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
@@ -63,11 +64,16 @@ public class SecondaryIndexPendingVariantsDescriptor implements PendingVariantsT
                     .getLastStagingOrActiveIndex();
             long creationDate = indexMetadata.getCreationDateTimestamp();
             long lastUpdate = indexMetadata.getLastUpdateDateTimestamp();
-            Map<Integer, Integer> cohortsSize = new HashMap<>();
-            for (Map.Entry<String, Integer> entry : metadataManager.getStudies().entrySet()) {
-                for (CohortMetadata cohort : metadataManager.getCalculatedOrPartialCohorts(entry.getValue())) {
-                    cohortsSize.put(cohort.getId(), cohort.getSamples().size());
+            Map<Integer, Integer> cohortsSize;
+            if (VariantSearchManager.isStatsFunctionalQueryEnabled(indexMetadata)) {
+                cohortsSize = new HashMap<>();
+                for (Map.Entry<String, Integer> entry : metadataManager.getStudies().entrySet()) {
+                    for (CohortMetadata cohort : metadataManager.getCalculatedOrPartialCohorts(entry.getValue())) {
+                        cohortsSize.put(cohort.getId(), cohort.getSamples().size());
+                    }
                 }
+            } else {
+                cohortsSize = null;
             }
             return (value) -> {
                 VariantSearchSyncInfo.Status syncStatus = HadoopVariantSearchIndexUtils

@@ -138,8 +138,10 @@ public class HadoopVariantSearchIndexUtils {
                 }
             }
 
-            Map<Integer, Long> cohortHash = new HashMap<>();
-            if (cohortSizeMap != null) {
+            if (cohortSizeMap == null) {
+                return VariantSearchSyncInfo.Status.STATS_NOT_SYNC;
+            } else {
+                Map<Integer, Long> cohortHash = new HashMap<>();
                 variantRow.walker().onCohortStats(statsColumn -> {
                     int cohortId = statsColumn.getCohortId();
                     VariantStats variantStats = statsColumn.toJava();
@@ -147,11 +149,11 @@ public class HadoopVariantSearchIndexUtils {
                     long statsHash = VariantSecondaryIndexFilter.getStatsHashValue(variantStats, cohortSizeMap.get(cohortId));
                     cohortHash.put(statsHashKey, statsHash);
                 }).walk();
-            }
-            if (cohortHash.equals(info.getStatsHash())) {
-                return VariantSearchSyncInfo.Status.SYNCHRONIZED;
-            } else {
-                return VariantSearchSyncInfo.Status.STATS_NOT_SYNC;
+                if (cohortHash.equals(info.getStatsHash())) {
+                    return VariantSearchSyncInfo.Status.SYNCHRONIZED;
+                } else {
+                    return VariantSearchSyncInfo.Status.STATS_NOT_SYNC;
+                }
             }
         }
         return status;

@@ -12,6 +12,7 @@ import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchSyncInfo;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.HBaseToVariantStatsConverter;
@@ -38,13 +39,13 @@ public class SecondaryIndexPendingVariantsFileBasedDescriptor implements Pending
     }
 
     public Function<Result, Variant> getPendingEvaluatorMapper(VariantStorageMetadataManager metadataManager, boolean overwrite) {
-        PendingVariantConverter converter = new PendingVariantConverter(metadataManager);
+        SearchIndexMetadata indexMetadata = metadataManager.getProjectMetadata().getSecondaryAnnotationIndex()
+                .getLastStagingOrActiveIndex();
+        PendingVariantConverter converter = new PendingVariantConverter(metadataManager, indexMetadata);
         if (overwrite) {
             // When overwriting mark all variants as pending
             return value -> converter.convert(value, VariantSearchSyncInfo.Status.NOT_SYNCHRONIZED);
         } else {
-            SearchIndexMetadata indexMetadata = metadataManager.getProjectMetadata().getSecondaryAnnotationIndex()
-                    .getLastStagingOrActiveIndex();
             long creationTs = indexMetadata.getCreationDateTimestamp();
             long updateTs = indexMetadata.getLastUpdateDateTimestamp();
             return (value) -> converter.checkAndConvert(value, creationTs, updateTs);
@@ -62,13 +63,17 @@ public class SecondaryIndexPendingVariantsFileBasedDescriptor implements Pending
         private final Map<Integer, Integer> cohortsSize;
         private final VariantStorageMetadataManager metadataManager;
 
-        public PendingVariantConverter(VariantStorageMetadataManager metadataManager) {
+        public PendingVariantConverter(VariantStorageMetadataManager metadataManager, SearchIndexMetadata indexMetadata) {
             this.metadataManager = metadataManager;
-            this.cohortsSize = new HashMap<>();
-            for (Map.Entry<String, Integer> entry : metadataManager.getStudies().entrySet()) {
-                for (CohortMetadata cohort : metadataManager.getCalculatedOrPartialCohorts(entry.getValue())) {
-                    cohortsSize.put(cohort.getId(), cohort.getSamples().size());
+            if (VariantSearchManager.isStatsFunctionalQueryEnabled(indexMetadata)) {
+                this.cohortsSize = new HashMap<>();
+                for (Map.Entry<String, Integer> entry : metadataManager.getStudies().entrySet()) {
+                    for (CohortMetadata cohort : metadataManager.getCalculatedOrPartialCohorts(entry.getValue())) {
+                        cohortsSize.put(cohort.getId(), cohort.getSamples().size());
+                    }
                 }
+            } else {
+                this.cohortsSize = null;
             }
         }
 
@@ -85,10 +90,15 @@ public class SecondaryIndexPendingVariantsFileBasedDescriptor implements Pending
 
         private Variant convert(Result value, VariantSearchSyncInfo.Status syncStatus) {
             VariantRow variantRow = new VariantRow(value);
-            Map<Integer, Map<Integer, org.opencb.biodata.models.variant.stats.VariantStats>> stats = statsConverter.convert(value);
-            Variant variant = variantRow.walker().onStudy(studyId -> {
-                stats.computeIfAbsent(studyId, k-> Collections.emptyMap());
-            }).walk();
+            Map<Integer, Map<Integer, org.opencb.biodata.models.variant.stats.VariantStats>> stats = new HashMap<>();
+            Variant variant = variantRow.walker()
+                    .onStudy(studyId -> {
+                        stats.computeIfAbsent(studyId, k -> Collections.emptyMap());
+                    }).onCohortStats(statsColumn -> {
+                        VariantStats variantStats = statsConverter.convert(statsColumn);
+                        stats.computeIfAbsent(statsColumn.getStudyId(), k -> new HashMap<>())
+                                .put(statsColumn.getCohortId(), variantStats);
+                    }).walk();
             for (Map.Entry<Integer, Map<Integer, VariantStats>> entry : stats.entrySet()) {
                 int studyId = entry.getKey();
                 StudyEntry studyEntry = new StudyEntry(metadataManager.getStudyName(studyId));
