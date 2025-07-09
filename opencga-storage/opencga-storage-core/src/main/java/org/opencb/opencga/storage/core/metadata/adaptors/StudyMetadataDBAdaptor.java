@@ -38,10 +38,14 @@ public interface StudyMetadataDBAdaptor extends AutoCloseable {
     Lock lock(int studyId, long lockDuration, long timeout, String lockName) throws StorageEngineException;
 
     @Deprecated
-    DataResult<StudyConfiguration> getStudyConfiguration(String studyName, Long time, QueryOptions options);
+    default DataResult<StudyConfiguration> getStudyConfiguration(String studyName, Long time, QueryOptions options) {
+        throw new UnsupportedOperationException("");
+    }
 
     @Deprecated
-    DataResult<StudyConfiguration> getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options);
+    default DataResult<StudyConfiguration> getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
+        throw new UnsupportedOperationException("");
+    }
 
     @Deprecated
     DataResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options);

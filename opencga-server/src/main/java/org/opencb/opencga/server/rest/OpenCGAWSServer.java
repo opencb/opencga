@@ -47,6 +47,8 @@ import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.JobType;
+import org.opencb.opencga.core.models.job.ToolInfo;
 import org.opencb.opencga.core.models.migration.MigrationRun;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.FederationNode;
@@ -747,27 +749,45 @@ public class OpenCGAWSServer {
         for (OpenCGAResult<?> openCGAResult : list) {
             setFederationServer(openCGAResult, uriInfo.getBaseUri().toString());
         }
-        Response.Status status = getResponseStatus(list);
-
         queryResponse.setResponses(list);
+        Response.Status status = getResponseStatus(queryResponse);
 
         Response response = Response.fromResponse(createJsonResponse(queryResponse)).status(status).build();
         logResponse(response.getStatusInfo(), queryResponse);
         return response;
     }
 
-    private Response.Status getResponseStatus(List<OpenCGAResult<?>> list) {
-        if (list != null) {
-            for (OpenCGAResult<?> openCGAResult : list) {
-                if (CollectionUtils.isNotEmpty(openCGAResult.getEvents())) {
-                    for (Event event : openCGAResult.getEvents()) {
-                        if (event.getType().equals(Event.Type.ERROR)) {
-                            if (event.getMessage().contains("denied")) {
-                                return Response.Status.UNAUTHORIZED;
-                            } else {
-                                return Response.Status.BAD_REQUEST;
-                            }
-                        }
+    protected Response createResponse(RestResponse<?> restResponse) {
+        Response.Status status = getResponseStatus(restResponse);
+        Response response = Response.fromResponse(createJsonResponse(restResponse)).status(status).build();
+        logResponse(response.getStatusInfo(), restResponse);
+        return response;
+    }
+
+    protected Response.Status getResponseStatus(RestResponse<?> restResponse) {
+        Response.Status responseStatus = getResponseStatus(restResponse.getEvents());
+        if (responseStatus != Response.Status.OK) {
+            return responseStatus;
+        }
+        if (CollectionUtils.isNotEmpty(restResponse.getResponses())) {
+            for (OpenCGAResult<?> response : restResponse.getResponses()) {
+                responseStatus = getResponseStatus(response.getEvents());
+                if (responseStatus != Response.Status.OK) {
+                    return responseStatus;
+                }
+            }
+        }
+        return Response.Status.OK;
+    }
+
+    protected Response.Status getResponseStatus(List<Event> eventList) {
+        if (CollectionUtils.isNotEmpty(eventList)) {
+            for (Event event : eventList) {
+                if (event.getType().equals(Event.Type.ERROR)) {
+                    if (event.getMessage().contains("denied")) {
+                        return Response.Status.UNAUTHORIZED;
+                    } else {
+                        return Response.Status.BAD_REQUEST;
                     }
                 }
             }
@@ -794,11 +814,11 @@ public class OpenCGAWSServer {
         return buildResponse(Response.ok(o1, o2).header("content-disposition", "attachment; filename =" + fileName));
     }
 
-    void logResponse(Response.StatusType statusInfo) {
+    protected void logResponse(Response.StatusType statusInfo) {
         logResponse(statusInfo, null, startTime, requestDescription);
     }
 
-    void logResponse(Response.StatusType statusInfo, RestResponse<?> queryResponse) {
+    protected void logResponse(Response.StatusType statusInfo, RestResponse<?> queryResponse) {
         logResponse(statusInfo, queryResponse, startTime, requestDescription);
     }
 
@@ -852,33 +872,44 @@ public class OpenCGAWSServer {
         }
     }
 
-    public Response submitJob(String toolId, String project, String study, Map<String, Object> paramsMap, String jobName,
+    public Response submitJob(String project, String study, JobType type, String toolId, Map<String, Object> paramsMap, String jobName,
                               String jobDescription, String jobDependsOne, String jobTags, String jobScheduledStartTime, String jobPriority,
                               Boolean dryRun) {
-        return run(() -> submitJobRaw(toolId, project, study, paramsMap, jobName, jobDescription, jobDependsOne, jobTags, jobScheduledStartTime, jobPriority, dryRun));
+        return run(() -> submitJobRaw(project, study, type, toolId, paramsMap, jobName, jobDescription, jobDependsOne, jobTags,
+                jobScheduledStartTime, jobPriority, dryRun));
     }
 
-    public Response submitJob(String toolId, String study, ToolParams bodyParams, String jobId, String jobDescription,
+    public Response submitJob(String study, JobType type, String toolId, ToolParams bodyParams, String jobId, String jobDescription,
                               String jobDependsOnStr, String jobTagsStr, String jobScheduledStartTime, String jobPriority, Boolean dryRun) {
-        return submitJob(toolId, null, study, bodyParams, jobId, jobDescription, jobDependsOnStr, jobTagsStr, jobScheduledStartTime, jobPriority, dryRun);
+        return submitJob(null, study, type, toolId, bodyParams, jobId, jobDescription, jobDependsOnStr, jobTagsStr, jobScheduledStartTime,
+                jobPriority, dryRun);
     }
 
-    public Response submitJobAdmin(String toolId, ToolParams bodyParams, String jobId, String jobDescription,
+    public Response submitJobAdmin(JobType type, String toolId, ToolParams bodyParams, String jobId, String jobDescription,
                                    String jobDependsOnStr, String jobTagsStr, String jobScheduledStartTime, String jobPriority,
                                    Boolean dryRun) {
         return run(() -> {
             JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
             catalogManager.getAuthorizationManager().checkIsOpencgaAdministrator(jwtPayload, "submit job from tool '" + toolId + "'");
-            return submitJobRaw(toolId, null, ADMIN_STUDY_FQN, bodyParams, jobId, jobDescription, jobDependsOnStr, jobTagsStr, jobScheduledStartTime, jobPriority, dryRun);
+            return submitJobRaw(null, ADMIN_STUDY_FQN, type, toolId, bodyParams, jobId, jobDescription, jobDependsOnStr, jobTagsStr,
+                    jobScheduledStartTime, jobPriority, dryRun);
         });
     }
 
-    public Response submitJob(String toolId, String project, String study, ToolParams bodyParams, String jobId, String jobDescription,
+    public Response submitJob(String study, JobType type, ToolInfo toolInfo, ToolParams bodyParams, String jobId, String jobDescription,
                               String jobDependsOnStr, String jobTagsStr, String jobScheduledStartTime, String jobPriority, Boolean dryRun) {
-        return run(() -> submitJobRaw(toolId, project, study, bodyParams, jobId, jobDescription, jobDependsOnStr, jobTagsStr, jobScheduledStartTime, jobPriority, dryRun));
+        return run(() -> submitJobRaw(null, study, type, toolInfo, bodyParams, jobId, jobDescription, jobDependsOnStr, jobTagsStr,
+                jobScheduledStartTime, jobPriority, dryRun));
     }
 
-    protected DataResult<Job> submitJobRaw(String toolId, String project, String study, ToolParams bodyParams, String jobId,
+    public Response submitJob(String project, String study, JobType type, String toolId, ToolParams bodyParams, String jobId,
+                              String jobDescription, String jobDependsOnStr, String jobTagsStr, String jobScheduledStartTime,
+                              String jobPriority, Boolean dryRun) {
+        return run(() -> submitJobRaw(project, study, type, toolId, bodyParams, jobId, jobDescription, jobDependsOnStr, jobTagsStr,
+                jobScheduledStartTime, jobPriority, dryRun));
+    }
+
+    protected DataResult<Job> submitJobRaw(String project, String study, JobType type, String toolId, ToolParams bodyParams, String jobId,
                                            String jobDescription, String jobDependsOnStr, String jobTagsStr, String jobScheduledStartTime,
                                            String jobPriority, Boolean dryRun)
             throws CatalogException {
@@ -891,13 +922,13 @@ public class OpenCGAWSServer {
         if (StringUtils.isNotEmpty(study)) {
             paramsMap.putIfAbsent(ParamConstants.STUDY_PARAM, study);
         }
-        return submitJobRaw(toolId, project, study, paramsMap, jobId, jobDescription, jobDependsOnStr, jobTagsStr, jobScheduledStartTime, jobPriority, dryRun);
+        return submitJobRaw(project, study, type, toolId, paramsMap, jobId, jobDescription, jobDependsOnStr, jobTagsStr,
+                jobScheduledStartTime, jobPriority, dryRun);
     }
 
-    protected DataResult<Job> submitJobRaw(String toolId, String project, String study, Map<String, Object> paramsMap, String jobId,
-                                           String jobDescription, String jobDependsOnStr, String jobTagsStr, String jobScheduledStartTime,
-                                           String jobPriority, Boolean dryRun)
-            throws CatalogException {
+    protected DataResult<Job> submitJobRaw(String project, String study, JobType type, String toolId, Map<String, Object> paramsMap,
+                                           String jobId, String jobDescription, String jobDependsOnStr, String jobTagsStr,
+                                           String jobScheduledStartTime, String jobPriority, Boolean dryRun) throws CatalogException {
 
         if (StringUtils.isNotEmpty(project) && StringUtils.isEmpty(study)) {
             // Project job
@@ -932,8 +963,60 @@ public class OpenCGAWSServer {
             priority = Enums.Priority.getPriority(jobPriority.toUpperCase());
         }
         return catalogManager.getJobManager()
-                .submit(study, toolId, priority, paramsMap, jobId, jobDescription, jobDependsOn, jobTags, null,
-                        jobScheduledStartTime, dryRun, token);
+                .submit(study, type, toolId, priority, paramsMap, jobId, jobDescription, jobDependsOn, jobTags, null, jobScheduledStartTime,
+                        dryRun, token);
+    }
+
+    protected DataResult<Job> submitJobRaw(String project, String study, JobType type, ToolInfo toolInfo, ToolParams bodyParams,
+                                           String jobId, String jobDescription, String jobDependsOnStr, String jobTagsStr,
+                                           String jobScheduledStartTime, String jobPriority, Boolean dryRun) throws CatalogException {
+        Map<String, Object> paramsMap = bodyParams.toParams();
+        if (StringUtils.isNotEmpty(study)) {
+            paramsMap.putIfAbsent(ParamConstants.STUDY_PARAM, study);
+        }
+        return submitJobRaw(study, project, type, toolInfo, paramsMap, jobId, jobDescription, jobDependsOnStr, jobTagsStr,
+                jobScheduledStartTime, jobPriority, dryRun);
+    }
+
+    protected DataResult<Job> submitJobRaw(String study, String project, JobType type, ToolInfo toolInfo, Map<String, Object> paramsMap,
+                                           String jobId, String jobDescription, String jobDependsOnStr, String jobTagsStr,
+                                           String jobScheduledStartTime, String jobPriority, Boolean dryRun) throws CatalogException {
+
+        if (StringUtils.isNotEmpty(project) && StringUtils.isEmpty(study)) {
+            // Project job
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key());
+            // Peek any study. The ExecutionDaemon will take care of filling up the rest of studies.
+            List<String> studies = catalogManager.getStudyManager()
+                    .search(project, new Query(), options, token)
+                    .getResults()
+                    .stream()
+                    .map(Study::getFqn)
+                    .collect(Collectors.toList());
+            if (studies.isEmpty()) {
+                throw new CatalogException("Project '" + project + "' not found!");
+            }
+            study = studies.get(0);
+        }
+
+        List<String> jobTags;
+        if (StringUtils.isNotEmpty(jobTagsStr)) {
+            jobTags = Arrays.asList(jobTagsStr.split(","));
+        } else {
+            jobTags = Collections.emptyList();
+        }
+        List<String> jobDependsOn;
+        if (StringUtils.isNotEmpty(jobDependsOnStr)) {
+            jobDependsOn = Arrays.asList(jobDependsOnStr.split(","));
+        } else {
+            jobDependsOn = Collections.emptyList();
+        }
+        Enums.Priority priority = Enums.Priority.MEDIUM;
+        if (!StringUtils.isEmpty(jobPriority)) {
+            priority = Enums.Priority.getPriority(jobPriority.toUpperCase());
+        }
+        return catalogManager.getJobManager()
+                .submit(study, type, toolInfo, priority, paramsMap, jobId, jobDescription, jobDependsOn, jobTags, null,
+                        jobScheduledStartTime, dryRun, Collections.emptyMap(), token);
     }
 
     public Response createPendingResponse() {

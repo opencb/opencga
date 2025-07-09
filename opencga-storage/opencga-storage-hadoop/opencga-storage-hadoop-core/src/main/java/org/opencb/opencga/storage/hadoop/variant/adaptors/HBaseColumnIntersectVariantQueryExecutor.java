@@ -44,8 +44,9 @@ public class HBaseColumnIntersectVariantQueryExecutor extends VariantQueryExecut
     }
 
     @Override
-    public boolean canUseThisExecutor(ParsedVariantQuery variantQuery, QueryOptions options) {
+    public boolean canUseThisExecutor(ParsedVariantQuery variantQuery) {
         VariantQuery query = variantQuery.getQuery();
+        QueryOptions options = variantQuery.getInputOptions();
         if (!options.getBoolean(HBASE_COLUMN_INTERSECT, ACTIVE_BY_DEFAULT)) {
             // HBase column intersect not active
             return false;

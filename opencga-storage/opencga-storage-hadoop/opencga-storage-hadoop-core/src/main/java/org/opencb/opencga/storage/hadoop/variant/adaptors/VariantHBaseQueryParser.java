@@ -617,9 +617,11 @@ public class VariantHBaseQueryParser {
             if (regionOrVariant != null) {
                 logger.info("\tRegion = " + regionOrVariant);
             }
-            logger.info("columns (" + scan.getFamilyMap().getOrDefault(family, Collections.emptyNavigableSet()).size() + ") = "
-                    + scan.getFamilyMap().getOrDefault(family, Collections.emptyNavigableSet())
-                    .stream().map(Bytes::toString).collect(Collectors.joining(",")));
+            NavigableSet<byte[]> columns = scan.getFamilyMap().getOrDefault(family, Collections.emptyNavigableSet());
+            int numColumns = columns.size();
+            logger.info("columns (" + numColumns + ") = " + ((columns.size() > 100)
+                    ? columns.stream().map(Bytes::toString).limit(100).collect(Collectors.joining(",")) + ", ..."
+                    : columns.stream().map(Bytes::toString).collect(Collectors.joining(","))));
             logger.info("MaxResultSize = " + scan.getMaxResultSize());
             logger.info("Filters = " + scan.getFilter());
             if (!scan.getTimeRange().isAllTime()) {

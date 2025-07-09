@@ -31,7 +31,8 @@ public class AbstractMongoDBAdaptorTest extends AbstractManagerTest {
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        dbAdaptorFactory = new MongoDBAdaptorFactory(catalogManager.getConfiguration(), catalogManager.getIoManagerFactory());
+        dbAdaptorFactory = new MongoDBAdaptorFactory(catalogManager.getConfiguration(), catalogManager.getIoManagerFactory(),
+                catalogManager.getCatalogIOManager());
         catalogUserDBAdaptor = (UserMongoDBAdaptor) dbAdaptorFactory.getCatalogUserDBAdaptor(organizationId);
         catalogStudyDBAdaptor = (StudyMongoDBAdaptor) dbAdaptorFactory.getCatalogStudyDBAdaptor(organizationId);
         catalogProjectDBAdaptor = (ProjectMongoDBAdaptor) dbAdaptorFactory.getCatalogProjectDbAdaptor(organizationId);

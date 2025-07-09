@@ -1,7 +1,7 @@
 package org.opencb.opencga.storage.core.variant.query.executors.accumulators;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.config.storage.FieldConfiguration;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -77,18 +77,18 @@ public class Range<N extends Number & Comparable<N>> implements Comparable<Range
         s = sb.toString();
     }
 
-    public static List<Range<Double>> buildRanges(IndexFieldConfiguration index) {
+    public static List<Range<Double>> buildRanges(FieldConfiguration index) {
         return buildRanges(index, null, null);
     }
 
-    public static List<Range<Double>> buildRanges(IndexFieldConfiguration index, Double min, Double max) {
+    public static List<Range<Double>> buildRanges(FieldConfiguration index, Double min, Double max) {
         List<Range<Double>> ranges = new LinkedList<>();
         if (index.getNullable()) {
             ranges.add(new Range.NA<>());
         }
         double[] thresholds = index.getThresholds();
-        boolean startInclusive = index.getType() == IndexFieldConfiguration.Type.RANGE_LT;
-        boolean endInclusive = index.getType() == IndexFieldConfiguration.Type.RANGE_GT;
+        boolean startInclusive = index.getType() == FieldConfiguration.Type.RANGE_LT;
+        boolean endInclusive = index.getType() == FieldConfiguration.Type.RANGE_GT;
         ranges.add(new Range<>(min, false, thresholds[0], endInclusive));
         for (int i = 1; i < thresholds.length; i++) {
             ranges.add(new Range<>(thresholds[i - 1], startInclusive, thresholds[i], endInclusive));

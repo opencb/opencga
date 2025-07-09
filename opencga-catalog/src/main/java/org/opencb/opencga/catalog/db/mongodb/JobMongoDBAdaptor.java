@@ -17,7 +17,9 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.client.ClientSession;
+import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Projections;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -44,10 +46,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.InternalStatus;
-import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.job.JobInternalWebhook;
-import org.opencb.opencga.core.models.job.JobPermissions;
-import org.opencb.opencga.core.models.job.ToolInfo;
+import org.opencb.opencga.core.models.job.*;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
@@ -295,6 +294,45 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
     }
 
     @Override
+    public OpenCGAResult<ExecutionTime> executionTimeByMonth(Query query)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        long startTime = startQuery();
+
+        Bson bsonQuery = parseQuery(query, QueryOptions.empty());
+        List<Bson> aggregation = new ArrayList<>();
+        aggregation.add(Aggregates.match(bsonQuery));
+        aggregation.add(Aggregates.project(Projections.fields(
+                Projections.computed("date", "$" + PRIVATE_MODIFICATION_DATE),
+                Projections.computed("difference", new Document("$toDouble",
+                        new Document("$subtract",
+                                Arrays.asList("$" + QueryParams.EXECUTION_END.key(), "$" + QueryParams.EXECUTION_START.key()))))
+                )));
+        aggregation.add(new Document("$group", new Document()
+                .append("_id", new Document()
+                        .append("month", new Document("$month", "$date"))
+                        .append("year", new Document("$year", "$date")))
+                .append("sum", new Document("$sum", "$difference"))));
+
+        DataResult<Document> aggregate = jobCollection.aggregate(aggregation, QueryOptions.empty());
+        // Result comes in this format:
+        // { "_id" : { "month" : 5, "year" : 2024 }, "sum" : 13196 }
+
+        // Parse result
+        List<ExecutionTime> executionTimeList = new ArrayList<>(aggregate.getNumResults());
+        for (Document result : aggregate.getResults()) {
+            Document id = result.get("_id", Document.class);
+            String month = id.getInteger("month").toString();
+            String year = id.getInteger("year").toString();
+            double seconds = result.get("sum", Number.class).doubleValue() / 1000; // convert milliseconds to seconds
+            double minutes = seconds / 60.0;
+            double hours = minutes / 60.0;
+            ExecutionTime.Time time = new ExecutionTime.Time(hours, minutes, seconds);
+            executionTimeList.add(new ExecutionTime(month, year, time));
+        }
+        return endQuery(startTime, executionTimeList);
+    }
+
+    @Override
     public OpenCGAResult delete(Job job) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         try {
             Query query = new Query()
@@ -369,14 +407,12 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
     private UpdateDocument parseAndValidateUpdateParams(ObjectMap parameters, QueryOptions options) throws CatalogDBException {
         UpdateDocument document = new UpdateDocument();
 
-        String[] acceptedParams = {QueryParams.USER_ID.key(), QueryParams.DESCRIPTION.key(), QueryParams.COMMAND_LINE.key()};
+        String[] acceptedParams = {QueryParams.USER_ID.key(), QueryParams.DESCRIPTION.key(), QueryParams.COMMAND_LINE.key(),
+                QueryParams.SCHEDULED_START_TIME.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
         String[] acceptedBooleanParams = {QueryParams.VISITED.key(), QueryParams.INTERNAL_KILL_JOB_REQUESTED.key()};
         filterBooleanParams(parameters, document.getSet(), acceptedBooleanParams);
-
-        String[] acceptedStringListParams = {QueryParams.TAGS.key()};
-        filterStringListParams(parameters, document.getSet(), acceptedStringListParams);
 
         if (parameters.containsKey(QueryParams.TOOL.key())) {
             if (parameters.get(QueryParams.TOOL.key()) instanceof ToolInfo) {
@@ -393,6 +429,28 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
                 document.getSet().put(QueryParams.INTERNAL_WEBHOOK.key(), getMongoDBDocument(value, "JobInternalWebhook"));
             } else {
                 document.getSet().put(QueryParams.INTERNAL_WEBHOOK.key(), value);
+            }
+        }
+
+        if (parameters.containsKey(QueryParams.TAGS.key())) {
+            List<String> tagList = parameters.getAsStringList(QueryParams.TAGS.key());
+            Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
+            ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.TAGS.key(),
+                    ParamUtils.BasicUpdateAction.ADD);
+            if (ParamUtils.BasicUpdateAction.SET.equals(operation) || !tagList.isEmpty()) {
+                switch (operation) {
+                    case SET:
+                        document.getSet().put(QueryParams.TAGS.key(), tagList);
+                        break;
+                    case REMOVE:
+                        document.getPullAll().put(QueryParams.TAGS.key(), tagList);
+                        break;
+                    case ADD:
+                        document.getAddToSet().put(QueryParams.TAGS.key(), tagList);
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Unknown operation " + operation);
+                }
             }
         }
 
@@ -440,7 +498,8 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
                     Enums.Priority.getPriority(parameters.getString(QueryParams.PRIORITY.key())).getValue());
         }
 
-        String[] acceptedObjectParams = {QueryParams.EXECUTION.key(), QueryParams.STUDY.key(), QueryParams.INTERNAL_STATUS.key()};
+        String[] acceptedObjectParams = {QueryParams.EXECUTION.key(), QueryParams.STUDY.key(), QueryParams.INTERNAL_STATUS.key(),
+                QueryParams.TOOL_EXTERNAL_EXECUTOR.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
 
         if (document.getSet().containsKey(QueryParams.STUDY.key())) {
@@ -727,6 +786,13 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
     }
 
     @Override
+    public OpenCGAResult<FacetField> facet(long studyUid, Query query, String facet, String userId)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        Bson bson = parseQuery(query, QueryOptions.empty(), userId);
+        return facet(jobCollection, bson, facet);
+    }
+
+    @Override
     public void forEach(Query query, Consumer<? super Object> action, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Objects.requireNonNull(action);
@@ -890,15 +956,20 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
                                 QueryParams.INTERNAL_STATUS_ID.type(), andBsonList);
                         break;
                     case ID:
-                    case UUID:
                     case USER_ID:
+                    case TYPE:
+                    case UUID:
                     case TOOL_TYPE:
-                    case PRIORITY: // TODO: This filter is not indexed. We should change it and query _priority instead.
+                    case PRIORITY:
+                    case TOOL_EXTERNAL_EXECUTOR_ID:
+                    case PARENT_ID:
+                    case DRY_RUN:
+                    case INTERNAL_KILL_JOB_REQUESTED:
 //                    case START_TIME:
 //                    case END_TIME:
 //                    case OUTPUT_ERROR:
 //                    case EXECUTION_START:
-//                    case EXECUTION_END:
+                    case EXECUTION_END:
 //                    case COMMAND_LINE:
                     case VISITED:
                     case RELEASE:

@@ -1322,6 +1322,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         }
 
         qOptions = removeInnerProjections(qOptions, QueryParams.SAMPLES.key());
+        qOptions = removeInnerProjections(qOptions, QueryParams.FATHER.key());
+        qOptions = removeInnerProjections(qOptions, QueryParams.MOTHER.key());
         qOptions = removeAnnotationProjectionOptions(qOptions);
 
         // FIXME we should be able to remove this now safely
@@ -1388,6 +1390,13 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
         return new OpenCGAResult<>((int) stopWatch.getTime(TimeUnit.MILLISECONDS), Collections.emptyList(), results.size(),
                 new ArrayList<>(results), -1);
+    }
+
+    @Override
+    public OpenCGAResult<FacetField> facet(long studyUid, Query query, String facet, String userId)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        Bson bson = parseQuery(query, userId);
+        return facet(individualCollection, bson, facet);
     }
 
     @Override

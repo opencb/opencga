@@ -35,6 +35,7 @@ import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.JobType;
 import org.opencb.opencga.core.models.notes.Note;
 import org.opencb.opencga.core.models.notes.NoteCreateParams;
 import org.opencb.opencga.core.models.notes.NoteUpdateParams;
@@ -576,7 +577,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = TemplateParams.DESCRIPTION, required = true) TemplateParams params) {
-        return submitJob(TemplateRunner.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE, TemplateRunner.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @GET
@@ -593,6 +594,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.CREATION_DATE_PARAM) String creationDate,
             @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.MODIFICATION_DATE_PARAM) String modificationDate,
             @ApiParam(value = FieldConstants.NOTES_ID_DESCRIPTION) @QueryParam(FieldConstants.NOTES_ID_PARAM) String noteId,
+            @ApiParam(value = FieldConstants.NOTES_TYPE_DESCRIPTION) @QueryParam(FieldConstants.NOTES_TYPE_PARAM) String type,
             @ApiParam(value = FieldConstants.GENERIC_UUID_DESCRIPTION) @QueryParam("uuid") String uuid,
             @ApiParam(value = FieldConstants.NOTES_USER_ID_DESCRIPTION) @QueryParam(FieldConstants.NOTES_USER_ID_PARAM) String userId,
             @ApiParam(value = FieldConstants.NOTES_TAGS_DESCRIPTION) @QueryParam(FieldConstants.NOTES_TAGS_PARAM) String tags,

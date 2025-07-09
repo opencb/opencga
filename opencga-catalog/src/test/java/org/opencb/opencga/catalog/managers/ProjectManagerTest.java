@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.mockito.Mockito;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -51,6 +52,27 @@ import static org.junit.Assert.*;
  */
 @Category(MediumTests.class)
 public class ProjectManagerTest extends AbstractManagerTest {
+
+    @Test
+    public void createProjectQuotaTest() throws CatalogException {
+        catalogManager.getConfiguration().getQuota().setMaxNumProjects(5);
+        try (CatalogManager mockCatalogManager = mockCatalogManager()) {
+            ProjectDBAdaptor projectDBAdaptor = mockCatalogManager.getProjectManager().getProjectDBAdaptor(organizationId);
+
+            // Mock there already exists 50 projects
+            OpenCGAResult<Project> result = new OpenCGAResult<>(0, Collections.emptyList());
+            result.setNumMatches(50);
+            Mockito.doReturn(result).when(projectDBAdaptor).count();
+            Mockito.doReturn(result).when(projectDBAdaptor).count(Mockito.any(Query.class));
+
+            ProjectCreateParams projectCreateParams = new ProjectCreateParams()
+                    .setId("newProject")
+                    .setName("Project about some genomes");
+            CatalogException exception = assertThrows(CatalogException.class,
+                    () -> mockCatalogManager.getProjectManager().create(projectCreateParams, QueryOptions.empty(), ownerToken));
+            assertTrue(exception.getMessage().contains("quota"));
+        }
+    }
 
     @Test
     public void searchProjectByStudy() throws CatalogException {
@@ -91,7 +113,7 @@ public class ProjectManagerTest extends AbstractManagerTest {
         catalogManager.getUserManager().create(new User().setId("userFromOrg2").setName("name").setOrganization(org2),
                 TestParamConstants.PASSWORD, opencgaToken);
         catalogManager.getOrganizationManager().update(org2, new OrganizationUpdateParams().setOwner("userFromOrg2"), null, opencgaToken);
-        String owner2Token = catalogManager.getUserManager().login(org2, "userFromOrg2", TestParamConstants.PASSWORD).getToken();
+        String owner2Token = catalogManager.getUserManager().login(org2, "userFromOrg2", TestParamConstants.PASSWORD).first().getToken();
         Project p = catalogManager.getProjectManager().create(new ProjectCreateParams()
                         .setId("project")
                         .setOrganism(new ProjectOrganism("Homo sapiens", "GRCh38")),
@@ -99,14 +121,14 @@ public class ProjectManagerTest extends AbstractManagerTest {
         Study study = catalogManager.getStudyManager().create(p.getFqn(), new Study().setId("study"), INCLUDE_RESULT, owner2Token).first();
 
         catalogManager.getUserManager().create("userid", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, org2, null, owner2Token);
-        String token = catalogManager.getUserManager().login(org2, "userid", TestParamConstants.PASSWORD).getToken();
+        String token = catalogManager.getUserManager().login(org2, "userid", TestParamConstants.PASSWORD).first().getToken();
         OpenCGAResult<Project> projectOpenCGAResult = catalogManager.getProjectManager().search(org2, new Query(), QueryOptions.empty(), token);
         assertTrue(projectOpenCGAResult.getResults().isEmpty());
         assertEquals(0, projectOpenCGAResult.getEvents().size());
 
         String otherUser = "user_tmp";
         catalogManager.getUserManager().create(otherUser, "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, org2, null, owner2Token);
-        String otherUsertoken = catalogManager.getUserManager().login(org2, otherUser, TestParamConstants.PASSWORD).getToken();
+        String otherUsertoken = catalogManager.getUserManager().login(org2, otherUser, TestParamConstants.PASSWORD).first().getToken();
         OpenCGAResult<Project> result = catalogManager.getProjectManager()
                 .search(org2, new Query(), QueryOptions.empty(), otherUsertoken);
         assertTrue(result.getResults().isEmpty());

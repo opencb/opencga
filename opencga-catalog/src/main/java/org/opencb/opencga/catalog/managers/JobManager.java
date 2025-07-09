@@ -21,10 +21,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.opencb.commons.datastore.core.Event;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
@@ -36,9 +33,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
-import org.opencb.opencga.catalog.utils.CatalogFqn;
-import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.catalog.utils.UuidUtils;
+import org.opencb.opencga.catalog.utils.*;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -319,6 +314,7 @@ public class JobManager extends ResourceManager<Job> {
 
     private void autoCompleteNewJob(String organizationId, Study study, Job job, JwtPayload tokenPayload) throws CatalogException {
         ParamUtils.checkObj(job, "Job");
+        ParamUtils.checkObj(job.getType(), "Job type");
 
         // Auto generate id
         if (StringUtils.isEmpty(job.getId())) {
@@ -378,9 +374,13 @@ public class JobManager extends ResourceManager<Job> {
 
             job.setInput(Collections.emptyList());
         } else {
-            // We only check input files if the job does not depend on other job that might be creating the necessary file.
-
-            List<File> inputFiles = getJobInputFilesFromParams(study.getFqn(), job, tokenPayload.getToken());
+            // We only check input files if the job does not depend on other job that might be creating the necessary files.
+            List<File> inputFiles;
+            if (job.getType() == JobType.NATIVE) {
+                inputFiles = getJobInputFilesFromParams(study.getFqn(), job, tokenPayload.getToken());
+            } else {
+                inputFiles = getWorkflowJobInputFilesFromParams(study.getFqn(), job, tokenPayload.getToken());
+            }
             job.setInput(inputFiles);
         }
 
@@ -434,7 +434,6 @@ public class JobManager extends ResourceManager<Job> {
         }
     }
 
-
     public List<File> getJobInputFilesFromParams(String study, Job job, String token) throws CatalogException {
         // Look for input files
         String fileParamSuffix = "file";
@@ -443,7 +442,12 @@ public class JobManager extends ResourceManager<Job> {
             for (Map.Entry<String, Object> entry : job.getParams().entrySet()) {
                 // We assume that every variable ending in 'file' corresponds to input files that need to be accessible in catalog
                 if (entry.getKey().toLowerCase().endsWith(fileParamSuffix)) {
-                    for (String fileStr : StringUtils.split((String) entry.getValue(), ',')) {
+                    String[] files = StringUtils.split((String) entry.getValue(), ',');
+                    for (String fileStr : files) {
+                        // We skip the ALL and NONE files as they are not real files
+                        if (files.length == 1 && (fileStr.equals(ParamConstants.ALL) || fileStr.equals(ParamConstants.NONE))) {
+                            continue;
+                        }
                         try {
                             // Validate the user has access to the file
                             File file = catalogManager.getFileManager().get(study, fileStr,
@@ -478,6 +482,46 @@ public class JobManager extends ResourceManager<Job> {
         return inputFiles;
     }
 
+    public List<File> getWorkflowJobInputFilesFromParams(String study, Job job, String token) throws CatalogException {
+        InputFileUtils inputFileUtils = new InputFileUtils(catalogManager);
+        // Look for input files
+        List<File> inputFiles = new ArrayList<>();
+        if (job.getParams() != null) {
+            for (Map.Entry<String, Object> entry : job.getParams().entrySet()) {
+                if (entry.getValue() instanceof String) {
+                    String fileStr = (String) entry.getValue();
+                    if (inputFileUtils.isValidOpenCGAFile(fileStr)) {
+                        try {
+                            File file = inputFileUtils.findOpenCGAFileFromPattern(study, fileStr, token);
+                            inputFiles.add(file);
+                        } catch (CatalogException e) {
+                            throw new CatalogException("Cannot find file '" + entry.getValue() + "' from job param '" + entry.getKey()
+                                    + "'; (study = " + study + ") :" + e.getMessage(), e);
+                        }
+                    }
+                } else if (entry.getValue() instanceof Map) {
+                    // We look for files in the dynamic params
+                    Map<String, Object> dynamicParams = (Map<String, Object>) entry.getValue();
+                    for (Map.Entry<String, Object> subEntry : dynamicParams.entrySet()) {
+                        if (subEntry.getValue() instanceof String) {
+                            String fileStr = (String) subEntry.getValue();
+                            if (inputFileUtils.isValidOpenCGAFile(fileStr)) {
+                                try {
+                                    File file = inputFileUtils.findOpenCGAFileFromPattern(study, fileStr, token);
+                                    inputFiles.add(file);
+                                } catch (CatalogException e) {
+                                    throw new CatalogException("Cannot find file '" + subEntry.getValue() + "' from variable '"
+                                            + entry.getKey() + "." + subEntry.getKey() + "'. ", e);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return inputFiles;
+    }
+
     public OpenCGAResult<Job> retry(String studyStr, JobRetryParams jobRetry, Enums.Priority priority, String jobId, String jobDescription,
                                     List<String> jobDependsOn, List<String> jobTags, String jobScheduledStartTime, String token)
             throws CatalogException {
@@ -494,19 +538,19 @@ public class JobManager extends ResourceManager<Job> {
             if (StringUtils.isEmpty(jobDescription)) {
                 jobDescription = "Retry from job '" + jobRetry.getJob() + "'";
             }
-            return submit(studyStr, job.getTool().getId(), priority, params, jobId, jobDescription, jobDependsOn, jobTags, job.getId(),
-                    jobScheduledStartTime, job.isDryRun(), attributes, token);
+            return submit(studyStr, job.getType(), job.getTool(), priority, params, jobId, jobDescription, jobDependsOn, jobTags,
+                    job.getId(), jobScheduledStartTime, job.isDryRun(), attributes, token);
         } else {
             throw new CatalogException("Unable to retry job with status " + job.getInternal().getStatus().getId());
         }
     }
 
-    public OpenCGAResult<Job> submit(String studyStr, String toolId, Enums.Priority priority, Map<String, Object> params, String token)
-            throws CatalogException {
-        return submit(studyStr, toolId, priority, params, null, null, null, null, null, null, false, token);
+    public OpenCGAResult<Job> submit(String studyStr, JobType type, String toolId, Enums.Priority priority, Map<String, Object> params,
+                                     String token) throws CatalogException {
+        return submit(studyStr, type, toolId, priority, params, null, null, null, null, null, null, false, token);
     }
 
-    public OpenCGAResult<Job> submitProject(String projectStr, String toolId, Enums.Priority priority,
+    public OpenCGAResult<Job> submitProject(String projectStr, JobType type, String toolId, Enums.Priority priority,
                                             Map<String, Object> params, String jobId, String jobDescription, List<String> jobDependsOn,
                                             List<String> jobTags, String token) throws CatalogException {
         // Project job
@@ -521,18 +565,20 @@ public class JobManager extends ResourceManager<Job> {
         if (studies.isEmpty()) {
             throw new CatalogException("Project '" + projectStr + "' not found!");
         }
-        return submit(studies.get(0), toolId, priority, params, jobId, jobDescription, jobDependsOn, jobTags, null, null, false, token);
+        return submit(studies.get(0), type, toolId, priority, params, jobId, jobDescription, jobDependsOn, jobTags, null, null, false,
+                token);
     }
 
-    public OpenCGAResult<Job> submit(String studyStr, String toolId, Enums.Priority priority, Map<String, Object> params, String jobId,
-                                     String jobDescription, List<String> jobDependsOn, List<String> jobTags, @Nullable String jobParentId,
-                                     @Nullable String scheduledStartTime, Boolean dryRun, String token) throws CatalogException {
-        return submit(studyStr, toolId, priority, params, jobId, jobDescription, jobDependsOn, jobTags, jobParentId, scheduledStartTime,
-                dryRun, null, token);
+    public OpenCGAResult<Job> submit(String studyStr, JobType type, String toolId, Enums.Priority priority, Map<String, Object> params,
+                                     String jobId, String jobDescription, List<String> jobDependsOn, List<String> jobTags,
+                                     @Nullable String jobParentId, @Nullable String scheduledStartTime, Boolean dryRun, String token)
+            throws CatalogException {
+        return submit(studyStr, type, new ToolInfo().setId(toolId), priority, params, jobId, jobDescription, jobDependsOn,
+                jobTags, jobParentId, scheduledStartTime, dryRun, null, token);
     }
 
-    public OpenCGAResult<Job> submit(String studyStr, String toolId, Enums.Priority priority, Map<String, Object> params, String jobId,
-                                     String jobDescription, List<String> jobDependsOn, List<String> jobTags,
+    public OpenCGAResult<Job> submit(String studyStr, JobType type, ToolInfo toolInfo, Enums.Priority priority, Map<String, Object> params,
+                                     String jobId, String jobDescription, List<String> jobDependsOn, List<String> jobTags,
                                      @Nullable String jobParentId, @Nullable String scheduledStartTime, Boolean dryRun,
                                      Map<String, Object> attributes, String token) throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
@@ -543,7 +589,8 @@ public class JobManager extends ResourceManager<Job> {
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
-                .append("toolId", toolId)
+                .append("type", type)
+                .append("toolInfo", toolInfo)
                 .append("jobPriority", priority)
                 .append("params", params)
                 .append("jobId", jobId)
@@ -557,7 +604,8 @@ public class JobManager extends ResourceManager<Job> {
         Job job = new Job();
         job.setId(jobId);
         job.setDescription(jobDescription);
-        job.setTool(new ToolInfo().setId(toolId));
+        job.setType(type);
+        job.setTool(toolInfo);
         job.setTags(jobTags);
         job.setStudy(new JobStudyParam(study.getFqn()));
         job.setUserId(userId);
@@ -572,8 +620,10 @@ public class JobManager extends ResourceManager<Job> {
         job.setAttributes(attributes);
         try {
             autoCompleteNewJob(organizationId, study, job, tokenPayload);
-
             authorizationManager.checkStudyPermission(organizationId, study.getUid(), userId, StudyPermissions.Permissions.EXECUTE_JOBS);
+
+            // Check if we have already reached the limit of job hours in the Organisation
+            checkExecutionLimitQuota(organizationId);
 
             // Check params
             ParamUtils.checkObj(params, "params");
@@ -594,6 +644,15 @@ public class JobManager extends ResourceManager<Job> {
                 return reuseJob;
             } else {
                 getJobDBAdaptor(organizationId).insert(study.getUid(), job, new QueryOptions());
+
+                // Grant all job permissions to the user that generated the job
+                List<String> jobPermissions = EnumSet.allOf(JobPermissions.class)
+                        .stream()
+                        .map(JobPermissions::toString)
+                        .collect(Collectors.toList());
+                authorizationManager.setAcls(organizationId, study.getUid(), Collections.singletonList(userId),
+                        new AuthorizationManager.CatalogAclParams(Collections.singletonList(job.getUid()),
+                                jobPermissions, Enums.Resource.JOB));
                 OpenCGAResult<Job> jobResult = getJobDBAdaptor(organizationId).get(job.getUid(), new QueryOptions());
 
                 auditManager.auditCreate(organizationId, userId, Enums.Resource.JOB, job.getId(), "", study.getId(), study.getUuid(),
@@ -611,6 +670,115 @@ public class JobManager extends ResourceManager<Job> {
 
             throw e;
         }
+    }
+
+    /**
+     * Method to reschedule a list of jobs. Only intended for "Opencga" administrators.
+     * @param studyStr study where the list of jobs belong.
+     * @param jobUids  List of job uids to be rescheduled.
+     * @param scheduledStartTime New scheduled start time.
+     * @param token OpenCGA token.
+     * @return OpenCGAResult with the list of jobs that have been rescheduled.
+     * @throws CatalogException if there is any error.
+     */
+    public OpenCGAResult<Job> rescheduleJobs(String studyStr, List<Long> jobUids, String scheduledStartTime, String token)
+            throws CatalogException {
+        return rescheduleJobs(studyStr, jobUids, scheduledStartTime, null, token);
+    }
+
+    /**
+     * Method to reschedule a list of jobs. Only intended for "Opencga" administrators.
+     * @param studyStr study where the list of jobs belong.
+     * @param jobUids  List of job uids to be rescheduled.
+     * @param scheduledStartTime New scheduled start time.
+     * @param eventMessage Event message to be added to the rescheduled jobs.
+     * @param token OpenCGA token.
+     * @return OpenCGAResult with the list of jobs that have been rescheduled.
+     * @throws CatalogException if there is any error.
+     */
+    public OpenCGAResult<Job> rescheduleJobs(String studyStr, List<Long> jobUids, String scheduledStartTime, String eventMessage,
+                                             String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("jobUids", jobUids)
+                .append("scheduledStartTime", scheduledStartTime)
+                .append("eventMessage", eventMessage)
+                .append("token", token);
+        try {
+            Study study = catalogManager.getStudyManager().resolveId(studyFqn, tokenPayload);
+            authorizationManager.checkIsOpencgaAdministrator(tokenPayload);
+
+            if (CollectionUtils.isEmpty(jobUids)) {
+                throw new CatalogException("Missing job uids");
+            }
+            if (StringUtils.isEmpty(scheduledStartTime)) {
+                throw new CatalogException("Missing scheduled start time");
+            }
+            ParamUtils.checkDateIsNotExpired(scheduledStartTime, JobDBAdaptor.QueryParams.SCHEDULED_START_TIME.key());
+
+            ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.SCHEDULED_START_TIME.key(), scheduledStartTime);
+            QueryOptions queryOptions = new QueryOptions();
+
+            if (StringUtils.isNotEmpty(eventMessage)) {
+                // Add event message
+                List<Event> eventList = Collections.singletonList(new Event(Event.Type.INFO, "reschedule", eventMessage));
+                params.append(JobDBAdaptor.QueryParams.INTERNAL_EVENTS.key(), eventList);
+
+                Map<String, Object> actionMap = new HashMap<>();
+                actionMap.put(JobDBAdaptor.QueryParams.INTERNAL_EVENTS.key(), ParamUtils.BasicUpdateAction.ADD);
+                queryOptions.getMap(Constants.ACTIONS, actionMap);
+            }
+
+            Query query = new Query()
+                    .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                    .append(JobDBAdaptor.QueryParams.UID.key(), jobUids);
+            OpenCGAResult<Job> update = getJobDBAdaptor(organizationId).update(query, params, queryOptions);
+
+            auditManager.audit(organizationId, userId, Enums.Action.RESCHEDULE_JOB, Enums.Resource.JOB, "", "", "",
+                    "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return update;
+        } catch (Exception e) {
+            auditManager.audit(organizationId, userId, Enums.Action.RESCHEDULE_JOB, Enums.Resource.JOB, "", "", "",
+                    "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e));
+            throw e;
+        }
+    }
+
+    public OpenCGAResult<ExecutionTime> getExecutionTimeByMonth(String organizationId, Query query, String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        ParamUtils.checkParameter(organizationId, "organizationId");
+        authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, tokenPayload.getUserId(organizationId));
+        return getJobDBAdaptor(organizationId).executionTimeByMonth(query);
+    }
+
+    private void checkExecutionLimitQuota(String organizationId) throws CatalogException {
+        if (exceedsExecutionLimitQuota(organizationId)) {
+            throw new CatalogException("The organization '" + organizationId + "' has reached the maximum quota of execution hours ("
+                    + configuration.getQuota().getMaxNumJobHours() + ") for the current month.");
+        }
+    }
+
+    public boolean exceedsExecutionLimitQuota(String organizationId) throws CatalogException {
+        if (configuration.getQuota().getMaxNumJobHours() <= 0) {
+            return false;
+        }
+        // Get current year/month
+        String time = TimeUtils.getTime(TimeUtils.getDate(), TimeUtils.yyyyMM);
+        Query query = new Query(JobDBAdaptor.QueryParams.EXECUTION_END.key(), time);
+        OpenCGAResult<ExecutionTime> result = getJobDBAdaptor(organizationId).executionTimeByMonth(query);
+        if (result.getNumResults() > 0) {
+            ExecutionTime executionTime = result.first();
+            if (executionTime.getTime().getHours() >= configuration.getQuota().getMaxNumJobHours()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -811,6 +979,23 @@ public class JobManager extends ResourceManager<Job> {
         query.put(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         return getJobDBAdaptor(organizationId).iterator(study.getUid(), query, options, userId);
+    }
+
+    @Override
+    public OpenCGAResult<FacetField> facet(String studyStr, Query query, String facet, String token) throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+
+        Study study = catalogManager.getStudyManager().resolveId(studyFqn, StudyManager.INCLUDE_VARIABLE_SET, tokenPayload);
+
+        fixQueryObject(organizationId, study, query, userId);
+        query.append(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+
+        return getJobDBAdaptor(organizationId).facet(study.getUid(), query, facet, userId);
     }
 
     public OpenCGAResult countInOrganization(String organizationId, Query query, String token) throws CatalogException {
@@ -1914,7 +2099,7 @@ public class JobManager extends ResourceManager<Job> {
         CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, tokenPayload);
         String organizationId = studyFqn.getOrganizationId();
         String userId = tokenPayload.getUserId(organizationId);
-        Study study = studyManager.resolveId(studyId, userId, organizationId);
+        Study study = studyManager.resolveId(studyFqn, StudyManager.INCLUDE_CONFIGURATION, tokenPayload);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)
@@ -1955,6 +2140,13 @@ public class JobManager extends ResourceManager<Job> {
             }
             authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
             checkMembers(organizationId, study.getUid(), members);
+            if (study.getInternal().isFederated()) {
+                try {
+                    checkIsNotAFederatedUser(organizationId, members);
+                } catch (CatalogException e) {
+                    throw new CatalogException("Cannot provide access to federated users to a federated study.", e);
+                }
+            }
 
             List<Long> jobUids = jobList.stream().map(Job::getUid).collect(Collectors.toList());
             AuthorizationManager.CatalogAclParams catalogAclParams = new AuthorizationManager.CatalogAclParams(jobUids, permissions,

@@ -98,6 +98,7 @@ public final class VariantQueryUtils {
             "", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam NUM_SAMPLES = QueryParam.create("numSamples", "", QueryParam.Type.INTEGER);
     public static final QueryParam NUM_TOTAL_SAMPLES = QueryParam.create("numTotalSamples", "", QueryParam.Type.INTEGER);
+    public static final QueryParam SPARSE_SAMPLES = QueryParam.create("sparseSamples", "", Type.BOOLEAN);
 
     public static final String NON_EXISTING_REGION = "non_existing_region";
     public static final List<QueryParam> INTERNAL_VARIANT_QUERY_PARAMS = Arrays.asList(
@@ -113,7 +114,8 @@ public final class VariantQueryUtils {
             SAMPLE_DE_NOVO_STRICT,
             SAMPLE_COMPOUND_HETEROZYGOUS,
             NUM_SAMPLES,
-            NUM_TOTAL_SAMPLES);
+            NUM_TOTAL_SAMPLES,
+            SPARSE_SAMPLES);
 
     public static final String LOF = "lof";
     public static final String LOSS_OF_FUNCTION = "loss_of_function";
@@ -166,7 +168,12 @@ public final class VariantQueryUtils {
             UNKNOWN_GENOTYPE,
             SAMPLE_METADATA,
             SAMPLE_LIMIT,
-            SAMPLE_SKIP
+            SAMPLE_SKIP,
+            SOURCE
+    )));
+
+    public static final Set<QueryParam> MODIFIER_INTERNAL_QUERY_PARAMS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            SPARSE_SAMPLES
     )));
 
     public static final String SKIP_MISSING_GENES = "skipMissingGenes";
@@ -1577,27 +1584,46 @@ public final class VariantQueryUtils {
         return regions;
     }
 
-    public static String printQuery(Query query) {
+    public static String printQuery(final Query query) {
         if (query == null) {
             return "{}";
         } else {
+            Query simpleQuery = null;
             if (isValidParam(query, ANNOT_GENE_REGIONS_MAP)) {
-                query = new Query(query);
-                query.remove(ANNOT_GENE_REGIONS_MAP.key());
+                simpleQuery = simpleQuery == null ? new Query(query) : simpleQuery;
+                simpleQuery.remove(ANNOT_GENE_REGIONS_MAP.key());
                 Object geneRegions = query.get(ANNOT_GENE_REGIONS.key());
                 if (geneRegions instanceof Collection) {
-                    query.put(ANNOT_GENE_REGIONS.key(), "numGeneRegions : " + ((Collection<?>) geneRegions).size());
+                    simpleQuery.put(ANNOT_GENE_REGIONS.key(), "numGeneRegions : " + ((Collection<?>) geneRegions).size());
                 }
             }
             if (isValidParam(query, ID_INTERSECT)) {
-                query = new Query(query);
-                Object idIntersect = query.get(ID_INTERSECT.key());
+                simpleQuery = simpleQuery == null ? new Query(query) : simpleQuery;
+                Object idIntersect = simpleQuery.get(ID_INTERSECT.key());
                 if (idIntersect instanceof Collection) {
-                    query.put(ID_INTERSECT.key(), "numIdIntersect : " + ((Collection<?>) idIntersect).size());
+                    simpleQuery.put(ID_INTERSECT.key(), "numIdIntersect : " + ((Collection<?>) idIntersect).size());
+                }
+            }
+            if (isValidParam(query, INCLUDE_SAMPLE)) {
+                simpleQuery = simpleQuery == null ? new Query(query) : simpleQuery;
+                List<String> value = simpleQuery.getAsStringList(INCLUDE_SAMPLE.key());
+                if (value.size() > 50) {
+                    simpleQuery.put(INCLUDE_SAMPLE.key(), "numIncludeSample : " + value.size());
+                }
+            }
+            if (isValidParam(query, INCLUDE_FILE)) {
+                simpleQuery = simpleQuery == null ? new Query(query) : simpleQuery;
+                List<String> value = simpleQuery.getAsStringList(INCLUDE_FILE.key());
+                if (value.size() > 50) {
+                    simpleQuery.put(INCLUDE_FILE.key(), "numIncludeFile : " + value.size());
                 }
             }
             try {
-                return QUERY_MAPPER.writeValueAsString(query);
+                if (simpleQuery != null) {
+                    return QUERY_MAPPER.writeValueAsString(simpleQuery);
+                } else {
+                    return QUERY_MAPPER.writeValueAsString(query);
+                }
             } catch (JsonProcessingException e) {
                 logger.debug("Error writing json variant", e);
                 return query.toString();

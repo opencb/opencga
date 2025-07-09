@@ -11,11 +11,11 @@ import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.OperationsVariantStorageCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.JulieParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
@@ -453,6 +453,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .readValue(new java.io.File(commandOptions.jsonFile), VariantAggregateFamilyParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "family", commandOptions.family, true);
             putNestedIfNotNull(beanParams, "samples", commandOptions.samples, true);
             putNestedIfNotEmpty(beanParams, "gapsGenotype", commandOptions.gapsGenotype, true);
             putNestedIfNotNull(beanParams, "resume", commandOptions.resume, true);

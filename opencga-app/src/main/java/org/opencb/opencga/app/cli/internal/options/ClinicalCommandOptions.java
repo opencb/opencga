@@ -22,10 +22,9 @@ import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOp
 import java.util.List;
 
 import static org.opencb.opencga.analysis.clinical.InterpretationAnalysis.*;
-import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.*;
 import static org.opencb.opencga.core.api.FieldConstants.EXOMISER_CLINICAL_ANALYSIS_DESCRIPTION;
 import static org.opencb.opencga.core.api.FieldConstants.EXOMISER_VERSION_DESCRIPTION;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
+import static org.opencb.opencga.core.models.variant.VariantQueryParams.*;
 
 @Parameters(commandNames = {"clinical"}, commandDescription = "Clinical analysis commands")
 public class ClinicalCommandOptions {

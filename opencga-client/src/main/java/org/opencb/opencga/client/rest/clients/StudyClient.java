@@ -18,9 +18,10 @@ package org.opencb.opencga.client.rest.clients;
 
 import java.lang.Object;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.*;
+import org.opencb.opencga.core.client.ParentClient;
+import org.opencb.opencga.core.config.client.ClientConfiguration;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.job.Job;
@@ -59,7 +60,7 @@ import org.opencb.opencga.core.response.RestResponse;
  * This class contains methods for the Study webservices.
  *    PATH: studies
  */
-public class StudyClient extends AbstractParentClient {
+public class StudyClient extends ParentClient {
 
     public StudyClient(String token, ClientConfiguration configuration) {
         super(token, configuration);
@@ -267,6 +268,7 @@ public class StudyClient extends AbstractParentClient {
      *       creationDate: Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
      *       modificationDate: Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
      *       id: Note unique identifier.
+     *       type: Note type.
      *       uuid: Unique 32-character identifier assigned automatically by OpenCGA.
      *       userId: User that wrote that Note.
      *       tags: Note tags.

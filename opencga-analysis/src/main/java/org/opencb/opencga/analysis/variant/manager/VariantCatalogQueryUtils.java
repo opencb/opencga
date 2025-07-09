@@ -56,6 +56,7 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SamplePermissions;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.UserFilter;
+import org.opencb.opencga.core.models.variant.VariantQueryParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -89,70 +90,45 @@ import static org.opencb.opencga.storage.core.variant.query.executors.CompoundHe
  */
 public class VariantCatalogQueryUtils extends CatalogUtils {
 
-    public static final String SAMPLE_ANNOTATION_DESC =
-            "Selects some samples using metadata information from Catalog. e.g. age>20;phenotype=hpo:123,hpo:456;name=smith";
     public static final QueryParam SAMPLE_ANNOTATION
-            = QueryParam.create("sampleAnnotation", SAMPLE_ANNOTATION_DESC, QueryParam.Type.TEXT_ARRAY);
-    public static final String PROJECT_DESC = ParamConstants.PROJECT_DESCRIPTION;
-    public static final QueryParam PROJECT = QueryParam.create(ParamConstants.PROJECT_PARAM, PROJECT_DESC, QueryParam.Type.TEXT_ARRAY);
+            = QueryParam.create("sampleAnnotation", VariantQueryParams.SAMPLE_ANNOTATION_DESC, QueryParam.Type.TEXT_ARRAY);
+    public static final QueryParam PROJECT = QueryParam.create(ParamConstants.PROJECT_PARAM, VariantQueryParams.PROJECT_DESC, QueryParam.Type.TEXT_ARRAY);
 
-    public static final String FAMILY_DESC = "Filter variants where any of the samples from the given family contains the variant "
-            + "(HET or HOM_ALT)";
     public static final QueryParam FAMILY =
-            QueryParam.create("family", FAMILY_DESC, QueryParam.Type.TEXT);
-    public static final String FAMILY_MEMBERS_DESC = "Sub set of the members of a given family";
+            QueryParam.create("family", VariantQueryParams.FAMILY_DESC, QueryParam.Type.TEXT);
     public static final QueryParam FAMILY_MEMBERS =
-            QueryParam.create("familyMembers", FAMILY_MEMBERS_DESC, QueryParam.Type.TEXT);
-    public static final String FAMILY_DISORDER_DESC = "Specify the disorder to use for the family segregation";
+            QueryParam.create("familyMembers", VariantQueryParams.FAMILY_MEMBERS_DESC, QueryParam.Type.TEXT);
     public static final QueryParam FAMILY_DISORDER =
-            QueryParam.create("familyDisorder", FAMILY_DISORDER_DESC, QueryParam.Type.TEXT);
-    public static final String FAMILY_PROBAND_DESC = "Specify the proband child to use for the family segregation";
+            QueryParam.create("familyDisorder", VariantQueryParams.FAMILY_DISORDER_DESC, QueryParam.Type.TEXT);
     public static final QueryParam FAMILY_PROBAND =
-            QueryParam.create("familyProband", FAMILY_PROBAND_DESC, QueryParam.Type.TEXT);
-    public static final String FAMILY_SEGREGATION_DESCR = "Filter by segregation mode from a given family. Accepted values: "
-            + "[ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, "
-            + "deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]";
+            QueryParam.create("familyProband", VariantQueryParams.FAMILY_PROBAND_DESC, QueryParam.Type.TEXT);
     public static final QueryParam FAMILY_SEGREGATION =
-            QueryParam.create("familySegregation", FAMILY_SEGREGATION_DESCR, QueryParam.Type.TEXT);
+            QueryParam.create("familySegregation", VariantQueryParams.FAMILY_SEGREGATION_DESCR, QueryParam.Type.TEXT);
 
-    public static final String SAVED_FILTER_DESCR = "Use a saved filter at User level";
     public static final QueryParam SAVED_FILTER =
-            QueryParam.create("savedFilter", SAVED_FILTER_DESCR, QueryParam.Type.TEXT);
+            QueryParam.create("savedFilter", VariantQueryParams.SAVED_FILTER_DESCR, QueryParam.Type.TEXT);
 
     @Deprecated
     public static final QueryParam FAMILY_PHENOTYPE = FAMILY_DISORDER;
     @Deprecated
     public static final QueryParam MODE_OF_INHERITANCE = FAMILY_SEGREGATION;
 
-    public static final String PANEL_DESC = "Filter by genes from the given disease panel";
     public static final QueryParam PANEL =
-            QueryParam.create("panel", PANEL_DESC, QueryParam.Type.TEXT);
-    public static final String PANEL_MOI_DESC = "Filter genes from specific panels that match certain mode of inheritance. " +
-            "Accepted values : "
-            + "[ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, "
-            + "deNovo, mendelianError, compoundHeterozygous ]";
+            QueryParam.create("panel", VariantQueryParams.PANEL_DESC, QueryParam.Type.TEXT);
     public static final QueryParam PANEL_MODE_OF_INHERITANCE =
-            QueryParam.create("panelModeOfInheritance", PANEL_MOI_DESC
+            QueryParam.create("panelModeOfInheritance", VariantQueryParams.PANEL_MOI_DESC
                     , QueryParam.Type.TEXT);
-    public static final String PANEL_CONFIDENCE_DESC = "Filter genes from specific panels that match certain confidence. " +
-            "Accepted values : [ high, medium, low, rejected ]";
     public static final QueryParam PANEL_CONFIDENCE =
-            QueryParam.create("panelConfidence", PANEL_CONFIDENCE_DESC, QueryParam.Type.TEXT);
+            QueryParam.create("panelConfidence", VariantQueryParams.PANEL_CONFIDENCE_DESC, QueryParam.Type.TEXT);
 
-    public static final String PANEL_INTERSECTION_DESC = "Intersect panel genes and regions with given "
-            + "genes and regions from que input query. This will prevent returning variants from regions out of the panel.";
     public static final QueryParam PANEL_INTERSECTION =
-            QueryParam.create("panelIntersection", PANEL_INTERSECTION_DESC, Type.BOOLEAN);
+            QueryParam.create("panelIntersection", VariantQueryParams.PANEL_INTERSECTION_DESC, Type.BOOLEAN);
 
-    public static final String PANEL_ROLE_IN_CANCER_DESC = "Filter genes from specific panels that match certain role in cancer. " +
-            "Accepted values : [ both, oncogene, tumorSuppressorGene, fusion ]";
     public static final QueryParam PANEL_ROLE_IN_CANCER =
-            QueryParam.create("panelRoleInCancer", PANEL_ROLE_IN_CANCER_DESC, QueryParam.Type.TEXT);
+            QueryParam.create("panelRoleInCancer", VariantQueryParams.PANEL_ROLE_IN_CANCER_DESC, QueryParam.Type.TEXT);
 
-    public static final String PANEL_FEATURE_TYPE_DESC = "Filter elements from specific panels by type. " +
-            "Accepted values : [ gene, region, str, variant ]";
     public static final QueryParam PANEL_FEATURE_TYPE =
-            QueryParam.create("panelFeatureType", PANEL_FEATURE_TYPE_DESC, QueryParam.Type.TEXT);
+            QueryParam.create("panelFeatureType", VariantQueryParams.PANEL_FEATURE_TYPE_DESC, QueryParam.Type.TEXT);
 
     public static final List<QueryParam> VARIANT_CATALOG_QUERY_PARAMS = Arrays.asList(
             SAMPLE_ANNOTATION,

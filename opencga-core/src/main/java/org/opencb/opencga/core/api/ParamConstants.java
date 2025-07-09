@@ -29,6 +29,9 @@ public class ParamConstants {
     public static final String LIMIT_DESCRIPTION = "Number of results to be returned";
     public static final String SKIP_DESCRIPTION = "Number of results to skip";
     public static final String COUNT_DESCRIPTION = "Get the total number of results matching the query. Deactivated by default.";
+    public static final String FACET_PARAM = "field";
+    public static final String FACET_DESCRIPTION = "Field to apply aggregation statistics to (or a list of fields separated by semicolons)"
+        + ", e.g.: studies;type;numSamples[0..10]:1;format:sum(size)";
     public static final String CREATION_DATE_DESCRIPTION = "Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805";
     public static final String CREATION_DATE_PARAM = "creationDate";
     public static final String MODIFICATION_DATE_DESCRIPTION = "Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, " +
@@ -42,8 +45,12 @@ public class ParamConstants {
     public static final String ENTRY_ID_LIST = "entryIds";
     public static final String PERMISSION_LIST_DESCRIPTION = "Comma separated list of permissions to be retrieved.";
     public static final String PERMISSION_LIST = "permissions";
+    public final static String RGA_INDEX_ID = "rga-index";
+    public final static String RGA_INDEX_DESCRIPTION = "Generate Recessive Gene Analysis secondary index";
+    public static final String FILE = "file";
     private static final String REGEX_SUPPORT = ". Also admits basic regular expressions using the operator '~', "
             + "i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.";
+    public static final String RESOURCES_FOLDER = "RESOURCES";
     @Deprecated // Use INTERNAL_VARIANT_INDEX_STATUS_PARAM
     public static final String INTERNAL_INDEX_STATUS_PARAM = "internalIndexStatus";
     public static final String INTERNAL_VARIANT_INDEX_STATUS_PARAM = "internalVariantIndexStatus";
@@ -78,6 +85,8 @@ public class ParamConstants {
     public static final String BODY_PARAM = "body";
     public static final String OVERWRITE = "overwrite";
     private static final String UP_TO_100 = " up to a maximum of 100";
+
+    public static final String DEFAULT_MIN_NEXTFLOW_VERSION = "24.04.4";
 
     public static final String CELLBASE_URL = "https://ws.zettagenomics.com/cellbase";
     public static final String CELLBASE_VERSION = "v5.8";
@@ -195,6 +204,7 @@ public class ParamConstants {
     public static final String FILE_TYPE_DESCRIPTION = "File type, either FILE or DIRECTORY";
     public static final String FILE_FORMAT_DESCRIPTION = "Comma separated Format values. For existing Formats see files/formats";
     public static final String FILE_EXTERNAL_DESCRIPTION = "Boolean field indicating whether to filter by external or non external files";
+    public static final String FILE_RESOURCE_DESCRIPTION = "Boolean field indicating whether the file is a resource or not";
     public static final String FILE_BIOFORMAT_DESCRIPTION = "Comma separated Bioformat values. For existing Bioformats see " +
             "files/bioformats";
     public static final String FILE_STATUS_DESCRIPTION = "File status";
@@ -494,7 +504,7 @@ public class ParamConstants {
     public static final String INTERPRETATION_CREATION_DATE_DESCRIPTION = "Interpretation " + CREATION_DATE_DESCRIPTION;
     public static final String INCLUDE_INTERPRETATION = "includeInterpretation";
     public static final String INCLUDE_INTERPRETATION_DESCRIPTION = "Interpretation ID to include the fields related to this"
-        + " interpretation";
+            + " interpretation";
     // ---------------------------------------------
     public static final String INTERPRETATION_MODIFICATION_DATE_DESCRIPTION = "Interpretation " + MODIFICATION_DATE_DESCRIPTION;
     public static final String INTERPRETATION_STATUS_DESCRIPTION = STATUS_DESCRIPTION;
@@ -559,7 +569,17 @@ public class ParamConstants {
     public static final String JOB_DEPENDS_ON_PARAM = "dependsOn";
     public static final String JOB_DEPENDS_ON_DESCRIPTION = "Comma separated list of existing job IDs the job will depend on.";
     public static final String JOB_TOOL_ID_PARAM = "toolId";
+    public static final String JOB_TOOL_EXTERNAL_EXECUTOR_ID_PARAM = "tool.externalExecutor.id";
+    public static final String JOB_TOOL_EXTERNAL_EXECUTOR_ID_DESCRIPTION = "Id of the external executor. This field is only applicable for "
+            + "jobs executed by an external executor.";
+    public static final String JOB_DRY_RUN_PARAM = "dryRun";
+    public static final String JOB_TYPE_PARAM = "type";
+    public static final String JOB_PARENT_ID_PARAM = "parentId";
+    public static final String JOB_PARENT_ID_DESCRIPTION = "Job id that generated this job (if any).";
+    public static final String JOB_INTERNAL_KILL_JOB_REQUESTED_PARAM = "internal.killJobRequested";
+    public static final String JOB_INTERNAL_KILL_JOB_REQUESTED_DESCRIPTION = "Flag indicating that the user requested to kill the job.";
     public static final String JOB_TOOL_TYPE_PARAM = "toolType";
+    public static final String JOB_TYPE_DESCRIPTION = "Job type (NATIVE, WORKFLOW, CUSTOM or WALKER)";
     public static final String JOB_TOOL_ID_DESCRIPTION = "Tool ID executed by the job" + REGEX_SUPPORT;
     public static final String JOB_TOOL_TYPE_DESCRIPTION = "Tool type executed by the job [OPERATION, ANALYSIS]";
     public static final String JOB_USER_PARAM = "userId";
@@ -584,6 +604,39 @@ public class ParamConstants {
             + " not actually run.";
 
     // ---------------------------------------------
+    // INDEX PARAMS DESCRIPTIONS
+    public static final String COVERAGE_INDEX_PARAMS_DESCRIPTION = "Coverage computation parameters";
+    public static final String ALIGNMENT_INDEX_PARAMS_DESCRIPTION = "Alignment index params";
+    public static final String VARIANT_INDEX_PARAMS_DESCRIPTION = "Variant index params";
+    public static final String RGA_ANALYSIS_PARAMS_DESCRIPTION = "Recessive Gene Analysis index params";
+    public static final String EXOMISER_INTERPRETATION_ANALYSIS_PARAMS_DESCRIPTION = "Exomiser interpretation analysis params";
+
+    // ---------------------------------------------
+    // WORKFLOWS
+    public static final String WORKFLOW_VERSION_PARAM = "version";
+    public static final String WORKFLOW_VERSION_DESCRIPTION = "Comma separated list of workflow versions. 'all' to get all the workflow "
+            + "versions. Not supported if multiple workflow ids are provided";
+    public static final String WORKFLOWS_ID_PARAM = "id";
+    public static final String WORKFLOWS_UUID_PARAM = "uuid";
+    public static final String WORKFLOWS_NAME_PARAM = "name";
+    public static final String WORKFLOWS_TYPE_PARAM = "type";
+    public static final String WORKFLOWS_TAGS_PARAM = "tags";
+    public static final String WORKFLOWS_DRAFT_PARAM = "draft";
+    public static final String WORKFLOWS_INTERNAL_REGISTRATION_USER_ID_PARAM = "internal.registrationUserId";
+    public static final String WORKFLOWS_MANAGER_ID_PARAM = "manager.id";
+    public static final String WORKFLOWS_ID_DESCRIPTION = "Comma separated list of workflow IDs" + UP_TO_100 + REGEX_SUPPORT;
+    public static final String WORKFLOWS_NAME_DESCRIPTION = "Comma separated list of workflow names" + UP_TO_100 + REGEX_SUPPORT;
+    public static final String WORKFLOWS_UUID_DESCRIPTION = "Comma separated list of workflow UUIDs" + UP_TO_100;
+    public static final String WORKFLOWS_TYPE_DESCRIPTION = "Workflow type. Allowed types: [CLINICAL_INTERPRETATION, SECONDARY_ANALYSIS, "
+            + "RESEARCH or OTHER]";
+    public static final String WORKFLOWS_TAGS_DESCRIPTION = "Comma separated list of tags";
+    public static final String WORKFLOWS_DRAFT_DESCRIPTION = "Boolean field indicating whether the workflow is a draft or not.";
+    public static final String WORKFLOWS_INTERNAL_REGISTRATION_USER_ID_DESCRIPTION = "UserId that created the workflow.";
+    public static final String WORKFLOWS_MANAGER_ID_DESCRIPTION = "Id of the workflow system (Allowed values: NEXTFLOW).";
+    public static final String WORKFLOW_SCRIPTS_ACTION_DESCRIPTION = "Action to be performed if the array of scripts is being updated "
+            + "[SET, ADD, REMOVE]";
+    public static final String WORKFLOW_SCRIPTS_ACTION_PARAM = "scriptsAction";
+    // ---------------------------------------------
     public static final String JOB_INPUT_FILES_PARAM = "input";
     public static final String JOB_INPUT_FILES_DESCRIPTION = "Comma separated list of file IDs used as input.";
     public static final String JOB_OUTPUT_FILES_PARAM = "output";
@@ -596,6 +649,7 @@ public class ParamConstants {
             "<201805";
     public static final String VARIANTS_QUERY_DESCRIPTION = "Filter and fetch variants from indexed VCF files in the variant storage";
     public static final String OUTPUT_DIRECTORY_DESCRIPTION = "Output directory";
+
     // ---------------------------------------------
     public static final String REGION_DESCRIPTION = "Comma separated list of regions 'chr:start-end, e.g.: 2,3:63500-65000";
     public static final String REGION_PARAM = "region";
@@ -606,9 +660,7 @@ public class ParamConstants {
     public static final String INDEX_AUXILIAR_COLLECTION_DESCRIPTION = "Index auxiliar collection to improve performance assuming RGA is " +
             "completely indexed.";
     public static final String INDEX_AUXILIAR_COLLECTION = "auxiliarIndex";
-    public static final String ALIGNMENT_INDEX_DESCRIPTION = "Index alignment file";
     public static final String ALIGNMENT_QUERY_DESCRIPTION = "Search over indexed alignments";
-    public static final String ALIGNMENT_COVERAGE_DESCRIPTION = "Compute coverage for a given alignemnt file";
     public static final String ALIGNMENT_COVERAGE_QUERY_DESCRIPTION = "Query the coverage of an alignment file for regions or genes";
     public static final String ALIGNMENT_COVERAGE_RATIO_DESCRIPTION = "Compute coverage ratio from file #1 vs file #2, (e.g. somatic vs " +
             "germline)";
@@ -836,7 +888,7 @@ public class ParamConstants {
     public static final String STUDIES_VARIABLESET_VARIABLES_UPDATE_ID = "The body web service id parameter";
     public static final String STUDIES_VARIABLESET_VARIABLES_UPDATE_NAME = "The body web service name parameter";
     public static final String STUDIES_VARIABLESET_VARIABLES_UPDATE_CATEGORY = "The body web service category parameter";
-//    public static final String STUDIES_VARIABLESET_VARIABLES_UPDATE_TYPE = "The body web service type parameter";
+    //    public static final String STUDIES_VARIABLESET_VARIABLES_UPDATE_TYPE = "The body web service type parameter";
     public static final String STUDIES_VARIABLESET_VARIABLES_UPDATE_DEFAULTVALUE = "The body web service defaultValue parameter";
     public static final String STUDIES_VARIABLESET_VARIABLES_UPDATE_REQUIRED = "The body web service required parameter";
     public static final String STUDIES_VARIABLESET_VARIABLES_UPDATE_MULTIVALUE = "The body web service multiValue parameter";
@@ -862,7 +914,7 @@ public class ParamConstants {
     public static final String FILES_UPDATE_MODIFICATIONDATE = "The body web service modificationDate parameter";
     public static final String FILES_UPDATE_SAMPLEIDS = "The body web service sampleIds parameter";
     public static final String FILES_UPDATE_CHECKSUM = "The body web service checksum parameter";
-//    public static final String FILES_UPDATE_FORMAT = "The body web service format parameter";
+    //    public static final String FILES_UPDATE_FORMAT = "The body web service format parameter";
 //    public static final String FILES_UPDATE_BIOFORMAT = "The body web service bioformat parameter";
     public static final String FILES_UPDATE_SOFTWARE = "The body web service software parameter";
     public static final String FILES_UPDATE_EXPERIMENT = "The body web service experiment parameter";
@@ -1016,7 +1068,7 @@ public class ParamConstants {
     public static final String FAMILIES_CREATE_ATTRIBUTES = "The body web service attributes parameter";
     public static final String FAMILIES_CREATE_ANNOTATIONSETS = "The body web service annotationSets parameter";
     public static final String COHORTS_UPDATE_ID = "The body web service id parameter";
-//    public static final String COHORTS_UPDATE_TYPE = "The body web service type parameter";
+    //    public static final String COHORTS_UPDATE_TYPE = "The body web service type parameter";
     public static final String COHORTS_UPDATE_DESCRIPTION = "The body web service description parameter";
     public static final String COHORTS_UPDATE_CREATIONDATE = "The body web service creationDate parameter";
     public static final String COHORTS_UPDATE_MODIFICATIONDATE = "The body web service modificationDate parameter";
@@ -1027,7 +1079,7 @@ public class ParamConstants {
     public static final String COHORTS_ANNOTATIONSETS_LOAD_CONTENT = "The body web service content parameter";
     public static final String COHORTS_UPDATE_COHORT = "The body web service cohort parameter";
     public static final String COHORTS_CREATE_ID = "The body web service id parameter";
-//    public static final String COHORTS_CREATE_TYPE = "The body web service type parameter";
+    //    public static final String COHORTS_CREATE_TYPE = "The body web service type parameter";
     public static final String COHORTS_CREATE_DESCRIPTION = "The body web service description parameter";
     public static final String COHORTS_CREATE_CREATIONDATE = "The body web service creationDate parameter";
     public static final String COHORTS_CREATE_MODIFICATIONDATE = "The body web service modificationDate parameter";
@@ -1036,7 +1088,7 @@ public class ParamConstants {
     public static final String COHORTS_CREATE_ATTRIBUTES = "The body web service attributes parameter";
     public static final String COHORTS_CREATE_STATUS = "The body web service status parameter";
     public static final String COHORTS_GENERATE_ID = "The body web service id parameter";
-//    public static final String COHORTS_GENERATE_TYPE = "The body web service type parameter";
+    //    public static final String COHORTS_GENERATE_TYPE = "The body web service type parameter";
     public static final String COHORTS_GENERATE_DESCRIPTION = "The body web service description parameter";
     public static final String COHORTS_GENERATE_CREATIONDATE = "The body web service creationDate parameter";
     public static final String COHORTS_GENERATE_MODIFICATIONDATE = "The body web service modificationDate parameter";
@@ -1262,7 +1314,7 @@ public class ParamConstants {
     public static final String ANALYSIS_VARIANT_CIRCOS_RUN_OUTDIR = "The body web service outdir parameter";
     public static final String ANALYSIS_CLINICAL_UPDATE_ID = "The body web service id parameter";
     public static final String ANALYSIS_CLINICAL_UPDATE_DESCRIPTION = "The body web service description parameter";
-//    public static final String ANALYSIS_CLINICAL_UPDATE_TYPE = "The body web service type parameter";
+    //    public static final String ANALYSIS_CLINICAL_UPDATE_TYPE = "The body web service type parameter";
     public static final String ANALYSIS_CLINICAL_UPDATE_DISORDER = "The body web service disorder parameter";
     public static final String ANALYSIS_CLINICAL_UPDATE_FILES = "The body web service files parameter";
     public static final String ANALYSIS_CLINICAL_UPDATE_PANELS = "The body web service panels parameter";
@@ -1297,7 +1349,7 @@ public class ParamConstants {
     public static final String ANALYSIS_CLINICAL_INTERPRETATION_CREATE_ATTRIBUTES = "The body web service attributes parameter";
     public static final String ANALYSIS_CLINICAL_CREATE_ID = "The body web service id parameter";
     public static final String ANALYSIS_CLINICAL_CREATE_DESCRIPTION = "The body web service description parameter";
-//    public static final String ANALYSIS_CLINICAL_CREATE_TYPE = "The body web service type parameter";
+    //    public static final String ANALYSIS_CLINICAL_CREATE_TYPE = "The body web service type parameter";
     public static final String ANALYSIS_CLINICAL_CREATE_DISORDER = "The body web service disorder parameter";
     public static final String ANALYSIS_CLINICAL_CREATE_FILES = "The body web service files parameter";
     public static final String ANALYSIS_CLINICAL_CREATE_PROBAND = "The body web service proband parameter";
@@ -1483,13 +1535,13 @@ public class ParamConstants {
     public static final String OPERATIONS_VARIANT_STORAGE_VARIANT_SAMPLE_INDEX_BUILDINDEX = "The body web service buildIndex parameter";
     public static final String OPERATIONS_VARIANT_STORAGE_VARIANT_SAMPLE_INDEX_ANNOTATE = "The body web service annotate parameter";
     public static final String OPERATIONS_VARIANT_STORAGE_VARIANT_SAMPLE_INDEX_OVERWRITE = "The body web service overwrite parameter";
-//    public static final String ADMIN_USERS_CREATE_TYPE = "The body web service type parameter";
+    //    public static final String ADMIN_USERS_CREATE_TYPE = "The body web service type parameter";
     public static final String ADMIN_USERS_SYNC_AUTHENTICATIONORIGINID = "The body web service authenticationOriginId parameter";
     public static final String ADMIN_USERS_SYNC_FROM = "The body web service from parameter";
     public static final String ADMIN_USERS_SYNC_TO = "The body web service to parameter";
     public static final String ADMIN_USERS_SYNC_STUDY = "The body web service study parameter";
     public static final String ADMIN_USERS_SYNC_SYNCALL = "The body web service syncAll parameter";
-//    public static final String ADMIN_USERS_SYNC_TYPE = "The body web service type parameter";
+    //    public static final String ADMIN_USERS_SYNC_TYPE = "The body web service type parameter";
     public static final String ADMIN_USERS_SYNC_FORCE = "The body web service force parameter";
     public static final String ADMIN_USERS_IMPORT_AUTHENTICATIONORIGINID = "The body web service authenticationOriginId parameter";
     public static final String ADMIN_USERS_IMPORT_ID = "The body web service id parameter";
@@ -1532,6 +1584,8 @@ public class ParamConstants {
     public static final String JOBS_DESCRIPTION = "Comma separated list of job IDs or UUIDs" + UP_TO_100;
     public static final String JOB_IDS_DESCRIPTION = "Comma separated list of job IDs" + UP_TO_100 + REGEX_SUPPORT;
     public static final String JOB_UUIDS_DESCRIPTION = "Comma separated list of job UUIDs" + UP_TO_100;
+    public static final String WORKFLOWS_DESCRIPTION = "Comma separated list workflow IDs or UUIDs" + UP_TO_100;
+    public static final String WORKFLOW_DESCRIPTION = "Workflow ID or UUID";
     // ---------------------------------------------
     public static final String PROJECTS_DESCRIPTION = "Comma separated list of projects [organization@]project" + UP_TO_100;
     // ---------------------------------------------

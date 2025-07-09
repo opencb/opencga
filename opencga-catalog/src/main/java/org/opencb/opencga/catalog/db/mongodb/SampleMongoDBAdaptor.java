@@ -690,7 +690,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 QueryParams.INTERNAL_VARIANT_SECONDARY_SAMPLE_INDEX.key(),
                 QueryParams.INTERNAL_VARIANT_GENOTYPE_INDEX.key(),
                 QueryParams.INTERNAL_VARIANT_ANNOTATION_INDEX.key(),
-                QueryParams.INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX.key()};
+                QueryParams.INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX.key(),
+                QueryParams.INTERNAL_VARIANT_AGGREGATE_FAMILY.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         if (document.getSet().containsKey(QueryParams.STATUS.key())) {
             nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
@@ -1188,12 +1189,28 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     @Override
-    public OpenCGAResult distinct(long studyUid, String field, Query query, String userId)
+    public OpenCGAResult<?> distinct(long studyUid, String field, Query query, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query finalQuery = query != null ? new Query(query) : new Query();
         finalQuery.put(QueryParams.STUDY_UID.key(), studyUid);
         Bson bson = parseQuery(finalQuery, userId);
         return new OpenCGAResult<>(sampleCollection.distinct(field, bson));
+    }
+
+    @Override
+    public OpenCGAResult<?> distinct(List<String> fields, Query query)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        StopWatch stopWatch = StopWatch.createStarted();
+        Query finalQuery = query != null ? new Query(query) : new Query();
+        Bson bson = parseQuery(finalQuery);
+
+        Set<String> results = new LinkedHashSet<>();
+        for (String field : fields) {
+            results.addAll(sampleCollection.distinct(field, bson, String.class).getResults());
+        }
+
+        return new OpenCGAResult<>((int) stopWatch.getTime(TimeUnit.MILLISECONDS), Collections.emptyList(), results.size(),
+                new ArrayList<>(results), -1);
     }
 
     @Override
@@ -1211,6 +1228,13 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
         return new OpenCGAResult<>((int) stopWatch.getTime(TimeUnit.MILLISECONDS), Collections.emptyList(), results.size(),
                 new ArrayList<>(results), -1);
+    }
+
+    @Override
+    public OpenCGAResult<FacetField> facet(long studyUid, Query query, String facet, String userId)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        Bson bson = parseQuery(query, userId);
+        return facet(sampleCollection, bson, facet);
     }
 
     private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options, String user)
@@ -1431,6 +1455,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                         break;
                     case ID:
                     case UUID:
+                    case INTERNAL_VARIANT_INDEX_STATUS_ID:
                     case PROCESSING_PRODUCT_ID:
                     case PROCESSING_PREPARATION_METHOD:
                     case PROCESSING_EXTRACTION_METHOD:

@@ -68,6 +68,16 @@ export default class Meta extends OpenCGAParentClass {
         return this._get("meta", null, null, null, "model", params);
     }
 
+    /** Opencga openapi json
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.environment] - Environment of the app.
+    * @param {String} [params.host] - Opencga host without environment.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    openapi(params) {
+        return this._get("meta", null, null, null, "openapi", params);
+    }
+
     /** Ping Opencga webservices.
     * 
     * @returns {Promise} Promise object in the form of RestResponse instance.
