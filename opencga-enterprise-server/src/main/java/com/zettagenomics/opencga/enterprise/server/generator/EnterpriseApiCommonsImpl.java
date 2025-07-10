@@ -19,9 +19,34 @@ public class EnterpriseApiCommonsImpl implements ApiCommons {
     public EnterpriseApiCommonsImpl() {
     }
 
+    /**
+     * The order of the classes is important for the order of the categories in Swagger.
+     * This is the correct order of categories in Swagger:
+     *   1. Federations
+     *   2. Organizations
+     *   3. Users
+     *   4. Projects
+     *   5. Studies
+     *   6. Files
+     *   7. Jobs
+     *   8. Workflows
+     *   9. Samples
+     *   10. Individuals
+     *   11. Families
+     *   12. Cohorts
+     *   13. Disease Panels
+     *   14. Analysis - Alignment
+     *   15. Analysis - Variant
+     *   16. Analysis - Clinical
+     *   17. Analysis - CVDB
+     *   18. Operations - Variant Storage
+     *   19. Meta
+     *   20. Admin
+     *   21. Ga4gh
+     */
     public List<Class<?>> getApiClasses() {
 
-        //The order of the classes is important for the order of the categories in the swagger.
+        // List of classes that implement the RESTful Web Services API
         List<Class<?>> classes = new ArrayList();
         classes.add(EnterpriseFederationWSServer.class);
         classes.add(OrganizationWSServer.class);
@@ -50,5 +75,6 @@ public class EnterpriseApiCommonsImpl implements ApiCommons {
 
         return classes;
     }
+
 
 }
