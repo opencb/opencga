@@ -15,6 +15,31 @@ import java.util.List;
 
 public class ApiCommonsImpl implements ApiCommons {
 
+    /**
+     * The order of the classes is important for the order of the categories in Swagger.
+     * This is the correct order of categories in Swagger:
+     *   1. Organizations
+     *   2. Users
+     *   3. Projects
+     *   4. Studies
+     *   5. Files
+     *   6. Jobs
+     *   7. Workflows
+     *   8. Samples
+     *   9. Individuals
+     *   10. Families
+     *   11. Cohorts
+     *   12. Disease Panels
+     *   13. Analysis - Alignment
+     *   14. Analysis - Variant
+     *   15. Analysis - Clinical
+     *   16. Operations - Variant Storage
+     *   17. Meta
+     *   18. Admin
+     *   19. Ga4gh
+     */
+
+
     public List<Class<?>> getApiClasses(){
 
         //The order of the classes is important for the order of the categories in the swagger.
@@ -41,29 +66,5 @@ public class ApiCommonsImpl implements ApiCommons {
 
         return classes;
     }
-/*
-    @Override
-    public List<String> getOrderCategories() {
-        return Arrays.asList(
-                "Organizations",
-                "Users",
-                "Projects",
-                "Studies",
-                "Files",
-                "Jobs",
-                "Workflows",
-                "Samples",
-                "Individuals",
-                "Families",
-                "Cohorts",
-                "Disease Panels",
-                "Analysis - Alignment",
-                "Analysis - Variant",
-                "Analysis - Clinical",
-                "Operations - Variant Storage",
-                "Meta",
-                "Admin",
-                "Ga4gh"
-        );
-    }*/
+
 }
