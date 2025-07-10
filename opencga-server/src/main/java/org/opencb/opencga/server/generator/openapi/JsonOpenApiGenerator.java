@@ -20,7 +20,7 @@ public class JsonOpenApiGenerator {
     private final Set<Class<?>> beansDefinitions = new LinkedHashSet<>();
     private String study;
 
-    public Swagger generateJsonOpenApi(ApiCommons apiCommons, String token, String environment, String host, String apiVersion, String study) {
+    public Swagger generateJsonOpenApi(ApiCommons apiCommons, String token, String url, String apiVersion, String study) {
 
         this.study = study;
         List<Class<?>> classes = apiCommons.getApiClasses();
@@ -30,12 +30,8 @@ public class JsonOpenApiGenerator {
         info.setDescription("OpenCGA RESTful Web Services API");
         info.setVersion(GitRepositoryState.getInstance().getBuildVersion());
         swagger.setInfo(info);
-        swagger.setHost(StringUtils.isEmpty(host) ? "test.app.zettagenomics.com" : host);
-        if (StringUtils.isNotEmpty(environment)) {
-            swagger.setBasePath("/" + environment + "/opencga/webservices/rest");
-        }else{
-            swagger.setBasePath("/opencga/webservices/rest");
-        }
+        swagger.setHost(getHost(url));
+        swagger.setBasePath(getEnvironment(url) + "/webservices/rest");
         List<String> schemes = new ArrayList<>();
         schemes.add("https");
         swagger.setSchemes(schemes);
@@ -171,47 +167,42 @@ public class JsonOpenApiGenerator {
         return swagger;
     }
 
-//    public List<Tag> sortTagsByName(List<Tag> tags,ApiCommons apiCommons) {
-//        // Build a lookup map from tag name to Tag instance
-//        List<String> fixedOrder = apiCommons.getOrderCategories();
-//        Map<String, Tag> nameToTag = new HashMap<>();
-//        for (Tag tag : tags) {
-//            String name = tag.getName();
-//            if (!fixedOrder.contains(name)) {
-//                // Unknown name → error out immediately
-//                throw new IllegalArgumentException(
-//                        "Unsupported tag name: '" + name + "'. Allowed values are: " + fixedOrder
-//                );
-//            }
-//            // If there are duplicates, the last one wins; adjust if needed
-//            nameToTag.put(name, tag);
-//        }
-//
-//        // Build the result list by walking FIXED_ORDER exactly once
-//        List<Tag> sorted = new ArrayList<>(tags.size());
-//        for (String expectedName : fixedOrder) {
-//            Tag t = nameToTag.get(expectedName);
-//            if (t == null) {
-//                // A required tag is missing → error out
-//                throw new IllegalArgumentException(
-//                        "Missing required tag: '" + expectedName + "'. All FIXED_ORDER entries must be present."
-//                );
-//            }
-//            sorted.add(t);
-//        }
-//
-//        return sorted;
-//    }
+    /**
+     * Extracts the host (everything before the first '/') from a URL string
+     * that is guaranteed to come without a protocol.
+     *
+     * @param url the input URL, e.g. "demo.app.zettagenomics.com/trial-gtech/opencga"
+     * @return the host portion, e.g. "demo.app.zettagenomics.com"
+     */
+    private String getHost(String url) {
+        int slashIdx = url.indexOf('/');
+        if (slashIdx == -1) {
+            // no “/” found: the entire string is the host
+            return url;
+        }
+        return url.substring(0, slashIdx);
+    }
+
+    /**
+     * Extracts the environment path (everything including and after the first '/'),
+     * or returns "/" if there is no path.
+     *
+     * @param url the input URL, e.g. "demo.app.zettagenomics.com/trial-gtech/opencga"
+     * @return the environment portion, e.g. "/trial-gtech/opencga", or "" if none
+     */
+    private String getEnvironment(String url) {
+        int slashIdx = url.indexOf('/');
+        if (slashIdx == -1) {
+            // no “/” found: default to root
+            return "";
+        }
+        return url.substring(slashIdx);
+    }
 
     private Map<String, Response> getStringResponseMap(ApiOperation apiOperation) {
         Map<String,Response> responses=new HashMap<>();
         Response response = new Response();
         if (InputStream.class.isAssignableFrom(apiOperation.response())) {
-            // Content  is not expected for InputStream
-//            Map<String, Content> content = new HashMap<>();
-//            content.put("application/octet-stream", new Content()
-//                    .setSchema(new Schema().setType("string").setFormat("binary")));
-//            response.setContent(content);
             response.setDescription("File successfully downloaded");
         } else {
             response.setDescription("Successful operation: " + apiOperation.response().getSimpleName());
@@ -256,7 +247,7 @@ public class JsonOpenApiGenerator {
     private List<Parameter> extractParameters(java.lang.reflect.Method method) {
         List<Parameter> parameters = new ArrayList<>();
 
-        // Procesar parámetros definidos con @ApiImplicitParams
+        // Process params defined by @ApiImplicitParams
         ApiImplicitParams implicitParams = method.getAnnotation(ApiImplicitParams.class);
         if (implicitParams != null) {
             for (ApiImplicitParam implicitParam : implicitParams.value()) {
@@ -275,7 +266,7 @@ public class JsonOpenApiGenerator {
             }
         }
 
-        // Procesar parámetros individuales del método
+        // Process params defined by method
         for (java.lang.reflect.Parameter methodParam : method.getParameters()) {
             // Procesar ApiParam
             // 4.1 Ignore all method parameters without @ApiParam annotations
@@ -291,10 +282,8 @@ public class JsonOpenApiGenerator {
                 parameter.setType(null);
                 parameter.setFormat(null);
                 if (Map.class.isAssignableFrom(methodParam.getType())) {
-//                    parameter.setType("array");
                     parameter.setSchema(getMapSchema(methodParam));
                 } else {
-//                    parameter.setType(methodParam.getType().getTypeName());
                     parameter.setSchema(new Schema().set$ref(SwaggerDefinitionGenerator.build$ref(methodParam.getType())));
                     if (SwaggerDefinitionGenerator.isOpencbBean(methodParam.getType())) {
                         beansDefinitions.add(methodParam.getType());
@@ -396,7 +385,7 @@ public class JsonOpenApiGenerator {
                 Schema keySchema = getTypeSchema(typeArguments[0]);
                 Schema valueSchema = getTypeSchema(typeArguments[1]);
 
-                // En OpenAPI los mapas solo pueden tener claves tipo String
+                // Only strings are permitted as key map in openapi
                 if (!"string".equals(keySchema.getType())) {
                     throw new IllegalArgumentException("OpenAPI solo permite Map con claves de tipo String.");
                 }
@@ -404,7 +393,7 @@ public class JsonOpenApiGenerator {
                 schema.setAdditionalProperties(valueSchema);
             }
         } else {
-            // Si no es un tipo parametrizado, asumimos Map<String, Object>
+            // If it is not a parameterized type, we assume Map<String, Object>
             Schema additionalPropertiesSchema = new Schema();
             additionalPropertiesSchema.setType("object");
             schema.setAdditionalProperties(additionalPropertiesSchema);
@@ -442,7 +431,7 @@ public class JsonOpenApiGenerator {
                 schema.setType("object");
             }
         } else {
-            schema.setType("object"); // Si es un tipo genérico desconocido, asumimos objeto
+            schema.setType("object"); //If it is an unknown generic type, we assume object
         }
 
         return schema;
@@ -468,7 +457,7 @@ public class JsonOpenApiGenerator {
     }
 
     /**
-     * Determina la ubicación del parámetro (query, path, etc.).
+     * Determines the location of the parameter (query, path, etc.).
      */
     private String determineParameterLocation(java.lang.reflect.Parameter parameter) {
         if (parameter.isAnnotationPresent(PathParam.class)) {
@@ -476,8 +465,8 @@ public class JsonOpenApiGenerator {
         } else if (parameter.isAnnotationPresent(QueryParam.class)) {
             return "query";
         } else if (parameter.isAnnotationPresent(ApiParam.class)) {
-            return "query"; // Por defecto si no se especifica
+            return "query"; // by default
         }
-        return "query"; // Predeterminado
+        return "query"; // Default
     }
 }
