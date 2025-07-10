@@ -121,7 +121,10 @@ public class RegenieStep2WrapperAnalysis extends OpenCgaToolScopeStudy {
              BufferedWriter writer = new BufferedWriter(new FileWriter(regenieResultsPath.toFile()))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                if (write && !line.startsWith(REGENIE_HEADER_PREFIX)) {
+                if (line.startsWith(REGENIE_COMMENT_PREFIX)) {
+                    // Skip comment lines and log these lines
+                    logger.info(line);
+                } else if (write && !line.startsWith(REGENIE_HEADER_PREFIX)) {
                     writer.write(line);
                     writer.newLine(); // Write a new line character after the header line
                 } else if (!write && line.startsWith(REGENIE_HEADER_PREFIX)) {

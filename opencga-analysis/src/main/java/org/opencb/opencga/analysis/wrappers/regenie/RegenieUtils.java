@@ -89,6 +89,7 @@ public class RegenieUtils {
     public static final String PSAM = ".psam";
 
     public static final String REGENIE_HEADER_PREFIX = "CHROM GENPOS ";
+    public static final String REGENIE_COMMENT_PREFIX = "## ";
 
     public static final String FILE_PREFIX = "file://";
     public static final String DOCKER_FILE_PREFIX = "docker://";
