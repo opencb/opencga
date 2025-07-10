@@ -6,7 +6,7 @@ import re
 
 import pysam
 
-from utils import execute_bash_command, bgzip_vcf, get_reverse_complement, generate_results_json, list_dir_files, list_dir_dirs
+from utils import execute_bash_command, bgzip_vcf, get_reverse_complement, generate_results_json, list_dir_files, list_dir_dirs, convert_to_base64
 
 LOGGER = logging.getLogger('variant_qc_logger')
 
@@ -417,15 +417,15 @@ class MutationalCatalogueAnalysis:
             source = None
 
         # Getting output files
-        files = []
+        encoded_base64_files = []
         for f in list_dir_files(self.output_dir):
             if (f.endswith('.pdf') and f != 'catalogues.pdf') or f.startswith('fitData'):
-                files.append(os.path.join(self.output_dir, f))
+                encoded_base64_files.append(convert_to_base64(os.path.join(self.output_dir, f)))
         for d in list_dir_dirs(self.output_dir):
             if d.startswith('selectedSolution'):
                 for f in list_dir_files(os.path.join(self.output_dir, d)):
                     if f.endswith('.pdf'):
-                        files.append(os.path.join(self.output_dir, f))
+                        encoded_base64_files.append(convert_to_base64(os.path.join(self.output_dir, d, f)))
 
         # Getting params
         params = {}
@@ -441,7 +441,7 @@ class MutationalCatalogueAnalysis:
             'signatureSource': source,
             'signatureVersion': self.config_json['msFitSigVersion'],
             'scores': fitting_scores,
-            'files': files,
+            'files': encoded_base64_files,
             'params': params}
 
         # Creating results

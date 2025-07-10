@@ -231,13 +231,39 @@ def bgzip_vcf(vcf_fpath, delete_original=False):
     return fname_out
 
 def get_reverse_complement(seq):
+    """Gets the reverse complement of a DNA string
+
+    :param str seq: DNA string
+    :return: reverse complement of the input DNA string
+    """
     complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'}
     reverse_complement = "".join(complement.get(base, base) for base in reversed(seq))
     return reverse_complement
 
 
 def list_dir_files(path):
+    """Lists all files in a directory
+
+    :param str path: Directory path
+    :return: List of files
+    """
     return [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
 
 def list_dir_dirs(path):
+    """Lists all directories in a directory
+
+    :param str path: Directory path
+    :return: List of directories
+    """
     return [f for f in os.listdir(path) if os.path.isdir(os.path.join(path, f))]
+
+def convert_to_base64(fpath):
+    """Converts a file to base64 string
+
+    :param str fpath: File path
+    :return: Base64 string
+    """
+    with open(fpath, "rb") as fhand:
+        encoded_bytes = base64.b64encode(fhand.read())
+        encoded_string = encoded_bytes.decode('ascii')
+    return encoded_string
