@@ -122,8 +122,7 @@ public class MetaCommandExecutor extends com.zettagenomics.opencga.enterprise.ap
         MetaCommandOptions.OpenapiCommandOptions commandOptions = metaCommandOptions.openapiCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("environment", commandOptions.environment);
-        queryParams.putIfNotEmpty("host", commandOptions.host);
+        queryParams.putIfNotEmpty("url", commandOptions.url);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());

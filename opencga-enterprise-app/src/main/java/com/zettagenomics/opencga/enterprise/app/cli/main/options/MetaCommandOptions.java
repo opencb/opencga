@@ -100,11 +100,8 @@ public class MetaCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--environment"}, description = "Environment of the app", required = false, arity = 1)
-        public String environment; 
-    
-        @Parameter(names = {"--host"}, description = "Opencga host without environment", required = false, arity = 1)
-        public String host; 
+        @Parameter(names = {"--url"}, description = "Opencga host with environment", required = false, arity = 1)
+        public String url; 
     
         @Parameter(names = {"--study", "-s"}, description = "Opencga study to be default in queries.", required = false, arity = 1)
         public String study; 

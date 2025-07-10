@@ -60,8 +60,7 @@ class Meta(_ParentRestClient):
         Opencga openapi json.
         PATH: /{apiVersion}/meta/openapi
 
-        :param str environment: Environment of the app.
-        :param str host: Opencga host without environment.
+        :param str url: Opencga host with environment.
         :param str study: Opencga study to be default in queries.
         """
 

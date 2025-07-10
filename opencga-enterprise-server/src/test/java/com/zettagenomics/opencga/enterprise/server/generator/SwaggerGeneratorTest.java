@@ -30,7 +30,6 @@ public class SwaggerGeneratorTest {
 //        ApiCommons apiCommons = () -> Arrays.asList(IndividualWSServer.class);
         Swagger swagger = generator.generateJsonOpenApi(apiCommons,
                 "<some_valid_token>",
-                "reference",
                 "test.app.zettagenomics.com",
                 "v2", "OpencgaStudy");
 
