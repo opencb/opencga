@@ -12,6 +12,7 @@ from datetime import datetime
 # from family_qc.family_qc_executor import FamilyQCExecutor
 from sample_qc.sample_qc_executor import SampleQCExecutor
 # from individual_qc.individual_qc_executor import IndividualQCExecutor
+from utils import list_dir_files
 
 
 LOGGER = logging.getLogger('variant_qc_logger')
@@ -172,13 +173,16 @@ def main():
     LOGGER.info('Checking input files "{}" and "{}"'.format(vcf_file, info_json))
     sample_ids, id_ = check_input(vcf_file, info_json, qc_type)
 
-    # Copying VCF file and info JSON file in output directory
-    LOGGER.info('Copying VCF file "{}" in output directory "{}"'.format(vcf_file, output_dir))
-    shutil.copy(vcf_file, output_dir)
-    LOGGER.info('Copying info JSON file "{}" in output directory "{}"'.format(info_json, output_dir))
-    shutil.copy(info_json, output_dir)
-    LOGGER.info('Copying config JSON file "{}" in output directory "{}"'.format(config, output_dir))
-    shutil.copy(config, output_dir)
+    # Copying VCF file and info JSON file in output directory if not there already
+    if vcf_file not in list_dir_files(output_dir):
+        LOGGER.info('Copying VCF file "{}" in output directory "{}"'.format(vcf_file, output_dir))
+        shutil.copy(vcf_file, output_dir)
+    if info_json not in list_dir_files(output_dir):
+        LOGGER.info('Copying info JSON file "{}" in output directory "{}"'.format(info_json, output_dir))
+        shutil.copy(info_json, output_dir)
+    if config not in list_dir_files(output_dir):
+        LOGGER.info('Copying config JSON file "{}" in output directory "{}"'.format(config, output_dir))
+        shutil.copy(config, output_dir)
 
     # Execute QC
     qc_executor(
