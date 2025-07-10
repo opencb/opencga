@@ -1,6 +1,5 @@
 package org.opencb.opencga.server.generator.openapi;
 
-import com.sun.xml.internal.ws.util.StringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.opencga.core.common.GitRepositoryState;
