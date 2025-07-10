@@ -3,6 +3,7 @@ import json
 import os
 import logging
 import re
+import shlex
 
 import pysam
 
@@ -150,8 +151,7 @@ class MutationalCatalogueAnalysis:
             counts[context_key] += 1
 
         # Creating results
-        results = {'id': self.config_json['msId'],
-                   'query': self.config_json['msQuery'],
+        results = {'query': self.config_json['msQuery'],
                    'type': self.get_ms_type(),
                    'counts': [{'context': k, 'total': counts[k]} for k in counts]}
         generate_results_json(results=results, outdir_path=self.output_dir)
@@ -310,8 +310,7 @@ class MutationalCatalogueAnalysis:
             counts[context_key] += 1
 
         # Creating results
-        results = {'id': self.config_json['msId'],
-                   'query': self.config_json['msQuery'],
+        results = {'query': self.config_json['msQuery'],
                    'type': self.get_ms_type(),
                    'counts': [{'context': k, 'total': counts[k]} for k in counts]}
         generate_results_json(results=results, outdir_path=self.output_dir)
@@ -328,11 +327,15 @@ class MutationalCatalogueAnalysis:
         :returns: The CMD to run the signature fitting
         """
 
-        # Creating basic CMD
-        cmd = 'R CMD Rscript --vanilla'
-        cmd += ' /opt/opencga/signature.tools.lib/scripts/signatureFit'
-        cmd += ' --commonsigtier=T2'
-        cmd += ' --genomev=hg38'
+        # Creating basic CMD and params dict
+        cmd = 'R CMD Rscript --vanilla /opt/opencga/signature.tools.lib/scripts/signatureFit'
+        params = {}
+
+        # Adding common signature tier
+        params['commonsigtier'] = 'T2'
+
+        # Adding genome reference
+        params['genomev'] = 'hg38'
 
         # Creating mutational catalogue counts file and adding it as parameter
         if 'results.json' in list_dir_files(self.output_dir):
@@ -352,50 +355,58 @@ class MutationalCatalogueAnalysis:
             catalogues_fpath = os.path.join(self.resource_dir, CATALOGUES_FILENAME_DEFAULT)
         else:
             raise ValueError('No catalogue file "{}" found for fitting analysis'.format(CATALOGUES_FILENAME_DEFAULT))
-        cmd += ' --catalogues={}'.format(catalogues_fpath)
+        params['catalogues'] = catalogues_fpath
 
         # Adding output dir
-        cmd += ' --outdir={}'.format(self.output_dir)
+        params['outdir'] = self.output_dir
 
         # Adding extra analysis parameters
         # --fitmethod
         if 'msFitMethod' in self.config_json and self.config_json['msFitMethod']:
-            cmd += ' --fitmethod={}'.format(self.config_json['msFitMethod'])
+            params['fitmethod'] = self.config_json['msFitMethod']
         # --sigversion
         if 'msFitSigVersion' in self.config_json and self.config_json['msFitSigVersion']:
-            cmd += ' --sigversion={}'.format(self.config_json['msFitSigVersion'])
+            params['sigversion'] = self.config_json['msFitSigVersion']
         # --organ
         if 'msFitOrgan' in self.config_json and self.config_json['msFitOrgan']:
-            cmd += ' --organ={}'.format(self.config_json['msFitOrgan'])
+            params['organ'] = self.config_json['msFitOrgan']
         # --thresholdperc
         if 'msFitThresholdPerc' in self.config_json and self.config_json['msFitThresholdPerc']:
-            cmd += ' --thresholdperc={}'.format(self.config_json['msFitThresholdPerc'])
+            params['thresholdperc'] = self.config_json['msFitThresholdPerc']
         # --thresholdpval
         if 'msFitThresholdPval' in self.config_json and self.config_json['msFitThresholdPval']:
-            cmd += ' --thresholdpval={}'.format(self.config_json['msFitThresholdPval'])
+            params['thresholdpval'] = self.config_json['msFitThresholdPval']
         # --maxraresigs
         if 'msFitMaxRareSigs' in self.config_json and self.config_json['msFitMaxRareSigs']:
-            cmd += ' --maxraresigs={}'.format(self.config_json['msFitMaxRareSigs'])
+            params['maxraresigs'] = self.config_json['msFitMaxRareSigs']
         # --nboot
         if 'msFitNBoot' in self.config_json and self.config_json['msFitNBoot']:
-            cmd += ' -b --nboot={}'.format(self.config_json['msFitNBoot'])
+            params['bootstrap'] = ''
+            params['nboot'] = self.config_json['msFitNBoot']
         # --signaturesfile
         if 'msFitSignaturesFile' in self.config_json and self.config_json['msFitSignaturesFile']:
             signatures_file_fpath = os.path.join(self.resource_dir, self.config_json['msFitSignaturesFile'])
-            cmd += ' --signaturesfile={}'.format(signatures_file_fpath)
+            params['signaturesfile'] = signatures_file_fpath
         # --raresignaturesfile
         if 'msFitRareSignaturesFile' in self.config_json and self.config_json['msFitRareSignaturesFile']:
             rare_signatures_file_fpath = os.path.join(self.resource_dir, self.config_json['msFitRareSignaturesFile'])
-            cmd += ' --raresignaturesfile={}'.format(rare_signatures_file_fpath)
+            params['raresignaturesfile'] = rare_signatures_file_fpath
 
-        return cmd
+        # Adding all params to CMD
+        for param in params:
+            if len(str(params[param])) > 0:
+                cmd += ' --{}={}'.format(param, params[param])
+            else:
+                cmd += ' --{}'.format(param)
+
+        return cmd, params
 
     def create_signature_fitting(self):
         """Create the mutational signature fitting"""
         LOGGER.info('Creating the signature fitting')
 
         # Runnning fitting
-        cmd = self.get_fitting_command()
+        cmd, params = self.get_fitting_command()
         execute_bash_command(cmd)
 
         # Getting fitting scores
@@ -427,22 +438,15 @@ class MutationalCatalogueAnalysis:
                     if f.endswith('.pdf'):
                         encoded_base64_files.append(convert_to_base64(os.path.join(self.output_dir, d, f)))
 
-        # Getting params
-        params = {}
-        for param in ['msFitOrgan', 'msFitThresholdPerc', 'msFitThresholdPval', 'msFitMaxRareSigs', 'msFitNBoot']:
-            if param in self.config_json and self.config_json[param]:
-                param_name = re.sub(r'^msFit', '', param)  # Removing leading "msFit"
-                params[param_name[0].lower() + param_name[1:]] = self.config_json[param]
-
         # Getting fitting results
         fitting_results = {
-            'id': self.config_json['msFitId'],
             'method': self.config_json['msFitMethod'],
             'signatureSource': source,
             'signatureVersion': self.config_json['msFitSigVersion'],
             'scores': fitting_scores,
             'files': encoded_base64_files,
-            'params': params}
+            'params': params
+        }
 
         # Creating results
         if 'results.json' in list_dir_files(self.output_dir):
@@ -451,7 +455,7 @@ class MutationalCatalogueAnalysis:
             results_json = json.loads(results_fhand.read())
             results_fhand.close()
             # Adding fitting results
-            results_json['fittings'] = fitting_results
+            results_json['fitting'] = fitting_results
             generate_results_json(results=results_json, outdir_path=self.output_dir)
         else:
             generate_results_json(results=fitting_results, outdir_path=self.output_dir)
