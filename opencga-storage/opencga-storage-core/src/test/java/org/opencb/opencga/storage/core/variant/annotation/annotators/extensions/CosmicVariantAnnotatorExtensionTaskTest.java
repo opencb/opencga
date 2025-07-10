@@ -146,8 +146,11 @@ public class CosmicVariantAnnotatorExtensionTaskTest {
     }
 
     public static Path initCosmicPath() throws IOException {
-        Path cosmicPath = getTempPath();
-        if (!cosmicPath.toFile().mkdirs()) {
+        return initCosmicPath(getTempPath());
+    }
+
+    public static Path initCosmicPath(Path cosmicPath) throws IOException {
+        if (!Files.isDirectory(cosmicPath) && !cosmicPath.toFile().mkdirs()) {
             throw new IOException("Error creating the COSMIC path: " + cosmicPath.toAbsolutePath());
         }
         Path cosmicFile = Paths.get(CosmicVariantAnnotatorExtensionTaskTest.class.getResource("/custom_annotation/Small_Cosmic_"
@@ -163,8 +166,11 @@ public class CosmicVariantAnnotatorExtensionTaskTest {
     }
 
     public static Path initInvalidCosmicPath() throws IOException {
-        Path cosmicPath = getTempPath();
-        if (!cosmicPath.toFile().mkdirs()) {
+        return initInvalidCosmicPath(getTempPath());
+    }
+
+    public static Path initInvalidCosmicPath(Path cosmicPath) throws IOException {
+        if (!Files.isDirectory(cosmicPath) && !cosmicPath.toFile().mkdirs()) {
             throw new IOException("Error creating the COSMIC path: " + cosmicPath.toAbsolutePath());
         }
         Path cosmicFile = Paths.get(CosmicVariantAnnotatorExtensionTaskTest.class.getResource("/custom_annotation/myannot.vcf").getPath());
