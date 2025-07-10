@@ -1186,7 +1186,7 @@ public class VariantAnalysisTest {
         toolRunner.execute(LiftoverWrapperAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), liftOutdir, null, false, token);
 
         Assert.assertTrue(Files.exists(liftOutdir.resolve(basename + ".hg38.liftover.vcf.gz")));
-        Assert.assertTrue(liftOutdir.resolve(basename + ".hg38.liftover.vcf.gz").toFile().length() > 0);
+        Assert.assertTrue(liftOutdir.resolve(basename + ".hg38.liftover.rejected.vcf").toFile().length() > 0);
     }
 
     @Test
@@ -1207,8 +1207,19 @@ public class VariantAnalysisTest {
 
         toolRunner.execute(LiftoverWrapperAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), liftOutdir, null, false, token);
 
-        Assert.assertTrue(Files.exists(Paths.get(file.getUri().getPath()).getParent().resolve(basename + ".hg38.liftover.vcf.gz")));
-        Assert.assertTrue(Paths.get(file.getUri().getPath()).getParent().resolve(basename + ".hg38.liftover.vcf.gz").toFile().length() > 0);
+        Path folderPath = Paths.get(file.getPath()).getParent();
+        String filename = basename + ".hg38.liftover.vcf.gz";
+        File resultFile = catalogManager.getFileManager().get(STUDY, folderPath.resolve(filename).toString(), QueryOptions.empty(), token)
+                .first();
+        Assert.assertEquals(filename, resultFile.getName());
+        Assert.assertEquals(folderPath.resolve(filename).toString(), resultFile.getPath());
+        Assert.assertTrue(Files.exists(Paths.get(file.getUri().getPath()).getParent().resolve(filename)));
+        filename = basename + ".hg38.liftover.rejected.vcf";
+        resultFile = catalogManager.getFileManager().get(STUDY, folderPath.resolve(filename).toString(), QueryOptions.empty(), token)
+                .first();
+        Assert.assertEquals(filename, resultFile.getName());
+        Assert.assertEquals(folderPath.resolve(filename).toString(), resultFile.getPath());
+        Assert.assertTrue(Paths.get(file.getUri().getPath()).getParent().resolve(filename).toFile().length() > 0);
     }
 
     @Test
@@ -1235,8 +1246,18 @@ public class VariantAnalysisTest {
 
         toolRunner.execute(LiftoverWrapperAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), liftOutdir, null, false, token);
 
-        Assert.assertTrue(Files.exists(Paths.get(destCustomFolder.getUri().getPath()).resolve(basename + ".hg38.liftover.vcf.gz")));
-        Assert.assertTrue(Paths.get(destCustomFolder.getUri().getPath()).resolve(basename + ".hg38.liftover.vcf.gz").toFile().length() > 0);
+        String filename = basename + ".hg38.liftover.vcf.gz";
+        File resultFile = catalogManager.getFileManager().get(STUDY, folderPath.resolve(filename).toString(), QueryOptions.empty(), token)
+                .first();
+        Assert.assertEquals(filename, resultFile.getName());
+        Assert.assertEquals(folderPath.resolve(filename).toString(), resultFile.getPath());
+        Assert.assertTrue(Files.exists(Paths.get(destCustomFolder.getUri().getPath()).resolve(filename)));
+        filename = basename + ".hg38.liftover.rejected.vcf";
+        resultFile = catalogManager.getFileManager().get(STUDY, folderPath.resolve(filename).toString(), QueryOptions.empty(), token)
+                .first();
+        Assert.assertEquals(filename, resultFile.getName());
+        Assert.assertEquals(folderPath.resolve(filename).toString(), resultFile.getPath());
+        Assert.assertTrue(Paths.get(destCustomFolder.getUri().getPath()).resolve(filename).toFile().length() > 0);
     }
 
     //-------------------------------------------------------------------------
@@ -1260,7 +1281,20 @@ public class VariantAnalysisTest {
 
     private boolean areLiftoverResourcesReady() throws IOException {
         // We can't download this for each test! It takes too long, and it might fill up the disk in small runners
-        return false;
+        Path path = Paths.get("/opt/opencga/analysis/resources/");
+        if (!Files.exists(path)
+                || !Files.exists(path.resolve("reference-genomes/hg38/hg19ToHg38.over.chain.gz"))
+                || !Files.exists(path.resolve("reference-genomes/hg38/hg38.fa.gz"))) {
+            return false;
+        }
+
+        String resourcePath = "reference-genomes";
+        Files.createSymbolicLink(opencga.getOpencgaHome().resolve(resourcePath).toAbsolutePath(), path.resolve(resourcePath));
+        if (!Files.exists(opencga.getOpencgaHome().resolve(resourcePath))) {
+            return false;
+        }
+
+        return true;
     }
 
     // TODO: Decide what to do with this

@@ -87,6 +87,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageTest;
 import org.opencb.opencga.storage.hadoop.HBaseCompat;
+import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDriver;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchemaManager;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
@@ -97,10 +98,7 @@ import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGene
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintStream;
+import java.io.*;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -484,6 +482,10 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         }
     }
 
+    default void clearDB() throws Exception {
+        clearDB(VariantStorageBaseTest.DB_NAME);
+    }
+
     @Override
     default void clearDB(String tableName) throws Exception {
         try (Connection con = ConnectionFactory.createConnection(configuration.get()); Admin admin = con.getAdmin()) {
@@ -523,7 +525,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
     class TestSshMrExecutor extends SshMRExecutor {
         private final Configuration configuration;
-
+        private final Logger logger = LoggerFactory.getLogger(TestSshMrExecutor.class);
         public TestSshMrExecutor() {
             this.configuration = new Configuration(TestMRExecutor.staticConfiguration);
         }
@@ -531,10 +533,22 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         @Override
         protected int runRemote(String executable, String[] args, List<String> env, ByteArrayOutputStream outputStream) {
             PrintStream out = System.out;
+            InputStream in = System.in;
             try {
-                return new TestMRExecutor(conf).run(executable, args).getExitValue();
+                if (buildCommand(executable, args).length() > MAX_COMMAND_LINE_ARGS_LENGTH) {
+                    logger.info("Command line is too long. Passing args from stdin'");
+                    StringBuilder sb = new StringBuilder();
+                    for (String arg : args) {
+                        sb.append(arg).append('\n');
+                    }
+                    System.setIn(new ByteArrayInputStream(sb.toString().getBytes()));
+                    return new TestMRExecutor(conf).run(executable, new String[]{AbstractHBaseDriver.ARGS_FROM_STDIN}).getExitValue();
+                } else {
+                    return new TestMRExecutor(conf).run(executable, args).getExitValue();
+                }
             } finally {
                 System.setOut(out);
+                System.setIn(in);
             }
         }
 
