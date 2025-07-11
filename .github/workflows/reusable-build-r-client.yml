@@ -1,0 +1,29 @@
+name: Build opencga r-client
+
+on:
+  workflow_call:
+
+jobs:
+  build-r-client:
+    runs-on: ${{ vars.UBUNTU_VERSION }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: '10'
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build R client
+        run: |
+          ./build_clients.sh --skip-python --skip-javascript
+      - name: Extract version from DESCRIPTION
+        id: version
+        run: |
+          VERSION=$(grep '^Version:' build/clients/R/DESCRIPTION | cut -d' ' -f2)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+      - name: Upload built R package as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: opencga-R-client-${{ steps.version.outputs.version }}.tar.gz
+          path: build/dist/opencgaR_${{ steps.version.outputs.version }}.tar.gz
+
