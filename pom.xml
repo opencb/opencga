@@ -156,6 +156,7 @@
         <kryo.version>2.23.0</kryo.version>
         <lombok.version>1.18.30</lombok.version>
         <maven-war-plugin.version>3.4.0</maven-war-plugin.version>
+        <swagger-parser.version>1.0.58</swagger-parser.version>
     </properties>
 
     <scm>
@@ -605,6 +606,11 @@
                 <groupId>org.apache.jmeter</groupId>
                 <artifactId>jorphan</artifactId>
                 <version>${jorphan.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.swagger</groupId>
+                <artifactId>swagger-parser</artifactId>
+                <version>${swagger-parser.version}</version>
             </dependency>
             <dependency>
                 <groupId>javax.ws.rs</groupId>
