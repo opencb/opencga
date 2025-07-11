@@ -343,10 +343,14 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
         return searchIndex(false);
     }
 
-    public VariantSearchLoadResult searchIndex(boolean overwrite) throws Exception {
+    public final VariantSearchLoadResult searchIndex(boolean overwrite) throws Exception {
+        return searchIndex(new Query(), overwrite);
+    }
+
+    public VariantSearchLoadResult searchIndex(Query query, boolean overwrite) throws Exception {
         i++;
         solr.configure(variantStorageEngine);
-        VariantSearchLoadResult result = variantStorageEngine.secondaryIndex(new Query(), new QueryOptions(), overwrite);
+        VariantSearchLoadResult result = variantStorageEngine.secondaryIndex(query, new QueryOptions(), overwrite);
         solr.printCollections(Paths.get(newOutputUri("searchIndex_" + TimeUtils.getTime() + "_" + i + "_solr")));
         return result;
     }

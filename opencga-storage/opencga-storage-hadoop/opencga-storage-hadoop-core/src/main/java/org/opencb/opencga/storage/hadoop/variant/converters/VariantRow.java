@@ -474,23 +474,29 @@ public class VariantRow {
     }
 
     public interface Column {
+        boolean hasTimestamp();
+
+        long getTimestamp();
     }
 
     private static class BytesColumn {
         protected final byte[] valueArray;
         protected final int valueOffset;
         protected final int valueLength;
+        protected final long timestamp;
 
         BytesColumn(Cell cell) {
             valueArray = cell.getValueArray();
             valueOffset = cell.getValueOffset();
             valueLength = cell.getValueLength();
+            timestamp = cell.getTimestamp();
         }
 
         BytesColumn(byte[] value) {
             valueArray = value;
             valueOffset = 0;
             valueLength = value.length;
+            timestamp = -1;
         }
 
         public ImmutableBytesWritable toBytesWritable() {
@@ -512,6 +518,17 @@ public class VariantRow {
                     valueLength);
             PhoenixHelper.positionAtArrayElement(ptr, arrayIndex, pDataType, null);
             return (T) pDataType.toObject(ptr);
+        }
+
+        public boolean hasTimestamp() {
+            return timestamp > 0;
+        }
+
+        public long getTimestamp() {
+            if (!hasTimestamp()) {
+                throw new IllegalArgumentException("Missing timestamp value for this column!");
+            }
+            return timestamp;
         }
     }
 

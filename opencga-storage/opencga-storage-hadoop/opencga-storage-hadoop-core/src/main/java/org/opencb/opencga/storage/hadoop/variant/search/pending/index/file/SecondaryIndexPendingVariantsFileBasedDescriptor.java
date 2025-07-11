@@ -42,12 +42,12 @@ public class SecondaryIndexPendingVariantsFileBasedDescriptor implements Pending
         SearchIndexMetadata indexMetadata = metadataManager.getProjectMetadata().getSecondaryAnnotationIndex()
                 .getLastStagingOrActiveIndex();
         PendingVariantConverter converter = new PendingVariantConverter(metadataManager, indexMetadata);
+        long creationTs = indexMetadata.getCreationDateTimestamp();
+        long updateTs = indexMetadata.getLastUpdateDateTimestamp();
         if (overwrite) {
             // When overwriting mark all variants as pending
-            return value -> converter.convert(value, VariantSearchSyncInfo.Status.NOT_SYNCHRONIZED);
+            return value -> converter.convert(value, VariantSearchSyncInfo.Status.NOT_SYNCHRONIZED, updateTs);
         } else {
-            long creationTs = indexMetadata.getCreationDateTimestamp();
-            long updateTs = indexMetadata.getLastUpdateDateTimestamp();
             return (value) -> converter.checkAndConvert(value, creationTs, updateTs);
         }
     }
@@ -84,17 +84,23 @@ public class SecondaryIndexPendingVariantsFileBasedDescriptor implements Pending
                 // Variant is already synchronized. Nothing to do!
                 return null;
             } else {
-                return convert(value, syncStatus);
+                return convert(value, syncStatus, lastUpdateTs);
             }
         }
 
-        private Variant convert(Result value, VariantSearchSyncInfo.Status syncStatus) {
+        private Variant convert(Result value, VariantSearchSyncInfo.Status syncStatus, long lastUpdateTs) {
             VariantRow variantRow = new VariantRow(value);
             Map<Integer, Map<Integer, org.opencb.biodata.models.variant.stats.VariantStats>> stats = new HashMap<>();
             Variant variant = variantRow.walker()
                     .onStudy(studyId -> {
                         stats.computeIfAbsent(studyId, k -> Collections.emptyMap());
                     }).onCohortStats(statsColumn -> {
+                        if (syncStatus == VariantSearchSyncInfo.Status.STATS_NOT_SYNC) {
+                            if (statsColumn.getTimestamp() < lastUpdateTs) {
+                                // Skip stats that are older than the last update timestamp
+                                return;
+                            }
+                        }
                         VariantStats variantStats = statsConverter.convert(statsColumn);
                         stats.computeIfAbsent(statsColumn.getStudyId(), k -> new HashMap<>())
                                 .put(statsColumn.getCohortId(), variantStats);

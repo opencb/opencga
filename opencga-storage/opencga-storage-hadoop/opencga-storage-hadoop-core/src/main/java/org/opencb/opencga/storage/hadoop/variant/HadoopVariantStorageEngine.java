@@ -549,6 +549,29 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         return shouldRunDiscover;
     }
 
+    public ObjectMap runDiscoverPendingVariantsSecondaryAnnotationIndex(
+            Query query, QueryOptions queryOptions, boolean overwrite, SearchIndexMetadata indexMetadata, long updateStartTimestamp)
+            throws StorageEngineException, IOException {
+        final ObjectMap mrResult;
+        boolean partialLoad = isValidParam(query, VariantQueryParam.REGION);
+        ObjectMap mrOptions = getMergedOptions(queryOptions);
+        if (partialLoad) {
+            mrOptions.put(VariantQueryParam.REGION.key(), query.getString(VariantQueryParam.REGION.key()));
+        }
+        mrResult = new SecondaryIndexPendingVariantsFileBasedManager(getVariantTableName(), getConf())
+                .discoverPending(getMRExecutor(), getVariantTableName(), overwrite, mrOptions.appendAll(query));
+        if (!partialLoad) {
+            // Update pending variants timestamp if this is not a partial load
+            int version = indexMetadata.getVersion();
+            getMetadataManager().updateProjectMetadata(pm -> {
+                SearchIndexMetadata im = pm.getSecondaryAnnotationIndex().getIndexMetadata(version);
+                im.getAttributes().put("pendingVariantsToSecondaryIndex", mrResult);
+                im.getAttributes().put(LAST_PENDING_VARIANTS_TO_SEARCH_INDEX_UPDATE_TS, updateStartTimestamp);
+            });
+        }
+        return mrResult;
+    }
+
     @Override
     public VariantSearchLoadResult secondaryIndex(Query query, QueryOptions queryOptions, final boolean overwrite,
                                                   SearchIndexMetadata indexMetadata, long updateStartTimestamp)
@@ -558,23 +581,10 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         boolean shouldRunDiscover = shouldRunDiscoverPendingVariantsSecondaryAnnotationIndex(indexMetadata, overwrite);
         final ObjectMap mrResult;
         if (shouldRunDiscover) {
-            boolean partialLoad = isValidParam(query, VariantQueryParam.REGION);
-            ObjectMap mrOptions = getMergedOptions(queryOptions);
-            if (partialLoad) {
-                mrOptions.put(VariantQueryParam.REGION.key(), query.getString(VariantQueryParam.REGION.key()));
-            }
-            mrResult = new SecondaryIndexPendingVariantsFileBasedManager(getVariantTableName(), getConf())
-                    .discoverPending(getMRExecutor(), getVariantTableName(), overwrite, mrOptions.appendAll(query));
-            if (!partialLoad) {
-                // Update pending variants timestamp if this is not a partial load
-                long pendingVariantsUpdateTimestamp = updateStartTimestamp;
-                int version = indexMetadata.getVersion();
-                indexMetadata = getMetadataManager().updateProjectMetadata(pm -> {
-                    SearchIndexMetadata im = pm.getSecondaryAnnotationIndex().getIndexMetadata(version);
-                    im.getAttributes().put("pendingVariantsToSecondaryIndex", mrResult);
-                    im.getAttributes().put(LAST_PENDING_VARIANTS_TO_SEARCH_INDEX_UPDATE_TS, pendingVariantsUpdateTimestamp);
-                }).getSecondaryAnnotationIndex().getIndexMetadata(version);
-            }
+            mrResult = runDiscoverPendingVariantsSecondaryAnnotationIndex(query, queryOptions, overwrite,
+                    indexMetadata, updateStartTimestamp);
+            indexMetadata = getMetadataManager().getProjectMetadata().getSecondaryAnnotationIndex()
+                    .getIndexMetadata(indexMetadata.getVersion());
         } else {
             mrResult = null;
             // Discover pending variants to secondary index not run.

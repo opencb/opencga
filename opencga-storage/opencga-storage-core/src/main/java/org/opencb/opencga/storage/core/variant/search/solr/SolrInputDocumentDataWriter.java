@@ -7,7 +7,6 @@ import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.opencb.commons.io.DataWriter;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,10 +94,6 @@ public class SolrInputDocumentDataWriter implements DataWriter<SolrInputDocument
         } catch (Exception e) {
             Throwables.propagate(e);
         }
-        logger.info("Finish Solr Bulk Load on collection '{}'", collection);
-        logger.info(" - Inserted documents: {}", insertedDocuments);
-        logger.info(" - Push (add) time: {}", TimeUtils.durationToString(addTimeMs));
-        logger.info(" - Commit time: {}", TimeUtils.durationToString(commitTimeMs));
         return true;
     }
 
@@ -120,6 +115,22 @@ public class SolrInputDocumentDataWriter implements DataWriter<SolrInputDocument
         commitTimeMs += response.getElapsedTime();
         insertedDocuments += serverBufferSize;
         serverBufferSize = 0;
+    }
+
+    public long getCommitTimeMs() {
+        return commitTimeMs;
+    }
+
+    public long getAddTimeMs() {
+        return addTimeMs;
+    }
+
+    public int getInsertedDocuments() {
+        return insertedDocuments;
+    }
+
+    public String getCollection() {
+        return collection;
     }
 
     @FunctionalInterface

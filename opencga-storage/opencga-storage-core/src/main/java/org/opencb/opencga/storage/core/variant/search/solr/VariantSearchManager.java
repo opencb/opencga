@@ -19,7 +19,6 @@ package org.opencb.opencga.storage.core.variant.search.solr;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.time.StopWatch;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -47,7 +46,6 @@ import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.common.IOUtils;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.SearchConfiguration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -516,11 +514,12 @@ public class VariantSearchManager {
         int batchSize = options.getInt(
                 VariantStorageOptions.SEARCH_LOAD_BATCH_SIZE.key(),
                 VariantStorageOptions.SEARCH_LOAD_BATCH_SIZE.defaultValue());
-        int numThreads = options.getInt(
-                VariantStorageOptions.SEARCH_LOAD_THREADS.key(),
-                VariantStorageOptions.SEARCH_LOAD_THREADS.defaultValue());
+//        int numLoadThreads = options.getInt(
+//                VariantStorageOptions.SEARCH_LOAD_THREADS.key(),
+//                VariantStorageOptions.SEARCH_LOAD_THREADS.defaultValue());
 
-        ProgressLogger progressLogger = new ProgressLogger("Variants loaded in Solr:");
+        ProgressLogger progressLogger = new ProgressLogger("Variants loaded in Solr:")
+                .setProgressRateAtMillionsPerHours();
 
         VariantToSolrBeanConverterTask converterTask = new VariantToSolrBeanConverterTask(solrManager.getSolrClient().getBinder(),
                 indexMetadata, metadataManager);
@@ -534,32 +533,29 @@ public class VariantSearchManager {
                 ParallelTaskRunner.Config.builder()
                         .setSorted(true)
                         .setBatchSize(batchSize)
-                        .setCapacity(2)
-                        .setNumTasks(numThreads)
+                        .setCapacity(4)
+                        .setNumTasks(1)
                         .build());
 
-        StopWatch stopWatch = StopWatch.createStarted();
+        Thread hook = new Thread(() -> {
+            logger.warn("Shutdown hook triggered. Stopping Variant Search loading...");
+            writer.printStats();
+        });
         try {
+            Runtime.getRuntime().addShutdownHook(hook);
             watchdog.start();
             ptr.run();
         } catch (ExecutionException e) {
             throw new VariantSearchException("Error loading secondary index", e);
         } finally {
             watchdog.stopWatchdog();
+            Runtime.getRuntime().removeShutdownHook(hook);
         }
-        int count = variantDBIterator.getCount();
-        logger.info("Variant Search loading done. " + (writer.getInsertedDocuments() + writer.getPartiallyUpdatedDocuments())
-                + " variants indexed in " + TimeUtils.durationToString(stopWatch));
-        logger.info(" - Processed variants: " + count);
-        logger.info(" - Inserted documents: " + writer.getInsertedDocuments());
-        logger.info(" - Partially updated documents: " + writer.getPartiallyUpdatedDocuments());
-        float ratePerHour = count / (stopWatch.getTime() / 1000f) * 3600;
-        logger.info(" - Insert/Update rate: " + String.format("%.2f", ratePerHour) + " variants/hour "
-                + "(" + String.format("%.2f", ratePerHour / 1000000) + " M/h)");
 
         waitForReplicasInSync(indexMetadata, 5, TimeUnit.MINUTES, false);
         logCollectionsStatus(indexMetadata);
-        return new VariantSearchLoadResult(count, count, 0, writer.getInsertedDocuments(), writer.getPartiallyUpdatedDocuments());
+        return new VariantSearchLoadResult(variantDBIterator.getCount(), writer.getUpdatedDocuments(),
+                0, writer.getInsertedDocuments(), writer.getPartiallyUpdatedDocuments());
     }
 
     public static boolean isStatsFunctionalQueryEnabled(SearchIndexMetadata indexMetadata) {

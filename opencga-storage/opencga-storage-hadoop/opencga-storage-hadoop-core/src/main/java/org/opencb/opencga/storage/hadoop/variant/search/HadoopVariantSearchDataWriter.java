@@ -133,8 +133,6 @@ public class HadoopVariantSearchDataWriter extends VariantSolrInputDocumentDataW
         stopWatch.start();
         cleaner.post();
         cleanTimeMs += stopWatch.getTime();
-        logger.info("HBase flags update time: {}", TimeUtils.durationToString(hbasePutTimeMs));
-        logger.info("Pending Variants Files Clean: {}", TimeUtils.durationToString(cleanTimeMs));
         return true;
     }
 
@@ -149,5 +147,12 @@ public class HadoopVariantSearchDataWriter extends VariantSolrInputDocumentDataW
         writer.close();
         cleaner.close();
         return true;
+    }
+
+    @Override
+    public void printStats() {
+        super.printStats();
+        logger.info(" - HBase flags update time: {}", TimeUtils.durationToString(hbasePutTimeMs));
+        logger.info(" - Pending Variants Files Clean: {}", TimeUtils.durationToString(cleanTimeMs));
     }
 }
