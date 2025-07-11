@@ -20,6 +20,7 @@ package org.opencb.opencga.analysis.wrappers.regenie;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -92,7 +93,7 @@ public class RegenieStep2WrapperAnalysis extends OpenCgaToolScopeStudy {
     }
 
     protected void runRegenieStep2() throws CatalogException, StorageEngineException, ToolException, IOException {
-        logger.info("Running regenie step2 with regenie-walker docker image: {} ...", walkerDockerImage);
+        logger.info("Running regenie step2 using walker docker image: {} ...", walkerDockerImage);
 
         // Create REGENIE command line from the user parameters
         StringBuilder regenieCmd = new StringBuilder("python3 /opt/app/python/variant_walker.py regenie_walker Regenie");
@@ -100,11 +101,16 @@ public class RegenieStep2WrapperAnalysis extends OpenCgaToolScopeStudy {
             addRegenieOptions(regenieCmd);
         }
 
-        VariantQuery variantQuery = new VariantQuery()
-                .study(getStudy())
+        VariantQuery variantQuery = new VariantQuery();
+        if (regenieParams.getVariantQuery() != null && !regenieParams.getVariantQuery().toQuery().isEmpty()) {
+            variantQuery.putAll(regenieParams.getVariantQuery().toQuery());
+        }
+        variantQuery.study(getStudy())
                 .includeSampleAll()
                 .includeSampleData("GT")
                 .unknownGenotype("./.");
+
+        logger.info("Executing regenie step2 walker using the query: {}", variantQuery.toJson());
 
         Path resultsPath = getOutDir().resolve("tmp-results-regenie-step2.txt");
         variantStorageManager.walkData(resultsPath.toString(), VariantWriterFactory.VariantOutputFormat.VCF,

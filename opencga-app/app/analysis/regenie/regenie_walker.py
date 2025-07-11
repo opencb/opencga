@@ -11,17 +11,16 @@ class Regenie(VariantWalker):
         self.args = args;
         self.vcf_file = self.get_tempfile(prefix="data_", suffix=".vcf")
         self.regenie_results = self.getTmpdir() + "/regenie_results"
-        print(f"## setup: {self.vcf_file}", file=sys.stderr)
-        # print(f"## setup: {self.vcf_annotated_file}", file=sys.stderr)
-        print(f"## setup: {self.regenie_results}", file=sys.stderr)
+        print(f"## at setup: {self.vcf_file}", file=sys.stderr)
+        print(f"## at setup: {self.regenie_results}", file=sys.stderr)
         self.vcf_body_lines = 0
 
     def header(self, header):
         # write the number of lines in the header
         if not header:
-            print("## header: no header provided", file=sys.stderr)
+            print("## at header: no header provided", file=sys.stderr)
             return
-        print(f"## header: {len(header)} lines", file=sys.stderr)
+        print(f"## at header: VCF header lines = {len(header)}", file=sys.stderr)
         self.fwrite_lines(self.vcf_file, header, "w")
         pass
 
@@ -31,23 +30,21 @@ class Regenie(VariantWalker):
         pass
 
     def cleanup(self):
-        print(f"## cleanup: {self.vcf_body_lines} lines in VCF file; next run_regenie_step2", file=sys.stderr)
+        print(f"## at cleanup: num. variants = {self.vcf_body_lines}", file=sys.stderr)
+        if self.vcf_body_lines == 0:
+            print("## at cleanup: no variants in VCF file, skipping regenie step 2", file=sys.stderr)
+            return
+        # Otherwise, run regenie step 2
         self.run_regenie_step2()
         out_file = self.regenie_results + "_PHENO.regenie"
-        print(f"## cleanup: dumping the content of {out_file}", file=sys.stderr)
+        print(f"## at cleanup: dumping the content of {out_file}", file=sys.stderr)
         for line in self.fread_lines(out_file):
             self.write(line.rstrip())
         pass
 
     def run_regenie_step2(self):
         try:
-            print(f"## run_regenie_step2: VCF file {self.vcf_file}", file=sys.stderr)
-            print(f"## run_regenie_step2: VCF body lines: {self.vcf_body_lines}", file=sys.stderr)
-
-            # Check if the VCF file exists physically
-            if not os.path.exists(self.vcf_file):
-                print(f"## run_regenie_step2: VCF file {self.vcf_file} does not exist", file=sys.stderr)
-                sys.exit(1)
+            print(f"## at run_regenie_step2: VCF file {self.vcf_file} with {self.vcf_body_lines} variants", file=sys.stderr)
 
             # 1. plink1.9 --vcf to --bed
             plink_file = self.vcf_file.removesuffix(".vcf")
@@ -58,7 +55,7 @@ class Regenie(VariantWalker):
                 "--out", plink_file,
                 "--silent"  # Suppress plink's verbose output
             ]
-            print(f"## run_regenie_step2: {plink_cmd}", file=sys.stderr)
+            print(f"## at run_regenie_step2: {plink_cmd}", file=sys.stderr)
             subprocess.run(plink_cmd, check=True, stderr=subprocess.PIPE)
 
             # 2. regenie step 2
@@ -69,17 +66,17 @@ class Regenie(VariantWalker):
                 "--out", self.regenie_results
             ]
             regenie_cmd.extend(self.args)
-            print(f"## run_regenie_step2: {regenie_cmd}", file=sys.stderr)
+            print(f"## at run_regenie_step2: {regenie_cmd}", file=sys.stderr)
 
             subprocess.run(regenie_cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
 
         except subprocess.CalledProcessError as e:
-            print(f"## run_regenie_step2: command failed, {e.cmd}", file=sys.stderr)
-            print(f"## run_regenie_step2: error message, {str(e)}", file=sys.stderr)
+            print(f"## at run_regenie_step2: command failed, {e.cmd}", file=sys.stderr)
+            print(f"## at run_regenie_step2: error message, {str(e)}", file=sys.stderr)
             sys.exit(1)
         except FileNotFoundError as e:
-            print(f"## run_regenie_step2: file not found error, {str(e)}", file=sys.stderr)
+            print(f"## at run_regenie_step2: file not found error, {str(e)}", file=sys.stderr)
             sys.exit(1)
         except Exception as e:
-            print(f"## run_regenie_step2: unexpected error, {str(e)}", file=sys.stderr)
+            print(f"## at run_regenie_step2: unexpected error, {str(e)}", file=sys.stderr)
             sys.exit(1)

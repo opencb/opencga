@@ -629,6 +629,8 @@ public class FieldConstants {
     public static final String REGENIE_FILE_OPTIONS_DESCRIPTION = "Regenie options for files as described in the Regenie documentation"
     + " that will be include in the regenie-walker docker to use in step2. Key-values examples: \"--bgen\"=\"file://regenie/example.bgen\"";
     public static final String REGENIE_VCF_FILE_DESCRIPTION = "VCF file; alternative to the BGEN, BED or PGEN input file.";
+    public static final String REGENIE_VARIANT_QUERY_DESCRIPTION = "Annotation variant query to filter the variants to be used in step2."
+            + " If no provided, all variants in the study will be used.";
     public static final String REGENIE_WALKER_DOCKER_NAME_DESCRIPTION = "Docker image name of the regenie-walker, it must include the"
             + " organization (or namespace), e.g.: myorganization/1000g-regenie.";
     public static final String REGENIE_WALKER_DOCKER_TAG_DESCRIPTION = "Docker image tag of the regenie-walker, e.g.: v2";

@@ -500,7 +500,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--id"}, description = "List of variant IDs in the format chrom:start:ref:alt, e.g. 19:7177679:C:T", required = false, arity = 1)
         public String id;
     
-        @Parameter(names = {"--region"}, description = "Reference allele", required = false, arity = 1)
+        @Parameter(names = {"--region"}, description = "List of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000", required = false, arity = 1)
         public String region;
     
         @Parameter(names = {"--gene"}, description = "List of genes, most gene IDs are accepted (HGNC, Ensembl gene, ...). This is an alias to 'xref' parameter", required = false, arity = 1)
@@ -2172,6 +2172,84 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean jobDryRun; 
     
+        @Parameter(names = {"--variant-query-id"}, description = "List of variant IDs in the format chrom:start:ref:alt, e.g. 19:7177679:C:T", required = false, arity = 1)
+        public String variantQueryId;
+    
+        @Parameter(names = {"--variant-query-region"}, description = "List of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000", required = false, arity = 1)
+        public String variantQueryRegion;
+    
+        @Parameter(names = {"--variant-query-gene"}, description = "List of genes, most gene IDs are accepted (HGNC, Ensembl gene, ...). This is an alias to 'xref' parameter", required = false, arity = 1)
+        public String variantQueryGene;
+    
+        @Parameter(names = {"--variant-query-type"}, description = "List of types, accepted values are SNV, MNV, INDEL, SV, COPY_NUMBER, COPY_NUMBER_LOSS, COPY_NUMBER_GAIN, INSERTION, DELETION, DUPLICATION, TANDEM_DUPLICATION, BREAKEND, e.g. SNV,INDEL", required = false, arity = 1)
+        public String variantQueryType;
+    
+        @Parameter(names = {"--variant-query-panel"}, description = "Filter by genes from the given disease panel", required = false, arity = 1)
+        public String variantQueryPanel;
+    
+        @Parameter(names = {"--variant-query-panel-mode-of-inheritance"}, description = "Filter genes from specific panels that match certain mode of inheritance. Accepted values : [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, mendelianError, compoundHeterozygous ]", required = false, arity = 1)
+        public String variantQueryPanelModeOfInheritance;
+    
+        @Parameter(names = {"--variant-query-panel-confidence"}, description = "Filter genes from specific panels that match certain confidence. Accepted values : [ high, medium, low, rejected ]", required = false, arity = 1)
+        public String variantQueryPanelConfidence;
+    
+        @Parameter(names = {"--variant-query-panel-role-in-cancer"}, description = "Filter genes from specific panels that match certain role in cancer. Accepted values : [ both, oncogene, tumorSuppressorGene, fusion ]", required = false, arity = 1)
+        public String variantQueryPanelRoleInCancer;
+    
+        @Parameter(names = {"--variant-query-panel-intersection"}, description = "Intersect panel genes and regions with given genes and regions from que input query. This will prevent returning variants from regions out of the panel.", required = false, help = true, arity = 0)
+        public boolean variantQueryPanelIntersection = false;
+    
+        @Parameter(names = {"--variant-query-panel-feature-type"}, description = "Filter elements from specific panels by type. Accepted values : [ gene, region, str, variant ]", required = false, arity = 1)
+        public String variantQueryPanelFeatureType;
+    
+        @Parameter(names = {"--variant-query-cohort-stats-ref"}, description = "Reference Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4", required = false, arity = 1)
+        public String variantQueryCohortStatsRef;
+    
+        @Parameter(names = {"--variant-query-cohort-stats-alt"}, description = "Alternate Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4", required = false, arity = 1)
+        public String variantQueryCohortStatsAlt;
+    
+        @Parameter(names = {"--variant-query-cohort-stats-maf"}, description = "Minor Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4", required = false, arity = 1)
+        public String variantQueryCohortStatsMaf;
+    
+        @Parameter(names = {"--variant-query-ct"}, description = "List of SO consequence types, e.g. missense_variant,stop_lost or SO:0001583,SO:0001578. Accepts aliases 'loss_of_function' and 'protein_altering'", required = false, arity = 1)
+        public String variantQueryCt;
+    
+        @Parameter(names = {"--variant-query-xref"}, description = "List of any external reference, these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, HGVS ...", required = false, arity = 1)
+        public String variantQueryXref;
+    
+        @Parameter(names = {"--variant-query-biotype"}, description = "List of biotypes, e.g. protein_coding", required = false, arity = 1)
+        public String variantQueryBiotype;
+    
+        @Parameter(names = {"--variant-query-protein-substitution"}, description = "Protein substitution scores include SIFT and PolyPhen. You can query using the score {protein_score}[<|>|<=|>=]{number} or the description {protein_score}[~=|=]{description} e.g. polyphen>0.1,sift=tolerant", required = false, arity = 1)
+        public String variantQueryProteinSubstitution;
+    
+        @Parameter(names = {"--variant-query-conservation"}, description = "Filter by conservation score: {conservation_score}[<|>|<=|>=]{number} e.g. phastCons>0.5,phylop<0.1,gerp>0.1", required = false, arity = 1)
+        public String variantQueryConservation;
+    
+        @Parameter(names = {"--variant-query-population-frequency-maf"}, description = "Population minor allele frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01", required = false, arity = 1)
+        public String variantQueryPopulationFrequencyMaf;
+    
+        @Parameter(names = {"--variant-query-population-frequency-alt"}, description = "Alternate Population Frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01", required = false, arity = 1)
+        public String variantQueryPopulationFrequencyAlt;
+    
+        @Parameter(names = {"--variant-query-population-frequency-ref"}, description = "Reference Population Frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01", required = false, arity = 1)
+        public String variantQueryPopulationFrequencyRef;
+    
+        @Parameter(names = {"--variant-query-transcript-flag"}, description = "List of transcript flags. e.g. canonical, CCDS, basic, LRG, MANE Select, MANE Plus Clinical, EGLH_HaemOnc, TSO500", required = false, arity = 1)
+        public String variantQueryTranscriptFlag;
+    
+        @Parameter(names = {"--variant-query-functional-score"}, description = "Functional score: {functional_score}[<|>|<=|>=]{number} e.g. cadd_scaled>5.2 , cadd_raw<=0.3", required = false, arity = 1)
+        public String variantQueryFunctionalScore;
+    
+        @Parameter(names = {"--variant-query-clinical"}, description = "Clinical source: clinvar, cosmic", required = false, arity = 1)
+        public String variantQueryClinical;
+    
+        @Parameter(names = {"--variant-query-clinical-significance"}, description = "Clinical significance: benign, likely_benign, likely_pathogenic, pathogenic", required = false, arity = 1)
+        public String variantQueryClinicalSignificance;
+    
+        @Parameter(names = {"--variant-query-clinical-confirmed-status"}, description = "Clinical confirmed status", required = false, help = true, arity = 0)
+        public boolean variantQueryClinicalConfirmedStatus = false;
+    
         @DynamicParameter(names = {"--regenie-params"}, description = "Regenie options as described in the Regenie documentation. Key-values examples: '--bgen'='file://regenie/example.bgen', '--bt'='flag:true', '--bsize'=100. Use: --regenie-params key=value", required = false)
         public Map<String, ?> regenieParams = new HashMap<>(); //Dynamic parameters must be initialized;
     
@@ -2458,7 +2536,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--vs-query-id"}, description = "List of variant IDs in the format chrom:start:ref:alt, e.g. 19:7177679:C:T", required = false, arity = 1)
         public String vsQueryId;
     
-        @Parameter(names = {"--vs-query-region"}, description = "Reference allele", required = false, arity = 1)
+        @Parameter(names = {"--vs-query-region"}, description = "List of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000", required = false, arity = 1)
         public String vsQueryRegion;
     
         @Parameter(names = {"--vs-query-gene"}, description = "List of genes, most gene IDs are accepted (HGNC, Ensembl gene, ...). This is an alias to 'xref' parameter", required = false, arity = 1)
@@ -2651,7 +2729,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--id"}, description = "List of variant IDs in the format chrom:start:ref:alt, e.g. 19:7177679:C:T", required = false, arity = 1)
         public String id;
     
-        @Parameter(names = {"--region"}, description = "Reference allele", required = false, arity = 1)
+        @Parameter(names = {"--region"}, description = "List of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000", required = false, arity = 1)
         public String region;
     
         @Parameter(names = {"--gene"}, description = "List of genes, most gene IDs are accepted (HGNC, Ensembl gene, ...). This is an alias to 'xref' parameter", required = false, arity = 1)
@@ -2838,7 +2916,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--variant-query-id"}, description = "List of variant IDs in the format chrom:start:ref:alt, e.g. 19:7177679:C:T", required = false, arity = 1)
         public String variantQueryId;
     
-        @Parameter(names = {"--variant-query-region"}, description = "Reference allele", required = false, arity = 1)
+        @Parameter(names = {"--variant-query-region"}, description = "List of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000", required = false, arity = 1)
         public String variantQueryRegion;
     
         @Parameter(names = {"--variant-query-gene"}, description = "List of genes, most gene IDs are accepted (HGNC, Ensembl gene, ...). This is an alias to 'xref' parameter", required = false, arity = 1)
@@ -3105,7 +3183,7 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--id"}, description = "List of variant IDs in the format chrom:start:ref:alt, e.g. 19:7177679:C:T", required = false, arity = 1)
         public String id;
     
-        @Parameter(names = {"--region"}, description = "Reference allele", required = false, arity = 1)
+        @Parameter(names = {"--region"}, description = "List of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000", required = false, arity = 1)
         public String region;
     
         @Parameter(names = {"--gene"}, description = "List of genes, most gene IDs are accepted (HGNC, Ensembl gene, ...). This is an alias to 'xref' parameter", required = false, arity = 1)

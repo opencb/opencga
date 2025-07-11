@@ -19,9 +19,13 @@ package org.opencb.opencga.core.models.variant.regenie;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.api.FieldConstants;
+import org.opencb.opencga.core.models.variant.AnnotationVariantQueryParams;
 import org.opencb.opencga.core.tools.ToolParams;
 
 public class RegenieStep2WrapperParams extends ToolParams {
+
+    @DataField(id = "variantQuery", description = FieldConstants.REGENIE_VARIANT_QUERY_DESCRIPTION)
+    private AnnotationVariantQueryParams variantQuery;
 
     @DataField(id = "regenieParams", description = FieldConstants.REGENIE_OPTIONS_DESCRIPTION)
     private ObjectMap regenieParams;
@@ -32,7 +36,8 @@ public class RegenieStep2WrapperParams extends ToolParams {
     public RegenieStep2WrapperParams() {
     }
 
-    public RegenieStep2WrapperParams(ObjectMap regenieParams, RegenieDockerParams docker) {
+    public RegenieStep2WrapperParams(AnnotationVariantQueryParams variantQuery, ObjectMap regenieParams, RegenieDockerParams docker) {
+        this.variantQuery = variantQuery;
         this.regenieParams = regenieParams;
         this.docker = docker;
     }
@@ -40,10 +45,20 @@ public class RegenieStep2WrapperParams extends ToolParams {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("RegenieStep2WrapperParams{");
-        sb.append("regenieParams=").append(regenieParams);
+        sb.append("variantQuery=").append(variantQuery);
+        sb.append(", regenieParams=").append(regenieParams);
         sb.append(", docker=").append(docker);
         sb.append('}');
         return sb.toString();
+    }
+
+    public AnnotationVariantQueryParams getVariantQuery() {
+        return variantQuery;
+    }
+
+    public RegenieStep2WrapperParams setVariantQuery(AnnotationVariantQueryParams variantQuery) {
+        this.variantQuery = variantQuery;
+        return this;
     }
 
     public ObjectMap getRegenieParams() {
