@@ -142,6 +142,8 @@ public class PosixIOManager extends IOManager {
     public void deleteFile(URI fileUri) throws CatalogIOException {
         try {
             Files.delete(Paths.get(fileUri));
+        } catch (NoSuchFileException e) {
+            logger.warn("File {} does not exist. Nothing to delete.", fileUri);
         } catch (IOException e) {
             throw new CatalogIOException("Could not delete file " + fileUri, e);
         }

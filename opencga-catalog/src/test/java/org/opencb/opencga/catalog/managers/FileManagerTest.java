@@ -560,6 +560,23 @@ public class FileManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void deleteEmptyDirectoryTest() throws CatalogException {
+        fileManager.create(studyFqn, new FileCreateParams().setType(File.Type.DIRECTORY).setPath("myFolder/"), false, ownerToken);
+        OpenCGAResult<File> folder = fileManager.get(studyFqn, "myFolder/", QueryOptions.empty(), ownerToken);
+        assertEquals(1, folder.getNumResults());
+        assertEquals("myFolder/", folder.first().getPath());
+
+        fileManager.checkCanDeleteFile(studyFqn, "myFolder/", false, ownerToken);
+        setToPendingDelete(studyFqn, new Query(FileDBAdaptor.QueryParams.PATH.key(), "myFolder/"));
+        QueryOptions queryOptions = new QueryOptions(Constants.SKIP_TRASH, true);
+        fileManager.delete(studyFqn, folder.first().getUuid(), queryOptions, ownerToken);
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("not found");
+        fileManager.get(studyFqn, "myFolder/", QueryOptions.empty(), ownerToken);
+    }
+
+    @Test
     public void testLinkVirtualWithDifferentSamples() throws CatalogException {
         String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
         fileManager.link(studyFqn, new FileLinkParams(vcfFile, "", "", "", null, "biofiles/virtual_file.vcf", null, null, null), false, ownerToken);
