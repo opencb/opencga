@@ -78,6 +78,11 @@ public class VariantToSolrBeanConverterTask implements Converter<Variant, Varian
                         updateDocument.removeField(fieldName);
                     }
                 }
+                if (updateDocument.getFieldNames().size() <= 1) {
+                    throw new IllegalStateException("No stats fields found in variant " + variant + ". "
+                            + "This should not happen, as the variant is expected to have stats. "
+                            + "Resolved sync info: " + resolvedSyncInfo);
+                }
 
                 return new VariantSearchUpdateDocument(variant, resolvedSyncInfo, updateDocument, false);
             }

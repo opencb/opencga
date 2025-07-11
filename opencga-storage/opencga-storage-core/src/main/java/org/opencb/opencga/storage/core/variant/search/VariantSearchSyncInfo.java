@@ -105,5 +105,13 @@ public class VariantSearchSyncInfo {
         }
     }
 
-
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("VariantSearchSyncInfo{");
+        sb.append("status=").append(status);
+        sb.append(", studies=").append(studies);
+        sb.append(", statsHash=").append(statsHash);
+        sb.append('}');
+        return sb.toString();
+    }
 }
