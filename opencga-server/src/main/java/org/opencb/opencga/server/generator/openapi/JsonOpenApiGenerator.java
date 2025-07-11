@@ -77,17 +77,11 @@ public class JsonOpenApiGenerator {
             List<String> classTags = new ArrayList<>();
             // Warning: TAG filtering is case-sensitive.
             // See https://github.com/swagger-api/swagger-ui/issues/8143
-            String mainTag = api.value().toLowerCase();
+            String mainTag = api.value();
             classTags.add(mainTag);
-            tags.add(new Tag(mainTag, api.description()));
-            if (api.tags() != null) {
-                for (String tag : api.tags()) {
-                    String customTag = tag.trim().toLowerCase();
-                    if (!customTag.isEmpty()) {
-                        tags.add(new Tag(customTag, clazz.getSimpleName() + " tag"));
-                        classTags.add(customTag);
-                    }
-                }
+            //Add main tag to Swagger if not already present
+            if (tags.stream().noneMatch(tag -> tag.getName().equalsIgnoreCase(mainTag))) {
+                tags.add(new Tag(mainTag, api.description()));
             }
 
             // Obtener ruta base de la clase

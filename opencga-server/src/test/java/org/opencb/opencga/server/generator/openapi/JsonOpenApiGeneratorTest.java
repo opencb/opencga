@@ -35,7 +35,7 @@ public class JsonOpenApiGeneratorTest {
     @BeforeClass
     public static void initSwagger() throws Exception {
         JsonOpenApiGenerator generator = new JsonOpenApiGenerator();
-        ApiCommonsImpl apiCommons = new ApiCommonsImpl();
+        ApiCommons apiCommons = new ApiCommonsImpl();
         swagger = generator.generateJsonOpenApi(
                 apiCommons,
                 "SHA256SOMEVALIDTKEN",
@@ -63,16 +63,7 @@ public class JsonOpenApiGeneratorTest {
      */
     @Test
     public void tagsOrderMatchesExpected() throws Exception {
-        JsonOpenApiGenerator generator = new JsonOpenApiGenerator();
-        ApiCommonsImpl apiCommons = new ApiCommonsImpl();
-        Swagger swagger = generator.generateJsonOpenApi(
-                apiCommons,
-                "<some_valid_token>",
-                "test.app.zettagenomics.com",
-                "v2",
-                "OpencgaStudy"
-        );
-
+        // The order of the tags is important for the UI, so we need to ensure that they are generated in the expected order.
         List<String> actualTags = swagger.getTags().stream()
                 .map(Tag::getName)
                 .collect(Collectors.toList());
