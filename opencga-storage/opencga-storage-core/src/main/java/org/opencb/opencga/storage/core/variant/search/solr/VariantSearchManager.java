@@ -529,7 +529,7 @@ public class VariantSearchManager {
                 new VariantDBReader(variantDBIterator),
                 converterTask,
                 writer.then(progressLogger
-                        .asTask(d -> "up to position " + d.getVariant() + " -> " + d.getDocument().jsonStr())),
+                        .asTask(d -> "up to position " + d.getVariant().toString())),
                 ParallelTaskRunner.Config.builder()
                         .setSorted(true)
                         .setBatchSize(batchSize)
