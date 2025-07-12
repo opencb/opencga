@@ -853,7 +853,7 @@ public class RegenieWrapperAnalysisTest {
         String dockerPassword = split[2];
 
         String dockerName = "joaquintarraga/regenie-walker";
-        String dockerTag = "1751620394240";
+        String dockerTag = "1752313760985";
         String walkerDockerImage = dockerName + ":" + dockerTag;
         Assume.assumeTrue(RegenieUtils.isDockerImageAvailable(walkerDockerImage, dockerUsername, dockerPassword));
 
@@ -876,7 +876,7 @@ public class RegenieWrapperAnalysisTest {
         Path resultsPath = regenieOutdir.resolve(REGENIE_RESULTS_FILENAME);
         Assert.assertTrue(Files.exists(resultsPath));
         lines = FileUtils.readLines(resultsPath.toFile());
-        Assert.assertEquals(235, lines.size());
+        Assert.assertEquals(236, lines.size());
         Assert.assertTrue(lines.get(0).startsWith(REGENIE_HEADER_PREFIX));
     }
 
@@ -892,7 +892,7 @@ public class RegenieWrapperAnalysisTest {
         String dockerPassword = split[2];
 
         String dockerName = "joaquintarraga/regenie-walker";
-        String dockerTag = "1751620394240";
+        String dockerTag = "1752313760985";
         String walkerDockerImage = dockerName + ":" + dockerTag;
         Assume.assumeTrue(RegenieUtils.isDockerImageAvailable(walkerDockerImage, dockerUsername, dockerPassword));
 
@@ -919,7 +919,7 @@ public class RegenieWrapperAnalysisTest {
         Path resultsPath = regenieOutdir.resolve(REGENIE_RESULTS_FILENAME);
         Assert.assertTrue(Files.exists(resultsPath));
         lines = FileUtils.readLines(resultsPath.toFile());
-        Assert.assertEquals(235, lines.size());
+        Assert.assertEquals(236, lines.size());
         Assert.assertTrue(lines.get(0).startsWith(REGENIE_HEADER_PREFIX));
     }
 
@@ -935,7 +935,7 @@ public class RegenieWrapperAnalysisTest {
         String dockerPassword = split[2];
 
         String dockerName = "joaquintarraga/regenie-walker";
-        String dockerTag = "1751276838868";
+        String dockerTag = "1752313760985";
         String walkerDockerImage = dockerName + ":" + dockerTag;
         Assume.assumeTrue(RegenieUtils.isDockerImageAvailable(walkerDockerImage, dockerUsername, dockerPassword));
 
@@ -958,7 +958,7 @@ public class RegenieWrapperAnalysisTest {
         Path resultsPath = regenieOutdir.resolve(REGENIE_RESULTS_FILENAME);
         Assert.assertTrue(Files.exists(resultsPath));
         lines = FileUtils.readLines(resultsPath.toFile());
-        Assert.assertEquals(235, lines.size());
+        Assert.assertEquals(236, lines.size());
         Assert.assertTrue(lines.get(0).startsWith(REGENIE_HEADER_PREFIX));
     }
 }

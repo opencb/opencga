@@ -247,8 +247,8 @@ public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
 
     private void throwExceptionIfAny() throws IOException {
         if (hasExceptions()) {
-            String message = "StreamVariantMapper failed processing split starting at " + currentChromosome + ":" + currentPosition +
-                    " after processing " + numRecordsRead + " variants and writing " + numRecordsWritten + " records."
+            String message = "StreamVariantMapper failed processing split starting at " + currentChromosome + ":" + currentPosition
+                    + " after processing " + numRecordsRead + " variants and writing " + numRecordsWritten + " records."
                     + " Processed bytes: " + processedBytes;
             if (stderrThread != null) {
                 String stderr = String.join("\n[STDERR] - ", stderrThread.stderrBuffer);

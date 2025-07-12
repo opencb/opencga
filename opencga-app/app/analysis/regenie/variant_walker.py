@@ -1,5 +1,7 @@
 import sys
 import importlib
+import importlib.machinery
+import importlib.util
 import os
 from abc import ABC, abstractmethod
 from typing import List, Iterable, Union, Iterator
@@ -50,7 +52,7 @@ class VariantWalker(ABC):
         if not all(char.isalnum() or char in ['_', '-'] for char in key):
             raise ValueError("Invalid key. Key can only contain alphanumeric characters, underscores, and hyphens.")
 
-        # print(f"reporter:counter:{key},{increment}", file=sys.stderr)
+        print(f"reporter:counter:{key},{increment}", file=sys.stderr)
 
     def write(self, value):
         """
@@ -93,10 +95,7 @@ class VariantWalker(ABC):
         with open(filename, mode) as f:
             f.write(f"{line}\n")
 
-    def fwrite_lines(self,
-                    filename: str,
-                    lines: Union[List[str], Iterable[str]],
-                    mode: str = "w") -> None:
+    def fwrite_lines(self, filename: str, lines: Union[List[str], Iterable[str]], mode: str = "w") -> None:
         """
         Write an array/iterable of lines to a file.
 
@@ -127,7 +126,7 @@ class VariantWalker(ABC):
 
     def get_tempfile(self, prefix: str = "", suffix: str = "") -> str:
         """
-        Create a temporary file path (does not create the file).
+            Create a temporary file path (does not create the file).
 
         Args:
             prefix: Filename prefix
@@ -135,7 +134,6 @@ class VariantWalker(ABC):
         """
         import tempfile
         return os.path.join(self.getTmpdir(), f"{prefix}{next(tempfile._get_candidate_names())}{suffix}")
-
 
 def main(module_name, class_name, *args):
     """
@@ -169,37 +167,50 @@ def main(module_name, class_name, *args):
         print(f"An error occurred during setup: {e}", file=sys.stderr)
         raise
 
-    num_entries = 0
-    size_entries = 0
+    input_lines_count = 0
+    header_lines_count = 0
+    header_size_bytes = 0
+    variant_count = 0
+    variant_size_bytes = 0
 
     header_read = False
     header = []
     for line in sys.stdin:
-        num_entries = num_entries + 1
-        size_entries = size_entries + len(line)
+        input_lines_count = input_lines_count + 1
         # Now 'line' does not have trailing '\n' or '\r'
         line = line.rstrip()
 
         ## The line will be a header line if it starts with '#' or if it's the first line
         if not header_read:
-            if line.startswith("#") or num_entries == 1:
+            if line.startswith("#") or input_lines_count == 1:
                 header.append(line)
+                header_lines_count = header_lines_count + 1
+                header_size_bytes = header_size_bytes + len(line)
+                ## Keep reading header lines until we find a non-header line
+                continue
             else:
+                ## Process the header
                 header_read = True
                 try:
                     walker.header(header)
                 except Exception as e:
                     print(f"An error occurred while processing the header: {e}", file=sys.stderr)
                     raise
-        else:
-            try:
-                walker.map(line)
-            except Exception as e:
-                print(f"An error occurred while processing a line: {e}", file=sys.stderr)
-                raise
+                header = None
 
-    walker.count("num_entries", num_entries)
-    walker.count("size_entries", size_entries)
+        variant_count = variant_count + 1
+        variant_size_bytes = variant_size_bytes + len(line)
+        try:
+            walker.map(line)
+        except Exception as e:
+            print(f"An error occurred while processing a line: {e}", file=sys.stderr)
+            raise
+
+    walker.count("input_lines_count", input_lines_count)
+    walker.count("header_lines_count", header_lines_count)
+    walker.count("header_size_bytes", header_size_bytes)
+    walker.count("variant_count", variant_count)
+    walker.count("variant_size_bytes", variant_size_bytes)
     try:
         walker.cleanup()
     except Exception as e:
