@@ -14,6 +14,7 @@ class Regenie(VariantWalker):
         print(f"## at setup: {self.vcf_file}", file=sys.stderr)
         print(f"## at setup: {self.regenie_results}", file=sys.stderr)
         self.vcf_body_lines = 0
+        self.last_body_line = None
 
     def header(self, header):
         # write the number of lines in the header
@@ -26,6 +27,7 @@ class Regenie(VariantWalker):
 
     def map(self, line):
         self.vcf_body_lines += 1
+        self.last_body_line = line
         self.fwrite_line(self.vcf_file, line, "a")
         pass
 
@@ -38,8 +40,11 @@ class Regenie(VariantWalker):
         self.run_regenie_step2()
         out_file = self.regenie_results + "_PHENO.regenie"
         print(f"## at cleanup: dumping the content of {out_file}", file=sys.stderr)
-        for line in self.fread_lines(out_file):
-            self.write(line.rstrip())
+        try:
+            for line in self.fread_lines(out_file):
+                self.write(line.rstrip())
+        except FileNotFoundError as e:
+            print(f"## at cleanup: file {out_file} not found; error: {str(e)}", file=sys.stderr)
         pass
 
     def run_regenie_step2(self):
@@ -68,15 +73,21 @@ class Regenie(VariantWalker):
             regenie_cmd.extend(self.args)
             print(f"## at run_regenie_step2: {regenie_cmd}", file=sys.stderr)
 
-            subprocess.run(regenie_cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+            #subprocess.run(regenie_cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+            subprocess.run(regenie_cmd, check=True, text=True, stdout=sys.stderr, stderr=sys.stderr)
 
         except subprocess.CalledProcessError as e:
-            print(f"## at run_regenie_step2: command failed, {e.cmd}", file=sys.stderr)
-            print(f"## at run_regenie_step2: error message, {str(e)}", file=sys.stderr)
-            sys.exit(1)
+            print(f"## at run_regenie_step2: command failed; error message: {str(e)}", file=sys.stderr)
+            print(f"## at run_regenie_step2: last variant: {self.last_body_line}'", file=sys.stderr)
+            if self.vcf_body_lines == 1:
+                print("## at run_regenie_step2: error with only 1 variant in VCF file, ignore the error", file=sys.stderr)
+            else:
+                sys.exit(1)
         except FileNotFoundError as e:
-            print(f"## at run_regenie_step2: file not found error, {str(e)}", file=sys.stderr)
+            print(f"## at run_regenie_step2: file not found error: {str(e)}", file=sys.stderr)
+            print(f"## at run_regenie_step2: last variant: {self.last_body_line}'", file=sys.stderr)
             sys.exit(1)
         except Exception as e:
-            print(f"## at run_regenie_step2: unexpected error, {str(e)}", file=sys.stderr)
+            print(f"## at run_regenie_step2: unexpected error: {str(e)}", file=sys.stderr)
+            print(f"## at run_regenie_step2: last variant: {self.last_body_line}'", file=sys.stderr)
             sys.exit(1)

@@ -52,7 +52,7 @@ class VariantWalker(ABC):
         if not all(char.isalnum() or char in ['_', '-'] for char in key):
             raise ValueError("Invalid key. Key can only contain alphanumeric characters, underscores, and hyphens.")
 
-        print(f"reporter:counter:{key},{increment}", file=sys.stderr)
+        print(f"## reporter:counter:{key},{increment}", file=sys.stderr)
 
     def write(self, value):
         """
