@@ -1,5 +1,6 @@
 package com.zettagenomics.opencga.enterprise.server.generator;
 
+import com.zettagenomics.opencga.enterprise.core.GitUtils;
 import com.zettagenomics.opencga.enterprise.server.rest.*;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.server.generator.commons.ApiCommons;
@@ -79,6 +80,6 @@ public class EnterpriseApiCommonsImpl implements ApiCommons {
 
     @Override
     public String getVersion() {
-        return "OpenCGA-Enterprise-"+GitRepositoryState.getInstance().getBuildVersion();
+        return "OpenCGA-Enterprise-"+ GitUtils.getEnterprise().getBuildVersion();
     }
 }
