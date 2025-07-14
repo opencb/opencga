@@ -79,19 +79,28 @@ public class JsonOpenApiGenerator {
             // See https://github.com/swagger-api/swagger-ui/issues/8143
             String mainTag = api.value();
             classTags.add(mainTag);
-            //Add main tag to Swagger if not already present
-            if (tags.stream().noneMatch(tag -> tag.getName().equalsIgnoreCase(mainTag))) {
-                tags.add(new Tag(mainTag, api.description()));
-            }
 
-            // Obtener ruta base de la clase
+            // Count available methods in the class
+            int count = 0;
+            for (java.lang.reflect.Method wsmethod : clazz.getDeclaredMethods()) {
+                ApiOperation apiOperation = wsmethod.getAnnotation(ApiOperation.class);
+                if (apiOperation != null && !apiOperation.hidden()) {
+                    count++;
+                }
+            }
+            Tag tag = new Tag();
+            tag.setName(mainTag);
+            tag.setDescription(api.description());
+            tag.setCount(count);
+            addTag(tags, tag);
+
+            // Gets the path annotation from the class
             javax.ws.rs.Path classPathAnnotation = clazz.getAnnotation(javax.ws.rs.Path.class);
             String basePath = classPathAnnotation.value();
             if (classPathAnnotation == null) {
                 continue;
             }
-
-            // Procesar métodos
+            // Process methods in the class
             for (java.lang.reflect.Method wsmethod : clazz.getDeclaredMethods()) {
                 ApiOperation apiOperation = wsmethod.getAnnotation(ApiOperation.class);
 
@@ -181,6 +190,32 @@ public class JsonOpenApiGenerator {
         swagger.setPaths(orderedPaths);
         swagger.setDefinitions(definitions);
         return swagger;
+    }
+
+    private static void addTag(List<Tag> tags,  Tag newtag) {
+        // Iterate through the list by index to find and mark the existing tag for removal
+        int removeIndex = -1;
+        for (int i = 0; i < tags.size(); i++) {
+            Tag tag = tags.get(i);
+            // If we find a tag with the same name (case-insensitive)...
+            if (tag.getName().equalsIgnoreCase(newtag.getName())) {
+                // ...add its count to our counter...
+                int newCount = tag.getCount() + newtag.getCount();
+                newtag.setCount(newCount);
+                // ...remember its index for removal...
+                removeIndex = i;
+                // ...and stop iterating after handling the first match
+                break;
+            }
+        }
+
+        // Remove the old tag if it was found
+        if (removeIndex != -1) {
+            tags.remove(removeIndex);
+        }
+        newtag.setDescription("<span class=\"badge bg-primary float-end rounded-pill\">"+newtag.getCount()+ "</span> " + newtag.getDescription());
+        // Always add (or re-add) the tag with the updated count and description
+        tags.add(newtag);
     }
 
     /**

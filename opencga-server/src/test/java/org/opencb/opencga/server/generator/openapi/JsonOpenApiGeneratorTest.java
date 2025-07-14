@@ -38,7 +38,7 @@ public class JsonOpenApiGeneratorTest {
         ApiCommons apiCommons = new ApiCommonsImpl();
         swagger = generator.generateJsonOpenApi(
                 apiCommons,
-                "SHA256SOMEVALIDTKEN",
+                "ANYVALIDTOKEN",
                 "test.app.zettagenomics.com/task-swagger/opencga",
                 "v2",
                 "test@germline:platinum"
@@ -165,6 +165,6 @@ public class JsonOpenApiGeneratorTest {
         assertNotNull("GET /v2/files/{file}/download should have security defined", security);
         assertEquals("GET /v2/files/{file}/download should have one security definition", 1, security.size());
         assertNotNull("GET /v2/files/{file}/download should have BearerAuth defined",  security.get(0).get("BearerAuth"));
-        assertEquals("GET /v2/files/{file}/download should have one security definition", security.get(0).get("BearerAuth").get(0), "Bearer SHA256SOMEVALIDTKEN");
+        assertEquals("GET /v2/files/{file}/download should have one security definition", security.get(0).get("BearerAuth").get(0), "Bearer ANYVALIDTOKEN");
     }
 }
