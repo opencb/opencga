@@ -110,7 +110,7 @@ public class JsonOpenApiGeneratorTest {
      */
     @Test
     public void hostAndBasePathAreExtractedCorrectly() {
-        ApiCommons noApis = Collections::emptyList;
+        ApiCommons noApis = new EnterpriseApiCommonsImpl();
         JsonOpenApiGenerator generator = new JsonOpenApiGenerator();
 
         Swagger swaggerNoPath = generator.generateJsonOpenApi(
