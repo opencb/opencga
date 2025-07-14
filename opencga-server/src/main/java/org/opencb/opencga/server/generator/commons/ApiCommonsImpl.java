@@ -1,5 +1,6 @@
 package org.opencb.opencga.server.generator.commons;
 
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.server.rest.*;
 import org.opencb.opencga.server.rest.admin.AdminWSServer;
 import org.opencb.opencga.server.rest.analysis.AlignmentWebService;
@@ -65,6 +66,11 @@ public class ApiCommonsImpl implements ApiCommons {
         classes.add(Ga4ghWSServer.class);
 
         return classes;
+    }
+
+    @Override
+    public String getVersion() {
+        return GitRepositoryState.getInstance().getBuildVersion();
     }
 
 }

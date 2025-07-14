@@ -176,7 +176,7 @@ public class MetaWSServer extends OpenCGAWSServer {
     public String openApi(@ApiParam(value = "Opencga host with environment.") @QueryParam("url") String url,
                           @ApiParam(value = "Opencga study to be default in queries.") @QueryParam("study") String study) {
         JsonOpenApiGenerator generator = new JsonOpenApiGenerator();
-        Swagger swagger = generator.generateJsonOpenApi(new ApiCommonsImpl(), token, url, apiVersion, study,GitRepositoryState.getInstance().getBuildVersion());
+        Swagger swagger = generator.generateJsonOpenApi(new ApiCommonsImpl(), token, url, apiVersion, study);
         ObjectMapper mapper = new ObjectMapper();
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         try {

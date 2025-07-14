@@ -42,7 +42,7 @@ public class JsonOpenApiGenerator {
      * @return a fully populated Swagger object ready to be serialized to JSON
      */
 
-    public Swagger generateJsonOpenApi(ApiCommons apiCommons, String token, String url, String apiVersion, String study,String version) {
+    public Swagger generateJsonOpenApi(ApiCommons apiCommons, String token, String url, String apiVersion, String study) {
 
         this.study = study;
         List<Class<?>> classes = apiCommons.getApiClasses();
@@ -50,7 +50,7 @@ public class JsonOpenApiGenerator {
         Info info = new Info();
         info.setTitle("OpenCGA RESTful Web Services");
         info.setDescription("OpenCGA RESTful Web Services API");
-        info.setVersion(version);
+        info.setVersion(apiCommons.getVersion());
         swagger.setInfo(info);
         swagger.setHost(getHost(url));
         swagger.setBasePath(getEnvironment(url) + "/webservices/rest");
