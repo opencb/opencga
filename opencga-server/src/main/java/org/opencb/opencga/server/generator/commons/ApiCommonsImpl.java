@@ -70,7 +70,7 @@ public class ApiCommonsImpl implements ApiCommons {
 
     @Override
     public String getVersion() {
-        return GitRepositoryState.getInstance().getBuildVersion();
+        return "OpenCGA-"+GitRepositoryState.getInstance().getBuildVersion();
     }
 
 }
