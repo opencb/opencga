@@ -108,7 +108,7 @@ public class JsonOpenApiGeneratorTest {
      */
     @Test
     public void hostAndBasePathAreExtractedCorrectly() {
-        ApiCommons noApis = Collections::emptyList;
+        ApiCommons noApis = new ApiCommonsTestImpl();
         JsonOpenApiGenerator generator = new JsonOpenApiGenerator();
 
         Swagger swaggerNoPath = generator.generateJsonOpenApi(
@@ -166,5 +166,18 @@ public class JsonOpenApiGeneratorTest {
         assertEquals("GET /v2/files/{file}/download should have one security definition", 1, security.size());
         assertNotNull("GET /v2/files/{file}/download should have BearerAuth defined",  security.get(0).get("BearerAuth"));
         assertEquals("GET /v2/files/{file}/download should have one security definition", security.get(0).get("BearerAuth").get(0), "Bearer ANYVALIDTOKEN");
+    }
+
+    public class ApiCommonsTestImpl implements ApiCommons {
+
+        @Override
+        public List<Class<?>> getApiClasses() {
+            return Collections.emptyList();
+        }
+
+        @Override
+        public String getVersion() {
+            return "v1";
+        }
     }
 }
