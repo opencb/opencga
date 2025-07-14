@@ -279,6 +279,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         sampleFilterValidator.processFilter(query, VariantQueryParam.GENOTYPE, release, token, defaultStudyStr);
         fileFilterValidator.processFilter(query, VariantQueryParam.FILE, release, token, defaultStudyStr);
         fileFilterValidator.processFilter(query, VariantQueryParam.INCLUDE_FILE, release, token, defaultStudyStr);
+        fileFilterValidator.processFilter(query, VariantQueryParam.FILE_DATA, release, token, defaultStudyStr);
         cohortFilterValidator.processFilter(query, VariantQueryParam.COHORT, release, token, defaultStudyStr);
         cohortFilterValidator.processFilter(query, VariantQueryParam.STATS_ALT, release, token, defaultStudyStr);
         cohortFilterValidator.processFilter(query, VariantQueryParam.STATS_REF, release, token, defaultStudyStr);
@@ -1386,6 +1387,10 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         return trios;
     }
 
+    public static String toStorageFileName(File file) {
+        return file.getUri().getPath();
+    }
+
     public abstract class FilterValidator {
         protected final QueryOptions RELEASE_OPTIONS = new QueryOptions(INCLUDE, Arrays.asList(
                 FileDBAdaptor.QueryParams.ID.key(),
@@ -1532,8 +1537,8 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 throws CatalogException {
             if (release == null) {
                 DataResult<File> files = catalogManager.getFileManager().get(defaultStudyStr, values,
-                        FileManager.INCLUDE_FILE_IDS, sessionId);
-                return files.getResults().stream().map(File::getName).collect(Collectors.toList());
+                        FileManager.INCLUDE_FILE_URI, sessionId);
+                return files.getResults().stream().map(VariantCatalogQueryUtils::toStorageFileName).collect(Collectors.toList());
             } else {
                 return validate(defaultStudyStr, values, release, param, catalogManager.getFileManager(), File::getName,
                         file -> file.getInternal().getVariant().getIndex().getRelease(), file -> {
@@ -1545,6 +1550,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 
             }
         }
+
     }
 
     public class SampleFilterValidator extends FilterValidator {

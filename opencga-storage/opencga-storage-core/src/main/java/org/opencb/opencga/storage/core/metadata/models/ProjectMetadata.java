@@ -20,6 +20,8 @@ public class ProjectMetadata {
     private String dataRelease;
 
     private int release;
+    // Timestamp of the last time the cache was valid. Anything older than this timestamp should be considered invalid.
+    private int validCacheTimestamp;
 
     private VariantAnnotationSets annotation;
 
@@ -272,6 +274,7 @@ public class ProjectMetadata {
 
     public ProjectMetadata() {
         release = 1;
+        validCacheTimestamp = 0;
         dataRelease = "";
         annotation = new VariantAnnotationSets();
         counters = new HashMap<>();
@@ -279,23 +282,24 @@ public class ProjectMetadata {
     }
 
     public ProjectMetadata(String species, String assembly, int release) {
-        this(species, assembly, null, release, null, null, null);
+        this(species, assembly, null, release, 0, null, null, null);
     }
 
-    public ProjectMetadata(String species, String assembly, String dataRelease, int release, ObjectMap attributes,
+    public ProjectMetadata(String species, String assembly, String dataRelease, int release, int validCacheTimestamp, ObjectMap attributes,
                            Map<String, Integer> counters, VariantAnnotationSets annotation) {
         this.species = species;
         this.assembly = assembly;
         this.dataRelease = dataRelease;
         this.release = release;
+        this.validCacheTimestamp = validCacheTimestamp;
         this.attributes = attributes != null ? attributes : new ObjectMap();
         this.annotation = annotation != null ? annotation : new VariantAnnotationSets();
         this.counters = counters != null ? counters : new HashMap<>();
     }
 
     public ProjectMetadata copy() {
-        return new ProjectMetadata(species, assembly, dataRelease, release, new ObjectMap(attributes), new HashMap<>(counters),
-                annotation);
+        return new ProjectMetadata(species, assembly, dataRelease, release, validCacheTimestamp, new ObjectMap(attributes),
+                new HashMap<>(counters), annotation);
     }
 
     public String getSpecies() {
@@ -331,6 +335,15 @@ public class ProjectMetadata {
 
     public ProjectMetadata setRelease(int release) {
         this.release = release;
+        return this;
+    }
+
+    public int getValidCacheTimestamp() {
+        return validCacheTimestamp;
+    }
+
+    public ProjectMetadata setValidCacheTimestamp(int validCacheTimestamp) {
+        this.validCacheTimestamp = validCacheTimestamp;
         return this;
     }
 

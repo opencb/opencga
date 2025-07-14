@@ -31,6 +31,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.adaptors.FileMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.Lock;
@@ -102,6 +103,10 @@ public class HBaseFileMetadataDBAdaptor extends AbstractHBaseDBAdaptor implement
 
     @Override
     public void updateFileMetadata(int studyId, FileMetadata file, Long timeStamp) {
+        if (file.isDuplicatedName()) {
+            putValue(getFileNameIndexRowKey(studyId, file.getDuplicatedName()), Type.INDEX,
+                    VariantStorageMetadataManager.DUPLICATED_NAME_ID, timeStamp);
+        }
         putValue(getFileNameIndexRowKey(studyId, file.getName()), Type.INDEX, file.getId(), timeStamp);
         putValue(getFileMetadataRowKey(studyId, file.getId()), Type.FILE, file, timeStamp);
     }

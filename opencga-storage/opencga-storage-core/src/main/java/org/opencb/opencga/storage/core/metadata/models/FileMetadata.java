@@ -15,6 +15,12 @@ public class FileMetadata extends StudyResourceMetadata<FileMetadata> {
     public static final String VIRTUAL_PARENT = "virtualParent";
     public static final String VIRTUAL_FILES = "virtualFiles";
 
+    /**
+     * Name of the file, if it is duplicated.
+     * If this is not null, then the file is a duplicated file.
+     * The name of the original file is stored here.
+     */
+    private String duplicatedName;
     private String path;
     private LinkedHashSet<Integer> samples;
     private Type type = Type.NORMAL;
@@ -65,6 +71,18 @@ public class FileMetadata extends StudyResourceMetadata<FileMetadata> {
         return this;
     }
 
+    public boolean isDuplicatedName() {
+        return duplicatedName != null;
+    }
+
+    public String getDuplicatedName() {
+        return duplicatedName;
+    }
+
+    public FileMetadata setDuplicatedName(String duplicatedName) {
+        this.duplicatedName = duplicatedName;
+        return this;
+    }
 //    public VariantFileMetadata getVariantFileMetadata() {
 //        return variantFileMetadata;
 //    }

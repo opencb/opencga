@@ -56,6 +56,7 @@ public abstract class StudyResourceMetadata<T extends StudyResourceMetadata<?>> 
         return getThis();
     }
 
+
     public Map<String, TaskMetadata.Status> getStatus() {
         return status;
     }

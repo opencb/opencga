@@ -8,7 +8,6 @@ import org.apache.hadoop.hbase.TableName;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -21,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -206,13 +206,7 @@ public class VariantMetadataMain extends AbstractMain {
                 throw new IllegalStateException("New study name already exists!");
             }
             int studyId = mm.getStudyId(currentStudyName);
-            mm.updateStudyMetadata(studyId, studyMetadata -> {
-                studyMetadata.setName(newStudyName);
-                studyMetadata.getAttributes().put("rename_" + TimeUtils.getTime(), new ObjectMap()
-                        .append("newName", newStudyName)
-                        .append("oldName", currentStudyName)
-                );
-            });
+            mm.renameStudy(studyId, newStudyName);
         }
     }
 
@@ -243,6 +237,16 @@ public class VariantMetadataMain extends AbstractMain {
         protected void write(int studyId, FileMetadata file) {
             mm.unsecureUpdateFileMetadata(studyId, file);
         }
+
+//        protected void rename(int studyId, String currentFileName, String newFileName) throws StorageEngineException {
+//            int fileId = mm.getFileIdOrFail(studyId, currentFileName);
+//            mm.renameFile(studyId, fileId, newFileName);
+//        }
+//
+//        protected void move(int studyId, String currentFileName, String newFilePath) throws StorageEngineException {
+//            int fileId = mm.getFileIdOrFail(studyId, currentFileName);
+//            mm.moveFile(studyId, fileId, Paths.get(newFilePath));
+//        }
 
         public static class CreateVirtualFileParams extends ToolParams {
             protected String virtualFileName;
