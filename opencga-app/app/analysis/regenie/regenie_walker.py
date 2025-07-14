@@ -39,17 +39,18 @@ class Regenie(VariantWalker):
         # Otherwise, run regenie step 2
         self.run_regenie_step2()
         out_file = self.regenie_results + "_PHENO.regenie"
-        print(f"## at cleanup: dumping the content of {out_file}", file=sys.stderr)
-        try:
+        if os.path.exists(out_file):
+            print(f"## at cleanup: dumping the content of {out_file}", file=sys.stderr)
             for line in self.fread_lines(out_file):
                 self.write(line.rstrip())
-        except FileNotFoundError as e:
-            print(f"## at cleanup: file {out_file} not found; error: {str(e)}", file=sys.stderr)
         pass
 
     def run_regenie_step2(self):
         try:
             print(f"## at run_regenie_step2: VCF file {self.vcf_file} with {self.vcf_body_lines} variants", file=sys.stderr)
+            if self.vcf_body_lines == 1:
+                print(f"## at run_regenie_step2: ignore because of there is one single variant, {self.last_body_line}", file=sys.stderr)
+                return
 
             # 1. plink1.9 --vcf to --bed
             plink_file = self.vcf_file.removesuffix(".vcf")
@@ -73,21 +74,14 @@ class Regenie(VariantWalker):
             regenie_cmd.extend(self.args)
             print(f"## at run_regenie_step2: {regenie_cmd}", file=sys.stderr)
 
-            #subprocess.run(regenie_cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
-            subprocess.run(regenie_cmd, check=True, text=True, stdout=sys.stderr, stderr=sys.stderr)
+            subprocess.run(regenie_cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
 
         except subprocess.CalledProcessError as e:
             print(f"## at run_regenie_step2: command failed; error message: {str(e)}", file=sys.stderr)
-            print(f"## at run_regenie_step2: last variant: {self.last_body_line}'", file=sys.stderr)
-            if self.vcf_body_lines == 1:
-                print("## at run_regenie_step2: error with only 1 variant in VCF file, ignore the error", file=sys.stderr)
-            else:
-                sys.exit(1)
+            sys.exit(1)
         except FileNotFoundError as e:
             print(f"## at run_regenie_step2: file not found error: {str(e)}", file=sys.stderr)
-            print(f"## at run_regenie_step2: last variant: {self.last_body_line}'", file=sys.stderr)
             sys.exit(1)
         except Exception as e:
             print(f"## at run_regenie_step2: unexpected error: {str(e)}", file=sys.stderr)
-            print(f"## at run_regenie_step2: last variant: {self.last_body_line}'", file=sys.stderr)
             sys.exit(1)
