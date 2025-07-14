@@ -216,6 +216,8 @@ public class VariantMetadataMain extends AbstractMain {
             addSubCommand(Collections.singletonList("create-virtual-file"),
                     "<metadata_table> <study> " + new CreateVirtualFileParams().toCliHelp(), this::createVirtualFile);
             addSubCommand(Collections.singletonList("list-indexed"), "<metadata_table> <study> [--includePartial]", this::listIndexed);
+            addSubCommand(Arrays.asList("rename"), "<metadata_table> <study> <currentFileName> <newFileName>", this::rename);
+            addSubCommand(Arrays.asList("move", "mv"), "<metadata_table> <study> <currentFileName> <newFilePath>", this::move);
         }
 
         @Override
@@ -238,15 +240,23 @@ public class VariantMetadataMain extends AbstractMain {
             mm.unsecureUpdateFileMetadata(studyId, file);
         }
 
-//        protected void rename(int studyId, String currentFileName, String newFileName) throws StorageEngineException {
-//            int fileId = mm.getFileIdOrFail(studyId, currentFileName);
-//            mm.renameFile(studyId, fileId, newFileName);
-//        }
-//
-//        protected void move(int studyId, String currentFileName, String newFilePath) throws StorageEngineException {
-//            int fileId = mm.getFileIdOrFail(studyId, currentFileName);
-//            mm.moveFile(studyId, fileId, Paths.get(newFilePath));
-//        }
+        protected void rename(String[] args) throws Exception {
+            int studyId = mm.getStudyId(getArg(args, 1));
+            String currentFileName = getArg(args, 2);
+            String newFileName = getArg(args, 3);
+
+            int fileId = mm.getFileIdOrFail(studyId, currentFileName);
+            mm.renameFile(studyId, fileId, newFileName);
+        }
+
+        protected void move(String[] args) throws Exception {
+            int studyId = mm.getStudyId(getArg(args, 1));
+            String currentFileName = getArg(args, 2);
+            String newFilePath = getArg(args, 3);
+
+            int fileId = mm.getFileIdOrFail(studyId, currentFileName);
+            mm.moveFile(studyId, fileId, Paths.get(newFilePath));
+        }
 
         public static class CreateVirtualFileParams extends ToolParams {
             protected String virtualFileName;
