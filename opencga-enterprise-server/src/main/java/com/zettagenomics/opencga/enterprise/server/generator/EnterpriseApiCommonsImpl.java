@@ -79,6 +79,6 @@ public class EnterpriseApiCommonsImpl implements ApiCommons {
 
     @Override
     public String getVersion() {
-        return GitRepositoryState.getInstance().getBuildVersion();
+        return "OpenCGA-Enterprise-"+GitRepositoryState.getInstance().getBuildVersion();
     }
 }
