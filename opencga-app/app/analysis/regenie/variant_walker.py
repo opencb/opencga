@@ -162,14 +162,19 @@ def main(module_name, class_name, *args):
     walker.count("variant_count", variant_count)
     walker.count("variant_size_bytes", variant_size_bytes)
     try:
+        print(f"DEBUG - Cleanup start", file=sys.stderr)
         walker.cleanup()
+        print(f"DEBUG - Cleanup end", file=sys.stderr)
     except Exception as e:
         print(f"An error occurred during cleanup: {e}", file=sys.stderr)
         raise
+    print(f"DEBUG - Variant walker end, return 0", file=sys.stderr)
     return 0
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
         print("Usage: python variant_walker.py <module_name> <class_name> [args...]", file=sys.stderr)
         sys.exit(1)
-    sys.exit(main(sys.argv[1], sys.argv[2], *sys.argv[3:]))
+    errorCode = main(sys.argv[1], sys.argv[2], *sys.argv[3:])
+    print(f"DEBUG - Variant walker finished. Exit code : {errorCode}", file=sys.stderr)
+    sys.exit(errorCode)
