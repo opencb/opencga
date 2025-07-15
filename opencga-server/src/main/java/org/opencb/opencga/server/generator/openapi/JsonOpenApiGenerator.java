@@ -2,6 +2,7 @@ package org.opencb.opencga.server.generator.openapi;
 
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataParam;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.tools.annotations.*;
 import org.opencb.opencga.server.generator.commons.ApiCommons;
@@ -353,7 +354,7 @@ public class JsonOpenApiGenerator {
                 parameter.setType(implicitParam.dataType());
                 parameter.setFormat(implicitParam.format());
                 parameter.setDefault(implicitParam.defaultValue());
-                if(parameter.getName() != null && parameter.getName().equals("study") && StringUtils.isNotEmpty(study)) {
+                if(parameter.getName() != null && parameter.getName().equals(ParamConstants.STUDY_PARAM) && StringUtils.isNotEmpty(study)) {
                     parameter.setDefault(study);
                 }
                 parameters.add(parameter);
@@ -424,7 +425,7 @@ public class JsonOpenApiGenerator {
                 parameter.setDescription(formatParameterDescription(apiParam, parameter));
             }
             if (parameter.getName() != null) {
-                if(parameter.getName().equals("study") && StringUtils.isNotEmpty(study)) {
+                if(parameter.getName().equals(ParamConstants.STUDY_PARAM) && StringUtils.isNotEmpty(study)) {
                     parameter.setDefault(study);
                 }
                 parameters.add(parameter);
