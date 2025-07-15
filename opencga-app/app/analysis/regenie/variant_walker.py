@@ -4,7 +4,6 @@ import importlib.machinery
 import importlib.util
 import os
 from abc import ABC, abstractmethod
-from typing import List, Iterable, Union, Iterator
 
 class VariantWalker(ABC):
     @abstractmethod
@@ -52,7 +51,7 @@ class VariantWalker(ABC):
         if not all(char.isalnum() or char in ['_', '-'] for char in key):
             raise ValueError("Invalid key. Key can only contain alphanumeric characters, underscores, and hyphens.")
 
-        print(f"## reporter:counter:{key},{increment}", file=sys.stderr)
+        print(f"reporter:counter:{key},{increment}", file=sys.stderr)
 
     def write(self, value):
         """
@@ -83,57 +82,8 @@ class VariantWalker(ABC):
         """
         return os.environ.get("TMPDIR", "/tmp")
 
-    def fwrite_line(self, filename: str, line: str, mode: str = "a") -> None:
-        """
-        Append a line to a file (with newline).
 
-        Args:
-            filename: Path to the file
-            line: Text to append
-            mode: File mode ('a' for append by default)
-        """
-        with open(filename, mode) as f:
-            f.write(f"{line}\n")
 
-    def fwrite_lines(self, filename: str, lines: Union[List[str], Iterable[str]], mode: str = "w") -> None:
-        """
-        Write an array/iterable of lines to a file.
-
-        Args:
-            filename: Path to the target file
-            lines: List/iterable of strings to write
-            mode: File mode ('w' for overwrite, 'a' for append)
-
-        Example:
-            parent.write_lines("log.txt", ["Line 1", "Line 2"], mode="a")
-        """
-        with open(filename, mode) as f:
-            f.writelines(
-                f"{line}\n"
-                for line in lines
-            )
-
-    def fread_lines(self, filename: str) -> Iterator[str]:
-        """
-        Read file line-by-line (memory-efficient for large files).
-
-        Usage:
-            for line in parent.read_lines("file.txt"):
-                print(line.strip())
-        """
-        with open(filename, "r") as f:
-            yield from f
-
-    def get_tempfile(self, prefix: str = "", suffix: str = "") -> str:
-        """
-            Create a temporary file path (does not create the file).
-
-        Args:
-            prefix: Filename prefix
-            suffix: Filename suffix (e.g., '.txt')
-        """
-        import tempfile
-        return os.path.join(self.getTmpdir(), f"{prefix}{next(tempfile._get_candidate_names())}{suffix}")
 
 def main(module_name, class_name, *args):
     """
