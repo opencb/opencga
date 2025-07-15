@@ -48,7 +48,6 @@ public class EnterpriseApiCommonsImpl implements ApiCommons {
      */
     public List<Class<?>> getApiClasses() {
 
-        // List of classes that implement the RESTful Web Services API
         List<Class<?>> classes = new ArrayList();
         classes.add(EnterpriseFederationWSServer.class);
         classes.add(OrganizationWSServer.class);
