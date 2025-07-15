@@ -35,6 +35,7 @@ class Regenie(VariantWalker):
     def cleanup(self):
         if self.vcf_body_lines == 0:
             print("## at cleanup: skipping regenie step 2 since there is no variants", file=sys.stderr)
+            self.write("CHROM GENPOS ID ALLELE0 ALLELE1 A1FREQ N TEST BETA SE CHISQ LOG10P EXTRA")
             return
         first_chars = str(self.last_body_line or '')[:50]
         fields = self.last_body_line.split()
@@ -42,6 +43,7 @@ class Regenie(VariantWalker):
         print(f"## at cleanup: before running regenie step2; num. variants = {self.vcf_body_lines}; last variant with {num_fields} fields, (first 50 chars): {first_chars} ", file=sys.stderr)
         if self.vcf_body_lines == 1:
             print("## at cleanup: skipping regenie step 2 since there is only one variant", file=sys.stderr)
+            self.write("CHROM GENPOS ID ALLELE0 ALLELE1 A1FREQ N TEST BETA SE CHISQ LOG10P EXTRA")
             return
 
         # Otherwise, run regenie step 2
