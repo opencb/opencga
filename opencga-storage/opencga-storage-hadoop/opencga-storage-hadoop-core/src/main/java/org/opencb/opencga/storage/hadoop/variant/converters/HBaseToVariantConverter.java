@@ -115,7 +115,9 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         if (configuration.getProjection() != null) {
             annotationConverter.setIncludeFields(configuration.getProjection().getFields());
         }
-        annotationConverter.setIncludeIndexStatus(configuration.getSearchIndexCreationTs(), configuration.getSearchIndexUpdateTs());
+        if (configuration.getSearchIndexCreationTs() >= 0) {
+            annotationConverter.setIncludeIndexStatus(configuration.getSearchIndexCreationTs(), configuration.getSearchIndexUpdateTs());
+        }
         return this;
     }
 

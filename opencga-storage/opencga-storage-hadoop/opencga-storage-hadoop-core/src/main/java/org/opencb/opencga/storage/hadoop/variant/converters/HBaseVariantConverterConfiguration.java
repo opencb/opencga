@@ -147,8 +147,8 @@ public class HBaseVariantConverterConfiguration {
         private boolean mutableSamplesPosition = true;
         private List<String> sampleDataKeys;
         private boolean includeSampleId;
-        private long searchIndexCreationTs;
-        private long searchIndexUpdateTs;
+        private long searchIndexCreationTs = -1;
+        private long searchIndexUpdateTs = -1;
 
         public Builder setProjection(VariantQueryProjection projection) {
             this.projection = projection;
