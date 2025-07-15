@@ -485,20 +485,20 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
                         res.append("        queryParams.putIfNotEmpty(\"")
                                 .append(normalizeNames(restParameter.getName()))
                                 .append("\", commandOptions.")
-                                .append(normalizeNames(restParameter.getName()))
+                                .append(getVariableName(restParameter))
                                 .append(");\n");
                     } else {
                         if (restParameter.isStringList()) {
                             res.append("        queryParams.putIfNotNull(\"")
                                     .append(normalizeNames(restParameter.getName()))
                                     .append("\", CommandLineUtils").append(".getListValues(commandOptions.")
-                                    .append(normalizeNames(restParameter.getName()))
+                                    .append(getVariableName(restParameter))
                                     .append("));\n");
                         } else {
                             res.append("        queryParams.putIfNotNull(\"")
                                     .append(normalizeNames(restParameter.getName()))
                                     .append("\", commandOptions.")
-                                    .append(normalizeNames(restParameter.getName()))
+                                    .append(getVariableName(restParameter))
                                     .append(");\n");
                         }
                     }
@@ -514,6 +514,16 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
             return res + "\n";
         }
         return "";
+    }
+
+    private String getVariableName(RestParameter restParameter) {
+        String res = "";
+        if (restParameter.isInnerParam()) {
+            res = normalizeNames(getAsCamelCase(restParameter.getParentName() + " " + restParameter.getName()));
+        } else {
+            res = normalizeNames(getAsCamelCase(restParameter.getName()));
+        }
+        return res;
     }
 
     private String getValidResponseNames(String responseClass) {

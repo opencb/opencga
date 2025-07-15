@@ -50,7 +50,7 @@ public class CommandLineUtils {
     }
 
     public static String getAsVariableName(String path) {
-        return (Character.toLowerCase(path.charAt(0)) + path.substring(1)).replace(" ", "").replace("-", "");
+        return (Character.toLowerCase(path.charAt(0)) + path.substring(1)).replace(" ", "").replace("-", "").replace("_", "");
     }
 
     public static String getSetterVariableName(String variableName) {

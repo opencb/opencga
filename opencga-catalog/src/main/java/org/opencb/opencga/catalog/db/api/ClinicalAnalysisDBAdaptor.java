@@ -75,6 +75,7 @@ public interface ClinicalAnalysisDBAdaptor extends AnnotationSetDBAdaptor<Clinic
         REPORT_UPDATE("report_update", OBJECT, ""),   // Made up key to be able to set inner fields and not the entire object
         REPORT_SUPPORTING_EVIDENCES("report.supportingEvidences", TEXT_ARRAY, ""),
         REPORT_FILES("report.files", TEXT_ARRAY, ""),
+        REPORT_DATE("report.date", DATE, ""),
         REQUEST("request", OBJECT, ""),
         RESPONSIBLE("responsible", OBJECT, ""),
         FLAGS("flags", OBJECT, ""),

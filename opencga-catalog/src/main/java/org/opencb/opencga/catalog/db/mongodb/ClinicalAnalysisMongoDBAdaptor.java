@@ -88,6 +88,7 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<ClinicalAnalysis> implements ClinicalAnalysisDBAdaptor {
 
     private static final String PRIVATE_DUE_DATE = "_dueDate";
+    private static final String PRIVATE_REPORT_DATE = "report._date";
     private final MongoDBCollection clinicalCollection;
     private final MongoDBCollection archiveClinicalCollection;
     private final MongoDBCollection deletedClinicalCollection;
@@ -483,10 +484,15 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
 
         if (parameters.containsKey(REPORT_UPDATE.key())) {
             ObjectMap reportParameters = parameters.getNestedMap(REPORT_UPDATE.key());
-            reportParameters.put(ReportQueryParams.DATE.key(), TimeUtils.getTime());
             String[] stringParams = {ReportQueryParams.TITLE.key(), ReportQueryParams.OVERVIEW.key(), ReportQueryParams.LOGO.key(),
-                    ReportQueryParams.SIGNED_BY.key(), ReportQueryParams.SIGNATURE.key(), ReportQueryParams.DATE.key(), };
+                    ReportQueryParams.SIGNED_BY.key(), ReportQueryParams.SIGNATURE.key(), };
             filterStringParams(reportParameters, document.getSet(), stringParams, REPORT.key() + ".");
+
+            // Update report date to current date
+            String reportDateTime = TimeUtils.getTime();
+            Date reportDate = TimeUtils.toDate(reportDateTime);
+            document.getSet().put(REPORT.key() + "." + ReportQueryParams.DATE.key(), reportDateTime);
+            document.getSet().put(PRIVATE_REPORT_DATE, reportDate);
 
             String[] objectParams = {ReportQueryParams.DISCUSSION.key()};
             filterObjectParams(reportParameters, document.getSet(), objectParams, REPORT.key() + ".");
@@ -1131,6 +1137,14 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
             throw new CatalogDBException("Cannot create Clinical Analysis without a " + DUE_DATE.key());
         }
         clinicalDocument.put(PRIVATE_DUE_DATE, TimeUtils.toDate(clinicalAnalysis.getDueDate()));
+        if (clinicalAnalysis.getReport() != null) {
+            // Update report date to current date
+            String reportDateTime = TimeUtils.getTime();
+            Date reportDate = TimeUtils.toDate(reportDateTime);
+            Document reportDoc = clinicalDocument.get(REPORT.key(), Document.class);
+            reportDoc.put(ReportQueryParams.DATE.key(), reportDateTime);
+            reportDoc.put("_date", reportDate);
+        }
 
         logger.debug("Inserting ClinicalAnalysis '{}' ({})...", clinicalAnalysis.getId(), clinicalAnalysis.getUid());
         versionedMongoDBAdaptor.insert(clientSession, clinicalDocument);
@@ -1397,6 +1411,9 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
                         break;
                     case DUE_DATE:
                         addAutoOrQuery(PRIVATE_DUE_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        break;
+                    case REPORT_DATE:
+                        addAutoOrQuery(PRIVATE_REPORT_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case INDIVIDUAL:
                         List<Bson> queryList = new ArrayList<>();
