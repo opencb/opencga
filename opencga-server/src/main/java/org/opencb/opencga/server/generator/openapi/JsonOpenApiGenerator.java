@@ -76,8 +76,6 @@ public class JsonOpenApiGenerator {
                 continue;
             }
             List<String> classTags = new ArrayList<>();
-            // Warning: TAG filtering is case-sensitive.
-            // See https://github.com/swagger-api/swagger-ui/issues/8143
             String mainTag = api.value();
             classTags.add(mainTag);
 
