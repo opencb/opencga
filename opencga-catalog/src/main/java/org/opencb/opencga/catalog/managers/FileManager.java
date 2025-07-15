@@ -3338,8 +3338,10 @@ public class FileManager extends AnnotationSetManager<File> {
                 }
 
                 // File must exist in the file system
-                if (!unlink && !ioManager.exists(tmpFile.getUri())) {
-                    throw new CatalogException("File " + tmpFile.getUri() + " not found in file system");
+                if (!unlink) {
+                    if (tmpFile.getType().equals(File.Type.FILE) && !ioManager.exists(tmpFile.getUri())) {
+                        throw new CatalogException("File " + tmpFile.getUri() + " not found in file system");
+                    }
                 }
 
                 checkValidStatusForDeletion(tmpFile, acceptedStatus);
