@@ -1,0 +1,55 @@
+Package: opencgaEnterpriseR
+Type: Package
+Title: Querying Opencga Data
+Version: OPENCGA_R_VERSION
+Author: Zetta Genomics
+Maintainer: Zetta Genomics <support@zettagenomics.com>
+Description: R client that contains classes and methods for working with
+    Opencga Enterprise data.
+License: GPL-3
+Encoding: UTF-8
+LazyData: TRUE
+Depends:
+    R(>= 3.2.2)
+Imports:
+    jsonlite,
+    httr,
+    configr,
+    base64enc,
+    methods,
+    rlang,
+    lubridate
+Suggests:
+    BiocStyle,
+    knitr,
+    rmarkdown,
+    miniUI,
+    shiny
+Collate: 
+    'AllClasses.R'
+    'commons.R'
+    'AllGenerics.R'
+    'Admin-methods.R'
+    'Alignment-methods.R'
+    'CVDB-methods.R'
+    'Clinical-methods.R'
+    'Cohort-methods.R'
+    'Family-methods.R'
+    'Federation-methods.R'
+    'File-methods.R'
+    'Individual-methods.R'
+    'Job-methods.R'
+    'Meta-methods.R'
+    'OpencgaR-methods.R'
+    'Operation-methods.R'
+    'Organization-methods.R'
+    'Panel-methods.R'
+    'Project-methods.R'
+    'RestResponse-methods.R'
+    'Sample-methods.R'
+    'Study-methods.R'
+    'User-methods.R'
+    'Variant-methods.R'
+    'Workflow-methods.R'
+RoxygenNote: 7.1.2
+VignetteBuilder: knitr
