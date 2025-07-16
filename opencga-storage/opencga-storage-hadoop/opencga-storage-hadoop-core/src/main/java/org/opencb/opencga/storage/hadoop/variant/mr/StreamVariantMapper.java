@@ -347,7 +347,7 @@ public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
 
                 if (exitVal != 0) {
                     LOG.error("Process exited with code " + exitVal);
-                    throw new IOException("Process exited with code " + exitVal);
+//                    throw new IOException("Process exited with code " + exitVal);
                 }
                 process = null;
             }
