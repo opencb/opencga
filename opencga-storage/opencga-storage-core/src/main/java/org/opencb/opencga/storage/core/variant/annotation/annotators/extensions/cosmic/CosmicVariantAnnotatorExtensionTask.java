@@ -92,7 +92,7 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
             throw new ToolException("Invalid COSMIC file format '" + cosmicFile.getFileName() + "': it must be a .tar.gz file");
         }
 
-        Path outDirPath = Paths.get(outDir);
+        Path outDirPath = cosmicFile.getParent();
         FileUtils.checkDirectory(outDirPath, true);
 
         // Check COSMIC version and assembly
