@@ -62,16 +62,10 @@ fi
 
 if [ $ACTION = "push-test" ]; then
   build
-
   echo "******************************"
   echo "Pushing to test PyPI..."
   echo "******************************"
   ## Get HTTP response code, if already exists then response is 200
-  STATUS=$(curl -s --head -w %{http_code} https://test.pypi.org/project/pyopencga/$VERSION/ -o /dev/null)
-  if [ $STATUS = "200" ]; then
-    echo "Version $VERSION already exists in test PyPI!"
-  else
-    python3 -m pip install --user --upgrade twine
-    python3 -m twine upload --repository-url https://test.pypi.org/legacy/ dist/*
-  fi
+  python3 -m pip install --user --upgrade twine
+  python3 -m twine upload --repository-url https://test.pypi.org/legacy/ dist/*
 fi
