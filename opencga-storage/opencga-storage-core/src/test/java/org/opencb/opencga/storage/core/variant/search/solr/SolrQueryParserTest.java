@@ -22,13 +22,17 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
+
+import java.util.Date;
 
 import static org.junit.Assert.assertEquals;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
@@ -40,9 +44,9 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 public class SolrQueryParserTest {
 
     private String studyName = "platinum";
-    private String flBase = "fl=other,geneToSoAcc,traits,type,soAcc,score_*,sift,passStats_*,caddRaw,biotypes,polyphenDesc,studies,end,id,variantId,"
-            + "popFreq_*,caddScaled,genes,chromosome,xrefs,start,gerp,polyphen,attr_id,siftDesc,"
-            + "phastCons,phylop,altStats_*";
+    private String flBase = "fl=geneToSoAcc,traits,type,soAcc,score_*,sift,passStats_*,caddRaw,biotypes,polyphenDesc,studies,end,id,"
+            + "popFreq_*,caddScaled,genes,chromosome,xrefs,start,gerp,polyphen,attr_id,siftDesc,fullId,"
+            + "phastCons,phylop,altStats_*&sort=id+asc";
 
     SolrQueryParser solrQueryParser;
 
@@ -57,7 +61,8 @@ public class SolrQueryParserTest {
         scm = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
         scm.createStudy(studyName);
 
-        solrQueryParser = new SolrQueryParser(scm);
+        solrQueryParser = new SolrQueryParser(scm, new SearchIndexMetadata(1, new Date(), new Date(), SearchIndexMetadata.Status.ACTIVE,
+                "", "", new ObjectMap()));
     }
 
     @Test
@@ -261,9 +266,9 @@ public class SolrQueryParserTest {
         Query query = new Query();
         query.put(STATS_MAF.key(), "ALL<0.1;OTH<0.1");
         String expectedFilter = "&q=*:*&fq="
-                + "((altStats__platinum__ALL:[0+TO+0.1})"
+                + "((altStats__platinum__ALL:[0+TO+0.1}))"
                 + "+AND+"
-                + "(altStats__platinum__OTH:[0+TO+0.1}))";
+                + "((altStats__platinum__OTH:[0+TO+0.1}))";
 
         // Without study
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);

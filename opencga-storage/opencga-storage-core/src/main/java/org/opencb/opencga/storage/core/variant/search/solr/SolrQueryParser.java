@@ -62,6 +62,7 @@ public class SolrQueryParser {
 
     private final VariantStorageMetadataManager variantStorageMetadataManager;
     private final boolean functionQueryStats;
+    private final VariantSearchIdGenerator idGenerator;
     // Experimental! No performance improvement seen on small datasets. Disabled by default.
     private final boolean auxQueryStats = false;
 
@@ -96,9 +97,9 @@ public class SolrQueryParser {
         includeMap.put("studies.scores", "studies,score_*");
 
         includeMap.put("annotation", "genes,soAcc,geneToSoAcc,biotypes,sift,siftDesc,polyphen,polyphenDesc,popFreq_*,"
-                + "xrefs,phastCons,phylop,gerp,caddRaw,caddScaled,traits,other");
+                + "xrefs,phastCons,phylop,gerp,caddRaw,caddScaled,traits");
         includeMap.put("annotation.consequenceTypes", "genes,soAcc,geneToSoAcc,biotypes,sift,siftDesc,polyphen,"
-                + "polyphenDesc,other");
+                + "polyphenDesc");
         includeMap.put("annotation.populationFrequencies", "popFreq_*");
         includeMap.put("annotation.xrefs", "xrefs");
         includeMap.put("annotation.conservation", "phastCons,phylop,gerp");
@@ -106,13 +107,6 @@ public class SolrQueryParser {
         includeMap.put("annotation.traitAssociation", "traits");
 
         initChromosomeMap();
-    }
-
-    private VariantSearchIdGenerator idGenerator;
-
-    public SolrQueryParser(VariantStorageMetadataManager variantStorageMetadataManager) {
-        this.variantStorageMetadataManager = variantStorageMetadataManager;
-        this.functionQueryStats = true;
     }
 
     public SolrQueryParser(VariantStorageMetadataManager variantStorageMetadataManager, SearchIndexMetadata indexMetadata) {
