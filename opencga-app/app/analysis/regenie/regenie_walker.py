@@ -39,33 +39,30 @@ class Regenie(VariantWalker):
             first_chars = str(self.last_body_line or '')[:50]
             fields = self.last_body_line.split()
             num_fields = len(fields)
-        print(f"## at cleanup: testing, do nothing; num. variants = {self.vcf_body_lines}; last variant with {num_fields} fields, (first 50 chars): {first_chars} ", file=sys.stderr)
-        return
+        print(f"## at cleanup: num. variants = {self.vcf_body_lines}; last variant with {num_fields} fields, (first 50 chars): {first_chars} ", file=sys.stderr)
 
-        # if self.vcf_body_lines == 0:
-        #     print("## at cleanup: skipping regenie step 2 since there is no variants", file=sys.stderr)
-        #     self.write("CHROM GENPOS ID ALLELE0 ALLELE1 A1FREQ N TEST BETA SE CHISQ LOG10P EXTRA")
-        #     return
-        # first_chars = str(self.last_body_line or '')[:50]
-        # fields = self.last_body_line.split()
-        # num_fields = len(fields)
-        # print(f"## at cleanup: before running regenie step2; num. variants = {self.vcf_body_lines}; last variant with {num_fields} fields, (first 50 chars): {first_chars} ", file=sys.stderr)
-        # if self.vcf_body_lines == 1:
-        #     print("## at cleanup: skipping regenie step 2 since there is only one variant", file=sys.stderr)
-        #     self.write("CHROM GENPOS ID ALLELE0 ALLELE1 A1FREQ N TEST BETA SE CHISQ LOG10P EXTRA")
-        #     return
-        #
-        # # Otherwise, run regenie step 2
-        # self.run_regenie_step2()
-        # out_file = self.regenie_results + "_PHENO.regenie"
-        # if os.path.exists(out_file):
-        #     print(f"## at cleanup: dumping the content of {out_file}", file=sys.stderr)
-        #     for line in self.fread_lines(out_file):
-        #         self.write(line.rstrip())
-        # pass
+        if self.vcf_body_lines == 0:
+            print("## at cleanup: skipping regenie step 2 since there is no variants", file=sys.stderr)
+            self.write("CHROM GENPOS ID ALLELE0 ALLELE1 A1FREQ N TEST BETA SE CHISQ LOG10P EXTRA")
+            return
+
+        if self.vcf_body_lines == 1:
+            print("## at cleanup: skipping regenie step 2 since there is only one variant", file=sys.stderr)
+            self.write("CHROM GENPOS ID ALLELE0 ALLELE1 A1FREQ N TEST BETA SE CHISQ LOG10P EXTRA")
+            return
+
+        # Otherwise, run regenie step 2
+        self.run_regenie_step2()
+        out_file = self.regenie_results + "_PHENO.regenie"
+        if os.path.exists(out_file):
+            print(f"## at cleanup: dumping the content of {out_file}", file=sys.stderr)
+            for line in self.fread_lines(out_file):
+                self.write(line.rstrip())
 
     def run_regenie_step2(self):
         try:
+            print(f"## at run_regenie_step2: num. variants = {self.vcf_body_lines}", file=sys.stderr)
+
             # 1. plink1.9 --vcf to --bed
             plink_file = self.vcf_file.removesuffix(".vcf")
             plink_cmd = [
@@ -76,38 +73,28 @@ class Regenie(VariantWalker):
                 # "--silent"  # Suppress plink's verbose output
             ]
             print(f"## at run_regenie_step2: {plink_cmd}", file=sys.stderr)
-            # subprocess.run(plink_cmd, check=True, stderr=subprocess.PIPE)
-            result = subprocess.run(plink_cmd, text=True, stdout=sys.stderr, stderr=sys.stderr)
-            if result.returncode != 0:
-                print(f"## at run_regenie_step2: fails, exit code = {result.returncode}; check logs", file=sys.stderr)
-                sys.exit(1)
+            subprocess.run(plink_cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
             # 2. regenie step 2
             regenie_cmd = [
                 "regenie",
-                "--step", "22",
+                "--step", "2",
                 "--bed", plink_file,
                 "--out", self.regenie_results
             ]
             regenie_cmd.extend(self.args)
             print(f"## at run_regenie_step2: {regenie_cmd}", file=sys.stderr)
-            # subprocess.run(regenie_cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
-            result = subprocess.run(regenie_cmd, text=True, stdout=sys.stderr, stderr=sys.stderr)
-            # result = subprocess.run(regenie_cmd, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            if result.returncode != 0:
-                print(f"## at run_regenie_step2: fails, exit code = {result.returncode}; check logs", file=sys.stderr)
-                sys.exit(1)
-
+            subprocess.run(regenie_cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
         except subprocess.CalledProcessError as e:
             print(f"## at run_regenie_step2: command failed; error message: {str(e)}", file=sys.stderr)
-            sys.exit(1)
+            raise
         except FileNotFoundError as e:
             print(f"## at run_regenie_step2: file not found error: {str(e)}", file=sys.stderr)
-            sys.exit(1)
+            raise
         except Exception as e:
             print(f"## at run_regenie_step2: unexpected error: {str(e)}", file=sys.stderr)
-            sys.exit(1)
+            raise
 
     def fwrite_line(self, filename: str, line: str, mode: str = "a") -> None:
         """
