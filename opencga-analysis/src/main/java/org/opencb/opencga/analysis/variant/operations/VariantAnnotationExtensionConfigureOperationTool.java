@@ -22,6 +22,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
@@ -85,16 +86,21 @@ public class VariantAnnotationExtensionConfigureOperationTool extends OperationT
         for (String resource : configureParams.getResources()) {
             boolean found = false;
             for (Study study : studies) {
-                File file = getCatalogManager().getFileManager().get(study.getFqn(), resource, QueryOptions.empty(), token).first();
-                if (file != null && Files.exists(Paths.get(file.getUri().getPath()))) {
-                    resources.add(Paths.get(file.getUri().getPath()).toAbsolutePath().toString());
-                    found = true;
-                    break;
+                try {
+                    File file = getCatalogManager().getFileManager().get(study.getFqn(), resource, QueryOptions.empty(), token).first();
+                    if (file != null && Files.exists(Paths.get(file.getUri().getPath()))) {
+                        resources.add(Paths.get(file.getUri().getPath()).toAbsolutePath().toString());
+                        found = true;
+                        break;
+                    }
+                } catch (CatalogException e) {
+                    // Ignore exception, continue searching in other studies
+                    logger.info("Resource {} not found in study {}: {}", resource, study.getFqn(), e.getMessage());
                 }
             }
             if (!found) {
                 throw new ToolException("Resource " + resource + " for annotation extension " + configureParams.getExtension()
-                        + " does not exist in project " + project.getFqn());
+                        + " does not exist in any study of the project " + project.getFqn());
             }
         }
     }
