@@ -115,12 +115,14 @@ public class VariantSolrExternalResource extends ExternalResource {
     public void after() {
         super.after();
         try {
-            if (embeded) {
-                solrClient.actuallyClose();
-                miniSolrCloudCluster.shutdown();
-                zkTestServer.shutdown();
-            } else {
-                solrClient.actuallyClose();
+            if (solrClient != null) {
+                if (embeded) {
+                    solrClient.actuallyClose();
+                    miniSolrCloudCluster.shutdown();
+                    zkTestServer.shutdown();
+                } else {
+                    solrClient.actuallyClose();
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -150,6 +152,16 @@ public class VariantSolrExternalResource extends ExternalResource {
         return variantSearchManager;
     }
 
+    public void clearCollections() throws Exception {
+        System.out.println("Clearing Solr collections");
+        int i = 0;
+        for (String collection : CollectionAdminRequest.listCollections(solrClient)) {
+            i++;
+            System.out.println("Deleting collection " + collection);
+            CollectionAdminRequest.deleteCollection(collection).process(solrClient);
+        }
+        System.out.println("Collections cleared : " + i);
+    }
 
     public void printCollections(Path outdir) throws SolrServerException, IOException {
         for (String collection : CollectionAdminRequest.listCollections(solrClient)) {
