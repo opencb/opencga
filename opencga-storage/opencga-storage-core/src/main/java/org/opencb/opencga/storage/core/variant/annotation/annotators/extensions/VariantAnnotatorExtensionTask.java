@@ -33,6 +33,8 @@ public interface VariantAnnotatorExtensionTask extends Task<VariantAnnotation, V
 
     /**
      * Check extension parameters and if they are compatibly with the options.
+     *
+     * @param options Options to check compatibility
      * @throws IllegalArgumentException if extension parameters are missing or incompatible with the options
      */
     void check(ObjectMap options) throws IllegalArgumentException;
