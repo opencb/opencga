@@ -33,6 +33,8 @@ import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
@@ -106,7 +108,19 @@ public class VariantAnnotationExtensionConfigureOperationToolTest {
 
             Path tmpOutdir = Paths.get(opencga.createTmpOutdir());
             Path cosmicFilePath = CosmicVariantAnnotatorExtensionTaskTest.initCosmicPath(tmpOutdir);
-            cosmicResourceFile = catalogManager.getFileManager().link(STUDY, cosmicFilePath.toUri(), null, new ObjectMap(), token).first();
+
+
+
+            File file = new File()
+                    .setName(cosmicFilePath.getFileName().toString())
+                    .setPath(ParamConstants.RESOURCES_FOLDER + "/cosmic/" + cosmicFilePath.getFileName().toString())
+                    .setResource(true);
+            InputStream inputStream = Files.newInputStream(cosmicFilePath);
+            cosmicResourceFile = catalogManager.getFileManager().upload(STUDY, inputStream, file, false, true, false, null,
+                    null, token).first();
+
+//            catalogManager.getFileManager().upload(
+//            cosmicResourceFile = catalogManager.getFileManager().link(STUDY, cosmicFilePath.toUri(), null, new ObjectMap(), token).first();
 
             opencga.getStorageConfiguration().getVariant().setDefaultEngine(storageEngine);
             VariantStorageEngine engine = opencga.getStorageEngineFactory().getVariantStorageEngine(storageEngine, DB_NAME);

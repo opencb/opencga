@@ -164,6 +164,7 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
             }
         }
 
+
         return Collections.singletonList(dbLocation.toUri());
     }
 

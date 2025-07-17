@@ -132,6 +132,7 @@ public class ProjectMetadata {
             this.name = other.name;
             this.creationDate = other.creationDate;
             this.annotator = other.annotator;
+            this.extensions = other.extensions;
             this.sourceVersion = new ArrayList<>(other.sourceVersion.size());
             for (ObjectMap source : other.sourceVersion) {
                 this.sourceVersion.add(new ObjectMap(source));

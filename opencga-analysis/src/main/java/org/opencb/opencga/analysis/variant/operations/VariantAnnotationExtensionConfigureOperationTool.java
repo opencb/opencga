@@ -89,6 +89,9 @@ public class VariantAnnotationExtensionConfigureOperationTool extends OperationT
                 try {
                     File file = getCatalogManager().getFileManager().get(study.getFqn(), resource, QueryOptions.empty(), token).first();
                     if (file != null && Files.exists(Paths.get(file.getUri().getPath()))) {
+                        if (!file.isResource()) {
+                            throw new ToolException("File " + file.getId() + " is not a resource. Please, use a resource file.");
+                        }
                         resources.add(Paths.get(file.getUri().getPath()).toAbsolutePath().toString());
                         found = true;
                         break;
