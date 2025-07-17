@@ -1,6 +1,5 @@
 package org.opencb.opencga.storage.core.variant.annotation.annotators.extensions;
 
-import org.apache.commons.lang.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.cosmic.CosmicVariantAnnotatorExtensionTask;
@@ -8,8 +7,6 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.
 import java.lang.reflect.InvocationTargetException;
 import java.util.LinkedList;
 import java.util.List;
-
-import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.ASSEMBLY;
 
 public class VariantAnnotatorExtensionsFactory {
 
