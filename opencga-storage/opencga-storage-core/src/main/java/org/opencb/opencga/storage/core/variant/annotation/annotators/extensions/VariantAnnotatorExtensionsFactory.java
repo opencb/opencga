@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.core.variant.annotation.annotators.extensions;
 
+import org.apache.commons.lang.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.cosmic.CosmicVariantAnnotatorExtensionTask;
@@ -8,9 +9,15 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.LinkedList;
 import java.util.List;
 
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.ASSEMBLY;
+
 public class VariantAnnotatorExtensionsFactory {
 
     public List<VariantAnnotatorExtensionTask> getVariantAnnotatorExtensions(ObjectMap options) {
+        return getVariantAnnotatorExtensions(options, false);
+    }
+
+    public List<VariantAnnotatorExtensionTask> getVariantAnnotatorExtensions(ObjectMap options, boolean check) {
 
         List<VariantAnnotatorExtensionTask> tasks = new LinkedList<>();
         for (String extensionId : options.getAsStringList(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key())) {
@@ -28,8 +35,8 @@ public class VariantAnnotatorExtensionsFactory {
                     }
             }
 
-            if (task == null) {
-                throw new IllegalArgumentException("Unable to create annotator extension '" + extensionId + "'");
+            if (check) {
+                task.check(options);
             }
 
             tasks.add(task);

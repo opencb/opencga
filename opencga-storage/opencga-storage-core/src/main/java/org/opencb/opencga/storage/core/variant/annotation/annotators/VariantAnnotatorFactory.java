@@ -103,7 +103,7 @@ public final class VariantAnnotatorFactory {
 
         logger.info("Getting annotator extension tasks");
         List<VariantAnnotatorExtensionTask> annotatorExtensions = new VariantAnnotatorExtensionsFactory()
-                .getVariantAnnotatorExtensions(options);
+                .getVariantAnnotatorExtensions(options, true);
 
         for (VariantAnnotatorExtensionTask extension : annotatorExtensions) {
             logger.info("Checking annotator extension '{}' availability", extension.getId());

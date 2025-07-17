@@ -165,12 +165,12 @@ public class VariantAnnotationExtensionConfigureOperationToolTest {
         toolRunner.execute(VariantAnnotationExtensionConfigureOperationTool.class, params,
                 new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outDir, null, false, token);
 
-
         // Verify project configuration was updated
         project = catalogManager.getProjectManager().get(PROJECT, QueryOptions.empty(), token).first();
         ObjectMap options = project.getInternal().getDatastores().getVariant().getOptions();
         Assert.assertEquals(CosmicVariantAnnotatorExtensionTask.ID, options.get(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key()));
         Assert.assertEquals(cosmicVersion, options.get(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key()));
         Assert.assertEquals(cosmicAssembly, options.get(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_ASSEMBLY.key()));
+        Assert.assertEquals(Paths.get(cosmicResourceFile.getUri().getPath()).getParent().resolve(CosmicVariantAnnotatorExtensionTask.COSMIC_ANNOTATOR_INDEX_NAME).toString(), options.get(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key()));
     }
 }

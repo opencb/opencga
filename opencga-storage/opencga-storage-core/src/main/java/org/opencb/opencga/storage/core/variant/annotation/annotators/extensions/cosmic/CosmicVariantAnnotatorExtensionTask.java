@@ -16,6 +16,7 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.operations.variant.VariantAnnotationExtensionConfigureParams;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.VariantAnnotatorExtensionTask;
 import org.rocksdb.Options;
 import org.rocksdb.RocksDB;
@@ -35,6 +36,8 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
+
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.ASSEMBLY;
 
 public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExtensionTask {
 
@@ -108,6 +111,7 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
 
         // Clean and init RocksDB
         dbLocation = outDirPath.resolve(COSMIC_ANNOTATOR_INDEX_NAME);
+        logger.info("RocksDB location: {}", dbLocation.toAbsolutePath());
         if (Files.exists(dbLocation)) {
             // Skipping setup but init RocksDB
             logger.info("Skipping setup, it was already done");
@@ -165,7 +169,27 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
     }
 
     @Override
+    public void check(ObjectMap options) throws IllegalArgumentException {
+        if (dbLocation == null || StringUtils.isEmpty(dbLocation.toString())) {
+            throw new IllegalArgumentException("Missing COSMIC file");
+        }
+        if (StringUtils.isEmpty(cosmicVersion)) {
+            throw new IllegalArgumentException("Missing COSMIC version");
+        }
+        if (StringUtils.isEmpty(cosmicAssembly)) {
+            throw new IllegalArgumentException("Missing COSMIC assembly");
+        }
+
+        if (MapUtils.isNotEmpty(options) && options.containsKey(ASSEMBLY.key())
+                && !options.getString(ASSEMBLY.key()).equalsIgnoreCase(cosmicAssembly)) {
+            throw new IllegalArgumentException("COSMIC assembly '" + cosmicAssembly + "' does not match the variant storage assembly '"
+                    + options.getString(ASSEMBLY.key()) + "'");
+        }
+    }
+
+    @Override
     public void checkAvailable() throws IllegalArgumentException {
+        check(null);
         if (dbLocation == null || !Files.exists(dbLocation)
                 || !dbLocation.toAbsolutePath().toString().endsWith(COSMIC_ANNOTATOR_INDEX_NAME)) {
             throw new IllegalArgumentException("COSMIC annotator extension is not available (dbLocation = " + dbLocation + ")");
