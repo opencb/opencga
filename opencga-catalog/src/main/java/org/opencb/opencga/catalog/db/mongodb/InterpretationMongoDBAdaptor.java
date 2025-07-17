@@ -63,8 +63,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE;
-import static org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor.QueryParams.LOCKED;
-import static org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor.QueryParams.STATUS_ID;
+import static org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor.QueryParams.*;
 import static org.opencb.opencga.catalog.db.mongodb.ClinicalAnalysisMongoDBAdaptor.fixCommentsForRemoval;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
@@ -520,25 +519,25 @@ public class InterpretationMongoDBAdaptor extends CatalogMongoDBAdaptor implemen
                 throw new IllegalStateException("Unknown operation " + findingsOperation);
         }
 
-        objectAcceptedParams = new String[]{QueryParams.SECONDARY_FINDINGS.key()};
-        findingsOperation = ParamUtils.UpdateAction.from(actionMap, QueryParams.SECONDARY_FINDINGS.key(), ParamUtils.UpdateAction.ADD);
+        objectAcceptedParams = new String[]{SECONDARY_FINDINGS.key()};
+        findingsOperation = ParamUtils.UpdateAction.from(actionMap, SECONDARY_FINDINGS.key(), ParamUtils.UpdateAction.ADD);
         switch (findingsOperation) {
             case SET:
                 filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
                 break;
             case REMOVE:
-                fixFindingsForRemoval(parameters, QueryParams.SECONDARY_FINDINGS.key());
+                fixFindingsForRemoval(parameters, SECONDARY_FINDINGS.key());
                 filterObjectParams(parameters, document.getPull(), objectAcceptedParams);
                 break;
             case REPLACE:
-                filterReplaceParams(parameters.getAsList(QueryParams.SECONDARY_FINDINGS.key(), Map.class), document,
+                filterReplaceParams(parameters.getAsList(SECONDARY_FINDINGS.key(), Map.class), document,
                         m -> String.valueOf(m.get("id")), QueryParams.SECONDARY_FINDINGS_ID.key());
                 break;
             case ADD:
-                if (parameters.containsKey(QueryParams.SECONDARY_FINDINGS.key())) {
+                if (parameters.containsKey(SECONDARY_FINDINGS.key())) {
                     interpretation = getSingleInterpretation(clientSession, query, interpretation);
                     checkNewFindingsDontExist(interpretation.getSecondaryFindings(),
-                            parameters.getAsList(QueryParams.SECONDARY_FINDINGS.key(), Map.class));
+                            parameters.getAsList(SECONDARY_FINDINGS.key(), Map.class));
                 }
                 filterObjectParams(parameters, document.getAddToSet(), objectAcceptedParams);
                 break;
@@ -1114,6 +1113,22 @@ public class InterpretationMongoDBAdaptor extends CatalogMongoDBAdaptor implemen
                     case ANALYST:
                     case ANALYST_ID:
                         addAutoOrQuery(QueryParams.ANALYST_ID.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        break;
+                    case FINDINGS_GENE_ID:
+                        List<Bson> geneQueryList = new ArrayList<>();
+                        String genePrimaryKey = FINDINGS_GENE_ID.key().replace("findings", PRIMARY_FINDINGS.key());
+                        String geneSecondaryKey = FINDINGS_GENE_ID.key().replace("findings", SECONDARY_FINDINGS.key());
+                        addAutoOrQuery(genePrimaryKey, queryParam.key(), queryCopy, queryParam.type(), geneQueryList);
+                        addAutoOrQuery(geneSecondaryKey, queryParam.key(), queryCopy, queryParam.type(), geneQueryList);
+                        andBsonList.add(Filters.or(geneQueryList));
+                        break;
+                    case FINDINGS_CHROMOSOME:
+                        List<Bson> chromosomeQueryList = new ArrayList<>();
+                        String chrPrimaryKey = FINDINGS_CHROMOSOME.key().replace("findings", PRIMARY_FINDINGS.key());
+                        String chrSecondaryKey = FINDINGS_CHROMOSOME.key().replace("findings", SECONDARY_FINDINGS.key());
+                        addAutoOrQuery(chrPrimaryKey, queryParam.key(), queryCopy, queryParam.type(), chromosomeQueryList);
+                        addAutoOrQuery(chrSecondaryKey, queryParam.key(), queryCopy, queryParam.type(), chromosomeQueryList);
+                        andBsonList.add(Filters.or(chromosomeQueryList));
                         break;
                     case PRIMARY_FINDINGS:
                     case PRIMARY_FINDINGS_ID:

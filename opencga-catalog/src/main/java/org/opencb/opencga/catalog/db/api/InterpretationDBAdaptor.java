@@ -54,6 +54,8 @@ public interface InterpretationDBAdaptor extends CoreDBAdaptor<Interpretation> {
         METHOD("method", TEXT_ARRAY, ""),
         METHOD_NAME("method.name", TEXT_ARRAY, ""),
         STATS("stats", TEXT_ARRAY, ""),
+        FINDINGS_GENE_ID("findings.annotation.consequenceTypes.geneId", TEXT_ARRAY, ""),
+        FINDINGS_CHROMOSOME("findings.chromosome", TEXT_ARRAY, ""),
         PRIMARY_FINDINGS("primaryFindings", TEXT_ARRAY, ""),
         PRIMARY_FINDINGS_ID("primaryFindings.id", TEXT_ARRAY, ""),
         SECONDARY_FINDINGS("secondaryFindings", TEXT_ARRAY, ""),

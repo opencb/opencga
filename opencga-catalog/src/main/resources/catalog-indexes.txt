@@ -241,7 +241,11 @@
 {"collections": ["interpretation", "interpretation_archive"], "fields": {"panels.uid": 1, "studyUid": 1}, "options": {}}
 {"collections": ["interpretation", "interpretation_archive"], "fields": {"status.id": 1, "studyUid": 1}, "options": {}}
 {"collections": ["interpretation", "interpretation_archive"], "fields": {"primaryFindings.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["interpretation", "interpretation_archive"], "fields": {"primaryFindings.annotation.consequenceTypes.geneId": 1, "studyUid": 1}, "options": {}}
+{"collections": ["interpretation", "interpretation_archive"], "fields": {"primaryFindings.chromosome": 1, "studyUid": 1}, "options": {}}
 {"collections": ["interpretation", "interpretation_archive"], "fields": {"secondaryFindings.id": 1, "studyUid": 1}, "options": {}}
+{"collections": ["interpretation", "interpretation_archive"], "fields": {"secondaryFindings.annotation.consequenceTypes.geneId": 1, "studyUid": 1}, "options": {}}
+{"collections": ["interpretation", "interpretation_archive"], "fields": {"secondaryFindings.chromosome": 1, "studyUid": 1}, "options": {}}
 {"collections": ["interpretation", "interpretation_archive"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {}}
 {"collections": ["interpretation", "interpretation_archive"], "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {}}
 {"collections": ["interpretation", "interpretation_archive"], "fields": {"status.id": 1, "studyUid": 1}, "options": {}}
