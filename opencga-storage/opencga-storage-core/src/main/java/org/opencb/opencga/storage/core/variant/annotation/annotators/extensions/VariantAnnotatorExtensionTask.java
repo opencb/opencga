@@ -32,6 +32,12 @@ public interface VariantAnnotatorExtensionTask extends Task<VariantAnnotation, V
     List<URI> setup(VariantAnnotationExtensionConfigureParams configureParams, URI outDir) throws Exception;
 
     /**
+     * Check extension parameters and if they are compatibly with the options.
+     * @throws IllegalArgumentException if extension parameters are missing or incompatible with the options
+     */
+    void check(ObjectMap options) throws IllegalArgumentException;
+
+    /**
      * Check if the annotator extension is available for the given options.
      * @throws IllegalArgumentException if the annotator extension is not available
      */

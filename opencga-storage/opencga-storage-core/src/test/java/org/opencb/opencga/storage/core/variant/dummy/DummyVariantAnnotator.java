@@ -81,8 +81,6 @@ public class DummyVariantAnnotator extends VariantAnnotator {
 
     @Override
     public ProjectMetadata.VariantAnnotationMetadata getVariantAnnotationMetadata() throws VariantAnnotatorException {
-        return new ProjectMetadata.VariantAnnotationMetadata(-1, null, null,
-                new ProjectMetadata.VariantAnnotatorProgram("MyAnnotator", key, null), new HashMap<>(),
-                Collections.singletonList(new ObjectMap("data", "genes")), null,null);
+        return metadata;
     }
 }

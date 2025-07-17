@@ -54,7 +54,7 @@ public class CosmicVariantAnnotatorExtensionTaskTest {
         cosmicParams.put(CosmicVariantAnnotatorExtensionTask.COSMIC_ASSEMBLY_KEY, COSMIC_ASSEMBLY);
         params.setParams(cosmicParams);
 
-        task.setup(params, outPath.toUri());
+        task.setup(params, null);
 
         ObjectMap metadata = task.getMetadata();
         Assert.assertEquals(COSMIC_VERSION, metadata.get(COSMIC_VERSION_KEY));
@@ -75,22 +75,17 @@ public class CosmicVariantAnnotatorExtensionTaskTest {
 
     @Test
     public void testAnnotationCosmicVariantAnnotatorExtensionTaskUsingFactory() throws Exception {
-        Path outPath = getTempPath();
-        if (!outPath.toFile().mkdirs()) {
-            throw new IOException("Error creating the output path: " + outPath.toAbsolutePath());
-        }
-        System.out.println("outPath = " + outPath.toAbsolutePath());
+//        Path outPath = getTempPath();
+//        if (!outPath.toFile().mkdirs()) {
+//            throw new IOException("Error creating the output path: " + outPath.toAbsolutePath());
+//        }
+//        System.out.println("outPath = " + outPath.toAbsolutePath());
 
         // Setup COSMIC directory
         Path cosmicFile = initCosmicPath();
         System.out.println("cosmicFile = " + cosmicFile.toAbsolutePath());
 
-        ObjectMap options = new ObjectMap();
-        options.put(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key(), CosmicVariantAnnotatorExtensionTask.ID);
-
-        CosmicVariantAnnotatorExtensionTask task = (CosmicVariantAnnotatorExtensionTask) new VariantAnnotatorExtensionsFactory().getVariantAnnotatorExtensions(options).get(0);
-        Assert.assertEquals(false, task.isAvailable());
-
+        CosmicVariantAnnotatorExtensionTask task = new CosmicVariantAnnotatorExtensionTask(null);
         VariantAnnotationExtensionConfigureParams params = new VariantAnnotationExtensionConfigureParams();
         params.setExtension(CosmicVariantAnnotatorExtensionTask.ID);
         params.setResources(Collections.singletonList(cosmicFile.toAbsolutePath().toString()));
@@ -99,11 +94,15 @@ public class CosmicVariantAnnotatorExtensionTaskTest {
         cosmicParams.put(CosmicVariantAnnotatorExtensionTask.COSMIC_ASSEMBLY_KEY, COSMIC_ASSEMBLY);
         params.setParams(cosmicParams);
 
-        task.setup(params, outPath.toUri());
+        // Cosmic index is built next to the COSMIC tar.gz file
+        task.setup(params, null);
 
         Assert.assertEquals(true, task.isAvailable());
+        ObjectMap options = new ObjectMap();
 
-        options.put(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key(), outPath.resolve(COSMIC_ANNOTATOR_INDEX_NAME));
+        // All is ready, so we can use the factory to get the task
+        options.put(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key(), CosmicVariantAnnotatorExtensionTask.ID);
+        options.putAll(task.getOptions());
 
         task = (CosmicVariantAnnotatorExtensionTask) new VariantAnnotatorExtensionsFactory().getVariantAnnotatorExtensions(options).get(0);
         task.pre();
