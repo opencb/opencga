@@ -390,7 +390,6 @@
                                 <exec executable="mkdir" failonerror="true">
                                     <arg value="-p"/>
                                     <arg value="${build.dir}/bin/utils"/>
-                                    <arg value="${build.dir}/clients"/>
                                     <arg value="${build.dir}/conf"/>
                                     <arg value="${build.dir}/test"/>
                                     <!--
@@ -455,58 +454,6 @@
                                     <arg value="${project.basedir}/../opencga-core/target/generated-resources/org/opencb/opencga/core/git.properties"/>
                                     <arg value="${build.dir}/misc/git"/>
                                 </exec>
-                                <!-- Generate clients -->
-                                <!-- Python -->
-                                <echo>Copying Python and R to ${build.dir}/clients</echo>
-                                <exec executable="cp" failonerror="true">
-                                    <arg value="-r"/>
-                                    <arg value="${project.basedir}/../opencga-client/src/main/python"/>
-                                    <arg value="${build.dir}/clients"/>
-                                </exec>
-
-                                <echo>Calculating Python version</echo>
-                                <exec executable="python3" outputproperty="pyopencga.version" failonerror="true">
-                                    <arg value="${app.dir}/scripts/calculate_pypi_version.py"/>
-                                    <arg value="${project.version}"/>
-                                </exec>
-
-                                <echo message="Calculated Python Version: ${pyopencga.version}"/>
-
-                                <echo>Updating setup.py with version ${pyopencga.version}</echo>
-                                <exec executable="sed" failonerror="true">
-                                    <arg value="-i"/>
-                                    <arg value="s/PYOPENCGA_VERSION/${pyopencga.version}/"/>
-                                    <arg value="${build.dir}/clients/python/setup.py"/>
-                                </exec>
-
-                                <!-- R -->
-                                <exec executable="cp" failonerror="true">
-                                    <arg value="-r"/>
-                                    <arg value="${project.basedir}/../opencga-client/src/main/R"/>
-                                    <arg value="${build.dir}/clients"/>
-                                </exec>
-
-                                <!-- If the version ends with -SNAPSHOT, replace it with -dev -->
-                                <exec executable="bash" outputproperty="R.version" failonerror="true">
-                                    <arg value="-c"/>
-                                    <arg value="echo ${project.version} | sed 's/-SNAPSHOT/.9000/g'"/>
-                                </exec>
-
-                                <echo message="Calculated R Version: ${R.version}"/>
-
-                                <echo>Updating ${build.dir}/clients/R/DESCRIPTION with version ${R.version}</echo>
-                                <exec executable="sed" failonerror="true">
-                                    <arg value="-i"/>
-                                    <arg value="s/OPENCGA_R_VERSION/${R.version}/"/>
-                                    <arg value="${build.dir}/clients/R/DESCRIPTION"/>
-                                </exec>
-
-                                <exec executable="cp" failonerror="true">
-                                    <arg value="-r"/>
-                                    <arg value="${project.basedir}/../opencga-client/src/main/javascript"/>
-                                    <arg value="${build.dir}/clients"/>
-                                </exec>
-
                                 <echo>Copying configuration files</echo>
                                 <exec executable="cp" failonerror="true">
                                     <arg value="${project.basedir}/../opencga-core/target/classes/configuration.yml"/>
@@ -595,9 +542,6 @@
                                 <exec executable="cp" failonerror="true">
                                     <arg value="-r"/>
                                     <arg value="${build.dir}/libs"/>
-                                    <arg value="${build.dir}/clients/python"/>
-                                    <arg value="${build.dir}/clients/R"/>
-                                    <arg value="${build.dir}/clients/javascript"/>
                                     <arg value="${build.dir}/LICENSE"/>
                                     <arg value="${build.dir}/README.md"/>
                                     <arg value="${build.dir}/${opencga.client.dir}"/>
@@ -643,6 +587,30 @@
                         <goals>
                             <goal>run</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>run-client-builder</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${skipClients}</skip>
+                            <executable>bash</executable>
+                            <workingDirectory>${project.basedir}/..</workingDirectory>
+                            <arguments>
+                                <argument>client-builder.sh</argument>
+                                <argument>--skip-build-opencga</argument>
+                                <argument>--skip-r</argument>
+                            </arguments>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

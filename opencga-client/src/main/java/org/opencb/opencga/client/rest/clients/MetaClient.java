@@ -92,7 +92,8 @@ public class MetaClient extends ParentClient {
     /**
      * Opencga openapi json.
      * @param params Map containing any of the following optional parameters.
-     *       token: List of categories to get API from.
+     *       environment: Environment of the app.
+     *       host: Opencga host without environment.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
