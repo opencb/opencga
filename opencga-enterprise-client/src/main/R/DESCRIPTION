@@ -18,7 +18,8 @@ Imports:
     base64enc,
     methods,
     rlang,
-    lubridate
+    lubridate,
+    reticulate
 Suggests:
     BiocStyle,
     knitr,
@@ -47,9 +48,11 @@ Collate:
     'Project-methods.R'
     'RestResponse-methods.R'
     'Sample-methods.R'
+    'SsoLogin-methods.R'
     'Study-methods.R'
     'User-methods.R'
     'Variant-methods.R'
     'Workflow-methods.R'
+    'zzz.R'
 RoxygenNote: 7.1.2
 VignetteBuilder: knitr
