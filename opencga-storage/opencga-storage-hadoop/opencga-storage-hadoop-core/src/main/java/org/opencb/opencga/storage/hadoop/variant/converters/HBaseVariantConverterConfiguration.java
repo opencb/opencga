@@ -25,7 +25,6 @@ public class HBaseVariantConverterConfiguration {
 
     private final VariantQueryProjection projection;
 
-    private final boolean failOnWrongVariants;
     private final boolean failOnEmptyVariants;
     private final boolean studyNameAsStudyId;
     private final boolean simpleGenotypes;
@@ -36,12 +35,11 @@ public class HBaseVariantConverterConfiguration {
     private final boolean includeIndexStatus;
     private final boolean sparse;
 
-    public HBaseVariantConverterConfiguration(VariantQueryProjection projection, boolean failOnWrongVariants, boolean failOnEmptyVariants,
+    public HBaseVariantConverterConfiguration(VariantQueryProjection projection, boolean failOnEmptyVariants,
                                               boolean studyNameAsStudyId, boolean simpleGenotypes, String unknownGenotype,
                                               boolean mutableSamplesPosition, List<String> sampleDataKeys, boolean includeSampleId,
                                               boolean includeIndexStatus, boolean sparse) {
         this.projection = projection;
-        this.failOnWrongVariants = failOnWrongVariants;
         this.failOnEmptyVariants = failOnEmptyVariants;
         this.studyNameAsStudyId = studyNameAsStudyId;
         this.simpleGenotypes = simpleGenotypes;
@@ -130,10 +128,6 @@ public class HBaseVariantConverterConfiguration {
         return simpleGenotypes;
     }
 
-    public boolean getFailOnWrongVariants() {
-        return failOnWrongVariants;
-    }
-
     public boolean getFailOnEmptyVariants() {
         return failOnEmptyVariants;
     }
@@ -171,7 +165,6 @@ public class HBaseVariantConverterConfiguration {
         private VariantQueryProjection projection;
         private boolean studyNameAsStudyId = false;
         private boolean simpleGenotypes = false;
-        private boolean failOnWrongVariants = HBaseToVariantConverter.isFailOnWrongVariants();
         private boolean failOnEmptyVariants = false;
         private String unknownGenotype = UNKNOWN_GENOTYPE;
         private boolean mutableSamplesPosition = true;
@@ -195,11 +188,6 @@ public class HBaseVariantConverterConfiguration {
 
         public Builder setSimpleGenotypes(boolean simpleGenotypes) {
             this.simpleGenotypes = simpleGenotypes;
-            return this;
-        }
-
-        public Builder setFailOnWrongVariants(boolean failOnWrongVariants) {
-            this.failOnWrongVariants = failOnWrongVariants;
             return this;
         }
 
@@ -244,7 +232,7 @@ public class HBaseVariantConverterConfiguration {
 
         public HBaseVariantConverterConfiguration build() {
             return new HBaseVariantConverterConfiguration(
-                    projection, failOnWrongVariants,
+                    projection,
                     failOnEmptyVariants,
                     studyNameAsStudyId,
                     simpleGenotypes,
