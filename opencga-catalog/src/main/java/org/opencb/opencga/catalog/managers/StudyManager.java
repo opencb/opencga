@@ -65,6 +65,7 @@ import org.opencb.opencga.core.models.summaries.StudySummary;
 import org.opencb.opencga.core.models.summaries.VariableSetSummary;
 import org.opencb.opencga.core.models.summaries.VariableSummary;
 import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.models.variant.InternalVariantOperationIndex;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
@@ -1894,6 +1895,37 @@ public class StudyManager extends AbstractManager {
 
         ObjectMap parameters = new ObjectMap(StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION_VARIANT_ENGINE.key(), configuration);
         getStudyDBAdaptor(organizationId).update(study.getUid(), parameters, QueryOptions.empty());
+    }
+
+    public OpenCGAResult<Study> setStudyInternalVariantSecondarySampleIndex(
+            String studyStr, InternalVariantOperationIndex variant, QueryOptions options, String token) throws CatalogException {
+        return setStudyInternalVariant(studyStr, new StudyInternalVariant().setSecondarySampleIndex(variant), options, token);
+    }
+
+    public OpenCGAResult<Study> setStudyInternalVariant(String studyStr, StudyInternalVariant variant, QueryOptions options,
+                                                            String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn catalogFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = catalogFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+
+        Study study = resolveId(catalogFqn, null, tokenPayload);
+
+        authorizationManager.isAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
+        ParamUtils.checkObj(variant, "StudyInternalVariant");
+
+        ObjectMap parameters = new ObjectMap();
+        if (variant.getSecondarySampleIndex() != null) {
+            parameters.put(StudyDBAdaptor.QueryParams.INTERNAL_VARIANT_SECONDARY_SAMPLE_INDEX.key(), variant.getSecondarySampleIndex());
+        }
+
+        OpenCGAResult<Study> updateResult = getStudyDBAdaptor(organizationId).update(study.getUid(), parameters, QueryOptions.empty());
+        if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+            // Fetch updated study
+            OpenCGAResult<Study> result = getStudyDBAdaptor(organizationId).get(study.getUid(), options);
+            updateResult.setResults(result.getResults());
+        }
+        return updateResult;
     }
 
     public void setVariantEngineSetupOptions(String studyStr, VariantSetupResult variantSetupResult, String token) throws CatalogException {

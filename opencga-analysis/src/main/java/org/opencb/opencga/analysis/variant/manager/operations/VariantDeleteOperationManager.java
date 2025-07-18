@@ -121,11 +121,9 @@ public class VariantDeleteOperationManager extends OperationManager {
         CatalogStorageMetadataSynchronizer metadataSynchronizer
                 = new CatalogStorageMetadataSynchronizer(catalogManager, metadataManager);
 
-        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
-
         // Update Catalog file and cohort status.
-        metadataSynchronizer.synchronizeCatalogStudyFromStorage(studyMetadata, token);
-        metadataSynchronizer.synchronizeCatalogSamplesFromStorage(studyMetadata.getName(), samples, token);
+        metadataSynchronizer.synchronizeCatalogFromStorage(study, token);
+        metadataSynchronizer.synchronizeCatalogSamplesFromStorage(study, samples, token);
     }
 
 
