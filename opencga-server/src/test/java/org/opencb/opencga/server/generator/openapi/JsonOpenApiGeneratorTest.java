@@ -39,7 +39,7 @@ public class JsonOpenApiGeneratorTest {
         swagger = generator.generateJsonOpenApi(
                 apiCommons,
                 "ANYVALIDTOKEN",
-                "test.app.zettagenomics.com/task-swagger/opencga",
+                "https://test.app.zettagenomics.com/task-swagger/opencga",
                 "v2",
                 "test@germline:platinum"
         );
@@ -112,13 +112,13 @@ public class JsonOpenApiGeneratorTest {
         JsonOpenApiGenerator generator = new JsonOpenApiGenerator();
 
         Swagger swaggerNoPath = generator.generateJsonOpenApi(
-                noApis, "", "demo.server.com", "v1", ""
+                noApis, "", "https://demo.server.com", "v1", ""
         );
         assertEquals("demo.server.com", swaggerNoPath.getHost());
         assertEquals("/webservices/rest", swaggerNoPath.getBasePath());
 
         Swagger swaggerWithPath = generator.generateJsonOpenApi(
-                noApis, "", "demo.server.com/api", "v1", ""
+                noApis, "", "https://demo.server.com/api", "v1", ""
         );
         assertEquals("demo.server.com", swaggerWithPath.getHost());
         assertEquals("/api/webservices/rest", swaggerWithPath.getBasePath());

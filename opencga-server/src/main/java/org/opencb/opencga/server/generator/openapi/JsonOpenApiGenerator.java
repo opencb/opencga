@@ -13,6 +13,10 @@ import javax.ws.rs.*;
 import java.io.InputStream;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -226,13 +230,12 @@ public class JsonOpenApiGenerator {
      * @param url the input URL, e.g. "demo.app.zettagenomics.com/trial-gtech/opencga"
      * @return the host portion, e.g. "demo.app.zettagenomics.com"
      */
-    private String getHost(String url) {
-        int slashIdx = url.indexOf('/');
-        if (slashIdx == -1) {
-            // no “/” found: the entire string is the host
-            return url;
+    private String getHost(String url)  {
+        try {
+            return new URI(url).getHost();
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
         }
-        return url.substring(0, slashIdx);
     }
 
     /**
@@ -243,12 +246,11 @@ public class JsonOpenApiGenerator {
      * @return the environment portion, e.g. "/trial-gtech/opencga", or "" if none
      */
     private String getEnvironment(String url) {
-        int slashIdx = url.indexOf('/');
-        if (slashIdx == -1) {
-            // no “/” found: default to root
-            return "";
+        try {
+            return new URI(url).getPath();
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
         }
-        return url.substring(slashIdx);
     }
 
     /**
