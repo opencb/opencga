@@ -80,7 +80,6 @@ public class JsonOpenApiGenerator {
             List<String> classTags = new ArrayList<>();
             String mainTag = api.value();
             classTags.add(mainTag);
-            classTags.add(mainTag.toLowerCase());
 
             // Count available methods in the class
             int count = 0;
