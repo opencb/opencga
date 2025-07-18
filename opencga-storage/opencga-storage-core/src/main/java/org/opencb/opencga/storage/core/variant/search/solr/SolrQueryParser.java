@@ -267,7 +267,8 @@ public class SolrQueryParser {
         // in the search model: "popFreq__1000G__CEU":0.0053191,popFreq__1000G__CLM">0.0125319"
         key = ANNOT_POPULATION_ALTERNATE_FREQUENCY.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.addAll(parsePopFreqValue(ANNOT_POPULATION_ALTERNATE_FREQUENCY, FreqField.POP_FREQ, query.getString(key), FreqType.ALT, null, null));
+            filterList.addAll(parsePopFreqValue(ANNOT_POPULATION_ALTERNATE_FREQUENCY, FreqField.POP_FREQ, query.getString(key),
+                    FreqType.ALT, null, null));
         }
 
         // MAF population frequency
