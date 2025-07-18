@@ -267,7 +267,7 @@ public class SolrQueryParser {
         // in the search model: "popFreq__1000G__CEU":0.0053191,popFreq__1000G__CLM">0.0125319"
         key = ANNOT_POPULATION_ALTERNATE_FREQUENCY.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.addAll(parsePopFreqValue(ANNOT_POPULATION_ALTERNATE_FREQUENCY, "popFreq", query.getString(key), "ALT", null, null));
+            filterList.addAll(parsePopFreqValue(ANNOT_POPULATION_ALTERNATE_FREQUENCY, FreqField.POP_FREQ, query.getString(key), FreqType.ALT, null, null));
         }
 
         // MAF population frequency
@@ -275,7 +275,7 @@ public class SolrQueryParser {
         key = ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             filterList.addAll(parsePopFreqValue(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY,
-                    "popFreq", query.getString(key), "MAF", null, null));
+                    FreqField.POP_FREQ, query.getString(key), FreqType.MAF, null, null));
         }
 
         // REF population frequency
@@ -283,14 +283,14 @@ public class SolrQueryParser {
         key = ANNOT_POPULATION_REFERENCE_FREQUENCY.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             filterList.addAll(parsePopFreqValue(ANNOT_POPULATION_REFERENCE_FREQUENCY,
-                    "popFreq", query.getString(key), "REF", null, null));
+                    FreqField.POP_FREQ, query.getString(key), FreqType.REF, null, null));
         }
 
         // Stats ALT
         // In the model: "altStats__1000G__ALL"=0.02
         key = STATS_ALT.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.addAll(parsePopFreqValue(STATS_ALT, "altStats", query.getString(key), "ALT", defaultStudyName,
+            filterList.addAll(parsePopFreqValue(STATS_ALT, FreqField.ALT_STATS, query.getString(key), FreqType.ALT, defaultStudyName,
                     query.getString(STUDY.key())));
         }
 
@@ -298,7 +298,7 @@ public class SolrQueryParser {
         // In the model: "altStats__1000G__ALL"=0.02
         key = STATS_MAF.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.addAll(parsePopFreqValue(STATS_MAF, "altStats", query.getString(key), "MAF", defaultStudyName,
+            filterList.addAll(parsePopFreqValue(STATS_MAF, FreqField.ALT_STATS, query.getString(key), FreqType.MAF, defaultStudyName,
                     query.getString(STUDY.key())));
         }
 
@@ -306,7 +306,7 @@ public class SolrQueryParser {
         // In the model: "altStats__1000G__ALL"=0.02
         key = STATS_REF.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.addAll(parsePopFreqValue(STATS_REF, "altStats", query.getString(key), "REF", defaultStudyName,
+            filterList.addAll(parsePopFreqValue(STATS_REF, FreqField.ALT_STATS, query.getString(key), FreqType.REF, defaultStudyName,
                     query.getString(STUDY.key())));
         }
 
@@ -314,7 +314,7 @@ public class SolrQueryParser {
         // In the model: "passStats__1000G__ALL">0.2
         key = STATS_PASS_FREQ.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.addAll(parsePopFreqValue(STATS_PASS_FREQ, "passStats", query.getString(key), "", defaultStudyName,
+            filterList.addAll(parsePopFreqValue(STATS_PASS_FREQ, FreqField.PASS_STATS, query.getString(key), FreqType.ALT, defaultStudyName,
                     query.getString(STUDY.key())));
         }
 
@@ -885,6 +885,43 @@ public class SolrQueryParser {
         }
     }
 
+    private enum FreqField {
+        POP_FREQ("popFreq"),
+        ALT_STATS("altStats"),
+        PASS_STATS("passStats");
+
+        private final String field;
+
+        FreqField(String field) {
+            this.field = field;
+        }
+
+        public String getField() {
+            return field;
+        }
+
+        @Override
+        public String toString() {
+            return getField();
+        }
+    }
+
+    private enum FreqType {
+        REF("REF"),
+        ALT("ALT"),
+        MAF("MAF");
+
+        private final String type;
+
+        FreqType(String type) {
+            this.type = type;
+        }
+
+        public String getType() {
+            return type;
+        }
+    }
+
     /**
      * Parse population/altStats values, e.g.: 1000g:all>0.4 or 1000G:JPN<0.00982. This function takes into account
      * multiple values and the separator between them can be:
@@ -895,12 +932,12 @@ public class SolrQueryParser {
      * @param param        Param name
      * @param field        Parameter field: propFreq, altStats or passStats
      * @param value        Filter value, e.g.: 1000G:CEU<=0.0053191,1000G:CLM>0.0125319
-     * @param type         Type of frequency: REF, ALT, MAF, empty
+     * @param type         Type of frequency: REF, ALT, MAF
      * @param defaultStudy Default study. To be used only if the study is not present.
      * @param studies      True if multiple studies are present joined by , (i.e., OR logical operation), only for STATS
      * @return             The string with the boolean conditions
      */
-    private List<String> parsePopFreqValue(VariantQueryParam param, String field, String value, String type, String defaultStudy,
+    private List<String> parsePopFreqValue(VariantQueryParam param, FreqField field, String value, FreqType type, String defaultStudy,
                                      String studies) {
         // In Solr, range queries can be inclusive or exclusive of the upper and lower bounds:
         //    - Inclusive range queries are denoted by square brackets.
@@ -916,7 +953,7 @@ public class SolrQueryParser {
 
             // We need to know if
             boolean addOr = true;
-            if (field.equals("altStats") || field.equals("passStats")) {
+            if (field == FreqField.ALT_STATS || field == FreqField.PASS_STATS) {
                 if (StringUtils.isNotEmpty(studies) || StringUtils.isNotEmpty(defaultStudy)) {
                     Set<String> studiesSet = new HashSet<>();
                     if (defaultStudy != null) {
@@ -958,7 +995,7 @@ public class SolrQueryParser {
                     throw VariantQueryException.malformedParam(param, value, "Missing study");
                 }
 
-                if (field.equals("popFreq")) {
+                if (field == FreqField.POP_FREQ) {
                     // Solr only stores ALT frequency, we need to calculate the MAF or REF before querying
                     String[] fixedFreqValue = getMafOrRefFrequency(type, op, numValue);
                     op = fixedFreqValue[0];
@@ -974,14 +1011,41 @@ public class SolrQueryParser {
                 } else if (!functionQueryStats) {
                     // Backwards compatibility for altStats and passStats
 
-                    // Solr only stores ALT frequency, we need to calculate the MAF or REF before querying
-                    String[] fixedFreqValue = getMafOrRefFrequency(type, op, numValue);
-                    op = fixedFreqValue[0];
-                    numValue = fixedFreqValue[1];
+                    if (type == FreqType.MAF) {
+                        // e.g.
+                        //   maf < 0.2 -> alt < 0.2 OR alt > 0.8
+                        //   maf > 0.2 -> alt > 0.2 AND alt < 0.8
+                        if (op.equals("<") || op.equals("<<")) {
+                            StringBuilder sb = new StringBuilder();
+                            sb.append(getRange(field + FIELD_SEPARATOR + studyIdToSearchModel(study) + FIELD_SEPARATOR,
+                                    pop, op, numValue, addOr));
+                            // e.g.: maf < 0.2 -> alt < 0.2 OR alt > 0.8
+                            String[] flip = flipOperator(op, numValue);
+                            sb.append(" OR ");
+                            sb.append(getRange(field + FIELD_SEPARATOR + studyIdToSearchModel(study) + FIELD_SEPARATOR,
+                                    pop, flip[0], flip[1], addOr));
+                            filters.add(sb.toString());
+                        } else if (op.equals(">") || op.equals(">>")) {
+                            double d = Double.parseDouble(numValue);
+                            if (d > 0.5) {
+                                d = 1 - d; // flip value
+                            }
+                            double d1 = d;
+                            double d2 = 1 - d;
+                            // e.g.: maf > 0.2 -> alt > 0.2 AND alt < 0.8
+                            String fieldStr = field + FIELD_SEPARATOR + studyIdToSearchModel(study) + FIELD_SEPARATOR + pop;
+                            filters.add(fieldStr + ":[" + d1 + " TO " + d2 + "]");
+                        }
+                    } else {
+                        // Solr only stores ALT frequency, we need to calculate the MAF or REF before querying
+                        String[] fixedFreqValue = getMafOrRefFrequency(type, op, numValue);
+                        op = fixedFreqValue[0];
+                        numValue = fixedFreqValue[1];
 
-                    // concat expression, e.g.: value:[0 TO 12]
-                    filters.add(getRange(field + FIELD_SEPARATOR + studyIdToSearchModel(study) + FIELD_SEPARATOR,
-                            pop, op, numValue, addOr));
+                        // concat expression, e.g.: value:[0 TO 12]
+                        filters.add(getRange(field + FIELD_SEPARATOR + studyIdToSearchModel(study) + FIELD_SEPARATOR,
+                                pop, op, numValue, addOr));
+                    }
 
                 } else {
                     String cohort = pop;
@@ -991,7 +1055,7 @@ public class SolrQueryParser {
                         throw VariantQueryException.malformedParam(param, value, "Missing cohort " + cohort + " in study " + study);
                     }
 
-                    if (field.equals("altStats")) {
+                    if (field == FreqField.ALT_STATS) {
                         StringBuilder sb = new StringBuilder();
 
             // See https://solr.apache.org/guide/solr/latest/query-guide/local-params.html#specifying-the-parameter-value-with-the-v-key
@@ -1001,7 +1065,7 @@ public class SolrQueryParser {
                         String functionQuery;
 
                         switch (type) {
-                            case "ALT":
+                            case ALT:
                                 functionQuery = altFreqF(study, cohortMetadata);
                                 if (auxQueryStats) {
                                     // Add extra FQ query for optimization
@@ -1036,10 +1100,10 @@ public class SolrQueryParser {
                                             + " OR " + missingAllelesOrGap + ":[1 TO *]");
                                 }
                                 break;
-                            case "REF":
+                            case REF:
                                 functionQuery = refFreqF(study, cohortMetadata);
                                 break;
-                            case "MAF":
+                            case MAF:
                                 functionQuery = mafFreqF(study, cohortMetadata);
                                 break;
                             default:
@@ -1052,7 +1116,7 @@ public class SolrQueryParser {
                                 .append(" v='").append(functionQuery).append("'}");
 
                         filters.add(sb.toString());
-                    } else if (field.equals("passStats")) {
+                    } else if (field == FreqField.PASS_STATS) {
                         // concat expression, e.g.: value:[0 TO 12]
                         filters.add(getRange(field + FIELD_SEPARATOR + studyIdToSearchModel(study) + FIELD_SEPARATOR,
                                 cohort, op, numValue, addOr));
@@ -1229,42 +1293,32 @@ public class SolrQueryParser {
 //        return studies.size();
 //    }
 
-    private String[] getMafOrRefFrequency(String type, String operator, String value) {
-        String[] opValue = new String[2];
-        opValue[0] = operator;
-        switch (type.toUpperCase()) {
-            case "MAF":
+    private String[] getMafOrRefFrequency(FreqType type, String operator, String value) {
+        switch (type) {
+            case MAF:
                 double d = Double.parseDouble(value);
                 if (d > 0.5) {
-                    d = 1 - d;
-
-                    if (operator.contains("<")) {
-                        opValue[0] = operator.replaceAll("<", ">");
-                    } else {
-                        if (operator.contains(">")) {
-                            opValue[0] = operator.replaceAll(">", "<");
-                        }
-                    }
+                    return flipOperator(operator, value);
                 }
-
-                opValue[1] = String.valueOf(d);
+            case REF:
+                return flipOperator(operator, value);
+            case ALT:
                 break;
-            case "REF":
-                if (operator.contains("<")) {
-                    opValue[0] = operator.replaceAll("<", ">");
-                } else {
-                    if (operator.contains(">")) {
-                        opValue[0] = operator.replaceAll(">", "<");
-                    }
-                }
-                opValue[1] = String.valueOf(1 - Double.parseDouble(value));
-                break;
-            case "ALT":
             default:
-                opValue[1] = value;
-                break;
+                throw new IllegalArgumentException("Unexpected FreqType " + type);
         }
-        return opValue;
+        return new String[]{operator, value};
+    }
+
+    private static String[] flipOperator(String operator, String value) {
+        if (operator.contains("<")) {
+            operator = operator.replaceAll("<", ">");
+        } else {
+            if (operator.contains(">")) {
+                operator = operator.replaceAll(">", "<");
+            }
+        }
+        return new String[]{operator, String.valueOf(1 - Double.parseDouble(value))};
     }
 
     /**
