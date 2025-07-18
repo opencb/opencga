@@ -104,6 +104,8 @@ import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 import org.opencb.opencga.core.tools.result.Status;
+import org.opencb.opencga.master.monitor.executors.BatchExecutor;
+import org.opencb.opencga.master.monitor.executors.ExecutorFactory;
 import org.opencb.opencga.master.monitor.models.PrivateJobUpdateParams;
 import org.opencb.opencga.master.monitor.schedulers.JobScheduler;
 
@@ -147,6 +149,7 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
     private final FileManager fileManager;
     private final Map<String, Long> jobsCountByType = new HashMap<>();
     private final Map<String, Long> retainedLogsTime = new HashMap<>();
+    protected BatchExecutor batchExecutor;
 
     private List<String> packages;
 
@@ -251,6 +254,9 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
                            String appHome, List<String> packages) throws CatalogDBException {
         super(interval, token, catalogManager);
 
+        ExecutorFactory executorFactory = new ExecutorFactory(catalogManager.getConfiguration());
+        this.batchExecutor = executorFactory.getExecutor();
+
         this.jobManager = catalogManager.getJobManager();
         this.fileManager = catalogManager.getFileManager();
         this.storageConfiguration = storageConfiguration;
@@ -276,15 +282,19 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
         logger.info("Packages where to find tools/analyses: " + StringUtils.join(this.packages, ", "));
     }
 
+    public MonitorParentDaemon setBatchExecutor(BatchExecutor batchExecutor) {
+        this.batchExecutor = batchExecutor;
+        return this;
+    }
+
     @Override
-    public void apply() throws Exception {
+    protected void apply() throws Exception {
         checkJobs();
     }
 
     @Override
     public void close() throws IOException {
         batchExecutor.close();
-
         try {
             logger.info("Attempt to shutdown webhook executor");
             executor.shutdown();
@@ -707,11 +717,12 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
             return;
         }
 
-        List<String> fileList = new ArrayList<>(job.getInput().size());
+        List<String> filePathList = new ArrayList<>(job.getInput().size());
         for (File file : job.getInput()) {
-            fileList.add(file.getPath());
+            filePathList.add(file.getPath());
         }
-        List<File> inputFiles = VariantFileIndexerOperationManager.getInputFiles(catalogManager, job.getStudy().getId(), fileList, token);
+        List<File> inputFiles = VariantFileIndexerOperationManager.getInputFiles(catalogManager, job.getStudy().getId(), filePathList,
+                token);
         // Fetch the samples that are going to be indexed
         Set<String> sampleIds = new HashSet<>();
         inputFiles.forEach((f) -> sampleIds.addAll(f.getSampleIds()));

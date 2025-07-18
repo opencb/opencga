@@ -278,10 +278,6 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
         metadataManager.updateVariantFileMetadata(studyId, fileMetadata);
 
         registerLoadedFiles(Collections.singletonList(getFileId()));
-        metadataManager.updateProjectMetadata(projectMetadata -> {
-            projectMetadata.getAttributes().put(LAST_LOADED_FILE_TS, System.currentTimeMillis());
-            return projectMetadata;
-        });
 
         // This method checks the loaded variants (if possible) and adds the loaded files to the metadata
         super.postLoad(input, output);

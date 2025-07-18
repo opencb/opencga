@@ -752,14 +752,6 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         }
     }
 
-    private void wrongVariant(String message) {
-        if (configuration.getFailOnWrongVariants()) {
-            throw new IllegalStateException(message);
-        } else {
-            logger.warn(message);
-        }
-    }
-
     /**
      * Add secondary alternates to the StudyEntry. Merge secondary alternates if needed.
      *
