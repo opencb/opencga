@@ -75,9 +75,12 @@ public class JsonOpenApiGenerator {
             if (api == null) {
                 continue;
             }
+            // Warning: TAG filtering is case-sensitive.
+            // See https://github.com/swagger-api/swagger-ui/issues/8143
             List<String> classTags = new ArrayList<>();
             String mainTag = api.value();
             classTags.add(mainTag);
+            classTags.add(mainTag.toLowerCase());
 
             // Count available methods in the class
             int count = 0;
