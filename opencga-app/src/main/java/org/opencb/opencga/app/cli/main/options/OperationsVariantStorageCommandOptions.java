@@ -216,7 +216,7 @@ public class OperationsVariantStorageCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"variant-annotation-extension-configure"}, commandDescription ="Update Variant Storage Engine configuration. Can be updated at Project or Study level")
+    @Parameters(commandNames = {"variant-annotation-extension-configure"}, commandDescription ="Install a variant annotation extension and configure the project to use it")
     public class VariantAnnotationExtensionConfigureCommandOptions {
     
         @ParametersDelegate
@@ -249,9 +249,6 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean jobDryRun; 
     
-        @Parameter(names = {"--project", "-p"}, description = "Project [organization@]project where project can be either the ID or the alias", required = false, arity = 1)
-        public String project; 
-    
         @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
@@ -263,6 +260,9 @@ public class OperationsVariantStorageCommandOptions {
     
         @DynamicParameter(names = {"--params"}, description = "Parameters of the variant annotation extension based on a key-value map, example of key-value: 'version'='v101'. Use: --params key=value", required = false)
         public Map<String, ?> params = new HashMap<>(); //Dynamic parameters must be initialized;
+    
+        @Parameter(names = {"--overwrite"}, description = "Overwrite.", required = false, arity = 1)
+        public Boolean overwrite;
     
     }
 

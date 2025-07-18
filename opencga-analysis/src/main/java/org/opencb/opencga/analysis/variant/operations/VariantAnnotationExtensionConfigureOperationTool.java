@@ -23,6 +23,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.FqnUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
@@ -35,9 +36,11 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.VariantAnnotatorExtensionTask;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.VariantAnnotatorExtensionsFactory;
 
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Tool(id = VariantAnnotationExtensionConfigureOperationTool.ID, description = VariantAnnotationExtensionConfigureOperationTool.DESCRIPTION,
@@ -49,7 +52,7 @@ public class VariantAnnotationExtensionConfigureOperationTool extends OperationT
     @ToolParams
     protected VariantAnnotationExtensionConfigureParams configureParams = new VariantAnnotationExtensionConfigureParams();
 
-    private Project project = null;
+    private Project project;
 
     private List<String> resources = new ArrayList<>();
     private VariantAnnotatorExtensionTask variantAnnotatorExtensionTask;
@@ -58,11 +61,12 @@ public class VariantAnnotationExtensionConfigureOperationTool extends OperationT
     protected void check() throws Exception {
         super.check();
 
-        String projectFqn = getProjectFqn();
-        if (StringUtils.isEmpty(projectFqn)) {
-            throw new ToolException("Project not found from parameters: " + params.toJson());
+        // Check study and project
+        String studyFqn = getStudyFqn();
+        if (StringUtils.isEmpty(studyFqn)) {
+            throw new ToolException("Study not found from parameters: " + params.toJson());
         }
-        project = catalogManager.getProjectManager().get(projectFqn, QueryOptions.empty(), token).first();
+        project = getCatalogManager().getProjectManager().get(FqnUtils.getProject(studyFqn), QueryOptions.empty(), token).first();
 
         // Check extension name
         ObjectMap options = new ObjectMap();
@@ -80,31 +84,14 @@ public class VariantAnnotationExtensionConfigureOperationTool extends OperationT
         if (CollectionUtils.isEmpty(configureParams.getResources())) {
             throw new ToolException("No resources found for annotation extension " + configureParams.getExtension());
         }
-        Query query = new Query();
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "fqn");
-        List<Study> studies = getCatalogManager().getStudyManager().search(projectFqn, query, queryOptions, token).getResults();
+
+        // Check that all resources are valid
         for (String resource : configureParams.getResources()) {
-            boolean found = false;
-            for (Study study : studies) {
-                try {
-                    File file = getCatalogManager().getFileManager().get(study.getFqn(), resource, QueryOptions.empty(), token).first();
-                    if (file != null && Files.exists(Paths.get(file.getUri().getPath()))) {
-                        if (!file.isResource()) {
-                            throw new ToolException("File " + file.getId() + " is not a resource. Please, use a resource file.");
-                        }
-                        resources.add(Paths.get(file.getUri().getPath()).toAbsolutePath().toString());
-                        found = true;
-                        break;
-                    }
-                } catch (CatalogException e) {
-                    // Ignore exception, continue searching in other studies
-                    logger.info("Resource {} not found in study {}: {}", resource, study.getFqn(), e.getMessage());
-                }
+            File file = getCatalogManager().getFileManager().get(studyFqn, resource, QueryOptions.empty(), token).first();
+            if (!file.isResource()) {
+                throw new ToolException("File " + file.getId() + " is not a resource. Please, use a resource file.");
             }
-            if (!found) {
-                throw new ToolException("Resource " + resource + " for annotation extension " + configureParams.getExtension()
-                        + " does not exist in any study of the project " + project.getFqn());
-            }
+            resources.add(Paths.get(file.getUri().getPath()).toAbsolutePath().toString());
         }
     }
 
@@ -117,9 +104,10 @@ public class VariantAnnotationExtensionConfigureOperationTool extends OperationT
 
     @Override
     protected void run() throws Exception {
-        // Configure the variant annotator extension using resource physical paths
-        variantAnnotatorExtensionTask.setup(new VariantAnnotationExtensionConfigureParams(
-                configureParams.getExtension(), resources, configureParams.getParams()), getOutDir().toUri());
+        // IMPORTANT: create a new extension configure parameter that uses physical paths for input resources
+        VariantAnnotationExtensionConfigureParams params = new VariantAnnotationExtensionConfigureParams(configureParams.getExtension(),
+                resources, configureParams.getParams(), configureParams.getOverwrite());
+        List<URI> outUris = variantAnnotatorExtensionTask.setup(params, getOutDir().toUri());
         variantAnnotatorExtensionTask.checkAvailable();
 
         // Update project configuration with annotator extension options
@@ -133,6 +121,15 @@ public class VariantAnnotationExtensionConfigureOperationTool extends OperationT
         }
         updateOptions(options);
         getVariantStorageManager().configureProject(project.getFqn(), options, token);
+
+//        // Link output URIs
+//        if (CollectionUtils.isNotEmpty(outUris)) {
+//            for (URI outUri : outUris) {
+//                getCatalogManager().getFileManager().link(project.getFqn(), outUri, getOutDir().toUri(), true, token);
+//            }
+//        } else {
+//            logger.warn("No output URIs generated by the annotator extension task.");
+//        }
     }
 
     private void updateOptions(ObjectMap options) {
@@ -144,7 +141,7 @@ public class VariantAnnotationExtensionConfigureOperationTool extends OperationT
             }
             options.put(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key(), annotatorExtensionList);
         } else {
-            options.put(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key(), configureParams.getExtension());
+            options.put(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key(), Collections.singleton(configureParams.getExtension()));
         }
 
         // Add the annotation extension options

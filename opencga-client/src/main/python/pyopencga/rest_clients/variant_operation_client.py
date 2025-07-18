@@ -88,8 +88,8 @@ class VariantOperation(_ParentRestClient):
 
     def variant_annotation_extension_configure(self, data=None, **options):
         """
-        Update Variant Storage Engine configuration. Can be updated at Project
-            or Study level.
+        Install a variant annotation extension and configure the project to
+            use it.
         PATH: /{apiVersion}/operation/variant/annotation/extension/configure
 
         :param str job_id: Job ID. It must be a unique string within the
@@ -105,8 +105,6 @@ class VariantOperation(_ParentRestClient):
             in dry-run mode. In this mode, OpenCGA will validate that all
             parameters and prerequisites are correctly set for successful
             execution, but the job will not actually run.
-        :param str project: Project [organization@]project where project can
-            be either the ID or the alias.
         :param str study: Study [[organization@]project:]study where study and
             project can be either the ID or UUID.
         :param dict data: Parameters to configure a variant annotation

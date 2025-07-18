@@ -1594,9 +1594,10 @@ public class ParamConstants {
 
 
     // Parameter descriptions for variant annotation extension configure operation
-    public static final String VARIANT_ANNOTATION_EXTENSION_NAME_DESCRIPTION = "Name of the variant annotation extension.";
-    public static final String VARIANT_ANNOTATION_EXTENSION_RESOURCE_LIST_DESCRIPTION = "List of resources of the variant annotation"
+    public static final String VARIANT_ANNOTATION_EXTENSION_NAME_DESCR = "Name of the variant annotation extension.";
+    public static final String VARIANT_ANNOTATION_EXTENSION_RESOURCE_LIST_DESCR = "List of resources of the variant annotation"
             + " extension.";
-    public static final String VARIANT_ANNOTATION_EXTENSION_PARAMS_DESCRIPTION = "Parameters of the variant annotation"
+    public static final String VARIANT_ANNOTATION_EXTENSION_PARAMS_DESCR = "Parameters of the variant annotation"
             +" extension based on a key-value map, example of key-value: \"version\"=\"v101\"";
+    public static final String VARIANT_ANNOTATION_EXTENSION_OVERWRITE_DESCR = "Overwrite.";
 }

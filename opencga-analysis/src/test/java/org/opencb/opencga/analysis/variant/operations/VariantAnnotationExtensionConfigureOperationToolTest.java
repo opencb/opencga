@@ -37,7 +37,11 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
 import java.util.Collections;
+import java.util.Date;
+
+import static org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.cosmic.CosmicVariantAnnotatorExtensionTask.COSMIC_INDEX_CREATION_DATE_KEY;
 
 @RunWith(Parameterized.class)
 public class VariantAnnotationExtensionConfigureOperationToolTest {
@@ -88,7 +92,6 @@ public class VariantAnnotationExtensionConfigureOperationToolTest {
     private static String storageEngine;
     private static boolean indexed = false;
     private static String token;
-    private static File cosmicResourceFile;
 
     @Before
     public void setUp() throws Throwable {
@@ -105,22 +108,6 @@ public class VariantAnnotationExtensionConfigureOperationToolTest {
             setUpCatalogManager();
 
             VariantOperationsTest.dummyVariantSetup(variantStorageManager, STUDY, token);
-
-            Path tmpOutdir = Paths.get(opencga.createTmpOutdir());
-            Path cosmicFilePath = CosmicVariantAnnotatorExtensionTaskTest.initCosmicPath(tmpOutdir);
-
-
-
-            File file = new File()
-                    .setName(cosmicFilePath.getFileName().toString())
-                    .setPath(ParamConstants.RESOURCES_FOLDER + "/cosmic/" + cosmicFilePath.getFileName().toString())
-                    .setResource(true);
-            InputStream inputStream = Files.newInputStream(cosmicFilePath);
-            cosmicResourceFile = catalogManager.getFileManager().upload(STUDY, inputStream, file, false, true, false, null,
-                    null, token).first();
-
-//            catalogManager.getFileManager().upload(
-//            cosmicResourceFile = catalogManager.getFileManager().link(STUDY, cosmicFilePath.toUri(), null, new ObjectMap(), token).first();
 
             opencga.getStorageConfiguration().getVariant().setDefaultEngine(storageEngine);
             VariantStorageEngine engine = opencga.getStorageEngineFactory().getVariantStorageEngine(storageEngine, DB_NAME);
@@ -161,30 +148,141 @@ public class VariantAnnotationExtensionConfigureOperationToolTest {
 
 
     @Test
-    public void testVariantAnnotationExtensionConfigureBasic() throws Exception {
+    public void testVariantAnnotationExtensionConfigure() throws Exception {
         String cosmicVersion = "v101";
         String cosmicAssembly = "GRCh38";
 
         Path outDir = Paths.get(opencga.createTmpOutdir("_annotationExtensionConfigureTest"));
 
+        File cosmicResourceFile = getCosmicResourceFile();
         VariantAnnotationExtensionConfigureParams params = new VariantAnnotationExtensionConfigureParams()
                 .setExtension(CosmicVariantAnnotatorExtensionTask.ID)
                 .setResources(Collections.singletonList(cosmicResourceFile.getId()))
                 .setParams(new ObjectMap(CosmicVariantAnnotatorExtensionTask.COSMIC_VERSION_KEY, cosmicVersion)
                         .append(CosmicVariantAnnotatorExtensionTask.COSMIC_ASSEMBLY_KEY, cosmicAssembly));
 
-        Project project = catalogManager.getProjectManager().get(PROJECT, QueryOptions.empty(), token).first();
-        Assert.assertTrue(project.getInternal().getDatastores().getVariant() == null);
 
         toolRunner.execute(VariantAnnotationExtensionConfigureOperationTool.class, params,
                 new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outDir, null, false, token);
 
         // Verify project configuration was updated
-        project = catalogManager.getProjectManager().get(PROJECT, QueryOptions.empty(), token).first();
+        Project project = catalogManager.getProjectManager().get(PROJECT, QueryOptions.empty(), token).first();
         ObjectMap options = project.getInternal().getDatastores().getVariant().getOptions();
-        Assert.assertEquals(CosmicVariantAnnotatorExtensionTask.ID, options.get(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key()));
+        Assert.assertTrue(options.getList(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key()).contains(CosmicVariantAnnotatorExtensionTask.ID));
         Assert.assertEquals(cosmicVersion, options.get(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key()));
         Assert.assertEquals(cosmicAssembly, options.get(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_ASSEMBLY.key()));
-        Assert.assertEquals(Paths.get(cosmicResourceFile.getUri().getPath()).getParent().resolve(CosmicVariantAnnotatorExtensionTask.COSMIC_ANNOTATOR_INDEX_NAME).toString(), options.get(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key()));
+        Assert.assertEquals(Paths.get(cosmicResourceFile.getUri().getPath() + CosmicVariantAnnotatorExtensionTask.COSMIC_ANNOTATOR_INDEX_SUFFIX).toString(), options.get(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key()));
+    }
+
+    @Test
+    public void testVariantAnnotationExtensionConfigureNoOverwrite() throws Exception {
+        String cosmicVersion = "v101";
+        String cosmicAssembly = "GRCh38";
+
+        Path outDir = Paths.get(opencga.createTmpOutdir("_annotationExtensionConfigureTestNoOverwrite"));
+
+        File cosmicResourceFile = getCosmicResourceFile();
+        VariantAnnotationExtensionConfigureParams params = new VariantAnnotationExtensionConfigureParams()
+                .setExtension(CosmicVariantAnnotatorExtensionTask.ID)
+                .setResources(Collections.singletonList(cosmicResourceFile.getId()))
+                .setParams(new ObjectMap(CosmicVariantAnnotatorExtensionTask.COSMIC_VERSION_KEY, cosmicVersion)
+                        .append(CosmicVariantAnnotatorExtensionTask.COSMIC_ASSEMBLY_KEY, cosmicAssembly));
+
+        toolRunner.execute(VariantAnnotationExtensionConfigureOperationTool.class, params,
+                new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outDir, null, false, token);
+
+        Project project = catalogManager.getProjectManager().get(PROJECT, QueryOptions.empty(), token).first();
+        ObjectMap options = project.getInternal().getDatastores().getVariant().getOptions();
+        String indexCreationDate = options.getString(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_INDEX_CREATION_DATE.key());
+
+
+        Path outDir2 = Paths.get(opencga.createTmpOutdir("_annotationExtensionConfigureTestNoOverwrite2"));
+
+        toolRunner.execute(VariantAnnotationExtensionConfigureOperationTool.class, params,
+                new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outDir2, null, false, token);
+
+        // Verify project configuration was updated
+        project = catalogManager.getProjectManager().get(PROJECT, QueryOptions.empty(), token).first();
+        options = project.getInternal().getDatastores().getVariant().getOptions();
+        Assert.assertTrue(options.getList(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key()).contains(CosmicVariantAnnotatorExtensionTask.ID));
+        Assert.assertEquals(cosmicVersion, options.get(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key()));
+        Assert.assertEquals(cosmicAssembly, options.get(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_ASSEMBLY.key()));
+        Assert.assertEquals(indexCreationDate, options.get(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_INDEX_CREATION_DATE.key()));
+        Assert.assertEquals(Paths.get(cosmicResourceFile.getUri().getPath() + CosmicVariantAnnotatorExtensionTask.COSMIC_ANNOTATOR_INDEX_SUFFIX).toString(), options.get(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key()));
+    }
+
+    @Test
+    public void testVariantAnnotationExtensionConfigureOvewrite() throws Exception {
+        String cosmicVersion = "v101";
+        String cosmicAssembly = "GRCh38";
+
+        Path outDir = Paths.get(opencga.createTmpOutdir("_annotationExtensionConfigureTestOverwrite"));
+
+        File cosmicResourceFile = getCosmicResourceFile();
+        VariantAnnotationExtensionConfigureParams params = new VariantAnnotationExtensionConfigureParams()
+                .setExtension(CosmicVariantAnnotatorExtensionTask.ID)
+                .setResources(Collections.singletonList(cosmicResourceFile.getId()))
+                .setParams(new ObjectMap(CosmicVariantAnnotatorExtensionTask.COSMIC_VERSION_KEY, cosmicVersion)
+                        .append(CosmicVariantAnnotatorExtensionTask.COSMIC_ASSEMBLY_KEY, cosmicAssembly));
+
+
+        toolRunner.execute(VariantAnnotationExtensionConfigureOperationTool.class, params,
+                new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outDir, null, false, token);
+
+        String cosmicVersion2 = "v102";
+        String cosmicAssembly2 = "GRCh38";
+
+        Path outDir2 = Paths.get(opencga.createTmpOutdir("_annotationExtensionConfigureTestNoOverwrite2"));
+
+        File cosmicResourceFile2 = getCosmicResourceFile();
+        VariantAnnotationExtensionConfigureParams params2 = new VariantAnnotationExtensionConfigureParams()
+                .setExtension(CosmicVariantAnnotatorExtensionTask.ID)
+                .setResources(Collections.singletonList(cosmicResourceFile2.getId()))
+                .setParams(new ObjectMap(CosmicVariantAnnotatorExtensionTask.COSMIC_VERSION_KEY, cosmicVersion2)
+                        .append(CosmicVariantAnnotatorExtensionTask.COSMIC_ASSEMBLY_KEY, cosmicAssembly2))
+                .setOverwrite(true);
+
+        toolRunner.execute(VariantAnnotationExtensionConfigureOperationTool.class, params2,
+                new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outDir2, null, false, token);
+
+        // Verify project configuration was updated
+        Project project = catalogManager.getProjectManager().get(PROJECT, QueryOptions.empty(), token).first();
+        project = catalogManager.getProjectManager().get(PROJECT, QueryOptions.empty(), token).first();
+        ObjectMap options = project.getInternal().getDatastores().getVariant().getOptions();
+        Assert.assertTrue(options.getList(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key()).contains(CosmicVariantAnnotatorExtensionTask.ID));
+        Assert.assertEquals(cosmicVersion2, options.get(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_VERSION.key()));
+        Assert.assertEquals(cosmicAssembly2, options.get(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_ASSEMBLY.key()));
+        Assert.assertEquals(Paths.get(cosmicResourceFile2.getUri().getPath() + CosmicVariantAnnotatorExtensionTask.COSMIC_ANNOTATOR_INDEX_SUFFIX).toString(), options.get(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key()));
+    }
+
+    private File getCosmicResourceFile() throws IOException, CatalogException {
+        Path tmpOutdir = Paths.get(opencga.createTmpOutdir());
+        String suffix = "-" + new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss.SSS").format(new Date());
+
+        if (!Files.isDirectory(tmpOutdir) && !tmpOutdir.toFile().mkdirs()) {
+            throw new IOException("Error creating the COSMIC path: " + tmpOutdir.toAbsolutePath());
+        }
+        Path cosmicFile = Paths.get(CosmicVariantAnnotatorExtensionTaskTest.class.getResource("/custom_annotation/Small_Cosmic_"
+                + CosmicVariantAnnotatorExtensionTaskTest.COSMIC_VERSION + "_" + CosmicVariantAnnotatorExtensionTaskTest.COSMIC_ASSEMBLY
+                + ".tar.gz").getPath());
+        Path cosmicFilePath = tmpOutdir.resolve("Small_Cosmic_" + CosmicVariantAnnotatorExtensionTaskTest.COSMIC_VERSION + "_"
+                + CosmicVariantAnnotatorExtensionTaskTest.COSMIC_ASSEMBLY + "_" + suffix + ".tar.gz");
+        Files.copy(cosmicFile, cosmicFilePath);
+
+        if (!Files.exists(cosmicFilePath)) {
+            throw new IOException("Error copying COSMIC file to " + cosmicFilePath);
+        }
+
+        try {
+            return catalogManager.getFileManager().get(STUDY, cosmicFilePath.getFileName().toString(), QueryOptions.empty(), token).first();
+        } catch (CatalogException e) {
+
+            File file = new File()
+                    .setName(cosmicFilePath.getFileName().toString())
+                    .setPath(ParamConstants.RESOURCES_FOLDER + "/cosmic/" + cosmicFilePath.getFileName().toString())
+                    .setResource(true);
+            InputStream inputStream = Files.newInputStream(cosmicFilePath);
+            return catalogManager.getFileManager().upload(STUDY, inputStream, file, false, true, false, null, null, token).first();
+        }
     }
 }

@@ -104,8 +104,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
 
     @POST
     @Path("/variant/annotation/extension/configure")
-    @ApiOperation(value = "Update Variant Storage Engine configuration. Can be updated at Project or Study level", response =
-            ObjectMap.class)
+    @ApiOperation(value = "Install a variant annotation extension and configure the project to use it", response = ObjectMap.class)
     public Response variantAnnotationExtensionConfigure(
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
@@ -114,12 +113,11 @@ public class VariantOperationWebService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
-            @ApiParam(value = ParamConstants.PROJECT_DESCRIPTION) @QueryParam(ParamConstants.PROJECT_PARAM) String project,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = VariantAnnotationExtensionConfigureParams.DESCRIPTION) VariantAnnotationExtensionConfigureParams params) {
 
-        return submitOperation(VariantAnnotationExtensionConfigureOperationTool.ID, project, study, params, jobName, jobDescription,
-                dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitOperation(VariantAnnotationExtensionConfigureOperationTool.ID, study, params, jobName, jobDescription, dependsOn,
+                jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @POST

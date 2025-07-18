@@ -282,7 +282,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
         queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
         queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
-        queryParams.putIfNotEmpty("project", commandOptions.project);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -303,6 +302,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             putNestedIfNotEmpty(beanParams, "extension", commandOptions.extension, true);
             putNestedIfNotNull(beanParams, "resources", commandOptions.resources, true);
             putNestedMapIfNotEmpty(beanParams, "params", commandOptions.params, true);
+            putNestedIfNotNull(beanParams, "overwrite", commandOptions.overwrite, true);
 
             variantAnnotationExtensionConfigureParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

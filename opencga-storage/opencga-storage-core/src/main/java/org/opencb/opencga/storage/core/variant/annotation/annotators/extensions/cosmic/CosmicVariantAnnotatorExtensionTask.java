@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.cosmic;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
@@ -43,6 +44,10 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
     public static final String ID = "cosmic";
     public static final String COSMIC_VERSION_KEY = "version";
     public static final String COSMIC_ASSEMBLY_KEY = "assembly";
+    public static final String COSMIC_INDEX_CREATION_DATE_KEY = "indexCreationDate";
+
+    public static final String COSMIC_ANNOTATOR_INDEX_SUFFIX = "-INDEX";
+    public static final String COSMIC_ANNOTATOR_CONFIG_FILENAME = ID + "-config.json";
 
     private String cosmicVersion;
     private String cosmicAssembly;
@@ -54,7 +59,6 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
     private Options dbOption = null;
     private Path dbLocation = null;
 
-    public static final String COSMIC_ANNOTATOR_INDEX_NAME = "cosmicAnnotatorIndex";
 
     private static final String VARIANT_STRING_PATTERN = "([ACGTN]*)|(<CNV[0-9]+>)|(<DUP>)|(<DEL>)|(<INS>)|(<INV>)";
 
@@ -81,9 +85,21 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
     }
 
     public List<URI> setup(VariantAnnotationExtensionConfigureParams configureParams, URI outDir) throws Exception {
+        ObjectMapper defaultObjectMapper = JacksonUtils.getDefaultObjectMapper();
+
         // Sanity check
         if (!ID.equals(configureParams.getExtension())) {
             throw new ToolException("Invalid COSMIC extension: " + configureParams.getExtension());
+        }
+
+        // Check COSMIC version and assembly
+        String tmpCosmicVersion = configureParams.getParams().getString(COSMIC_VERSION_KEY);
+        if (StringUtils.isEmpty(tmpCosmicVersion)) {
+            throw new ToolException("Missing COSMIC version");
+        }
+        String tmpCosmicAssembly = configureParams.getParams().getString(COSMIC_ASSEMBLY_KEY);
+        if (StringUtils.isEmpty(tmpCosmicAssembly)) {
+            throw new ToolException("Missing COSMIC assembly");
         }
 
         // Check COSMIC file
@@ -97,71 +113,100 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
         Path outDirPath = cosmicFile.getParent();
         FileUtils.checkDirectory(outDirPath, true);
 
-        // Check COSMIC version and assembly
-        this.cosmicVersion = configureParams.getParams().getString(COSMIC_VERSION_KEY);
-        if (StringUtils.isEmpty(cosmicVersion)) {
-            throw new ToolException("Missing COSMIC version");
-        }
-        this.cosmicAssembly = configureParams.getParams().getString(COSMIC_ASSEMBLY_KEY);
-        if (StringUtils.isEmpty(cosmicAssembly)) {
-            throw new ToolException("Missing COSMIC assembly");
-        }
-        this.cosmicIndexCreationDate = Instant.now().toString();
+        Path cosmicConfigFile = outDirPath.resolve(COSMIC_ANNOTATOR_CONFIG_FILENAME);
+        Path tmpDbLocation = outDirPath.resolve(cosmicFile.getFileName() + COSMIC_ANNOTATOR_INDEX_SUFFIX);
+        if (Files.exists(cosmicConfigFile) && Files.exists(tmpDbLocation) && Boolean.FALSE.equals(configureParams.getOverwrite())) {
+            // Load existing config file
+            VariantAnnotationExtensionConfigureParams previousParams = defaultObjectMapper.readerFor(
+                    VariantAnnotationExtensionConfigureParams.class).readValue(cosmicConfigFile.toFile());
 
-        // Clean and init RocksDB
-        dbLocation = outDirPath.resolve(COSMIC_ANNOTATOR_INDEX_NAME);
-        logger.info("RocksDB location: {}", dbLocation.toAbsolutePath());
-        if (Files.exists(dbLocation)) {
+            if (!cosmicFile.toAbsolutePath().toString().equals(previousParams.getResources().get(0))) {
+                throw new ToolException("COSMIC file '" + cosmicFile + "' does not match the existing config file version '"
+                        + previousParams.getResources().get(0) + "'. Use the overwrite flag to force the update.");
+            }
+
+            if (!tmpCosmicVersion.equals(previousParams.getParams().get(COSMIC_VERSION_KEY))) {
+                throw new ToolException("COSMIC version '" + tmpCosmicVersion + "' does not match the existing config file version '"
+                        + previousParams.getParams().get(COSMIC_VERSION_KEY) + "'. Use the overwrite flag to force the update.");
+            }
+
+            if (!tmpCosmicAssembly.equals(previousParams.getParams().get(COSMIC_ASSEMBLY_KEY))) {
+                throw new ToolException("COSMIC assembly '" + tmpCosmicAssembly + "' does not match the existing config file version '"
+                        + previousParams.getParams().get(COSMIC_ASSEMBLY_KEY) + "'. Use the overwrite flag to force the update.");
+            }
+
             // Skipping setup but init RocksDB
-            logger.info("Skipping setup, it was already done");
-            initRockDB(false);
-        } else {
-            // Check and decompress tarball, checking the COSMIC files: GenomeScreensMutant and Classification
-            Path genomeScreensMutantFile = null;
-            Path classificationFile = null;
+            logger.info("Skipping setup since it was already done and overwrite is not set to true");
+            dbLocation = tmpDbLocation;
+            cosmicVersion = tmpCosmicVersion;
+            cosmicAssembly = tmpCosmicAssembly;
+            cosmicIndexCreationDate = previousParams.getParams().getString(COSMIC_INDEX_CREATION_DATE_KEY);
 
-            Path tmpPath = outDirPath.resolve("tmp");
-            decompressTarBall(cosmicFile, tmpPath);
-            File[] files = tmpPath.toFile().listFiles();
-            if (files != null) {
-                for (File file : files) {
-                    if (file.getName().contains("Classification")) {
-                        classificationFile = file.toPath();
-                    } else if (file.getName().contains("GenomeScreensMutant")) {
-                        genomeScreensMutantFile = file.toPath();
-                    }
+//            initRockDB(false);
+
+            return Collections.singletonList(dbLocation.toUri());
+        }
+
+
+        String tmpCosmicIndexCreationDate = Instant.now().toString();
+
+        // Check and decompress tarball, checking the COSMIC files: GenomeScreensMutant and Classification
+        Path genomeScreensMutantFile = null;
+        Path classificationFile = null;
+
+        Path tmpPath = outDirPath.resolve("tmp");
+        decompressTarBall(cosmicFile, tmpPath);
+        File[] files = tmpPath.toFile().listFiles();
+        if (files != null) {
+            for (File file : files) {
+                if (file.getName().contains("Classification")) {
+                    classificationFile = file.toPath();
+                } else if (file.getName().contains("GenomeScreensMutant")) {
+                    genomeScreensMutantFile = file.toPath();
                 }
             }
-            if (genomeScreensMutantFile == null) {
-                throw new ToolException("Missing the GenomeScreensMutant file in the COSMIC tarball '" + cosmicFile.getFileName() + "'");
-            }
-            if (classificationFile == null) {
-                throw new ToolException("Missing the Classification file in the COSMIC tarball '" + cosmicFile.getFileName() + "'");
-            }
+        }
+        if (genomeScreensMutantFile == null) {
+            throw new ToolException("Missing the GenomeScreensMutant file in the COSMIC tarball '" + cosmicFile.getFileName() + "'");
+        }
+        if (classificationFile == null) {
+            throw new ToolException("Missing the Classification file in the COSMIC tarball '" + cosmicFile.getFileName() + "'");
+        }
 
-            logger.info("Setup and populate RocksDB by parsing COSMIC files (version {}, assembly {})", cosmicVersion, cosmicAssembly);
+        logger.info("Setup and populate RocksDB by parsing COSMIC files (version {}, assembly {})", tmpCosmicVersion, tmpCosmicAssembly);
 
-            // Init RocksDB
-            initRockDB(true);
+        // Init RocksDB
+        dbLocation = tmpDbLocation;
+        initRockDB(true);
 
-            // Call COSMIC parser
-            try {
-                CosmicExtensionTaskCallback callback = new CosmicExtensionTaskCallback(rdb);
-                CosmicParser101.parse(genomeScreensMutantFile, classificationFile, cosmicVersion, ID, cosmicAssembly, callback);
-            } catch (IOException e) {
-                throw new ToolException(e);
+        // Call COSMIC parser
+        try {
+            CosmicExtensionTaskCallback callback = new CosmicExtensionTaskCallback(rdb);
+            CosmicParser101.parse(genomeScreensMutantFile, classificationFile, tmpCosmicVersion, ID, tmpCosmicVersion, callback);
+        } catch (IOException e) {
+            throw new ToolException(e);
+        }
+
+        // Close RocksDB
+        closeRocksDB();
+
+        cosmicVersion = tmpCosmicVersion;
+        cosmicAssembly = tmpCosmicAssembly;
+        cosmicIndexCreationDate = tmpCosmicIndexCreationDate;
+
+        VariantAnnotationExtensionConfigureParams newParams = new VariantAnnotationExtensionConfigureParams(configureParams);
+        newParams.getParams().append(COSMIC_INDEX_CREATION_DATE_KEY, cosmicIndexCreationDate);
+        defaultObjectMapper.writeValue(cosmicConfigFile.toFile(), newParams);
+
+        // Remove temporary files
+        try {
+            logger.info("Removing temporary files");
+            for (File file : files) {
+                Files.deleteIfExists(file.toPath());
             }
-
-            // Remove temporary files
-            try {
-                logger.info("Removing temporary files");
-                for (File file : files) {
-                    Files.deleteIfExists(file.toPath());
-                }
-                Files.delete(tmpPath);
-            } catch (IOException e) {
-                logger.warn("Error deleting temporary files", e);
-            }
+            Files.delete(tmpPath);
+        } catch (IOException e) {
+            logger.warn("Error deleting temporary files", e);
         }
 
 
@@ -191,7 +236,7 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
     public void checkAvailable() throws IllegalArgumentException {
         check(null);
         if (dbLocation == null || !Files.exists(dbLocation)
-                || !dbLocation.toAbsolutePath().toString().endsWith(COSMIC_ANNOTATOR_INDEX_NAME)) {
+                || !dbLocation.toAbsolutePath().toString().endsWith(COSMIC_ANNOTATOR_INDEX_SUFFIX)) {
             throw new IllegalArgumentException("COSMIC annotator extension is not available (dbLocation = " + dbLocation + ")");
         }
     }
