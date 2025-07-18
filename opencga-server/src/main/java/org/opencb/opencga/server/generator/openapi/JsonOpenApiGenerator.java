@@ -60,7 +60,7 @@ public class JsonOpenApiGenerator {
         swagger.setHost(getHost(url));
         swagger.setBasePath(getEnvironment(url) + "/webservices/rest");
         List<String> schemes = new ArrayList<>();
-        schemes.add("https");
+        schemes.add(getScheme(url));
         swagger.setSchemes(schemes);
         Map<String, Map<String, Method>> paths = new HashMap<>();
         List<Tag> tags = new ArrayList<>();
@@ -221,6 +221,21 @@ public class JsonOpenApiGenerator {
         newtag.setDescription("<span>"+newtag.getCount()+ "</span> " + newtag.getDescription());
         // Always add (or re-add) the tag with the updated count and description
         tags.add(newtag);
+    }
+
+    /**
+     * Extracts the host (everything before the first '/') from a URL string
+     * that is guaranteed to come without a protocol.
+     *
+     * @param url the input URL, e.g. "demo.app.zettagenomics.com/trial-gtech/opencga"
+     * @return the host portion, e.g. "demo.app.zettagenomics.com"
+     */
+    private String getScheme(String url)  {
+        try {
+            return new URI(url).getScheme();
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
