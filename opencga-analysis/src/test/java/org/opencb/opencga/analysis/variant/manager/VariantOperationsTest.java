@@ -110,8 +110,8 @@ public class VariantOperationsTest {
     public static Object[][] parameters() {
         return new Object[][]{
 //                {MongoDBVariantStorageEngine.STORAGE_ENGINE_ID},
-                {DummyVariantStorageEngine.STORAGE_ENGINE_ID},
-                {HadoopVariantStorageEngine.STORAGE_ENGINE_ID}
+                {HadoopVariantStorageEngine.STORAGE_ENGINE_ID},
+                {DummyVariantStorageEngine.STORAGE_ENGINE_ID}
         };
     }
 
