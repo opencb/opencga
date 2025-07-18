@@ -1,7 +1,7 @@
-name: Build clients for opencga-enterprise
+name: Build opencga javascript-client
 
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
       branch:
         description: "The branch, tag or SHA of the source code to build client."
@@ -9,13 +9,14 @@ on:
         required: true
 
 jobs:
-  build-clients:
+  build-javascript-client:
     runs-on: ${{ vars.UBUNTU_VERSION }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: '10'
-          ref: ${{ github.event.inputs.branch }}
+          ref: ${{ inputs.branch }}
       - id: get_opencga_branch
         name: Get OpenCGA branch from pom.xml property
         run: |
@@ -30,13 +31,20 @@ jobs:
           ref: ${{ steps.get_opencga_branch.outputs.opencga_branch }}
           path: opencga-home
           fetch-depth: '10'
-
-      - name: Build clients
+      - name: Set up JDK 8
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '8'
+          cache: 'maven'
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build R client
         run: |
-          chmod +x client-builder.sh 
-          ./client-builder.sh
-      - name: Upload clients folder as artifact
+          ./client-builder.sh --skip-r --skip-python
+      - name: Upload built javascript client package as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: clients
-          path: build/dist
+          name: opencga-enterprise-javascript-client-${{ steps.version.outputs.version }}.tar.gz
+          path: build/dist/opencga-enterprise-javascript-client-${{ steps.version.outputs.version }}.tar.gz
+

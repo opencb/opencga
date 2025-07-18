@@ -1,7 +1,7 @@
-name: Build clients for opencga-enterprise
+name: Build and Test opencga-r-builder Docker Image
 
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
       branch:
         description: "The branch, tag or SHA of the source code to build client."
@@ -9,13 +9,13 @@ on:
         required: true
 
 jobs:
-  build-clients:
+  build-test-publish:
     runs-on: ${{ vars.UBUNTU_VERSION }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: '10'
-          ref: ${{ github.event.inputs.branch }}
+          ref: ${{ inputs.branch }}
       - id: get_opencga_branch
         name: Get OpenCGA branch from pom.xml property
         run: |
@@ -30,13 +30,18 @@ jobs:
           ref: ${{ steps.get_opencga_branch.outputs.opencga_branch }}
           path: opencga-home
           fetch-depth: '10'
-
-      - name: Build clients
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build Docker image
         run: |
-          chmod +x client-builder.sh 
-          ./client-builder.sh
-      - name: Upload clients folder as artifact
+          ./client-builder.sh --skip-python --skip-javascript
+      - name: Extract version from DESCRIPTION
+        id: version
+        run: |
+          VERSION=$(grep '^Version:' build/clients/R/DESCRIPTION | cut -d' ' -f2)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+      - name: Upload built R package as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: clients
-          path: build/dist
+          name: opencgaEnterpriseR_${{ steps.version.outputs.version }}.tar.gz
+          path: build/dist/opencgaEnterpriseR_${{ steps.version.outputs.version }}.tar.gz
