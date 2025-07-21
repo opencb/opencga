@@ -1016,6 +1016,13 @@ public class SolrQueryParser {
                         // e.g.
                         //   maf < 0.2 -> alt < 0.2 OR alt > 0.8
                         //   maf > 0.2 -> alt > 0.2 AND alt < 0.8
+                        //   maf > 0.6 -> maf < 0.4
+                        //   maf < 0.6 -> maf > 0.4
+                        double d = Double.parseDouble(numValue);
+                        if (d > 0.5) {
+                            d = 1 - d; // flip value
+                            op = flipOperator(op); // flip operator
+                        }
                         if (op.equals("<") || op.equals("<<")) {
                             StringBuilder sb = new StringBuilder();
                             sb.append(getRange(field + FIELD_SEPARATOR + studyIdToSearchModel(study) + FIELD_SEPARATOR,
@@ -1027,15 +1034,13 @@ public class SolrQueryParser {
                                     pop, flip[0], flip[1], addOr));
                             filters.add(sb.toString());
                         } else if (op.equals(">") || op.equals(">>")) {
-                            double d = Double.parseDouble(numValue);
-                            if (d > 0.5) {
-                                d = 1 - d; // flip value
-                            }
                             double d1 = d;
                             double d2 = 1 - d;
                             // e.g.: maf > 0.2 -> alt > 0.2 AND alt < 0.8
                             String fieldStr = field + FIELD_SEPARATOR + studyIdToSearchModel(study) + FIELD_SEPARATOR + pop;
                             filters.add(fieldStr + ":[" + d1 + " TO " + d2 + "]");
+                        } else {
+                            throw new IllegalArgumentException("Unexpected operator '" + op + "'");
                         }
                     } else {
                         // Solr only stores ALT frequency, we need to calculate the MAF or REF before querying
@@ -1295,31 +1300,40 @@ public class SolrQueryParser {
 //    }
 
     private String[] getMafOrRefFrequency(FreqType type, String operator, String value) {
+        final String[] opValue;
         switch (type) {
             case MAF:
                 double d = Double.parseDouble(value);
                 if (d > 0.5) {
-                    return flipOperator(operator, value);
+                    opValue = flipOperator(operator, value);
+                } else {
+                    opValue = new String[]{operator, value};
                 }
+                break;
             case REF:
-                return flipOperator(operator, value);
+                opValue = flipOperator(operator, value);
+                break;
             case ALT:
+                opValue = new String[]{operator, value};
                 break;
             default:
                 throw new IllegalArgumentException("Unexpected FreqType " + type);
         }
-        return new String[]{operator, value};
+        return opValue;
     }
 
     private static String[] flipOperator(String operator, String value) {
+        operator = flipOperator(operator);
+        return new String[]{operator, String.valueOf(1 - Double.parseDouble(value))};
+    }
+
+    private static String flipOperator(String operator) {
         if (operator.contains("<")) {
             operator = operator.replaceAll("<", ">");
-        } else {
-            if (operator.contains(">")) {
-                operator = operator.replaceAll(">", "<");
-            }
+        } else if (operator.contains(">")) {
+            operator = operator.replaceAll(">", "<");
         }
-        return new String[]{operator, String.valueOf(1 - Double.parseDouble(value))};
+        return operator;
     }
 
     /**
