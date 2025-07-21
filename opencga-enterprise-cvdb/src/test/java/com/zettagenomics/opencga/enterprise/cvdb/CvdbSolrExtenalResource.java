@@ -67,16 +67,18 @@ public class CvdbSolrExtenalResource extends ExternalResource {
     protected void before() throws Throwable {
         super.before();
 
-//        Path rootDir = getTmpRootDir();
+        //        Path rootDir = getTmpRootDir();
 
         String caConfigSet = "opencga-ca-configset-" + GitUtils.getEnterprise().getBuildVersion();
         String ciConfigSet = "opencga-ci-configset-" + GitUtils.getEnterprise().getBuildVersion();
         String cvConfigSet = "opencga-cv-configset-" + GitUtils.getEnterprise().getBuildVersion();
         String cveConfigSet = "opencga-cve-configset-" + GitUtils.getEnterprise().getBuildVersion();
+        String viewersConfigSet = "opencga-viewers-configset-" + GitUtils.getEnterprise().getBuildVersion();
         copyConfigSetConfiguration(caConfigSet, "ca-managed-schema");
         copyConfigSetConfiguration(ciConfigSet, "ci-managed-schema");
         copyConfigSetConfiguration(cvConfigSet, "cv-managed-schema");
         copyConfigSetConfiguration(cveConfigSet, "cve-managed-schema");
+        copyConfigSetConfiguration(viewersConfigSet, "viewers-managed-schema");
 
         String solrHome = rootDir.resolve("solr").toString();
 
@@ -85,7 +87,8 @@ public class CvdbSolrExtenalResource extends ExternalResource {
                     CollectionPrefixUtils.getCollectionName(collectionPrefix, CLINICAL_ANALYSES_COLLECTION_SUFFIX)
                             + "," + CollectionPrefixUtils.getCollectionName(collectionPrefix, INTERPRETATIONS_COLLECTION_SUFFIX)
                             + "," + CollectionPrefixUtils.getCollectionName(collectionPrefix, CLINICAL_VARIANTS_COLLECTION_SUFFIX)
-                            + "," + CollectionPrefixUtils.getCollectionName(collectionPrefix, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX));
+                            + "," + CollectionPrefixUtils.getCollectionName(collectionPrefix, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX)
+                            + "," + CollectionPrefixUtils.getCollectionName(collectionPrefix, CLINICAL_VIEWERS_COLLECTION_SUFFIX));
         } else {
             SolrManager solrManager = new SolrManager(solrHost, solrMode, solrTimeout);
             this.solrClient = solrManager.getSolrClient();

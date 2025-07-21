@@ -79,6 +79,9 @@ public class ClinicalInterpretationQueryParser extends ClinicalQueryParser {
         join = "{!join from=ciId to=id fromIndex=" + getCollectionName(prefix, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX) + "}";
         addStringFilters(filters, join, solrQuery);
 
+        // Viewers
+        addViewerFilter(query, "caId", prefix, solrQuery);
+
         // Log queries
         logQueries(query, queryOptions, solrQuery, "Clinical interpretation");
 

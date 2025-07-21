@@ -78,6 +78,9 @@ public class ClinicalVariantEvidenceQueryParser extends ClinicalQueryParser {
         addCommonFilters(query, filters);
         addStringFilters(filters, solrQuery);
 
+        // Viewers
+        addViewerFilter(query, "caId", prefix, solrQuery);
+
         // Log queries
         logQueries(query, queryOptions, solrQuery, "Clinical variant evidence");
 

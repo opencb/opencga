@@ -10,15 +10,11 @@ jobs:
     uses: ./.github/workflows/build-java-enterprise-workflow.yml
     with:
       storage_hadoop: hdp3.1
-      artifact_name: build-folder
+      artifact_name: hdp-build-folder
       release: true
-
-  deploy-hdp-docker:
-    uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
-    needs: build-hdp
-    secrets: inherit
-    with:
-      artifact_name: build-folder
+      python_client: true
+      r_client: true
+      javascript_client: true
 
   build-emr:
     uses: ./.github/workflows/build-java-enterprise-workflow.yml
@@ -26,6 +22,14 @@ jobs:
       storage_hadoop: emr6.1
       artifact_name: emr-build-folder
       release: true
+
+  deploy-hdp-docker:
+    uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
+    needs: build-hdp
+    secrets: inherit
+    with:
+      artifact_name: hdp-build-folder
+
 
   deploy-emr-docker:
     uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
@@ -62,6 +66,16 @@ jobs:
     with:
       artifact_name: emr13-build-folder
 
+  deploy-python:
+    uses: opencb/java-common-libs/.github/workflows/deploy-python-workflow.yml@develop
+    needs: build
+    with:
+      cli: ./clients/python/python-build.sh push
+      artifact: build-folder
+    secrets:
+      PYPI_TWINE_USER: ${{ secrets.PYPI_TWINE_USER }}
+      PYPI_TWINE_PASSWORD: ${{ secrets.PYPI_TWINE_PASSWORD }}
+
   release:
     name: Create GitHub Release
     runs-on: ubuntu-22.04
@@ -69,7 +83,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: build-folder
+          name: emr-build-folder
       - name: GitHub Release
         uses: softprops/action-gh-release@v1
         with:
@@ -77,7 +91,8 @@ jobs:
           tag_name: ${{ github.ref }}
           generate_release_notes: true
           files: |
-            opencga-enterprise-client-${{ needs.build-hdp.outputs.version }}.tar.gz
+            opencga-enterprise-cli-${{ needs.build-hdp.outputs.version }}.tar.gz
+            dist/*.*
       - id: echo_result
         name: Results
         run: |

@@ -75,6 +75,9 @@ public class ClinicalAnalysisQueryParser extends ClinicalQueryParser {
                 + "}";
         addStringFilters(filters, join, solrQuery);
 
+        // Viewers
+        addViewerFilter(query, "id", prefix, solrQuery);
+
         // Log queries
         logQueries(query, queryOptions, solrQuery, "Clinical analysis");
 
