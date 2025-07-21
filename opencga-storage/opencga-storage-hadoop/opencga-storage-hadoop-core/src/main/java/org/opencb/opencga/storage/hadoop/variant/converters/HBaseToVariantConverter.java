@@ -47,7 +47,6 @@ import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.SEARCH_INDEX_LAST_TIMESTAMP;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory.extractVariantFromResult;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory.extractVariantFromResultSet;
 
@@ -62,11 +61,10 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
     protected final HBaseToStudyEntryConverter studyEntryConverter;
     protected final Logger logger = LoggerFactory.getLogger(HBaseToVariantConverter.class);
 
-    protected static boolean failOnWrongVariants = false; //FIXME
     protected HBaseVariantConverterConfiguration configuration;
 
     public HBaseToVariantConverter(VariantStorageMetadataManager scm) {
-        long ts = scm.getProjectMetadata().getAttributes().getLong(SEARCH_INDEX_LAST_TIMESTAMP.key());
+        long ts = scm.getProjectMetadata().getSecondaryAnnotationIndexLastTimestamp();
         this.annotationConverter = new HBaseToVariantAnnotationConverter(ts)
                 .setAnnotationIds(scm.getProjectMetadata().getAnnotation());
         HBaseToVariantStatsConverter statsConverter = new HBaseToVariantStatsConverter();
@@ -125,14 +123,6 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         return configure(HBaseVariantConverterConfiguration.builder(configuration).build());
     }
 
-    public static boolean isFailOnWrongVariants() {
-        return failOnWrongVariants;
-    }
-
-    public static void setFailOnWrongVariants(boolean b) {
-        failOnWrongVariants = b;
-    }
-
     public static HBaseToVariantConverter<Result> fromResult(VariantStorageMetadataManager scm) {
         return new ResultToVariantConverter(scm);
     }
@@ -172,14 +162,6 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
             throw new IllegalStateException("No Studies registered for variant!!! " + variant);
         }
         return variant;
-    }
-
-    private void wrongVariant(String message) {
-        if (configuration.getFailOnWrongVariants()) {
-            throw new IllegalStateException(message);
-        } else {
-            logger.warn(message);
-        }
     }
 
     private static class ResultSetToVariantConverter extends HBaseToVariantConverter<ResultSet> {

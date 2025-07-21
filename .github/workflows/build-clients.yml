@@ -1,0 +1,26 @@
+name: Build clients for opencga
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "The branch, tag or SHA of the source code to build docker."
+        type: string
+        required: true
+jobs:
+  build-clients:
+    runs-on: ${{ vars.UBUNTU_VERSION }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: '10'
+          ref: ${{ github.event.inputs.branch }}
+      - name: Build clients
+        run: |
+          chmod +x client-builder.sh 
+          ./client-builder.sh
+      - name: Upload clients folder as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: clients
+          path: build/dist
