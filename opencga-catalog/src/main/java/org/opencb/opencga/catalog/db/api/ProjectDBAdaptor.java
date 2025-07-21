@@ -64,6 +64,8 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
         INTERNAL_DATASTORES("internal.datastores", TEXT_ARRAY, ""),
         INTERNAL_DATASTORES_VARIANT("internal.datastores.variant", TEXT_ARRAY, ""),
         INTERNAL_DATASTORES_CVDB("internal.datastores.cvdb", TEXT_ARRAY, ""),
+        INTERNAL_VARIANT_ANNOTATION_INDEX("internal.variant.annotationIndex", OBJECT, ""),
+        INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX("internal.variant.secondaryAnnotationIndex", OBJECT, ""),
         INTERNAL("internal", TEXT_ARRAY, ""),
 
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
@@ -119,7 +121,6 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
             return map.get(key);
         }
     }
-
 
     default boolean exists(long projectId) throws CatalogDBException {
         return count(new Query(QueryParams.UID.key(), projectId)).getNumMatches() > 0;

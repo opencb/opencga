@@ -261,7 +261,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             Query inputQuery = new Query();
             inputQuery.putIfNotEmpty(VariantQueryParam.REGION.key(), region);
             VariantSearchLoadResult result = engine.secondaryIndex(inputQuery, new QueryOptions(params), overwrite);
-            getSynchronizer(engine).synchronizeCatalogFromStorage(token);
+            getSynchronizer(engine).synchronizeCatalogFromStorage(project, null, token);
             return result;
         });
     }
@@ -320,8 +320,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     public void saveAnnotation(String project, String annotationName, ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
         secureOperationByProject(VariantAnnotationSaveOperationTool.ID, project, params, token, engine -> {
-            CatalogStorageMetadataSynchronizer
-                    .updateProjectMetadata(catalogManager, engine.getMetadataManager(), project, token);
+            getSynchronizer(engine).synchronizeProjectMetadataFromCatalog(project, token);
             engine.saveAnnotation(annotationName, params);
             return null;
         });
@@ -330,8 +329,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     public void deleteAnnotation(String project, String annotationName, ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
         secureOperationByProject(VariantAnnotationDeleteOperationTool.ID, project, params, token, engine -> {
-            CatalogStorageMetadataSynchronizer
-                    .updateProjectMetadata(catalogManager, engine.getMetadataManager(), project, token);
+            getSynchronizer(engine).synchronizeProjectMetadataFromCatalog(project, token);
             engine.deleteAnnotation(annotationName, params);
             return null;
         });
@@ -610,6 +608,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             String cellbaseVersion = engine.getCellBaseUtils().getVersionFromServer();
             sampleIndexConfiguration.validate(cellbaseVersion);
             String studyFqn = getStudyFqn(studyStr, token);
+
             int studyId;
             if (!engine.getMetadataManager().studyExists(studyFqn)) {
                 studyId = engine.getMetadataManager().createStudy(studyFqn, cellbaseVersion).getId();
@@ -617,9 +616,10 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 studyId = engine.getMetadataManager().getStudyId(studyFqn);
             }
             engine.getMetadataManager().addSampleIndexConfiguration(studyId, sampleIndexConfiguration, true);
+            getSynchronizer(engine).synchronizeCatalogProjectFromStorageByStudy(studyFqn, token);
 
             catalogManager.getStudyManager()
-                    .setVariantEngineConfigurationSampleIndex(studyStr, sampleIndexConfiguration, token);
+                    .setVariantEngineConfigurationSampleIndex(studyFqn, sampleIndexConfiguration, token);
             if (skipRebuild) {
                 return new OpenCGAResult<>(0, new ArrayList<>(), 0, new ArrayList<>(), 0);
             } else {
@@ -652,6 +652,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 .append("cellbaseConfiguration", cellbaseConfiguration)
                 .append("annotate", annotate)
                 .append("annotationSaveId", annotationSaveId), token, engine -> {
+            String projectFqn = getProjectFqn(project, token);
             OpenCGAResult<Job> result = new OpenCGAResult<>();
             result.setResultType(Job.class.getCanonicalName());
             result.setResults(new ArrayList<>());
@@ -669,6 +670,9 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             engine.reloadCellbaseConfiguration();
 
             if (engine.getMetadataManager().exists()) {
+                engine.getMetadataManager().invalidateCurrentVariantAnnotationIndex();
+                logger.info("Invalidating current variant annotation index on project '{}'", projectFqn);
+                getSynchronizer(engine).synchronizeCatalogProjectFromStorage(projectFqn, token);
                 List<String> jobDependsOn = new ArrayList<>(1);
                 if (StringUtils.isNotEmpty(annotationSaveId)) {
                     VariantAnnotationSaveParams params = new VariantAnnotationSaveParams(annotationSaveId);
@@ -1191,7 +1195,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         String studySqn = getStudyFqn(study, token);
         return secureOperation("synchronizeCatalogStudyFromStorage", studySqn, new ObjectMap(), token, engine -> {
             CatalogStorageMetadataSynchronizer synchronizer = getSynchronizer(engine);
-            return synchronizer.synchronizeCatalogStudyFromStorage(studySqn, token);
+            return synchronizer.synchronizeCatalogFromStorage(studySqn, token);
         });
     }
 
@@ -1204,7 +1208,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return secureOperation("synchronizeCatalogStudyFromStorage", studySqn, new ObjectMap(), token, engine -> {
             List<File> filesFromCatalog = catalogManager.getFileManager()
                     .get(studySqn, files, FILE_GET_QUERY_OPTIONS, token).getResults();
-            return getSynchronizer(engine).synchronizeCatalogFilesFromStorage(studySqn, filesFromCatalog, token);
+            return getSynchronizer(engine).synchronizeCatalogFromStorage(studySqn, filesFromCatalog, false, token);
         });
     }
 
@@ -1729,6 +1733,10 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
     private String getStudyFqn(String study, String token) throws CatalogException {
         return catalogManager.getStudyManager().get(study, StudyManager.INCLUDE_STUDY_IDS, token).first().getFqn();
+    }
+
+    private String getProjectFqn(String projectStr, String token) throws CatalogException {
+        return getProjectFqn(projectStr, ((List<String>) null), token);
     }
 
     private String getProjectFqn(String projectStr, String study, String token) throws CatalogException {

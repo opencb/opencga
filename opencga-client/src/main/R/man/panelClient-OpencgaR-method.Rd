@@ -92,6 +92,7 @@ This function implements the OpenCGA calls for managing Disease Panels.
 The following table summarises the available \emph{actions} for this client:\tabular{llr}{
    endpointName \tab Endpoint WS \tab parameters accepted \cr
    updateAcl \tab /{apiVersion}/panels/acl/{members}/update \tab study, members\link{*}, action\link{*}, body\link{*} \cr
+   aggregationStats \tab /{apiVersion}/panels/aggregationStats \tab study, id, uuid, name, internalStatus, disorders, variants, genes, source, regions, categories, tags, deleted, status, creationDate, modificationDate, acl, release, snapshot, field \cr
    create \tab /{apiVersion}/panels/create \tab include, exclude, study, includeResult, body \cr
    distinct \tab /{apiVersion}/panels/distinct \tab study, id, uuid, name, internalStatus, disorders, variants, genes, source, regions, categories, tags, deleted, status, creationDate, modificationDate, acl, release, snapshot, field\link{*} \cr
    importPanels \tab /{apiVersion}/panels/import \tab study, jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body \cr
@@ -105,6 +106,11 @@ The following table summarises the available \emph{actions} for this client:\tab
 \section{Endpoint /{apiVersion}/panels/acl/{members}/update}{
 
 Update the set of permissions granted for the member.
+}
+
+\section{Endpoint /{apiVersion}/panels/aggregationStats}{
+
+Fetch catalog panel stats.
 }
 
 \section{Endpoint /{apiVersion}/panels/create}{
