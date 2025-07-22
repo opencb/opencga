@@ -1015,15 +1015,11 @@ public class SolrQueryParser {
                     if (type == FreqType.MAF) {
                         // e.g.
                         //   maf < 0.2 -> alt < 0.2 OR alt > 0.8
+                        //   maf < 0.5 -> All results
                         //   maf > 0.2 -> alt > 0.2 AND alt < 0.8
-                        //   maf > 0.6 -> maf < 0.4
-                        //   maf < 0.6 -> maf > 0.4
+                        //   maf > 0.5 -> No results
                         double d = Double.parseDouble(numValue);
-                        if (d > 0.5) {
-                            d = 1 - d; // flip value
-                            op = flipOperator(op); // flip operator
-                        }
-                        if (op.equals("<") || op.equals("<<")) {
+                        if (op.equals("<") || op.equals("<<") || op.equals("<=") || op.equals("<<=")) {
                             StringBuilder sb = new StringBuilder();
                             sb.append(getRange(field + FIELD_SEPARATOR + studyIdToSearchModel(study) + FIELD_SEPARATOR,
                                     pop, op, numValue, addOr));
@@ -1033,7 +1029,7 @@ public class SolrQueryParser {
                             sb.append(getRange(field + FIELD_SEPARATOR + studyIdToSearchModel(study) + FIELD_SEPARATOR,
                                     pop, flip[0], flip[1], addOr));
                             filters.add(sb.toString());
-                        } else if (op.equals(">") || op.equals(">>")) {
+                        } else if (op.equals(">") || op.equals(">>") || op.equals(">=") || op.equals(">>=")) {
                             double d1 = d;
                             double d2 = 1 - d;
                             // e.g.: maf > 0.2 -> alt > 0.2 AND alt < 0.8

@@ -421,6 +421,10 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
                 withStats("cohort1", withMaf(lt(0.8))));
 
         checkStudyQuery(new VariantQuery().includeSampleAll().study(studyMetadata.getName())
+                .cohortStatsMaf("cohort1>0.8"),
+                withStats("cohort1", withMaf(gt(0.8))));
+
+        checkStudyQuery(new VariantQuery().includeSampleAll().study(studyMetadata.getName())
                         .cohortStatsMaf("cohort1>0.1"),
                 withStats("cohort1", withMaf(gt(0.1))));
 
