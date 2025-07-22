@@ -46,6 +46,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.*;
 import java.util.function.Function;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
@@ -244,10 +247,14 @@ public class DiscoverPendingVariantsDriver extends AbstractVariantsTableDriver {
         private VariantStorageMetadataManager metadataManager;
         private MultipleOutputs<VariantLocusKey, Text> mos;
         private ObjectMapper objectMapper;
+        private String baseOutputPath;
+        private ExecutorService executorService;
+        private List<Future<Object>> futures = new ArrayList<>();
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
             super.setup(context);
+            executorService = Executors.newCachedThreadPool();
             mos = new MultipleOutputs<>(context);
             descriptor = (PendingVariantsFileBasedDescriptor) getDescriptor(context.getConfiguration());
 
@@ -278,16 +285,41 @@ public class DiscoverPendingVariantsDriver extends AbstractVariantsTableDriver {
                         .getAttribute().get(VariantField.AdditionalAttributes.INDEX_SYNCHRONIZATION.key()));
                 context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, syncStatus.name()).increment(1);
                 context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, PENDING_VARIANTS_COUNTER).increment(1);
+
+                String thisBaseOutputPath = descriptor.buildFileName(variant);
+                if (baseOutputPath == null) {
+                    baseOutputPath = thisBaseOutputPath;
+                } else if (!baseOutputPath.equals(thisBaseOutputPath)) {
+                    baseOutputPath = thisBaseOutputPath;
+                    asyncClose(mos);
+                    mos = new MultipleOutputs<>(context);
+                }
                 mos.write(new VariantLocusKey(variant),
                         new Text(objectMapper.writeValueAsBytes(variant)),
-                        descriptor.buildFileName(variant));
+                        baseOutputPath);
             }
+        }
+
+        private void asyncClose(MultipleOutputs<VariantLocusKey, Text> mosToClose) {
+            futures.add(executorService.submit(() -> {
+                mosToClose.close();
+                return null;
+            }));
         }
 
         @Override
         protected void cleanup(Context context) throws IOException, InterruptedException {
             super.cleanup(context);
-            mos.close();
+            asyncClose(mos);
+            executorService.shutdown();
+            for (Future<Object> future : futures) {
+                try {
+                    future.get(30, TimeUnit.SECONDS);
+                } catch (ExecutionException | TimeoutException e) {
+                    throw new IOException("Error closing output", e);
+                }
+            }
+            executorService.awaitTermination(30, TimeUnit.SECONDS);
             metadataManager.close();
         }
     }
