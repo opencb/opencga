@@ -114,6 +114,8 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
                 DataStore dataStore = variantStorageManager.getDataStoreByProjectId(project, token);
                 ObjectMap map = new ObjectMap("project", project);
                 map.put("dataStore", dataStore);
+                List<ObjectMap> searchStatus = variantStorageManager.getSearchStatus(project, token);
+                map.put("searchIndexStatus", searchStatus);
                 dataStores.add(map);
             }
             status.put("dataStores", dataStores);

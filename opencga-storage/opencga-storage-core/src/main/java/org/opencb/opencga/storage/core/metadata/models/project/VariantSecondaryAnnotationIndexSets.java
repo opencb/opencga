@@ -37,6 +37,16 @@ public class VariantSecondaryAnnotationIndexSets {
         return null;
     }
 
+    public Iterable<SearchIndexMetadata> getStagingIndexes() {
+        List<SearchIndexMetadata> stagingIndexes = new LinkedList<>();
+        for (SearchIndexMetadata indexSet : values) {
+            if (indexSet.getStatus() == SearchIndexMetadata.Status.STAGING) {
+                stagingIndexes.add(indexSet);
+            }
+        }
+        return stagingIndexes;
+    }
+
     public SearchIndexMetadata getLastStagingOrActiveIndex() {
         SearchIndexMetadata index = getActiveIndex();
         for (SearchIndexMetadata thisIndexMetadata : values) {
