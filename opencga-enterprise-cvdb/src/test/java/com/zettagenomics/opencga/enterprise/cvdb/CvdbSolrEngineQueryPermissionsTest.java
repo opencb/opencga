@@ -101,7 +101,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
         loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca3.json.gz"), study);
 
         // CVDB index from catalog
-        CvdbIndexResult indexResult = cvdbEngine.indexProject(projectId, catalogManager, true, userToken);
+        CvdbIndexResult indexResult = cvdbEngine.indexProject(projectId, true, userToken);
         System.out.println(indexResult.getFailures());
         assertEquals(2, indexResult.getNumIndexed());
         assertEquals(0, indexResult.getFailures().size());

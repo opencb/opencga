@@ -188,7 +188,7 @@ public class CvdbSolrEngine {
     // P U B L I C      M E T H O D S
     //----------------------------------------------------------------------
 
-    public CvdbIndexResult indexProject(String projectId, CatalogManager catalogManager, boolean overwrite, String token)
+    public CvdbIndexResult indexProject(String projectId, boolean overwrite, String token)
             throws CatalogException {
         logger.info("Loading all clinical analyses from project: '{}'", projectId);
 
@@ -208,7 +208,7 @@ public class CvdbSolrEngine {
                 token);
         List<String> studyFqns = studyResults.getResults().stream().map(Study::getFqn).collect(Collectors.toList());
         for (String studyFqn : studyFqns) {
-            CvdbIndexResult tmpResult = indexStudy(studyFqn, catalogManager, overwrite, token);
+            CvdbIndexResult tmpResult = indexStudy(studyFqn, overwrite, token);
             result.setNumIndexed(result.getNumIndexed() + tmpResult.getNumIndexed());
             result.getFailures().putAll(tmpResult.getFailures());
         }
@@ -220,7 +220,7 @@ public class CvdbSolrEngine {
         return result;
     }
 
-    public CvdbIndexResult indexStudy(String studyFqn, CatalogManager catalogManager, boolean overwrite, String token)
+    public CvdbIndexResult indexStudy(String studyFqn, boolean overwrite, String token)
             throws CatalogException {
         logger.info("Loading all clinical analyses from study: '{}'", studyFqn);
 
@@ -252,7 +252,7 @@ public class CvdbSolrEngine {
         while (iterator.hasNext()) {
             caIds.add(iterator.next().getId());
             if (caIds.size() == listSize) {
-                CvdbIndexResult tmpResult = indexClinicalAnalyses(caIds, studyFqn, catalogManager, overwrite, token);
+                CvdbIndexResult tmpResult = indexClinicalAnalyses(caIds, studyFqn, overwrite, token);
                 result.setNumIndexed(result.getNumIndexed() + tmpResult.getNumIndexed());
                 result.getFailures().putAll(tmpResult.getFailures());
 
@@ -263,7 +263,7 @@ public class CvdbSolrEngine {
 
         // Check if there are still clinical analyses to index
         if (CollectionUtils.isNotEmpty(caIds)) {
-            CvdbIndexResult tmpResult = indexClinicalAnalyses(caIds, studyFqn, catalogManager, overwrite, token);
+            CvdbIndexResult tmpResult = indexClinicalAnalyses(caIds, studyFqn, overwrite, token);
             result.setNumIndexed(result.getNumIndexed() + tmpResult.getNumIndexed());
             result.getFailures().putAll(tmpResult.getFailures());
         }
@@ -275,8 +275,8 @@ public class CvdbSolrEngine {
         return result;
     }
 
-    public CvdbIndexResult indexClinicalAnalyses(List<String> clinicalAnalysisIds, String studyFqn, CatalogManager catalogManager,
-                                                 boolean overwrite, String token) throws CatalogException {
+    public CvdbIndexResult indexClinicalAnalyses(List<String> clinicalAnalysisIds, String studyFqn, boolean overwrite, String token)
+            throws CatalogException {
         logger.info("Loading {} clinical analyses from the input list", clinicalAnalysisIds.size());
 
         JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);

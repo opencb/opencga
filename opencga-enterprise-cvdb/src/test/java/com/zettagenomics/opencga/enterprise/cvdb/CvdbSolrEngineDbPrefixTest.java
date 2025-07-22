@@ -124,7 +124,7 @@ public class CvdbSolrEngineDbPrefixTest {
         TestUtilities.checkClinicalAnalysisIndexStatus(CvdbIndexStatus.NONE, study, catalogManager, userToken);
 
         // CVDB index from catalog project
-        cvdbEngine.indexProject(projectId, catalogManager, true, userToken);
+        cvdbEngine.indexProject(projectId, true, userToken);
 
         // CVDB queries
         SolrQuery solrQuery = new SolrQuery("*:*");

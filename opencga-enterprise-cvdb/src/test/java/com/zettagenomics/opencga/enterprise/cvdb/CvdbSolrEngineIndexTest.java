@@ -123,7 +123,7 @@ public class CvdbSolrEngineIndexTest {
         TestUtilities.checkClinicalAnalysisIndexStatus(CvdbIndexStatus.NONE, study, catalogManager, userToken);
 
         // CVDB index from catalog project
-        cvdbEngine.indexProject(projectId, catalogManager, true, userToken);
+        cvdbEngine.indexProject(projectId, true, userToken);
 
         // CVDB queries
         SolrQuery solrQuery = new SolrQuery("*:*");
@@ -150,11 +150,12 @@ public class CvdbSolrEngineIndexTest {
 
     @Test
     public void testIndexStudy() throws CatalogException, IOException, CvdbException, SolrServerException {
-        TestUtilities.loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca2.json.gz", "ca3.json.gz"), study, userToken, opencgaToken, catalogManager);
+        TestUtilities.loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca2.json.gz", "ca3.json.gz"), study, userToken,
+                opencgaToken, catalogManager);
         TestUtilities.checkClinicalAnalysisIndexStatus(CvdbIndexStatus.NONE, study, catalogManager, userToken);
 
         // CVDB index from catalog study
-        cvdbEngine.indexStudy(study.getFqn(), catalogManager, true, userToken);
+        cvdbEngine.indexStudy(study.getFqn(), true, userToken);
 
         // CVDB queries
         SolrQuery solrQuery = new SolrQuery("*:*");
@@ -188,15 +189,15 @@ public class CvdbSolrEngineIndexTest {
 
         List<String> ids = caResults.getResults().stream().map(r -> r.getId()).collect(Collectors.toList());
         CvdbIndexResult indexResult = cvdbEngine.indexClinicalAnalyses(Collections.singletonList(ids.get(0)), study.getFqn(),
-                catalogManager, true, userToken);
+                true, userToken);
         System.out.println(indexResult);
         Assert.assertEquals(1, indexResult.getNumIndexed());
 
-        indexResult = cvdbEngine.indexClinicalAnalyses(ids, study.getFqn(), catalogManager, false, userToken);
+        indexResult = cvdbEngine.indexClinicalAnalyses(ids, study.getFqn(), false, userToken);
         System.out.println(indexResult);
         Assert.assertEquals(2, indexResult.getNumIndexed());
 
-        indexResult = cvdbEngine.indexClinicalAnalyses(ids, study.getFqn(), catalogManager, false, userToken);
+        indexResult = cvdbEngine.indexClinicalAnalyses(ids, study.getFqn(), false, userToken);
         System.out.println(indexResult);
         Assert.assertEquals(0, indexResult.getNumIndexed());
 
@@ -228,7 +229,7 @@ public class CvdbSolrEngineIndexTest {
         TestUtilities.checkClinicalAnalysisIndexStatus(CvdbIndexStatus.NONE, study, catalogManager, userToken);
 
         // CVDB index from catalog project
-        cvdbEngine.indexProject(projectId, catalogManager, true, userToken);
+        cvdbEngine.indexProject(projectId, true, userToken);
 
         // CVDB query
         String caId = "OPA-6522-1";
@@ -253,8 +254,7 @@ public class CvdbSolrEngineIndexTest {
         catalogManager.getClinicalAnalysisManager().update(study.getFqn(), caId, updateParams, QueryOptions.empty(), userToken);
 
         // CVDB index the given clinical analysis from catalog
-        cvdbEngine.indexClinicalAnalyses(Collections.singletonList(caId), study.getFqn(), catalogManager,
-                true, userToken);
+        cvdbEngine.indexClinicalAnalyses(Collections.singletonList(caId), study.getFqn(), true, userToken);
         result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
         assertEquals(1, result.getNumResults());
         ClinicalAnalysis updatedClinicalAnalysis = result.first();
@@ -269,7 +269,7 @@ public class CvdbSolrEngineIndexTest {
         TestUtilities.checkClinicalAnalysisIndexStatus(CvdbIndexStatus.NONE, study, catalogManager, userToken);
 
         // CVDB index from catalog project
-        cvdbEngine.indexProject(projectId, catalogManager, true, userToken);
+        cvdbEngine.indexProject(projectId, true, userToken);
 
         // CVDB query
         String caId = "OPA-6522-1";
@@ -315,8 +315,7 @@ public class CvdbSolrEngineIndexTest {
                 prevCa.getInterpretation().getId(), ciUpdateParams, null, queryOptions, opencgaToken).first();
 
         // CVDB index the given clinical analysis from catalog
-        cvdbEngine.indexClinicalAnalyses(Collections.singletonList(caId), study.getFqn(), catalogManager,
-                true, userToken);
+        cvdbEngine.indexClinicalAnalyses(Collections.singletonList(caId), study.getFqn(), true, userToken);
         result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
         assertEquals(1, result.getNumResults());
         ClinicalAnalysis updatedClinicalAnalysis = result.first();
@@ -367,11 +366,12 @@ public class CvdbSolrEngineIndexTest {
 
     @Test
     public void testOverwriteFalse() throws CatalogException, IOException, CvdbException, SolrServerException {
-        TestUtilities.loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca2.json.gz", "ca3.json.gz"), study, userToken, opencgaToken, catalogManager);
+        TestUtilities.loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca2.json.gz", "ca3.json.gz"), study, userToken,
+                opencgaToken, catalogManager);
         TestUtilities.checkClinicalAnalysisIndexStatus(CvdbIndexStatus.NONE, study, catalogManager, userToken);
 
         // CVDB index from catalog project
-        cvdbEngine.indexProject(projectId, catalogManager, true, userToken);
+        cvdbEngine.indexProject(projectId, true, userToken);
 
         // CVDB query
         String caId = "OPA-6522-1";
@@ -396,8 +396,7 @@ public class CvdbSolrEngineIndexTest {
         catalogManager.getClinicalAnalysisManager().update(study.getFqn(), caId, updateParams, QueryOptions.empty(), userToken);
 
         // CVDB index the given clinical analysis from catalog but overwrite to FALSE (i.e., no index is performed)
-        cvdbEngine.indexClinicalAnalyses(Collections.singletonList(caId), study.getFqn(), catalogManager,
-                false, userToken);
+        cvdbEngine.indexClinicalAnalyses(Collections.singletonList(caId), study.getFqn(), false, userToken);
         result = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
         assertEquals(1, result.getNumResults());
         ClinicalAnalysis updatedClinicalAnalysis = result.first();

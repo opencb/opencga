@@ -77,14 +77,13 @@ public class CvdbIndexTask extends OpenCgaToolScopeStudy {
             CvdbIndexResult result;
             if (params.isAllProject()) {
                 // All clinical analyses for the given project
-                result = cvdbEngine.indexProject(project.getId(), getCatalogManager(), params.isOverwrite(), token);
+                result = cvdbEngine.indexProject(project.getId(), params.isOverwrite(), token);
             } else if (CollectionUtils.isNotEmpty(params.getClinicalAnalysisIds())) {
                 // All clinical analyses for the input list
-                result = cvdbEngine.indexClinicalAnalyses(params.getClinicalAnalysisIds(), getStudyFqn(), getCatalogManager(),
-                        params.isOverwrite(), token);
+                result = cvdbEngine.indexClinicalAnalyses(params.getClinicalAnalysisIds(), getStudyFqn(), params.isOverwrite(), token);
             } else {
                 // All clinical analyses for the given study
-                result = cvdbEngine.indexStudy(getStudyFqn(), getCatalogManager(), params.isOverwrite(), token);
+                result = cvdbEngine.indexStudy(getStudyFqn(), params.isOverwrite(), token);
             }
 
             // Add results as attributes

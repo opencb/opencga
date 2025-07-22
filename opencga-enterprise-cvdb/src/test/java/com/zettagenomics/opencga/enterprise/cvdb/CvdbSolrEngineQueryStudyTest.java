@@ -95,7 +95,7 @@ public class CvdbSolrEngineQueryStudyTest {
         TestUtilities.loadClinicalAnalsysesInCatalog(Arrays.asList("ca3.json.gz"), study1, userToken, opencgaToken, catalogManager);
 
         // CVDB index from catalog
-        CvdbIndexResult indexResult = cvdbEngine.indexProject(projectId, catalogManager, true, userToken);
+        CvdbIndexResult indexResult = cvdbEngine.indexProject(projectId, true, userToken);
         System.out.println(indexResult.getFailures());
         assertEquals(2, indexResult.getNumIndexed());
         assertEquals(0, indexResult.getFailures().size());
