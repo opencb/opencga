@@ -24,8 +24,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.models.project.Project;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class CollectionPrefixUtils {
 
@@ -38,7 +38,7 @@ public class CollectionPrefixUtils {
 
     private CollectionPrefixUtils(CatalogManager catalogManager) {
         this.catalogManager = catalogManager;
-        this.collectionPrefixMap = new HashMap<>();
+        this.collectionPrefixMap = new ConcurrentHashMap<>();
     }
 
     public static synchronized CollectionPrefixUtils getInstance(CatalogManager catalogManager) {
