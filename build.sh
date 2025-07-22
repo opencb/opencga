@@ -320,9 +320,9 @@ function build_opencga_enterprise() {
   cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
 
   if [ "$COMMAND" == "build" ];then
+    # The opencga.war.name is include in the MVN_OPTS, so we do not need to pass it
     mvn clean install -DskipTests -T 2 -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
     -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" --no-transfer-progress $MVN_OPTS
-#    -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" -Dopencga.war.name=opencga --no-transfer-progress $MVN_OPTS
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND opencga-enterprise build FAILED!!!!!"
         print_log_summary
@@ -336,9 +336,9 @@ function build_opencga_enterprise() {
   elif [ "$COMMAND" == "test" ]; then
       local pwd=$(pwd)
       echo "${pwd} opencga-enterprise" >> "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
+    # The opencga.war.name is include in the MVN_OPTS, so we do not need to pass it
       mvn clean install -B surefire-report:report -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
       -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" ${FAIL_NEVER} --no-transfer-progress $MVN_OPTS
-#      -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" ${FAIL_NEVER} -Dopencga.war.name=opencga --no-transfer-progress $MVN_OPTS
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND opencga-enterprise test FAILED!!!!!"
         print_log_summary
