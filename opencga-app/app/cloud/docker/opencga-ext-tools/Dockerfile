@@ -33,30 +33,25 @@ RUN apt-get update -y && \
     make && \
     bash -c '/bin/cp bcftools plugins/{munge,liftover,score,metal,pgs,blup}.so /usr/local/bin/' && \
     wget -P /usr/local/bin http://raw.githubusercontent.com/freeseek/score/master/assoc_plot.R && \
-    chmod a+x /usr/local/bin/assoc_plot.R && \
-    cd .. && true
+    chmod a+x /usr/local/bin/assoc_plot.R
+    ## Installation dependencies using R install.packages() is slower than apt-get but final size is 400GB smaller.
+RUN R -e "install.packages(c('BiocManager', 'RCircos', 'nnls', 'ggplot2', 'jsonlite', 'optparse', 'knitr', 'configr', 'dplyr', 'rmarkdown', 'tidyr', 'httr', 'kinship2', 'limSolve'))" && \
+    R -e "BiocManager::install('BiocStyle')" && \
+    R -e "BiocManager::install('BSgenome.Hsapiens.UCSC.hg38')" && \
+    ## signature.tools.lib installation \
+    R -e 'install.packages(c("devtools", "getopt"), repos=c("http://cran.rstudio.com/", "https://www.stats.bris.ac.uk/R/"))' && \
+    git clone https://github.com/Nik-Zainal-Group/signature.tools.lib.git /opt/opencga/signature.tools.lib
 
-    # 2. Clone the signature.tools.lib repository
-RUN git clone https://github.com/Nik-Zainal-Group/signature.tools.lib.git /opt/opencga/signature.tools.lib && \
-    cd /opt/opencga/signature.tools.lib && \
-    git fetch origin --tags && \
+WORKDIR /opt/opencga/signature.tools.lib
+
+RUN git fetch origin --tags && \
     git checkout tags/v2.4.4 && \
     sed -i '/Mmusculus/d' DESCRIPTION && \
     sed -i '/Cfamiliaris/d' DESCRIPTION && \
-    sed -i '/1000genomes/d' DESCRIPTION
-
-    # 3. Install R package managers and general dependencies
-RUN R -e "install.packages('BiocManager', repos='https://cloud.r-project.org')" && \
-    R -e "install.packages(c('remotes','devtools', 'getopt', 'RCircos', 'nnls', 'ggplot2', 'jsonlite', 'optparse', 'knitr', 'configr', 'dplyr', 'rmarkdown', 'tidyr', 'httr', 'kinship2', 'gh', 'usethis'), repos='https://cloud.r-project.org')"
-
-    # 4. Install Bioconductor packages required by signature.tools.lib
-RUN R -e "BiocManager::install(c('BiocStyle', 'BSgenome.Hsapiens.UCSC.hg38', 'limSolve'))"
-
-    # 5. Install signature.tools.lib from local clone (ignore warnings about long file paths)
-RUN Rscript -e "options(timeout = 3600); remotes::install_local('/opt/opencga/signature.tools.lib', upgrade='never', dependencies=TRUE)"
-
-    ## 6. Clean up
-RUN rm -rf samtools-1.21 bcftools-1.21 /var/lib/apt/lists/* /tmp/* /opt/opencga/signature.tools.lib/.git && \
+    sed -i '/1000genomes/d' DESCRIPTION && \
+    R -e 'options(timeout = 3600);devtools::install(repos="https://www.stats.bris.ac.uk/R/")' && \
+    ## Clean up
+    rm -rf /var/lib/apt/lists/* /tmp/* /opt/opencga/signature.tools.lib/.git && \
     strip --remove-section=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so.5
 
 ENV BCFTOOLS_PLUGINS="/usr/local/bin"
