@@ -122,8 +122,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
             } else {
                 AnnotationPendingVariantsManager pendingVariantsManager = new AnnotationPendingVariantsManager(dbAdaptor);
                 ProjectMetadata projectMetadata = dbAdaptor.getMetadataManager().getProjectMetadata();
-                long lastLoadedFileTs = projectMetadata.getAttributes()
-                        .getLong(HadoopVariantStorageEngine.LAST_LOADED_FILE_TS);
+                long lastLoadedFileTs = projectMetadata.getVariantIndexLastTimestamp();
                 long lastVariantsToAnnotateUpdateTs = projectMetadata.getAttributes()
                         .getLong(HadoopVariantStorageEngine.LAST_VARIANTS_TO_ANNOTATE_UPDATE_TS);
 

@@ -141,8 +141,6 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     public static final String STUDY_ID = "studyId";
 
     // Project attributes
-    // Last time (in millis from epoch) that a file was loaded
-    public static final String LAST_LOADED_FILE_TS = "lastLoadedFileTs";
     // Last time (in millis from epoch) that the list of "pendingVariantsToAnnotate" was updated
     public static final String LAST_VARIANTS_TO_ANNOTATE_UPDATE_TS = "lastVariantsToAnnotateUpdateTs";
 

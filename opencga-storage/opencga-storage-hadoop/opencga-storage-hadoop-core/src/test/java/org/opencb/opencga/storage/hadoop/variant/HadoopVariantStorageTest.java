@@ -87,6 +87,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageTest;
 import org.opencb.opencga.storage.hadoop.HBaseCompat;
+import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDriver;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchemaManager;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
@@ -97,10 +98,7 @@ import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGene
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintStream;
+import java.io.*;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -528,14 +526,32 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
     class TestSshMrExecutor extends SshMRExecutor {
         private final Configuration configuration;
-
+        private final Logger logger = LoggerFactory.getLogger(TestSshMrExecutor.class);
         public TestSshMrExecutor() {
             this.configuration = new Configuration(TestMRExecutor.staticConfiguration);
         }
 
         @Override
         protected int runRemote(String executable, String[] args, List<String> env, ByteArrayOutputStream outputStream) {
-            Result result = new TestMRExecutor(conf).run(executable, args);
+            PrintStream out = System.out;
+            InputStream in = System.in;
+            Result result;
+            try {
+                if (buildCommand(executable, args).length() > MAX_COMMAND_LINE_ARGS_LENGTH) {
+                    logger.info("Command line is too long. Passing args from stdin'");
+                    StringBuilder sb = new StringBuilder();
+                    for (String arg : args) {
+                        sb.append(arg).append('\n');
+                    }
+                    System.setIn(new ByteArrayInputStream(sb.toString().getBytes()));
+                    result = new TestMRExecutor(conf).run(executable, new String[]{AbstractHBaseDriver.ARGS_FROM_STDIN});
+                } else {
+                    result = new TestMRExecutor(conf).run(executable, args);
+                }
+            } finally {
+                System.setOut(out);
+                System.setIn(in);
+            }
             for (String key : result.getResult().keySet()) {
                 try {
                     outputStream.write((key + "=" + result.getResult().getString(key) + "\n").getBytes(StandardCharsets.UTF_8));

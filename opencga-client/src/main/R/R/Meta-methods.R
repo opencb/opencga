@@ -23,7 +23,7 @@
 #' | api | /{apiVersion}/meta/api | category |
 #' | fail | /{apiVersion}/meta/fail |  |
 #' | model | /{apiVersion}/meta/model | model |
-#' | openapi | /{apiVersion}/meta/openapi | token |
+#' | openapi | /{apiVersion}/meta/openapi | environment, host |
 #' | ping | /{apiVersion}/meta/ping |  |
 #' | status | /{apiVersion}/meta/status |  |
 #'
@@ -62,7 +62,8 @@ setMethod("metaClient", "OpencgaR", function(OpencgaR, endpointName, params=NULL
 
         #' @section Endpoint /{apiVersion}/meta/openapi:
         #' Opencga openapi json.
-        #' @param token List of categories to get API from.
+        #' @param environment Environment of the app.
+        #' @param host Opencga host without environment.
         openapi=fetchOpenCGA(object=OpencgaR, category="meta", categoryId=NULL, subcategory=NULL, subcategoryId=NULL,
                 action="openapi", params=params, httpMethod="GET", as.queryParam=NULL, ...),
 

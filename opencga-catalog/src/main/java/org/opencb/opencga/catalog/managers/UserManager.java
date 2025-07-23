@@ -192,7 +192,6 @@ public class UserManager extends AbstractManager {
                 UserDBAdaptor.QueryParams.CREATION_DATE.key()));
         user.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(user.getModificationDate(),
                 UserDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
-
         user.setInternal(ParamUtils.defaultObject(user.getInternal(), UserInternal::new));
         user.getInternal().setStatus(new UserStatus(InternalStatus.READY));
         user.setQuota(ParamUtils.defaultObject(user.getQuota(), UserQuota::new));
@@ -343,7 +342,7 @@ public class UserManager extends AbstractManager {
 
     public void syncAllUsersOfExternalGroup(String organizationId, String study, String authOrigin, String token) throws CatalogException {
         JwtPayload payload = validateToken(token);
-        authorizationManager.checkIsOpencgaAdministrator(payload);
+        authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, payload.getUserId());
 
         OpenCGAResult<Group> allGroups = catalogManager.getStudyManager().getGroup(study, null, token);
 
@@ -430,7 +429,7 @@ public class UserManager extends AbstractManager {
                 .append("sync", sync)
                 .append("token", token);
         try {
-            authorizationManager.checkIsOpencgaAdministrator(payload);
+            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
 
             ParamUtils.checkParameter(authOrigin, "Authentication origin");
             ParamUtils.checkParameter(remoteGroup, "Remote group");
@@ -838,7 +837,6 @@ public class UserManager extends AbstractManager {
         ParamUtils.checkParameter(password, "password");
 
         String authId = null;
-        String userId = null;
         AuthenticationResponse response = null;
 
         if (StringUtils.isEmpty(organizationId)) {
@@ -857,12 +855,13 @@ public class UserManager extends AbstractManager {
 
         OpenCGAResult<User> userOpenCGAResult = getUserDBAdaptor(organizationId).get(username, INCLUDE_INTERNAL);
         List<Event> eventList = new LinkedList<>();
+        User user = null;
         if (userOpenCGAResult.getNumResults() == 1) {
-            User user = userOpenCGAResult.first();
-            userId = user.getId();
+            user = userOpenCGAResult.first();
+            authId = user.getInternal().getAccount().getAuthentication().getId();
             // Only local OPENCGA users that are not superadmins can be automatically banned or their accounts be expired
             boolean userCanBeBanned = !ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)
-                    && CatalogAuthenticationManager.OPENCGA.equals(user.getInternal().getAccount().getAuthentication().getId());
+                    && CatalogAuthenticationManager.OPENCGA.equals(authId);
             // We check
             if (userCanBeBanned) {
                 eventList.addAll(checkValidUserAccountStatus(username, user));
@@ -907,13 +906,23 @@ public class UserManager extends AbstractManager {
                 try {
                     response = authenticationManager.authenticate(organizationId, username, password);
                     authId = entry.getKey();
-                    userId = authenticationManager.getUserId(response.getToken());
                     break;
                 } catch (CatalogAuthenticationException e) {
                     logger.debug("Attempted authentication failed with {} for user '{}'\n{}", entry.getKey(), username, e.getMessage(), e);
                 }
             }
 
+            if (response != null && !CatalogAuthenticationManager.OPENCGA.equals(authId)
+                    && !CatalogAuthenticationManager.INTERNAL.equals(authId)) {
+                // The user does not exist so we register it
+                user = authenticationFactory.getRemoteUserInformation(organizationId, authId, Collections.singletonList(username))
+                        .get(0);
+                user.setOrganization(organizationId);
+                // Generate a root token to be able to create the user even if the installation is private
+                String rootToken = authenticationFactory.createToken(ParamConstants.ADMIN_ORGANIZATION,
+                        CatalogAuthenticationManager.OPENCGA, OPENCGA);
+                create(user, null, rootToken);
+            }
         }
 
         if (response == null) {
@@ -924,6 +933,7 @@ public class UserManager extends AbstractManager {
 
         auditManager.auditUser(organizationId, username, Enums.Action.LOGIN, username,
                 new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+        String userId = authenticationFactory.getUserId(organizationId, authId, response.getToken());
         if (!CatalogAuthenticationManager.OPENCGA.equals(authId) && !CatalogAuthenticationManager.INTERNAL.equals(authId)) {
             // External authorization
             try {
@@ -931,11 +941,12 @@ public class UserManager extends AbstractManager {
                 getUserDBAdaptor(organizationId).checkId(userId);
             } catch (CatalogDBException e) {
                 // The user does not exist so we register it
-                User user = authenticationFactory.getRemoteUserInformation(organizationId, authId, Collections.singletonList(userId))
+                user = authenticationFactory.getRemoteUserInformation(organizationId, authId, Collections.singletonList(userId))
                         .get(0);
                 user.setOrganization(organizationId);
-                // Generate a root token to be able to create the user even if the installation is private
-                String rootToken = authenticationFactory.createToken(organizationId, CatalogAuthenticationManager.OPENCGA, OPENCGA);
+                // Generate a super admin token to be able to create the user even if the installation is private
+                String rootToken = authenticationFactory.createToken(ParamConstants.ADMIN_ORGANIZATION,
+                        CatalogAuthenticationManager.OPENCGA, OPENCGA);
                 create(user, null, rootToken);
             }
 
@@ -943,9 +954,9 @@ public class UserManager extends AbstractManager {
                 List<String> remoteGroups = authenticationFactory.getRemoteGroups(organizationId, authId, response.getToken());
 
                 // Resync synced groups of user in OpenCGA
-                getStudyDBAdaptor(organizationId).resyncUserWithSyncedGroups(userId, remoteGroups, authId);
+                getStudyDBAdaptor(organizationId).resyncUserWithSyncedGroups(user.getId(), remoteGroups, authId);
             } catch (CatalogException e) {
-                logger.error("Could not update synced groups for user '" + userId + "'\n" + e.getMessage(), e);
+                logger.error("Could not update synced groups for user '{}': {}", user.getId(), e.getMessage(), e);
             }
         }
 
