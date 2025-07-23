@@ -159,6 +159,9 @@ function print_usage() {
   echo "     -d     --docker              FLAG           Publish docker of OpenCGA-enterprise."
   echo "     -p     --docker-tag          FLAG           Tag for docker of OpenCGA-enterprise."
   echo "     -c     --cellbase-db         STRING         Connection to mongodb to test cellbase (host:port)."
+  echo "     -P     --python-client       STRING         Also builds opencga-enterprise python client"
+  echo "     -W     --javascript-client   STRING         Also builds opencga-enterprise javascript client."
+  echo "     -R     --R-client            STRING         Also builds opencga-enterprise R client"
   echo "     -v     --verbose             FLAG           Print verbose logs"
   echo "     -h     --help                FLAG           Print this help and exit"
   echo ""
@@ -287,6 +290,25 @@ function build_opencga() {
         log_summary "$COMMAND opencga test Success!"
       fi
   fi
+  ## if we skip clients, we do not build them
+    if [ "$BUILD_CLIENTS" == "true" ]; then
+      cd "$OPENCGA_HOME_DIR" || exit 2
+      SKIP_CLIENTS=""
+      cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
+      if [ "$PYTHON_CLIENT" == "false" ]; then
+       SKIP_CLIENTS="--skip-python"
+      fi
+      if [ "$R_CLIENT" == "false" ]; then
+       SKIP_CLIENTS="$SKIP_CLIENTS --skip-r"
+      fi
+      if [ "$JAVASCRIPT_CLIENT" == "false" ]; then
+       SKIP_CLIENTS="$SKIP_CLIENTS --skip-javascript"
+      fi
+      cd "$OPENCGA_HOME_DIR" || exit 2
+      echo "Working directory is: $(pwd)"
+      #Do not put quotes in the following command or it will not work
+      ./client-builder.sh --skip-build-opencga $SKIP_CLIENTS
+    fi
 }
 
 # Function to build or/and test the opencga-enterprise
@@ -323,6 +345,22 @@ function build_opencga_enterprise() {
         log_version_summary "opencga-enterprise,$VERSION,$BRANCH"
         log_summary "$COMMAND opencga-enterprise test Success!"
       fi
+  fi
+  ## if we skip clients, we do not build them
+  if [ "$BUILD_CLIENTS" == "true" ]; then
+    SKIP_CLIENTS=""
+    cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
+    if [ "$PYTHON_CLIENT" == "false" ]; then
+     SKIP_CLIENTS="--skip-python"
+    fi
+    if [ "$R_CLIENT" == "false" ]; then
+     SKIP_CLIENTS="$SKIP_CLIENTS --skip-r"
+    fi
+    if [ "$JAVASCRIPT_CLIENT" == "false" ]; then
+     SKIP_CLIENTS="$SKIP_CLIENTS --skip-javascript"
+    fi
+    #Do not put quotes in the following command or it will not work
+    ./client-builder.sh --skip-build-opencga $SKIP_CLIENTS
   fi
 }
 
@@ -664,7 +702,10 @@ COMMAND="build"
 SAVE_REPORTS="false"
 VERSION_SUMMARY=""
 PARAM_SUMMARY=""
-
+BUILD_CLIENTS="false"
+PYTHON_CLIENT="false"
+R_CLIENT="false"
+JAVASCRIPT_CLIENT="false"
 ###################################
 
 ## 2. Read and parse CLI options
@@ -698,6 +739,21 @@ while [[ $# -gt 0 ]]; do
   -s | --test-save-reports)
       SAVE_REPORTS="true"
       COMMAND="test"
+      shift # past argument
+      ;;
+  -P | --python-client)
+      PYTHON_CLIENT="true"
+      BUILD_CLIENTS="true"
+      shift # past argument
+      ;;
+  -R | --R-client)
+      R_CLIENT="true"
+      BUILD_CLIENTS="true"
+      shift # past argument
+      ;;
+  -W | --javascript-client)
+      JAVASCRIPT_CLIENT="true"
+      BUILD_CLIENTS="true"
       shift # past argument
       ;;
   -d | --docker)

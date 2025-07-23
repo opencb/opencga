@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-
+import base64
+import datetime
 import json
 import os
 import sys
@@ -15,6 +16,7 @@ from multiprocessing import Process
 
 app = Flask(__name__)
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
+HOST = {}
 SERVER = None
 TIMEOUT = 60
 
@@ -23,15 +25,20 @@ TIMEOUT = 60
 def secure():
     """Retrieve cookies and writes them in a session file"""
     # Retrieving cookies from query params
+    global HOST
     cookies = {}
-    session_info = {'cookies': cookies}
+    session_info = {'host': HOST['url'], 'attributes': {'cookies': cookies}}
     for key in request.args.keys():
         if key != 'user' and key != 'token':
             cookies[key] = request.args.get(key)
         else:
             session_info[key] = request.args.get(key)
+
+    session_info["login"] = time.strftime("%Y-%m-%d %H:%M:%S")
+    session_info["expirationTime"] = get_jwt_expiration(session_info.get('token'))
+
     # Create session file with cookies
-    create_session_file(session_info)
+    create_session_file(HOST['name'], session_info)
 
     # Stopping server
     global SERVER
@@ -41,13 +48,30 @@ def secure():
     return '<p>You are <b>logged in</b>. You can now close this tab.</p>'
 
 
-def create_session_file(session_info):
+def get_jwt_expiration(jwt_token):
+    # JWT format: header.payload.signature
+    try:
+        payload_b64 = jwt_token.split('.')[1]
+        # Add padding if necessary
+        padding = '=' * (-len(payload_b64) % 4)
+        payload_b64 += padding
+        payload_json = base64.urlsafe_b64decode(payload_b64)
+        payload = json.loads(payload_json)
+        exp = payload.get('exp')
+        if exp is None:
+            return None
+        dt = datetime.datetime.fromtimestamp(exp)
+        return dt.strftime("%Y-%m-%d %H:%M:%S")
+    except Exception:
+        return None
+
+
+def create_session_file(hostname, session_info):
     """Create session file with cookies"""
     out_dir = os.path.join(os.path.expanduser('~'), '.opencga')
     os.makedirs(out_dir, exist_ok=True)
-    out_fpath = open(os.path.join(out_dir, 'session.json'), 'w')
-    out_fpath.write(json.dumps(session_info))
-    out_fpath.close()
+    with open(os.path.join(out_dir, hostname + '_session.json'), 'w') as out_fpath:
+        json.dump(session_info, out_fpath, indent=4)
 
 
 def kill_process(pid):
@@ -76,12 +100,12 @@ def get_host(config_fpath, host_name):
     host = None
     if hosts:
         if len(hosts) == 1:
-            host = hosts[0]['url']
+            host = hosts[0]
         else:
             if host_name:
                 for h in hosts:
                     if h['name'] == host_name:
-                        host = h['url']
+                        host = h
                 if not host:
                     msg = 'Host "{}" not found in "{}".'
                     raise ValueError(msg.format(host_name, config_fpath))
@@ -117,11 +141,12 @@ def main():
         msg = 'Please, use "--client_config_file" or "--host_url" to specify the OpenCGA host'
         raise ValueError(msg)
 
+    global HOST
     # Getting host
     if not host_url:
-        host = get_host(client_config_file, host_name)
+        HOST = get_host(client_config_file, host_name)
     else:
-        host = host_url
+        HOST = {'name': 'opencga', 'url': host_url}
 
     # Disabling Flask startup warnings for not using a WSGI server
     sys.modules['flask.cli'].show_server_banner = lambda *_: None
@@ -134,7 +159,7 @@ def main():
     SERVER.start()
 
     # Opening browser
-    url = host.strip('/') + '/webservices/rest/v2/meta/sso/login?url=http://localhost:5000/secure'
+    url = HOST['url'].strip('/') + '/webservices/rest/v2/meta/sso/login?url=http://localhost:5000/secure'
     webbrowser.open(url, new=2)
 
     # Wait for some time and then kill the server
