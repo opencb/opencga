@@ -154,7 +154,6 @@
         <kryo.version>2.23.0</kryo.version>
         <lombok.version>1.18.30</lombok.version>
         <maven-war-plugin.version>3.4.0</maven-war-plugin.version>
-        <swagger-parser.version>1.0.58</swagger-parser.version>
     </properties>
 
     <scm>
