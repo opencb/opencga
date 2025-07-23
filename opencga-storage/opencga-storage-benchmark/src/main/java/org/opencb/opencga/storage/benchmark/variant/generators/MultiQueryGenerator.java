@@ -40,6 +40,7 @@ public class MultiQueryGenerator extends QueryGenerator {
 
     public static final String MULTI_QUERY = "multi-query";
     public static final String RANDOM_QUERIES_FILE = "randomQueries.yml";
+    public static final String RANDOM_QUERIES_DEFAULT_FILE = "randomQueriesDefault.txt";
     private List<QueryGenerator> generators;
     private RandomQueries randomQueries;
     private Map<String, String> baseQueriesFromCLI;
@@ -78,10 +79,10 @@ public class MultiQueryGenerator extends QueryGenerator {
                     for (String s : extraParam.split(",")) {
                         String[] split = s.split("=", 2);
                         if (split.length != 2) {
-                            int arity = Integer.parseInt(extraParam);
+                            int arity = Integer.parseInt(s);
                             extraParamsMap.put(ARITY, String.valueOf(arity));
                         } else {
-                            extraParamsMap.put(split[0].trim(), split.length > 1 ? split[1].trim() : "");
+                            extraParamsMap.put(split[0].trim(), split[1].trim());
                         }
                     }
                 }

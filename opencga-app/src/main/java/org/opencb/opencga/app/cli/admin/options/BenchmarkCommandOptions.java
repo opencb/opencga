@@ -35,7 +35,7 @@ public class BenchmarkCommandOptions extends org.opencb.opencga.app.cli.GeneralC
         public BenchmarkRunner.ConnectionType connectionType = BenchmarkRunner.ConnectionType.REST;
 
         @Parameter(names = {"-m", "--mode"}, description = "Type of queries to execute: FIXED, RANDOM")
-        public BenchmarkRunner.ExecutionMode executionMode = BenchmarkRunner.ExecutionMode.FIXED;
+        public BenchmarkRunner.ExecutionMode executionMode = BenchmarkRunner.ExecutionMode.RANDOM;
 
         @Parameter(names = {"-r", "--num-repetition"}, description = "Number of repetition to execute.", arity = 1)
         public Integer repetition;

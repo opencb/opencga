@@ -37,6 +37,7 @@ import org.opencb.opencga.storage.benchmark.variant.samplers.VariantStorageEngin
 import org.opencb.opencga.storage.benchmark.variant.samplers.VariantStorageEngineRestSampler;
 import org.opencb.opencga.storage.benchmark.variant.samplers.VariantStorageEngineSampler;
 import org.opencb.opencga.storage.benchmark.variant.samplers.VariantStorageManagerRestSampler;
+import org.opencb.opencga.storage.core.io.plain.StringDataReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,8 +89,7 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
                 break;
             case RANDOM:
                 if (StringUtils.isEmpty(queries)) {
-                    throw new IllegalArgumentException("Please provide execution queries for dynamic mode.");
-//                    readRandomQueriesFromFile(dataDir, queryFile);
+                    queriesList = readRandomQueriesFromFile(dataDir, queryFile);
                 } else {
                     queriesList = Arrays.asList(queries.split(";"));
                 }
@@ -164,6 +164,21 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
             default:
                 throw new IllegalArgumentException("Unknown type " + type);
         }
+    }
+
+    private List<String> readRandomQueriesFromFile(Path dataDir, String queryFile) {
+        Path queryFilePath;
+        if (StringUtils.isEmpty(queryFile)) {
+            queryFilePath = Paths.get(dataDir.toString(), MultiQueryGenerator.RANDOM_QUERIES_DEFAULT_FILE);
+        } else {
+            queryFilePath = Paths.get(queryFile);
+        }
+
+        List<String> queries = new ArrayList<>();
+        for (String line : new StringDataReader(queryFilePath)) {
+            queries.add(line);
+        }
+        return queries;
     }
 
     private List<String> readFixedQueriesIdsFromFile(Path dataDir, String queryFile) {

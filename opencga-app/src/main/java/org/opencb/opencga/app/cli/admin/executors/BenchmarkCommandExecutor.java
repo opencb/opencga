@@ -41,6 +41,7 @@ import org.opencb.opencga.storage.benchmark.variant.samplers.VariantStorageManag
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -79,6 +80,20 @@ public class BenchmarkCommandExecutor extends AdminCommandExecutor {
 
         BenchmarkConfiguration benchmarkConf = storageConfiguration.getBenchmark();
 
+        OpenCGAClient openCGAClient = new OpenCGAClient(
+                new AuthenticationResponse(sessionManager.getSession().getToken(), sessionManager.getSession().getRefreshToken()),
+                clientConfiguration);
+        openCGAClient.setUserId(sessionManager.getSession().getUser());
+        openCGAClient.setThrowExceptionOnError(true);
+        String projectFqn;
+        if (StringUtils.isNotEmpty(options.project)) {
+            projectFqn = openCGAClient.getProjectClient().info(options.project,
+                            new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.FQN.key()))
+                    .firstResult().getFqn();
+        } else {
+            projectFqn = null;
+        }
+
         if (options.repetition != null) {
             benchmarkConf.setNumRepetitions(options.repetition);
         }
@@ -93,8 +108,20 @@ public class BenchmarkCommandExecutor extends AdminCommandExecutor {
         uri = uri.resolve(uri.getPath() + VariantStorageManagerRestSampler.STORAGE_MANAGER_REST_PATH).normalize();
         benchmarkConf.setRest(uri);
 
+        String prefix;
+        if (clientConfiguration.getCurrentHost().getName().isEmpty()
+                || clientConfiguration.getCurrentHost().getName().equals(clientConfiguration.getCurrentHost().getUrl())) {
+            // If the name is the same as the URL, use the URL path as prefix
+            URL url = new URL(clientConfiguration.getCurrentHost().getUrl());
+            String path = url.getPath();
+            prefix = path.split("/")[1];
+        } else {
+            // Otherwise, use the name as prefix
+            prefix = clientConfiguration.getCurrentHost().getName();
+        }
         Path outdirPath = Paths.get(options.outdir == null ? "" : options.outdir,
-                "benchmark_"
+                prefix + "_"
+                        + (projectFqn == null ? "" : projectFqn.replace("@","_") + "_")
                         + TimeUtils.getTime()
                         + "_" + benchmarkConf.getConcurrency() + "x" + benchmarkConf.getNumRepetitions())
                 .toAbsolutePath();
@@ -132,20 +159,9 @@ public class BenchmarkCommandExecutor extends AdminCommandExecutor {
             }
         });
 
-        OpenCGAClient openCGAClient = new OpenCGAClient(
-                new AuthenticationResponse(sessionManager.getSession().getToken(), sessionManager.getSession().getRefreshToken()),
-                clientConfiguration);
-        openCGAClient.setUserId(sessionManager.getSession().getUser());
-        openCGAClient.setThrowExceptionOnError(true);
-        String projectFqn;
-        if (StringUtils.isNotEmpty(options.project)) {
-            projectFqn = openCGAClient.getProjectClient().info(options.project,
-                    new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.FQN.key()))
-                    .firstResult().getFqn();
+        if (projectFqn != null) {
             benchmarkConf.setDatabaseName(projectFqn);
             baseQuery.put(VariantCatalogQueryUtils.PROJECT.key(), projectFqn);
-        } else {
-            projectFqn = null;
         }
         if (options.executionMode == BenchmarkRunner.ExecutionMode.RANDOM) {
             // Edit randomQueries.yml to include project specific data

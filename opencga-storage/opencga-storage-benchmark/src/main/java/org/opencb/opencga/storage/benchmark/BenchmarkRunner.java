@@ -266,5 +266,9 @@ public class BenchmarkRunner {
         out.println("cd " + outdir + "");
         out.println("jmeter -g " + buildOutputFileName() + ".jtl -o Dashboard");
         out.println();
+        out.println("** How To Generate MatPlotLib Charts **");
+        out.println("python3 " + jmeterHome.getParent().resolve("bin").resolve("benchmark_plot_series.py") + " " + outdir.getParent());
+        out.println();
+
     }
 }
