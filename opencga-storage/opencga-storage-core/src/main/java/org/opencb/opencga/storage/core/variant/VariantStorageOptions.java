@@ -113,7 +113,7 @@ public enum VariantStorageOptions implements ConfigurationOption {
     SEARCH_INTERSECT_PARAMS_THRESHOLD("search.intersect.params.threshold", 3), // Minimum number of QueryParams in the query to intersect
     SEARCH_LOAD_BATCH_SIZE("search.load.batchSize", 200),
     SEARCH_LOAD_THREADS("search.load.numThreads", 2),
-    SEARCH_LOAD_SHARDS_PER_NODE("search.load.shardsPerNode", 1),             // Number of shards to create per solr node
+    SEARCH_LOAD_SHARDS_PER_NODE("search.load.shardsPerNode", 2),             // Number of shards to create per solr node
     SEARCH_STATS_FUNCTIONAL_QUERIES_ENABLED("search.stats.functionalQueries.enabled", false),
     SEARCH_STATS_VARIANT_ID_VERSION("search.stats.variantId.version", "v2"),
 
