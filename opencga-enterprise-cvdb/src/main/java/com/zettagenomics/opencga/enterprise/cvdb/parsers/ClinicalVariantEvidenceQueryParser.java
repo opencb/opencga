@@ -30,14 +30,12 @@ public class ClinicalVariantEvidenceQueryParser extends ClinicalQueryParser {
     // Map from clinical variant fields (keys) to Solr indexed fields (values)
     public static Map<String, List<String>> cveToCvesFieldMap;
 
-    public ClinicalVariantEvidenceQueryParser(VariantStorageMetadataManager variantStorageMetadataManager) {
-        super(variantStorageMetadataManager);
+    public ClinicalVariantEvidenceQueryParser(String collectionPrefix, VariantStorageMetadataManager variantStorageMetadataManager) {
+        super(collectionPrefix, variantStorageMetadataManager);
     }
 
     @Override
     public SolrQuery parse(Query query, QueryOptions queryOptions) throws CvdbException {
-        setCollectionNames(queryOptions);
-
         SolrQuery solrQuery = new SolrQuery("*:*");
 
         // Process query options, if necessary

@@ -38,7 +38,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.zettagenomics.opencga.enterprise.cvdb.CollectionNameGenerator.OPENCGA_CVDB_DBPREFIX_KEY;
 import static com.zettagenomics.opencga.enterprise.cvdb.converters.SearchConverter.simpleDateFormat;
 import static com.zettagenomics.opencga.enterprise.cvdb.converters.SearchConverter.solrDateFormat;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
@@ -61,9 +60,9 @@ public class ClinicalQueryParser {
         + " soTermNames, xrefIds, panelId, mois, penetrance, acmgs, tier, clinicalSignificance, drugResponse, traitAssociation,"
         + " functionalEffect, tumorigenesis, otherClassifications, rolesInCancer, reviewAcmgs, reviewTier, reviewClinicalSignificance";
 
-    protected CollectionNameGenerator collectionNameGenerator;
     private SolrQueryParser solrParser;
 
+    protected String collectionPrefix;
     protected String caCollectionName;
     protected String ciCollectionName;
     protected String cvCollectionName;
@@ -72,28 +71,19 @@ public class ClinicalQueryParser {
 
     protected static Logger logger = LoggerFactory.getLogger(ClinicalQueryParser.class);
 
-    protected ClinicalQueryParser(VariantStorageMetadataManager variantStorageMetadataManager) {
-        this.collectionNameGenerator = new CollectionNameGenerator(null);
+    protected ClinicalQueryParser(String collectionPrefix, VariantStorageMetadataManager variantStorageMetadataManager) {
+        this.collectionPrefix = collectionPrefix;
+        this.caCollectionName = CollectionNameGenerator.getClinicalAnalysisCollectionName(collectionPrefix);
+        this.ciCollectionName = CollectionNameGenerator.getClinicalInterpretationCollectionName(collectionPrefix);
+        this.cvCollectionName = CollectionNameGenerator.getClinicalVariantCollectionName(collectionPrefix);
+        this.cveCollectionName = CollectionNameGenerator.getClinicalVariantEvidenceCollectionName(collectionPrefix);
+        this.viewerCollectionName = CollectionNameGenerator.getClinicalViewerCollectionName(collectionPrefix);
+
         this.solrParser = new SolrQueryParser(variantStorageMetadataManager);
     }
 
     public SolrQuery parse(Query query, QueryOptions queryOptions) throws CvdbException {
         return solrParser.parse(query, queryOptions);
-    }
-
-    protected void setCollectionNames(QueryOptions queryOptions) throws CvdbException {
-        if (!queryOptions.containsKey(OPENCGA_CVDB_DBPREFIX_KEY)
-                || StringUtils.isEmpty(queryOptions.getString(OPENCGA_CVDB_DBPREFIX_KEY))) {
-            throw new CvdbException("Missing CVDB collection prefix in query options");
-        }
-
-        String collectionPrefix = queryOptions.getString(OPENCGA_CVDB_DBPREFIX_KEY);
-
-        caCollectionName = collectionNameGenerator.getClinicalAnalysisCollectionName(collectionPrefix);
-        ciCollectionName = collectionNameGenerator.getClinicalInterpretationCollectionName(collectionPrefix);
-        cvCollectionName = collectionNameGenerator.getClinicalVariantCollectionName(collectionPrefix);
-        cveCollectionName = collectionNameGenerator.getClinicalVariantEvidenceCollectionName(collectionPrefix);
-        viewerCollectionName = collectionNameGenerator.getClinicalViewerCollectionName(collectionPrefix);
     }
 
     public List<String> clinicalAnalysisFilters(Query query) {

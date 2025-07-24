@@ -37,14 +37,12 @@ public class ClinicalVariantQueryParser extends ClinicalQueryParser {
 
     private SolrQueryParser solrQueryParser;
 
-    public ClinicalVariantQueryParser(VariantStorageMetadataManager variantStorageMetadataManager) {
-        super(variantStorageMetadataManager);
+    public ClinicalVariantQueryParser(String collectionPrefix, VariantStorageMetadataManager variantStorageMetadataManager) {
+        super(collectionPrefix, variantStorageMetadataManager);
     }
 
     @Override
     public SolrQuery parse(Query query, QueryOptions queryOptions) throws CvdbException {
-        setCollectionNames(queryOptions);
-
         SolrQuery solrQuery = new SolrQuery("*:*");
 
         // Process query options, if necessary

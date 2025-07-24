@@ -48,7 +48,6 @@ public class CollectionNameGenerator {
             CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX,
             CLINICAL_VIEWERS_COLLECTION_SUFFIX);
 
-    public static final String OPENCGA_CVDB_DBPREFIX_KEY = "OPENCGA_CVDB_DBPREFIX";
     public static final String CVDB_SEP = "_";
 
     private CatalogManager catalogManager;
@@ -59,10 +58,9 @@ public class CollectionNameGenerator {
         this.collectionPrefixMap = new ConcurrentHashMap<>();
     }
 
-    public String getCollectionPrefix(Query query, String token) throws CatalogException {
-        String projectId = query.getString(PROJECT_PARAM_NAME);
+    public String getCollectionPrefix(String projectId, String token) throws CatalogException {
         if (StringUtils.isEmpty(projectId)) {
-            throw new CatalogException("Missing project ID in query: " + query);
+            throw new CatalogException("Could not get CVDB collection prefix since project ID is empty");
         }
 
         // Get organization
@@ -93,7 +91,7 @@ public class CollectionNameGenerator {
         return collectionPrefixMap.get(key);
     }
 
-    public List<String> getCollectionSuffixes() {
+    public static List<String> getCollectionSuffixes() {
         return COLLECTION_SUFFIXES;
     }
 
@@ -102,47 +100,47 @@ public class CollectionNameGenerator {
                 .map(suffix -> getCollectionName(collectionPrefix, suffix)).collect(Collectors.toList());
     }
 
-    public String getClinicalAnalysisCollectionName(Query query, String token) throws CatalogException {
-        return getCollectionName(getCollectionPrefix(query, token), CLINICAL_ANALYSES_COLLECTION_SUFFIX);
+    public String getClinicalAnalysisCollectionName(String projectId, String token) throws CatalogException {
+        return getCollectionName(getCollectionPrefix(projectId, token), CLINICAL_ANALYSES_COLLECTION_SUFFIX);
     }
 
-    public String getClinicalAnalysisCollectionName(String prefix) {
+    public static String getClinicalAnalysisCollectionName(String prefix) {
         return getCollectionName(prefix, CLINICAL_ANALYSES_COLLECTION_SUFFIX);
     }
 
-    public String getClinicalInterpretationCollectionName(Query query, String token) throws CatalogException {
-        return getCollectionName(getCollectionPrefix(query, token), INTERPRETATIONS_COLLECTION_SUFFIX);
+    public String getClinicalInterpretationCollectionName(String projectId, String token) throws CatalogException {
+        return getCollectionName(getCollectionPrefix(projectId, token), INTERPRETATIONS_COLLECTION_SUFFIX);
     }
 
-    public String getClinicalInterpretationCollectionName(String prefix) {
+    public static String getClinicalInterpretationCollectionName(String prefix) {
         return getCollectionName(prefix, INTERPRETATIONS_COLLECTION_SUFFIX);
     }
 
-    public String getClinicalVariantCollectionName(Query query, String token) throws CatalogException {
-        return getCollectionName(getCollectionPrefix(query, token), CLINICAL_VARIANTS_COLLECTION_SUFFIX);
+    public String getClinicalVariantCollectionName(String projectId, String token) throws CatalogException {
+        return getCollectionName(getCollectionPrefix(projectId, token), CLINICAL_VARIANTS_COLLECTION_SUFFIX);
     }
 
-    public String getClinicalVariantCollectionName(String prefix) {
+    public static String getClinicalVariantCollectionName(String prefix) {
         return getCollectionName(prefix, CLINICAL_VARIANTS_COLLECTION_SUFFIX);
     }
 
-    public String getClinicalVariantEvidenceCollectionName(Query query, String token) throws CatalogException {
-        return getCollectionName(getCollectionPrefix(query, token), CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX);
+    public String getClinicalVariantEvidenceCollectionName(String projectId, String token) throws CatalogException {
+        return getCollectionName(getCollectionPrefix(projectId, token), CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX);
     }
 
-    public String getClinicalVariantEvidenceCollectionName(String prefix) {
+    public static String getClinicalVariantEvidenceCollectionName(String prefix) {
         return getCollectionName(prefix, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX);
     }
 
-    public String getClinicalViewerCollectionName(Query query, String token) throws CatalogException {
-        return getCollectionName(getCollectionPrefix(query, token), CLINICAL_VIEWERS_COLLECTION_SUFFIX);
+    public String getClinicalViewerCollectionName(String projectId, String token) throws CatalogException {
+        return getCollectionName(getCollectionPrefix(projectId, token), CLINICAL_VIEWERS_COLLECTION_SUFFIX);
     }
 
-    public String getClinicalViewerCollectionName(String prefix) {
+    public static String getClinicalViewerCollectionName(String prefix) {
         return getCollectionName(prefix, CLINICAL_VIEWERS_COLLECTION_SUFFIX);
     }
 
-    public String getCollectionName(String prefix, String suffix) {
+    public static String getCollectionName(String prefix, String suffix) {
         return prefix + CVDB_SEP + suffix;
     }
 }

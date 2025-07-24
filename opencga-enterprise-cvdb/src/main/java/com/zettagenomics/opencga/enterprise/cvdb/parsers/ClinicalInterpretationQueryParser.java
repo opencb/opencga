@@ -31,14 +31,12 @@ public class ClinicalInterpretationQueryParser extends ClinicalQueryParser {
     // Map from clinical interpretation fields (keys) to Solr indexed fields (values)
     public static Map<String, List<String>> ciToCisFieldMap;
 
-    public ClinicalInterpretationQueryParser(VariantStorageMetadataManager variantStorageMetadataManager) {
-        super(variantStorageMetadataManager);
+    public ClinicalInterpretationQueryParser(String collectionPrefix, VariantStorageMetadataManager variantStorageMetadataManager) {
+        super(collectionPrefix, variantStorageMetadataManager);
     }
 
     @Override
     public SolrQuery parse(Query query, QueryOptions queryOptions) throws CvdbException {
-        setCollectionNames(queryOptions);
-
         SolrQuery solrQuery = new SolrQuery("*:*");
 
         // Process query options, if necessary
