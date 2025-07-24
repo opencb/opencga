@@ -82,6 +82,17 @@ if ! $SKIP_RCLIENT; then
   echo ">> Building OpenCGA R client..."
   R_DIR="$CLIENTS_DIR/R"
   mkdir -p "$R_DIR"
+  # Path where the Python helper should live inside the R package
+  TARGET="./opencga-client/src/main/R/inst/python/sso_login.py"
+  # If the target file doesn't exist, create its directory and copy it in
+  if [[ ! -f "$TARGET" ]]; then
+    echo "'$TARGET' not found – creating directory and copying 'python/sso_login.py'..."
+    mkdir -p "$(dirname "$TARGET")"
+    cp "./opencga-client/src/main/python/sso_login.py" "$TARGET"
+  else
+    echo "'$TARGET' already exists – skipping copy."
+  fi
+
   cp -r ./opencga-client/src/main/R $CLIENTS_DIR
   R_VERSION=$(echo "$VERSION" | sed 's/-SNAPSHOT/.9000/g')
   echo "Calculated R Version: $R_VERSION"
