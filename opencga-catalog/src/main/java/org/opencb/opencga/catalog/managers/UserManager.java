@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -894,7 +895,7 @@ public class UserManager extends AbstractManager {
                     response = authenticationManager.authenticate(organizationId, username, password);
                     authId = entry.getKey();
                     break;
-                } catch (CatalogAuthenticationException e) {
+                } catch (NotImplementedException | CatalogAuthenticationException e) {
                     logger.debug("Attempted authentication failed with {} for user '{}'\n{}", entry.getKey(), username, e.getMessage(), e);
                 }
             }
