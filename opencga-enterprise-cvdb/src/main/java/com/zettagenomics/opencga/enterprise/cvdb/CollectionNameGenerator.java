@@ -73,7 +73,7 @@ public class CollectionNameGenerator {
     }
 
     public String getCollectionPrefix(String organizationId, String projectId, String token) throws CatalogException {
-        String key = organizationId + "===" + projectId;
+        String key = organizationId + ":" + projectId;
         if (!collectionPrefixMap.containsKey(key)) {
             QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES_CVDB.key());
             Project project = catalogManager.getProjectManager().get(projectId, queryOptions, token).first();
