@@ -2,9 +2,9 @@ package com.zettagenomics.opencga.enterprise.cvdb;
 
 import com.zettagenomics.opencga.enterprise.core.GitUtils;
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
-import com.zettagenomics.opencga.enterprise.cvdb.parsers.CollectionPrefixUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -23,8 +23,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
+import java.util.stream.Collectors;
 
-import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.*;
 import static org.junit.Assert.fail;
 
 public class CvdbSolrExtenalResource extends ExternalResource {
@@ -83,12 +84,12 @@ public class CvdbSolrExtenalResource extends ExternalResource {
         String solrHome = rootDir.resolve("solr").toString();
 
         if (embeded) {
-            solrClient = create(solrHome, rootDir.resolve("configsets").toString(),
-                    CollectionPrefixUtils.getCollectionName(collectionPrefix, CLINICAL_ANALYSES_COLLECTION_SUFFIX)
-                            + "," + CollectionPrefixUtils.getCollectionName(collectionPrefix, INTERPRETATIONS_COLLECTION_SUFFIX)
-                            + "," + CollectionPrefixUtils.getCollectionName(collectionPrefix, CLINICAL_VARIANTS_COLLECTION_SUFFIX)
-                            + "," + CollectionPrefixUtils.getCollectionName(collectionPrefix, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX)
-                            + "," + CollectionPrefixUtils.getCollectionName(collectionPrefix, CLINICAL_VIEWERS_COLLECTION_SUFFIX));
+            CollectionNameGenerator collectionNameGenerator = new CollectionNameGenerator(null);
+            List<String> suffixes = collectionNameGenerator.getCollectionSuffixes();
+            // Given the suffixes, create a string with the collection names separated by commas
+            String name = StringUtils.join(suffixes.stream().map(
+                    s -> collectionNameGenerator.getCollectionName(collectionPrefix, s)).collect(Collectors.toList()), ",");
+            solrClient = create(solrHome, rootDir.resolve("configsets").toString(), name);
         } else {
             SolrManager solrManager = new SolrManager(solrHost, solrMode, solrTimeout);
             this.solrClient = solrManager.getSolrClient();

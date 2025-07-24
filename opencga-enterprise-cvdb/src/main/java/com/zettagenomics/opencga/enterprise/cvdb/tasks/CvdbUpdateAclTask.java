@@ -3,7 +3,6 @@ package com.zettagenomics.opencga.enterprise.cvdb.tasks;
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
-import com.zettagenomics.opencga.enterprise.cvdb.parsers.CollectionPrefixUtils;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbUpdateAclTaskParams;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -82,9 +81,7 @@ public class CvdbUpdateAclTask extends OpenCgaToolScopeStudy {
         EnterpriseConfiguration enterpriseConfiguration = EnterpriseConfiguration.load(getOpencgaHome());
         cvdbEngine = new CvdbSolrEngine(enterpriseConfiguration.getCvdb(), catalogManager, null);
         try {
-            collectionPrefix = CollectionPrefixUtils.getInstance(catalogManager).getCollectionPrefix(organizationId,
-                    project.getId(), token);
-
+            collectionPrefix = cvdbEngine.getCollectionNameGenerator().getCollectionPrefix(organizationId, project.getId(), token);
             if (!cvdbEngine.existCollections(collectionPrefix)) {
                 cvdbEngine.createCollections(project.getFqn(), collectionPrefix, token);
             }

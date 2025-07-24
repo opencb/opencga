@@ -3,7 +3,6 @@ package com.zettagenomics.opencga.enterprise.cvdb;
 import com.zettagenomics.opencga.enterprise.cvdb.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import com.zettagenomics.opencga.enterprise.cvdb.models.CvdbIndexResult;
-import com.zettagenomics.opencga.enterprise.cvdb.parsers.CollectionPrefixUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.DataResult;
@@ -36,6 +35,7 @@ import static org.opencb.commons.datastore.solr.FacetQueryParser.FACET_SEPARATOR
 public class ClinicalAggregationTest {
 
     protected static CvdbSolrEngine cvdbEngine;
+    protected static CollectionNameGenerator collectionNameGenerator;
     protected static String organizationId = "test";
     protected static String projectId = "project1";
     protected static Study study;
@@ -62,13 +62,14 @@ public class ClinicalAggregationTest {
         setUpCatalogManager(catalogManager);
 
         // CVDB
-        String collectionPrefix = CollectionPrefixUtils.getInstance(catalogManager).getCollectionPrefix(organizationId, projectId,
-                userToken);
+        collectionNameGenerator = new CollectionNameGenerator(catalogManager);
+        String collectionPrefix = collectionNameGenerator.getCollectionPrefix(organizationId, projectId, userToken);
         cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, organizationId, projectId, collectionPrefix);
         cvdbSolrExternalResource.before();
 
         cvdbEngine = cvdbSolrExternalResource.configure();
         cvdbEngine.setCatalogManager(catalogManager);
+        cvdbEngine.setCollectionNameGenerator(collectionNameGenerator);
         cvdbEngine.setVariantStorageMetadataManager(new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory()));
 
         if (!cvdbEngine.existCollections(collectionPrefix)) {

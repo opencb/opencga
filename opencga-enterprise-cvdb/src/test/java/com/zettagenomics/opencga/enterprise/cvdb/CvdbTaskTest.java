@@ -1,7 +1,6 @@
 package com.zettagenomics.opencga.enterprise.cvdb;
 
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
-import com.zettagenomics.opencga.enterprise.cvdb.parsers.CollectionPrefixUtils;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.CvdbIndexTask;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbIndexTaskParams;
 import org.junit.*;
@@ -64,7 +63,8 @@ public class CvdbTaskTest {
         setUpCatalogManager(catalogManager);
 
         // CVBD
-        String collectionPrefix = CollectionPrefixUtils.getInstance(catalogManager).getCollectionPrefix(organizationId, projectId, sessionIdUser);
+        CollectionNameGenerator collectionNameGenerator = new CollectionNameGenerator(catalogManager);
+        String collectionPrefix = collectionNameGenerator.getCollectionPrefix(organizationId, projectId, sessionIdUser);
         cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, organizationId, projectId, collectionPrefix);
         cvdbSolrExternalResource.before();
 

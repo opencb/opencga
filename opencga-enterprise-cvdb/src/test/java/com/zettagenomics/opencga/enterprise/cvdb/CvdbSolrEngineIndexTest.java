@@ -5,7 +5,6 @@ import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import com.zettagenomics.opencga.enterprise.cvdb.iterators.ClinicalSolrIterator;
 import com.zettagenomics.opencga.enterprise.cvdb.models.ClinicalVariantSearch;
 import com.zettagenomics.opencga.enterprise.cvdb.models.CvdbIndexResult;
-import com.zettagenomics.opencga.enterprise.cvdb.parsers.CollectionPrefixUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -46,7 +45,6 @@ import java.util.stream.Collectors;
 
 import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.PROJECT_PARAM_NAME;
 import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.STUDY_PARAM_NAME;
-import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.CLINICAL_ANALYSES_COLLECTION_SUFFIX;
 import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.ADMIN_PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.OpenCGAEnterpriseCatalogManagerExternalResource.PASSWORD;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.CA_ID_NAME;
@@ -58,6 +56,8 @@ import static org.opencb.commons.datastore.core.QueryOptions.LIMIT;
 public class CvdbSolrEngineIndexTest {
 
     protected CvdbSolrEngine cvdbEngine;
+    protected CollectionNameGenerator collectionNameGenerator;
+    protected String collectionPrefix;
     protected String organizationId = "test";
     protected String projectId = "project1";
     protected Study study;
@@ -83,13 +83,14 @@ public class CvdbSolrEngineIndexTest {
         setUpCatalogManager(catalogManager);
 
         // CVDB
-        String collectionPrefix = CollectionPrefixUtils.getInstance(catalogManager).getCollectionPrefix(organizationId, projectId,
-                userToken);
+        collectionNameGenerator = new CollectionNameGenerator(catalogManager);
+        collectionPrefix = collectionNameGenerator.getCollectionPrefix(organizationId, projectId, userToken);
         cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, organizationId, projectId, collectionPrefix);
         cvdbSolrExternalResource.before();
 
         cvdbEngine = cvdbSolrExternalResource.configure();
         cvdbEngine.setCatalogManager(catalogManager);
+        cvdbEngine.setCollectionNameGenerator(collectionNameGenerator);
         cvdbEngine.setVariantStorageMetadataManager(new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory()));
 
         if (!cvdbEngine.existCollections(collectionPrefix)) {
@@ -130,10 +131,7 @@ public class CvdbSolrEngineIndexTest {
         solrQuery.setRows(100);
 
         // Execute the Solr query
-        String collectionPrefix = CollectionPrefixUtils.getInstance(catalogManager).getCollectionPrefix(organizationId, projectId,
-                userToken);
-        QueryResponse response = cvdbEngine.getSolrClient().query(CollectionPrefixUtils.getCollectionName(collectionPrefix,
-                        CLINICAL_ANALYSES_COLLECTION_SUFFIX),
+        QueryResponse response = cvdbEngine.getSolrClient().query(collectionNameGenerator.getClinicalAnalysisCollectionName(collectionPrefix),
                 solrQuery);
 
         // Print out the results
@@ -162,10 +160,7 @@ public class CvdbSolrEngineIndexTest {
         solrQuery.setRows(100);
 
         // Execute the Solr query
-        String collectionPrefix = CollectionPrefixUtils.getInstance(catalogManager).getCollectionPrefix(organizationId, projectId,
-                userToken);
-        QueryResponse response = cvdbEngine.getSolrClient().query(CollectionPrefixUtils.getCollectionName(collectionPrefix,
-                        CLINICAL_ANALYSES_COLLECTION_SUFFIX), solrQuery);
+        QueryResponse response = cvdbEngine.getSolrClient().query(collectionNameGenerator.getClinicalAnalysisCollectionName(collectionPrefix), solrQuery);
 
         // Print out the results
         System.out.println("Number of clinical analysis: " + response.getResults().getNumFound());
@@ -206,10 +201,7 @@ public class CvdbSolrEngineIndexTest {
         solrQuery.setRows(100);
 
         // Execute the Solr query
-        String collectionPrefix = CollectionPrefixUtils.getInstance(catalogManager).getCollectionPrefix(organizationId, projectId,
-                userToken);
-        QueryResponse response = cvdbEngine.getSolrClient().query(CollectionPrefixUtils.getCollectionName(collectionPrefix,
-                        CLINICAL_ANALYSES_COLLECTION_SUFFIX), solrQuery);
+        QueryResponse response = cvdbEngine.getSolrClient().query(collectionNameGenerator.getClinicalAnalysisCollectionName(collectionPrefix), solrQuery);
 
         // Print out the results
         System.out.println("Number of clinical analysis: " + response.getResults().getNumFound());

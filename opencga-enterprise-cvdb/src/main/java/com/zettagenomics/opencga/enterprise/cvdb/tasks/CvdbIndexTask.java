@@ -4,7 +4,6 @@ import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfigu
 import com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import com.zettagenomics.opencga.enterprise.cvdb.models.CvdbIndexResult;
-import com.zettagenomics.opencga.enterprise.cvdb.parsers.CollectionPrefixUtils;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbIndexTaskParams;
 import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.commons.datastore.core.Query;
@@ -59,8 +58,7 @@ public class CvdbIndexTask extends OpenCgaToolScopeStudy {
         EnterpriseConfiguration enterpriseConfiguration = EnterpriseConfiguration.load(getOpencgaHome());
         cvdbEngine = new CvdbSolrEngine(enterpriseConfiguration.getCvdb(), catalogManager, null);
         try {
-            String collectionPrefix = CollectionPrefixUtils.getInstance(catalogManager).getCollectionPrefix(organizationId, project.getId(),
-                    token);
+            String collectionPrefix = cvdbEngine.getCollectionNameGenerator().getCollectionPrefix(organizationId, project.getId(), token);
             if (!cvdbEngine.existCollections(collectionPrefix)) {
                 cvdbEngine.createCollections(project.getFqn(), collectionPrefix, token);
             }
