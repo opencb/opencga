@@ -108,8 +108,18 @@ if ! $SKIP_PYTHON; then
   echo "Updating setup.py with version ${PYOPENCGA_VERSION}"
   sed -i "s/PYOPENCGA_VERSION/${PYOPENCGA_VERSION}/" "$CLIENTS_DIR/python/setup.py"
 
-  python3 -m pip install --upgrade pip
-  pip install --upgrade setuptools packaging
+  # ───────────────────────────────────────────────────────────────────
+  # 1) Create and activate an isolated virtual environment
+  VENV_DIR="$PYTHON_DIR/.venv"
+  python3 -m venv "$VENV_DIR"
+  . "$VENV_DIR/bin/activate"
+
+  # 2) Upgrade pip, setuptools, and wheel inside the venv
+  pip install --upgrade pip setuptools wheel
+  pip install packaging requests
+
+  # ───────────────────────────────────────────────────────────────────
+
   ./build/clients/python/python-build.sh build
   PYPY_VERSION=$(python3 opencga-app/app/scripts/calculate_pypi_version.py "$VERSION")
   echo ">> Compressing OpenCGA Python client..."
