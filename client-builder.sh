@@ -90,7 +90,7 @@ if ! $SKIP_R; then
   else
     echo "'$TARGET' already exists – skipping copy."
   fi
-  cp -r "$R_SOURCE_DIR" "$CLIENTS_DIR"
+  cp -rL "$R_SOURCE_DIR" "$CLIENTS_DIR"
   # If Version is a SNAPSHOT, we need to replace it with a version that R can understand
   R_VERSION=$(echo "$VERSION" | sed 's/-SNAPSHOT/.9000/g')
   echo "Calculated R Version: $R_VERSION"
