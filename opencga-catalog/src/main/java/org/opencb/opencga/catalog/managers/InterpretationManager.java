@@ -334,7 +334,8 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             for (ClinicalStatusValue clinicalStatusValue : clinicalStatusValues) {
                 if (interpretation.getStatus().getId().equals(clinicalStatusValue.getId())
                         && (clinicalStatusValue.getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED
-                        || clinicalStatusValue.getType() == ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE)) {
+                        || clinicalStatusValue.getType() == ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE
+                        || clinicalStatusValue.getType() == ClinicalStatusValue.ClinicalStatusType.REJECTED)) {
                     String msg = "Interpretation '" + interpretation.getId() + "' created with status '"
                             + interpretation.getStatus().getId() + "', which is of type " + clinicalStatusValue.getType()
                             + ". Automatically locking Interpretation.";
@@ -939,7 +940,8 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 //                    + " the Interpretation.");
 //        }
         if (clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED
-                || clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE) {
+                || clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE
+                || clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.REJECTED) {
             throw new CatalogException("Cannot update the Interpretation. Case status is " + clinicalAnalysis.getStatus().getType());
         }
 
@@ -947,15 +949,16 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 .getInterpretation();
         // Get the interpretation status that are CLOSED, INCONCLUSIVE and DONE
         Set<String> closedStatus = new HashSet<>();
-        Set<String> inconclusiveStatus = new HashSet<>();
+        Set<String> inconclusiveOrRejectedStatus = new HashSet<>();
         Set<String> doneStatus = new HashSet<>();
         for (ClinicalStatusValue clinicalStatusValue : interpretationStudyConfiguration.getStatus()) {
             if (clinicalStatusValue.getType().equals(ClinicalStatusValue.ClinicalStatusType.CLOSED)) {
                 closedStatus.add(clinicalStatusValue.getId());
             } else if (clinicalStatusValue.getType().equals(ClinicalStatusValue.ClinicalStatusType.DONE)) {
                 doneStatus.add(clinicalStatusValue.getId());
-            } else if (clinicalStatusValue.getType().equals(ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE)) {
-                inconclusiveStatus.add(clinicalStatusValue.getId());
+            } else if (clinicalStatusValue.getType().equals(ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE)
+                    || clinicalStatusValue.getType().equals(ClinicalStatusValue.ClinicalStatusType.REJECTED)) {
+                inconclusiveOrRejectedStatus.add(clinicalStatusValue.getId());
             }
         }
 
@@ -968,15 +971,17 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 || interpretation.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED
                 || interpretation.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.DONE
                 || interpretation.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE
+                || interpretation.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.REJECTED
                 || updateParams.getLocked() != null
                 || (updateParams.getStatus() != null && (closedStatus.contains(updateParams.getStatus().getId())
                 || doneStatus.contains(updateParams.getStatus().getId())))) {
             authorizationManager.checkClinicalAnalysisPermission(organizationId, study.getUid(), clinicalAnalysis.getUid(), userId,
                     ClinicalAnalysisPermissions.ADMIN);
 
-            // Current status is of type CLOSED or INCONCLUSIVE
+            // Current status is of type CLOSED, INCONCLUSIVE or REJECTED
             if (interpretation.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED
-                || interpretation.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE) {
+                    || interpretation.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE
+                    || interpretation.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.REJECTED) {
                 // The only allowed action is to change the status
                 if (updateParams.getStatus() == null || StringUtils.isEmpty(updateParams.getStatus().getId())) {
                     throw new CatalogException("Cannot update a Interpretation with a " + interpretation.getStatus().getType()
@@ -984,8 +989,9 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                             + "to perform further updates on the Interpretation.");
                 } else if ((interpretation.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED
                         && closedStatus.contains(updateParams.getStatus().getId()))
-                        || (interpretation.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE
-                        && inconclusiveStatus.contains(updateParams.getStatus().getId()))) {
+                        || ((interpretation.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE
+                        || interpretation.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.REJECTED)
+                        && inconclusiveOrRejectedStatus.contains(updateParams.getStatus().getId()))) {
                     // Users should be able to change from one "CLOSED" status to a different one but we should still control that no
                     // further modifications are made
                     if (parameters.size() > 1) {
@@ -1120,7 +1126,8 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 for (ClinicalStatusValue clinicalStatusValue : clinicalStatusValues) {
                     if (interpretation.getStatus().getId().equals(clinicalStatusValue.getId())
                             && (clinicalStatusValue.getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED
-                            || clinicalStatusValue.getType() == ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE)) {
+                            || clinicalStatusValue.getType() == ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE
+                            || clinicalStatusValue.getType() == ClinicalStatusValue.ClinicalStatusType.REJECTED)) {
                         String msg = "User '" + userId + "' changed case '" + interpretation.getId() + "' to status '"
                                 + updateParams.getStatus().getId() + "', which is of type " + clinicalStatusValue.getType()
                                 + ". Automatically locking Interpretation";

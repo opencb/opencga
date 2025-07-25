@@ -11,7 +11,8 @@ public class ClinicalStatusValue {
         ACTIVE,
         DONE,
         CLOSED,
-        INCONCLUSIVE
+        INCONCLUSIVE,
+        REJECTED
     }
 
     public ClinicalStatusValue() {

@@ -37,8 +37,8 @@ public class ClinicalAnalysisStudyConfiguration {
     }
 
     public static ClinicalAnalysisStudyConfiguration defaultConfiguration() {
-        List<ClinicalStatusValue> clinicalStatusValueList = new ArrayList<>(4);
-        List<ClinicalStatusValue> interpretationStatusList = new ArrayList<>(3);
+        List<ClinicalStatusValue> clinicalStatusValueList = new ArrayList<>(8);
+        List<ClinicalStatusValue> interpretationStatusList = new ArrayList<>(6);
         List<ClinicalPriorityValue> priorities = new ArrayList<>(5);
         List<ClinicalConsent> clinicalConsentList = new ArrayList<>();
         List<ClinicalTierConfiguration> clinicalTierConfigurationList = new ArrayList<>(3);
@@ -48,17 +48,25 @@ public class ClinicalAnalysisStudyConfiguration {
                         ClinicalStatusValue.ClinicalStatusType.NOT_STARTED)
         );
         clinicalStatusValueList.add(
-                new ClinicalStatusValue("READY_FOR_REPORT", "The Interpretation is finished and it is to create the report",
+                new ClinicalStatusValue("IN_PROGRESS", "The Clinical Analysis is in progress",
+                        ClinicalStatusValue.ClinicalStatusType.ACTIVE)
+        );
+        clinicalStatusValueList.add(
+                new ClinicalStatusValue("QUALITY_CONTROL", "The Clinical Analysis is in quality control",
                         ClinicalStatusValue.ClinicalStatusType.ACTIVE)
         );
         clinicalStatusValueList.add(
                 new ClinicalStatusValue("DONE", "The Clinical Analysis is done", ClinicalStatusValue.ClinicalStatusType.DONE)
         );
         clinicalStatusValueList.add(
+                new ClinicalStatusValue("UNDER_REVIEW", "The Clinical Analysis is under review",
+                        ClinicalStatusValue.ClinicalStatusType.DONE)
+        );
+        clinicalStatusValueList.add(
                 new ClinicalStatusValue("CLOSED", "The Clinical Analysis is closed", ClinicalStatusValue.ClinicalStatusType.CLOSED)
         );
         clinicalStatusValueList.add(
-                new ClinicalStatusValue("REJECTED", "The Clinical Analysis is rejected", ClinicalStatusValue.ClinicalStatusType.CLOSED)
+                new ClinicalStatusValue("REJECTED", "The Clinical Analysis is rejected", ClinicalStatusValue.ClinicalStatusType.REJECTED)
         );
         clinicalStatusValueList.add(
                 new ClinicalStatusValue("INCONCLUSIVE", "No conclusions can be extracted from the Clinical Analysis",
@@ -69,8 +77,8 @@ public class ClinicalAnalysisStudyConfiguration {
         interpretationStatusList.add(new ClinicalStatusValue("IN_PROGRESS", "Interpretation in progress", ClinicalStatusValue.ClinicalStatusType.ACTIVE));
         interpretationStatusList.add(new ClinicalStatusValue("DONE", "Interpretation done", ClinicalStatusValue.ClinicalStatusType.DONE));
         interpretationStatusList.add(new ClinicalStatusValue("READY", "Interpretation ready", ClinicalStatusValue.ClinicalStatusType.CLOSED));
-        interpretationStatusList.add(new ClinicalStatusValue("REJECTED", "Interpretation rejected", ClinicalStatusValue.ClinicalStatusType.CLOSED));
         interpretationStatusList.add(new ClinicalStatusValue("INCONCLUSIVE", "Interpretation inconclusive", ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE));
+        interpretationStatusList.add(new ClinicalStatusValue("REJECTED", "Interpretation rejected", ClinicalStatusValue.ClinicalStatusType.REJECTED));
 
         priorities.add(new ClinicalPriorityValue("URGENT", "Highest priority of all", 1, false));
         priorities.add(new ClinicalPriorityValue("HIGH", "Second highest priority of all", 2, false));

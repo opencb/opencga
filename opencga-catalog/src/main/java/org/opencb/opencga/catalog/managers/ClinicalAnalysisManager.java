@@ -628,10 +628,11 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
                             clinicalAnalysis.getInternal().setCvdbIndex(cvdbIndexStatus);
 
                             events.add(new Event(Event.Type.INFO, clinicalAnalysis.getId(), msg));
-                        } else if (clinicalStatusValue.getType() == ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE) {
+                        } else if (clinicalStatusValue.getType() == ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE
+                                || clinicalStatusValue.getType() == ClinicalStatusValue.ClinicalStatusType.REJECTED) {
                             String msg = "Case '" + clinicalAnalysis.getId() + "' created with status '"
-                                    + clinicalAnalysis.getStatus().getId() + "', which is of type "
-                                    + ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE + ". Automatically locking ClinicalAnalysis.";
+                                    + clinicalAnalysis.getStatus().getId() + "', which is of type " + clinicalStatusValue.getType()
+                                    + ". Automatically locking ClinicalAnalysis.";
                             logger.info(msg);
                             clinicalAnalysis.setLocked(true);
 
@@ -1381,15 +1382,16 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
 
         // Get the clinical status that are CLOSED, INCONCLUSIVE and DONE
         Set<String> closedStatus = new HashSet<>();
-        Set<String> inconclusiveStatus = new HashSet<>();
+        Set<String> inconclusiveOrRejectedStatus = new HashSet<>();
         Set<String> doneStatus = new HashSet<>();
         for (ClinicalStatusValue clinicalStatusValue : clinicalConfiguration.getStatus()) {
             if (clinicalStatusValue.getType().equals(ClinicalStatusValue.ClinicalStatusType.CLOSED)) {
                 closedStatus.add(clinicalStatusValue.getId());
             } else if (clinicalStatusValue.getType().equals(ClinicalStatusValue.ClinicalStatusType.DONE)) {
                 doneStatus.add(clinicalStatusValue.getId());
-            } else if (clinicalStatusValue.getType().equals(ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE)) {
-                inconclusiveStatus.add(clinicalStatusValue.getId());
+            } else if (clinicalStatusValue.getType().equals(ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE)
+                    || clinicalStatusValue.getType().equals(ClinicalStatusValue.ClinicalStatusType.REJECTED)) {
+                inconclusiveOrRejectedStatus.add(clinicalStatusValue.getId());
             }
         }
 
@@ -1402,6 +1404,7 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
                 || clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED
                 || clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.DONE
                 || clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE
+                || clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.REJECTED
                 || updateParamsClone.getLocked() != null
                 || updateParams.getPanelLocked() != null
                 || (updateParams.getStatus() != null && (closedStatus.contains(updateParams.getStatus().getId())
@@ -1411,7 +1414,8 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
 
             // Current status is of type CLOSED OR INCONCLUSIVE
             if (clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED
-                    || clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE) {
+                    || clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE
+                    || clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.REJECTED) {
                 // The only allowed action is to remove the INCONCLUSIVE or CLOSED status
                 if (updateParams.getStatus() == null || StringUtils.isEmpty(updateParams.getStatus().getId())) {
                     throw new CatalogException("Cannot update a ClinicalAnalysis with a " + clinicalAnalysis.getStatus().getType()
@@ -1419,10 +1423,11 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
                             + "to perform further updates on the ClinicalAnalysis.");
                 } else if ((clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED
                         && closedStatus.contains(updateParams.getStatus().getId()))
-                        || (clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE
-                        && inconclusiveStatus.contains(updateParams.getStatus().getId()))) {
-                    // Users should be able to change from one CLOSED|INCONCLUSIVE status to a different one but we should still control
-                    // that no further modifications are made
+                        || ((clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE
+                        || clinicalAnalysis.getStatus().getType() == ClinicalStatusValue.ClinicalStatusType.REJECTED)
+                        && inconclusiveOrRejectedStatus.contains(updateParams.getStatus().getId()))) {
+                    // Users should be able to change from one CLOSED|INCONCLUSIVE|REJECTED status to a different one but we should
+                    // still control that no further modifications are made
                     if (parameters.size() > 1) {
                         throw new CatalogException("Cannot update a ClinicalAnalysis with a "
                                 + clinicalAnalysis.getStatus().getType() + " status. You need to remove the "
