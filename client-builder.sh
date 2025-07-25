@@ -80,16 +80,6 @@ if ! $SKIP_R; then
   echo "==================="
   R_SOURCE_DIR="./opencga-enterprise-client/src/main/R"
   echo "Copying OpenCGA R client files to $CLIENTS_DIR"
-  # Path where the Python lib should live inside the R package
-  TARGET="$R_SOURCE_DIR/inst/python/sso_login.py"
-  # If the target file doesn't exist, create its directory and copy it in
-  if [[ ! -f "$TARGET" ]]; then
-    echo "'$TARGET' not found – creating directory and copying 'python/sso_login.py'..."
-    mkdir -p "$(dirname "$TARGET")"
-    cp "opencga-enterprise-client/src/main/python/sso_login.py" "$TARGET"
-  else
-    echo "'$TARGET' already exists – skipping copy."
-  fi
   cp -rL "$R_SOURCE_DIR" "$CLIENTS_DIR"
   # If Version is a SNAPSHOT, we need to replace it with a version that R can understand
   R_VERSION=$(echo "$VERSION" | sed 's/-SNAPSHOT/.9000/g')
