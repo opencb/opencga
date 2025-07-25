@@ -211,6 +211,19 @@ analysis:
     defaultQueue: ""            # Default queue to be used to submit jobs
     availableQueues:            # Other queues for specific applications
     toolsPerQueue:
+    queues:
+      - id: "default"
+        executor: "${OPENCGA.EXECUTION.MODE}"
+        description: "Default queue for execution"
+        type: "CPU"
+        cpu: 8
+        memory: "32G"
+    defaultRequest:
+      cpu: 2
+      memory: "8G"
+    requestFactor:
+      cpu: 0.95
+      memory: 0.9
     #       docker:
     #          - "circos"
     #          - "deeptools"
