@@ -1,0 +1,29 @@
+name: Build opencga javascript-client
+
+on:
+  workflow_call:
+    inputs:
+        branch:
+          type: string
+          required: true
+
+jobs:
+  build-javascript-client:
+    runs-on: ${{ vars.UBUNTU_VERSION }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+          fetch-depth: '10'
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build R client
+        run: |
+          ./client-builder.sh --skip-r --skip-python
+      - name: Upload built javascript client package as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: opencga-javascript-client-${{ steps.version.outputs.version }}.tar.gz
+          path: build/dist/opencga-javascript-client-${{ steps.version.outputs.version }}.tar.gz
+

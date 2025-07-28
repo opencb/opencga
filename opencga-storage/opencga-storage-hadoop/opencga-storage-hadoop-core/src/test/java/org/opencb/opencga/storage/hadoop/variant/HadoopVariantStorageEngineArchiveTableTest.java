@@ -43,8 +43,7 @@ public class HadoopVariantStorageEngineArchiveTableTest extends VariantStorageBa
         HadoopVariantStorageEngine variantStorageManager = externalResource.getVariantStorageEngine();
 
         ObjectMap extraParams = new ObjectMap(VariantStorageOptions.LOAD_HOM_REF.key(), true);
-//        extraParams.append(VariantStorageOptions.TRANSFORM_FORMAT.key(), "proto");
-//        extraParams.append(VariantStorageOptions.GVCF.key(), true);
+        extraParams.append(VariantStorageOptions.LOAD_ARCHIVE.key(), true);
 
         runETL(variantStorageManager, getResourceUri("impact/HG005_GRCh38_1_22_v4.2.1_benchmark.tuned.chr6-31.vcf.gz"), STUDY_NAME, extraParams);
         runETL(variantStorageManager, getResourceUri("impact/HG006_GRCh38_1_22_v4.2.1_benchmark.tuned.chr6-31.vcf.gz"), STUDY_NAME, extraParams);
@@ -87,7 +86,7 @@ public class HadoopVariantStorageEngineArchiveTableTest extends VariantStorageBa
                         variantChromosomeCounts.merge(variant.getChromosome(), 1L, Long::sum);
                     });
             System.out.println("End query from Archive table");
-            VariantSetStats stats = mm.getVariantFileMetadata(studyId, fileMetadata.getId(), null).first().getStats();
+            VariantSetStats stats = mm.getVariantFileMetadata(studyId, fileMetadata.getId()).getStats();
             stats.getChromosomeCount().forEach((s, l) -> assertEquals("chromosome : " + s, l, variantChromosomeCounts.getOrDefault(s, 0L)));
             stats.getTypeCount().forEach((s, l) -> assertEquals("variant type : " + s, l, variantCounts.getOrDefault(VariantType.valueOf(s), 0L)));
             assertEquals(stats.getVariantCount().intValue(), numVariants[0]);

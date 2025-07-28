@@ -116,7 +116,6 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
     protected static URI corruptedInputUri;
 
     public static final String ANNOTATOR_EXTENSION_VCF_TEST_FILE_NAME = "variant-test-file-annotator-extension.vcf.gz";
-    protected static URI annotatorExtensionInputUri;
 
     protected static URI outputUri;
     protected VariantStorageEngine variantStorageEngine;
@@ -146,20 +145,16 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         Path inputPath = rootDir.resolve(VCF_TEST_FILE_NAME);
         Path smallInputPath = rootDir.resolve(SMALL_VCF_TEST_FILE_NAME);
         Path corruptedInputPath = rootDir.resolve(VCF_CORRUPTED_FILE_NAME);
-        Path annotatorExtensionInputPath = rootDir.resolve(ANNOTATOR_EXTENSION_VCF_TEST_FILE_NAME);
         Files.copy(VariantStorageEngineTest.class.getClassLoader().getResourceAsStream(VCF_TEST_FILE_NAME), inputPath,
                 StandardCopyOption.REPLACE_EXISTING);
         Files.copy(VariantStorageEngineTest.class.getClassLoader().getResourceAsStream(SMALL_VCF_TEST_FILE_NAME), smallInputPath,
                 StandardCopyOption.REPLACE_EXISTING);
         Files.copy(VariantStorageEngineTest.class.getClassLoader().getResourceAsStream(VCF_CORRUPTED_FILE_NAME), corruptedInputPath,
                 StandardCopyOption.REPLACE_EXISTING);
-        Files.copy(VariantStorageEngineTest.class.getClassLoader().getResourceAsStream(ANNOTATOR_EXTENSION_VCF_TEST_FILE_NAME),
-                annotatorExtensionInputPath, StandardCopyOption.REPLACE_EXISTING);
 
         inputUri = inputPath.toUri();
         smallInputUri = smallInputPath.toUri();
         corruptedInputUri = corruptedInputPath.toUri();
-        annotatorExtensionInputUri = annotatorExtensionInputPath.toUri();
         outputUri = rootDir.toUri();
 //        logger.info("count: " + count.getAndIncrement());
 
@@ -215,15 +210,33 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
 
 
     private static void newRootDir() throws IOException {
-        rootDir = Paths.get("target/test-data", "junit-" + testClassNameWatcher.getTestClassSimpleName() + "-" + TimeUtils.getTimeMillis() + "_" + RandomStringUtils.randomAlphabetic(3));
-        Files.createDirectories(rootDir);
+        String classSimpleName = testClassNameWatcher.getTestClassSimpleName();
+        newRootDir(classSimpleName);
+    }
+
+    public static Path newRootDir(String classSimpleName) throws IOException {
+        Path path = Paths.get("target/test-data", "junit-" + classSimpleName + "-" + TimeUtils.getTimeMillis() + "_" + RandomStringUtils.randomAlphabetic(3));
+        Files.createDirectories(path);
+        rootDir = path;
+        return path;
     }
 
     public static void setRootDir(Path rootDir) {
         VariantStorageBaseTest.rootDir = rootDir;
     }
 
-    protected static URI newOutputUri() throws IOException {
+    public static URI newOutputUri() throws IOException {
+        if (rootDir == null) {
+            newRootDir();
+        }
+        return newOutputUri(rootDir.toUri());
+    }
+
+    public static URI newOutputUri(Path output) throws IOException {
+        return newOutputUri(output.toUri());
+    }
+
+    public static URI newOutputUri(URI outputUri) throws IOException {
         String dirName = null;
         StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
         for (int i = 0; i < stackTrace.length; i++) {
@@ -319,28 +332,18 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
     /* Static methods to run a simple ETL to index Variants */
     /* ---------------------------------------------------- */
 
-
-    public static StoragePipelineResult runETL(VariantStorageEngine variantStorageManager, ObjectMap options)
-            throws IOException, FileFormatException, StorageEngineException {
-        return runETL(variantStorageManager, options, true, true, true);
-    }
-
     public static StoragePipelineResult runETL(VariantStorageEngine variantStorageManager, URI input, String study, ObjectMap options)
             throws IOException, FileFormatException, StorageEngineException {
         return runETL(variantStorageManager, input, outputUri, options.append(VariantStorageOptions.STUDY.key(), study), true, true, true);
     }
 
-    public static StoragePipelineResult runETL(VariantStorageEngine variantStorageManager, ObjectMap options,
+    public static StoragePipelineResult runETL(VariantStorageEngine variantStorageManager, URI inputUri,
+                                               ObjectMap options,
                                                boolean doExtract,
                                                boolean doTransform,
                                                boolean doLoad)
             throws IOException, FileFormatException, StorageEngineException {
         return runETL(variantStorageManager, inputUri, outputUri, options, doExtract, doTransform, doLoad);
-    }
-
-    public static StoragePipelineResult runDefaultETL(VariantStorageEngine variantStorageManager, StudyMetadata studyMetadata)
-            throws URISyntaxException, IOException, FileFormatException, StorageEngineException {
-        return runDefaultETL(inputUri, variantStorageManager, studyMetadata);
     }
 
     public static StoragePipelineResult runDefaultETL(URI inputUri, VariantStorageEngine variantStorageManager, StudyMetadata studyMetadata)

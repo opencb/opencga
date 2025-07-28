@@ -199,7 +199,7 @@ public class StringDataReader implements DataReader<String> {
         }
     }
 
-    private static class SizeInputStream extends InputStream {
+    public static class SizeInputStream extends InputStream {
         // The InputStream to read bytes from
         private InputStream in = null;
 
@@ -209,7 +209,7 @@ public class StringDataReader implements DataReader<String> {
         // The number of bytes that have been read from the InputStream
         private long bytesRead = 0;
 
-        SizeInputStream(InputStream in, long size) {
+        public SizeInputStream(InputStream in, long size) {
             super();
             this.in = in;
             this.size = size;
