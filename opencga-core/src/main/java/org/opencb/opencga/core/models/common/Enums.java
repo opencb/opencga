@@ -268,7 +268,10 @@ public final class Enums {
         // Variants
         VARIANT_STORAGE_OPERATION,
         SAMPLE_DATA,
-        FACET
+        FACET,
+
+        // Admin
+        UPDATE_WORKSPACE_URI
     }
 
     public enum Priority {

@@ -410,6 +410,8 @@ public interface StudyDBAdaptor extends Iterable<Study> {
 
     void updateDiskUsage(ClientSession clientSession, long studyId, long size) throws CatalogDBException;
 
+    void updateWorkspaceUri(String oldBaseUri, String newBaseUri) throws CatalogParameterException;
+
     enum QueryParams implements QueryParam {
         ID("id", TEXT, ""),
         UID("uid", INTEGER_ARRAY, ""),

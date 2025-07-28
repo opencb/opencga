@@ -65,6 +65,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -809,6 +810,28 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                         updateDocument);
             }
         }
+    }
+
+    void updateWorkspaceUri(ClientSession clientSession, String oldBaseUri, String newBaseUri) {
+        // Filter: documents where uri starts with oldBaseUri
+        Bson filter = Filters.regex("uri", Pattern.compile("^" + oldBaseUri));
+
+        // Aggregation pipeline for the update
+        Document replaceOneStage = new Document("$replaceOne",
+                new Document("input", "$uri")
+                        .append("find", oldBaseUri)
+                        .append("replacement", newBaseUri)
+        );
+
+        List<Document> setStage = Collections.singletonList(new Document("$set",
+                new Document("uri", replaceOneStage)
+        ));
+
+        deletedFileCollection.updateWithPipeline(clientSession, filter, setStage, new QueryOptions(MongoDBCollection.MULTI, true));
+        DataResult<?> update = fileCollection.updateWithPipeline(clientSession, filter, setStage,
+                new QueryOptions(MongoDBCollection.MULTI, true));
+        logger.info("Organization '{}': Updated URI from {} File documents", dbAdaptorFactory.getOrganizationId(),
+                update.getNumUpdated());
     }
 
     private void updateWhenFileIdChanged(ClientSession clientSession, File file, UpdateDocument updateDocument, QueryOptions options)

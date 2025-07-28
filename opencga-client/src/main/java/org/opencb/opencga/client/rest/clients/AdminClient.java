@@ -27,6 +27,7 @@ import org.opencb.opencga.core.models.admin.InstallationParams;
 import org.opencb.opencga.core.models.admin.JWTParams;
 import org.opencb.opencga.core.models.admin.UserImportParams;
 import org.opencb.opencga.core.models.admin.UserUpdateGroup;
+import org.opencb.opencga.core.models.admin.WorkspaceUpdateParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.resource.ResourceFetcherToolParams;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -101,6 +102,18 @@ public class AdminClient extends ParentClient {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("admin", null, "catalog", null, "jwt", params, POST, ObjectMap.class);
+    }
+
+    /**
+     * Update the OpenCGA Catalog workspace.
+     * @param data JSON containing the workspace parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<ObjectMap> updateCatalogWorkspace(WorkspaceUpdateParams data) throws ClientException {
+        ObjectMap params = new ObjectMap();
+        params.put("body", data);
+        return execute("admin", null, "catalog/workspace", null, "update", params, POST, ObjectMap.class);
     }
 
     /**

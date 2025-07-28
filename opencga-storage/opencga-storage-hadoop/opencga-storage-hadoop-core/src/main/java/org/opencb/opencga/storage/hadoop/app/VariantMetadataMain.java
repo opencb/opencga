@@ -65,7 +65,8 @@ public class VariantMetadataMain extends AbstractMain {
             addSubCommand(Arrays.asList("study-metadata", "sm", "study", "studies"), "[help|list|id|read|write|replace|rename] "
                             + "<metadata_table> ..",
                     new StudyCommandExecutor());
-            addSubCommand(Arrays.asList("file-metadata", "fm", "file", "files"), "[help|list|id|read|write|rename|move|move-bulk] <metadata_table> ...",
+            addSubCommand(Arrays.asList("file-metadata", "fm", "file", "files"), "[help|list|id|read|write|rename|move|move-bulk] "
+                            + "<metadata_table> ...",
                     new FileCommandExecutor());
             addSubCommand(Arrays.asList("variant-file-metadata", "vfm"), "[help|list|id|read|write] <metadata_table> ...",
                     new VariantFileCommandExecutor());
