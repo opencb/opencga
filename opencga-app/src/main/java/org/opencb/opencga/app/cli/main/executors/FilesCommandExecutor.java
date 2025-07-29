@@ -43,6 +43,7 @@ import org.opencb.opencga.core.models.file.FileQualityControl;
 import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.file.FileTree;
 import org.opencb.opencga.core.models.file.FileUpdateParams;
+import org.opencb.opencga.core.models.file.FileUriChangeRestParam;
 import org.opencb.opencga.core.models.file.MissingSamples;
 import org.opencb.opencga.core.models.file.PostLinkToolParams;
 import org.opencb.opencga.core.models.file.SmallFileInternal;
@@ -123,6 +124,9 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "upload":
                 queryResponse = upload();
+                break;
+            case "uri-update":
+                queryResponse = updateUri();
                 break;
             case "acl":
                 queryResponse = acl();
@@ -629,6 +633,31 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         }
         CustomFilesCommandExecutor customFilesCommandExecutor = new CustomFilesCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), appHome, getLogger());
         return customFilesCommandExecutor.upload(commandOptions);
+    }
+
+    private RestResponse<File> updateUri() throws Exception {
+        logger.debug("Executing updateUri in Files command line");
+
+        FilesCommandOptions.UpdateUriCommandOptions commandOptions = filesCommandOptions.updateUriCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        FileUriChangeRestParam fileUriChangeRestParam = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<File> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/files/uri/update"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            fileUriChangeRestParam = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), FileUriChangeRestParam.class);
+        }
+        return openCGAClient.getFileClient().updateUri(fileUriChangeRestParam, queryParams);
     }
 
     private RestResponse<FileAclEntryList> acl() throws Exception {

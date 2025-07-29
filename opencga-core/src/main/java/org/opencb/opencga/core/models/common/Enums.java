@@ -249,6 +249,7 @@ public final class Enums {
         DOWNLOAD_AND_REGISTER,
         MOVE,
         MOVE_AND_REGISTER,
+        CHANGE_FILE_URI,
 
         VISIT,
         KILL_JOB,
