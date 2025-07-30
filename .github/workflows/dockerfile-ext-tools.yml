@@ -2,10 +2,6 @@ name: Deploy Docker Ext-Tools
 
 on:
   push:
-    branches:
-      - develop
-      - release-*
-      - TASK-*
     paths:
       - opencga-app/app/cloud/docker/opencga-ext-tools/Dockerfile
 
