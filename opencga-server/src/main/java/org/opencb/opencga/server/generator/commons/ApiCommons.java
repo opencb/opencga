@@ -5,4 +5,7 @@ import java.util.List;
 public interface ApiCommons {
 
     List<Class<?>> getApiClasses();
+
+    String getVersion();
+    // List<String> getOrderCategories();
 }

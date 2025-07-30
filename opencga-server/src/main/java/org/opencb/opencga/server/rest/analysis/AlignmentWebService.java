@@ -58,7 +58,7 @@ import static org.opencb.opencga.core.api.ParamConstants.*;
  */
 @Path("/{apiVersion}/analysis/alignment")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "Analysis - Alignment", description = "Methods for working with 'files' endpoint")
+@Api(value = "Analysis - Alignment", description = "Methods for working with Alignments")
 public class AlignmentWebService extends AnalysisWebService {
 
     public AlignmentWebService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
