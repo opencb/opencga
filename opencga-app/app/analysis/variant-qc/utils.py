@@ -203,30 +203,34 @@ def get_contig_prefix(vcf_file: str):
                 return 'chr' if chrom.startswith('chr') else ''
         return ''
 
-def bgzip_vcf(vcf_fpath, delete_original=False):
+def bgzip_file(file_path, force=False, delete_original=False):
     """
     BGZIPs a VCF.
 
-    :param str vcf_fpath: VCF file path
-    :param bool delete_original: Delete original file if True
+    :param str file_path: VCF file path
+    :param bool force: Overwrite BGZIP file if it exists (it also creates indexes)
+    :param bool delete_original: Delete original file
     :return: BGZIPped VCF file path
     """
-    if vcf_fpath.endswith('.vcf.gz'):
-        execute_bash_command('gzip -dkf {}'.format(vcf_fpath))  # Decompress GZIP
-        fname_out = vcf_fpath[:-3] + '.bgz'
-        pysam.tabix_compress(vcf_fpath[:-3],fname_out, force=True)
-        os.remove(vcf_fpath[:-3])  # Remove decompressed file
-    elif vcf_fpath.endswith('.vcf.bgz'):
-        fname_out = vcf_fpath
-        delete_original = False
-    elif vcf_fpath.endswith('.vcf'):
-        fname_out = vcf_fpath + '.bgz'
-        pysam.tabix_compress(vcf_fpath, fname_out, force=True)
+    if file_path.endswith('.gz'):
+        execute_bash_command('gzip -dkf {}'.format(file_path))  # Decompress GZIP
+        fname_out = file_path[:-3] + '.bgz'
+        pysam.tabix_compress(file_path[:-3], fname_out, force=True)
+        os.remove(file_path[:-3])  # Remove decompressed file
+    elif file_path.endswith('.bgz'):
+        if force:
+            execute_bash_command('bgzip -dkf {}'.format(file_path))  # Decompress BGZIP
+            fname_out = file_path
+            pysam.tabix_compress(file_path[:-4], fname_out, force=True)
+        else:
+            fname_out = file_path
+            delete_original = False
     else:
-        raise ValueError('Compressed file format not recognized')
+        fname_out = file_path + '.bgz'
+        pysam.tabix_compress(file_path, fname_out, force=True)
 
     if delete_original:
-        os.remove(vcf_fpath)
+        os.remove(file_path)
 
     return fname_out
 

@@ -6,13 +6,18 @@ import re
 import shlex
 
 import pysam
+from fontTools.subset import intersect
 
-from utils import execute_bash_command, bgzip_vcf, get_reverse_complement, generate_results_json, list_dir_files, list_dir_dirs, convert_to_base64
+from utils import execute_bash_command, bgzip_file, get_reverse_complement, generate_results_json, list_dir_files, list_dir_dirs, convert_to_base64
 
 LOGGER = logging.getLogger('variant_qc_logger')
 
 ASSEMBLY = 'GRCh38'
 REFERENCE_GENOME_FASTA_FNAME = 'Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz'
+REFERENCE_GENOME_FASTA_FNAME_REQUIRED = [
+    'Homo_sapiens.GRCh38.dna.primary_assembly.fa.bgz',
+    'Homo_sapiens.GRCh38.dna.primary_assembly.fa.bgz.fai'
+]
 TYPE_DEL = "del"
 TYPE_TDS = "tds"
 TYPE_INV = "inv"
@@ -82,11 +87,14 @@ class MutationalCatalogueAnalysis:
         LOGGER.info('Creating the SNV genome context file "{}"'.format(self.snv_genome_context_fpath))
 
         # Opening ALL SNV VCF file (BGZIP VCF file)
-        snv_all_vcf_fpath = bgzip_vcf(self.snv_all_vcf_fpath)  # BGZIPping VCF (pysam requirement)
+        snv_all_vcf_fpath = bgzip_file(self.snv_all_vcf_fpath)  # BGZIPping VCF (pysam requirement)
         pysam_snv_all_vcf_fhand = pysam.VariantFile(snv_all_vcf_fpath)
 
         # Opening reference genome FASTA file
-        ref_genome = pysam.FastaFile(self.ref_genome_fasta_fpath)
+        ref_genome_fasta_fpath = self.ref_genome_fasta_fpath
+        if not all([i in list_dir_files(self.resource_dir) for i in REFERENCE_GENOME_FASTA_FNAME_REQUIRED]):
+            ref_genome_fasta_fpath = bgzip_file(self.ref_genome_fasta_fpath, force=True)  # BGZIPping FASTA
+        ref_genome = pysam.FastaFile(ref_genome_fasta_fpath)
 
         # Creating genome context file to write
         snv_genome_context_fhand = open(self.snv_genome_context_fpath, 'w')
@@ -123,7 +131,7 @@ class MutationalCatalogueAnalysis:
         snv_genome_context_fhand.close()
 
         # Opening FILTERED SNV VCF file (BGZIP VCF file)
-        snv_filtered_vcf_fpath = bgzip_vcf(self.snv_filtered_vcf_fpath)  # BGZIPping VCF (pysam requirement)
+        snv_filtered_vcf_fpath = bgzip_file(self.snv_filtered_vcf_fpath)  # BGZIPping VCF (pysam requirement)
         pysam_snv_filtered_vcf_fhand = pysam.VariantFile(snv_filtered_vcf_fpath)
 
         # Creating context keys
@@ -234,7 +242,7 @@ class MutationalCatalogueAnalysis:
         """
 
         # Opening ALL SV VCF file (BGZIP VCF file)
-        sv_all_vcf_fpath = bgzip_vcf(self.sv_all_vcf_fpath)  # BGZIPping VCF (pysam requirement)
+        sv_all_vcf_fpath = bgzip_file(self.sv_all_vcf_fpath)  # BGZIPping VCF (pysam requirement)
         pysam_sv_all_vcf_fhand = pysam.VariantFile(sv_all_vcf_fpath)
 
         # Writing input file
