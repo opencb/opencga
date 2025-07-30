@@ -37,7 +37,6 @@ import org.opencb.commons.run.Task;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.BatchUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.adaptors.*;
@@ -155,9 +154,23 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         fileIdCache = new MetadataCache<>((studyId, file) -> {
             Integer fileId = fileDBAdaptor.getFileId(studyId, file);
             if (fileId == null && file.contains("/")) {
-                // Input is a file path. Try reading by fileName
+                // Input is a file path. Try reading by fileName. Then ensure that the filePath matches.
                 String fileName = Paths.get(file).getFileName().toString();
                 fileId = fileDBAdaptor.getFileId(studyId, fileName);
+                if (fileId == null) {
+                    return null;
+                } else if (fileId == DUPLICATED_NAME_ID) {
+                    // The fileName exists, but it's duplicated. Input filePath doesn't exist
+                    return null;
+                } else {
+                    FileMetadata fileMetadata = fileDBAdaptor.getFileMetadata(studyId, fileId, null);
+                    if (fileMetadata.getPath().equals(file)) {
+                        return fileId;
+                    } else {
+                        // FileName exists, but in a different path!
+                        return null;
+                    }
+                }
             }
             return fileId;
         });
@@ -813,9 +826,9 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
     private Integer getFileId(int studyId, Object fileObj, boolean onlyIndexed, boolean validate) {
         if (fileObj instanceof URI) {
-            fileObj = UriUtils.fileName(((URI) fileObj));
+            fileObj = ((URI) fileObj).getPath();
         } else if (fileObj instanceof Path) {
-            fileObj = ((Path) fileObj).getFileName().toString();
+            fileObj = ((Path) fileObj).toAbsolutePath().toString();
         }
         Integer fileId = parseResourceId(studyId, fileObj,
                 o -> getFileId(studyId, o),
@@ -855,9 +868,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     public Pair<Integer, Integer> getFileIdPair(Object fileObj, boolean skipNegated, StudyMetadata defaultStudy) {
-        Pair<Integer, Integer> file = getResourcePair(fileObj, skipNegated, defaultStudy, this::fileIdExists, this::getFileId, "file");
-        System.out.println("fileObj = " + fileObj + " -> " + file);
-        return file;
+        return getResourcePair(fileObj, skipNegated, defaultStudy, this::fileIdExists, this::getFileId, "file");
     }
 
     private boolean fileIdExists(int studyId, int fileId, boolean indexed) {
@@ -1870,9 +1881,12 @@ public class VariantStorageMetadataManager implements AutoCloseable {
      * @throws StorageEngineException if the file is not valid for being loaded
      */
     private int registerFile(int studyId, String filePath, FileMetadata.Type type) throws StorageEngineException {
-
+        Integer fileId = getFileId(studyId, filePath);
+        if (fileId != null) {
+            return fileId;
+        }
         String fileName = Paths.get(filePath).getFileName().toString();
-        Integer fileId = getFileIdOrDuplicated(studyId, fileName);
+        fileId = getFileIdOrDuplicated(studyId, fileName);
 
         if (fileId != null) {
             if (fileId != DUPLICATED_NAME_ID) {
@@ -1932,6 +1946,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 }
             }
         } else {
+            getFileIdOrDuplicated(studyId, filePath);
             fileId = newFileId(studyId);
             try (Lock lock = lockStudy(studyId)) {
                 FileMetadata fileMetadata = new FileMetadata()

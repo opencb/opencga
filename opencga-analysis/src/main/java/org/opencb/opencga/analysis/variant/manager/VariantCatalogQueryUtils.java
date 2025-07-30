@@ -1388,6 +1388,10 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
     }
 
     public static String toStorageFileName(File file) {
+        return toStorageFilePath(file);
+    }
+
+    public static String toStorageFilePath(File file) {
         return file.getUri().getPath();
     }
 

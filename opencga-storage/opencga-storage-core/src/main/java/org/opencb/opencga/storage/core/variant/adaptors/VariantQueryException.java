@@ -219,7 +219,7 @@ public class VariantQueryException extends IllegalArgumentException {
 
     public static VariantQueryException fileNotFoundDuplicatedName(String fileName, Object study) {
         return new VariantQueryException("File " + quote(fileName) + " found in study '" + study + "'. "
-                + "There are multiple files with the same name '" + fileName + "'. "
+                + "There are multiple files with the same name. "
                 + "Please use the filePath instead of the file name.");
     }
 

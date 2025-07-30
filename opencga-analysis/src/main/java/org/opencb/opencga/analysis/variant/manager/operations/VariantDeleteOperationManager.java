@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.analysis.variant.manager.operations;
 
+import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchronizer;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -89,8 +90,7 @@ public class VariantDeleteOperationManager extends OperationManager {
                                 + (fileMetadata == null ? " File not found in storage." : ""));
                     }
                 }
-                fileNames.add(file.getName());
-//                        filePaths.add(file.getPath());
+                fileNames.add(VariantCatalogQueryUtils.toStorageFileName(file));
             }
 
         }

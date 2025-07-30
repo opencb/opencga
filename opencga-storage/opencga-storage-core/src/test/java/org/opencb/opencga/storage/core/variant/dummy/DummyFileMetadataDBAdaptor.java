@@ -107,8 +107,10 @@ public class DummyFileMetadataDBAdaptor implements FileMetadataDBAdaptor {
 
     @Override
     public Integer getFileId(int studyId, String fileName) {
-        if (isDuplicated(fileName)) {
-            return VariantStorageMetadataManager.DUPLICATED_NAME_ID;
+        if (!fileName.contains("/")) {
+            if (isDuplicated(fileName)) {
+                return VariantStorageMetadataManager.DUPLICATED_NAME_ID;
+            }
         }
         return FILE_METADATA_MAP.getOrDefault(studyId, Collections.emptyMap()).values()
                 .stream()
