@@ -16,12 +16,8 @@
 
 package org.opencb.opencga.storage.core.variant;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Iterators;
 import htsjdk.variant.vcf.VCFConstants;
-import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -37,7 +33,6 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -51,15 +46,10 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
-import org.opencb.opencga.core.models.common.mixins.GenericRecordAvroJsonMixin;
-import org.opencb.opencga.core.models.common.mixins.VariantStatsJsonMixin;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
-import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
@@ -68,7 +58,6 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.zip.GZIPInputStream;
 
 import static org.junit.Assert.*;
 import static org.opencb.opencga.core.common.UriUtils.dirName;
@@ -251,7 +240,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         URI file1Uri = getResourceUri("1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
         runDefaultETL(file1Uri, variantStorageEngine, studyMetadataMultiFile, options);
         CohortMetadata defaultCohort = metadataManager.getCohortMetadata(studyMetadataMultiFile.getId(), StudyEntry.DEFAULT_COHORT);
-        
+
         assertNotNull(defaultCohort);
         assertEquals(500, defaultCohort.getSamples().size());
         assertFalse(defaultCohort.isStatsReady());

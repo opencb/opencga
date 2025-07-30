@@ -1,8 +1,12 @@
 package org.opencb.opencga.server.generator.openapi.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public class Tag {
     private String name;
     private String description;
+    @JsonIgnore
+    private int count;
 
     public Tag() {
     }
@@ -14,11 +18,11 @@ public class Tag {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("Tag{");
-        sb.append("name='").append(name).append('\'');
-        sb.append(", description='").append(description).append('\'');
-        sb.append('}');
-        return sb.toString();
+        return "Tag{" +
+                "name='" + name + '\'' +
+                ", description='" + description + '\'' +
+                ", count=" + count +
+                '}';
     }
 
     public String getName() {
@@ -36,6 +40,15 @@ public class Tag {
 
     public Tag setDescription(String description) {
         this.description = description;
+        return this;
+    }
+
+    public int getCount() {
+        return count;
+    }
+
+    public Tag setCount(int count) {
+        this.count = count;
         return this;
     }
 }

@@ -973,20 +973,6 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"download"}, commandDescription ="Download file")
-    public class DownloadCommandOptions {
-    
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
-    
-        @Parameter(names = {"--file"}, description = "File id, name or path. Paths must be separated by : instead of /", required = true, arity = 1)
-        public String file; 
-    
-        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
-        public String study; 
-    
-    }
-
     @Parameters(commandNames = {"grep"}, commandDescription ="Filter lines of the file containing the pattern")
     public class GrepCommandOptions {
     

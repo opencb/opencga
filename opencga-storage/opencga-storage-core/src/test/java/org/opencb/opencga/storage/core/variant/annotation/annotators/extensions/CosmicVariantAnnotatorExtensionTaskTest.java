@@ -6,12 +6,9 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.opencb.biodata.models.common.DataVersion;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.cosmic.CosmicVariantAnnotatorExtensionTask;
@@ -21,7 +18,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 @Category(ShortTests.class)
@@ -130,8 +126,11 @@ public class CosmicVariantAnnotatorExtensionTaskTest {
     }
 
     public static Path initCosmicPath() throws IOException {
-        Path cosmicPath = getTempPath();
-        if (!cosmicPath.toFile().mkdirs()) {
+        return initCosmicPath(getTempPath());
+    }
+
+    public static Path initCosmicPath(Path cosmicPath) throws IOException {
+        if (!Files.isDirectory(cosmicPath) && !cosmicPath.toFile().mkdirs()) {
             throw new IOException("Error creating the COSMIC path: " + cosmicPath.toAbsolutePath());
         }
         Path cosmicFile = Paths.get(CosmicVariantAnnotatorExtensionTaskTest.class.getResource("/custom_annotation/cosmic.small.tsv.gz").getPath());
@@ -146,8 +145,11 @@ public class CosmicVariantAnnotatorExtensionTaskTest {
     }
 
     public static Path initInvalidCosmicPath() throws IOException {
-        Path cosmicPath = getTempPath();
-        if (!cosmicPath.toFile().mkdirs()) {
+        return initInvalidCosmicPath(getTempPath());
+    }
+
+    public static Path initInvalidCosmicPath(Path cosmicPath) throws IOException {
+        if (!Files.isDirectory(cosmicPath) && !cosmicPath.toFile().mkdirs()) {
             throw new IOException("Error creating the COSMIC path: " + cosmicPath.toAbsolutePath());
         }
         Path cosmicFile = Paths.get(CosmicVariantAnnotatorExtensionTaskTest.class.getResource("/custom_annotation/myannot.vcf").getPath());

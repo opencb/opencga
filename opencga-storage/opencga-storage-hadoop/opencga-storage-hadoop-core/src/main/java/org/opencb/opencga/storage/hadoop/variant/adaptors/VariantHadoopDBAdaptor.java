@@ -84,7 +84,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.SEARCH_INDEX_LAST_TIMESTAMP;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 
@@ -279,7 +278,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         } else {
             ProjectMetadata.VariantAnnotationMetadata saved = getMetadataManager().getProjectMetadata().
                     getAnnotation().getSaved(name);
-
             annotationColumn = Bytes.toBytes(VariantPhoenixSchema.getAnnotationSnapshotColumn(saved.getId()));
             query.put(ANNOT_NAME.key(), saved.getId());
         }
@@ -293,22 +291,23 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 throw VariantQueryException.internalException(e);
             }
         }).iterator();
-        long ts = getMetadataManager().getProjectMetadata().getAttributes()
-                .getLong(SEARCH_INDEX_LAST_TIMESTAMP.key());
+        long ts = getMetadataManager().getProjectMetadata().getSecondaryAnnotationIndexLastTimestamp();
         HBaseToVariantAnnotationConverter converter = new HBaseToVariantAnnotationConverter(ts)
                 .setAnnotationIds(getMetadataManager().getProjectMetadata().getAnnotation())
                 .setIncludeFields(selectElements.getFields());
         converter.setAnnotationColumn(annotationColumn, name);
         Iterator<Result> iterator = Iterators.concat(iterators);
+        Iterator<VariantAnnotation> varAnnotIterator = Iterators.transform(iterator, converter::convert);
+        varAnnotIterator = Iterators.filter(varAnnotIterator, Objects::nonNull);
         int skip = options.getInt(QueryOptions.SKIP);
         if (skip > 0) {
-            Iterators.advance(iterator, skip);
+            Iterators.advance(varAnnotIterator, skip);
         }
         int limit = options.getInt(QueryOptions.LIMIT);
         if (limit >= 0) {
-            iterator = Iterators.limit(iterator, limit);
+            varAnnotIterator = Iterators.limit(varAnnotIterator, limit);
         }
-        return Iterators.transform(iterator, converter::convert);
+        return varAnnotIterator;
     }
 
     @Override
@@ -363,7 +362,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         if (isValidParam(query, UNKNOWN_GENOTYPE)) {
             unknownGenotype = query.getString(UNKNOWN_GENOTYPE.key());
         }
-        List<String> formats = getIncludeSampleData(query);
 
         HBaseVariantConverterConfiguration converterConfiguration = HBaseVariantConverterConfiguration.builder()
                 .setMutableSamplesPosition(false)
@@ -371,9 +369,10 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 .setSimpleGenotypes(options.getBoolean(HBaseVariantConverterConfiguration.SIMPLE_GENOTYPES, true))
                 .setUnknownGenotype(unknownGenotype)
                 .setProjection(variantQuery.getProjection())
-                .setSampleDataKeys(formats)
+                .setSampleDataKeys(getIncludeSampleData(query))
                 .setIncludeSampleId(query.getBoolean(INCLUDE_SAMPLE_ID.key(), false))
                 .setIncludeIndexStatus(query.getBoolean(VariantQueryUtils.VARIANTS_TO_INDEX.key(), false))
+                .setSparse(query.getBoolean(SPARSE_SAMPLES.key(), false))
                 .build();
 
         if (hbaseIterator) {

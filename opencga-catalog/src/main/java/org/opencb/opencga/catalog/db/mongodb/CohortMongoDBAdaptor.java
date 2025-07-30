@@ -572,7 +572,8 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         return result;
     }
 
-    OpenCGAResult<Cohort> privateDelete(ClientSession clientSession, Document cohortDocument) throws CatalogDBException {
+    OpenCGAResult<Cohort> privateDelete(ClientSession clientSession, Document cohortDocument)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long tmpStartTime = startQuery();
 
         // Remove private _id from the document to avoid issues with mongo in case a document already exists
@@ -585,6 +586,10 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         logger.info("Deleting cohort {} ({})", cohortId, cohortUid);
 
         checkCohortCanBeDeleted(cohortDocument);
+
+        // Update sample references of cohort
+        Cohort cohort = cohortConverter.convertToDataModelType(cohortDocument);
+        updateCohortReferenceInSamples(clientSession, cohort, cohort.getSamples(), ParamUtils.BasicUpdateAction.REMOVE);
 
         // Add status DELETED
         nestedPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new CohortStatus(InternalStatus.DELETED), "status"),
