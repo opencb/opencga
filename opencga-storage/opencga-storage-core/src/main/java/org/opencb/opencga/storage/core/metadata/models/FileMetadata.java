@@ -2,7 +2,9 @@ package org.opencb.opencga.storage.core.metadata.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.opencb.opencga.core.common.UriUtils;
 
+import java.net.URI;
 import java.util.LinkedHashSet;
 
 /**
@@ -46,6 +48,11 @@ public class FileMetadata extends StudyResourceMetadata<FileMetadata> {
 
     public String getPath() {
         return path;
+    }
+
+    @JsonIgnore
+    public URI getURI() {
+        return UriUtils.createUriSafe(path);
     }
 
     public FileMetadata setPath(String path) {
