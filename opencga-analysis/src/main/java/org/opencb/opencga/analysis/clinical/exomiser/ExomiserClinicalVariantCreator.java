@@ -34,7 +34,7 @@ public class ExomiserClinicalVariantCreator {
         }
 
         return new ClinicalVariant(variant.getImpl(), new ArrayList<>(), new ArrayList<>(),
-                new ClinicalVariantFilter(new HashMap<>(), "", ""), "", new ArrayList<>(), new ClinicalDiscussion(),
+                new ClinicalVariantFilter(new HashMap<>(), "", ""), new ArrayList<>(), "", new ArrayList<>(), new ClinicalDiscussion(),
                 new ClinicalVariantConfidence(), new ArrayList<>(), ClinicalVariant.Status.NOT_REVIEWED, new ArrayList<>(),
                 new ArrayList<>(), new HashMap<>());
     }

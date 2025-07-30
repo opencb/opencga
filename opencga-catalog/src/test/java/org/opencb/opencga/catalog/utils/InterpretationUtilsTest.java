@@ -105,7 +105,7 @@ public class InterpretationUtilsTest {
             variantEvidenceList.add(evidence);
         }
 
-        return new ClinicalVariant(variantAvro, variantEvidenceList, null, null, "", null, new ClinicalDiscussion(), null, null, status,
-                Collections.emptyList(), Collections.emptyList(), null);
+        return new ClinicalVariant(variantAvro, variantEvidenceList, null, null, Collections.emptyList(), "", null,
+                new ClinicalDiscussion(), null, null, status, Collections.emptyList(), Collections.emptyList(), null);
     }
 }
