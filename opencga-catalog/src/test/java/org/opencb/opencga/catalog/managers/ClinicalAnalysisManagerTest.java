@@ -1628,6 +1628,7 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
 
         ClinicalAnalysisUpdateParams updateParams = new ClinicalAnalysisUpdateParams()
                 .setDescription("My description")
+                .setReport(new ClinicalReport().setDiscussion(new ClinicalDiscussion("author", "date", "text")))
                 .setPriority(new PriorityParam("URGENT"));
 
         OpenCGAResult<ClinicalAnalysis> update = catalogManager.getClinicalAnalysisManager().update(studyFqn, dummyEnvironment.first().getId(),
@@ -1638,6 +1639,9 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
                 ownerToken).first();
         assertEquals("My description", ca.getDescription());
         assertEquals("URGENT", ca.getPriority().getId());
+        assertEquals("author", ca.getReport().getDiscussion().getAuthor());
+        assertEquals("date", ca.getReport().getDiscussion().getDate());
+        assertEquals("text", ca.getReport().getDiscussion().getText());
     }
 
     @Test

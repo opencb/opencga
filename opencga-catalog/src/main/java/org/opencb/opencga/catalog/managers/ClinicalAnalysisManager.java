@@ -1344,7 +1344,7 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
         try {
             updateParamsClone = JacksonUtils.copy(updateParams, ClinicalAnalysisUpdateParams.class);
         } catch (IOException e) {
-            throw new CatalogException("Could not clone ClinicalAnalysisUpdateParams object");
+            throw new CatalogException("Could not clone ClinicalAnalysisUpdateParams object: " + e.getMessage(), e);
         }
         if (updateParamsClone == null) {
             throw new CatalogException("Empty update parameters. Nothing to update.");

@@ -1,6 +1,7 @@
 package org.opencb.opencga.core.models.clinical;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.ClinicalDiscussion;
 import org.opencb.biodata.models.clinical.interpretation.MiniPubmed;
@@ -221,7 +222,10 @@ public class ClinicalReport {
 
     @Deprecated
     public ClinicalReport setTitle(String title) {
-        throw new UnsupportedOperationException("Title field is deprecated. Add title to Study clinical report configuration instead.");
+        if (title != null) {
+            throw new UnsupportedOperationException("Title field is deprecated. Add title to Study clinical report configuration instead.");
+        }
+        return this;
     }
 
     @Deprecated
@@ -231,7 +235,10 @@ public class ClinicalReport {
 
     @Deprecated
     public ClinicalReport setLogo(String logo) {
-        throw new UnsupportedOperationException("Logo field is deprecated. Add logo to Study clinical report configuration instead.");
+        if (logo != null) {
+            throw new UnsupportedOperationException("Logo field is deprecated. Add logo to Study clinical report configuration instead.");
+        }
+        return this;
     }
 
     @Deprecated
@@ -241,7 +248,13 @@ public class ClinicalReport {
 
     @Deprecated
     public ClinicalReport setSignedBy(String signedBy) {
-        throw new UnsupportedOperationException("SignedBy field is deprecated. Use array of signatures instead.");
+        if (signedBy != null) {
+            throw new UnsupportedOperationException("SignedBy field is deprecated. Use array of signatures instead.");
+        }
+        if (CollectionUtils.isNotEmpty(signatures) && StringUtils.isEmpty(signatures.get(0).getSignedBy())) {
+            signatures.get(0).setSignedBy(signedBy);
+        }
+        return this;
     }
 
     @Deprecated
@@ -251,7 +264,13 @@ public class ClinicalReport {
 
     @Deprecated
     public ClinicalReport setSignature(String signature) {
-        throw new UnsupportedOperationException("Signature field is deprecated. Use array of signatures instead.");
+        if (signature != null) {
+            throw new UnsupportedOperationException("Signature field is deprecated. Use array of signatures instead.");
+        }
+        if (CollectionUtils.isNotEmpty(signatures) && StringUtils.isEmpty(signatures.get(0).getSignature())) {
+            signatures.get(0).setSignature(signature);
+        }
+        return this;
     }
 
     @Deprecated
@@ -261,7 +280,10 @@ public class ClinicalReport {
 
     @Deprecated
     public ClinicalReport setSupportingEvidences(List<File> supportingEvidences) {
-        throw new UnsupportedOperationException("Supporting evidences field is deprecated. Use references and images instead.");
+        if (supportingEvidences != null) {
+            throw new UnsupportedOperationException("Supporting evidences field is deprecated. Use references and images instead.");
+        }
+        return this;
     }
 
     @Deprecated
@@ -271,6 +293,9 @@ public class ClinicalReport {
 
     @Deprecated
     public ClinicalReport setFiles(List<File> files) {
-        throw new UnsupportedOperationException("Files field is deprecated. Moved to ClinicalAnalysis.reportedFiles.");
+        if (files != null) {
+            throw new UnsupportedOperationException("Files field is deprecated. Moved to ClinicalAnalysis.reportedFiles.");
+        }
+        return this;
     }
 }
