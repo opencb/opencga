@@ -76,6 +76,7 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
     private static HadoopVariantStorageEngine variantStorageEngine;
     private static final String study1 = "st1";
     private static final String study2 = "st2";
+    private static final String study3 = "st3";
 
     @BeforeClass
     public static void beforeClass() throws Exception {
@@ -103,6 +104,12 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
 
         inputUri = VariantStorageBaseTest.getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz");
         VariantStorageBaseTest.runDefaultETL(inputUri, variantStorageEngine, new StudyMetadata(0, study2),
+                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true)
+                        .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
+        );
+
+        inputUri = VariantStorageBaseTest.getResourceUri("variant-test-unusual-contigs.vcf");
+        VariantStorageBaseTest.runDefaultETL(inputUri, variantStorageEngine, new StudyMetadata(0, study3),
                 new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true)
                         .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
         );
@@ -150,6 +157,16 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
         String fileName = "multi.region.avro";
         URI uri = getOutputUri(fileName);
         variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.AVRO, null, new Query(REGION.key(), "1,2"), new QueryOptions());
+
+        copyToLocal(fileName, uri);
+    }
+
+    @Test
+    public void exportUnusualContigs() throws Exception {
+        String fileName = "unusual_contigs.vcf";
+        URI uri = getOutputUri(fileName);
+        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.VCF, null, new Query(STUDY.key(), study3),
+                new QueryOptions("skipSmallQuery", true));
 
         copyToLocal(fileName, uri);
     }

@@ -100,6 +100,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -534,6 +535,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         protected int runRemote(String executable, String[] args, List<String> env, ByteArrayOutputStream outputStream) {
             PrintStream out = System.out;
             InputStream in = System.in;
+            Result result;
             try {
                 if (buildCommand(executable, args).length() > MAX_COMMAND_LINE_ARGS_LENGTH) {
                     logger.info("Command line is too long. Passing args from stdin'");
@@ -542,14 +544,22 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                         sb.append(arg).append('\n');
                     }
                     System.setIn(new ByteArrayInputStream(sb.toString().getBytes()));
-                    return new TestMRExecutor(conf).run(executable, new String[]{AbstractHBaseDriver.ARGS_FROM_STDIN}).getExitValue();
+                    result = new TestMRExecutor(conf).run(executable, new String[]{AbstractHBaseDriver.ARGS_FROM_STDIN});
                 } else {
-                    return new TestMRExecutor(conf).run(executable, args).getExitValue();
+                    result = new TestMRExecutor(conf).run(executable, args);
                 }
             } finally {
                 System.setOut(out);
                 System.setIn(in);
             }
+            for (String key : result.getResult().keySet()) {
+                try {
+                    outputStream.write((key + "=" + result.getResult().getString(key) + "\n").getBytes(StandardCharsets.UTF_8));
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            return result.getExitValue();
         }
 
         @Override
@@ -607,12 +617,23 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 Class<?> clazz = Class.forName(className);
                 System.out.println("Executing " + clazz.getSimpleName() + ": " + executable + " " + Arrays.toString(args));
                 Method method = clazz.getMethod("privateMain", String[].class, Configuration.class);
-                Object o = method.invoke(clazz.newInstance(), args, conf);
+
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                PrintStream stderr = System.err;
+                Object o;
+                try {
+                    PrintStream newErr = new PrintStream(outputStream);
+                    System.setErr(newErr);
+                    o = method.invoke(clazz.newInstance(), args, conf);
+                    newErr.flush();
+                } finally {
+                    System.setErr(stderr);
+                }
                 System.out.println("Finish execution " + clazz.getSimpleName());
                 if (((Number) o).intValue() != 0) {
                     throw new RuntimeException("Exit code = " + o);
                 }
-                return new Result(((Number) o).intValue(), new ObjectMap());
+                return new Result(((Number) o).intValue(), readResult(outputStream.toString()));
 
             } catch (Exception e) {
 //                e.printStackTrace();
