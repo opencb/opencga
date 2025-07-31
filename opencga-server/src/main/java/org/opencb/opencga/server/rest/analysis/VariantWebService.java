@@ -109,7 +109,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
  */
 @Path("/{apiVersion}/analysis/variant")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "Analysis - Variant", description = "Methods for working with 'files' endpoint")
+@Api(value = "Analysis - Variant", description = "Methods for working with Variants")
 public class VariantWebService extends AnalysisWebService {
 
     private static final String DEPRECATED = " [DEPRECATED] ";

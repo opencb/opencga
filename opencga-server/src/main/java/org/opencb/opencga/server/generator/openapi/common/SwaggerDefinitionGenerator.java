@@ -74,9 +74,6 @@ public class SwaggerDefinitionGenerator {
         // Remove the ones that are not serializable or deserializable
         properties.removeIf(property -> {
             if (!property.couldSerialize() || !property.couldDeserialize()) {
-//                if (!property.getName().equals("schema")) {
-//                    System.out.println("Ignored field " + clazz.getSimpleName() + "." + property.getName());
-//                }
                 return true;
             } else {
                 return false;

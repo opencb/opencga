@@ -55,15 +55,16 @@ class Meta(_ParentRestClient):
 
         return self._get(category='meta', resource='model', **options)
 
-    def openapi(self, **options):
+    def openapi(self, url, **options):
         """
         Opencga openapi json.
         PATH: /{apiVersion}/meta/openapi
 
-        :param str environment: Environment of the app.
-        :param str host: Opencga host without environment.
+        :param str url: Opencga host with environment. (REQUIRED)
+        :param str study: Opencga study to be default in queries.
         """
 
+        options['url'] = url
         return self._get(category='meta', resource='openapi', **options)
 
     def ping(self, **options):
