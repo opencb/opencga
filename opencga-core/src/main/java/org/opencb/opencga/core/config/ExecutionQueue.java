@@ -15,7 +15,7 @@ public class ExecutionQueue {
     private String description;
 
     @DataField(id = "type", description = "Execution type for the queue")
-    private ExecutionType type;
+    private ProcessorType processorType;
 
     @DataField(id = "cpu", description = "Number of CPUs allocated for this queue")
     private int cpu;
@@ -26,7 +26,7 @@ public class ExecutionQueue {
     @DataField(id = "options", description = "Additional options for the queue")
     private ObjectMap options;
 
-    public enum ExecutionType {
+    public enum ProcessorType {
         CPU, // Default execution type
         GPU, // Execution type for GPU-based tasks
         FPGA // Execution type for FPGA-based tasks
@@ -35,18 +35,19 @@ public class ExecutionQueue {
     public ExecutionQueue() {
     }
 
-    public ExecutionQueue(String id, String executor, String description, ExecutionType type, int cpu, String memory, ObjectMap options) {
+    public ExecutionQueue(String id, String executor, String description, ProcessorType processorType, int cpu, String memory,
+                          ObjectMap options) {
         this.id = id;
         this.executor = executor;
         this.description = description;
-        this.type = type;
+        this.processorType = processorType;
         this.cpu = cpu;
         this.memory = memory;
         this.options = options;
     }
 
     public static ExecutionQueue defaultQueue() {
-        return new ExecutionQueue("job", "k8s", "Default queue", ExecutionType.CPU, 8, "32GB", new ObjectMap());
+        return new ExecutionQueue("job", "k8s", "Default queue", ProcessorType.CPU, 8, "32GB", new ObjectMap());
     }
 
     @Override
@@ -54,7 +55,7 @@ public class ExecutionQueue {
         final StringBuilder sb = new StringBuilder("ExecutionQueue{");
         sb.append("id='").append(id).append('\'');
         sb.append(", executor='").append(executor).append('\'');
-        sb.append(", type=").append(type);
+        sb.append(", processorType=").append(processorType);
         sb.append(", cpu=").append(cpu);
         sb.append(", memory='").append(memory).append('\'');
         sb.append(", options=").append(options);
@@ -89,12 +90,12 @@ public class ExecutionQueue {
         return this;
     }
 
-    public ExecutionType getType() {
-        return type;
+    public ProcessorType getProcessorType() {
+        return processorType;
     }
 
-    public ExecutionQueue setType(ExecutionType type) {
-        this.type = type;
+    public ExecutionQueue setProcessorType(ProcessorType type) {
+        this.processorType = type;
         return this;
     }
 

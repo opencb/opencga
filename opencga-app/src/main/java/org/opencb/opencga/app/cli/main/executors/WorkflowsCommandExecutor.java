@@ -175,7 +175,7 @@ public class WorkflowsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "minimumRequirements.cpu", commandOptions.minimumRequirementsCpu, true);
             putNestedIfNotEmpty(beanParams, "minimumRequirements.memory", commandOptions.minimumRequirementsMemory, true);
             putNestedIfNotEmpty(beanParams, "minimumRequirements.disk", commandOptions.minimumRequirementsDisk, true);
-            putNestedIfNotNull(beanParams, "minimumRequirements.type", commandOptions.minimumRequirementsType, true);
+            putNestedIfNotNull(beanParams, "minimumRequirements.processorType", commandOptions.minimumRequirementsProcessorType, true);
             putNestedIfNotEmpty(beanParams, "minimumRequirements.queue", commandOptions.minimumRequirementsQueue, true);
             putNestedIfNotEmpty(beanParams, "creationDate", commandOptions.creationDate, true);
             putNestedIfNotEmpty(beanParams, "modificationDate", commandOptions.modificationDate, true);
@@ -363,7 +363,7 @@ public class WorkflowsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "minimumRequirements.cpu", commandOptions.minimumRequirementsCpu, true);
             putNestedIfNotEmpty(beanParams, "minimumRequirements.memory", commandOptions.minimumRequirementsMemory, true);
             putNestedIfNotEmpty(beanParams, "minimumRequirements.disk", commandOptions.minimumRequirementsDisk, true);
-            putNestedIfNotNull(beanParams, "minimumRequirements.type", commandOptions.minimumRequirementsType, true);
+            putNestedIfNotNull(beanParams, "minimumRequirements.processorType", commandOptions.minimumRequirementsProcessorType, true);
             putNestedIfNotEmpty(beanParams, "minimumRequirements.queue", commandOptions.minimumRequirementsQueue, true);
             putNestedIfNotEmpty(beanParams, "creationDate", commandOptions.creationDate, true);
             putNestedIfNotEmpty(beanParams, "modificationDate", commandOptions.modificationDate, true);

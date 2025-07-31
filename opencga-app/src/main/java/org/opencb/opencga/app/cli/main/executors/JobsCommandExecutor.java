@@ -177,6 +177,9 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
         queryParams.putIfNotEmpty("toolId", commandOptions.toolId);
         queryParams.putIfNotEmpty("toolType", commandOptions.toolType);
+        queryParams.putIfNotEmpty("toolMinimumRequirementsQueue", commandOptions.toolMinimumRequirementsQueue);
+        queryParams.putIfNotEmpty("toolMinimumRequirementsProcessorType", commandOptions.toolMinimumRequirementsProcessorType);
+        queryParams.putIfNotEmpty("executionQueueId", commandOptions.executionQueueId);
         queryParams.putIfNotEmpty("userId", commandOptions.userId);
         queryParams.putIfNotEmpty("priority", commandOptions.priority);
         queryParams.putIfNotEmpty("status", commandOptions.status);
@@ -262,6 +265,9 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("type", commandOptions.type);
         queryParams.putIfNotEmpty("toolId", commandOptions.toolId);
         queryParams.putIfNotEmpty("toolType", commandOptions.toolType);
+        queryParams.putIfNotEmpty("toolMinimumRequirementsQueue", commandOptions.toolMinimumRequirementsQueue);
+        queryParams.putIfNotEmpty("toolMinimumRequirementsProcessorType", commandOptions.toolMinimumRequirementsProcessorType);
+        queryParams.putIfNotEmpty("executionQueueId", commandOptions.executionQueueId);
         queryParams.putIfNotEmpty("toolExternalExecutorId", commandOptions.toolExternalExecutorId);
         queryParams.putIfNotEmpty("parentId", commandOptions.parentId);
         queryParams.putIfNotNull("dryRun", commandOptions.dryRun);
@@ -343,6 +349,9 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("type", commandOptions.type);
         queryParams.putIfNotEmpty("toolId", commandOptions.toolId);
         queryParams.putIfNotEmpty("toolType", commandOptions.toolType);
+        queryParams.putIfNotEmpty("toolMinimumRequirementsQueue", commandOptions.toolMinimumRequirementsQueue);
+        queryParams.putIfNotEmpty("toolMinimumRequirementsProcessorType", commandOptions.toolMinimumRequirementsProcessorType);
+        queryParams.putIfNotEmpty("executionQueueId", commandOptions.executionQueueId);
         queryParams.putIfNotEmpty("toolExternalExecutorId", commandOptions.toolExternalExecutorId);
         queryParams.putIfNotEmpty("parentId", commandOptions.parentId);
         queryParams.putIfNotNull("dryRun", commandOptions.dryRun);

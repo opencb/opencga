@@ -951,6 +951,8 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
                     case TYPE:
                     case UUID:
                     case TOOL_TYPE:
+                    case TOOL_REQUIREMENTS_QUEUE:
+                    case TOOL_REQUIREMENTS_PROCESSOR_TYPE:
                     case PRIORITY:
                     case TOOL_EXTERNAL_EXECUTOR_ID:
                     case PARENT_ID:
@@ -961,6 +963,7 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
 //                    case OUTPUT_ERROR:
 //                    case EXECUTION_START:
                     case EXECUTION_END:
+                    case EXECUTION_QUEUE_ID:
 //                    case COMMAND_LINE:
                     case VISITED:
                     case RELEASE:

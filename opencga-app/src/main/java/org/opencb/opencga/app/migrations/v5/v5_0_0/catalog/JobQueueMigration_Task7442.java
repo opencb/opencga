@@ -26,7 +26,7 @@ public class JobQueueMigration_Task7442 extends MigrationTool {
                 (document, bulk) -> {
                     MongoDBAdaptor.UpdateDocument updateDocument = new MongoDBAdaptor.UpdateDocument();
 
-                    updateDocument.getSet().put("tool.minimumRequirements.type", ExecutionQueue.ExecutionType.CPU.name());
+                    updateDocument.getSet().put("tool.minimumRequirements.type", ExecutionQueue.ProcessorType.CPU.name());
                     updateDocument.getSet().put("tool.minimumRequirements.queue", "");
                     updateDocument.getSet().put("execution.queue", new Document());
                     bulk.add(new UpdateOneModel<>(Filters.eq("_id", document.get("_id")), updateDocument.toFinalUpdateDocument()));

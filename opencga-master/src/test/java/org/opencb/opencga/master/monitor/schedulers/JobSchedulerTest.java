@@ -68,10 +68,10 @@ public class JobSchedulerTest {
 
         // Create test queues
         queues = Arrays.asList(
-                new ExecutionQueue().setId("small-queue").setType(ExecutionQueue.ExecutionType.CPU).setCpu(2).setMemory("4GB"),
-                new ExecutionQueue().setId("medium-queue").setType(ExecutionQueue.ExecutionType.CPU).setCpu(8).setMemory("16GB"),
-                new ExecutionQueue().setId("large-queue").setType(ExecutionQueue.ExecutionType.CPU).setCpu(16).setMemory("32GB"),
-                new ExecutionQueue().setId("local-queue").setType(ExecutionQueue.ExecutionType.GPU).setCpu(4).setMemory("8GB")
+                new ExecutionQueue().setId("small-queue").setProcessorType(ExecutionQueue.ProcessorType.CPU).setCpu(2).setMemory("4GB"),
+                new ExecutionQueue().setId("medium-queue").setProcessorType(ExecutionQueue.ProcessorType.CPU).setCpu(8).setMemory("16GB"),
+                new ExecutionQueue().setId("large-queue").setProcessorType(ExecutionQueue.ProcessorType.CPU).setCpu(16).setMemory("32GB"),
+                new ExecutionQueue().setId("local-queue").setProcessorType(ExecutionQueue.ProcessorType.GPU).setCpu(4).setMemory("8GB")
         );
 
         jobScheduler = new JobScheduler(catalogManager, queues, token);
@@ -210,7 +210,7 @@ public class JobSchedulerTest {
                 .setInternal(new JobInternal().setRegistrationDate(TimeUtils.getTime()))
                 .setTool(new ToolInfo().setMinimumRequirements(
                         new org.opencb.opencga.core.models.job.MinimumRequirements()
-                                .setType(ExecutionQueue.ExecutionType.CPU)
+                                .setProcessorType(ExecutionQueue.ProcessorType.CPU)
                                 .setCpu("2")
                                 .setMemory("4GB")
                                 .setQueue("small-queue")
@@ -226,7 +226,7 @@ public class JobSchedulerTest {
                 .setInternal(new JobInternal().setRegistrationDate(TimeUtils.getTime()))
                 .setTool(new ToolInfo().setMinimumRequirements(
                         new org.opencb.opencga.core.models.job.MinimumRequirements()
-                                .setType(ExecutionQueue.ExecutionType.CPU)
+                                .setProcessorType(ExecutionQueue.ProcessorType.CPU)
                                 .setCpu("4")
                                 .setMemory("8GB")
                                 .setQueue("medium-queue")
@@ -246,7 +246,7 @@ public class JobSchedulerTest {
                 .setInternal(new JobInternal().setRegistrationDate(TimeUtils.getTime()))
                 .setTool(new ToolInfo().setMinimumRequirements(
                         new org.opencb.opencga.core.models.job.MinimumRequirements()
-                                .setType(ExecutionQueue.ExecutionType.CPU)
+                                .setProcessorType(ExecutionQueue.ProcessorType.CPU)
                                 .setCpu("2")
                                 .setMemory("4GB")
                                 .setQueue("small-queue")

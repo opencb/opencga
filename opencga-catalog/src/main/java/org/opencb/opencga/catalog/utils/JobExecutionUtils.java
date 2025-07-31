@@ -13,7 +13,7 @@ public class JobExecutionUtils {
         // Sort the queues based on their number of CPUs and memory
         // Also filter out queues that do not meet the minimum requirements
         return queues.stream()
-                .filter(queue -> queue.getType().equals(requirements.getType())
+                .filter(queue -> queue.getProcessorType().equals(requirements.getProcessorType())
                         && queue.getCpu() >= Integer.parseInt(requirements.getCpu())
                         && IOUtils.fromHumanReadableToByte(queue.getMemory()) >= IOUtils.fromHumanReadableToByte(requirements.getMemory()))
                 .sorted((q1, q2) -> {

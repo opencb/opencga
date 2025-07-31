@@ -15,8 +15,8 @@ public class MinimumRequirements {
     @DataField(id = "disk", description = FieldConstants.MIN_REQUIREMENTS_DISK_DESCRIPTION)
     private String disk;
 
-    @DataField(id = "type", description = FieldConstants.MIN_REQUIREMENTS_TYPE_DESCRIPTION)
-    private ExecutionQueue.ExecutionType type;
+    @DataField(id = "processorType", description = FieldConstants.MIN_REQUIREMENTS_TYPE_DESCRIPTION)
+    private ExecutionQueue.ProcessorType processorType;
 
     @DataField(id = "queue", description = FieldConstants.MIN_REQUIREMENTS_QUEUE_DESCRIPTION)
     private String queue;
@@ -24,11 +24,11 @@ public class MinimumRequirements {
     public MinimumRequirements() {
     }
 
-    public MinimumRequirements(String cpu, String memory, String disk, ExecutionQueue.ExecutionType type, String queue) {
+    public MinimumRequirements(String cpu, String memory, String disk, ExecutionQueue.ProcessorType processorType, String queue) {
         this.cpu = cpu;
         this.memory = memory;
         this.disk = disk;
-        this.type = type;
+        this.processorType = processorType;
         this.queue = queue;
     }
 
@@ -38,7 +38,7 @@ public class MinimumRequirements {
         sb.append("cpu='").append(cpu).append('\'');
         sb.append(", memory='").append(memory).append('\'');
         sb.append(", disk='").append(disk).append('\'');
-        sb.append(", type=").append(type);
+        sb.append(", processorType=").append(processorType);
         sb.append(", queue='").append(queue).append('\'');
         sb.append('}');
         return sb.toString();
@@ -71,12 +71,12 @@ public class MinimumRequirements {
         return this;
     }
 
-    public ExecutionQueue.ExecutionType getType() {
-        return type;
+    public ExecutionQueue.ProcessorType getProcessorType() {
+        return processorType;
     }
 
-    public MinimumRequirements setType(ExecutionQueue.ExecutionType type) {
-        this.type = type;
+    public MinimumRequirements setProcessorType(ExecutionQueue.ProcessorType processorType) {
+        this.processorType = processorType;
         return this;
     }
 

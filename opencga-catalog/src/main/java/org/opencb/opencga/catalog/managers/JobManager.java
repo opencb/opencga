@@ -340,7 +340,7 @@ public class JobManager extends ResourceManager<Job> {
         MinimumRequirements requirements = job.getTool().getMinimumRequirements();
         requirements.setCpu(ParamUtils.defaultString(requirements.getCpu(), String.valueOf(request.getCpu())));
         requirements.setMemory(ParamUtils.defaultString(requirements.getMemory(), request.getMemory()));
-        requirements.setType(ParamUtils.defaultObject(requirements.getType(), ExecutionQueue.ExecutionType.CPU));
+        requirements.setProcessorType(ParamUtils.defaultObject(requirements.getProcessorType(), ExecutionQueue.ProcessorType.CPU));
         if (StringUtils.isEmpty(requirements.getQueue())) {
             ExecutionQueue executionQueue = JobExecutionUtils.findOptimalQueues(configuration.getAnalysis().getExecution().getQueues(),
                     requirements).get(0);

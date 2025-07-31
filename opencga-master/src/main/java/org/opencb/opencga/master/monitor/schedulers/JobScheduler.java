@@ -28,7 +28,7 @@ public class JobScheduler {
     private final String token;
 
     private Map<String, UserRole> userRoles;
-    private final Map<ExecutionQueue.ExecutionType, List<ExecutionQueue>> availableQueues;
+    private final Map<ExecutionQueue.ProcessorType, List<ExecutionQueue>> availableQueues;
 
     private static final float PRIORITY_WEIGHT = 0.6F;
     private static final float IDLE_TIME_WEIGHT = 0.4F;
@@ -44,10 +44,10 @@ public class JobScheduler {
 
         this.availableQueues = new HashMap<>();
         for (ExecutionQueue queue : queueList) {
-            if (!availableQueues.containsKey(queue.getType())) {
-                availableQueues.put(queue.getType(), new ArrayList<>());
+            if (!availableQueues.containsKey(queue.getProcessorType())) {
+                availableQueues.put(queue.getProcessorType(), new ArrayList<>());
             }
-            availableQueues.get(queue.getType()).add(queue);
+            availableQueues.get(queue.getProcessorType()).add(queue);
         }
     }
 
@@ -195,7 +195,7 @@ public class JobScheduler {
         for (Job job : pendingJobs) {
             String queueId = job.getTool().getMinimumRequirements().getQueue();
             if (StringUtils.isEmpty(queueId)) {
-                List<ExecutionQueue> executionQueues = this.availableQueues.get(job.getTool().getMinimumRequirements().getType());
+                List<ExecutionQueue> executionQueues = this.availableQueues.get(job.getTool().getMinimumRequirements().getProcessorType());
                 queueId = JobExecutionUtils.findOptimalQueues(executionQueues, job.getTool().getMinimumRequirements()).get(0).getId();
                 logger.debug("Job '{}' has no queue defined. Optimal queue for scheduling is '{}' .", job.getId(), queueId);
             }
