@@ -111,7 +111,7 @@ public class SshMRExecutor extends MRExecutor {
             try {
                 Runtime.getRuntime().removeShutdownHook(hook);
             } catch (Exception e) {
-                logger.error("Error removing shutdown hook", e);
+                LOGGER.error("Error removing shutdown hook", e);
             }
         }
         boolean succeed = exitValue == 0;
