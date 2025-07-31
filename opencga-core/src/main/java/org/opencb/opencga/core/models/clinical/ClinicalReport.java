@@ -1,5 +1,6 @@
 package org.opencb.opencga.core.models.clinical;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalComment;
@@ -49,27 +50,33 @@ public class ClinicalReport {
 
     // Deprecated fields
     @Deprecated
+    @JsonIgnore
     @DataField(id = "title", description = FieldConstants.CLINICAL_REPORT_TITLE, deprecated = true)
     private String title;
 
     @Deprecated
+    @JsonIgnore
     @DataField(id = "logo", description = FieldConstants.CLINICAL_REPORT_LOGO, deprecated = true)
     private String logo;
 
     @Deprecated
+    @JsonIgnore
     @DataField(id = "signedBy", description = FieldConstants.CLINICAL_REPORT_SIGNED_BY, deprecated = true)
     private String signedBy;
 
     @Deprecated
+    @JsonIgnore
     @DataField(id = "signature", description = FieldConstants.CLINICAL_REPORT_SIGNATURE, deprecated = true)
     private String signature;
 
     @Deprecated
+    @JsonIgnore
     @DataField(id = "supportingEvidences", description = FieldConstants.CLINICAL_REPORT_SUPPORTING_EVIDENCES, since = "2.12.0",
             deprecated = true)
     private List<File> supportingEvidences;
 
     @Deprecated
+    @JsonIgnore
     @DataField(id = "files", description = FieldConstants.CLINICAL_REPORT_FILES, since = "2.12.0", deprecated = true)
     private List<File> files;
 
