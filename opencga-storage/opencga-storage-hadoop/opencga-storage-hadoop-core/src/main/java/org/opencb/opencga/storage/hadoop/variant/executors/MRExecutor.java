@@ -58,7 +58,7 @@ public abstract class MRExecutor {
     private ObjectMap options;
     private List<String> env;
     private static Logger logger = LoggerFactory.getLogger(MRExecutor.class);
-    private static final Pattern STDOUT_KEY_VALUE_PATTERN = Pattern.compile("^[a-zA-Z0-9_]+=[^=]+$");
+    private static final Pattern STDOUT_KEY_VALUE_PATTERN = Pattern.compile("^[a-zA-Z0-9_\\-.]+=[^=]+$");
     private static final Pattern EXCEPTION = Pattern.compile("^Exception in thread \"main\" ([^:]+: .+)$");
 
     public static class Result {
