@@ -80,7 +80,7 @@ if ! $SKIP_R; then
   echo "==================="
   R_SOURCE_DIR="./opencga-enterprise-client/src/main/R"
   echo "Copying OpenCGA R client files to $CLIENTS_DIR"
-  cp -r "$R_SOURCE_DIR" "$CLIENTS_DIR"
+  cp -rL "$R_SOURCE_DIR" "$CLIENTS_DIR"
   # If Version is a SNAPSHOT, we need to replace it with a version that R can understand
   R_VERSION=$(echo "$VERSION" | sed 's/-SNAPSHOT/.9000/g')
   echo "Calculated R Version: $R_VERSION"
