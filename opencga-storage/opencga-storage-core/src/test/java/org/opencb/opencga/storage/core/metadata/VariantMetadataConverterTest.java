@@ -15,6 +15,7 @@ import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.io.managers.LocalIOConnector;
 import org.opencb.opencga.storage.core.metadata.models.*;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -46,7 +47,9 @@ public class VariantMetadataConverterTest {
     @Before
     public void setUp() throws Exception {
         metadataManager = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
-        projectMetadata = metadataManager.getAndUpdateProjectMetadata(new ObjectMap());
+        DummyVariantStorageMetadataDBAdaptorFactory.clear();
+        projectMetadata = metadataManager.getAndUpdateProjectMetadata(new ObjectMap(VariantStorageOptions.SPECIES.key(), "hsapiens")
+                .append(VariantStorageOptions.ASSEMBLY.key(), "grch38"));
 
         URI uri = VariantStorageBaseTest.getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz");
         variantReaderUtils = new VariantReaderUtils(new IOConnectorProvider(LocalIOConnector.class));
@@ -78,7 +81,6 @@ public class VariantMetadataConverterTest {
                 .configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true)
                 .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
                 .writerWithDefaultPrettyPrinter();
-        projectMetadata = new ProjectMetadata("hsapiens", "37", 1);
     }
 
     @Test

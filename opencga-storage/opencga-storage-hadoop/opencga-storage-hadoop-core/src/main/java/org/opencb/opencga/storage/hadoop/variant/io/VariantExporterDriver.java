@@ -31,7 +31,9 @@ import org.opencb.opencga.storage.hadoop.variant.mr.VariantLocusKeyPartitioner;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapper;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
+import java.net.URLEncoder;
 import java.util.List;
 import java.util.Objects;
 import java.util.logging.Handler;
@@ -208,8 +210,14 @@ public class VariantExporterDriver extends VariantDriver {
             if (VariantLocusKey.isSingleDigitChromosome(chromosome)) {
                 chromosome = "0" + chromosome;
             }
-
-            return String.format("%s.%s.%010d", namedOutput, chromosome, start);
+            String encodedChr;
+            try {
+                encodedChr = URLEncoder.encode(chromosome, "UTF-8");
+            } catch (UnsupportedEncodingException e) {
+                // This should never happen
+                throw new RuntimeException(e);
+            }
+            return String.format("%s.%s.%010d", namedOutput, encodedChr, start);
         }
 
         private MultipleOutputs<Variant, NullWritable> mos;

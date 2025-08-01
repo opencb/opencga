@@ -15,7 +15,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveAction;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.Acl;
-import org.opencb.opencga.core.models.admin.GroupSyncParams;
+import org.opencb.opencga.core.models.admin.DeprecatedGroupSyncParams;
 import org.opencb.opencga.core.models.admin.InstallationParams;
 import org.opencb.opencga.core.models.admin.JWTParams;
 import org.opencb.opencga.core.models.admin.UserImportParams;
@@ -316,15 +316,15 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("organization", commandOptions.organization);
 
 
-        GroupSyncParams groupSyncParams = null;
+        DeprecatedGroupSyncParams deprecatedGroupSyncParams = null;
         if (commandOptions.jsonDataModel) {
             RestResponse<Group> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/users/sync"));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            groupSyncParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), GroupSyncParams.class);
+            deprecatedGroupSyncParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), DeprecatedGroupSyncParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "authenticationOriginId", commandOptions.authenticationOriginId, true);
@@ -334,11 +334,11 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotNull(beanParams, "syncAll", commandOptions.syncAll, true);
             putNestedIfNotNull(beanParams, "force", commandOptions.force, true);
 
-            groupSyncParams = JacksonUtils.getDefaultObjectMapper().copy()
+            deprecatedGroupSyncParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), GroupSyncParams.class);
+                    .readValue(beanParams.toJson(), DeprecatedGroupSyncParams.class);
         }
-        return openCGAClient.getAdminClient().syncUsers(groupSyncParams, queryParams);
+        return openCGAClient.getAdminClient().syncUsers(deprecatedGroupSyncParams, queryParams);
     }
 
     private RestResponse<Group> usersUpdateGroups() throws Exception {
