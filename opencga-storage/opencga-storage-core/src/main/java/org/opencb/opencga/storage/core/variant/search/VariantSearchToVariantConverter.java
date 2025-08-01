@@ -65,22 +65,35 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
     private final VariantAnnotationModelUtils variantAnnotationModelUtils = new VariantAnnotationModelUtils();
     private final boolean functionQueryStats;
 
-    public VariantSearchToVariantConverter(VariantStorageMetadataManager metadataManager, SearchIndexMetadata searchIndexMetadata) {
-        this.includeFields = null;
-        for (Map.Entry<String, Integer> entry : metadataManager.getStudies().entrySet()) {
-            String studyName = entry.getKey();
-            studyName = VariantSearchToVariantConverter.studyIdToSearchModel(studyName);
+    public static VariantSearchToVariantConverter converterSimpleStats(SearchIndexMetadata searchIndexMetadata) {
+        if (VariantSearchManager.isStatsFunctionalQueryEnabled(searchIndexMetadata)) {
+            throw new IllegalArgumentException("Cannot create simpleStats VariantSearchToVariantConverter with functional stats enabled. "
+                    + "Use the constructor with VariantStorageMetadataManager instead.");
+        }
+        return new VariantSearchToVariantConverter(searchIndexMetadata, (VariantStorageMetadataManager) null);
+    }
 
-            for (CohortMetadata cohort : metadataManager.getCalculatedOrPartialCohorts(entry.getValue())) {
-                String cohortName = cohort.getName();
-                cohortsSize.put(studyName + VariantSearchUtils.FIELD_SEPARATOR + cohortName, cohort.getSamples().size());
+    public VariantSearchToVariantConverter(SearchIndexMetadata searchIndexMetadata, VariantStorageMetadataManager metadataManager) {
+        this.includeFields = null;
+        functionQueryStats = VariantSearchManager.isStatsFunctionalQueryEnabled(searchIndexMetadata);
+        if (functionQueryStats) {
+            if (metadataManager == null) {
+                throw new IllegalArgumentException("Metadata manager cannot be null when functionQueryStats is enabled");
+            }
+            for (Map.Entry<String, Integer> entry : metadataManager.getStudies().entrySet()) {
+                String studyName = entry.getKey();
+                studyName = VariantSearchToVariantConverter.studyIdToSearchModel(studyName);
+
+                for (CohortMetadata cohort : metadataManager.getCalculatedOrPartialCohorts(entry.getValue())) {
+                    String cohortName = cohort.getName();
+                    cohortsSize.put(studyName + VariantSearchUtils.FIELD_SEPARATOR + cohortName, cohort.getSamples().size());
+                }
             }
         }
         idGenerator = VariantSearchIdGenerator.getGenerator(searchIndexMetadata);
-        functionQueryStats = VariantSearchManager.isStatsFunctionalQueryEnabled(searchIndexMetadata);
     }
 
-    public VariantSearchToVariantConverter(Set<VariantField> includeFields, SearchIndexMetadata searchIndexMetadata) {
+    public VariantSearchToVariantConverter(SearchIndexMetadata searchIndexMetadata, Set<VariantField> includeFields) {
         this.includeFields = includeFields;
         idGenerator = VariantSearchIdGenerator.getGenerator(searchIndexMetadata);
         functionQueryStats = VariantSearchManager.isStatsFunctionalQueryEnabled(searchIndexMetadata);
@@ -1034,8 +1047,6 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     // Alternate allele frequency
                     // AltFreq = AltAlleleCount / (2 * cohortSize) - alleleGap
                     // RefFreq = RefAlleleCount / (2 * cohortSize) - alleleGap
-                    Integer cohortSize = cohortsSize.get(studyId + FIELD_SEPARATOR + cohortName);
-                    float alleleGap = getAlleleMissGapCount(stats, cohortSize);
                     float altAlleleCount = stats.getAltAlleleCount();
                     if (altAlleleCount == 0) {
                         // Avoid 0/0 division
@@ -1045,6 +1056,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     float nonRef = getNonRefCount(stats);
 
                     if (functionQueryStats) {
+                        Integer cohortSize = cohortsSize.get(studyId + FIELD_SEPARATOR + cohortName);
+                        float alleleGap = getAlleleMissGapCount(stats, cohortSize);
                         variantSearchModel.getAltStats().put(buildStatsAltAlleleCountField(studyId, cohortName),
                                 altAlleleCount);
                         variantSearchModel.getAltStats().put(buildStatsAlleleMissGapCountField(studyId, cohortName),

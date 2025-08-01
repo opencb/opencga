@@ -639,7 +639,7 @@ public class VariantSearchManager {
         DataResult<Variant> queryResult;
         try {
             queryResult = solrCollection.query(solrQuery, VariantSearchModel.class,
-                    new VariantSearchToVariantConverter(variantQuery.getProjection().getFields(), indexMetadata));
+                    new VariantSearchToVariantConverter(indexMetadata, variantQuery.getProjection().getFields()));
         } catch (SolrServerException e) {
             throw new VariantSearchException("Error executing variant query", e);
         }
@@ -716,7 +716,7 @@ public class VariantSearchManager {
         try {
             SolrQuery solrQuery = parseQuery(indexMetadata, query, queryOptions);
             return new SolrVariantDBIterator(solrManager.getSolrClient(), collection, solrQuery,
-                    new VariantSearchToVariantConverter(VariantField.getIncludeFields(queryOptions), indexMetadata));
+                    new VariantSearchToVariantConverter(indexMetadata, VariantField.getIncludeFields(queryOptions)));
         } catch (SolrServerException e) {
             throw new VariantSearchException("Error getting variant iterator", e);
         }

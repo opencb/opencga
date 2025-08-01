@@ -22,7 +22,7 @@ public class VariantToSolrBeanConverterTask implements Converter<Variant, Varian
                                           VariantStorageMetadataManager metadataManager) {
         this.binder = binder;
         this.filter = new VariantSecondaryIndexFilter(metadataManager, indexMetadata);
-        this.converter = new VariantSearchToVariantConverter(metadataManager, indexMetadata);
+        this.converter = new VariantSearchToVariantConverter(indexMetadata, metadataManager);
     }
 
     @Override
