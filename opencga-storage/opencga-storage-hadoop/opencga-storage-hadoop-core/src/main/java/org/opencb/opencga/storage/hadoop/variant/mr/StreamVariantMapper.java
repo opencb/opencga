@@ -443,7 +443,8 @@ public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
         variantDataWriter = writerFactory.newDataWriter(format, stdin, new Query(query), new QueryOptions(options));
 
 
-        if (format.inPlain() == VariantWriterFactory.VariantOutputFormat.JSON) {
+        if (format.inPlain() == VariantWriterFactory.VariantOutputFormat.JSON
+                || format.inPlain() == VariantWriterFactory.VariantOutputFormat.JSON_SPARSE) {
             if (metadata == null) {
                 VariantMetadataFactory metadataFactory = new VariantMetadataFactory(metadataManager);
                 metadata = metadataFactory.makeVariantMetadata(query, options);

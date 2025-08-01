@@ -136,8 +136,7 @@ public enum VariantStorageOptions implements ConfigurationOption {
 
     RELEASE("release", 1),
 
-    MERGE_MODE("merge.mode", VariantStorageEngine.MergeMode.ADVANCED),
-    SEARCH_INDEX_LAST_TIMESTAMP("search.index.last.timestamp", 0);
+    MERGE_MODE("merge.mode", VariantStorageEngine.MergeMode.ADVANCED);
 
     private final String key;
     private final Object value;

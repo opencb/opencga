@@ -6,6 +6,8 @@ public class Definition {
 
     private String type; // enum, object, array, string, integer, number, boolean, null
     private Map<String, FieldDefinition> properties;
+    private String description;
+    // List<String> required;
 
     // Getters y Setters
     public String getType() {
@@ -24,6 +26,13 @@ public class Definition {
         this.properties = properties;
     }
 
+    public String getDescription() {
+        return description;
+    }
 
+    public Definition setDescription(String description) {
+        this.description = description;
+        return this;
+    }
 }
 
