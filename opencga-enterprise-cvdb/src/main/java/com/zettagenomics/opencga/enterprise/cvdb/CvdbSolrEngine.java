@@ -78,11 +78,13 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
@@ -160,7 +162,7 @@ public class CvdbSolrEngine {
     }
 
     public CvdbSolrEngine(CvdbConfiguration cvdbConfig, CatalogManager catalogManager,
-                          VariantStorageMetadataManager variantStorageMetadataManager, SearchIndexMetadata searchIndexMetadata) {
+                          VariantStorageMetadataManager variantStorageMetadataManager) {
         this.configuration = catalogManager.getConfiguration();
         this.cvdbConfiguration = cvdbConfig;
 
@@ -168,9 +170,19 @@ public class CvdbSolrEngine {
                 cvdbConfig.getDatabase().getTimeout());
         this.catalogManager = catalogManager;
         this.variantStorageMetadataManager = variantStorageMetadataManager;
-        this.searchIndexMetadata = searchIndexMetadata;
+        // Ideally, the SearchIndexMetadata should be loaded from some persistent storage, but for now we will use a default one.
+        this.searchIndexMetadata = getDefaultSearchIndexMetadata();
 
         init();
+    }
+
+    static SearchIndexMetadata getDefaultSearchIndexMetadata() {
+        return new SearchIndexMetadata(
+                0, Date.from(Instant.now()), Date.from(Instant.now()), SearchIndexMetadata.Status.ACTIVE, CLINICAL_VARIANT_CONFIGSET, "",
+                new ObjectMap()
+                        .append(VariantStorageOptions.SEARCH_STATS_FUNCTIONAL_QUERIES_ENABLED.key(), false)
+                        .append(VariantStorageOptions.SEARCH_STATS_VARIANT_ID_VERSION.key(), "v1")
+        );
     }
 
     private void init() {
