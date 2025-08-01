@@ -61,7 +61,7 @@ public class SolrQueryParserTest {
         scm = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
         scm.createStudy(studyName);
 
-        solrQueryParser = new SolrQueryParser(scm, new SearchIndexMetadata(1, new Date(), new Date(), SearchIndexMetadata.Status.ACTIVE,
+        solrQueryParser = VariantStorageSolrQueryParser.create(scm, new SearchIndexMetadata(1, new Date(), new Date(), SearchIndexMetadata.Status.ACTIVE,
                 "", "", new ObjectMap()));
     }
 

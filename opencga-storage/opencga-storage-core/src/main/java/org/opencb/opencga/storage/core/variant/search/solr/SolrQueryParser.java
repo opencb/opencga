@@ -27,9 +27,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
-import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
@@ -50,7 +47,8 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
-import static org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter.*;
+import static org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter.MISSING_VALUE;
+import static org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter.studyIdToSearchModel;
 import static org.opencb.opencga.storage.core.variant.search.VariantSearchUtils.FIELD_SEPARATOR;
 
 /**
@@ -58,13 +56,9 @@ import static org.opencb.opencga.storage.core.variant.search.VariantSearchUtils.
  * Created by jtarraga on 18/11/16.
  * Created by wasim on 18/11/16.
  */
-public class SolrQueryParser {
+public abstract class SolrQueryParser {
 
-    private final VariantStorageMetadataManager variantStorageMetadataManager;
-    private final boolean functionQueryStats;
     private final VariantSearchIdGenerator idGenerator;
-    // Experimental! No performance improvement seen on small datasets. Disabled by default.
-    private final boolean auxQueryStats = false;
 
     private static Map<String, String> includeMap;
 
@@ -109,9 +103,7 @@ public class SolrQueryParser {
         initChromosomeMap();
     }
 
-    public SolrQueryParser(VariantStorageMetadataManager variantStorageMetadataManager, SearchIndexMetadata indexMetadata) {
-        this.variantStorageMetadataManager = variantStorageMetadataManager;
-        this.functionQueryStats = VariantSearchManager.isStatsFunctionalQueryEnabled(indexMetadata);
+    public SolrQueryParser(SearchIndexMetadata indexMetadata) {
         idGenerator = VariantSearchIdGenerator.getGenerator(indexMetadata);
     }
 
@@ -199,24 +191,13 @@ public class SolrQueryParser {
         // Study (study)
         @Deprecated
         boolean studiesOr = false;
-        StudyMetadata defaultStudy = VariantQueryParser.getDefaultStudy(query, variantStorageMetadataManager);
-        String defaultStudyName = (defaultStudy == null)
-                ? null
-                : defaultStudy.getName();
+        String defaultStudyName = getDefaultStudyName(query);
         String key = STUDY.key();
         if (isValidParam(query, STUDY)) {
             String value = query.getString(key);
             QueryOperation op = checkOperator(value);
-            Set<Integer> studyIds = new HashSet<>(variantStorageMetadataManager.getStudyIds(splitValue(value, op)));
-            List<String> studyNames = new ArrayList<>(studyIds.size());
-            Map<String, Integer> map = variantStorageMetadataManager.getStudies(null);
-            if (map != null && map.size() > 1) {
-                map.forEach((name, id) -> {
-                    if (studyIds.contains(id)) {
-                        studyNames.add(studyIdToSearchModel(name));
-                    }
-                });
-
+            List<String> studyNames = parseStudyNames(splitValue(value, op));
+            if (!studyNames.isEmpty()) {
                 if (op == null || op == QueryOperation.OR) {
                     filterList.add(parseCategoryTermValue("studies", StringUtils.join(studyNames, ",")));
                     studiesOr = true;
@@ -400,6 +381,10 @@ public class SolrQueryParser {
         logger.debug("solrQuery : " + solrQuery);
         return solrQuery;
     }
+
+    protected abstract List<String> parseStudyNames(List<String> studiesNames);
+
+    protected abstract String getDefaultStudyName(Query query);
 
     private List<String> parseVariantScores(String queryValue, String defaultStudyName) {
         List<String> filters = new ArrayList<>();
@@ -886,7 +871,7 @@ public class SolrQueryParser {
         }
     }
 
-    private enum FreqField {
+    protected enum FreqField {
         POP_FREQ("popFreq"),
         ALT_STATS("altStats"),
         PASS_STATS("passStats");
@@ -907,7 +892,7 @@ public class SolrQueryParser {
         }
     }
 
-    private enum FreqType {
+    protected enum FreqType {
         REF("REF"),
         ALT("ALT"),
         MAF("MAF");
@@ -1009,122 +994,8 @@ public class SolrQueryParser {
                     }
                     // concat expression, e.g.: value:[0 TO 12]
                     filters.add(getRange(field + FIELD_SEPARATOR + study + FIELD_SEPARATOR, pop, op, numValue, addOr));
-                } else if (!functionQueryStats) {
-                    // Backwards compatibility for altStats and passStats
-
-                    if (type == FreqType.MAF) {
-                        // e.g.
-                        //   maf < 0.2 -> alt < 0.2 OR alt > 0.8
-                        //   maf < 0.5 -> All results
-                        //   maf > 0.2 -> alt > 0.2 AND alt < 0.8
-                        //   maf > 0.5 -> No results
-                        double d = Double.parseDouble(numValue);
-                        if (op.equals("<") || op.equals("<<") || op.equals("<=") || op.equals("<<=")) {
-                            StringBuilder sb = new StringBuilder();
-                            sb.append(getRange(field + FIELD_SEPARATOR + studyIdToSearchModel(study) + FIELD_SEPARATOR,
-                                    pop, op, numValue, addOr));
-                            // e.g.: maf < 0.2 -> alt < 0.2 OR alt > 0.8
-                            String[] flip = flipOperator(op, numValue);
-                            sb.append(" OR ");
-                            sb.append(getRange(field + FIELD_SEPARATOR + studyIdToSearchModel(study) + FIELD_SEPARATOR,
-                                    pop, flip[0], flip[1], addOr));
-                            filters.add(sb.toString());
-                        } else if (op.equals(">") || op.equals(">>") || op.equals(">=") || op.equals(">>=")) {
-                            double d1 = d;
-                            double d2 = 1 - d;
-                            // e.g.: maf > 0.2 -> alt > 0.2 AND alt < 0.8
-                            String fieldStr = field + FIELD_SEPARATOR + studyIdToSearchModel(study) + FIELD_SEPARATOR + pop;
-                            filters.add(fieldStr + ":[" + d1 + " TO " + d2 + "]");
-                        } else {
-                            throw new IllegalArgumentException("Unexpected operator '" + op + "'");
-                        }
-                    } else {
-                        // Solr only stores ALT frequency, we need to calculate the MAF or REF before querying
-                        String[] fixedFreqValue = getMafOrRefFrequency(type, op, numValue);
-                        op = fixedFreqValue[0];
-                        numValue = fixedFreqValue[1];
-
-                        // concat expression, e.g.: value:[0 TO 12]
-                        filters.add(getRange(field + FIELD_SEPARATOR + studyIdToSearchModel(study) + FIELD_SEPARATOR,
-                                pop, op, numValue, addOr));
-                    }
-
                 } else {
-                    String cohort = pop;
-                    int studyId = variantStorageMetadataManager.getStudyId(study);
-                    CohortMetadata cohortMetadata = variantStorageMetadataManager.getCohortMetadata(studyId, cohort);
-                    if (cohortMetadata == null) {
-                        throw VariantQueryException.malformedParam(param, value, "Missing cohort " + cohort + " in study " + study);
-                    }
-
-                    if (field == FreqField.ALT_STATS) {
-                        StringBuilder sb = new StringBuilder();
-
-            // See https://solr.apache.org/guide/solr/latest/query-guide/local-params.html#specifying-the-parameter-value-with-the-v-key
-                        // The v key is used to specify the value of the parameter. This is required so we can use AND/OR
-                        // e.g. {!frange l=0 u=0.1 v='div(altCount, sub(cohortSize * 2 , alleleCountDiff))'}
-
-                        String functionQuery;
-
-                        switch (type) {
-                            case ALT:
-                                functionQuery = altFreqF(study, cohortMetadata);
-                                if (auxQueryStats) {
-                                    // Add extra FQ query for optimization
-                                    // (missingAllelesOrGap == 0 AND alternateAlleles < $expectedAlleles) OR missingAllelesOrGap > 0
-                                    float expectedAlleles = Float.parseFloat(numValue) * cohortMetadata.getSamples().size() * 2;
-                                    String range; // "[X TO Y]";
-                                    switch (op) {
-                                        case "<":
-                                        case "<<":
-                                            range = "[* TO " + expectedAlleles + "}";
-                                            break;
-                                        case "<=":
-                                        case "<<=":
-                                            range = "[* TO " + expectedAlleles + "]";
-                                            break;
-                                        case ">":
-                                        case ">>":
-                                            range = "{" + expectedAlleles + " TO *]";
-                                            break;
-                                        case ">=":
-                                        case ">>=":
-                                            range = "[" + expectedAlleles + " TO *]";
-                                            break;
-                                        default:
-                                            throw new IllegalArgumentException("Invalid operator '" + op + "' for field " + field
-                                                    + ". Valid values are: <, <=, >, >=.");
-                                    }
-                                    String cohortName = cohortMetadata.getName();
-                                    String altAlleleCount = buildStatsAltAlleleCountField(studyIdToSearchModel(study), cohortName);
-                                    String missingAllelesOrGap = buildStatsAlleleMissGapCountField(studyIdToSearchModel(study), cohortName);
-                                    auxFilters.add("(" + missingAllelesOrGap + ":0 AND " + altAlleleCount + ":" + range + ")"
-                                            + " OR " + missingAllelesOrGap + ":[1 TO *]");
-                                }
-                                break;
-                            case REF:
-                                functionQuery = refFreqF(study, cohortMetadata);
-                                break;
-                            case MAF:
-                                functionQuery = mafFreqF(study, cohortMetadata);
-                                break;
-                            default:
-                                throw new IllegalArgumentException("Invalid type '" + type + "' for field " + field
-                                        + ". Valid values are: MAF, REF, ALT.");
-                        }
-
-                        sb.append("{!frange ")
-                                .append(getFrangeQuery(op, Float.parseFloat(numValue)))
-                                .append(" v='").append(functionQuery).append("'}");
-
-                        filters.add(sb.toString());
-                    } else if (field == FreqField.PASS_STATS) {
-                        // concat expression, e.g.: value:[0 TO 12]
-                        filters.add(getRange(field + FIELD_SEPARATOR + studyIdToSearchModel(study) + FIELD_SEPARATOR,
-                                cohort, op, numValue, addOr));
-                    } else {
-                        throw new IllegalArgumentException("Unknown field: " + field);
-                    }
+                    parseVariantStatsFilter(param, value, field, type, study, pop, op, numValue, addOr, filters, auxFilters);
                 }
             }
 
@@ -1138,6 +1009,47 @@ public class SolrQueryParser {
             return filtersToReturn;
         } else {
             return Collections.emptyList();
+        }
+    }
+
+    protected void parseVariantStatsFilter(VariantQueryParam param, String value, FreqField field, FreqType type,
+                                           String study, String cohort, String op, String numValue,
+                                           boolean addOr, List<String> filters, List<String> auxFilters) {
+        if (type == FreqType.MAF) {
+            // e.g.
+            //   maf < 0.2 -> alt < 0.2 OR alt > 0.8
+            //   maf < 0.5 -> All results
+            //   maf > 0.2 -> alt > 0.2 AND alt < 0.8
+            //   maf > 0.5 -> No results
+            double d = Double.parseDouble(numValue);
+            if (op.equals("<") || op.equals("<<") || op.equals("<=") || op.equals("<<=")) {
+                StringBuilder sb = new StringBuilder();
+                sb.append(getRange(field + FIELD_SEPARATOR + studyIdToSearchModel(study) + FIELD_SEPARATOR,
+                        cohort, op, numValue, addOr));
+                // e.g.: maf < 0.2 -> alt < 0.2 OR alt > 0.8
+                String[] flip = flipOperator(op, numValue);
+                sb.append(" OR ");
+                sb.append(getRange(field + FIELD_SEPARATOR + studyIdToSearchModel(study) + FIELD_SEPARATOR,
+                        cohort, flip[0], flip[1], addOr));
+                filters.add(sb.toString());
+            } else if (op.equals(">") || op.equals(">>") || op.equals(">=") || op.equals(">>=")) {
+                double d1 = d;
+                double d2 = 1 - d;
+                // e.g.: maf > 0.2 -> alt > 0.2 AND alt < 0.8
+                String fieldStr = field + FIELD_SEPARATOR + studyIdToSearchModel(study) + FIELD_SEPARATOR + cohort;
+                filters.add(fieldStr + ":[" + d1 + " TO " + d2 + "]");
+            } else {
+                throw new IllegalArgumentException("Unexpected operator '" + op + "'");
+            }
+        } else {
+            // Solr only stores ALT frequency, we need to calculate the MAF or REF before querying
+            String[] fixedFreqValue = getMafOrRefFrequency(type, op, numValue);
+            op = fixedFreqValue[0];
+            numValue = fixedFreqValue[1];
+
+            // concat expression, e.g.: value:[0 TO 12]
+            filters.add(getRange(field + FIELD_SEPARATOR + studyIdToSearchModel(study) + FIELD_SEPARATOR,
+                    cohort, op, numValue, addOr));
         }
     }
 
@@ -1155,117 +1067,6 @@ public class SolrQueryParser {
             }
         }
         return sb.toString();
-    }
-
-    /**
-     * Obtain a FunctionQuery to calculate the AlleleCount.
-     *
-     * AlleleCount ~ count of non-missing alleles
-     *             ~ expected alleles of diploid GTs - (missing alleles + gaps from non-diploid GTs)
-     *
-     * AlleleCount = expectedNumAlleles - (missingAlleles + gapAlleles)
-     * AlleleCount = numSamples * 2 - (missingAlleles + gapAlleles)
-     *
-     * @param study          Study Name
-     * @param cohortMetadata Cohort Metadata
-     * @return function query to calculate the AlleleCount
-     */
-    private static String alleleCountF(String study, CohortMetadata cohortMetadata) {
-        String studySearchModel = studyIdToSearchModel(study);
-        double expectedNumAlleles = cohortMetadata.getSamples().size() * 2;
-        String alleleMissOrGap = buildStatsAlleleMissGapCountField(studySearchModel, cohortMetadata.getName());
-
-        return "sub(" + expectedNumAlleles + ", " + alleleMissOrGap + ")";
-    }
-
-    /**
-     * Obtain a FunctionQuery to calculate the AlternateAlleleFrequency.
-     *
-     * AlternateAlleleFrequency = alternateAlleles / alelleCount
-     *
-     * @param study          Study Name
-     * @param cohortMetadata Cohort Metadata
-     * @return function query to calculate the AlternateAlleleFrequency
-     */
-    private static String altFreqF(String study, CohortMetadata cohortMetadata) {
-        String studySearchModel = studyIdToSearchModel(study);
-        String altAlleleCount = buildStatsAltAlleleCountField(studySearchModel, cohortMetadata.getName());
-
-        return "div(" + altAlleleCount + ", " + alleleCountF(study, cohortMetadata) + ")";
-    }
-
-    /**
-     * Obtain a FunctionQuery to calculate the ReferenceAlleleFrequency.
-     *
-     * ReferenceAlleleFrequency = referenceAlleles / alleleCount
-     * referenceAlleles = alleleCount - (alternateAlleles + otherAlleles)
-     * nonRefAlleles = alternateAlleles + otherAlleles == alleleCount - referenceAlleles
-     * ReferenceAlleleFrequency = (alleleCount - nonRefAlleles) / alelleCount
-     * ReferenceAlleleFrequency = 1 - (nonRefAlleles / alleleCount)
-     *
-     * @param study          Study Name
-     * @param cohortMetadata Cohort Metadata
-     * @return function query to calculate the ReferenceAlleleFrequency
-     */
-    private static String refFreqF(String study, CohortMetadata cohortMetadata) {
-        String studySearchModel = studyIdToSearchModel(study);
-        String nonRefCount = buildStatsAlleleNonRefCountField(studySearchModel, cohortMetadata.getName());
-
-        return "sub(1, div(" + nonRefCount + ", " + alleleCountF(study, cohortMetadata) + "))";
-    }
-
-    /**
-     * Obtain a FunctionQuery to calculate the Minor Allele Frequency.
-     *
-     * MinorAlleleFrequency = min(AlternateAlleleFrequency, ReferenceAlleleFrequency)
-     *
-     * @param study          Study Name
-     * @param cohortMetadata Cohort Metadata
-     * @return
-     */
-    private static String mafFreqF(String study, CohortMetadata cohortMetadata) {
-        String studySearchModel = studyIdToSearchModel(study);
-        String altFreq = altFreqF(studySearchModel, cohortMetadata);
-        String refFreq = refFreqF(studySearchModel, cohortMetadata);
-        return "min(" + altFreq + ", " + refFreq + ")";
-    }
-
-    /**
-     * Translate num operator into a FunctionRangeQuery (frange).
-     *
-     * @see <a href="https://solr.apache.org/guide/solr/latest/query-guide/other-parsers.html#function-range-query-parser"></a>
-     *
-     * @param op       Operator, e.g.: <, <=, <<, <<=, >, >=, >>, >>=
-     * @param value    Num value
-     * @return         String with the frange query parameters
-     */
-    private static String getFrangeQuery(String op, float value) {
-        StringBuilder frangeVars = new StringBuilder();
-        switch (op) {
-            case "<":
-            case "<<":
-                // Exclude the upper bound
-                frangeVars.append("u=").append(value).append(" incu=false");
-                break;
-            case "<=":
-            case "<<=":
-                // Include the upper bound
-                frangeVars.append("u=").append(value).append(" incu=true");
-                break;
-            case ">":
-            case ">>":
-                // Exclude the lower bound
-                frangeVars.append("l=").append(value).append(" incl=false");
-                break;
-            case ">=":
-            case ">>=":
-                // Include the lower bound
-                frangeVars.append("l=").append(value).append(" incl=true");
-                break;
-            default:
-                throw new IllegalArgumentException("Invalid operator: " + op);
-        }
-        return frangeVars.toString();
     }
 
 //    private int getNumberOfStudies(List<String> values, VariantQueryParam paramName, String paramValue, String defaultStudy) {

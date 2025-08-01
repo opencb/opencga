@@ -652,7 +652,7 @@ public class VariantSearchManager {
     }
 
     private SolrQuery parseQuery(SearchIndexMetadata indexMetadata, Query query, QueryOptions inputOptions) {
-        SolrQueryParser parser = new SolrQueryParser(metadataManager, indexMetadata);
+        VariantStorageSolrQueryParser parser = VariantStorageSolrQueryParser.create(metadataManager, indexMetadata);
         SolrQuery solrQuery = parser.parse(query, inputOptions);
 
         logger.info("Solr query collection: {}", buildCollectionName(indexMetadata));
