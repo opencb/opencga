@@ -18,6 +18,7 @@ package com.zettagenomics.opencga.enterprise.cvdb;
 
 import com.zettagenomics.opencga.enterprise.catalog.managers.EnterpriseFactory;
 import com.zettagenomics.opencga.enterprise.catalog.utils.FederationUtils;
+import com.zettagenomics.opencga.enterprise.core.GitUtils;
 import com.zettagenomics.opencga.enterprise.core.configuration.CvdbConfiguration;
 import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalAnalysisConverter;
 import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalInterpretationConverter;
@@ -60,7 +61,6 @@ import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.FqnUtils;
 import org.opencb.opencga.core.client.GenericClient;
 import org.opencb.opencga.core.client.ParentClient;
-import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.Acl;
@@ -76,7 +76,6 @@ import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
-import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.slf4j.Logger;
@@ -103,7 +102,6 @@ public class CvdbSolrEngine {
 
     private SolrManager solrManager;
     private CatalogManager catalogManager;
-    private VariantStorageMetadataManager variantStorageMetadataManager;
     private SearchIndexMetadata searchIndexMetadata;
 
     private Configuration configuration;
@@ -114,7 +112,6 @@ public class CvdbSolrEngine {
     private ClinicalVariantConverter cvConverter;
     private ClinicalVariantEvidenceConverter cveConverter;
 
-    private static final String GIT_ENTERPRISE_PROPERTIES = "com/zettagenomics/opencga/enterprise/git-enterprise.properties";
     private Logger logger;
 
     public static final String NO_ACCESS_FOR_ANONYMOUS_USERS_MSG = "Access to CVDB is restricted for anonymous users. Please log in to"
@@ -131,13 +128,13 @@ public class CvdbSolrEngine {
             CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX);
 
     public static final String CLINICAL_ANALYSIS_CONFIGSET = "opencga-ca-configset-"
-            + GitRepositoryState.load(GIT_ENTERPRISE_PROPERTIES).getBuildVersion();
+            + GitUtils.getEnterprise().getBuildVersion();
     public static final String INTERPRETATION_CONFIGSET = "opencga-ci-configset-"
-            + GitRepositoryState.load(GIT_ENTERPRISE_PROPERTIES).getBuildVersion();
+            + GitUtils.getEnterprise().getBuildVersion();
     public static final String CLINICAL_VARIANT_CONFIGSET = "opencga-cv-configset-"
-            + GitRepositoryState.load(GIT_ENTERPRISE_PROPERTIES).getBuildVersion();
+            + GitUtils.getEnterprise().getBuildVersion();
     public static final String CLINICAL_VARIANT_EVIDENCE_CONFIGSET = "opencga-cve-configset-"
-            + GitRepositoryState.load(GIT_ENTERPRISE_PROPERTIES).getBuildVersion();
+            + GitUtils.getEnterprise().getBuildVersion();
 
     protected static final List<String> COLLECTION_CONFIGSETS = Arrays.asList(CLINICAL_ANALYSIS_CONFIGSET,
             INTERPRETATION_CONFIGSET,
@@ -161,15 +158,13 @@ public class CvdbSolrEngine {
         init();
     }
 
-    public CvdbSolrEngine(CvdbConfiguration cvdbConfig, CatalogManager catalogManager,
-                          VariantStorageMetadataManager variantStorageMetadataManager) {
+    public CvdbSolrEngine(CvdbConfiguration cvdbConfig, CatalogManager catalogManager) {
         this.configuration = catalogManager.getConfiguration();
         this.cvdbConfiguration = cvdbConfig;
 
         this.solrManager = new SolrManager(cvdbConfig.getDatabase().getHosts(), cvdbConfig.getDatabase().getMode(),
                 cvdbConfig.getDatabase().getTimeout());
         this.catalogManager = catalogManager;
-        this.variantStorageMetadataManager = variantStorageMetadataManager;
         // Ideally, the SearchIndexMetadata should be loaded from some persistent storage, but for now we will use a default one.
         this.searchIndexMetadata = getDefaultSearchIndexMetadata();
 
@@ -509,7 +504,7 @@ public class CvdbSolrEngine {
         // Parse query
         String collectionPrefix = CvdbUtils.getCollectionPrefix(catalogManager.getConfiguration().getDatabasePrefix(),
                 getOrganizationId(token));
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(collectionPrefix, variantStorageMetadataManager);
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(collectionPrefix, searchIndexMetadata);
         SolrQuery solrQuery = parser.parse(query, queryOptions);
 
         // Execute query
@@ -538,7 +533,7 @@ public class CvdbSolrEngine {
         // Parse query
         String collectionPrefix = CvdbUtils.getCollectionPrefix(catalogManager.getConfiguration().getDatabasePrefix(),
                 getOrganizationId(token));
-        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(collectionPrefix, variantStorageMetadataManager);
+        ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(collectionPrefix, searchIndexMetadata);
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         if (queryOptions.containsKey(INCLUDE)) {
             List<String> includeList = new ArrayList<>();
@@ -597,7 +592,7 @@ public class CvdbSolrEngine {
         // Parse query
         String collectionPrefix = CvdbUtils.getCollectionPrefix(catalogManager.getConfiguration().getDatabasePrefix(),
                 getOrganizationId(token));
-        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(collectionPrefix, variantStorageMetadataManager);
+        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(collectionPrefix, searchIndexMetadata);
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         if (queryOptions.containsKey(INCLUDE)) {
             List<String> includeList = new ArrayList<>();
@@ -640,7 +635,7 @@ public class CvdbSolrEngine {
         // Parse query
         String collectionPrefix = CvdbUtils.getCollectionPrefix(catalogManager.getConfiguration().getDatabasePrefix(),
                 getOrganizationId(token));
-        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(collectionPrefix, variantStorageMetadataManager);
+        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(collectionPrefix, searchIndexMetadata);
         SolrQuery solrQuery = parser.parse(query, queryOptions);
 
         // Execute query
@@ -724,7 +719,7 @@ public class CvdbSolrEngine {
         // Parse query
         String collectionPrefix = CvdbUtils.getCollectionPrefix(catalogManager.getConfiguration().getDatabasePrefix(),
                 getOrganizationId(token));
-        ClinicalVariantQueryParser parser = new ClinicalVariantQueryParser(collectionPrefix, variantStorageMetadataManager);
+        ClinicalVariantQueryParser parser = new ClinicalVariantQueryParser(collectionPrefix, searchIndexMetadata);
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         if (queryOptions.containsKey(INCLUDE)) {
             List<String> includeList = new ArrayList<>();
@@ -750,7 +745,7 @@ public class CvdbSolrEngine {
         // Parse query
         String collectionPrefix = CvdbUtils.getCollectionPrefix(catalogManager.getConfiguration().getDatabasePrefix(),
                 getOrganizationId(token));
-        ClinicalVariantQueryParser parser = new ClinicalVariantQueryParser(collectionPrefix, variantStorageMetadataManager);
+        ClinicalVariantQueryParser parser = new ClinicalVariantQueryParser(collectionPrefix, searchIndexMetadata);
         SolrQuery solrQuery = parser.parse(query, queryOptions);
 
         // Execute query
@@ -834,7 +829,7 @@ public class CvdbSolrEngine {
         // Parse query
         String collectionPrefix = CvdbUtils.getCollectionPrefix(catalogManager.getConfiguration().getDatabasePrefix(),
                 getOrganizationId(token));
-        ClinicalVariantEvidenceQueryParser parser = new ClinicalVariantEvidenceQueryParser(collectionPrefix, variantStorageMetadataManager);
+        ClinicalVariantEvidenceQueryParser parser = new ClinicalVariantEvidenceQueryParser(collectionPrefix, searchIndexMetadata);
         return parser.parse(query, queryOptions);
     }
 
@@ -846,7 +841,7 @@ public class CvdbSolrEngine {
         // Parse query
         String collectionPrefix = CvdbUtils.getCollectionPrefix(catalogManager.getConfiguration().getDatabasePrefix(),
                 getOrganizationId(token));
-        ClinicalVariantEvidenceQueryParser parser = new ClinicalVariantEvidenceQueryParser(collectionPrefix, variantStorageMetadataManager);
+        ClinicalVariantEvidenceQueryParser parser = new ClinicalVariantEvidenceQueryParser(collectionPrefix, searchIndexMetadata);
         SolrQuery solrQuery = parser.parse(query, queryOptions);
 
         // Execute query
@@ -1597,12 +1592,13 @@ public class CvdbSolrEngine {
         return this;
     }
 
-    public VariantStorageMetadataManager getVariantStorageMetadataManager() {
-        return variantStorageMetadataManager;
+    public SearchIndexMetadata getSearchIndexMetadata() {
+        return searchIndexMetadata;
     }
 
-    public CvdbSolrEngine setVariantStorageMetadataManager(VariantStorageMetadataManager variantStorageMetadataManager) {
-        this.variantStorageMetadataManager = variantStorageMetadataManager;
-        return this;
+    @Deprecated
+    public void setVariantStorageMetadataManager(Object o) {
+        // TODO: Remove this method
     }
+
 }

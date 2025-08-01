@@ -112,10 +112,10 @@ public class CvdbSolrEngineQueryTest {
         assertEquals(0, indexResult.getFailures().size());
 
         String prefix = CvdbUtils.getCollectionPrefix(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), organizationId);
-        caParser = new ClinicalAnalysisQueryParser(prefix, cvdbEngine.getVariantStorageMetadataManager());
-        ciParser = new ClinicalInterpretationQueryParser(prefix, cvdbEngine.getVariantStorageMetadataManager());
-        cvParser = new ClinicalVariantQueryParser(prefix, cvdbEngine.getVariantStorageMetadataManager());
-        cveParser = new ClinicalVariantEvidenceQueryParser(prefix, cvdbEngine.getVariantStorageMetadataManager());
+        caParser = new ClinicalAnalysisQueryParser(prefix, cvdbEngine.getSearchIndexMetadata());
+        ciParser = new ClinicalInterpretationQueryParser(prefix, cvdbEngine.getSearchIndexMetadata());
+        cvParser = new ClinicalVariantQueryParser(prefix, cvdbEngine.getSearchIndexMetadata());
+        cveParser = new ClinicalVariantEvidenceQueryParser(prefix, cvdbEngine.getSearchIndexMetadata());
     }
 
     public static void setUpCatalogManager(CatalogManager catalogManager) throws CatalogException {

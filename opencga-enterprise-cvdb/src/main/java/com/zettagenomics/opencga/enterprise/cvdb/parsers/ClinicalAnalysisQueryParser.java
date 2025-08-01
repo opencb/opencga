@@ -24,7 +24,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 
 import java.util.*;
 
@@ -35,8 +35,8 @@ public class ClinicalAnalysisQueryParser extends ClinicalQueryParser {
     // Map from clinical analysis fields (keys) to Solr indexed fields (values)
     public static Map<String, String> caToCasFieldMap;
 
-    public ClinicalAnalysisQueryParser(String collectionPrefix, VariantStorageMetadataManager variantStorageMetadataManager) {
-        super(collectionPrefix, variantStorageMetadataManager);
+    public ClinicalAnalysisQueryParser(String collectionPrefix, SearchIndexMetadata searchIndexMetadata) {
+        super(collectionPrefix, searchIndexMetadata);
     }
 
     @Override

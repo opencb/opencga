@@ -24,7 +24,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.solr.FacetQueryParser;
-import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
@@ -33,7 +33,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.text.ParseException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import static com.zettagenomics.opencga.enterprise.cvdb.converters.SearchConverter.simpleDateFormat;
 import static com.zettagenomics.opencga.enterprise.cvdb.converters.SearchConverter.solrDateFormat;
@@ -63,9 +65,9 @@ public class ClinicalQueryParser {
 
     protected static Logger logger = LoggerFactory.getLogger(ClinicalQueryParser.class);
 
-    protected ClinicalQueryParser(String collectionPrefix, VariantStorageMetadataManager variantStorageMetadataManager) {
+    protected ClinicalQueryParser(String collectionPrefix, SearchIndexMetadata searchIndexMetadata) {
+        this.solrParser = new ClinicalSolrQueryParser(searchIndexMetadata);
         this.collectionPrefix = collectionPrefix;
-        this.solrParser = new SolrQueryParser(variantStorageMetadataManager);
     }
 
     public SolrQuery parse(Query query, QueryOptions queryOptions) throws CvdbException {
