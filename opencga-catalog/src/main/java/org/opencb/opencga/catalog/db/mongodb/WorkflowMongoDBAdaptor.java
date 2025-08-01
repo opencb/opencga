@@ -268,7 +268,7 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
             return runTransaction(clientSession -> privateUpdate(clientSession, query, parameters, queryOptions));
         } catch (CatalogException e) {
             logger.error("Could not update workflows for query {}", query.toJson(), e);
-            throw new CatalogDBException("Could not update workflows based on query " + query.toJson(), e);
+            throw new CatalogDBException("Could not update workflows based on query " + query.toJson() + ": " + e.getMessage(), e);
         }
     }
 
@@ -335,10 +335,13 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
             QueryParams.TYPE.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
+        final String[] acceptedStringListParams = {QueryParams.TAGS.key()};
+        filterStringListParams(parameters, document.getSet(), acceptedStringListParams);
+
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        final String[] acceptedListParams = {QueryParams.MANAGER.key(), QueryParams.SCRIPTS.key(), QueryParams.TAGS.key(),
+        final String[] acceptedListParams = {QueryParams.MANAGER.key(), QueryParams.SCRIPTS.key(),
                 QueryParams.REPOSITORY.key(), QueryParams.VARIABLES.key(), QueryParams.MINIMUM_REQUIREMENTS.key()};
         filterObjectParams(parameters, document.getSet(), acceptedListParams);
 

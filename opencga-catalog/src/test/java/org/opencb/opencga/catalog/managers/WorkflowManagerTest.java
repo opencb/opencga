@@ -144,6 +144,7 @@ public class WorkflowManagerTest extends AbstractManagerTest {
                 .setName("newName")
                 .setType(Workflow.Type.OTHER)
                 .setDraft(true)
+                .setTags(Arrays.asList("tag1", "tag2"))
                 .setCreationDate("20240101000000")
                 .setModificationDate("20240201000000")
                 .setDescription("description");
@@ -156,6 +157,9 @@ public class WorkflowManagerTest extends AbstractManagerTest {
         assertEquals(updateParams.getCreationDate(), updatedWorkflow.getCreationDate());
         assertEquals(updateParams.getModificationDate(), updatedWorkflow.getModificationDate());
         assertEquals(updateParams.getDescription(), updatedWorkflow.getDescription());
+        assertEquals(2, updateParams.getTags().size());
+        assertTrue(updatedWorkflow.getTags().contains("tag1"));
+        assertTrue(updatedWorkflow.getTags().contains("tag2"));
     }
 
     @Test

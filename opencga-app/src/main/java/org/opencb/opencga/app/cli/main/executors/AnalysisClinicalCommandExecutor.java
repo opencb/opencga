@@ -408,10 +408,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "report.date", commandOptions.reportDate, true);
             putNestedIfNotNull(beanParams, "report.images", commandOptions.reportImages, true);
             putNestedMapIfNotEmpty(beanParams, "report.attributes", commandOptions.reportAttributes, true);
-            putNestedIfNotEmpty(beanParams, "report.title", commandOptions.reportTitle, true);
-            putNestedIfNotEmpty(beanParams, "report.logo", commandOptions.reportLogo, true);
-            putNestedIfNotEmpty(beanParams, "report.signedBy", commandOptions.reportSignedBy, true);
-            putNestedIfNotEmpty(beanParams, "report.signature", commandOptions.reportSignature, true);
             putNestedIfNotEmpty(beanParams, "request.id", commandOptions.requestId, true);
             putNestedIfNotEmpty(beanParams, "request.justification", commandOptions.requestJustification, true);
             putNestedIfNotEmpty(beanParams, "request.date", commandOptions.requestDate, true);
@@ -1398,10 +1394,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "report.date", commandOptions.reportDate, true);
             putNestedIfNotNull(beanParams, "report.images", commandOptions.reportImages, true);
             putNestedMapIfNotEmpty(beanParams, "report.attributes", commandOptions.reportAttributes, true);
-            putNestedIfNotEmpty(beanParams, "report.title", commandOptions.reportTitle, true);
-            putNestedIfNotEmpty(beanParams, "report.logo", commandOptions.reportLogo, true);
-            putNestedIfNotEmpty(beanParams, "report.signedBy", commandOptions.reportSignedBy, true);
-            putNestedIfNotEmpty(beanParams, "report.signature", commandOptions.reportSignature, true);
             putNestedIfNotEmpty(beanParams, "request.id", commandOptions.requestId, true);
             putNestedIfNotEmpty(beanParams, "request.justification", commandOptions.requestJustification, true);
             putNestedIfNotEmpty(beanParams, "request.date", commandOptions.requestDate, true);
@@ -1651,10 +1643,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "date", commandOptions.date, true);
             putNestedIfNotNull(beanParams, "images", commandOptions.images, true);
             putNestedMapIfNotEmpty(beanParams, "attributes", commandOptions.attributes, true);
-            putNestedIfNotEmpty(beanParams, "title", commandOptions.title, true);
-            putNestedIfNotEmpty(beanParams, "logo", commandOptions.logo, true);
-            putNestedIfNotEmpty(beanParams, "signedBy", commandOptions.signedBy, true);
-            putNestedIfNotEmpty(beanParams, "signature", commandOptions.signature, true);
 
             clinicalReport = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
