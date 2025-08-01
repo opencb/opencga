@@ -171,6 +171,7 @@ public class ParamConstants {
     public static final String USER_DESCRIPTION = "User ID";
     public static final String USERS_DESCRIPTION = "Comma separated list of user IDs";
     public static final String USER_AUTHENTICATION_ORIGIN = "authenticationId";
+    public static final String AUTHENTICATION_ORIGIN_PARAM = "authenticationOriginId";
     public static final String USER_AUTHENTICATION_ORIGIN_DESCRIPTION = "Authentication origin ID";
     public static final String USER_CREATION_DATE = "creationDate";
     public static final String USER_CREATION_DATE_DESCRIPTION = CREATION_DATE_DESCRIPTION;
