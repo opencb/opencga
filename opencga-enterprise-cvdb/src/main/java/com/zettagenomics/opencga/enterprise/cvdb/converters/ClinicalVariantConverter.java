@@ -29,8 +29,8 @@ public class ClinicalVariantConverter extends SearchConverter<ClinicalVariant, C
 
     protected Logger logger = LoggerFactory.getLogger(ClinicalVariantConverter.class);
 
-    public ClinicalVariantConverter(VariantStorageMetadataManager metadataManager, SearchIndexMetadata searchIndexMetadata) {
-        this.variantSearchToVariantConverter = new VariantSearchToVariantConverter(metadataManager, searchIndexMetadata);
+    public ClinicalVariantConverter(SearchIndexMetadata searchIndexMetadata) {
+        this.variantSearchToVariantConverter = VariantSearchToVariantConverter.converterSimpleStats(searchIndexMetadata);
         this.clinicalVariantReader = mapper.readerFor(ClinicalVariant.class);
     }
 

@@ -176,7 +176,7 @@ public class CvdbSolrEngine {
     private void init() {
         this.caConverter = new ClinicalAnalysisConverter();
         this.ciConverter = new ClinicalInterpretationConverter();
-        this.cvConverter = new ClinicalVariantConverter(variantStorageMetadataManager, searchIndexMetadata);
+        this.cvConverter = new ClinicalVariantConverter(searchIndexMetadata);
         this.cveConverter = new ClinicalVariantEvidenceConverter();
 
         this.logger = LoggerFactory.getLogger(CvdbSolrEngine.class);
