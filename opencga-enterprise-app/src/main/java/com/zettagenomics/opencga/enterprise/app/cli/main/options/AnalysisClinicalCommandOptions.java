@@ -376,18 +376,6 @@ public class AnalysisClinicalCommandOptions {
         @DynamicParameter(names = {"--report-attributes"}, description = "You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.. Use: --report-attributes key=value", required = false)
         public java.util.Map<java.lang.String,java.lang.Object> reportAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
-        @Parameter(names = {"--report-title"}, description = "Report title.", required = false, arity = 1)
-        public String reportTitle;
-    
-        @Parameter(names = {"--report-logo"}, description = "Report logo.", required = false, arity = 1)
-        public String reportLogo;
-    
-        @Parameter(names = {"--report-signed-by"}, description = "Indicates who has signed the report.", required = false, arity = 1)
-        public String reportSignedBy;
-    
-        @Parameter(names = {"--report-signature"}, description = "Report signature.", required = false, arity = 1)
-        public String reportSignature;
-    
         @Parameter(names = {"--request-id"}, description = "Unique identifier for the clinical request", required = false, arity = 1)
         public String requestId;
     
@@ -2263,18 +2251,6 @@ public class AnalysisClinicalCommandOptions {
         @DynamicParameter(names = {"--report-attributes"}, description = "You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.. Use: --report-attributes key=value", required = false)
         public java.util.Map<java.lang.String,java.lang.Object> reportAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
-        @Parameter(names = {"--report-title"}, description = "Report title.", required = false, arity = 1)
-        public String reportTitle;
-    
-        @Parameter(names = {"--report-logo"}, description = "Report logo.", required = false, arity = 1)
-        public String reportLogo;
-    
-        @Parameter(names = {"--report-signed-by"}, description = "Indicates who has signed the report.", required = false, arity = 1)
-        public String reportSignedBy;
-    
-        @Parameter(names = {"--report-signature"}, description = "Report signature.", required = false, arity = 1)
-        public String reportSignature;
-    
         @Parameter(names = {"--request-id"}, description = "Unique identifier for the clinical request", required = false, arity = 1)
         public String requestId;
     
@@ -2665,18 +2641,6 @@ public class AnalysisClinicalCommandOptions {
     
         @DynamicParameter(names = {"--attributes"}, description = "You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.. Use: --attributes key=value", required = false)
         public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
-    
-        @Parameter(names = {"--title"}, description = "Report title.", required = false, arity = 1)
-        public String title;
-    
-        @Parameter(names = {"--logo"}, description = "Report logo.", required = false, arity = 1)
-        public String logo;
-    
-        @Parameter(names = {"--signed-by"}, description = "Indicates who has signed the report.", required = false, arity = 1)
-        public String signedBy;
-    
-        @Parameter(names = {"--signature"}, description = "Report signature.", required = false, arity = 1)
-        public String signature;
     
     }
 
