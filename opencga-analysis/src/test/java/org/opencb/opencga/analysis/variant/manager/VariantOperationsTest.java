@@ -60,7 +60,9 @@ import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
 import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.sample.*;
+import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.VariantSetupResult;
+import org.opencb.opencga.core.models.variant.OperationIndexStatus;
 import org.opencb.opencga.core.models.variant.VariantSetupParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
@@ -143,7 +145,7 @@ public class VariantOperationsTest {
     public static OpenCGATestExternalResource opencga = new OpenCGATestExternalResource();
     public static HadoopVariantStorageTest.HadoopExternalResource hadoopExternalResource;
 
-    public static VariantSolrExternalResource solrExternalResource = new VariantSolrExternalResource();
+    public static VariantSolrExternalResource solrExternalResource;
 
     private static String storageEngine;
     //    private static boolean indexed = false;
@@ -189,6 +191,7 @@ public class VariantOperationsTest {
     @BeforeClass
     public static void beforeClass() throws Exception {
         if (HadoopVariantStorageTest.HadoopSolrSupport.isSolrTestingAvailable()) {
+            solrExternalResource = new VariantSolrExternalResource();
             solrExternalResource.before();
         }
     }
@@ -247,6 +250,11 @@ public class VariantOperationsTest {
 
         dummyVariantSetup(variantStorageManager, STUDY, token);
 
+        assertEquals(OperationIndexStatus.NONE,
+                catalogManager.getProjectManager().get(PROJECT_FQN, new QueryOptions(), token).first().getInternal().getVariant().getAnnotationIndex().getStatus().getId());
+        assertEquals(OperationIndexStatus.NONE,
+                catalogManager.getProjectManager().get(PROJECT_FQN, new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId());
+
         file = opencga.createFile(STUDY, "variant-test-file.vcf.gz", token);
 //            variantStorageManager.index(STUDY, file.getId(), opencga.createTmpOutdir("_index"), new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true), token);
         toolRunner.execute(VariantIndexOperationTool.class, STUDY,
@@ -255,9 +263,18 @@ public class VariantOperationsTest {
                         .setAnnotate(false)
                         .setLoadHomRef(YesNoAuto.YES.name()),
                 Paths.get(opencga.createTmpOutdir("_index")), "index", false, token);
+        assertEquals(OperationIndexStatus.PENDING,
+                catalogManager.getProjectManager().get(PROJECT_FQN, new QueryOptions(), token).first().getInternal().getVariant().getAnnotationIndex().getStatus().getId());
+        assertEquals(OperationIndexStatus.PENDING,
+                catalogManager.getProjectManager().get(PROJECT_FQN, new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId());
+
         toolRunner.execute(VariantAnnotationIndexOperationTool.class, STUDY,
                 new VariantAnnotationIndexParams(),
                 Paths.get(opencga.createTmpOutdir("_annotation-index")), "index", false, token);
+        assertEquals(OperationIndexStatus.READY,
+                catalogManager.getProjectManager().get(PROJECT_FQN, new QueryOptions(), token).first().getInternal().getVariant().getAnnotationIndex().getStatus().getId());
+        assertEquals(OperationIndexStatus.PENDING,
+                catalogManager.getProjectManager().get(PROJECT_FQN, new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId());
 
         for (int i = 0; i < file.getSampleIds().size(); i++) {
             if (i % 2 == 0) {
@@ -448,15 +465,25 @@ public class VariantOperationsTest {
     @Test
     public void testVariantSecondaryAnnotationIndex() throws Exception {
         Assume.assumeTrue(HadoopVariantStorageTest.HadoopSolrSupport.isSolrTestingAvailable());
-        for (String sample : samples) {
-            SampleInternalVariantSecondaryAnnotationIndex index = catalogManager.getSampleManager().get(STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex();
-            assertEquals(IndexStatus.NONE, index.getStatus().getId());
+        for (String sampleName : samples) {
+            Sample sample = catalogManager.getSampleManager().get(STUDY, sampleName, new QueryOptions(), token).first();
+            assertEquals(IndexStatus.NONE, sample.getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId());
+            assertEquals(IndexStatus.READY, sample.getInternal().getVariant().getAnnotationIndex().getStatus().getId());
         }
         assertEquals(IndexStatus.NONE, catalogManager.getFileManager().get(STUDY, file.getId(), new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId());
+        assertEquals(OperationIndexStatus.READY,
+                catalogManager.getProjectManager().get(PROJECT, new QueryOptions(), token).first().getInternal().getVariant().getAnnotationIndex().getStatus().getId());
+        assertEquals(OperationIndexStatus.PENDING,
+                catalogManager.getProjectManager().get(PROJECT, new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId());
 
         toolRunner.execute(VariantSecondaryAnnotationIndexOperationTool.class, STUDY,
                 new VariantSecondaryAnnotationIndexParams(),
                 Paths.get(opencga.createTmpOutdir()), "annotation_index", false, token);
+
+        assertEquals(OperationIndexStatus.READY,
+                catalogManager.getProjectManager().get(PROJECT, new QueryOptions(), token).first().getInternal().getVariant().getAnnotationIndex().getStatus().getId());
+        assertEquals(OperationIndexStatus.READY,
+                catalogManager.getProjectManager().get(PROJECT, new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId());
 
         for (String sample : samples) {
             SampleInternalVariantSecondaryAnnotationIndex index = catalogManager.getSampleManager().get(STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex();
@@ -508,14 +535,23 @@ public class VariantOperationsTest {
             assertEquals(sample, 1, sampleIndex.getVersion().intValue());
         }
 
+        Study study = catalogManager.getStudyManager().get(STUDY, new QueryOptions(), token).first();
+        assertEquals(OperationIndexStatus.READY, study.getInternal().getVariant().getSecondarySampleIndex().getStatus().getId());
+
         // Change the sample index configuration.
         OpenCGAResult<Job> jobs = variantStorageManager.configureSampleIndex(STUDY, SampleIndexConfiguration.defaultConfiguration()
                 .addPopulation(new SampleIndexConfiguration.Population("1000G", "SAS")), false, token);
+
+        study = catalogManager.getStudyManager().get(STUDY, new QueryOptions(), token).first();
+        assertEquals(OperationIndexStatus.PENDING, study.getInternal().getVariant().getSecondarySampleIndex().getStatus().getId());
 
         // Initially nothing should change, even after running a manual synchronization
         toolRunner.execute(VariantStorageMetadataSynchronizeOperationTool.class,
                 new VariantStorageMetadataSynchronizeParams().setStudy(STUDY_FQN),
                 Paths.get(opencga.createTmpOutdir()), "", false, catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).first().getToken());
+
+        study = catalogManager.getStudyManager().get(STUDY, new QueryOptions(), token).first();
+        assertEquals(OperationIndexStatus.PENDING, study.getInternal().getVariant().getSecondarySampleIndex().getStatus().getId());
 
         for (String sample : samples) {
             SampleInternalVariantSecondarySampleIndex sampleIndex = catalogManager.getSampleManager().get(STUDY, sample, new QueryOptions(), token)
@@ -541,6 +577,9 @@ public class VariantOperationsTest {
             }
             assertEquals(2, sampleIndex.getVersion().intValue());
         }
+
+        study = catalogManager.getStudyManager().get(STUDY, new QueryOptions(), token).first();
+        assertEquals(OperationIndexStatus.READY, study.getInternal().getVariant().getSecondarySampleIndex().getStatus().getId());
 
         // Same. Rerun configuration and change version.
         jobs = variantStorageManager.configureSampleIndex(STUDY, SampleIndexConfiguration.defaultConfiguration(), false, token);
@@ -765,6 +804,31 @@ public class VariantOperationsTest {
         String project = "Project_test_cellbase_configure";
         catalogManager.getProjectManager().create(new ProjectCreateParams(project, project, "", "", "", new ProjectOrganism("hsapiens", "GRCh38"), null, null), QueryOptions.empty(), token);
 
+        assertEquals(OperationIndexStatus.NONE,
+                catalogManager.getProjectManager().get(project, new QueryOptions(), token).first().getInternal().getVariant().getAnnotationIndex().getStatus().getId());
+
+        testCellbaseConfigure(project);
+
+        assertEquals(OperationIndexStatus.NONE,
+                catalogManager.getProjectManager().get(project, new QueryOptions(), token).first().getInternal().getVariant().getAnnotationIndex().getStatus().getId());
+
+    }
+
+    @Test
+    public void testCellbaseConfigureAnnotated() throws Exception {
+        String project = PROJECT;
+
+        assertEquals(OperationIndexStatus.READY,
+                catalogManager.getProjectManager().get(project, new QueryOptions(), token).first().getInternal().getVariant().getAnnotationIndex().getStatus().getId());
+
+        testCellbaseConfigure(project);
+
+        assertEquals(OperationIndexStatus.PENDING,
+                catalogManager.getProjectManager().get(project, new QueryOptions(), token).first().getInternal().getVariant().getAnnotationIndex().getStatus().getId());
+
+    }
+
+    private static void testCellbaseConfigure(String project) throws StorageEngineException, CatalogException {
         CellBaseUtils cellBaseUtils = variantStorageManager.getVariantStorageEngineByProject(project, null, token).getCellBaseUtils();
         assertEquals(ParamConstants.CELLBASE_URL, cellBaseUtils.getURL());
         assertEquals(ParamConstants.CELLBASE_VERSION, cellBaseUtils.getVersion());
@@ -786,7 +850,6 @@ public class VariantOperationsTest {
         assertEquals(newCellbaseVersion, cellbaseConfiguration.getVersion());
         assertEquals(newCellbaseDataRelease, cellbaseConfiguration.getDataRelease());
 
-//        assertTrue(family.getPedigreeGraph() != null);
     }
 
     @Test

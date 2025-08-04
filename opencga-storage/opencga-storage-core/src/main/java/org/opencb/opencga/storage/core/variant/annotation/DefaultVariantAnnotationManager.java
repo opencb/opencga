@@ -100,6 +100,8 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
     protected Map<Integer, List<Integer>> alreadyAnnotatedFiles = new HashMap<>();
     private final IOConnectorProvider ioConnectorProvider;
     private final VariantReaderUtils variantReaderUtils;
+    private boolean annotateAll;
+    private long annotationStartTimestamp;
 
     public DefaultVariantAnnotationManager(VariantAnnotator variantAnnotator, VariantDBAdaptor dbAdaptor,
                                            IOConnectorProvider ioConnectorProvider) {
@@ -414,11 +416,11 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
         }
 
         VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
-        boolean annotateAll;
         Set<VariantQueryParam> queryParams = VariantQueryUtils.validParams(query, true);
         Set<String> filesFilter = Collections.emptySet();
         queryParams.removeAll(Arrays.asList(VariantQueryParam.ANNOTATION_EXISTS, VariantQueryParam.STUDY));
 
+        annotationStartTimestamp = System.currentTimeMillis();
         if (queryParams.isEmpty()) {
             // There are no invalid filters.
             annotateAll = true;
@@ -509,11 +511,10 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
         if (doLoad && doCreate) {
             ProjectMetadata.VariantAnnotationMetadata newAnnotationMetadata = variantAnnotator.getVariantAnnotationMetadata();
 
-
             dbAdaptor.getMetadataManager().updateProjectMetadata(projectMetadata -> {
                 updateCurrentAnnotation(variantAnnotator, projectMetadata, overwrite, newAnnotationMetadata);
-                return projectMetadata;
             });
+            dbAdaptor.getMetadataManager().updateAnnotationIndexTimestamp(annotateAll, annotationStartTimestamp);
         }
 
         if (doLoad && filesToBeAnnotated != null) {

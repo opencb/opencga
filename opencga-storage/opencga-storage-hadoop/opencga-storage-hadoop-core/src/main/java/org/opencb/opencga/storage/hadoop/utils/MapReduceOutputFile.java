@@ -363,7 +363,8 @@ public class MapReduceOutputFile {
             LOGGER.info(" Target : {}", localOutput.toUri());
             fileSystem.copyToLocalFile(false, paths.get(0), localOutput);
         } else {
-            LOGGER.info("Concat and copy to local : " + paths.size() + " partial files");
+            LOGGER.info("Concat and copy to local : " + paths.size() + " partial files"
+                    + (partFilePrefix == null ? "" : " with prefix '" + partFilePrefix + "'"));
             LOGGER.info(" Source {}: {}", getCompression(paths.get(0).getName()), mrOutdir.toUri());
             LOGGER.info(" Target {}: {}", getCompression(localOutput.getName()), localOutput.toUri());
             LOGGER.info(" ---- ");

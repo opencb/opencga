@@ -2,7 +2,6 @@
 % Please edit documentation in R/OpencgaR-methods.R
 \name{opencgaLogout}
 \alias{opencgaLogout}
-\alias{OpencgaLogout}
 \title{Logout from OpenCGA Web Services}
 \usage{
 opencgaLogout(opencga)

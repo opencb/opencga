@@ -719,6 +719,8 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
                         // The order (ascending or descending) should be in priorityArray[1]
                         fixedSortList.add(PRIVATE_PRIORITY + ":" + priorityArray[1]);
                     }
+                } else if (key.equals(QueryParams.CREATION_DATE.key())) {
+                    fixedSortList.add(PRIVATE_CREATION_DATE);
                 } else {
                     fixedSortList.add(key);
                 }
