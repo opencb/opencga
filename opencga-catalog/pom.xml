@@ -29,6 +29,7 @@
 
     <artifactId>opencga-catalog</artifactId>
     <packaging>jar</packaging>
+    <name>OpenCGA Catalog</name>
 
     <dependencies>
         <dependency>

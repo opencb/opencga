@@ -28,6 +28,7 @@
 
     <artifactId>opencga-app</artifactId>
     <packaging>jar</packaging>
+    <name>OpenCGA App</name>
 
     <properties>
         <build.dir>${project.basedir}/../build</build.dir>

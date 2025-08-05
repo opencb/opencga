@@ -210,7 +210,7 @@
     <repositories>
         <repository>
             <id>ossrh</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <url>https://central.sonatype.com/repository/maven-snapshots/</url>
             <snapshots>
                 <enabled>true</enabled>
                 <updatePolicy>daily</updatePolicy>
@@ -1447,30 +1447,57 @@
         <profile>
             <id>deploy-maven</id>
             <distributionManagement>
+                <!-- Releases repository using the Sonatype OSSRH Staging API for staging and deployment -->
                 <repository>
                     <id>ossrh</id>
-                    <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+                    <name>OSSRH Staging API Releases</name>
+                    <url>https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/</url>
                 </repository>
+
+                <!-- Snapshots repository pointing to Maven Central’s snapshot feed for ongoing development versions -->
                 <snapshotRepository>
                     <id>ossrh</id>
-                    <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+                    <name>Central Portal Snapshots</name>
+                    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
                 </snapshotRepository>
             </distributionManagement>
             <build>
                 <plugins>
+                    <!-- Central Publishing Plugin: handles both snapshots and releases via the Sonatype Central API -->
+                    <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>0.8.0</version>
+                        <!-- extensions=true allows this plugin to hook into the build lifecycle -->
+                        <extensions>true</extensions>
+                        <configuration>
+                            <!-- ID of the <server> in your settings.xml containing your Sonatype credentials -->
+                            <publishingServerId>ossrh</publishingServerId>
+                            <!-- autoPublish=true will automatically close and release the staging repository after deploy -->
+                            <autoPublish>true</autoPublish>
+                            <!-- waitUntil=published makes the build wait until the artifacts are fully available in Central -->
+                            <waitUntil>published</waitUntil>
+                            <!-- ignorePublishedComponents skips already-published modules in multimodule builds -->
+                            <ignorePublishedComponents>true</ignorePublishedComponents>
+                        </configuration>
+                    </plugin>
+                    <!-- Source Plugin: generates and attaches a -sources.jar containing all your project’s source files -->
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-source-plugin</artifactId>
-                        <version>3.2.0</version>
+                        <version>3.2.1</version>
                         <executions>
                             <execution>
                                 <id>attach-sources</id>
                                 <goals>
+                                    <!-- jar-no-fork: create the sources jar without running the default lifecycle again -->
                                     <goal>jar-no-fork</goal>
                                 </goals>
                             </execution>
                         </executions>
                     </plugin>
+
+                    <!-- Javadoc Plugin: generates and attaches a -javadoc.jar containing your project’s API documentation -->
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
@@ -1479,14 +1506,20 @@
                             <execution>
                                 <id>attach-javadocs</id>
                                 <goals>
+                                    <!-- jar: package the generated Javadocs into a jar file -->
                                     <goal>jar</goal>
                                 </goals>
                             </execution>
                         </executions>
                         <configuration>
+                            <!-- disable strict checking of HTML tags in comments -->
                             <doclint>none</doclint>
+                            <!-- do not fail the build if Javadoc generation issues errors -->
+                            <failOnError>false</failOnError>
                         </configuration>
                     </plugin>
+
+                    <!-- GPG Plugin: signs all deployable artifacts (.jar, .pom, sources, javadoc) with your GPG key -->
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
@@ -1494,12 +1527,13 @@
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
-                                <phase>deploy</phase>
+                                <!-- bind signing to the verify phase, so signatures are created before deploy -->
+                                <phase>verify</phase>
                                 <goals>
                                     <goal>sign</goal>
                                 </goals>
                                 <configuration>
-                                    <!-- Prevent `gpg` from using pinentry programs -->
+                                    <!-- Use loopback pinentry to allow unattended signing in CI -->
                                     <gpgArguments>
                                         <arg>--pinentry-mode</arg>
                                         <arg>loopback</arg>
@@ -1507,17 +1541,6 @@
                                 </configuration>
                             </execution>
                         </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.sonatype.plugins</groupId>
-                        <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>1.6.8</version>
-                        <extensions>true</extensions>
-                        <configuration>
-                            <serverId>ossrh</serverId>
-                            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                            <autoReleaseAfterClose>true</autoReleaseAfterClose>
-                        </configuration>
                     </plugin>
                 </plugins>
             </build>

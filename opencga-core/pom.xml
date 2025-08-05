@@ -28,6 +28,7 @@
 
     <artifactId>opencga-core</artifactId>
     <packaging>jar</packaging>
+    <name>OpenCGA Core</name>
 
     <dependencies>
         <dependency>

@@ -28,6 +28,7 @@
 
     <artifactId>opencga-analysis</artifactId>
     <packaging>jar</packaging>
+    <name>OpenCGA Analysis</name>
 
     <dependencies>
         <dependency>
