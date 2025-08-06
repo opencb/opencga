@@ -1,30 +1,31 @@
+ARG TAG=5.0.0-SNAPSHOT
 ARG ORG=opencb
 
-FROM $ORG/opencga-ext-tools:22.04
+FROM $ORG/opencga-ext-tools:$TAG
 
 LABEL org.label-schema.vendor="OpenCB" \
-      org.label-schema.name="opencga-ext-tools" \
+      org.label-schema.name="opencga-genomics" \
       org.label-schema.url="http://docs.opencb.org/display/opencga" \
       org.label-schema.description="An Open Computational Genomics Analysis platform for big data processing and analysis in genomics" \
       maintainer="Joaquin Tarraga <joaquintarraga@gmail.com>" \
       org.label-schema.schema-version="1.0"
 
 ## Run update and install necessary packages
-RUN apt-get update -y && \
+RUN apt-get update && apt-get install -y --no-install-recommends && \
     ## 1. Install system dependencies
-    DEBIAN_FRONTEND="noninteractive" TZ="Europe/London" apt-get install -y libcurl4 git libgmp-dev libcurl4-openssl-dev libgit2-dev build-essential \
-    libssl-dev libssh-dev libxml2-dev libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev \
-    gnuplot pandoc samtools bcftools tabix fastqc plink1.9 bwa r-base wget libopenblas0-openmp libcholmod3 libsuitesparse-dev python3 python3-pip && \
-    apt-get remove libopenblas0-pthread && \
-    pip3 install pydantic && \
+#    DEBIAN_FRONTEND="noninteractive" TZ="Europe/London" apt-get install -y libcurl4 git libgmp-dev libcurl4-openssl-dev libgit2-dev build-essential \
+#    libssl-dev libssh-dev libxml2-dev libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev \
+#    gnuplot pandoc samtools bcftools tabix fastqc plink1.9 bwa r-base wget libopenblas0-openmp libcholmod3 libsuitesparse-dev python3 python3-pip && \
+#    apt-get remove libopenblas0-pthread && \
+#    pip3 install pydantic && \
 
     ## 2. Install samtools and bcftools 1.21 and plugins
-    wget https://github.com/samtools/samtools/releases/download/1.21/samtools-1.21.tar.bz2 && \
-    tar xjvf samtools-1.21.tar.bz2 && \
-    cd samtools-1.21 && \
-    ./configure --prefix=/usr/local && \
-    make && make install && \
-    cd .. && \
+#    wget https://github.com/samtools/samtools/releases/download/1.21/samtools-1.21.tar.bz2 && \
+#    tar xjvf samtools-1.21.tar.bz2 && \
+#    cd samtools-1.21 && \
+#    ./configure --prefix=/usr/local && \
+#    make && make install && \
+#    cd .. && \
 
     wget http://github.com/samtools/bcftools/releases/download/1.21/bcftools-1.21.tar.bz2 && \
     tar xjvf bcftools-1.21.tar.bz2 && \
@@ -39,8 +40,8 @@ RUN apt-get update -y && \
     cd .. && \
 
     ## 3. Installation dependencies using R install.packages() is slower than apt-get but final size is 400MB smaller.
-    R -e "install.packages(c('BiocManager', 'RCircos', 'nnls', 'ggplot2', 'jsonlite', 'optparse', 'knitr', 'configr', 'dplyr', 'rmarkdown', 'tidyr', 'httr', 'kinship2', 'limSolve'))" && \
-    R -e "BiocManager::install('BiocStyle')" && \
+#    R -e "install.packages(c('BiocManager', 'RCircos', 'nnls', 'ggplot2', 'jsonlite', 'optparse', 'knitr', 'configr', 'dplyr', 'rmarkdown', 'tidyr', 'httr', 'kinship2', 'limSolve'))" && \
+#    R -e "BiocManager::install('BiocStyle')" && \
     R -e "BiocManager::install('BSgenome.Hsapiens.UCSC.hg38')" && \
 
     ## 4. Install signature.tools.lib installation \
@@ -56,7 +57,7 @@ RUN apt-get update -y && \
     cd .. && \
 
     ## 5. Clean up
-    rm -rf samtools-1.21 bcftools-1.21 /var/lib/apt/lists/* /tmp/* /opt/opencga/signature.tools.lib/.git && \
+    rm -rf bcftools-1.21 /var/lib/apt/lists/* /tmp/* /opt/opencga/signature.tools.lib/.git && \
     strip --remove-section=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so.5
 
 ENV BCFTOOLS_PLUGINS="/usr/local/bin"
