@@ -22,14 +22,14 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga-storage-hadoop-compat</artifactId>
-        <version>3.7.0-SNAPSHOT</version>
+        <version>3.6.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <!--<groupId>org.opencb.opencga</groupId>-->
     <artifactId>opencga-storage-hadoop-compat-hbase2.4</artifactId>
     <packaging>jar</packaging>
-
+    <name>OpenCGA Storage Hadoop Compatibility HBase 2.4</name>
     <properties>
         <hbase.version>2.4.17</hbase.version>
         <hadoop.version>3.3.4</hadoop.version>

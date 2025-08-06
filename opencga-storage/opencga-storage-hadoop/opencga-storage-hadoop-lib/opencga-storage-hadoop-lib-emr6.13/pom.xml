@@ -7,12 +7,12 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga-storage-hadoop-lib</artifactId>
-        <version>3.7.0-SNAPSHOT</version>
+        <version>3.6.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>opencga-storage-hadoop-lib-emr6.13</artifactId>
-
+    <name>OpenCGA Storage Hadoop Lib EMR 6.13</name>
     <properties>
         <opencga-hadoop-shaded.id>emr6.13</opencga-hadoop-shaded.id>
         <opencga-storage-hadoop-compat.id>hbase2.4</opencga-storage-hadoop-compat.id>
