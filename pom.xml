@@ -1503,24 +1503,19 @@
                         <artifactId>maven-javadoc-plugin</artifactId>
                         <version>3.5.0</version>
                         <executions>
-                            <!-- 1) aggregate: gather Javadoc from every module in the reactor -->
                             <execution>
-                                <id>aggregate-javadocs</id>
+                                <id>attach-javadocs</id>
+                                <!-- bind this execution to the package phase so it always runs -->
                                 <phase>package</phase>
                                 <goals>
-                                    <goal>aggregate</goal>
-                                </goals>
-                            </execution>
-                            <!-- 2) aggregate-jar: package the aggregated docs into a single -javadoc.jar -->
-                            <execution>
-                                <id>attach-aggregate-jar</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>aggregate-jar</goal>
+                                    <!-- package the generated Javadocs into a -javadoc.jar -->
+                                    <goal>jar</goal>
                                 </goals>
                             </execution>
                         </executions>
                         <configuration>
+                            <!-- do not skip execution, even in POM-packaging modules -->
+                            <skip>false</skip>
                             <!-- disable strict HTML/tag checking in Javadoc comments -->
                             <doclint>none</doclint>
                             <!-- continue the build even if Javadoc generation issues errors -->
