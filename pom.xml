@@ -22,7 +22,7 @@
 
     <groupId>org.opencb.opencga</groupId>
     <artifactId>opencga</artifactId>
-    <version>3.7.0-SNAPSHOT</version>
+    <version>3.6.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>OpenCGA</name>
@@ -1505,16 +1505,20 @@
                         <executions>
                             <execution>
                                 <id>attach-javadocs</id>
+                                <!-- bind this execution to the verify phase so it's run before deploy -->
+                                <phase>verify</phase>
                                 <goals>
-                                    <!-- jar: package the generated Javadocs into a jar file -->
+                                    <!-- package the generated Javadocs into a -javadoc.jar -->
                                     <goal>jar</goal>
                                 </goals>
                             </execution>
                         </executions>
                         <configuration>
-                            <!-- disable strict checking of HTML tags in comments -->
+                            <!-- do not skip execution, even in POM-packaging modules -->
+                            <skip>false</skip>
+                            <!-- disable strict HTML/tag checking in Javadoc comments -->
                             <doclint>none</doclint>
-                            <!-- do not fail the build if Javadoc generation issues errors -->
+                            <!-- continue the build even if Javadoc generation issues errors -->
                             <failOnError>false</failOnError>
                         </configuration>
                     </plugin>
