@@ -22,7 +22,7 @@
 
     <groupId>org.opencb.opencga</groupId>
     <artifactId>opencga</artifactId>
-    <version>3.7.0-SNAPSHOT</version>
+    <version>3.6.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>OpenCGA</name>
@@ -1505,8 +1505,8 @@
                         <executions>
                             <execution>
                                 <id>attach-javadocs</id>
-                                <!-- bind this execution to the verify phase so it's run before deploy -->
-                                <phase>verify</phase>
+                                <!-- bind this execution to the package phase so it always runs -->
+                                <phase>package</phase>
                                 <goals>
                                     <!-- package the generated Javadocs into a -javadoc.jar -->
                                     <goal>jar</goal>
