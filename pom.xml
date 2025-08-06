@@ -22,7 +22,7 @@
 
     <groupId>org.opencb.opencga</groupId>
     <artifactId>opencga</artifactId>
-    <version>3.7.0-SNAPSHOT</version>
+    <version>3.6.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>OpenCGA</name>
@@ -1497,25 +1497,30 @@
                         </executions>
                     </plugin>
 
-                    <!-- Javadoc Plugin: generates and attaches a -javadoc.jar containing your project’s API documentation -->
+                    <!-- Javadoc Plugin (aggregate): collects docs from all modules and packages a single -javadoc.jar -->
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
                         <version>3.5.0</version>
                         <executions>
+                            <!-- 1) aggregate: gather Javadoc from every module in the reactor -->
                             <execution>
-                                <id>attach-javadocs</id>
-                                <!-- bind this execution to the package phase so it always runs -->
+                                <id>aggregate-javadocs</id>
                                 <phase>package</phase>
                                 <goals>
-                                    <!-- package the generated Javadocs into a -javadoc.jar -->
-                                    <goal>jar</goal>
+                                    <goal>aggregate</goal>
+                                </goals>
+                            </execution>
+                            <!-- 2) aggregate-jar: package the aggregated docs into a single -javadoc.jar -->
+                            <execution>
+                                <id>attach-aggregate-jar</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>aggregate-jar</goal>
                                 </goals>
                             </execution>
                         </executions>
                         <configuration>
-                            <!-- do not skip execution, even in POM-packaging modules -->
-                            <skip>false</skip>
                             <!-- disable strict HTML/tag checking in Javadoc comments -->
                             <doclint>none</doclint>
                             <!-- continue the build even if Javadoc generation issues errors -->
