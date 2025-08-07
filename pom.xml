@@ -1245,6 +1245,8 @@
                         org/opencb/opencga/storage/datamanagers/**,
                         org/opencb/opencga/storage/hadoop/variant/models/protobuf/**,
                         org/opencb/opencga/storage/server/grpc/**,
+                        org/opencb/opencga/storage/server/grpc/**,
+                        org/opencb/opencga/storage/lib/**,
                     </excludes>
                     <resourceExcludes>
                         benchmark/jmeter/**
