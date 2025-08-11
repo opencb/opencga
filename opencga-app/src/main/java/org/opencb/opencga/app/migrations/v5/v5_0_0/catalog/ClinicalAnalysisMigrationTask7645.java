@@ -8,11 +8,15 @@ import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantFilter;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.OrganizationMongoDBAdaptorFactory;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.migration.Migration;
 import org.opencb.opencga.catalog.migration.MigrationRuntimeException;
 import org.opencb.opencga.catalog.migration.MigrationTool;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.clinical.ClinicalStatusValue;
 import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
 
@@ -84,6 +88,13 @@ public class ClinicalAnalysisMigrationTask7645 extends MigrationTool {
                 query,
                 studyProjection,
                 (document, bulk) -> {
+                    String studyFqn = document.getString("fqn");
+                    try {
+                        createMissingDefaultReportTemplateFile(studyFqn);
+                    } catch (CatalogException e) {
+                        logger.error("Could not create default report template file for study '{}'. Continuing...", studyFqn, e);
+                    }
+
                     MongoDBAdaptor.UpdateDocument updateDocument = new MongoDBAdaptor.UpdateDocument();
 
                     Document internal = document.get("internal", Document.class);
@@ -189,6 +200,15 @@ public class ClinicalAnalysisMigrationTask7645 extends MigrationTool {
 
                     bulk.add(new UpdateOneModel<>(Filters.eq("_id", document.get("_id")), updateDocument.toFinalUpdateDocument()));
                 });
+    }
+
+    private void createMissingDefaultReportTemplateFile(String studyFqn) throws CatalogException {
+        // If the default resources template folder does not exist, create the default files
+        Query query = new Query()
+                .append(FileDBAdaptor.QueryParams.PATH.key(), ParamConstants.RESOURCES_REPORT_TEMPLATE_FOLDER + "/");
+        if (catalogManager.getFileManager().count(studyFqn, query, token).getNumMatches() == 0) {
+            catalogManager.getStudyManager().createDefaultFiles(studyFqn, token);
+        }
     }
 
     private void migrateFindings(List<Document> findings, MongoDBAdaptor.UpdateDocument updateDocument, String key) {
