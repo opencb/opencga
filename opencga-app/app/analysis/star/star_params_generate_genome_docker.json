@@ -1,0 +1,8 @@
+{
+  "starParams": {
+    "--runMode": "genomeGenerate",
+    "--genomeDir": "/data0/",
+    "--genomeFastaFiles":  "/data1/Homo_sapiens.GRCh38.dna.chromosome.20.fa",
+    "--runThreadN": "8"
+  }
+}

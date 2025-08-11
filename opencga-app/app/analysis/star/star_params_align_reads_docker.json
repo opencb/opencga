@@ -1,0 +1,9 @@
+{
+  "starParams": {
+    "--runMode": "alignReads",
+    "--genomeDir": "/data0/",
+    "--readFilesIn":  "/data1/HG00096.chrom20.small.fastq",
+    "--outFileNamePrefix": "/data2/"
+  }
+}
+
