@@ -1,0 +1,10 @@
+{
+  "inputPaths": [
+    "/input"
+  ],
+  "multiQcParams": {
+  	"--outdir": "/output",
+  	"--title": "My Project's Quality Control",
+  	"--force": true
+  }
+ }

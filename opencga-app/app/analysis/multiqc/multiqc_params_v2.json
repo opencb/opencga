@@ -1,0 +1,14 @@
+{
+  "input_paths": [
+    "/path/to/fastqc_results",
+  	"/path/to/star_results"
+  ],
+  "multiqc_params": {
+  	"--outdir": "/path/to/final_reports",
+  	"--filename": "my_project_qc_summary.html",
+  	"--title": "My Project's Quality Control",
+  	"--force": true,
+  	"--exclude": ["fastqc", "star"],
+  	"--module-ignore": "fastp"
+  }
+ }

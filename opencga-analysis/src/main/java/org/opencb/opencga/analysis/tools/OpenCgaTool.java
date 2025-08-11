@@ -172,8 +172,13 @@ public abstract class OpenCgaTool {
             }
         }
 
+        // Add default frameworks
         availableFrameworks.add(ToolExecutor.Framework.LOCAL);
+        availableFrameworks.add(ToolExecutor.Framework.DOCKER);
+
+        // Add default sources
         sourceTypes.add(ToolExecutor.Source.STORAGE);
+        sourceTypes.add(ToolExecutor.Source.FILE);
 //        return this;
     }
 

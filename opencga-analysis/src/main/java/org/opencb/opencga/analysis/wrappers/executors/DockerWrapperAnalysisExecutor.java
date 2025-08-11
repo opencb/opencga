@@ -200,6 +200,7 @@ public abstract class DockerWrapperAnalysisExecutor extends OpenCgaToolExecutor 
         return buildCommandLine(image, inputBindings, null, outputBinding, cmdParams, dockerParams);
     }
 
+    @Deprecated
     protected String buildCommandLine(String image, List<AbstractMap.SimpleEntry<String, String>> inputBindings,
                                       Set<String> readOnlyInputBindings, AbstractMap.SimpleEntry<String, String> outputBinding,
                                       String cmdParams, Map<String, String> dockerParams) throws IOException {
@@ -250,15 +251,53 @@ public abstract class DockerWrapperAnalysisExecutor extends OpenCgaToolExecutor 
         return commandLine.toString();
     }
 
-    protected void runCommandLine(String cmdline) throws ToolException {
+    protected String buildCommandLine(String image, List<AbstractMap.SimpleEntry<String, String>> bindings,
+                                      Set<String> readOnlyInputBindings, String cmdParams, Map<String, String> dockerParams)
+            throws IOException, ToolException {
+        // Docker run
+        StringBuilder commandLine = new StringBuilder("docker run --rm ");
+
+        // Docker params
+        boolean setUser = true;
+        if (dockerParams != null) {
+            if (!dockerParams.containsKey("user")) {
+                throw new ToolException("Missing 'user' parameter in dockerParams");
+            }
+            for (String key : dockerParams.keySet()) {
+                commandLine.append("--").append(key).append(" ").append(dockerParams.get(key)).append(" ");
+            }
+        }
+
+        if (bindings != null) {
+            // Mount management (bindings)
+            for (AbstractMap.SimpleEntry<String, String> binding : bindings) {
+                commandLine.append("--mount type=bind,source=\"").append(binding.getKey()).append("\",target=\"")
+                        .append(binding.getValue()).append("\"");
+                if (CollectionUtils.isNotEmpty(readOnlyInputBindings) && readOnlyInputBindings.contains(binding.getValue())) {
+                    commandLine.append(",readonly");
+                }
+                commandLine.append(" ");
+            }
+        }
+
+        // Docker image and version
+        commandLine.append(image).append(" ");
+
+        // Image command params
+        commandLine.append(cmdParams);
+        return commandLine.toString();
+    }
+
+    protected int runCommandLine(String cmdline) throws ToolException {
         checkDockerDaemonAlive();
         try {
-            new Command(cmdline)
+            Command cmd = new Command(cmdline)
                     .setOutputOutputStream(
                             new DataOutputStream(new FileOutputStream(getOutDir().resolve(STDOUT_FILENAME).toFile())))
                     .setErrorOutputStream(
-                            new DataOutputStream(new FileOutputStream(getOutDir().resolve(STDERR_FILENAME).toFile())))
-                    .run();
+                            new DataOutputStream(new FileOutputStream(getOutDir().resolve(STDERR_FILENAME).toFile())));
+            cmd.run();
+            return cmd.getExitValue();
         } catch (FileNotFoundException e) {
             throw new ToolException(e);
         }

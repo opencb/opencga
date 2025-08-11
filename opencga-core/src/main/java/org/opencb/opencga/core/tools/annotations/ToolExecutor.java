@@ -61,6 +61,7 @@ public @interface ToolExecutor {
     enum Framework {
         LOCAL,
         MAP_REDUCE,
-        SPARK
+        SPARK,
+        DOCKER
     }
 }

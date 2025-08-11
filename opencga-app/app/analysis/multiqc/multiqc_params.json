@@ -1,0 +1,10 @@
+{
+  "input_paths": [
+    "/home/jtarraga/data/bam/fastqc"
+  ],
+  "multiqc_params": {
+  	"--outdir": "/tmp/multiqc_final_reports",
+  	"--title": "My Project's Quality Control",
+  	"--force": true
+  }
+ }
