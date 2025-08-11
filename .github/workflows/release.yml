@@ -14,7 +14,7 @@ jobs:
       maven_opts: -P storage-hadoop,${{ vars.HADOOP_FLAVOUR }},RClient,opencga-storage-hadoop-deps -Dopencga.war.name=opencga -Dcheckstyle.skip -pl ':opencga-app' --also-make
       build_folder: build-folder
 
-  # Add the deploy-docker-hdp job that depends on the build-hdp job
+  # Add the deploy-zetta-docker job that depends on the build-hdp job
   deploy-zetta-docker:
     uses: opencb/java-common-libs/.github/workflows/deploy-zetta-docker-hub-workflow.yml@develop
     needs: build-hdp
@@ -70,7 +70,7 @@ jobs:
   # Add the release job that depends on all the previous jobs
   release:
     uses: opencb/java-common-libs/.github/workflows/release-github-workflow.yml@develop
-    needs: [ build-hdp, deploy-docker-hdp, deploy-maven, deploy-python, deploy-docker-python-notebook]
+    needs: [ build-hdp, deploy-zetta-docker, deploy-maven, deploy-python, deploy-docker-python-notebook]
     with:
       artifact: build-folder
       file: |
