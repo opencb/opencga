@@ -27,12 +27,9 @@ import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.io.*;
 import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.session.SessionManager;
-import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
-import org.opencb.opencga.core.models.project.Project;
-import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.opencga.core.response.RestResponse;
@@ -125,7 +122,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                 token = options.token;
 
                 // Update SessionManager and OpencgaClient with the new token
-                sessionManager.updateSessionToken(token, host);
+                sessionManager.updateSessionToken(token, this.hostConfig);
                 openCGAClient = new OpenCGAClient(new AuthenticationResponse(options.token), clientConfiguration);
             } else {
                 privateLogger.debug("No token has been provided, reading session file");
@@ -227,34 +224,10 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         return "int".equals(type) || "Long".equals(type) || "Float".equals(type) || "double".equals(type);
     }
 
-    public RestResponse<AuthenticationResponse> saveSession(String user, AuthenticationResponse response) throws ClientException, IOException {
-        RestResponse<AuthenticationResponse> res = new RestResponse<>();
-        if (response != null) {
-            List<String> studies = new ArrayList<>();
-            logger.debug(response.toString());
-            RestResponse<Project> projects = openCGAClient.getProjectClient().search(
-                    new ObjectMap(ProjectDBAdaptor.QueryParams.OWNER.key(), user));
-
-            if (projects.getResponses().get(0).getNumResults() == 0) {
-                // We try to fetch shared projects and studies instead when the user does not own any project or study
-                projects = openCGAClient.getProjectClient().search(new ObjectMap());
-            }
-
-            for (Project project : projects.getResponses().get(0).getResults()) {
-                for (Study study : project.getStudies()) {
-                    studies.add(study.getFqn());
-                }
-            }
-            this.sessionManager.saveSession(user, response.getToken(), response.getRefreshToken(), studies, this.host);
-            res.setType(QueryType.VOID);
-        }
-        return res;
-    }
-
     public RestResponse<AuthenticationResponse> refreshToken(AuthenticationResponse response) throws ClientException, IOException {
         RestResponse<AuthenticationResponse> res = new RestResponse<>();
         if (response != null) {
-            this.sessionManager.refreshSession(response.getRefreshToken(), this.host);
+            this.sessionManager.refreshSession(response.getRefreshToken(), this.hostConfig.getName());
             res.setType(QueryType.VOID);
         }
         return res;

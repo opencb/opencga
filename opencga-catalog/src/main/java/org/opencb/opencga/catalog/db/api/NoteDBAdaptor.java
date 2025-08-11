@@ -32,6 +32,7 @@ public interface NoteDBAdaptor extends DBAdaptor<Note> {
         UUID("uuid", STRING, ""),
         SCOPE("scope", STRING, ""),
         STUDY("study", STRING, ""),
+        TYPE("type", STRING, ""),
         TAGS("tags", TEXT_ARRAY, ""),
         USER_ID("userId", STRING, ""),
         VISIBILITY("visibility", STRING, ""),

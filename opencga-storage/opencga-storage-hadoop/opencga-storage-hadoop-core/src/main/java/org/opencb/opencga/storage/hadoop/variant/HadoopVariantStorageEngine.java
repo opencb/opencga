@@ -32,6 +32,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.IOUtils;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.DatabaseCredentials;
@@ -74,6 +75,7 @@ import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.io.HDFSIOConnector;
 import org.opencb.opencga.storage.hadoop.utils.DeleteHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
+import org.opencb.opencga.storage.hadoop.utils.MapReduceOutputFile;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.HBaseColumnIntersectVariantQueryExecutor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
@@ -87,6 +89,7 @@ import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutorFactory;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromArchiveMapper;
+import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromFile;
 import org.opencb.opencga.storage.hadoop.variant.gaps.PrepareFillMissingDriver;
 import org.opencb.opencga.storage.hadoop.variant.gaps.write.FillMissingHBaseWriterDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.*;
@@ -109,8 +112,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.*;
@@ -136,8 +141,6 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     public static final String STUDY_ID = "studyId";
 
     // Project attributes
-    // Last time (in millis from epoch) that a file was loaded
-    public static final String LAST_LOADED_FILE_TS = "lastLoadedFileTs";
     // Last time (in millis from epoch) that the list of "pendingVariantsToAnnotate" was updated
     public static final String LAST_VARIANTS_TO_ANNOTATE_UPDATE_TS = "lastVariantsToAnnotateUpdateTs";
 
@@ -173,6 +176,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         if (inputFiles.size() == 1 || !doLoad) {
             return super.index(inputFiles, outdirUri, doExtract, doTransform, doLoad);
         }
+        createStudyIfNeeded();
 
         final int nThreadArchive = getOptions().getInt(HADOOP_LOAD_FILES_IN_PARALLEL.key(), HADOOP_LOAD_FILES_IN_PARALLEL.defaultValue());
         ObjectMap extraOptions = new ObjectMap();
@@ -332,24 +336,26 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
 
         String dockerMemory = getOptions().getString(WALKER_DOCKER_MEMORY.key(), WALKER_DOCKER_MEMORY.defaultValue());
         long dockerMemoryBytes = IOUtils.fromHumanReadableToByte(dockerMemory, true);
+        long maxBytesPerMap = getOptions().getLong(WALKER_DOCKER_MAX_BYTES_PER_MAP.key(), dockerMemoryBytes / 2);
 
         String dockerHost = getOptions().getString(MR_STREAM_DOCKER_HOST.key(), MR_STREAM_DOCKER_HOST.defaultValue());
         if (StringUtils.isNotEmpty(dockerHost)) {
             params.put(StreamVariantDriver.ENVIRONMENT_VARIABLES, "DOCKER_HOST=" + dockerHost);
         }
 
-        getMRExecutor().run(StreamVariantDriver.class, StreamVariantDriver.buildArgs(
+        ObjectMap counters = getMRExecutor().run(StreamVariantDriver.class, StreamVariantDriver.buildArgs(
                 null,
                 getVariantTableName(), studyId, null,
                 params
                         .append(MR_HEAP_MAP_OTHER_MB.key(), dockerMemoryBytes / 1024 / 1204)
-                        .append(StreamVariantDriver.MAX_BYTES_PER_MAP_PARAM, dockerMemoryBytes / 2)
+                        .append(StreamVariantDriver.MAX_BYTES_PER_MAP_PARAM, maxBytesPerMap)
                         .append(StreamVariantDriver.COMMAND_LINE_BASE64_PARAM, Base64.getEncoder().encodeToString(commandLine.getBytes()))
                         .append(StreamVariantDriver.INPUT_FORMAT_PARAM, format.toString())
                         .append(StreamVariantDriver.OUTPUT_PARAM, outputFile)
         ), "Walk data");
         List<URI> uris = new ArrayList<>();
         URI stderrFile = UriUtils.createUriSafe(outputFile.toString() + StreamVariantDriver.STDERR_TXT_GZ);
+        URI countersFile = UriUtils.createUriSafe(outputFile.toString() + ".counters.json");
         try {
             IOConnector ioConnector = ioConnectorProvider.get(outputFile);
             if (ioConnector.exists(outputFile)) {
@@ -361,6 +367,13 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                 uris.add(stderrFile);
             } else {
                 logger.warn("Stderr file not found: {}", stderrFile);
+            }
+            try (OutputStream outputStream = ioConnector.newOutputStream(countersFile)) {
+                counters.entrySet().removeIf(entry -> entry.getKey().startsWith(MapReduceOutputFile.EXTRA_OUTPUT_PREFIX)
+                        || entry.getKey().startsWith(MapReduceOutputFile.EXTRA_NAMED_OUTPUT_PREFIX)
+                        || entry.getKey().equals(MapReduceOutputFile.NAMED_OUTPUT));
+                JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValue(outputStream, counters);
+                uris.add(countersFile);
             }
         } catch (IOException e) {
             throw new StorageEngineException("Error checking output file", e);
@@ -505,18 +518,23 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     @Override
-    public void aggregateFamily(String study, VariantAggregateFamilyParams params, ObjectMap options) throws StorageEngineException {
+    public void aggregateFamily(String study, VariantAggregateFamilyParams params, ObjectMap options, URI outdir)
+            throws StorageEngineException {
         List<String> samples = params.getSamples();
         if (samples == null || samples.size() < 2) {
             throw new IllegalArgumentException("Aggregate family operation requires at least two samples.");
         } else if (samples.size() > FILL_GAPS_MAX_SAMPLES) {
-            throw new IllegalArgumentException("Unable to execute fill gaps operation with more than "
+            throw new IllegalArgumentException("Unable to execute aggregate-family operation with more than "
                     + FILL_GAPS_MAX_SAMPLES + " samples.");
+        } else if (new HashSet<>(samples).size() != samples.size()) {
+            // Fail if duplicated samples
+            throw new IllegalArgumentException("Unable to execute aggregate-family operation with duplicated samples.");
         }
 
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
         List<Integer> sampleIds = new ArrayList<>(samples.size());
+        Set<Integer> fileIds = new HashSet<>();
         for (String sample : samples) {
             Integer sampleId = metadataManager.getSampleId(studyMetadata.getId(), sample);
             if (sampleId != null) {
@@ -524,17 +542,100 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             } else {
                 throw VariantQueryException.sampleNotFound(sample, studyMetadata.getName());
             }
+            List<Integer> sampleFiles = metadataManager.getFileIdsFromSampleId(studyMetadata.getId(), sampleId, true);
+            if (sampleFiles.size() > 1) {
+                throw new IllegalArgumentException("Unable to execute operation with more than one file per sample. Found "
+                        + sampleFiles.size() + " files for sample " + sample);
+            }
+            fileIds.addAll(sampleFiles);
         }
-
-        // Get files
-        Set<Integer> fileIds = metadataManager.getFileIdsFromSampleIds(studyMetadata.getId(), sampleIds);
 
         options = params.toObjectMap(options);
         if (StringUtils.isNotEmpty(params.getGapsGenotype())) {
             options.put(FILL_GAPS_GAP_GENOTYPE.key(), params.getGapsGenotype());
         }
         logger.info("FillGaps: Study " + study + ", samples " + samples);
-        fillGapsOrMissing(study, studyMetadata, fileIds, sampleIds, true, false, params.toObjectMap(options));
+
+        List<URI> uris = new ArrayList<>();
+        Set<Integer> filesWithArchive = new HashSet<>();
+        Set<Integer> fileExists = new HashSet<>();
+        for (Integer fileId : fileIds) {
+            FileMetadata fileMetadata = metadataManager.getFileMetadata(studyMetadata.getId(), fileId);
+            Path filePath = Paths.get(fileMetadata.getPath());
+            uris.add(filePath.toUri());
+            if (filePath.toFile().exists()) {
+                fileExists.add(fileId);
+            }
+            if (fileMetadata.getAttributes().getBoolean(LOAD_ARCHIVE.key(), false)) {
+                filesWithArchive.add(fileId);
+            }
+        }
+
+        boolean localEnabled = getOptions().getBoolean(FILL_GAPS_GAP_LOCAL_ENABLED.key(), FILL_GAPS_GAP_LOCAL_ENABLED.defaultValue());
+        if (!localEnabled) {
+            logger.info("Aggregation family operation locally is disabled. Use archive table.");
+        }
+        boolean localExecution = localEnabled && fileExists.size() == fileIds.size();
+        boolean mrExecution = filesWithArchive.size() == fileIds.size();
+        if (!localExecution && !mrExecution) {
+            Set<String> fileName = new HashSet<>();
+            for (Integer fileId : CollectionUtils.subtract(fileIds, fileExists)) {
+                fileName.add(metadataManager.getFileMetadata(studyMetadata.getId(), fileId).getName());
+            }
+            for (Integer fileId : CollectionUtils.subtract(fileIds, filesWithArchive)) {
+                fileName.add(metadataManager.getFileMetadata(studyMetadata.getId(), fileId).getName());
+            }
+            throw new StorageEngineException("Unable to execute family aggregate gaps operation. "
+                    + "Missing file or archive table. Files: " + fileName);
+        }
+
+        // Try to register the cohort. It might fail if the cohort already exists.
+        int internalCohortId = getMetadataManager()
+                .registerAggregateFamilySamplesCohort(studyMetadata.getId(), samples, params.isResume(), params.isResume());
+
+        // Update family index status to NONE
+        for (Integer sampleId : sampleIds) {
+            metadataManager.updateSampleMetadata(studyMetadata.getId(), sampleId, sm -> {
+                Integer version = sm.getFamilyIndexVersion();
+                if (version != null) {
+                    logger.info("Updating family index status for sample '{}' to {}", sm.getName(), TaskMetadata.Status.NONE);
+                    sm.setFamilyIndexStatus(TaskMetadata.Status.NONE, version);
+                }
+            });
+        }
+
+        try {
+            if (localExecution) {
+                logger.info("Run aggregation family operation locally for " + fileIds.size() + " files.");
+                FillGapsFromFile fillGapsFromFile = new FillGapsFromFile(getDBAdaptor().getHBaseManager(),
+                        metadataManager, options);
+                fillGapsFromFile.setMaxBufferSize(
+                        getOptions().getInt(FILL_GAPS_GAP_LOCAL_BUFFER_SIZE.key(),
+                                FILL_GAPS_GAP_LOCAL_BUFFER_SIZE.defaultValue()));
+                String gapsGenotype = getOptions().getString(
+                        FILL_GAPS_GAP_GENOTYPE.key(),
+                        FILL_GAPS_GAP_GENOTYPE.defaultValue());
+
+                fillGapsFromFile.fillGaps(studyMetadata.getName(), uris, outdir, getVariantTableName(), gapsGenotype);
+            } else {
+                logger.info("Run aggregation family operation using archive table for " + fileIds.size() + " files.");
+                fillGapsOrMissing(study, studyMetadata, fileIds, sampleIds, true, false, params.toObjectMap(options));
+            }
+
+            metadataManager.updateCohortMetadata(studyMetadata.getId(), internalCohortId, cohort -> {
+                cohort.setStatusByType(TaskMetadata.Status.READY);
+            });
+            metadataManager.removeExtraInternalCohorts(studyMetadata.getId(), internalCohortId);
+        } catch (Exception e) {
+            try {
+                metadataManager.updateCohortMetadata(studyMetadata.getId(), internalCohortId, cohort -> {
+                    cohort.setStatusByType(TaskMetadata.Status.ERROR);
+                });
+            } catch (Exception e1) {
+                e.addSuppressed(e1);
+            }
+            throw e;
+        }
     }
 
     private void fillGapsOrMissing(String study, StudyMetadata studyMetadata, Set<Integer> fileIds, List<Integer> sampleIds,
@@ -562,7 +663,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             throw new StorageEngineException("Unable to execute operation on files affected by TASK-633 : " + filesAffected633);
         }
         if (!filesWithoutArchive.isEmpty()) {
-            throw new StorageEngineException("Unable to execute operation on files without archive data : " + filesAffected633);
+            throw new StorageEngineException("Unable to execute operation on files without archive data : " + filesWithoutArchive);
         }
 
 
@@ -991,7 +1092,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     @Override
-    protected void postRemoveFiles(String study, List<Integer> fileIds, List<Integer> sampleIds, int taskId, boolean error)
+    protected void postRemoveFiles(String study, List<Integer> fileIds, List<Integer> samplesPartial, int taskId, boolean error)
             throws StorageEngineException {
         // First, if the operation finished without errors, remove the phoenix columns.
         if (!error) {
@@ -1000,13 +1101,13 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
 
             try (VariantPhoenixSchemaManager schemaManager = new VariantPhoenixSchemaManager(dbAdaptor)) {
                 schemaManager.dropFiles(sm.getId(), fileIds);
-                schemaManager.dropSamples(sm.getId(), sampleIds);
+                schemaManager.dropSamples(sm.getId(), samplesPartial);
             } catch (SQLException e) {
                 throw new StorageEngineException("Error removing columns from Phoenix", e);
             }
         }
         // Then, run the default postRemoveFiles
-        super.postRemoveFiles(study, fileIds, sampleIds, taskId, error);
+        super.postRemoveFiles(study, fileIds, samplesPartial, taskId, error);
     }
 
     @Override

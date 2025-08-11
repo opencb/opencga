@@ -37,12 +37,13 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.migration.MigrationManager;
 import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.catalog.utils.JwtUtils;
+import org.opencb.opencga.core.common.JwtUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.Optimizations;
+import org.opencb.opencga.core.config.UserOrganizationConfiguration;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.organizations.*;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
@@ -88,6 +89,7 @@ public class CatalogManager implements AutoCloseable {
     private ClinicalAnalysisManager clinicalAnalysisManager;
     private InterpretationManager interpretationManager;
     private PanelManager panelManager;
+    private WorkflowManager workflowManager;
 
     private AuditManager auditManager;
     private AuthorizationManager authorizationManager;
@@ -105,7 +107,7 @@ public class CatalogManager implements AutoCloseable {
         logger.debug("CatalogManager configureIOManager");
         configureIOManager(configuration);
         logger.debug("CatalogManager configureDBAdaptorFactory");
-        catalogDBAdaptorFactory = new MongoDBAdaptorFactory(configuration, ioManagerFactory);
+        catalogDBAdaptorFactory = new MongoDBAdaptorFactory(configuration, ioManagerFactory, catalogIOManager);
         authorizationDBAdaptorFactory = new AuthorizationMongoDBAdaptorFactory((MongoDBAdaptorFactory) catalogDBAdaptorFactory,
                 configuration);
         authenticationFactory = new AuthenticationFactory(catalogDBAdaptorFactory, configuration);
@@ -152,7 +154,7 @@ public class CatalogManager implements AutoCloseable {
         projectManager = new ProjectManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager,
                 configuration);
         studyManager = new StudyManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, ioManagerFactory,
-                catalogIOManager, configuration);
+                catalogIOManager, authenticationFactory, configuration);
         fileManager = new FileManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, ioManagerFactory, configuration);
         jobManager = new JobManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, ioManagerFactory, configuration);
         sampleManager = new SampleManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
@@ -163,6 +165,8 @@ public class CatalogManager implements AutoCloseable {
         clinicalAnalysisManager = new ClinicalAnalysisManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 configuration);
         interpretationManager = new InterpretationManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
+        workflowManager = new WorkflowManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, ioManagerFactory,
+                catalogIOManager, configuration);
     }
 
     private void initializeAdmin(Configuration configuration) throws CatalogDBException {
@@ -241,7 +245,7 @@ public class CatalogManager implements AutoCloseable {
         try {
             logger.info("Installing database {} in {}", getCatalogAdminDatabase(), configuration.getCatalog().getDatabase().getHosts());
             privateInstall(algorithm, secretKey, password, email);
-            String token = userManager.loginAsAdmin(password).getToken();
+            String token = userManager.loginAsAdmin(password).first().getToken();
             installIndexes(ADMIN_ORGANIZATION, token);
         } catch (Exception e) {
             try {
@@ -272,7 +276,8 @@ public class CatalogManager implements AutoCloseable {
 
         OrganizationConfiguration organizationConfiguration = new OrganizationConfiguration(
                 Collections.singletonList(CatalogAuthenticationManager.createOpencgaAuthenticationOrigin()),
-                Constants.DEFAULT_USER_EXPIRATION_DATE, new Optimizations(), new TokenConfiguration(algorithm, secretKey, 3600L));
+                new UserOrganizationConfiguration(Constants.DEFAULT_USER_EXPIRATION_DATE, false), new Optimizations(),
+                new TokenConfiguration(algorithm, secretKey, 3600L));
         organizationManager.create(new OrganizationCreateParams(ADMIN_ORGANIZATION, ADMIN_ORGANIZATION, null, null,
                         organizationConfiguration, null),
                 QueryOptions.empty(), null);
@@ -281,7 +286,7 @@ public class CatalogManager implements AutoCloseable {
                 .setEmail(StringUtils.isEmpty(email) ? "opencga@admin.com" : email)
                 .setOrganization(ADMIN_ORGANIZATION);
         userManager.create(user, password, null);
-        String token = userManager.login(ADMIN_ORGANIZATION, OPENCGA, password).getToken();
+        String token = userManager.login(ADMIN_ORGANIZATION, OPENCGA, password).first().getToken();
 
         // Add OPENCGA as owner of ADMIN_ORGANIZATION
         organizationManager.update(ADMIN_ORGANIZATION, new OrganizationUpdateParams().setOwner(OPENCGA), QueryOptions.empty(), token);
@@ -363,6 +368,10 @@ public class CatalogManager implements AutoCloseable {
 
     public IOManagerFactory getIoManagerFactory() {
         return ioManagerFactory;
+    }
+
+    public CatalogIOManager getCatalogIOManager() {
+        return catalogIOManager;
     }
 
     private void configureIOManager(Configuration configuration) throws CatalogIOException {
@@ -449,5 +458,9 @@ public class CatalogManager implements AutoCloseable {
 
     public MigrationManager getMigrationManager() {
         return migrationManager;
+    }
+
+    public WorkflowManager getWorkflowManager() {
+        return workflowManager;
     }
 }

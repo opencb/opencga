@@ -26,10 +26,11 @@
 #' | info | /{apiVersion}/studies/{studies}/info | include, exclude, studies[*] |
 #' | searchAudit | /{apiVersion}/studies/{study}/audit/search | include, exclude, limit, skip, count, study[*], operationId, userId, action, resource, resourceId, resourceUuid, status, date |
 #' | groups | /{apiVersion}/studies/{study}/groups | study[*], id, silent |
+#' | syncGroups | /{apiVersion}/studies/{study}/groups/sync | study[*], body[*] |
 #' | updateGroups | /{apiVersion}/studies/{study}/groups/update | study[*], action, body[*] |
 #' | updateGroupsUsers | /{apiVersion}/studies/{study}/groups/{group}/users/update | study[*], group[*], action, body[*] |
 #' | createNotes | /{apiVersion}/studies/{study}/notes/create | include, exclude, study[*], includeResult, body[*] |
-#' | searchNotes | /{apiVersion}/studies/{study}/notes/search | include, exclude, study[*], creationDate, modificationDate, id, uuid, userId, tags, visibility, version |
+#' | searchNotes | /{apiVersion}/studies/{study}/notes/search | include, exclude, study[*], creationDate, modificationDate, id, type, uuid, userId, tags, visibility, version |
 #' | deleteNotes | /{apiVersion}/studies/{study}/notes/{id}/delete | study[*], id[*], includeResult |
 #' | updateNotes | /{apiVersion}/studies/{study}/notes/{id}/update | include, exclude, study[*], id[*], tagsAction, includeResult, body[*] |
 #' | permissionRules | /{apiVersion}/studies/{study}/permissionRules | study[*], entity[*] |
@@ -38,6 +39,7 @@
 #' | uploadTemplates | /{apiVersion}/studies/{study}/templates/upload | file, study[*] |
 #' | deleteTemplates | /{apiVersion}/studies/{study}/templates/{templateId}/delete | study[*], templateId[*] |
 #' | update | /{apiVersion}/studies/{study}/update | include, exclude, study[*], includeResult, body[*] |
+#' | syncUsers | /{apiVersion}/studies/{study}/users/sync | study[*], authenticationOriginId[*] |
 #' | variableSets | /{apiVersion}/studies/{study}/variableSets | study[*], id |
 #' | updateVariableSets | /{apiVersion}/studies/{study}/variableSets/update | study[*], action, body[*] |
 #' | updateVariableSetsVariables | /{apiVersion}/studies/{study}/variableSets/{variableSet}/variables/update | study[*], variableSet[*], action, body[*] |
@@ -118,7 +120,7 @@ setMethod("studyClient", "OpencgaR", function(OpencgaR, group, id, members, stud
         #' @param operationId Audit operation UUID.
         #' @param userId User ID.
         #' @param action Action performed by the user.
-        #' @param resource Resource involved. Allowed values: ['AUDIT NOTE ORGANIZATION USER PROJECT STUDY FILE SAMPLE JOB INDIVIDUAL COHORT DISEASE_PANEL FAMILY CLINICAL_ANALYSIS INTERPRETATION VARIANT ALIGNMENT CLINICAL EXPRESSION RGA FUNCTIONAL']
+        #' @param resource Resource involved. Allowed values: ['AUDIT NOTE ORGANIZATION USER PROJECT STUDY FILE SAMPLE JOB INDIVIDUAL COHORT DISEASE_PANEL FAMILY CLINICAL_ANALYSIS INTERPRETATION VARIANT ALIGNMENT CLINICAL EXPRESSION RGA FUNCTIONAL WORKFLOW RESOURCE']
         #' @param resourceId Resource ID.
         #' @param resourceUuid resource UUID.
         #' @param status Filter by status. Allowed values: ['SUCCESS ERROR']
@@ -133,6 +135,13 @@ setMethod("studyClient", "OpencgaR", function(OpencgaR, group, id, members, stud
         #' @param silent Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries looked for cannot be shown for whichever reason.
         groups=fetchOpenCGA(object=OpencgaR, category="studies", categoryId=study, subcategory=NULL,
                 subcategoryId=NULL, action="groups", params=params, httpMethod="GET", as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/studies/{study}/groups/sync:
+        #' Associate a remote group from an authentication origin with a local group in a study.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param data JSON containing the parameters.
+        syncGroups=fetchOpenCGA(object=OpencgaR, category="studies", categoryId=study, subcategory="groups",
+                subcategoryId=NULL, action="sync", params=params, httpMethod="POST", as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/studies/{study}/groups/update:
         #' Add or remove a group.
@@ -169,6 +178,7 @@ setMethod("studyClient", "OpencgaR", function(OpencgaR, group, id, members, stud
         #' @param creationDate Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         #' @param modificationDate Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         #' @param id Note unique identifier.
+        #' @param type Note type.
         #' @param uuid Unique 32-character identifier assigned automatically by OpenCGA.
         #' @param userId User that wrote that Note.
         #' @param tags Note tags.
@@ -252,6 +262,14 @@ setMethod("studyClient", "OpencgaR", function(OpencgaR, group, id, members, stud
         #' @param data JSON containing the params to be updated.
         update=fetchOpenCGA(object=OpencgaR, category="studies", categoryId=study, subcategory=NULL,
                 subcategoryId=NULL, action="update", params=params, httpMethod="POST", as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/studies/{study}/users/sync:
+        #' Synchronize all users from the remote groups of a given authentication origin.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param authenticationOriginId Authentication origin ID.
+        syncUsers=fetchOpenCGA(object=OpencgaR, category="studies", categoryId=study, subcategory="users",
+                subcategoryId=NULL, action="sync", params=params, httpMethod="POST",
+                as.queryParam=c("authenticationOriginId"), ...),
 
         #' @section Endpoint /{apiVersion}/studies/{study}/variableSets:
         #' Fetch variableSets from a study.

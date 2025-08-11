@@ -24,9 +24,9 @@ import org.opencb.opencga.storage.hadoop.variant.index.core.CombinationTripleInd
 import org.opencb.opencga.storage.hadoop.variant.index.core.IndexField;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexVariant;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleVariantIndexEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -111,24 +111,24 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
         SampleIndexQuery sampleIndexQuery = sampleIndexDBAdaptor.parseSampleIndexQuery(new Query(query));
         SampleIndexSchema schema = sampleIndexQuery.getSchema();
 
-        List<FacetFieldAccumulator<SampleVariantIndexEntry>> accumulators = createAccumulators(schema, query, facet, filterTranscript);
+        List<FacetFieldAccumulator<SampleIndexVariant>> accumulators = createAccumulators(schema, query, facet, filterTranscript);
         List<FacetField> fields = new ArrayList<>();
 
         logger.info("Filter transcript = {}", filterTranscript);
 
-        try (CloseableIterator<SampleVariantIndexEntry> sampleVariantIndexEntryIterator = sampleIndexDBAdaptor.rawIterator(query)) {
+        try (CloseableIterator<SampleIndexVariant> sampleIndexVariantIterator = sampleIndexDBAdaptor.rawIterator(query)) {
             // Init top level fields
-            for (FacetFieldAccumulator<SampleVariantIndexEntry> accumulator : accumulators) {
+            for (FacetFieldAccumulator<SampleIndexVariant> accumulator : accumulators) {
                 fields.add(accumulator.createField());
             }
 
             // Loop
             long numMatches = 0;
-            while (sampleVariantIndexEntryIterator.hasNext()) {
+            while (sampleIndexVariantIterator.hasNext()) {
                 numMatches++;
-                SampleVariantIndexEntry entry = sampleVariantIndexEntryIterator.next();
+                SampleIndexVariant entry = sampleIndexVariantIterator.next();
                 for (int i = 0; i < accumulators.size(); i++) {
-                    FacetFieldAccumulator<SampleVariantIndexEntry> accumulator = accumulators.get(i);
+                    FacetFieldAccumulator<SampleIndexVariant> accumulator = accumulators.get(i);
                     FacetField field = fields.get(i);
                     accumulator.accumulate(field, entry);
                 }
@@ -136,7 +136,7 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
 
             // Tear down and clean up results.
             for (int i = 0; i < accumulators.size(); i++) {
-                FacetFieldAccumulator<SampleVariantIndexEntry> accumulator = accumulators.get(i);
+                FacetFieldAccumulator<SampleIndexVariant> accumulator = accumulators.get(i);
                 FacetField field = fields.get(i);
                 accumulator.evaluate(field);
             }
@@ -146,19 +146,19 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
         }
     }
 
-    private List<FacetFieldAccumulator<SampleVariantIndexEntry>> createAccumulators(
+    private List<FacetFieldAccumulator<SampleIndexVariant>> createAccumulators(
             SampleIndexSchema schema, Query query, String facet, boolean filterTranscript) {
-        List<FacetFieldAccumulator<SampleVariantIndexEntry>> list = new ArrayList<>();
+        List<FacetFieldAccumulator<SampleIndexVariant>> list = new ArrayList<>();
         for (String f : facet.split(FACET_SEPARATOR)) {
             list.add(createAccumulator(schema, query, f, filterTranscript));
         }
         return list;
     }
 
-    private FacetFieldAccumulator<SampleVariantIndexEntry> createAccumulator(
+    private FacetFieldAccumulator<SampleIndexVariant> createAccumulator(
             SampleIndexSchema schema, Query query, String facet, boolean filterTranscript) {
         String[] split = facet.split(NESTED_FACET_SEPARATOR);
-        FacetFieldAccumulator<SampleVariantIndexEntry> accumulator = null;
+        FacetFieldAccumulator<SampleIndexVariant> accumulator = null;
 
         Set<String> ctFilter = new HashSet<>(VariantQueryUtils
                 .parseConsequenceTypes(query.getAsStringList(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key())));
@@ -188,7 +188,7 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
             if (fieldKey.equalsIgnoreCase("depth") || fieldKey.equalsIgnoreCase("coverage")) {
                 fieldKey = "dp";
             }
-            FacetFieldAccumulator<SampleVariantIndexEntry> thisAccumulator = null;
+            FacetFieldAccumulator<SampleIndexVariant> thisAccumulator = null;
             switch (fieldKey) {
                 case CHROM_DENSITY:
                     int step;

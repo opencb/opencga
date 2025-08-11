@@ -6,33 +6,23 @@
 \usage{
 \S4method{cohortClient}{OpencgaR}(
   OpencgaR,
-  members,
   annotationSet,
-  cohorts,
   cohort,
+  cohorts,
+  members,
   endpointName,
   params = NULL,
   ...
 )
 }
 \arguments{
-\item{members}{Comma separated list of user or group ids.}
-
 \item{annotationSet}{AnnotationSet ID to be updated.}
-
-\item{cohorts}{Comma separated list of cohort ids.}
 
 \item{cohort}{Cohort ID.}
 
-\item{creationYear}{Creation year.}
+\item{cohorts}{Comma separated list of cohort ids.}
 
-\item{creationMonth}{Creation month (JANUARY, FEBRUARY...).}
-
-\item{creationDay}{Creation day.}
-
-\item{creationDayOfWeek}{Creation day of week (MONDAY, TUESDAY...).}
-
-\item{default}{Calculate default stats.}
+\item{members}{Comma separated list of user or group ids.}
 
 \item{variableSetId}{Variable set ID or name.}
 
@@ -46,7 +36,7 @@
 
 \item{variable}{Deprecated: Use /generate web service and filter by annotation.}
 
-\item{field}{Field for which to obtain the distinct values.}
+\item{field}{Comma separated list of fields for which to obtain the distinct values.}
 
 \item{somatic}{Somatic sample.}
 
@@ -54,7 +44,7 @@
 
 \item{fileIds}{Comma separated list of file IDs, paths or UUIDs.}
 
-\item{phenotypes}{Comma separated list of phenotype ids or names.}
+\item{phenotypes}{Comma separated list of phenotype ids or names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.}
 
 \item{snapshot}{Snapshot value (Latest version of the entry in the specified release).}
 
@@ -64,9 +54,9 @@
 
 \item{count}{Get the total number of results matching the query. Deactivated by default.}
 
-\item{id}{Comma separated list of cohort IDs up to a maximum of 100.}
+\item{id}{Comma separated list of cohort IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.}
 
-\item{name}{Comma separated list of cohort names up to a maximum of 100.}
+\item{name}{Comma separated list of cohort names up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.}
 
 \item{uuid}{Comma separated list of cohort IDs up to a maximum of 100.}
 
@@ -102,15 +92,15 @@
 
 \item{exclude}{Fields excluded in the response, whole JSON path must be provided.}
 
-\item{samplesAction}{Action to be performed if the array of samples is being updated. Allowed values: \link{'ADD', 'SET', 'REMOVE'}}
+\item{samplesAction}{Action to be performed if the array of samples is being updated. Allowed values: \link{'ADD SET REMOVE'}}
 
-\item{annotationSetsAction}{Action to be performed if the array of annotationSets is being updated. Allowed values: \link{'ADD', 'SET', 'REMOVE'}}
+\item{annotationSetsAction}{Action to be performed if the array of annotationSets is being updated. Allowed values: \link{'ADD SET REMOVE'}}
 
 \item{includeResult}{Flag indicating to include the created or updated document result in the response.}
 
-\item{study}{Study [\link{user@}project:]study where study and project can be either the ID or UUID.}
+\item{study}{Study [\link{organization@}project:]study where study and project can be either the ID or UUID.}
 
-\item{action}{Action to be performed: ADD to add new annotations; REPLACE to replace the value of an already existing annotation; SET to set the new list of annotations removing any possible old annotations; REMOVE to remove some annotations; RESET to set some annotations to the default value configured in the corresponding variables of the VariableSet if any. Allowed values: \link{'ADD', 'SET', 'REMOVE', 'RESET', 'REPLACE'}}
+\item{action}{Action to be performed: ADD to add new annotations; REPLACE to replace the value of an already existing annotation; SET to set the new list of annotations removing any possible old annotations; REMOVE to remove some annotations; RESET to set some annotations to the default value configured in the corresponding variables of the VariableSet if any. Allowed values: \link{'ADD SET REMOVE RESET REPLACE'}}
 
 \item{data}{Json containing the map of annotations when the action is ADD, SET or REPLACE, a json with only the key 'remove' containing the comma separated variables to be removed as a value when the action is REMOVE or a json with only the key 'reset' containing the comma separated variables that will be set to the default value when the action is RESET.}
 }
@@ -119,7 +109,7 @@ This function implements the OpenCGA calls for managing Cohorts.
 The following table summarises the available \emph{actions} for this client:\tabular{llr}{
    endpointName \tab Endpoint WS \tab parameters accepted \cr
    updateAcl \tab /{apiVersion}/cohorts/acl/{members}/update \tab study, members\link{*}, action\link{*}, body\link{*} \cr
-   aggregationStats \tab /{apiVersion}/cohorts/aggregationStats \tab study, type, creationYear, creationMonth, creationDay, creationDayOfWeek, numSamples, status, release, annotation, default, field \cr
+   aggregationStats \tab /{apiVersion}/cohorts/aggregationStats \tab study, id, name, uuid, type, creationDate, modificationDate, deleted, status, internalStatus, annotation, acl, samples, numSamples, release, field \cr
    loadAnnotationSets \tab /{apiVersion}/cohorts/annotationSets/load \tab study, variableSetId\link{*}, path\link{*}, parents, annotationSetId, body \cr
    create \tab /{apiVersion}/cohorts/create \tab include, exclude, study, variableSet, variable, includeResult, body\link{*} \cr
    distinct \tab /{apiVersion}/cohorts/distinct \tab study, id, name, uuid, type, creationDate, modificationDate, deleted, status, internalStatus, annotation, acl, samples, numSamples, release, field\link{*} \cr

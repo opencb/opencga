@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -47,6 +48,7 @@ import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.GroupUpdateParams;
+import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
@@ -64,8 +66,9 @@ import static org.opencb.opencga.catalog.utils.ParamUtils.checkEmail;
  */
 public class UserManager extends AbstractManager {
 
-    static final QueryOptions INCLUDE_INTERNAL = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(UserDBAdaptor.QueryParams.ID.key(),
-            UserDBAdaptor.QueryParams.INTERNAL.key(), UserDBAdaptor.QueryParams.DEPRECATED_ACCOUNT.key()));
+    public static final QueryOptions INCLUDE_INTERNAL = new QueryOptions(QueryOptions.INCLUDE,
+            Arrays.asList(UserDBAdaptor.QueryParams.ID.key(), UserDBAdaptor.QueryParams.INTERNAL.key(),
+                    UserDBAdaptor.QueryParams.DEPRECATED_ACCOUNT.key()));
     protected static Logger logger = LoggerFactory.getLogger(UserManager.class);
     private final CatalogIOManager catalogIOManager;
     private final AuthenticationFactory authenticationFactory;
@@ -128,9 +131,56 @@ public class UserManager extends AbstractManager {
 
         Organization organization = getOrganizationDBAdaptor(organizationId).get(OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION)
                 .first();
-
+        validateNewUser(user, password, organization.getConfiguration().getUser().getDefaultExpirationDate(), organizationId);
         ObjectMap auditParams = new ObjectMap("user", user);
 
+        if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationId) || !OPENCGA.equals(user.getId())) {
+            JwtPayload jwtPayload = validateToken(token);
+            // If it's not one of the SUPERADMIN users or the owner or one of the admins of the organisation, we should not allow it
+            if (!authorizationManager.isAtLeastOrganizationOwnerOrAdmin(organizationId, jwtPayload.getUserId(organizationId))) {
+                String errorMsg = "Please ask your administrator to create your account.";
+                auditManager.auditCreate(organizationId, user.getId(), Enums.Resource.USER, user.getId(), "", "", "", auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", errorMsg)));
+                throw new CatalogException(errorMsg);
+            }
+        }
+
+        // Check if we have already reached the limit of users in the Organisation
+        checkUserLimitQuota(organizationId);
+
+        // Check if the user already exists
+        checkUserExists(organizationId, user.getId());
+
+        try {
+            if (StringUtils.isNotEmpty(password) && !PasswordUtils.isStrongPassword(password)) {
+                throw new CatalogException("Invalid password. " + PasswordUtils.PASSWORD_REQUIREMENT);
+            }
+            if (user.getProjects() != null && !user.getProjects().isEmpty()) {
+                throw new CatalogException("Creating user and projects in a single transaction is forbidden");
+            }
+
+            getUserDBAdaptor(organizationId).insert(user, password, QueryOptions.empty());
+
+            // If all users are expected to belong to the members group of all studies, add it
+            if (organization.getConfiguration().getUser() != null && organization.getConfiguration().getUser().isAddToStudyMembers()) {
+                List<Study> studyList = catalogManager.getStudyManager().listStudies(organizationId);
+                catalogManager.getStudyManager().addToMembersGroup(organizationId, studyList, Collections.singletonList(user.getId()));
+            }
+
+            auditManager.auditCreate(organizationId, user.getId(), Enums.Resource.USER, user.getId(), "", "", "", auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return getUserDBAdaptor(organizationId).get(user.getId(), QueryOptions.empty());
+        } catch (CatalogIOException | CatalogDBException e) {
+            auditManager.auditCreate(organizationId, user.getId(), Enums.Resource.USER, user.getId(), "", "", "", auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+
+            throw e;
+        }
+    }
+
+    public void validateNewUser(User user, String password, String defaultUserExpirationDate, String organizationId)
+            throws CatalogException {
         // Initialise fields
         ParamUtils.checkObj(user, "User");
         ParamUtils.checkValidUserId(user.getId());
@@ -143,7 +193,6 @@ public class UserManager extends AbstractManager {
                 UserDBAdaptor.QueryParams.CREATION_DATE.key()));
         user.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(user.getModificationDate(),
                 UserDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
-
         user.setInternal(ParamUtils.defaultObject(user.getInternal(), UserInternal::new));
         user.getInternal().setStatus(new UserStatus(InternalStatus.READY));
         user.setQuota(ParamUtils.defaultObject(user.getQuota(), UserQuota::new));
@@ -157,7 +206,7 @@ public class UserManager extends AbstractManager {
         Account account = user.getInternal().getAccount();
         account.setPassword(ParamUtils.defaultObject(account.getPassword(), Password::new));
         if (StringUtils.isEmpty(account.getExpirationDate())) {
-            account.setExpirationDate(organization.getConfiguration().getDefaultUserExpirationDate());
+            account.setExpirationDate(defaultUserExpirationDate);
         } else {
             // Validate expiration date is not over
             ParamUtils.checkDateIsNotExpired(account.getExpirationDate(), UserDBAdaptor.QueryParams.INTERNAL_ACCOUNT_EXPIRATION_DATE.key());
@@ -168,7 +217,12 @@ public class UserManager extends AbstractManager {
                 throw new CatalogException("Unknown authentication origin id '" + account.getAuthentication() + "'");
             }
         } else {
-            account.setAuthentication(new Account.AuthenticationOrigin(CatalogAuthenticationManager.OPENCGA, false));
+            if (account.getAuthentication() != null) {
+                account.getAuthentication().setId(AuthenticationOrigin.AuthenticationType.OPENCGA.name());
+            } else {
+                account.setAuthentication(new Account.AuthenticationOrigin(AuthenticationOrigin.AuthenticationType.OPENCGA.name(), false,
+                        false));
+            }
         }
 
         // Set password expiration
@@ -183,39 +237,18 @@ public class UserManager extends AbstractManager {
             Date date = TimeUtils.addDaysToCurrentDate(configuration.getAccount().getPasswordExpirationDays());
             account.getPassword().setExpirationDate(TimeUtils.getTime(date));
         }
+    }
 
-        if (!ParamConstants.ADMIN_ORGANIZATION.equals(organizationId) || !OPENCGA.equals(user.getId())) {
-            JwtPayload jwtPayload = validateToken(token);
-            // If it's not one of the SUPERADMIN users or the owner or one of the admins of the organisation, we should not allow it
-            if (!authorizationManager.isAtLeastOrganizationOwnerOrAdmin(organizationId, jwtPayload.getUserId(organizationId))) {
-                String errorMsg = "Please ask your administrator to create your account.";
-                auditManager.auditCreate(organizationId, user.getId(), Enums.Resource.USER, user.getId(), "", "", "", auditParams,
-                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", errorMsg)));
-                throw new CatalogException(errorMsg);
-            }
+    private void checkUserLimitQuota(String organizationId) throws CatalogException {
+        if (configuration.getQuota().getMaxNumUsers() <= 0) {
+            logger.debug("Skipping user quota check. No limit set.");
+            return;
         }
-
-        checkUserExists(organizationId, user.getId());
-
-        try {
-            if (StringUtils.isNotEmpty(password) && !PasswordUtils.isStrongPassword(password)) {
-                throw new CatalogException("Invalid password. " + PasswordUtils.PASSWORD_REQUIREMENT);
-            }
-            if (user.getProjects() != null && !user.getProjects().isEmpty()) {
-                throw new CatalogException("Creating user and projects in a single transaction is forbidden");
-            }
-
-            getUserDBAdaptor(organizationId).insert(user, password, QueryOptions.empty());
-
-            auditManager.auditCreate(organizationId, user.getId(), Enums.Resource.USER, user.getId(), "", "", "", auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-
-            return getUserDBAdaptor(organizationId).get(user.getId(), QueryOptions.empty());
-        } catch (CatalogIOException | CatalogDBException e) {
-            auditManager.auditCreate(organizationId, user.getId(), Enums.Resource.USER, user.getId(), "", "", "", auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-
-            throw e;
+        // Check if we have already reached the limit of users in the Organisation
+        long numUsers = getUserDBAdaptor(organizationId).count(new Query()).getNumMatches();
+        if (numUsers >= configuration.getQuota().getMaxNumUsers()) {
+            throw new CatalogException("The organization '" + organizationId + "' has reached the maximum quota of allowed users ("
+                    + configuration.getQuota().getMaxNumUsers() + ").");
         }
     }
 
@@ -282,13 +315,17 @@ public class UserManager extends AbstractManager {
     }
 
     public JwtPayload validateToken(String token) throws CatalogException {
+        if (StringUtils.isEmpty(token)) {
+            throw new CatalogException("Missing token parameter");
+        }
+
         JwtPayload jwtPayload = new JwtPayload(token);
         ParamUtils.checkParameter(jwtPayload.getUserId(), "jwt user");
         ParamUtils.checkParameter(jwtPayload.getOrganization(), "jwt organization");
 
-        String authOrigin;
+        Account.AuthenticationOrigin authOrigin;
         if (ParamConstants.ANONYMOUS_USER_ID.equals(jwtPayload.getUserId())) {
-            authOrigin = CatalogAuthenticationManager.OPENCGA;
+            authOrigin = new Account.AuthenticationOrigin(CatalogAuthenticationManager.OPENCGA, false, false);
         } else {
             OpenCGAResult<User> userResult = getUserDBAdaptor(jwtPayload.getOrganization()).get(jwtPayload.getUserId(),
                     INCLUDE_INTERNAL);
@@ -296,18 +333,32 @@ public class UserManager extends AbstractManager {
                 throw new CatalogException("User '" + jwtPayload.getUserId() + "' could not be found.");
             }
             User user = userResult.first();
-            authOrigin = user.getInternal().getAccount().getAuthentication().getId();
+            checkValidUserAccountStatus(user.getId(), user);
+            authOrigin = user.getInternal().getAccount().getAuthentication();
         }
 
-        authenticationFactory.validateToken(jwtPayload.getOrganization(), authOrigin, token);
+        authenticationFactory.validateToken(jwtPayload.getOrganization(), authOrigin, jwtPayload);
         return jwtPayload;
     }
 
+    @Deprecated
     public void syncAllUsersOfExternalGroup(String organizationId, String study, String authOrigin, String token) throws CatalogException {
         JwtPayload payload = validateToken(token);
         authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, payload.getUserId());
 
-        OpenCGAResult<Group> allGroups = catalogManager.getStudyManager().getGroup(study, null, token);
+
+    }
+
+    public void syncAllUsersOfExternalGroup(String studyStr, String authOrigin, String token) throws CatalogException {
+        JwtPayload tokenPayload = validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        Study study = catalogManager.getStudyManager().resolveId(studyFqn, null, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+
+        authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
+
+        OpenCGAResult<Group> allGroups = catalogManager.getStudyManager().getGroup(studyStr, null, token);
 
         boolean foundAny = false;
         for (Group group : allGroups.getResults()) {
@@ -326,7 +377,7 @@ public class UserManager extends AbstractManager {
                             group.getId(), group.getSyncedFrom().getAuthOrigin());
                     logger.info("Please, manually remove group '{}' if external group '{}' was removed from the authentication origin",
                             group.getId(), group.getSyncedFrom().getAuthOrigin());
-                    catalogManager.getStudyManager().updateGroup(study, group.getId(), ParamUtils.BasicUpdateAction.SET,
+                    catalogManager.getStudyManager().updateGroup(studyStr, group.getId(), ParamUtils.BasicUpdateAction.SET,
                             new GroupUpdateParams(Collections.emptyList()), token);
                     continue;
                 }
@@ -356,28 +407,16 @@ public class UserManager extends AbstractManager {
                     logger.info("Associating members to the internal OpenCGA group");
                     updateParams = new GroupUpdateParams(new ArrayList<>(userList.stream().map(User::getId).collect(Collectors.toSet())));
                 }
-                catalogManager.getStudyManager().updateGroup(study, group.getId(), ParamUtils.BasicUpdateAction.SET,
+                catalogManager.getStudyManager().updateGroup(studyStr, group.getId(), ParamUtils.BasicUpdateAction.SET,
                         updateParams, token);
             }
         }
         if (!foundAny) {
-            logger.info("No synced groups found in study '{}' from authentication origin '{}'", study, authOrigin);
+            logger.info("No synced groups found in study '{}' from authentication origin '{}'", studyStr, authOrigin);
         }
     }
 
-    /**
-     * Register all the users belonging to a remote group. If internalGroup and study are not null, it will also associate the remote group
-     * to the internalGroup defined.
-     *
-     * @param organizationId Organization id.
-     * @param authOrigin     Authentication origin.
-     * @param remoteGroup    Group name of the remote authentication origin.
-     * @param internalGroup  Group name in Catalog that will be associated to the remote group.
-     * @param study          Study where the internal group will be associated.
-     * @param sync           Boolean indicating whether the remote group will be synced with the internal group or not.
-     * @param token          JWT token. The token should belong to the root user.
-     * @throws CatalogException If any of the parameters is wrong or there is any internal error.
-     */
+    @Deprecated
     public void importRemoteGroupOfUsers(String organizationId, String authOrigin, String remoteGroup, @Nullable String internalGroup,
                                          @Nullable String study, boolean sync, String token) throws CatalogException {
         JwtPayload payload = validateToken(token);
@@ -442,6 +481,108 @@ public class UserManager extends AbstractManager {
                 } catch (CatalogException e) {
                     logger.error("Could not register group '{}' in study '{}'\n{}", internalGroup, study, e.getMessage(), e);
                     throw new CatalogException("Could not register group '" + internalGroup + "' in study '" + study + "': "
+                            + e.getMessage(), e);
+                }
+            }
+        } catch (CatalogException e) {
+            auditManager.audit(organizationId, userId, Enums.Action.IMPORT_EXTERNAL_GROUP_OF_USERS, Enums.Resource.USER, "", "", "", "",
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+    }
+
+    /**
+     * Register all the users belonging to a remote group. If internalGroup and study are not null, it will also associate the remote group
+     * to the internalGroup defined.
+     *
+     * @param authOrigin     Authentication origin.
+     * @param remoteGroup    Group name of the remote authentication origin.
+     * @param internalGroup  Group name in Catalog that will be associated to the remote group.
+     * @param studyStr       Study where the internal group will be associated.
+     * @param sync           Boolean indicating whether the remote group will be synced with the internal group or not.
+     * @param token          JWT token. The token should belong to the root user.
+     * @throws CatalogException If any of the parameters is wrong or there is any internal error.
+     */
+    @Deprecated
+    public void importRemoteGroupOfUsers(String authOrigin, String remoteGroup, @Nullable String internalGroup,
+                                         @Nullable String studyStr, boolean sync, String token) throws CatalogException {
+        JwtPayload tokenPayload = validateToken(token);
+        String organizationId;
+        String userId;
+        Study study = null;
+        if (StringUtils.isNotEmpty(studyStr)) {
+            CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+            study = catalogManager.getStudyManager().resolveId(studyFqn, null, tokenPayload);
+            organizationId = studyFqn.getOrganizationId();
+            userId = tokenPayload.getUserId(organizationId);
+        } else {
+            organizationId = tokenPayload.getOrganization();
+            userId = tokenPayload.getUserId();
+        }
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("organizationId", organizationId)
+                .append("authOrigin", authOrigin)
+                .append("remoteGroup", remoteGroup)
+                .append("internalGroup", internalGroup)
+                .append("study", studyStr)
+                .append("sync", sync)
+                .append("token", token);
+        try {
+            if (studyStr != null) {
+                authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
+            } else {
+                authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
+            }
+
+            ParamUtils.checkParameter(authOrigin, "Authentication origin");
+            ParamUtils.checkParameter(remoteGroup, "Remote group");
+
+            List<User> userList;
+            if (sync) {
+                // We don't create any user as they will be automatically populated during login
+                userList = Collections.emptyList();
+            } else {
+                logger.info("Fetching users from authentication origin '{}'", authOrigin);
+
+                // Register the users
+                userList = authenticationFactory.getUsersFromRemoteGroup(organizationId, authOrigin, remoteGroup);
+                for (User user : userList) {
+                    user.setOrganization(organizationId);
+                    try {
+                        create(user, null, token);
+                        logger.info("User '{}' successfully created", user.getId());
+                    } catch (CatalogException e) {
+                        logger.warn("{}", e.getMessage());
+                    }
+                }
+            }
+
+            if (StringUtils.isNotEmpty(internalGroup) && StringUtils.isNotEmpty(studyStr)) {
+                // Check if the group already exists
+                OpenCGAResult<Group> groupResult = catalogManager.getStudyManager().getGroup(studyStr, internalGroup, token);
+                if (groupResult.getNumResults() == 1) {
+                    logger.error("Cannot synchronise with group {}. The group already exists and is already in use.", internalGroup);
+                    throw new CatalogException("Cannot synchronise with group " + internalGroup
+                            + ". The group already exists and is already in use.");
+                }
+
+                // Create new group associating it to the remote group
+                try {
+                    logger.info("Attempting to register group '{}' in study '{}'", internalGroup, studyStr);
+                    Group.Sync groupSync = null;
+                    if (sync) {
+                        groupSync = new Group.Sync(authOrigin, remoteGroup);
+                    }
+                    Group group = new Group(internalGroup, userList.stream().map(User::getId).collect(Collectors.toList()))
+                            .setSyncedFrom(groupSync);
+                    catalogManager.getStudyManager().createGroup(studyStr, group, token);
+                    logger.info("Group '{}' created and synchronised with external group", internalGroup);
+                    auditManager.audit(organizationId, userId, Enums.Action.IMPORT_EXTERNAL_GROUP_OF_USERS, Enums.Resource.USER,
+                            group.getId(), "", studyStr, "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+                } catch (CatalogException e) {
+                    logger.error("Could not register group '{}' in study '{}'\n{}", internalGroup, studyStr, e.getMessage(), e);
+                    throw new CatalogException("Could not register group '" + internalGroup + "' in study '" + studyStr + "': "
                             + e.getMessage(), e);
                 }
             }
@@ -771,7 +912,7 @@ public class UserManager extends AbstractManager {
         throw new UnsupportedOperationException();
     }
 
-    public OpenCGAResult resetPassword(String userId, String token) throws CatalogException {
+    public OpenCGAResult<?> resetPassword(String userId, String token) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(token, "token");
         JwtPayload jwtPayload = validateToken(token);
@@ -779,7 +920,7 @@ public class UserManager extends AbstractManager {
         try {
             authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, jwtPayload.getUserId());
             String authOrigin = getAuthenticationOriginId(organizationId, userId);
-            OpenCGAResult writeResult = authenticationFactory.resetPassword(organizationId, authOrigin, userId);
+            OpenCGAResult<?> writeResult = authenticationFactory.resetPassword(organizationId, authOrigin, userId);
 
             auditManager.auditUser(organizationId, jwtPayload.getUserId(organizationId), Enums.Action.RESET_USER_PASSWORD, userId,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -791,11 +932,11 @@ public class UserManager extends AbstractManager {
         }
     }
 
-    public AuthenticationResponse loginAsAdmin(String password) throws CatalogException {
+    public OpenCGAResult<AuthenticationResponse> loginAsAdmin(String password) throws CatalogException {
         return login(ParamConstants.ADMIN_ORGANIZATION, OPENCGA, password);
     }
 
-    public AuthenticationResponse login(String organizationId, String username, String password) throws CatalogException {
+    public OpenCGAResult<AuthenticationResponse> login(String organizationId, String username, String password) throws CatalogException {
         ParamUtils.checkParameter(username, "userId");
         ParamUtils.checkParameter(password, "password");
 
@@ -817,6 +958,7 @@ public class UserManager extends AbstractManager {
         }
 
         OpenCGAResult<User> userOpenCGAResult = getUserDBAdaptor(organizationId).get(username, INCLUDE_INTERNAL);
+        List<Event> eventList = new LinkedList<>();
         User user = null;
         if (userOpenCGAResult.getNumResults() == 1) {
             user = userOpenCGAResult.first();
@@ -826,38 +968,12 @@ public class UserManager extends AbstractManager {
                     && CatalogAuthenticationManager.OPENCGA.equals(authId);
             // We check
             if (userCanBeBanned) {
-                // Check user is not banned, suspended or has an expired account
-                if (UserStatus.BANNED.equals(user.getInternal().getStatus().getId())) {
-                    throw CatalogAuthenticationException.userIsBanned(username);
-                }
-                if (UserStatus.SUSPENDED.equals(user.getInternal().getStatus().getId())) {
-                    throw CatalogAuthenticationException.userIsSuspended(username);
-                }
-                Account account2 = user.getInternal().getAccount();
-                if (account2.getPassword().getExpirationDate() != null) {
-                    Account account1 = user.getInternal().getAccount();
-                    Date passwordExpirationDate = TimeUtils.toDate(account1.getPassword().getExpirationDate());
-                    if (passwordExpirationDate == null) {
-                        throw new CatalogException("Unexpected null 'passwordExpirationDate' for user '" + username + "'.");
-                    }
-                    if (passwordExpirationDate.before(new Date())) {
-                        Account account = user.getInternal().getAccount();
-                        throw CatalogAuthenticationException.passwordExpired(username, account.getPassword().getExpirationDate());
-                    }
-                }
-                if (user.getInternal().getAccount().getExpirationDate() != null) {
-                    Date date = TimeUtils.toDate(user.getInternal().getAccount().getExpirationDate());
-                    if (date == null) {
-                        throw new CatalogException("Unexpected null 'expirationDate' for user '" + username + "'.");
-                    }
-                    if (date.before(new Date())) {
-                        throw CatalogAuthenticationException.accountIsExpired(username,
-                                user.getInternal().getAccount().getExpirationDate());
-                    }
-                }
+                eventList.addAll(checkValidUserAccountStatus(username, user));
             }
+            Account.AuthenticationOrigin authentication = user.getInternal().getAccount().getAuthentication();
+            authId = user.getInternal().getAccount().getAuthentication().getId();
             try {
-                response = authenticationFactory.authenticate(organizationId, authId, username, password);
+                response = authenticationFactory.authenticate(organizationId, authentication, username, password);
             } catch (CatalogAuthenticationException e) {
                 if (userCanBeBanned) {
                     // We can only lock the account if it is not the root user
@@ -921,9 +1037,8 @@ public class UserManager extends AbstractManager {
 
         auditManager.auditUser(organizationId, username, Enums.Action.LOGIN, username,
                 new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+        String userId = authenticationFactory.getUserId(organizationId, authId, response.getToken());
         if (!CatalogAuthenticationManager.OPENCGA.equals(authId) && !CatalogAuthenticationManager.INTERNAL.equals(authId)) {
-            // External authorization
-            String userId = authenticationFactory.getUserId(organizationId, authId, response.getToken());
             try {
                 // If the user is not registered, an exception will be raised
                 getUserDBAdaptor(organizationId).checkId(userId);
@@ -937,8 +1052,6 @@ public class UserManager extends AbstractManager {
                         CatalogAuthenticationManager.OPENCGA, OPENCGA);
                 create(user, null, rootToken);
             }
-
-
             try {
                 List<String> remoteGroups = authenticationFactory.getRemoteGroups(organizationId, authId, response.getToken());
 
@@ -949,10 +1062,54 @@ public class UserManager extends AbstractManager {
             }
         }
 
-        return response;
+        return new OpenCGAResult<>(0, eventList, 1, Collections.singletonList(response), 1);
     }
 
-    public AuthenticationResponse loginAnonymous(String organizationId) throws CatalogException {
+    private static List<Event> checkValidUserAccountStatus(String username, User user) throws CatalogException {
+        List<Event> eventList = new LinkedList<>();
+        Date futureDate = TimeUtils.addDaysToCurrentDate(15);
+
+        // Check user is not banned, suspended or has an expired account
+        if (UserStatus.BANNED.equals(user.getInternal().getStatus().getId())) {
+            throw CatalogAuthorizationException.userIsBanned(username);
+        }
+        if (UserStatus.SUSPENDED.equals(user.getInternal().getStatus().getId())) {
+            throw CatalogAuthorizationException.userIsSuspended(username);
+        }
+        Account account2 = user.getInternal().getAccount();
+        if (StringUtils.isNotEmpty(account2.getPassword().getExpirationDate())) {
+            Account account1 = user.getInternal().getAccount();
+            Date passwordExpirationDate = TimeUtils.toDate(account1.getPassword().getExpirationDate());
+            if (passwordExpirationDate == null) {
+                throw new CatalogException("Unexpected null 'passwordExpirationDate' for user '" + username + "'.");
+            }
+            if (passwordExpirationDate.before(new Date())) {
+                Account account = user.getInternal().getAccount();
+                throw CatalogAuthorizationException.passwordExpired(username, account.getPassword().getExpirationDate());
+            }
+            if (passwordExpirationDate.before(futureDate)) {
+                eventList.add(new Event(Event.Type.WARNING, "Password expiration date is close. Please, consider changing it."));
+            }
+        }
+        if (StringUtils.isNotEmpty(user.getInternal().getAccount().getExpirationDate())) {
+            Date date = TimeUtils.toDate(user.getInternal().getAccount().getExpirationDate());
+            if (date == null) {
+                throw new CatalogException("Unexpected null 'expirationDate' for user '" + username + "'.");
+            }
+            if (date.before(new Date())) {
+                throw CatalogAuthorizationException.accountIsExpired(username,
+                        user.getInternal().getAccount().getExpirationDate());
+            }
+            if (date.before(futureDate)) {
+                eventList.add(new Event(Event.Type.WARNING, "Account expiration date is close. Please, talk to your"
+                        + " administrator."));
+            }
+        }
+
+        return eventList;
+    }
+
+    public OpenCGAResult<AuthenticationResponse> loginAnonymous(String organizationId) throws CatalogException {
         ParamUtils.checkParameter(organizationId, "organization id");
 
         // Check user anonymous has access to any study within the organization
@@ -964,17 +1121,19 @@ public class UserManager extends AbstractManager {
 
         String token = authenticationFactory.createToken(organizationId, CatalogAuthenticationManager.OPENCGA,
                 ParamConstants.ANONYMOUS_USER_ID);
-        return new AuthenticationResponse(token);
+
+        AuthenticationResponse response = new AuthenticationResponse(token);
+        return new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(response), 1);
     }
 
     /**
      * Create a new token if the token provided corresponds to the user and it is not expired yet.
      *
      * @param token          active token.
-     * @return a new AuthenticationResponse object.
+     * @return a new OpenCGAResult of AuthenticationResponse object.
      * @throws CatalogException if the token does not correspond to the user or the token is expired.
      */
-    public AuthenticationResponse refreshToken(String token) throws CatalogException {
+    public OpenCGAResult<AuthenticationResponse> refreshToken(String token) throws CatalogException {
         JwtPayload payload = new JwtPayload(token);
         String organizationId = payload.getOrganization();
         AuthenticationResponse response = null;
@@ -1004,7 +1163,7 @@ public class UserManager extends AbstractManager {
 
         auditManager.auditUser(organizationId, userId, Enums.Action.REFRESH_TOKEN, userId,
                 new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-        return response;
+        return  new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(response), 1);
     }
 
     public OpenCGAResult<User> changeStatus(String organizationId, String userId, String status, QueryOptions options, String token)
@@ -1545,7 +1704,7 @@ public class UserManager extends AbstractManager {
         }
     }
 
-    private String getAuthenticationOriginId(String organizationId, String userId) throws CatalogException {
+    String getAuthenticationOriginId(String organizationId, String userId) throws CatalogException {
         OpenCGAResult<User> user = getUserDBAdaptor(organizationId).get(userId, new QueryOptions());
         if (user == null || user.getNumResults() == 0) {
             throw new CatalogException(userId + " user not found");

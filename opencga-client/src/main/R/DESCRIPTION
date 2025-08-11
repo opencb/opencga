@@ -1,9 +1,9 @@
 Package: opencgaR
 Type: Package
 Title: Querying Opencga Data
-Version: ${opencgar.version}
-Author: Marta Bleda <martableda@gmail.com>
-Maintainer: Marta Bleda <martableda@gmail.com>
+Version: OPENCGA_R_VERSION
+Author: Zetta Genomics
+Maintainer: Zetta Genomics <support@zettagenomics.com>
 Description: R client that contains classes and methods for working with
     Opencga data.
 License: GPL-3
@@ -17,7 +17,8 @@ Imports:
     configr,
     base64enc,
     methods,
-    rlang
+    rlang,
+    lubridate
 Suggests:
     BiocStyle,
     knitr,
@@ -40,6 +41,7 @@ Collate:
     'Meta-methods.R'
     'OpencgaR-methods.R'
     'Operation-methods.R'
+    'Organization-methods.R'
     'Panel-methods.R'
     'Project-methods.R'
     'RestResponse-methods.R'
@@ -47,5 +49,6 @@ Collate:
     'Study-methods.R'
     'User-methods.R'
     'Variant-methods.R'
-RoxygenNote: 7.1.2
+    'Workflow-methods.R'
+RoxygenNote: 7.3.2
 VignetteBuilder: knitr

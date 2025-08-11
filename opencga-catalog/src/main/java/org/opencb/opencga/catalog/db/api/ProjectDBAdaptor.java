@@ -48,6 +48,7 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
         MODIFICATION_DATE("modificationDate", DATE, ""),
         DESCRIPTION("description", TEXT_ARRAY, ""),
         ORGANIZATION("organization", TEXT, ""),
+        FEDERATION("federation", OBJECT, ""),
         CELLBASE("cellbase", OBJECT, ""),
         ORGANISM("organism", TEXT_ARRAY, ""),
         ORGANISM_SCIENTIFIC_NAME("organism.scientificName", TEXT, ""),
@@ -55,12 +56,15 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
         ORGANISM_ASSEMBLY("organism.assembly", TEXT, ""),
         CURRENT_RELEASE("currentRelease", INTEGER, ""),
         FQN("fqn", TEXT, ""),
+        INTERNAL_FEDERATED("internal.federated", BOOLEAN, ""),
         INTERNAL_STATUS("internal.status", TEXT_ARRAY, ""),
         INTERNAL_STATUS_ID("internal.status.id", TEXT, ""),
         INTERNAL_STATUS_MSG("internal.status.msg", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         INTERNAL_DATASTORES("internal.datastores", TEXT_ARRAY, ""),
         INTERNAL_DATASTORES_VARIANT("internal.datastores.variant", TEXT_ARRAY, ""),
+        INTERNAL_VARIANT_ANNOTATION_INDEX("internal.variant.annotationIndex", OBJECT, ""),
+        INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX("internal.variant.secondaryAnnotationIndex", OBJECT, ""),
         INTERNAL("internal", TEXT_ARRAY, ""),
 
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
@@ -116,7 +120,6 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
             return map.get(key);
         }
     }
-
 
     default boolean exists(long projectId) throws CatalogDBException {
         return count(new Query(QueryParams.UID.key(), projectId)).getNumMatches() > 0;

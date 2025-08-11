@@ -16,6 +16,9 @@
 
 package org.opencb.opencga.server.rest;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.utils.DataModelsUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
@@ -26,7 +29,10 @@ import org.opencb.opencga.core.tools.annotations.ApiOperation;
 import org.opencb.opencga.core.tools.annotations.ApiParam;
 import org.opencb.opencga.server.OpenCGAHealthCheckMonitor;
 import org.opencb.opencga.server.generator.RestApiParser;
+import org.opencb.opencga.server.generator.commons.ApiCommonsImpl;
 import org.opencb.opencga.server.generator.models.RestApi;
+import org.opencb.opencga.server.generator.openapi.models.Swagger;
+import org.opencb.opencga.server.generator.openapi.JsonOpenApiGenerator;
 import org.opencb.opencga.server.rest.admin.AdminWSServer;
 import org.opencb.opencga.server.rest.analysis.AlignmentWebService;
 import org.opencb.opencga.server.rest.analysis.ClinicalWebService;
@@ -127,6 +133,7 @@ public class MetaWSServer extends OpenCGAWSServer {
         classMap.put("studies", StudyWSServer.class);
         classMap.put("files", FileWSServer.class);
         classMap.put("jobs", JobWSServer.class);
+        classMap.put("workflows", WorkflowWSServer.class);
         classMap.put("samples", SampleWSServer.class);
         classMap.put("individuals", IndividualWSServer.class);
         classMap.put("families", FamilyWSServer.class);
@@ -144,7 +151,13 @@ public class MetaWSServer extends OpenCGAWSServer {
         // Check if some categories have been selected
         if (StringUtils.isNotEmpty(categoryStr)) {
             for (String category : categoryStr.split(",")) {
-                classes.add(classMap.get(category));
+                Class<?> clazz = classMap.get(category);
+                if (clazz != null) {
+                    classes.add(clazz);
+                } else {
+                    return createErrorResponse("meta/api",
+                            "Category '" + category + "' not found. Available categories: " + String.join(",", classMap.keySet()));
+                }
             }
         } else {
             // Get API for all categories
@@ -154,5 +167,22 @@ public class MetaWSServer extends OpenCGAWSServer {
         }
         RestApi restApi = new RestApiParser().parse(classes, summary);
         return createOkResponse(new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(restApi.getCategories()), 1));
+    }
+
+
+    @GET
+    @Path("/openapi")
+    @ApiOperation(value = "Opencga openapi json", response = String.class)
+    public String openApi(@ApiParam(value = "Opencga host with environment.", required = true) @QueryParam("url") String url,
+                          @ApiParam(value = "Opencga study to be default in queries.") @QueryParam("study") String study) {
+        JsonOpenApiGenerator generator = new JsonOpenApiGenerator();
+        Swagger swagger = generator.generateJsonOpenApi(new ApiCommonsImpl(), token, url, apiVersion, study);
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        try {
+            return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(swagger);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

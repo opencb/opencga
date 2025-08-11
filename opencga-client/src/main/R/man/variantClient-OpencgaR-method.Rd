@@ -11,9 +11,9 @@
 
 \item{clinicalAnalysis}{Clinical analysis id.}
 
-\item{modeOfInheritance}{Mode of inheritance.}
+\item{modeOfInheritance}{Mode of inheritance. Allowed values: \link{'AUTOSOMAL_DOMINANT AUTOSOMAL_RECESSIVE X_LINKED_DOMINANT X_LINKED_RECESSIVE Y_LINKED MITOCHONDRIAL DE_NOVO MENDELIAN_ERROR COMPOUND_HETEROZYGOUS UNKNOWN'}}
 
-\item{penetrance}{Penetrance.}
+\item{penetrance}{Penetrance. Allowed values: \link{'COMPLETE INCOMPLETE UNKNOWN'}}
 
 \item{disorder}{Disorder id.}
 
@@ -21,11 +21,9 @@
 
 \item{job}{Job ID or UUID.}
 
-\item{fitting}{Compute the relative proportions of the different mutational signatures demonstrated by the tumour.}
+\item{msId}{Signature ID.}
 
-\item{include}{Fields included in the response, whole JSON path must be provided.}
-
-\item{exclude}{Fields excluded in the response, whole JSON path must be provided.}
+\item{msDescription}{Signature description.}
 
 \item{count}{Get the total number of results matching the query. Deactivated by default.}
 
@@ -37,7 +35,7 @@
 
 \item{approximateCountSamplingSize}{Sampling size to get the approximate count. Larger values increase accuracy but also increase execution time.}
 
-\item{id}{List of IDs, these can be rs IDs (dbSNP) or variants in the format chrom:start:ref:alt, e.g. rs116600158,19:7177679:C:T.}
+\item{id}{List of variant IDs in the format chrom:start:ref:alt, e.g. 19:7177679:C:T.}
 
 \item{reference}{Reference allele.}
 
@@ -89,15 +87,15 @@
 
 \item{gene}{List of genes, most gene IDs are accepted (HGNC, Ensembl gene, ...). This is an alias to 'xref' parameter.}
 
-\item{xref}{List of any external reference, these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, ...}
+\item{xref}{List of any external reference, these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, HGVS ...}
 
 \item{proteinSubstitution}{Protein substitution scores include SIFT and PolyPhen. You can query using the score {protein_score}[<|>|<=|>=]{number} or the description {protein_score}[~=|=]{description} e.g. polyphen>0.1,sift=tolerant.}
 
 \item{conservation}{Filter by conservation score: {conservation_score}[<|>|<=|>=]{number} e.g. phastCons>0.5,phylop<0.1,gerp>0.1.}
 
-\item{populationFrequencyRef}{Reference Population Frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1kG_phase3:ALL<0.01.}
+\item{populationFrequencyRef}{Reference Population Frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01.}
 
-\item{populationFrequencyMaf}{Population minor allele frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1kG_phase3:ALL<0.01.}
+\item{populationFrequencyMaf}{Population minor allele frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01.}
 
 \item{geneTraitId}{List of gene trait association id. e.g. "umls:C0007222" , "OMIM:269600".}
 
@@ -125,6 +123,8 @@
 
 \item{panelIntersection}{Intersect panel genes and regions with given genes and regions from que input query. This will prevent returning variants from regions out of the panel.}
 
+\item{source}{Select the variant data source from where to fetch the data. Accepted values are 'variant_index' (default) and 'secondary_sample_index'. When selecting a secondary_index, the data will be retrieved exclusively from that secondary index, and the 'include/exclude' parameters will be ignored. If the given query can not be fully resolved using the secondary index, an exception will be raised. As the returned variants will only contain data from the secondary_index, some data might be missing or be partial.}
+
 \item{trait}{List of traits, based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...}
 
 \item{savedFilter}{Use a saved filter at User level.}
@@ -135,7 +135,7 @@
 
 \item{familyDisorder}{Specify the disorder to use for the family segregation.}
 
-\item{familySegregation}{Filter by segregation mode from a given family. Accepted values: \link{ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, mendelianError, compoundHeterozygous }.}
+\item{familySegregation}{Filter by segregation mode from a given family. Accepted values: \link{ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous }.}
 
 \item{familyMembers}{Sub set of the members of a given family.}
 
@@ -167,7 +167,7 @@
 
 \item{transcriptFlag}{List of transcript flags. e.g. canonical, CCDS, basic, LRG, MANE Select, MANE Plus Clinical, EGLH_HaemOnc, TSO500.}
 
-\item{populationFrequencyAlt}{Alternate Population Frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1kG_phase3:ALL<0.01.}
+\item{populationFrequencyAlt}{Alternate Population Frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01.}
 
 \item{clinical}{Clinical source: clinvar, cosmic.}
 
@@ -179,9 +179,13 @@
 
 \item{sample}{Sample ID.}
 
-\item{project}{Project \link{user@}project where project can be either the ID or the alias.}
+\item{include}{Fields included in the response, whole JSON path must be provided.}
 
-\item{study}{Study [\link{user@}project:]study where study and project can be either the ID or UUID.}
+\item{exclude}{Fields excluded in the response, whole JSON path must be provided.}
+
+\item{project}{Project \link{organization@}project where project can be either the ID or the alias.}
+
+\item{study}{Study [\link{organization@}project:]study where study and project can be either the ID or UUID.}
 
 \item{jobId}{Job ID. It must be a unique string within the study. An ID will be autogenerated automatically if not provided.}
 
@@ -191,7 +195,13 @@
 
 \item{jobTags}{Job tags.}
 
-\item{data}{Variant stats params.}
+\item{jobScheduledStartTime}{Time when the job is scheduled to start.}
+
+\item{jobPriority}{Priority of the job.}
+
+\item{jobDryRun}{Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.}
+
+\item{data}{Variant walker params.}
 }
 \description{
 This function implements the OpenCGA calls for managing Analysis - Variant.
@@ -203,37 +213,41 @@ The following table summarises the available \emph{actions} for this client:\tab
    runCircos \tab /{apiVersion}/analysis/variant/circos/run \tab study, body\link{*} \cr
    deleteCohortStats \tab /{apiVersion}/analysis/variant/cohort/stats/delete \tab study, cohort \cr
    infoCohortStats \tab /{apiVersion}/analysis/variant/cohort/stats/info \tab study, cohort\link{*} \cr
-   runCohortStats \tab /{apiVersion}/analysis/variant/cohort/stats/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
-   runExport \tab /{apiVersion}/analysis/variant/export/run \tab include, exclude, project, study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
+   runCohortStats \tab /{apiVersion}/analysis/variant/cohort/stats/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
+   runExomiser \tab /{apiVersion}/analysis/variant/exomiser/run \tab study, jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
+   runExport \tab /{apiVersion}/analysis/variant/export/run \tab include, exclude, project, study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
    genotypesFamily \tab /{apiVersion}/analysis/variant/family/genotypes \tab study, family, clinicalAnalysis, modeOfInheritance\link{*}, penetrance, disorder \cr
-   runFamilyQc \tab /{apiVersion}/analysis/variant/family/qc/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
-   deleteFile \tab /{apiVersion}/analysis/variant/file/delete \tab jobId, jobDescription, jobDependsOn, jobTags, study, file, resume \cr
-   runGatk \tab /{apiVersion}/analysis/variant/gatk/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
-   runGenomePlot \tab /{apiVersion}/analysis/variant/genomePlot/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
-   runGwas \tab /{apiVersion}/analysis/variant/gwas/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
-   runIndex \tab /{apiVersion}/analysis/variant/index/run \tab study, jobId, jobDependsOn, jobDescription, jobTags, body\link{*} \cr
-   runIndividualQc \tab /{apiVersion}/analysis/variant/individual/qc/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
-   runInferredSex \tab /{apiVersion}/analysis/variant/inferredSex/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
+   runFamilyQc \tab /{apiVersion}/analysis/variant/family/qc/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
+   deleteFile \tab /{apiVersion}/analysis/variant/file/delete \tab jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, study, file, resume \cr
+   runGatk \tab /{apiVersion}/analysis/variant/gatk/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
+   runGenomePlot \tab /{apiVersion}/analysis/variant/genomePlot/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
+   runGwas \tab /{apiVersion}/analysis/variant/gwas/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
+   runHrDetect \tab /{apiVersion}/analysis/variant/hrDetect/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
+   runIndex \tab /{apiVersion}/analysis/variant/index/run \tab study, jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
+   runIndividualQc \tab /{apiVersion}/analysis/variant/individual/qc/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
+   runInferredSex \tab /{apiVersion}/analysis/variant/inferredSex/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
    queryKnockoutGene \tab /{apiVersion}/analysis/variant/knockout/gene/query \tab limit, skip, study, job \cr
    queryKnockoutIndividual \tab /{apiVersion}/analysis/variant/knockout/individual/query \tab limit, skip, study, job \cr
-   runKnockout \tab /{apiVersion}/analysis/variant/knockout/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
-   runMendelianError \tab /{apiVersion}/analysis/variant/mendelianError/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
+   runKnockout \tab /{apiVersion}/analysis/variant/knockout/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
+   runLiftover \tab /{apiVersion}/analysis/variant/liftover/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
+   runMendelianError \tab /{apiVersion}/analysis/variant/mendelianError/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
    metadata \tab /{apiVersion}/analysis/variant/metadata \tab project, study, file, sample, includeStudy, includeFile, includeSample, include, exclude \cr
-   queryMutationalSignature \tab /{apiVersion}/analysis/variant/mutationalSignature/query \tab study, sample, ct, biotype, fileData, filter, qual, region, gene, panel, panelModeOfInheritance, panelConfidence, panelFeatureType, panelRoleInCancer, panelIntersection, fitting \cr
-   runMutationalSignature \tab /{apiVersion}/analysis/variant/mutationalSignature/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
-   runPlink \tab /{apiVersion}/analysis/variant/plink/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
-   query \tab /{apiVersion}/analysis/variant/query \tab include, exclude, limit, skip, count, sort, summary, approximateCount, approximateCountSamplingSize, savedFilter, id, region, type, reference, alternate, project, study, file, filter, qual, fileData, sample, genotype, sampleData, sampleAnnotation, sampleMetadata, unknownGenotype, sampleLimit, sampleSkip, cohort, cohortStatsRef, cohortStatsAlt, cohortStatsMaf, cohortStatsMgf, cohortStatsPass, missingAlleles, missingGenotypes, score, family, familyDisorder, familySegregation, familyMembers, familyProband, includeStudy, includeFile, includeSample, includeSampleData, includeGenotype, includeSampleId, annotationExists, gene, ct, xref, biotype, proteinSubstitution, conservation, populationFrequencyAlt, populationFrequencyRef, populationFrequencyMaf, transcriptFlag, geneTraitId, go, expression, proteinKeyword, drug, functionalScore, clinical, clinicalSignificance, clinicalConfirmedStatus, customAnnotation, panel, panelModeOfInheritance, panelConfidence, panelRoleInCancer, panelFeatureType, panelIntersection, trait \cr
-   runRelatedness \tab /{apiVersion}/analysis/variant/relatedness/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
-   runRvtests \tab /{apiVersion}/analysis/variant/rvtests/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
+   queryMutationalSignature \tab /{apiVersion}/analysis/variant/mutationalSignature/query \tab study, sample, type, ct, biotype, fileData, filter, qual, region, gene, panel, panelModeOfInheritance, panelConfidence, panelFeatureType, panelRoleInCancer, panelIntersection, msId, msDescription \cr
+   runMutationalSignature \tab /{apiVersion}/analysis/variant/mutationalSignature/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
+   runPlink \tab /{apiVersion}/analysis/variant/plink/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
+   query \tab /{apiVersion}/analysis/variant/query \tab include, exclude, limit, skip, count, sort, summary, approximateCount, approximateCountSamplingSize, savedFilter, id, region, type, reference, alternate, project, study, file, filter, qual, fileData, sample, genotype, sampleData, sampleAnnotation, sampleMetadata, unknownGenotype, sampleLimit, sampleSkip, cohort, cohortStatsRef, cohortStatsAlt, cohortStatsMaf, cohortStatsMgf, cohortStatsPass, missingAlleles, missingGenotypes, score, family, familyDisorder, familySegregation, familyMembers, familyProband, includeStudy, includeFile, includeSample, includeSampleData, includeGenotype, includeSampleId, annotationExists, gene, ct, xref, biotype, proteinSubstitution, conservation, populationFrequencyAlt, populationFrequencyRef, populationFrequencyMaf, transcriptFlag, geneTraitId, go, expression, proteinKeyword, drug, functionalScore, clinical, clinicalSignificance, clinicalConfirmedStatus, customAnnotation, panel, panelModeOfInheritance, panelConfidence, panelRoleInCancer, panelFeatureType, panelIntersection, source, trait \cr
+   runRelatedness \tab /{apiVersion}/analysis/variant/relatedness/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
+   runRvtests \tab /{apiVersion}/analysis/variant/rvtests/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
    aggregationStatsSample \tab /{apiVersion}/analysis/variant/sample/aggregationStats \tab savedFilter, region, type, project, study, file, filter, sample, genotype, sampleAnnotation, family, familyDisorder, familySegregation, familyMembers, familyProband, ct, biotype, populationFrequencyAlt, clinical, clinicalSignificance, clinicalConfirmedStatus, field \cr
-   runSampleEligibility \tab /{apiVersion}/analysis/variant/sample/eligibility/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
-   runSampleQc \tab /{apiVersion}/analysis/variant/sample/qc/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
+   runSampleEligibility \tab /{apiVersion}/analysis/variant/sample/eligibility/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
+   runSampleQc \tab /{apiVersion}/analysis/variant/sample/qc/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
    querySample \tab /{apiVersion}/analysis/variant/sample/query \tab limit, skip, variant, study, genotype \cr
-   runSample \tab /{apiVersion}/analysis/variant/sample/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
+   runSample \tab /{apiVersion}/analysis/variant/sample/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
    querySampleStats \tab /{apiVersion}/analysis/variant/sample/stats/query \tab region, type, study, file, filter, sampleData, ct, biotype, transcriptFlag, populationFrequencyAlt, clinical, clinicalSignificance, clinicalConfirmedStatus, study, filterTranscript, sample\link{*} \cr
-   runSampleStats \tab /{apiVersion}/analysis/variant/sample/stats/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
-   runStatsExport \tab /{apiVersion}/analysis/variant/stats/export/run \tab project, study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
-   runStats \tab /{apiVersion}/analysis/variant/stats/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
+   runSampleStats \tab /{apiVersion}/analysis/variant/sample/stats/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
+   runStatsExport \tab /{apiVersion}/analysis/variant/stats/export/run \tab project, study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
+   runStats \tab /{apiVersion}/analysis/variant/stats/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
+   runWalker \tab /{apiVersion}/analysis/variant/walker/run \tab include, exclude, project, study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
 }
 }
 \section{Endpoint /{apiVersion}/analysis/variant/aggregationStats}{
@@ -271,6 +285,11 @@ Read cohort variant stats from list of cohorts.
 Compute cohort variant stats for the selected list of samples.
 }
 
+\section{Endpoint /{apiVersion}/analysis/variant/exomiser/run}{
+
+The Exomiser is a Java program that finds potential disease-causing variants from whole-exome or whole-genome sequencing data.
+}
+
 \section{Endpoint /{apiVersion}/analysis/variant/export/run}{
 
 Filter and export variants from the variant storage to a file.
@@ -306,6 +325,11 @@ Generate a genome plot for a given sample.
 Run a Genome Wide Association Study between two cohorts.
 }
 
+\section{Endpoint /{apiVersion}/analysis/variant/hrDetect/run}{
+
+Run HRDetect analysis for a given somatic sample.
+}
+
 \section{Endpoint /{apiVersion}/analysis/variant/index/run}{
 
 \link{DEPRECATED} Use operation/variant/index.
@@ -334,6 +358,11 @@ Fetch values from KnockoutAnalysis result, by individuals.
 \section{Endpoint /{apiVersion}/analysis/variant/knockout/run}{
 
 Obtains the list of knocked out genes for each sample.
+}
+
+\section{Endpoint /{apiVersion}/analysis/variant/liftover/run}{
+
+BCFtools liftover plugin maps coordinates from assembly 37 to 38.
 }
 
 \section{Endpoint /{apiVersion}/analysis/variant/mendelianError/run}{
@@ -419,6 +448,11 @@ Export calculated variant stats and frequencies.
 \section{Endpoint /{apiVersion}/analysis/variant/stats/run}{
 
 Compute variant stats for any cohort and any set of variants.
+}
+
+\section{Endpoint /{apiVersion}/analysis/variant/walker/run}{
+
+Filter and walk variants from the variant storage to produce a file.
 }
 
 \seealso{

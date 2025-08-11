@@ -25,10 +25,7 @@ import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.ClinicalAudit;
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.Disorder;
-import org.opencb.commons.datastore.core.Event;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.utils.ListUtils;
@@ -232,6 +229,23 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
         query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         return getClinicalAnalysisDBAdaptor(organizationId).iterator(study.getUid(), query, options, userId);
+    }
+
+    @Override
+    public OpenCGAResult<FacetField> facet(String studyStr, Query query, String facet, String token) throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+
+        Study study = catalogManager.getStudyManager().resolveId(studyFqn, StudyManager.INCLUDE_VARIABLE_SET, tokenPayload);
+
+        fixQueryObject(organizationId, study, query, userId, token);
+        query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+
+        return getClinicalAnalysisDBAdaptor(organizationId).facet(study.getUid(), query, facet, userId);
     }
 
     @Override
@@ -597,9 +611,15 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
                         if (clinicalStatusValue.getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED) {
                             String msg = "Case '" + clinicalAnalysis.getId() + "' created with status '"
                                     + clinicalAnalysis.getStatus().getId() + "', which is of type CLOSED. Automatically locking "
-                                    + "ClinicalAnalysis.";
+                                    + "ClinicalAnalysis and setting CVDB index status to PENDING.";
                             logger.info(msg);
                             clinicalAnalysis.setLocked(true);
+
+                            CvdbIndexStatus cvdbIndexStatus = new CvdbIndexStatus(CvdbIndexStatus.PENDING, "User '" + userId
+                                    + "' created case with status '" + clinicalAnalysis.getStatus().getId() + "', which is of type"
+                                    + " CLOSED. Automatically setting CVDB index status to " + CvdbIndexStatus.PENDING);
+                            clinicalAnalysis.getInternal().setCvdbIndex(cvdbIndexStatus);
+
                             events.add(new Event(Event.Type.INFO, clinicalAnalysis.getId(), msg));
                         }
                     }
@@ -761,7 +781,7 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
         }
     }
 
-        private void validateAndInitReport(String organizationId, Study study, ClinicalReport report, String userId)
+    private void validateAndInitReport(String organizationId, Study study, ClinicalReport report, String userId)
             throws CatalogException {
         if (report == null) {
             return;
@@ -1447,6 +1467,12 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
                         throw new CatalogException("ClinicalAnalysis already have the status '" + clinicalAnalysis.getStatus().getId()
                                 + "' of type " + ClinicalStatusValue.ClinicalStatusType.CLOSED);
                     }
+                } else {
+                    // The user wants to remove the CLOSED status
+                    CvdbIndexStatus cvdbIndexStatus = new CvdbIndexStatus(CvdbIndexStatus.PENDING_REMOVE, "User '" + userId
+                            + "' requested to remove the status '" + clinicalAnalysis.getStatus().getId() + "' of type "
+                            + ClinicalStatusValue.ClinicalStatusType.CLOSED + " to set it to '" + updateParams.getStatus().getId() + "'");
+                    parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_CVDB_INDEX.key(), cvdbIndexStatus);
                 }
             }
 
@@ -1732,10 +1758,28 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
                         if (clinicalStatusValue.getType() == ClinicalStatusValue.ClinicalStatusType.CLOSED) {
                             String msg = "User '" + userId + "' changed case '" + clinicalAnalysis.getId() + "' to status '"
                                     + updateParamsClone.getStatus().getId() + "', which is of type CLOSED. Automatically locking "
-                                    + "ClinicalAnalysis";
+                                    + "ClinicalAnalysis and changing CVDB index status to be indexed";
                             logger.info(msg);
                             parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(), true);
                             events.add(new Event(Event.Type.INFO, clinicalAnalysis.getId(), msg));
+
+                            if (StringUtils.isEmpty(clinicalAnalysis.getInternal().getCvdbIndex().getId())
+                                    || clinicalAnalysis.getInternal().getCvdbIndex().getId().equals(CvdbIndexStatus.NONE)) {
+                                CvdbIndexStatus cvdbIndexStatus = new CvdbIndexStatus(CvdbIndexStatus.PENDING, "User '" + userId
+                                        + "' changed case to status '" + updateParamsClone.getStatus().getId() + "', which is of type"
+                                        + " CLOSED. Automatically changing CVDB index status to " + CvdbIndexStatus.PENDING);
+                                parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_CVDB_INDEX.key(), cvdbIndexStatus);
+                            } else if (clinicalAnalysis.getInternal().getCvdbIndex().getId().equals(CvdbIndexStatus.PENDING_REMOVE)) {
+                                CvdbIndexStatus cvdbIndexStatus = new CvdbIndexStatus(CvdbIndexStatus.PENDING_OVERWRITE, "User '" + userId
+                                        + "' changed case to status '" + updateParamsClone.getStatus().getId() + "', which is of type"
+                                        + " CLOSED. CVDB index was already in " + CvdbIndexStatus.PENDING_REMOVE + ", so automatically"
+                                        + " changing CVDB index status to " + CvdbIndexStatus.PENDING_OVERWRITE);
+                                parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_CVDB_INDEX.key(), cvdbIndexStatus);
+                            } else {
+                                logger.warn("CVDB index status is unexpectedly set to '{}'. Although the user is closing the case, OpenCGA"
+                                        + " cannot automatically infer which should be the new CVDB index status.",
+                                        clinicalAnalysis.getInternal().getCvdbIndex().getId());
+                            }
                         }
                     }
                 }
@@ -1759,7 +1803,7 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
     }
 
     public OpenCGAResult<ClinicalReport> updateReport(String studyStr, String clinicalAnalysisId, ClinicalReport report,
-                                                        QueryOptions options, String token) throws CatalogException {
+                                                      QueryOptions options, String token) throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
 
@@ -1845,6 +1889,44 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
             throw e;
         }
     }
+
+    public OpenCGAResult<?> updateCvdbIndex(String studyFqn, ClinicalAnalysis clinical, CvdbIndexStatus index, String token)
+            throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn catalogFqn = CatalogFqn.extractFqnFromStudy(studyFqn, tokenPayload);
+        String organizationId = catalogFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyFqn", studyFqn)
+                .append("clinical", clinical.getId())
+                .append("cvdbIndex", index)
+                .append("token", token);
+
+        String studyId = studyFqn;
+        String studyUuid = "";
+        try {
+            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
+            Study study = studyManager.resolveId(catalogFqn, StudyManager.INCLUDE_STUDY_IDS, tokenPayload);
+            studyId = study.getFqn();
+            studyUuid = study.getUuid();
+
+            ObjectMap valueAsMap = new ObjectMap(getUpdateObjectMapper().writeValueAsString(index));
+            ObjectMap params = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_CVDB_INDEX.key(), valueAsMap);
+
+            OpenCGAResult<?> update = getClinicalAnalysisDBAdaptor(organizationId).update(clinical.getUid(), params,
+                    Collections.emptyList(), Collections.emptyList(), QueryOptions.empty());
+            auditManager.audit(organizationId, userId, Enums.Action.UPDATE_INTERNAL, Enums.Resource.CLINICAL_ANALYSIS, clinical.getId(),
+                    clinical.getUuid(), studyId, studyUuid, auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            return new OpenCGAResult<>(update.getTime(), update.getEvents(), 1, Collections.emptyList(), 1);
+        } catch (Exception e) {
+            auditManager.audit(organizationId, userId, Enums.Action.UPDATE_INTERNAL, Enums.Resource.CLINICAL_ANALYSIS, clinical.getId(),
+                    clinical.getUuid(), studyId, studyUuid, auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
+                            new Error().setName(e.getMessage())));
+            throw new CatalogException("Could not update CVDB Index status: " + e.getMessage(), e);
+        }
+    }
+
 
     /**
      * Sort the family members in the following order: proband, father, mother, others.

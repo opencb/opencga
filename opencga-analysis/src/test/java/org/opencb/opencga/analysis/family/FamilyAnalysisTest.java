@@ -1,8 +1,6 @@
 package org.opencb.opencga.analysis.family;
 
 import org.apache.commons.lang3.StringUtils;
-import org.hamcrest.CoreMatchers;
-import org.hamcrest.MatcherAssert;
 import org.junit.*;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
@@ -92,11 +90,11 @@ public class FamilyAnalysisTest extends GenericTest {
         catalogManager.getOrganizationManager().update(ORGANIZATION, new OrganizationUpdateParams().setAdmins(Collections.singletonList(USER)),
                 null,
                 opencga.getAdminToken());
-        sessionIdUser = catalogManager.getUserManager().login(ORGANIZATION, USER, TestParamConstants.PASSWORD).getToken();
+        sessionIdUser = catalogManager.getUserManager().login(ORGANIZATION, USER, TestParamConstants.PASSWORD).first().getToken();
 
         projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens", null, "GRCh38",
                 INCLUDE_RESULT, sessionIdUser).first().getId();
-        studyId = catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null,
+        studyId = catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, INCLUDE_RESULT,
                 sessionIdUser).first().getId();
 
         family = createDummyFamily("Martinez-Martinez").first();
@@ -112,6 +110,7 @@ public class FamilyAnalysisTest extends GenericTest {
     public void creationTest() throws IOException {
         PedigreeGraph pedigreeGraph = family.getPedigreeGraph();
         testBase64Image(pedigreeGraph, "family/creationTest.png");
+
     }
 
     @Test
@@ -140,6 +139,8 @@ public class FamilyAnalysisTest extends GenericTest {
 
         PedigreeGraph pedigreeGraph = updatedFamily.getPedigreeGraph();
         testBase64Image(pedigreeGraph, "family/threeMemberNoDisorderFamilyTest.png");
+
+
     }
 
     @Test

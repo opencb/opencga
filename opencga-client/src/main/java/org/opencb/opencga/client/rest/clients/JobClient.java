@@ -17,16 +17,20 @@
 package org.opencb.opencga.client.rest.clients;
 
 import java.lang.Object;
+import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.*;
+import org.opencb.opencga.core.client.ParentClient;
+import org.opencb.opencga.core.config.client.ClientConfiguration;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.file.FileContent;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobAclEntryList;
 import org.opencb.opencga.core.models.job.JobAclUpdateParams;
 import org.opencb.opencga.core.models.job.JobCreateParams;
 import org.opencb.opencga.core.models.job.JobRetryParams;
+import org.opencb.opencga.core.models.job.JobRunParams;
+import org.opencb.opencga.core.models.job.JobToolBuildParams;
 import org.opencb.opencga.core.models.job.JobTop;
 import org.opencb.opencga.core.models.job.JobUpdateParams;
 import org.opencb.opencga.core.response.RestResponse;
@@ -46,7 +50,7 @@ import org.opencb.opencga.core.response.RestResponse;
  * This class contains methods for the Job webservices.
  *    PATH: jobs
  */
-public class JobClient extends AbstractParentClient {
+public class JobClient extends ParentClient {
 
     public JobClient(String token, ClientConfiguration configuration) {
         super(token, configuration);
@@ -65,6 +69,42 @@ public class JobClient extends AbstractParentClient {
         params.putIfNotNull("action", action);
         params.put("body", data);
         return execute("jobs", null, "acl", members, "update", params, POST, JobAclEntryList.class);
+    }
+
+    /**
+     * Fetch catalog job stats.
+     * @param params Map containing any of the following optional parameters.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
+     *       otherStudies: Flag indicating the entries being queried can belong to any related study, not just the primary one.
+     *       id: Comma separated list of job IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e.
+     *            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       uuid: Comma separated list of job UUIDs up to a maximum of 100.
+     *       toolId: Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g.
+     *            '~value' for case sensitive, '~/value/i' for case insensitive search.
+     *       toolType: Tool type executed by the job [OPERATION, ANALYSIS].
+     *       userId: User that created the job.
+     *       priority: Priority of the job.
+     *       status: Filter by status.
+     *       internalStatus: Filter by internal status.
+     *       creationDate: Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+     *       modificationDate: Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+     *       visited: Visited status of job.
+     *       tags: Job tags.
+     *       input: Comma separated list of file IDs used as input.
+     *       output: Comma separated list of file IDs used as output.
+     *       acl: Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example:
+     *            acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS
+     *            permissions. Only study owners or administrators can query by this field. .
+     *       release: Release when it was created.
+     *       deleted: Boolean to retrieve deleted entries.
+     *       field: Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.:
+     *            studies;type;numSamples[0..10]:1;format:sum(size).
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<FacetField> aggregationStats(ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("jobs", null, null, null, "aggregationStats", params, GET, FacetField.class);
     }
 
     /**
@@ -90,9 +130,15 @@ public class JobClient extends AbstractParentClient {
      *       id: Comma separated list of job IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e.
      *            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
      *       uuid: Comma separated list of job UUIDs up to a maximum of 100.
+     *       type: Job type (NATIVE, WORKFLOW, CUSTOM or WALKER).
      *       toolId: Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g.
      *            '~value' for case sensitive, '~/value/i' for case insensitive search.
      *       toolType: Tool type executed by the job [OPERATION, ANALYSIS].
+     *       tool.externalExecutor.id: Id of the external executor. This field is only applicable for jobs executed by an external executor.
+     *       parentId: Job id that generated this job (if any).
+     *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
+     *            and prerequisites are correctly set for successful execution, but the job will not actually run.
+     *       internal.killJobRequested: Flag indicating that the user requested to kill the job.
      *       userId: User that created the job.
      *       priority: Priority of the job.
      *       status: Filter by status.
@@ -149,9 +195,15 @@ public class JobClient extends AbstractParentClient {
      *       id: Comma separated list of job IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e.
      *            '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
      *       uuid: Comma separated list of job UUIDs up to a maximum of 100.
+     *       type: Job type (NATIVE, WORKFLOW, CUSTOM or WALKER).
      *       toolId: Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g.
      *            '~value' for case sensitive, '~/value/i' for case insensitive search.
      *       toolType: Tool type executed by the job [OPERATION, ANALYSIS].
+     *       tool.externalExecutor.id: Id of the external executor. This field is only applicable for jobs executed by an external executor.
+     *       parentId: Job id that generated this job (if any).
+     *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
+     *            and prerequisites are correctly set for successful execution, but the job will not actually run.
+     *       internal.killJobRequested: Flag indicating that the user requested to kill the job.
      *       userId: User that created the job.
      *       priority: Priority of the job.
      *       status: Filter by status.
@@ -173,6 +225,50 @@ public class JobClient extends AbstractParentClient {
     public RestResponse<Job> search(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         return execute("jobs", null, null, null, "search", params, GET, Job.class);
+    }
+
+    /**
+     * Execute an analysis from a custom binary.
+     * @param data body.
+     * @param params Map containing any of the following optional parameters.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
+     *       jobId: Job ID. It must be a unique string within the study. An ID will be autogenerated automatically if not provided.
+     *       jobDescription: Job description.
+     *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
+     *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Job> buildTool(JobToolBuildParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("jobs", null, "tool", null, "build", params, POST, Job.class);
+    }
+
+    /**
+     * Execute an analysis from a custom binary.
+     * @param data NextFlow run parameters.
+     * @param params Map containing any of the following optional parameters.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
+     *       jobId: Job ID. It must be a unique string within the study. An ID will be autogenerated automatically if not provided.
+     *       jobDescription: Job description.
+     *       jobDependsOn: Comma separated list of existing job IDs the job will depend on.
+     *       jobTags: Job tags.
+     *       jobScheduledStartTime: Time when the job is scheduled to start.
+     *       jobPriority: Priority of the job.
+     *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
+     *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Job> runTool(JobRunParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("jobs", null, "tool", null, "run", params, POST, Job.class);
     }
 
     /**

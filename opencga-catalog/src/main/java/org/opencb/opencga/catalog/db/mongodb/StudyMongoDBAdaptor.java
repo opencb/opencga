@@ -36,10 +36,8 @@ import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.StudyConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.VariableSetConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.StudyCatalogMongoDBIterator;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.exceptions.*;
+import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.FqnUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -51,6 +49,7 @@ import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileInternal;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -58,6 +57,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.net.URI;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -80,11 +80,15 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
     private StudyConverter studyConverter;
     private VariableSetConverter variableSetConverter;
 
-    public StudyMongoDBAdaptor(MongoDBCollection studyCollection, MongoDBCollection deletedStudyCollection, Configuration configuration,
+    private final CatalogIOManager ioManager;
+
+    public StudyMongoDBAdaptor(MongoDBCollection studyCollection, MongoDBCollection deletedStudyCollection,
+                               CatalogIOManager catalogIOManager, Configuration configuration,
                                OrganizationMongoDBAdaptorFactory dbAdaptorFactory) {
         super(configuration, LoggerFactory.getLogger(StudyMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.studyCollection = studyCollection;
+        this.ioManager = catalogIOManager;
         this.deletedStudyCollection = deletedStudyCollection;
         this.studyConverter = new StudyConverter();
         this.variableSetConverter = new VariableSetConverter();
@@ -117,7 +121,8 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
 
         final String[] acceptedObjectParams = {QueryParams.TYPE.key(), QueryParams.SOURCES.key(), QueryParams.STATUS.key(),
                 QueryParams.INTERNAL_CONFIGURATION_CLINICAL.key(), QueryParams.INTERNAL_CONFIGURATION_VARIANT_ENGINE.key(),
-                QueryParams.INTERNAL_INDEX_RECESSIVE_GENE.key(), QueryParams.ADDITIONAL_INFO.key(), QueryParams.INTERNAL_STATUS.key()};
+                QueryParams.INTERNAL_INDEX_RECESSIVE_GENE.key(), QueryParams.ADDITIONAL_INFO.key(), QueryParams.INTERNAL_STATUS.key(),
+                QueryParams.INTERNAL_VARIANT_SECONDARY_SAMPLE_INDEX.key()};
         filterObjectParams(parameters, studyParameters, acceptedObjectParams);
 
         if (studyParameters.containsKey(QueryParams.STATUS.key())) {
@@ -199,23 +204,22 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
 //    }
 
     @Override
-    public OpenCGAResult<Study> insert(Project project, Study study, List<File> files, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult<Study> insert(Project project, Study study, QueryOptions options) throws CatalogDBException {
         try {
             return runTransaction(clientSession -> {
                 long tmpStartTime = startQuery();
                 logger.debug("Starting study insert transaction for study id '{}'", study.getId());
 
-                insert(clientSession, project, study, files);
+                insert(clientSession, project, study);
                 return endWrite(tmpStartTime, 1, 1, 0, 0, null);
             });
         } catch (Exception e) {
-            logger.error("Could not create study {}: {}", study.getId(), e.getMessage());
-            throw new CatalogDBException(e);
+            throw new CatalogDBException("Could not create study '" + study.getFqn() + "'", e);
         }
     }
 
-    Study insert(ClientSession clientSession, Project project, Study study, List<File> files)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    Study insert(ClientSession clientSession, Project project, Study study)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException, CatalogIOException {
         if (project.getUid() < 0) {
             throw CatalogDBException.uidNotFound("Project", project.getUid());
         }
@@ -243,12 +247,23 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
         if (variableSets != null) {
             variableSetDocuments = new ArrayList<>(variableSets.size());
             for (VariableSet variableSet : variableSets) {
+                long vsetUid = getNewUid(clientSession);
+                variableSet.setUid(vsetUid);
                 variableSetDocuments.add(variableSetConverter.convertToStorageType(variableSet));
             }
         }
         study.setVariableSets(null);
 
-        //Create DBObject
+        FqnUtils.FQN fqn = FqnUtils.parse(study.getFqn());
+        String organization = fqn.getOrganization();
+        try {
+            URI studyUri = ioManager.getStudyUri(organization, Long.toString(project.getUid()), Long.toString(study.getUid()));
+            study.setUri(studyUri);
+        } catch (CatalogIOException e) {
+            throw new CatalogIOException("Could not obtain study uri.", e);
+        }
+
+        //Create Document and store in the database
         Document studyObject = studyConverter.convertToStorageType(study);
         studyObject.put(PRIVATE_UID, studyUid);
         studyObject.put(QueryParams.VARIABLE_SET.key(), variableSetDocuments);
@@ -264,13 +279,30 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
                 StringUtils.isNotEmpty(study.getCreationDate()) ? TimeUtils.toDate(study.getCreationDate()) : TimeUtils.getDate());
         studyObject.put(PRIVATE_MODIFICATION_DATE,
                 StringUtils.isNotEmpty(study.getModificationDate()) ? TimeUtils.toDate(study.getModificationDate()) : TimeUtils.getDate());
-
         studyCollection.insert(clientSession, studyObject, null);
 
-        if (files != null) {
-            for (File file : files) {
-                dbAdaptorFactory.getCatalogFileDBAdaptor().insert(clientSession, study.getUid(), file, Collections.emptyList(),
-                        Collections.emptyList(), Collections.emptyList());
+        // Create default folders for study
+        List<File> files = Arrays.asList(
+                new File(".", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.UNKNOWN, "", study.getUri(),
+                        "study root folder", FileInternal.init(), false, 0, project.getCurrentRelease()),
+                new File("JOBS", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.UNKNOWN, "JOBS/",
+                        ioManager.getJobsUri(), "Default jobs folder", FileInternal.init(), false, 0, project.getCurrentRelease()),
+                new File(ParamConstants.RESOURCES_FOLDER, File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.UNKNOWN,
+                        ParamConstants.RESOURCES_FOLDER + "/", Paths.get(study.getUri()).resolve(ParamConstants.RESOURCES_FOLDER).toUri(),
+                        "Default resources folder", FileInternal.init(), true, 0, project.getCurrentRelease())
+        );
+
+        // Create default folders
+        for (File file : files) {
+            dbAdaptorFactory.getCatalogFileDBAdaptor().insert(clientSession, study.getUid(), file, Collections.emptyList(),
+                    Collections.emptyList(), Collections.emptyList());
+        }
+
+        if (!study.getInternal().isFederated()) {
+            try {
+                ioManager.createStudy(organization, Long.toString(project.getUid()), Long.toString(study.getUid()));
+            } catch (CatalogIOException e) {
+                throw new CatalogIOException("Could not create study folder '" + study.getUri() + "' in file system.", e);
             }
         }
 
@@ -492,7 +524,7 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
 
     @Override
     public OpenCGAResult<Group> removeUsersFromAllGroups(long studyId, List<String> users) throws CatalogException {
-        if (users == null || users.size() == 0) {
+        if (CollectionUtils.isEmpty(users)) {
             throw new CatalogDBException("Unable to remove users from groups. List of users is empty");
         }
 
@@ -507,7 +539,7 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
                 Bson pull = Updates.pullAll("groups.$.userIds", users);
 
                 // Pull those users while they are still there
-                DataResult update;
+                DataResult<?> update;
                 do {
                     update = studyCollection.update(clientSession, query, pull, null);
                 } while (update.getNumUpdated() > 0);
@@ -516,6 +548,36 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
             });
         } catch (Exception e) {
             logger.error("Could not remove users from all groups of the study. {}", e.getMessage());
+            throw e;
+        }
+    }
+
+    @Override
+    public OpenCGAResult<Group> removeUsersFromAllGroups(List<String> users) throws CatalogException {
+        if (CollectionUtils.isEmpty(users)) {
+            throw new CatalogDBException("Unable to remove users from groups. List of users is empty");
+        }
+
+        try {
+            return runTransaction(clientSession -> {
+                long tmpStartTime = startQuery();
+                logger.debug("Removing list of users '{}' from all groups from all studies", users);
+
+                Document query = new Document()
+                        .append(QueryParams.GROUP_USER_IDS.key(), new Document("$in", users));
+                Bson pull = Updates.pullAll("groups.$.userIds", users);
+
+                QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
+                // Pull those users while they are still there
+                DataResult<?> update;
+                do {
+                    update = studyCollection.update(clientSession, query, pull, multi);
+                } while (update.getNumUpdated() > 0);
+
+                return endWrite(tmpStartTime, -1, -1, null);
+            });
+        } catch (Exception e) {
+            logger.error("Could not remove users from all groups from all studies. {}", e.getMessage());
             throw e;
         }
     }
@@ -1503,26 +1565,23 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
 
         String studyId = studyDocument.getString(QueryParams.ID.key());
         long studyUid = studyDocument.getLong(PRIVATE_UID);
-        long projectUid = studyDocument.getEmbedded(Arrays.asList(PRIVATE_PROJECT, PRIVATE_UID), -1L);
 
         logger.debug("Deleting study {} ({})", studyId, studyUid);
 
         // TODO: In the future, we will want to delete also all the files, samples, cohorts... associated
 
         // Add status DELETED
-        studyDocument.put(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new InternalStatus(InternalStatus.DELETED), "status"));
+        Document internal = studyDocument.get("internal", Document.class);
+        if (internal != null) {
+            internal.put("status", getMongoDBDocument(new InternalStatus(InternalStatus.DELETED), "status"));
+        }
 
         // Upsert the document into the DELETED collection
-        Bson query = new Document()
-                .append(QueryParams.ID.key(), studyId)
-                .append(PRIVATE_PROJECT_UID, projectUid);
+        Bson query = new Document(PRIVATE_UID, studyUid);
         deletedStudyCollection.update(clientSession, query, new Document("$set", studyDocument),
                 new QueryOptions(MongoDBCollection.UPSERT, true));
 
         // Delete the document from the main STUDY collection
-        query = new Document()
-                .append(PRIVATE_UID, studyUid)
-                .append(PRIVATE_PROJECT_UID, projectUid);
         DataResult remove = studyCollection.remove(clientSession, query, null);
         if (remove.getNumMatches() == 0) {
             throw new CatalogDBException("Study " + studyId + " not found");
@@ -1829,6 +1888,7 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
                     case UUID:
                     case NAME:
                     case DESCRIPTION:
+                    case INTERNAL_FEDERATED:
                     case INTERNAL_STATUS_DATE:
                     case DATASTORES:
                     case SIZE:

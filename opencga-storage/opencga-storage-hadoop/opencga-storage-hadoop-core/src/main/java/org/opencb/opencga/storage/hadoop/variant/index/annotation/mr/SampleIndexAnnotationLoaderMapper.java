@@ -9,9 +9,9 @@ import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
-import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexPutBuilder;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.SampleIndexVariantAnnotationConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.SampleIndexVariantAnnotation;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.SampleIndexVariantAnnotationPutBuilder;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
@@ -31,11 +31,11 @@ public class SampleIndexAnnotationLoaderMapper extends VariantTableSampleIndexOr
     private static final String FIRST_SAMPLE_ID = "SampleIndexAnnotationLoaderMapper.firstSampleId";
     private static final String LAST_SAMPLE_ID = "SampleIndexAnnotationLoaderMapper.lastSampleId";
     private byte[] family;
-    private Map<String, AnnotationIndexPutBuilder>[] annotationIndices;
+    private Map<String, SampleIndexVariantAnnotationPutBuilder>[] annotationIndices;
 
     private boolean hasGenotype;
     private boolean multiFileSamples;
-    private AnnotationIndexConverter converter;
+    private SampleIndexVariantAnnotationConverter converter;
     private int firstSampleId;
     private SampleIndexSchema schema;
     private HBaseToVariantAnnotationConverter annotationConverter;
@@ -67,7 +67,7 @@ public class SampleIndexAnnotationLoaderMapper extends VariantTableSampleIndexOr
             annotationIndices[i] = new HashMap<>();
         }
         schema = VariantMapReduceUtil.getSampleIndexSchema(context.getConfiguration());
-        converter = new AnnotationIndexConverter(schema);
+        converter = new SampleIndexVariantAnnotationConverter(schema);
         annotationConverter = new HBaseToVariantAnnotationConverter();
     }
 
@@ -79,7 +79,7 @@ public class SampleIndexAnnotationLoaderMapper extends VariantTableSampleIndexOr
         if (variantAnnotation == null) {
             context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "variantsAnnotationNull").increment(1);
         }
-        AnnotationIndexEntry indexEntry = converter.convert(variantAnnotation);
+        SampleIndexVariantAnnotation indexEntry = converter.convert(variantAnnotation);
         // TODO Get stats given index values
 
         Set<String> samples = multiFileSamples ? new HashSet<>(result.rawCells().length) : null;
@@ -104,7 +104,7 @@ public class SampleIndexAnnotationLoaderMapper extends VariantTableSampleIndexOr
             if (samples == null || samples.add(sampleId + "_" + gt)) {
                 if (validGt) {
                     annotationIndices[sampleId - firstSampleId]
-                            .computeIfAbsent(gt, k -> new AnnotationIndexPutBuilder(schema)).add(indexEntry);
+                            .computeIfAbsent(gt, k -> new SampleIndexVariantAnnotationPutBuilder(schema)).add(indexEntry);
                 }
             }
         }).walk();
@@ -118,12 +118,12 @@ public class SampleIndexAnnotationLoaderMapper extends VariantTableSampleIndexOr
     protected void writeIndices(Context context, String chromosome, int position) throws IOException, InterruptedException {
         context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "write_indices").increment(1);
         for (int i = 0; i < annotationIndices.length; i++) {
-            Map<String, AnnotationIndexPutBuilder> gtMap = annotationIndices[i];
+            Map<String, SampleIndexVariantAnnotationPutBuilder> gtMap = annotationIndices[i];
             int sampleId = i + firstSampleId;
             Put put = new Put(SampleIndexSchema.toRowKey(sampleId, chromosome, position));
-            for (Map.Entry<String, AnnotationIndexPutBuilder> e : gtMap.entrySet()) {
+            for (Map.Entry<String, SampleIndexVariantAnnotationPutBuilder> e : gtMap.entrySet()) {
                 String gt = e.getKey();
-                AnnotationIndexPutBuilder value = e.getValue();
+                SampleIndexVariantAnnotationPutBuilder value = e.getValue();
                 if (!value.isEmpty()) {
                     value.buildAndReset(put, gt, family);
                 }

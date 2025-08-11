@@ -87,7 +87,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         validateConfiguration(commandOptions);
 
         CatalogManager catalogManager = new CatalogManager(configuration);
-        String token = catalogManager.getUserManager().loginAsAdmin(adminPassword).getToken();
+        String token = catalogManager.getUserManager().loginAsAdmin(adminPassword).first().getToken();
 
         if (StringUtils.isNotEmpty(commandOptions.project)) {
             catalogManager.getProjectManager().exportReleases(commandOptions.project, commandOptions.release, commandOptions.outputDir,
@@ -103,7 +103,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         validateConfiguration(commandOptions);
 
         CatalogManager catalogManager = new CatalogManager(configuration);
-        String token = catalogManager.getUserManager().loginAsAdmin(adminPassword).getToken();
+        String token = catalogManager.getUserManager().loginAsAdmin(adminPassword).first().getToken();
 
         catalogManager.getProjectManager().importReleases(commandOptions.organizationId, commandOptions.owner, commandOptions.directory, token);
     }
@@ -138,7 +138,8 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
                 result.put("installed", true);
             } else {
                 String oldDatabase = configuration.getDatabasePrefix() + "_catalog";
-                MongoDBAdaptorFactory mongoDBAdaptorFactory = new MongoDBAdaptorFactory(configuration, catalogManager.getIoManagerFactory());
+                MongoDBAdaptorFactory mongoDBAdaptorFactory = new MongoDBAdaptorFactory(configuration, catalogManager.getIoManagerFactory(),
+                        catalogManager.getCatalogIOManager());
                 MongoDataStore oldDatastore = mongoDBAdaptorFactory.getMongoManager().get(oldDatabase, mongoDBAdaptorFactory.getMongoDbConfiguration());
                 try {
                     if (oldDatastore.getCollectionNames().contains("metadata")) {
@@ -196,7 +197,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
 
         CatalogManager catalogManager = new CatalogManager(configuration);
         String token = catalogManager.getUserManager()
-                .loginAsAdmin(catalogCommandOptions.indexCatalogCommandOptions.commonOptions.adminPassword).getToken();
+                .loginAsAdmin(catalogCommandOptions.indexCatalogCommandOptions.commonOptions.adminPassword).first().getToken();
 
         String organizationId = catalogCommandOptions.indexCatalogCommandOptions.organizationId;
         if (StringUtils.isEmpty(organizationId)) {
@@ -217,7 +218,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
 
         CatalogManager catalogManager = new CatalogManager(configuration);
         String token = catalogManager.getUserManager()
-                .loginAsAdmin(catalogCommandOptions.daemonCatalogCommandOptions.commonOptions.adminPassword).getToken();
+                .loginAsAdmin(catalogCommandOptions.daemonCatalogCommandOptions.commonOptions.adminPassword).first().getToken();
 
         if (catalogCommandOptions.daemonCatalogCommandOptions.start) {
             // Server crated and started

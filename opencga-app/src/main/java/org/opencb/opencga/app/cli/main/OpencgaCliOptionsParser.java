@@ -24,6 +24,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
     private final AnalysisClinicalCommandOptions analysisClinicalCommandOptions;
     private final JobsCommandOptions jobsCommandOptions;
     private final AdminCommandOptions adminCommandOptions;
+    private final WorkflowsCommandOptions workflowsCommandOptions;
     private final IndividualsCommandOptions individualsCommandOptions;
     private final FamiliesCommandOptions familiesCommandOptions;
     private final UsersCommandOptions usersCommandOptions;
@@ -67,6 +68,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         analysisVariantSubCommands.addCommand("knockout-gene-query", analysisVariantCommandOptions.queryKnockoutGeneCommandOptions);
         analysisVariantSubCommands.addCommand("knockout-individual-query", analysisVariantCommandOptions.queryKnockoutIndividualCommandOptions);
         analysisVariantSubCommands.addCommand("knockout-run", analysisVariantCommandOptions.runKnockoutCommandOptions);
+        analysisVariantSubCommands.addCommand("liftover-run", analysisVariantCommandOptions.runLiftoverCommandOptions);
         analysisVariantSubCommands.addCommand("mendelian-error-run", analysisVariantCommandOptions.runMendelianErrorCommandOptions);
         analysisVariantSubCommands.addCommand("metadata", analysisVariantCommandOptions.metadataCommandOptions);
         analysisVariantSubCommands.addCommand("mutational-signature-query", analysisVariantCommandOptions.queryMutationalSignatureCommandOptions);
@@ -100,6 +102,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         jCommander.addCommand("panels", diseasePanelsCommandOptions);
         JCommander diseasePanelsSubCommands = jCommander.getCommands().get("panels");
         diseasePanelsSubCommands.addCommand("acl-update", diseasePanelsCommandOptions.updateAclCommandOptions);
+        diseasePanelsSubCommands.addCommand("aggregationstats", diseasePanelsCommandOptions.aggregationStatsCommandOptions);
         diseasePanelsSubCommands.addCommand("create", diseasePanelsCommandOptions.createCommandOptions);
         diseasePanelsSubCommands.addCommand("distinct", diseasePanelsCommandOptions.distinctCommandOptions);
         diseasePanelsSubCommands.addCommand("import", diseasePanelsCommandOptions.importCommandOptions);
@@ -113,10 +116,12 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         jCommander.addCommand("clinical", analysisClinicalCommandOptions);
         JCommander analysisClinicalSubCommands = jCommander.getCommands().get("clinical");
         analysisClinicalSubCommands.addCommand("acl-update", analysisClinicalCommandOptions.updateAclCommandOptions);
+        analysisClinicalSubCommands.addCommand("aggregationstats", analysisClinicalCommandOptions.aggregationStatsCommandOptions);
         analysisClinicalSubCommands.addCommand("annotation-sets-load", analysisClinicalCommandOptions.loadAnnotationSetsCommandOptions);
         analysisClinicalSubCommands.addCommand("clinical-configuration-update", analysisClinicalCommandOptions.updateClinicalConfigurationCommandOptions);
         analysisClinicalSubCommands.addCommand("create", analysisClinicalCommandOptions.createCommandOptions);
         analysisClinicalSubCommands.addCommand("distinct", analysisClinicalCommandOptions.distinctCommandOptions);
+        analysisClinicalSubCommands.addCommand("interpretation-aggregation-stats", analysisClinicalCommandOptions.aggregationStatsInterpretationCommandOptions);
         analysisClinicalSubCommands.addCommand("interpretation-distinct", analysisClinicalCommandOptions.distinctInterpretationCommandOptions);
         analysisClinicalSubCommands.addCommand("interpretation-search", analysisClinicalCommandOptions.searchInterpretationCommandOptions);
         analysisClinicalSubCommands.addCommand("interpretation-info", analysisClinicalCommandOptions.infoInterpretationCommandOptions);
@@ -152,10 +157,13 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         jCommander.addCommand("jobs", jobsCommandOptions);
         JCommander jobsSubCommands = jCommander.getCommands().get("jobs");
         jobsSubCommands.addCommand("acl-update", jobsCommandOptions.updateAclCommandOptions);
+        jobsSubCommands.addCommand("aggregationstats", jobsCommandOptions.aggregationStatsCommandOptions);
         jobsSubCommands.addCommand("create", jobsCommandOptions.createCommandOptions);
         jobsSubCommands.addCommand("distinct", jobsCommandOptions.distinctCommandOptions);
         jobsSubCommands.addCommand("retry", jobsCommandOptions.retryCommandOptions);
         jobsSubCommands.addCommand("search", jobsCommandOptions.searchCommandOptions);
+        jobsSubCommands.addCommand("tool-build", jobsCommandOptions.buildToolCommandOptions);
+        jobsSubCommands.addCommand("tool-run", jobsCommandOptions.runToolCommandOptions);
         jobsSubCommands.addCommand("top", jobsCommandOptions.topCommandOptions);
         jobsSubCommands.addCommand("acl", jobsCommandOptions.aclCommandOptions);
         jobsSubCommands.addCommand("delete", jobsCommandOptions.deleteCommandOptions);
@@ -172,6 +180,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         adminSubCommands.addCommand("audit-group-by", adminCommandOptions.groupByAuditCommandOptions);
         adminSubCommands.addCommand("catalog-install", adminCommandOptions.installCatalogCommandOptions);
         adminSubCommands.addCommand("catalog-jwt", adminCommandOptions.jwtCatalogCommandOptions);
+        adminSubCommands.addCommand("resource-fetch", adminCommandOptions.fetchResourceCommandOptions);
         adminSubCommands.addCommand("users-create", adminCommandOptions.createUsersCommandOptions);
         adminSubCommands.addCommand("users-import", adminCommandOptions.importUsersCommandOptions);
         adminSubCommands.addCommand("users-permissions", adminCommandOptions.permissionsUsersCommandOptions);
@@ -179,10 +188,25 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         adminSubCommands.addCommand("users-sync", adminCommandOptions.syncUsersCommandOptions);
         adminSubCommands.addCommand("update-groups-users", adminCommandOptions.usersUpdateGroupsCommandOptions);
 
+        workflowsCommandOptions = new WorkflowsCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("workflows", workflowsCommandOptions);
+        JCommander workflowsSubCommands = jCommander.getCommands().get("workflows");
+        workflowsSubCommands.addCommand("acl-update", workflowsCommandOptions.updateAclCommandOptions);
+        workflowsSubCommands.addCommand("create", workflowsCommandOptions.createCommandOptions);
+        workflowsSubCommands.addCommand("distinct", workflowsCommandOptions.distinctCommandOptions);
+        workflowsSubCommands.addCommand("import", workflowsCommandOptions.importCommandOptions);
+        workflowsSubCommands.addCommand("run", workflowsCommandOptions.runCommandOptions);
+        workflowsSubCommands.addCommand("search", workflowsCommandOptions.searchCommandOptions);
+        workflowsSubCommands.addCommand("update", workflowsCommandOptions.updateCommandOptions);
+        workflowsSubCommands.addCommand("acl", workflowsCommandOptions.aclCommandOptions);
+        workflowsSubCommands.addCommand("delete", workflowsCommandOptions.deleteCommandOptions);
+        workflowsSubCommands.addCommand("info", workflowsCommandOptions.infoCommandOptions);
+
         individualsCommandOptions = new IndividualsCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("individuals", individualsCommandOptions);
         JCommander individualsSubCommands = jCommander.getCommands().get("individuals");
         individualsSubCommands.addCommand("acl-update", individualsCommandOptions.updateAclCommandOptions);
+        individualsSubCommands.addCommand("aggregationstats", individualsCommandOptions.aggregationStatsCommandOptions);
         individualsSubCommands.addCommand("annotation-sets-load", individualsCommandOptions.loadAnnotationSetsCommandOptions);
         individualsSubCommands.addCommand("create", individualsCommandOptions.createCommandOptions);
         individualsSubCommands.addCommand("distinct", individualsCommandOptions.distinctCommandOptions);
@@ -198,6 +222,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         jCommander.addCommand("families", familiesCommandOptions);
         JCommander familiesSubCommands = jCommander.getCommands().get("families");
         familiesSubCommands.addCommand("acl-update", familiesCommandOptions.updateAclCommandOptions);
+        familiesSubCommands.addCommand("aggregationstats", familiesCommandOptions.aggregationStatsCommandOptions);
         familiesSubCommands.addCommand("annotation-sets-load", familiesCommandOptions.loadAnnotationSetsCommandOptions);
         familiesSubCommands.addCommand("create", familiesCommandOptions.createCommandOptions);
         familiesSubCommands.addCommand("distinct", familiesCommandOptions.distinctCommandOptions);
@@ -228,6 +253,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         jCommander.addCommand("samples", samplesCommandOptions);
         JCommander samplesSubCommands = jCommander.getCommands().get("samples");
         samplesSubCommands.addCommand("acl-update", samplesCommandOptions.updateAclCommandOptions);
+        samplesSubCommands.addCommand("aggregationstats", samplesCommandOptions.aggregationStatsCommandOptions);
         samplesSubCommands.addCommand("annotation-sets-load", samplesCommandOptions.loadAnnotationSetsCommandOptions);
         samplesSubCommands.addCommand("create", samplesCommandOptions.createCommandOptions);
         samplesSubCommands.addCommand("distinct", samplesCommandOptions.distinctCommandOptions);
@@ -274,6 +300,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         organizationsSubCommands.addCommand("notes-search", organizationsCommandOptions.searchNotesCommandOptions);
         organizationsSubCommands.addCommand("notes-delete", organizationsCommandOptions.deleteNotesCommandOptions);
         organizationsSubCommands.addCommand("notes-update", organizationsCommandOptions.updateNotesCommandOptions);
+        organizationsSubCommands.addCommand("user-password-reset", organizationsCommandOptions.resetUserPasswordCommandOptions);
         organizationsSubCommands.addCommand("update-status-user", organizationsCommandOptions.userUpdateStatusCommandOptions);
         organizationsSubCommands.addCommand("user-update", organizationsCommandOptions.updateUserCommandOptions);
         organizationsSubCommands.addCommand("configuration-update", organizationsCommandOptions.updateConfigurationCommandOptions);
@@ -290,6 +317,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         studiesSubCommands.addCommand("info", studiesCommandOptions.infoCommandOptions);
         studiesSubCommands.addCommand("audit-search", studiesCommandOptions.searchAuditCommandOptions);
         studiesSubCommands.addCommand("groups", studiesCommandOptions.groupsCommandOptions);
+        studiesSubCommands.addCommand("groups-sync", studiesCommandOptions.syncGroupsCommandOptions);
         studiesSubCommands.addCommand("groups-update", studiesCommandOptions.updateGroupsCommandOptions);
         studiesSubCommands.addCommand("groups-users-update", studiesCommandOptions.updateGroupsUsersCommandOptions);
         studiesSubCommands.addCommand("notes-create", studiesCommandOptions.createNotesCommandOptions);
@@ -302,6 +330,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         studiesSubCommands.addCommand("templates-upload", studiesCommandOptions.uploadTemplatesCommandOptions);
         studiesSubCommands.addCommand("templates-delete", studiesCommandOptions.deleteTemplatesCommandOptions);
         studiesSubCommands.addCommand("update", studiesCommandOptions.updateCommandOptions);
+        studiesSubCommands.addCommand("users-sync", studiesCommandOptions.syncUsersCommandOptions);
         studiesSubCommands.addCommand("variablesets", studiesCommandOptions.variableSetsCommandOptions);
         studiesSubCommands.addCommand("variable-sets-update", studiesCommandOptions.updateVariableSetsCommandOptions);
         studiesSubCommands.addCommand("variable-sets-variables-update", studiesCommandOptions.updateVariableSetsVariablesCommandOptions);
@@ -310,6 +339,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         jCommander.addCommand("files", filesCommandOptions);
         JCommander filesSubCommands = jCommander.getCommands().get("files");
         filesSubCommands.addCommand("acl-update", filesCommandOptions.updateAclCommandOptions);
+        filesSubCommands.addCommand("aggregationstats", filesCommandOptions.aggregationStatsCommandOptions);
         filesSubCommands.addCommand("annotation-sets-load", filesCommandOptions.loadAnnotationSetsCommandOptions);
         filesSubCommands.addCommand("bioformats", filesCommandOptions.bioformatsCommandOptions);
         filesSubCommands.addCommand("create", filesCommandOptions.createCommandOptions);
@@ -374,6 +404,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         jCommander.addCommand("cohorts", cohortsCommandOptions);
         JCommander cohortsSubCommands = jCommander.getCommands().get("cohorts");
         cohortsSubCommands.addCommand("acl-update", cohortsCommandOptions.updateAclCommandOptions);
+        cohortsSubCommands.addCommand("aggregationstats", cohortsCommandOptions.aggregationStatsCommandOptions);
         cohortsSubCommands.addCommand("annotation-sets-load", cohortsCommandOptions.loadAnnotationSetsCommandOptions);
         cohortsSubCommands.addCommand("create", cohortsCommandOptions.createCommandOptions);
         cohortsSubCommands.addCommand("distinct", cohortsCommandOptions.distinctCommandOptions);
@@ -413,6 +444,11 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
     
     public AdminCommandOptions getAdminCommandOptions() {
         return adminCommandOptions;
+    }
+    
+    
+    public WorkflowsCommandOptions getWorkflowsCommandOptions() {
+        return workflowsCommandOptions;
     }
     
     

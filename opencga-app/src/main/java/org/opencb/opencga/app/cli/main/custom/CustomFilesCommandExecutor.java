@@ -17,7 +17,7 @@ package org.opencb.opencga.app.cli.main.custom;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.app.cli.session.SessionManager;
-import org.opencb.opencga.client.config.ClientConfiguration;
+import org.opencb.opencga.core.config.client.ClientConfiguration;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.response.RestResponse;

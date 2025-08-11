@@ -40,6 +40,7 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
         public InfoCommandOptions infoCommandOptions;
         public SearchAuditCommandOptions searchAuditCommandOptions;
         public GroupsCommandOptions groupsCommandOptions;
+        public SyncGroupsCommandOptions syncGroupsCommandOptions;
         public UpdateGroupsCommandOptions updateGroupsCommandOptions;
         public UpdateGroupsUsersCommandOptions updateGroupsUsersCommandOptions;
         public CreateNotesCommandOptions createNotesCommandOptions;
@@ -52,6 +53,7 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
         public UploadTemplatesCommandOptions uploadTemplatesCommandOptions;
         public DeleteTemplatesCommandOptions deleteTemplatesCommandOptions;
         public UpdateCommandOptions updateCommandOptions;
+        public SyncUsersCommandOptions syncUsersCommandOptions;
         public VariableSetsCommandOptions variableSetsCommandOptions;
         public UpdateVariableSetsCommandOptions updateVariableSetsCommandOptions;
         public UpdateVariableSetsVariablesCommandOptions updateVariableSetsVariablesCommandOptions;
@@ -67,6 +69,7 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
         this.infoCommandOptions = new InfoCommandOptions();
         this.searchAuditCommandOptions = new SearchAuditCommandOptions();
         this.groupsCommandOptions = new GroupsCommandOptions();
+        this.syncGroupsCommandOptions = new SyncGroupsCommandOptions();
         this.updateGroupsCommandOptions = new UpdateGroupsCommandOptions();
         this.updateGroupsUsersCommandOptions = new UpdateGroupsUsersCommandOptions();
         this.createNotesCommandOptions = new CreateNotesCommandOptions();
@@ -79,6 +82,7 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
         this.uploadTemplatesCommandOptions = new UploadTemplatesCommandOptions();
         this.deleteTemplatesCommandOptions = new DeleteTemplatesCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
+        this.syncUsersCommandOptions = new SyncUsersCommandOptions();
         this.variableSetsCommandOptions = new VariableSetsCommandOptions();
         this.updateVariableSetsCommandOptions = new UpdateVariableSetsCommandOptions();
         this.updateVariableSetsVariablesCommandOptions = new UpdateVariableSetsVariablesCommandOptions();
@@ -333,6 +337,32 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
     
     }
 
+    @Parameters(commandNames = {"groups-sync"}, commandDescription ="Associate a remote group from an authentication origin with a local group in a study")
+    public class SyncGroupsCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = true, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--authentication-origin-id"}, description = "The body web service authenticationOriginId parameter", required = false, arity = 1)
+        public String authenticationOriginId;
+    
+        @Parameter(names = {"--remote-group-id"}, description = "The body web service remoteGroupId parameter", required = false, arity = 1)
+        public String remoteGroupId;
+    
+        @Parameter(names = {"--local-group-id"}, description = "The body web service localGroupId parameter", required = false, arity = 1)
+        public String localGroupId;
+    
+    }
+
     @Parameters(commandNames = {"groups-update"}, commandDescription ="Add or remove a group")
     public class UpdateGroupsCommandOptions {
     
@@ -412,6 +442,9 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
         @Parameter(names = {"--id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String id;
     
+        @Parameter(names = {"--type"}, description = "Enum param allowed values: VARIANT, GENE, TRANSCRIPT, PROTEIN, JOB, FILE, SAMPLE, INDIVIDUAL, FAMILY, COHORT, DISEASE_PANEL, CLINICAL_ANALYSIS, WORKFLOW, ORGANIZATION, OTHER, UNKNOWN", required = false, arity = 1)
+        public String type;
+    
         @Parameter(names = {"--tags"}, description = "The body web service tags parameter", required = false, arity = 1)
         public String tags;
     
@@ -446,6 +479,9 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
     
         @Parameter(names = {"--id"}, description = "Note unique identifier.", required = false, arity = 1)
         public String id; 
+    
+        @Parameter(names = {"--type"}, description = "Note type.", required = false, arity = 1)
+        public String type; 
     
         @Parameter(names = {"--uuid"}, description = "Unique 32-character identifier assigned automatically by OpenCGA.", required = false, arity = 1)
         public String uuid; 
@@ -510,6 +546,9 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
     
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
         public boolean includeResult = false; 
+    
+        @Parameter(names = {"--type"}, description = "Enum param allowed values: VARIANT, GENE, TRANSCRIPT, PROTEIN, JOB, FILE, SAMPLE, INDIVIDUAL, FAMILY, COHORT, DISEASE_PANEL, CLINICAL_ANALYSIS, WORKFLOW, ORGANIZATION, OTHER, UNKNOWN", required = false, arity = 1)
+        public String type;
     
         @Parameter(names = {"--tags"}, description = "The body web service tags parameter", required = false, arity = 1)
         public String tags;
@@ -638,6 +677,26 @@ public class StudiesCommandOptions extends CustomStudiesCommandOptions {
     
         @Parameter(names = {"--status-description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String statusDescription;
+    
+    }
+
+    @Parameters(commandNames = {"users-sync"}, commandDescription ="Synchronize all users from the remote groups of a given authentication origin")
+    public class SyncUsersCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = true, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--authentication-origin-id"}, description = "Authentication origin ID", required = true, arity = 1)
+        public String authenticationOriginId; 
     
     }
 

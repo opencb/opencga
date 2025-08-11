@@ -256,6 +256,10 @@
             <artifactId>javax.servlet-api</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-core</artifactId>
+        </dependency>
     </dependencies>
 
     <!--

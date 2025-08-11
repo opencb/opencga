@@ -23,6 +23,7 @@
 #' | api | /{apiVersion}/meta/api | category |
 #' | fail | /{apiVersion}/meta/fail |  |
 #' | model | /{apiVersion}/meta/model | model |
+#' | openapi | /{apiVersion}/meta/openapi | url[*], study |
 #' | ping | /{apiVersion}/meta/ping |  |
 #' | status | /{apiVersion}/meta/status |  |
 #'
@@ -58,6 +59,13 @@ setMethod("metaClient", "OpencgaR", function(OpencgaR, endpointName, params=NULL
         #' @param model Model description.
         model=fetchOpenCGA(object=OpencgaR, category="meta", categoryId=NULL, subcategory=NULL, subcategoryId=NULL,
                 action="model", params=params, httpMethod="GET", as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/meta/openapi:
+        #' Opencga openapi json.
+        #' @param url Opencga host with environment.
+        #' @param study Opencga study to be default in queries.
+        openapi=fetchOpenCGA(object=OpencgaR, category="meta", categoryId=NULL, subcategory=NULL, subcategoryId=NULL,
+                action="openapi", params=params, httpMethod="GET", as.queryParam=c("url"), ...),
 
         #' @section Endpoint /{apiVersion}/meta/ping:
         #' Ping Opencga webservices.

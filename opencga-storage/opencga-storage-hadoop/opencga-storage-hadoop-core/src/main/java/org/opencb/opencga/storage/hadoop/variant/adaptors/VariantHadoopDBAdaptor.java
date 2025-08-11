@@ -84,7 +84,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.SEARCH_INDEX_LAST_TIMESTAMP;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 
@@ -193,10 +192,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     public ArchiveTableHelper getArchiveHelper(int studyId, int fileId) throws StorageEngineException {
-        VariantFileMetadata fileMetadata = getMetadataManager().getVariantFileMetadata(studyId, fileId, null).first();
-        if (fileMetadata == null) {
-            throw VariantQueryException.fileNotFound(fileId, studyId);
-        }
+        VariantFileMetadata fileMetadata = getMetadataManager().getVariantFileMetadata(studyId, fileId);
         return new ArchiveTableHelper(configuration, studyId, fileMetadata);
 
     }
@@ -295,8 +291,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 throw VariantQueryException.internalException(e);
             }
         }).iterator();
-        long ts = getMetadataManager().getProjectMetadata().getAttributes()
-                .getLong(SEARCH_INDEX_LAST_TIMESTAMP.key());
+        long ts = getMetadataManager().getProjectMetadata().getSecondaryAnnotationIndexLastTimestamp();
         HBaseToVariantAnnotationConverter converter = new HBaseToVariantAnnotationConverter(ts)
                 .setAnnotationIds(getMetadataManager().getProjectMetadata().getAnnotation())
                 .setIncludeFields(selectElements.getFields());
@@ -367,7 +362,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         if (isValidParam(query, UNKNOWN_GENOTYPE)) {
             unknownGenotype = query.getString(UNKNOWN_GENOTYPE.key());
         }
-        List<String> formats = getIncludeSampleData(query);
 
         HBaseVariantConverterConfiguration converterConfiguration = HBaseVariantConverterConfiguration.builder()
                 .setMutableSamplesPosition(false)
@@ -375,9 +369,10 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 .setSimpleGenotypes(options.getBoolean(HBaseVariantConverterConfiguration.SIMPLE_GENOTYPES, true))
                 .setUnknownGenotype(unknownGenotype)
                 .setProjection(variantQuery.getProjection())
-                .setSampleDataKeys(formats)
+                .setSampleDataKeys(getIncludeSampleData(query))
                 .setIncludeSampleId(query.getBoolean(INCLUDE_SAMPLE_ID.key(), false))
                 .setIncludeIndexStatus(query.getBoolean(VariantQueryUtils.VARIANTS_TO_INDEX.key(), false))
+                .setSparse(query.getBoolean(SPARSE_SAMPLES.key(), false))
                 .build();
 
         if (hbaseIterator) {

@@ -55,7 +55,9 @@ import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
 import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.sample.*;
+import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.VariantSetupResult;
+import org.opencb.opencga.core.models.variant.OperationIndexStatus;
 import org.opencb.opencga.core.models.variant.VariantSetupParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
@@ -80,8 +82,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.hamcrest.CoreMatchers.anyOf;
-import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)
@@ -99,6 +100,7 @@ public class VariantOperationsTest {
     public static final Phenotype PHENOTYPE = new Phenotype(PHENOTYPE_NAME, PHENOTYPE_NAME, "mySource")
             .setStatus(Phenotype.Status.OBSERVED);
     public static final String DB_NAME = VariantStorageManager.buildDatabaseName("opencga_test", ORGANIZATION, PROJECT);
+    private static String family = "f1";
     private static String father = "NA19661";
     private static String mother = "NA19660";
     private static String son = "NA19685";
@@ -130,7 +132,7 @@ public class VariantOperationsTest {
     public static OpenCGATestExternalResource opencga = new OpenCGATestExternalResource();
     public static HadoopVariantStorageTest.HadoopExternalResource hadoopExternalResource;
 
-    public static VariantSolrExternalResource solrExternalResource = new VariantSolrExternalResource();
+    public static VariantSolrExternalResource solrExternalResource;
 
     private static String storageEngine;
 //    private static boolean indexed = false;
@@ -152,7 +154,7 @@ public class VariantOperationsTest {
 //        catalogManager = opencga.getCatalogManager();
 //        variantStorageManager = new VariantStorageManager(catalogManager, opencga.getStorageEngineFactory());
 //        toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantStorageManager.getStorageConfiguration()));
-        token = catalogManager.getUserManager().login(ORGANIZATION, "user", PASSWORD).getToken();
+        token = catalogManager.getUserManager().login(ORGANIZATION, "user", PASSWORD).first().getToken();
     }
 
     @After
@@ -176,6 +178,7 @@ public class VariantOperationsTest {
     @BeforeClass
     public static void beforeClass() throws Exception {
         if (HadoopVariantStorageTest.HadoopSolrSupport.isSolrTestingAvailable()) {
+            solrExternalResource = new VariantSolrExternalResource();
             solrExternalResource.before();
         }
     }
@@ -234,6 +237,11 @@ public class VariantOperationsTest {
 
         dummyVariantSetup(variantStorageManager, STUDY, token);
 
+        assertEquals(OperationIndexStatus.NONE,
+                catalogManager.getProjectManager().get(PROJECT_FQN, new QueryOptions(), token).first().getInternal().getVariant().getAnnotationIndex().getStatus().getId());
+        assertEquals(OperationIndexStatus.NONE,
+                catalogManager.getProjectManager().get(PROJECT_FQN, new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId());
+
         file = opencga.createFile(STUDY, "variant-test-file.vcf.gz", token);
 //            variantStorageManager.index(STUDY, file.getId(), opencga.createTmpOutdir("_index"), new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true), token);
         toolRunner.execute(VariantIndexOperationTool.class, STUDY,
@@ -242,9 +250,18 @@ public class VariantOperationsTest {
                         .setAnnotate(false)
                         .setLoadHomRef(YesNoAuto.YES.name()),
                 Paths.get(opencga.createTmpOutdir("_index")), "index", false, token);
+        assertEquals(OperationIndexStatus.PENDING,
+                catalogManager.getProjectManager().get(PROJECT_FQN, new QueryOptions(), token).first().getInternal().getVariant().getAnnotationIndex().getStatus().getId());
+        assertEquals(OperationIndexStatus.PENDING,
+                catalogManager.getProjectManager().get(PROJECT_FQN, new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId());
+
         toolRunner.execute(VariantAnnotationIndexOperationTool.class, STUDY,
                 new VariantAnnotationIndexParams(),
                 Paths.get(opencga.createTmpOutdir("_annotation-index")), "index", false, token);
+        assertEquals(OperationIndexStatus.READY,
+                catalogManager.getProjectManager().get(PROJECT_FQN, new QueryOptions(), token).first().getInternal().getVariant().getAnnotationIndex().getStatus().getId());
+        assertEquals(OperationIndexStatus.PENDING,
+                catalogManager.getProjectManager().get(PROJECT_FQN, new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId());
 
         for (int i = 0; i < file.getSampleIds().size(); i++) {
             if (i % 2 == 0) {
@@ -283,7 +300,7 @@ public class VariantOperationsTest {
                         Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)), Collections.singletonList(daughter), new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first());
         catalogManager.getFamilyManager().create(
                 STUDY,
-                new Family("f1", "f1", Collections.singletonList(phenotype), Collections.singletonList(disorder), null, null, 4, null, null),
+                new Family(family, family, Collections.singletonList(phenotype), Collections.singletonList(disorder), null, null, 4, null, null),
                 individuals.stream().map(Individual::getId).collect(Collectors.toList()), new QueryOptions(),
                 token);
 
@@ -311,7 +328,7 @@ public class VariantOperationsTest {
         catalogManager.getOrganizationManager().update(ORGANIZATION, new OrganizationUpdateParams().setAdmins(Collections.singletonList("user")),
                 null,
                 opencga.getAdminToken());
-        token = catalogManager.getUserManager().login(ORGANIZATION, "user", PASSWORD).getToken();
+        token = catalogManager.getUserManager().login(ORGANIZATION, "user", PASSWORD).first().getToken();
 
         String projectId = catalogManager.getProjectManager().create(PROJECT, "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first().getId();
@@ -332,7 +349,7 @@ public class VariantOperationsTest {
     public void testSetup() throws Exception {
         String study2 = "study2";
         String study2fqn = catalogManager.getStudyManager()
-                .create(PROJECT, study2, null, "Phase 1", "Done", null, null, null, null, null, token)
+                .create(PROJECT, study2, null, "Phase 1", "Done", null, null, null, null, new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token)
                 .first().getFqn();
         File file = opencga.createFile(study2, "variant-test-file.vcf.gz", token);
 
@@ -431,15 +448,25 @@ public class VariantOperationsTest {
     @Test
     public void testVariantSecondaryAnnotationIndex() throws Exception {
         Assume.assumeTrue(HadoopVariantStorageTest.HadoopSolrSupport.isSolrTestingAvailable());
-        for (String sample : samples) {
-            SampleInternalVariantSecondaryAnnotationIndex index = catalogManager.getSampleManager().get(STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex();
-            assertEquals(IndexStatus.NONE, index.getStatus().getId());
+        for (String sampleName : samples) {
+            Sample sample = catalogManager.getSampleManager().get(STUDY, sampleName, new QueryOptions(), token).first();
+            assertEquals(IndexStatus.NONE, sample.getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId());
+            assertEquals(IndexStatus.READY, sample.getInternal().getVariant().getAnnotationIndex().getStatus().getId());
         }
         assertEquals(IndexStatus.NONE, catalogManager.getFileManager().get(STUDY, file.getId(), new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId());
+        assertEquals(OperationIndexStatus.READY,
+                catalogManager.getProjectManager().get(PROJECT, new QueryOptions(), token).first().getInternal().getVariant().getAnnotationIndex().getStatus().getId());
+        assertEquals(OperationIndexStatus.PENDING,
+                catalogManager.getProjectManager().get(PROJECT, new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId());
 
         toolRunner.execute(VariantSecondaryAnnotationIndexOperationTool.class, STUDY,
                 new VariantSecondaryAnnotationIndexParams(),
                 Paths.get(opencga.createTmpOutdir()), "annotation_index", false, token);
+
+        assertEquals(OperationIndexStatus.READY,
+                catalogManager.getProjectManager().get(PROJECT, new QueryOptions(), token).first().getInternal().getVariant().getAnnotationIndex().getStatus().getId());
+        assertEquals(OperationIndexStatus.READY,
+                catalogManager.getProjectManager().get(PROJECT, new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId());
 
         for (String sample : samples) {
             SampleInternalVariantSecondaryAnnotationIndex index = catalogManager.getSampleManager().get(STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex();
@@ -491,14 +518,23 @@ public class VariantOperationsTest {
             assertEquals(sample, 1, sampleIndex.getVersion().intValue());
         }
 
+        Study study = catalogManager.getStudyManager().get(STUDY, new QueryOptions(), token).first();
+        assertEquals(OperationIndexStatus.READY, study.getInternal().getVariant().getSecondarySampleIndex().getStatus().getId());
+
         // Change the sample index configuration.
         OpenCGAResult<Job> jobs = variantStorageManager.configureSampleIndex(STUDY, SampleIndexConfiguration.defaultConfiguration()
                 .addPopulation(new SampleIndexConfiguration.Population("1000G", "SAS")), false, token);
 
+        study = catalogManager.getStudyManager().get(STUDY, new QueryOptions(), token).first();
+        assertEquals(OperationIndexStatus.PENDING, study.getInternal().getVariant().getSecondarySampleIndex().getStatus().getId());
+
         // Initially nothing should change, even after running a manual synchronization
         toolRunner.execute(VariantStorageMetadataSynchronizeOperationTool.class,
                 new VariantStorageMetadataSynchronizeParams().setStudy(STUDY_FQN),
-                Paths.get(opencga.createTmpOutdir()), "", false, catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken());
+                Paths.get(opencga.createTmpOutdir()), "", false, catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).first().getToken());
+
+        study = catalogManager.getStudyManager().get(STUDY, new QueryOptions(), token).first();
+        assertEquals(OperationIndexStatus.PENDING, study.getInternal().getVariant().getSecondarySampleIndex().getStatus().getId());
 
         for (String sample : samples) {
             SampleInternalVariantSecondarySampleIndex sampleIndex = catalogManager.getSampleManager().get(STUDY, sample, new QueryOptions(), token)
@@ -524,6 +560,9 @@ public class VariantOperationsTest {
             }
             assertEquals(2, sampleIndex.getVersion().intValue());
         }
+
+        study = catalogManager.getStudyManager().get(STUDY, new QueryOptions(), token).first();
+        assertEquals(OperationIndexStatus.READY, study.getInternal().getVariant().getSecondarySampleIndex().getStatus().getId());
 
         // Same. Rerun configuration and change version.
         jobs = variantStorageManager.configureSampleIndex(STUDY, SampleIndexConfiguration.defaultConfiguration(), false, token);
@@ -556,7 +595,7 @@ public class VariantOperationsTest {
         Phenotype phenotype = new Phenotype("phenotype", "phenotype", "");
         Disorder disorder = new Disorder("disorder", "disorder", "", "", Collections.singletonList(phenotype), Collections.emptyMap());
 
-        catalogManager.getFamilyManager().delete(STUDY, Collections.singletonList("f1"), null, token);
+        catalogManager.getFamilyManager().delete(STUDY, Collections.singletonList(family), null, token);
         catalogManager.getIndividualManager().update(STUDY, daughter, new IndividualUpdateParams()
                 .setMother(new IndividualReferenceParam(null, null)), null, token);
         catalogManager.getFamilyManager().create(
@@ -582,6 +621,132 @@ public class VariantOperationsTest {
             }
             assertEquals(sample, 1, sampleIndex.getVersion().intValue());
         }
+    }
+
+    @Test
+    public void testAggregateFamilyFromSamples() throws Exception {
+        try {
+            toolRunner.execute(VariantAggregateFamilyOperationTool.class, STUDY,
+                    new VariantAggregateFamilyParams(), Paths.get(opencga.createTmpOutdir("_agg_family_fail1")), null, false, token);
+            fail("Should have thrown an exception");
+        } catch (ToolException e) {
+            MatcherAssert.assertThat(e.getMessage(), containsString("Aggregate family operation requires at least two samples."));
+        }
+
+        List<String> samples1 = VariantOperationsTest.samples.subList(0, 2);
+        List<String> samples2 = VariantOperationsTest.samples.subList(2, 4);
+        List<String> samplesMix = Arrays.asList(samples1.get(0), samples2.get(0));
+
+        {
+            // Run aggregate-family on subset 1
+            List<String> samples = samples1;
+            toolRunner.execute(VariantAggregateFamilyOperationTool.class, STUDY,
+                    new VariantAggregateFamilyParams()
+                            .setSamples(samples), Paths.get(opencga.createTmpOutdir("_agg_family_samples")), null, false, token);
+
+            for (String sampleId : samples) {
+                Sample sample = catalogManager.getSampleManager().get(STUDY, sampleId, new QueryOptions(), token).first();
+                assertEquals(1, sample.getInternal().getVariant().getAggregateFamily().size());
+                SampleInternalVariantAggregateFamily aggregateFamily = sample.getInternal().getVariant().getAggregateFamily().get(0);
+
+                assertEquals(IndexStatus.READY, aggregateFamily.getStatus().getId());
+                assertEquals(new HashSet<>(samples), new HashSet<>(aggregateFamily.getSampleIds()));
+            }
+        }
+
+        {
+            // Run aggregate-family on subset 2
+            List<String> samples = samples2;
+            toolRunner.execute(VariantAggregateFamilyOperationTool.class, STUDY,
+                    new VariantAggregateFamilyParams()
+                            .setSamples(samples), Paths.get(opencga.createTmpOutdir("_agg_family_samples")), null, false, token);
+
+            for (String sampleId : samples) {
+                Sample sample = catalogManager.getSampleManager().get(STUDY, sampleId, new QueryOptions(), token).first();
+                assertEquals(1, sample.getInternal().getVariant().getAggregateFamily().size());
+                SampleInternalVariantAggregateFamily aggregateFamily = sample.getInternal().getVariant().getAggregateFamily().get(0);
+
+                assertEquals(IndexStatus.READY, aggregateFamily.getStatus().getId());
+                assertEquals(new HashSet<>(samples), new HashSet<>(aggregateFamily.getSampleIds()));
+            }
+        }
+
+        {
+            // Run aggregate-family on mixed samples. Two aggregate-family status should be created.
+            List<String> samples = samplesMix;
+            toolRunner.execute(VariantAggregateFamilyOperationTool.class, STUDY,
+                    new VariantAggregateFamilyParams()
+                            .setSamples(samples), Paths.get(opencga.createTmpOutdir("_agg_family_samples")), null, false, token);
+
+            for (String sampleId : samples) {
+                Sample sample = catalogManager.getSampleManager().get(STUDY, sampleId, new QueryOptions(), token).first();
+                assertEquals(2, sample.getInternal().getVariant().getAggregateFamily().size());
+                SampleInternalVariantAggregateFamily aggregateFamily = sample.getInternal().getVariant().getAggregateFamily().get(1);
+
+                assertEquals(IndexStatus.READY, aggregateFamily.getStatus().getId());
+                assertEquals(new HashSet<>(samples), new HashSet<>(aggregateFamily.getSampleIds()));
+            }
+        }
+
+        {
+            // Run aggregate-family on all samples. One aggregate-family status should replace the previous ones.
+            List<String> samples = VariantOperationsTest.samples;
+            toolRunner.execute(VariantAggregateFamilyOperationTool.class, STUDY,
+                    new VariantAggregateFamilyParams()
+                            .setSamples(samples), Paths.get(opencga.createTmpOutdir("_agg_family_samples")), null, false, token);
+
+            for (String sampleId : samples) {
+                Sample sample = catalogManager.getSampleManager().get(STUDY, sampleId, new QueryOptions(), token).first();
+                assertEquals(1, sample.getInternal().getVariant().getAggregateFamily().size());
+                SampleInternalVariantAggregateFamily aggregateFamily = sample.getInternal().getVariant().getAggregateFamily().get(0);
+
+                assertEquals(IndexStatus.READY, aggregateFamily.getStatus().getId());
+                assertEquals(new HashSet<>(samples), new HashSet<>(aggregateFamily.getSampleIds()));
+            }
+        }
+
+        {
+            // Delete some samples.
+            // These should have no index nor aggregate-family status.
+            // The rest of samples should have a reduced list of samples.
+            toolRunner.execute(VariantSampleDeleteOperationTool.class, STUDY, new VariantSampleDeleteParams(samples2, false, false), Paths.get(opencga.createTmpOutdir("_delete")), null, false, token);
+
+            for (String sampleId : samples1) {
+                Sample sample = catalogManager.getSampleManager().get(STUDY, sampleId, new QueryOptions(), token).first();
+                assertEquals(1, sample.getInternal().getVariant().getAggregateFamily().size());
+                SampleInternalVariantAggregateFamily aggregateFamily = sample.getInternal().getVariant().getAggregateFamily().get(0);
+
+                assertEquals(IndexStatus.READY, aggregateFamily.getStatus().getId());
+                assertEquals(new HashSet<>(samples1), new HashSet<>(aggregateFamily.getSampleIds()));
+            }
+            for (String sampleId : samples2) {
+                Sample sample = catalogManager.getSampleManager().get(STUDY, sampleId, new QueryOptions(), token).first();
+                assertEquals(0, sample.getInternal().getVariant().getAggregateFamily().size());
+            }
+        }
+    }
+
+    @Test
+    public void testAggregateFamilyFromFamily() throws Exception {
+        String emptyFamily = "family2";
+        catalogManager.getFamilyManager().create(
+                STUDY,
+                new Family(emptyFamily, emptyFamily, Collections.emptyList(), Collections.emptyList(), null, null, 0, null, null),
+                new QueryOptions(),
+                token);
+        try {
+            toolRunner.execute(VariantAggregateFamilyOperationTool.class, STUDY,
+                    new VariantAggregateFamilyParams().setFamily(emptyFamily),
+                    Paths.get(opencga.createTmpOutdir("_agg_family_fail2")), null, false, token);
+            fail("Should have thrown an exception");
+        } catch (ToolException e) {
+            e.printStackTrace();
+            MatcherAssert.assertThat(e.getMessage(), containsString("Aggregate family operation requires at least two samples."));
+        }
+
+        toolRunner.execute(VariantAggregateFamilyOperationTool.class, STUDY,
+                new VariantAggregateFamilyParams()
+                        .setFamily(family), Paths.get(opencga.createTmpOutdir("_agg_family_family")), null, false, token);
     }
 
     @Test
@@ -622,6 +787,31 @@ public class VariantOperationsTest {
         String project = "Project_test_cellbase_configure";
         catalogManager.getProjectManager().create(new ProjectCreateParams(project, project, "", "", "", new ProjectOrganism("hsapiens", "GRCh38"), null, null), QueryOptions.empty(), token);
 
+        assertEquals(OperationIndexStatus.NONE,
+                catalogManager.getProjectManager().get(project, new QueryOptions(), token).first().getInternal().getVariant().getAnnotationIndex().getStatus().getId());
+
+        testCellbaseConfigure(project);
+
+        assertEquals(OperationIndexStatus.NONE,
+                catalogManager.getProjectManager().get(project, new QueryOptions(), token).first().getInternal().getVariant().getAnnotationIndex().getStatus().getId());
+
+    }
+
+    @Test
+    public void testCellbaseConfigureAnnotated() throws Exception {
+        String project = PROJECT;
+
+        assertEquals(OperationIndexStatus.READY,
+                catalogManager.getProjectManager().get(project, new QueryOptions(), token).first().getInternal().getVariant().getAnnotationIndex().getStatus().getId());
+
+        testCellbaseConfigure(project);
+
+        assertEquals(OperationIndexStatus.PENDING,
+                catalogManager.getProjectManager().get(project, new QueryOptions(), token).first().getInternal().getVariant().getAnnotationIndex().getStatus().getId());
+
+    }
+
+    private static void testCellbaseConfigure(String project) throws StorageEngineException, CatalogException {
         CellBaseUtils cellBaseUtils = variantStorageManager.getVariantStorageEngineByProject(project, null, token).getCellBaseUtils();
         assertEquals(ParamConstants.CELLBASE_URL, cellBaseUtils.getURL());
         assertEquals(ParamConstants.CELLBASE_VERSION, cellBaseUtils.getVersion());
@@ -643,7 +833,6 @@ public class VariantOperationsTest {
         assertEquals(newCellbaseVersion, cellbaseConfiguration.getVersion());
         assertEquals(newCellbaseDataRelease, cellbaseConfiguration.getDataRelease());
 
-//        assertTrue(family.getPedigreeGraph() != null);
     }
 
     public void checkExecutionResult(ExecutionResult er) {

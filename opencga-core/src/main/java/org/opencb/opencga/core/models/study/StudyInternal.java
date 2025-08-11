@@ -39,18 +39,27 @@ public class StudyInternal extends Internal {
             description = FieldConstants.STUDY_INTERNAL_CONFIGURATION)
     private StudyConfiguration configuration;
 
+    @DataField(id = "variant", description = FieldConstants.STUDY_INTERNAL_VARIANT)
+    private StudyInternalVariant variant;
+
+    @DataField(id = "federated", indexed = true, description = FieldConstants.STUDY_INTERNAL_FEDERATED)
+    private boolean federated;
+
     public StudyInternal() {
     }
 
     public StudyInternal(InternalStatus status, String registrationDate, String modificationDate, StudyIndex index,
-                         StudyConfiguration configuration) {
+                         StudyConfiguration configuration, StudyInternalVariant variant, boolean federated) {
         super(status, registrationDate, modificationDate);
         this.index = index;
         this.configuration = configuration;
+        this.variant = variant;
+        this.federated = federated;
     }
 
-    public static StudyInternal init() {
-        return new StudyInternal(new InternalStatus(), TimeUtils.getTime(), TimeUtils.getTime(), StudyIndex.init(), StudyConfiguration.init());
+    public static StudyInternal init(String cellbaseVersion) {
+        return new StudyInternal(new InternalStatus(), TimeUtils.getTime(), TimeUtils.getTime(), StudyIndex.init(),
+                StudyConfiguration.init(cellbaseVersion), new StudyInternalVariant(), false);
     }
 
     @Override
@@ -61,6 +70,8 @@ public class StudyInternal extends Internal {
         sb.append(", status=").append(status);
         sb.append(", index=").append(index);
         sb.append(", configuration=").append(configuration);
+        sb.append(", variant=").append(variant);
+        sb.append(", federated=").append(federated);
         sb.append('}');
         return sb.toString();
     }
@@ -99,5 +110,22 @@ public class StudyInternal extends Internal {
     public StudyInternal setConfiguration(StudyConfiguration configuration) {
         this.configuration = configuration;
         return this;
+    }
+
+    public StudyInternalVariant getVariant() {
+        return variant;
+    }
+
+    public StudyInternal setVariant(StudyInternalVariant variant) {
+        this.variant = variant;
+        return this;
+    }
+
+    public boolean isFederated() {
+        return federated;
+    }
+
+    public void setFederated(boolean federated) {
+        this.federated = federated;
     }
 }

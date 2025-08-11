@@ -12,15 +12,17 @@ import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.AdminCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveAction;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.Acl;
-import org.opencb.opencga.core.models.admin.GroupSyncParams;
+import org.opencb.opencga.core.models.admin.DeprecatedGroupSyncParams;
 import org.opencb.opencga.core.models.admin.InstallationParams;
 import org.opencb.opencga.core.models.admin.JWTParams;
 import org.opencb.opencga.core.models.admin.UserImportParams;
 import org.opencb.opencga.core.models.admin.UserUpdateGroup;
 import org.opencb.opencga.core.models.common.Enums.Resource;
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.resource.ResourceFetcherToolParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.user.User;
@@ -70,6 +72,9 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "catalog-jwt":
                 queryResponse = jwtCatalog();
+                break;
+            case "resource-fetch":
+                queryResponse = fetchResource();
                 break;
             case "users-create":
                 queryResponse = createUsers();
@@ -168,6 +173,41 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), JWTParams.class);
         }
         return openCGAClient.getAdminClient().jwtCatalog(jWTParams, queryParams);
+    }
+
+    private RestResponse<Job> fetchResource() throws Exception {
+        logger.debug("Executing fetchResource in Admin command line");
+
+        AdminCommandOptions.FetchResourceCommandOptions commandOptions = adminCommandOptions.fetchResourceCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
+        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
+        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
+        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
+
+
+        ResourceFetcherToolParams resourceFetcherToolParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/resource/fetch"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            resourceFetcherToolParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), ResourceFetcherToolParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotNull(beanParams, "resources", commandOptions.resources, true);
+
+            resourceFetcherToolParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), ResourceFetcherToolParams.class);
+        }
+        return openCGAClient.getAdminClient().fetchResource(resourceFetcherToolParams, queryParams);
     }
 
     private RestResponse<User> createUsers() throws Exception {
@@ -276,15 +316,15 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("organization", commandOptions.organization);
 
 
-        GroupSyncParams groupSyncParams = null;
+        DeprecatedGroupSyncParams deprecatedGroupSyncParams = null;
         if (commandOptions.jsonDataModel) {
             RestResponse<Group> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/users/sync"));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            groupSyncParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), GroupSyncParams.class);
+            deprecatedGroupSyncParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), DeprecatedGroupSyncParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "authenticationOriginId", commandOptions.authenticationOriginId, true);
@@ -294,11 +334,11 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotNull(beanParams, "syncAll", commandOptions.syncAll, true);
             putNestedIfNotNull(beanParams, "force", commandOptions.force, true);
 
-            groupSyncParams = JacksonUtils.getDefaultObjectMapper().copy()
+            deprecatedGroupSyncParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), GroupSyncParams.class);
+                    .readValue(beanParams.toJson(), DeprecatedGroupSyncParams.class);
         }
-        return openCGAClient.getAdminClient().syncUsers(groupSyncParams, queryParams);
+        return openCGAClient.getAdminClient().syncUsers(deprecatedGroupSyncParams, queryParams);
     }
 
     private RestResponse<Group> usersUpdateGroups() throws Exception {

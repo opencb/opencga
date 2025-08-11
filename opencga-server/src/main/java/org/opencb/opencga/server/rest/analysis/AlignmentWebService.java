@@ -17,6 +17,7 @@
 package org.opencb.opencga.server.rest.analysis;
 
 import org.opencb.opencga.analysis.alignment.AlignmentCoverageAnalysis;
+import org.opencb.opencga.core.models.job.JobType;
 import org.opencb.opencga.core.tools.annotations.*;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -57,7 +58,7 @@ import static org.opencb.opencga.core.api.ParamConstants.*;
  */
 @Path("/{apiVersion}/analysis/alignment")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "Analysis - Alignment", description = "Methods for working with 'files' endpoint")
+@Api(value = "Analysis - Alignment", description = "Methods for working with Alignments")
 public class AlignmentWebService extends AnalysisWebService {
 
     public AlignmentWebService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
@@ -76,7 +77,7 @@ public class AlignmentWebService extends AnalysisWebService {
 
     @POST
     @Path("/index/run")
-    @ApiOperation(value = ALIGNMENT_INDEX_DESCRIPTION, response = Job.class)
+    @ApiOperation(value = AlignmentIndexOperation.DESCRIPTION, response = Job.class)
     public Response indexRun(
             @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
@@ -86,8 +87,8 @@ public class AlignmentWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
-            @ApiParam(value = AlignmentIndexParams.DESCRIPTION, required = true) AlignmentIndexParams params) {
-        return submitJob(AlignmentIndexOperation.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+            @ApiParam(value = ParamConstants.ALIGNMENT_INDEX_PARAMS_DESCRIPTION, required = true) AlignmentIndexParams params) {
+        return submitJob(study, JobType.NATIVE, AlignmentIndexOperation.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     //-------------------------------------------------------------------------
@@ -171,9 +172,10 @@ public class AlignmentWebService extends AnalysisWebService {
     // COVERAGE: index/run, query, ratio and stats
     //-------------------------------------------------------------------------
 
+
     @POST
     @Path("/coverage/index/run")
-    @ApiOperation(value = "Compute coverage for a list of alignment files", response = Job.class)
+    @ApiOperation(value = AlignmentCoverageAnalysis.DESCRIPTION, response = Job.class)
     public Response coverageRun(
             @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
@@ -183,9 +185,9 @@ public class AlignmentWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
-            @ApiParam(value = CoverageIndexParams.DESCRIPTION, required = true) CoverageIndexParams params) {
+            @ApiParam(value = ParamConstants.COVERAGE_INDEX_PARAMS_DESCRIPTION, required = true) CoverageIndexParams params) {
 
-        return submitJob(AlignmentCoverageAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE, AlignmentCoverageAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
 
         //        logger.debug("ObjectMap: {}", params);
 //
@@ -397,7 +399,7 @@ public class AlignmentWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = AlignmentGeneCoverageStatsParams.DESCRIPTION, required = true) AlignmentGeneCoverageStatsParams params) {
 
-        return submitJob(AlignmentGeneCoverageStatsAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE, AlignmentGeneCoverageStatsAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     //-------------------------------------------------------------------------
@@ -418,7 +420,7 @@ public class AlignmentWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = AlignmentQcParams.DESCRIPTION, required = true) AlignmentQcParams params) {
 
-        return submitJob(AlignmentQcAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE, AlignmentQcAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     //-------------------------------------------------------------------------
@@ -438,7 +440,7 @@ public class AlignmentWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = BwaWrapperParams.DESCRIPTION, required = true) BwaWrapperParams params) {
-        return submitJob(BwaWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE, BwaWrapperAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @POST
@@ -454,7 +456,7 @@ public class AlignmentWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = SamtoolsWrapperParams.DESCRIPTION, required = true) SamtoolsWrapperParams params) {
-        return submitJob(SamtoolsWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE, SamtoolsWrapperAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @POST
@@ -470,7 +472,7 @@ public class AlignmentWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = DeeptoolsWrapperParams.DESCRIPTION, required = true) DeeptoolsWrapperParams params) {
-        return submitJob(DeeptoolsWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE, DeeptoolsWrapperAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @POST
@@ -486,7 +488,7 @@ public class AlignmentWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = FastqcWrapperParams.DESCRIPTION, required = true) FastqcWrapperParams params) {
-        return submitJob(FastqcWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE, FastqcWrapperAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @POST
@@ -502,7 +504,7 @@ public class AlignmentWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = PicardWrapperParams.DESCRIPTION, required = true) PicardWrapperParams params) {
-        return submitJob(PicardWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE, PicardWrapperAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     //-------------------------------------------------------------------------

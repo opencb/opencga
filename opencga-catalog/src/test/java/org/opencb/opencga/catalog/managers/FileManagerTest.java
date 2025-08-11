@@ -19,14 +19,12 @@ package org.opencb.opencga.catalog.managers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.clinical.interpretation.Software;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
@@ -76,6 +74,7 @@ import java.util.stream.Collectors;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.*;
+import static org.opencb.commons.datastore.mongodb.MongoDBQueryUtils.SEPARATOR;
 
 /**
  * Created by pfurio on 24/08/16.
@@ -85,6 +84,22 @@ public class FileManagerTest extends AbstractManagerTest {
 
     private FileManager fileManager;
 
+    private static final Map<String, String> MONTH_MAP = new HashMap<>();
+
+    static {
+        MONTH_MAP.put("01", "Jan");
+        MONTH_MAP.put("02", "Feb");
+        MONTH_MAP.put("03", "Mar");
+        MONTH_MAP.put("04", "Apr");
+        MONTH_MAP.put("05", "May");
+        MONTH_MAP.put("06", "Jun");
+        MONTH_MAP.put("07", "Jul");
+        MONTH_MAP.put("08", "Aug");
+        MONTH_MAP.put("09", "Sep");
+        MONTH_MAP.put("10", "Oct");
+        MONTH_MAP.put("11", "Nov");
+        MONTH_MAP.put("12", "Dec");
+    }
     @Before
     public void setUp() throws Exception {
         super.setUp();
@@ -114,6 +129,34 @@ public class FileManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testCreateResourcesFile() throws CatalogException {
+        FileCreateParams fileCreateParams = new FileCreateParams()
+                .setType(File.Type.FILE)
+                .setPath("data/test/folder/file.txt")
+                .setResource(true)
+                .setDescription("My description")
+                .setContent("blabla");
+        File file = fileManager.create(studyFqn, fileCreateParams, true, studyAdminToken1).first();
+        assertTrue(file.isResource());
+        assertNotEquals(fileCreateParams.getPath(), file.getPath());
+        assertTrue(file.getPath().startsWith("RESOURCES/"));
+
+        // Only the study admin can create a resources file. Will try with some other users with generic WRITE file access
+        catalogManager.getStudyManager().updateAcl(studyFqn, normalUserId1,
+                new StudyAclParams(StudyPermissions.Permissions.WRITE_FILES.name(), ""), ParamUtils.AclAction.ADD, ownerToken);
+
+        FileCreateParams fileCreateParams2 = new FileCreateParams()
+                .setType(File.Type.FILE)
+                .setPath("data/test/folder/file2.txt")
+                .setResource(true)
+                .setDescription("My description")
+                .setContent("blabla");
+        CatalogAuthorizationException exception = assertThrows(CatalogAuthorizationException.class,
+                () -> fileManager.create(studyFqn, fileCreateParams2, true, normalToken1));
+        assertTrue(exception.getMessage().contains("study administrator"));
+    }
+
+    @Test
     public void testCreateFileFromSharedStudy() throws CatalogException {
         StudyAclParams aclParams = new StudyAclParams("", "analyst");
         catalogManager.getStudyManager().updateAcl(studyFqn, normalUserId2, aclParams, ParamUtils.AclAction.ADD, ownerToken);
@@ -126,6 +169,29 @@ public class FileManagerTest extends AbstractManagerTest {
                 true, normalToken2);
         assertEquals(1, fileManager.search(studyFqn, new Query(FileDBAdaptor.QueryParams.PATH.key(),
                 "data/test/folder/file.txt"), null, ownerToken).getNumResults());
+    }
+
+    @Test
+    public void testCreateFileWithSemicolonInId() throws CatalogException {
+        StudyAclParams aclParams = new StudyAclParams("", "analyst");
+        catalogManager.getStudyManager().updateAcl(studyFqn, normalUserId2, aclParams, ParamUtils.AclAction.ADD, ownerToken);
+        fileManager.create(studyFqn,
+                new FileCreateParams()
+                        .setType(File.Type.FILE)
+                        .setPath("data/test/folder/file::hello.txt")
+                        .setDescription("My description")
+                        .setContent("blabla"),
+                true, normalToken2);
+        OpenCGAResult<File> search = fileManager.search(studyFqn, new Query(FileDBAdaptor.QueryParams.PATH.key(), "data/test/folder/file::hello.txt"), null, ownerToken);
+        assertEquals(1, search.getNumResults());
+        assertTrue(search.first().getId().contains("\\:\\:"));
+        assertEquals(1, fileManager.search(studyFqn, new Query(FileDBAdaptor.QueryParams.ID.key(), search.first().getId()), null, ownerToken).getNumResults());
+
+        File file = fileManager.get(studyFqn, search.first().getId(), QueryOptions.empty(), ownerToken).first();
+        assertEquals(search.first().getUid(), file.getUid());
+
+        file = fileManager.get(studyFqn, search.first().getPath(), QueryOptions.empty(), ownerToken).first();
+        assertEquals(search.first().getUid(), file.getUid());
     }
 
     URI getStudyURI() throws CatalogException {
@@ -166,7 +232,7 @@ public class FileManagerTest extends AbstractManagerTest {
     public void testLinkAnalystUser() throws CatalogException {
         catalogManager.getUserManager().create("analyst", "analyst", "a@mail.com", TestParamConstants.PASSWORD, organizationId, 200000L, opencgaToken);
         catalogManager.getStudyManager().updateAcl(studyFqn, "analyst", new StudyAclParams("", "analyst"), ParamUtils.AclAction.SET, ownerToken);
-        String analystToken = catalogManager.getUserManager().login(organizationId, "analyst", TestParamConstants.PASSWORD).getToken();
+        String analystToken = catalogManager.getUserManager().login(organizationId, "analyst", TestParamConstants.PASSWORD).first().getToken();
 
         String reference = getClass().getResource("/biofiles/cram/hg19mini.fasta").getFile();
         File referenceFile = fileManager.link(studyFqn, Paths.get(reference).toUri(), "", null, analystToken).first();
@@ -178,7 +244,7 @@ public class FileManagerTest extends AbstractManagerTest {
     public void testLinkUserWithNoWritePermissions() throws CatalogException {
         catalogManager.getUserManager().create("view_user", "view_user", "a@mail.com", TestParamConstants.PASSWORD, organizationId, 200000L, opencgaToken);
         catalogManager.getStudyManager().updateAcl(studyFqn, "view_user", new StudyAclParams("", "view_only"), ParamUtils.AclAction.SET, ownerToken);
-        String analystToken = catalogManager.getUserManager().login(organizationId, "view_user", TestParamConstants.PASSWORD).getToken();
+        String analystToken = catalogManager.getUserManager().login(organizationId, "view_user", TestParamConstants.PASSWORD).first().getToken();
 
         String reference = getClass().getResource("/biofiles/cram/hg19mini.fasta").getFile();
 
@@ -408,6 +474,26 @@ public class FileManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testLinkWithPathAsDirectoryOrFile() throws CatalogException {
+        String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
+        FileLinkParams linkParams = new FileLinkParams()
+                .setUri(vcfFile)
+                .setPath("data");
+        File file = fileManager.link(studyFqn, linkParams, true, ownerToken).first();
+        String path = "data/variant-test-file.vcf.gz";
+        assertEquals(path, file.getPath());
+        fileManager.getFileDBAdaptor(organizationId).update(file.getUid(), new ObjectMap(FileDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(),
+                        FileStatus.PENDING_DELETE),
+                QueryOptions.empty());
+        fileManager.unlink(studyFqn, file.getPath(), ownerToken);
+        assertThrows(CatalogException.class, () -> fileManager.get(studyFqn, path, QueryOptions.empty(), ownerToken));
+
+        linkParams.setPath("data/variant-test-file.vcf.gz");
+        file = fileManager.link(studyFqn, linkParams, true, ownerToken).first();
+        assertEquals("data/variant-test-file.vcf.gz", file.getPath());
+    }
+
+    @Test
     public void testLinkVCFandBAMPair() throws CatalogException {
         String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
         fileManager.link(studyFqn, new FileLinkParams(vcfFile, "", "", "", null, null, null, null, null), false, ownerToken);
@@ -419,6 +505,75 @@ public class FileManagerTest extends AbstractManagerTest {
                 new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.FILE_IDS.key()), ownerToken).first();
         assertEquals(2, sample.getFileIds().size());
         assertTrue(Arrays.asList("variant-test-file.vcf.gz", "NA19600.chrom20.small.bam").containsAll(sample.getFileIds()));
+    }
+
+    @Test
+    public void associateAlignmentFilesTest() throws CatalogException {
+        // Link BAM file
+        String bamFileStr = getClass().getResource("/biofiles/NA19600.chrom20.small.bam").getFile();
+        File bamFile = fileManager.link(studyFqn, new FileLinkParams(bamFileStr, "", "", "", null, null, null, null, null), false, ownerToken).first();
+        assertTrue(StringUtils.isEmpty(bamFile.getInternal().getAlignment().getCoverage().getFileId()));
+
+        // Link BAI file
+        String baiFileStr = getClass().getResource("/biofiles/NA19600.chrom20.small.bam.bai").getFile();
+        OpenCGAResult<File> result = fileManager.link(studyFqn, new FileLinkParams(baiFileStr, "", "", "", null, null, null, null, null), false, ownerToken);
+        assertEquals(1, result.getEvents().size());
+        assertTrue(result.getEvents().get(0).getMessage().contains("BAM"));
+
+        File baiFile = result.first();
+        assertEquals(1, baiFile.getRelatedFiles().size());
+        assertEquals(FileRelatedFile.Relation.ALIGNMENT, baiFile.getRelatedFiles().get(0).getRelation());
+        assertEquals(bamFile.getId(), baiFile.getRelatedFiles().get(0).getFile().getId());
+
+        bamFile = fileManager.get(studyFqn, bamFile.getPath(), QueryOptions.empty(), ownerToken).first();
+        assertNotNull(bamFile.getInternal().getAlignment().getIndex());
+        assertEquals(baiFile.getId(), bamFile.getInternal().getAlignment().getIndex().getFileId());
+        assertEquals(FileStatus.READY, bamFile.getInternal().getAlignment().getIndex().getStatus().getId());
+
+        // Unlink BAM file
+        Query query = new Query(FileDBAdaptor.QueryParams.UID.key(), bamFile.getUid());
+        setToPendingDelete(studyFqn, query);
+        fileManager.unlink(studyFqn, bamFile.getPath(), ownerToken);
+        baiFile = fileManager.get(studyFqn, baiFile.getPath(), QueryOptions.empty(), ownerToken).first();
+        assertEquals(0, baiFile.getRelatedFiles().size());
+
+        // Link BAM file back
+        bamFile = fileManager.link(studyFqn, new FileLinkParams(bamFileStr, "", "", "", null, null, null, null, null), false, ownerToken).first();
+        assertEquals(File.Format.BAM, bamFile.getFormat());
+        assertNotNull(bamFile.getInternal().getAlignment().getIndex());
+        assertEquals(baiFile.getId(), bamFile.getInternal().getAlignment().getIndex().getFileId());
+        assertEquals(FileStatus.READY, bamFile.getInternal().getAlignment().getIndex().getStatus().getId());
+
+        baiFile = fileManager.get(studyFqn, baiFile.getPath(), QueryOptions.empty(), ownerToken).first();
+        assertEquals(1, baiFile.getRelatedFiles().size());
+        assertEquals(FileRelatedFile.Relation.ALIGNMENT, baiFile.getRelatedFiles().get(0).getRelation());
+        assertEquals(bamFile.getId(), baiFile.getRelatedFiles().get(0).getFile().getId());
+
+        // Unlink BAI file
+        query = new Query(FileDBAdaptor.QueryParams.UID.key(), baiFile.getUid());
+        setToPendingDelete(studyFqn, query);
+        fileManager.unlink(studyFqn, baiFile.getPath(), ownerToken);
+        bamFile = fileManager.get(studyFqn, bamFile.getPath(), QueryOptions.empty(), ownerToken).first();
+        assertNotNull(bamFile.getInternal().getAlignment().getIndex());
+        assertTrue(StringUtils.isEmpty(bamFile.getInternal().getAlignment().getIndex().getFileId()));
+        assertEquals(FileStatus.DELETED, bamFile.getInternal().getAlignment().getIndex().getStatus().getId());
+    }
+
+    @Test
+    public void deleteEmptyDirectoryTest() throws CatalogException {
+        fileManager.create(studyFqn, new FileCreateParams().setType(File.Type.DIRECTORY).setPath("myFolder/"), false, ownerToken);
+        OpenCGAResult<File> folder = fileManager.get(studyFqn, "myFolder/", QueryOptions.empty(), ownerToken);
+        assertEquals(1, folder.getNumResults());
+        assertEquals("myFolder/", folder.first().getPath());
+
+        fileManager.checkCanDeleteFile(studyFqn, "myFolder/", false, ownerToken);
+        setToPendingDelete(studyFqn, new Query(FileDBAdaptor.QueryParams.PATH.key(), "myFolder/"));
+        QueryOptions queryOptions = new QueryOptions(Constants.SKIP_TRASH, true);
+        fileManager.delete(studyFqn, folder.first().getUuid(), queryOptions, ownerToken);
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("not found");
+        fileManager.get(studyFqn, "myFolder/", QueryOptions.empty(), ownerToken);
     }
 
     @Test
@@ -1098,7 +1253,7 @@ public class FileManagerTest extends AbstractManagerTest {
     public void testCreateFolder() throws Exception {
         Set<String> paths = fileManager.search(studyFqn, new Query("type", File.Type.DIRECTORY), new QueryOptions(), orgAdminToken1)
                 .getResults().stream().map(File::getPath).collect(Collectors.toSet());
-        assertEquals(9, paths.size());
+        assertEquals(10, paths.size());
         assertTrue(paths.containsAll(Arrays.asList("", "JOBS/", "data/", "data/test/", "data/test/folder/", "data/d1/", "data/d1/d2/",
                 "data/d1/d2/d3/", "data/d1/d2/d3/d4/")));
 
@@ -1110,7 +1265,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         paths = fileManager.search(studyFqn, new Query(FileDBAdaptor.QueryParams.TYPE.key(), File.Type.DIRECTORY), new QueryOptions(),
                 orgAdminToken1).getResults().stream().map(File::getPath).collect(Collectors.toSet());
-        assertEquals(11, paths.size());
+        assertEquals(12, paths.size());
         assertTrue(paths.containsAll(Arrays.asList("", "JOBS/", "data/", "data/test/", "data/test/folder/", "data/d1/", "data/d1/d2/",
                 "data/d1/d2/d3/", "data/d1/d2/d3/d4/", "data/new/", "data/new/folder/")));
 
@@ -1119,7 +1274,8 @@ public class FileManagerTest extends AbstractManagerTest {
 
         fileManager.createFolder(studyFqn, Paths.get("WOLOLO").toString(), true, null, QueryOptions.empty(), orgAdminToken1);
 
-        String newStudy = catalogManager.getStudyManager().create(project2, "alias", null, "name", "", null, null, null, null, null, orgAdminToken1).first().getFqn();
+        Study study = new Study().setId("newStudy");
+        String newStudy = catalogManager.getStudyManager().create(project2, study, INCLUDE_RESULT, orgAdminToken1).first().getFqn();
 
         folder = fileManager.createFolder(newStudy, Paths.get("WOLOLO").toString(), true, null,
                 QueryOptions.empty(), orgAdminToken1).first();
@@ -1129,7 +1285,7 @@ public class FileManagerTest extends AbstractManagerTest {
     @Test
     public void testCreateFolderAlreadyExists() throws Exception {
         Set<String> paths = fileManager.search(studyFqn3, new Query("type", File.Type.DIRECTORY), new QueryOptions(), orgAdminToken1).getResults().stream().map(File::getPath).collect(Collectors.toSet());
-        assertEquals(2, paths.size());
+        assertEquals(3, paths.size());
         assertTrue(paths.contains(""));             //root
 //        assertTrue(paths.contains("data/"));        //data
 //        assertTrue(paths.contains("analysis/"));    //analysis
@@ -1482,11 +1638,11 @@ public class FileManagerTest extends AbstractManagerTest {
                 .setContent("content"), true, ownerToken);
 
         DataResult<FileTree> fileTree = fileManager.getTree(studyFqn, "/", 5, new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.ID.key()), ownerToken);
-        assertEquals(27, fileTree.getNumResults());
-        assertEquals(27, countElementsInTree(fileTree.first()));
+        assertEquals(28, fileTree.getNumResults());
+        assertEquals(28, countElementsInTree(fileTree.first()));
 
         fileTree = fileManager.getTree(studyFqn, "/", 2, new QueryOptions(), ownerToken);
-        assertEquals(17, fileTree.getNumResults());
+        assertEquals(18, fileTree.getNumResults());
 
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.ID.key());
         fileTree = fileManager.getTree(studyFqn, "/", 2, options, ownerToken);
@@ -1507,10 +1663,10 @@ public class FileManagerTest extends AbstractManagerTest {
         catalogManager.getStudyManager().create(project1, "phase2", null, "Phase 2", "Done", null, null, null, null, null, ownerToken);
 
         DataResult<FileTree> fileTree = fileManager.getTree(studyFqn, "/", 5, new QueryOptions(), ownerToken);
-        assertEquals(12, fileTree.getNumResults());
+        assertEquals(13, fileTree.getNumResults());
 
         fileTree = fileManager.getTree("phase2", ".", 5, new QueryOptions(), ownerToken);
-        assertEquals(2, fileTree.getNumResults());
+        assertEquals(3, fileTree.getNumResults());
     }
 
     @Test
@@ -1593,7 +1749,7 @@ public class FileManagerTest extends AbstractManagerTest {
         result = fileManager.search(studyFqn, query, null, ownerToken);
         result.getResults().forEach(f -> assertEquals(File.Type.DIRECTORY, f.getType()));
         int numFolders = result.getNumResults();
-        assertEquals(9, numFolders);
+        assertEquals(10, numFolders);
 
         query = new Query(FileDBAdaptor.QueryParams.PATH.key(), "");
         result = fileManager.search(studyFqn, query, null, ownerToken);
@@ -1603,7 +1759,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         query = new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE,DIRECTORY");
         result = fileManager.search(studyFqn, query, null, ownerToken);
-        assertEquals(13, result.getNumResults());
+        assertEquals(14, result.getNumResults());
         assertEquals(numFiles + numFolders, result.getNumResults());
 
         query = new Query("type", "FILE");
@@ -1631,7 +1787,7 @@ public class FileManagerTest extends AbstractManagerTest {
         QueryOptions options = new QueryOptions(QueryOptions.LIMIT, 2).append(QueryOptions.COUNT, true);
         result = fileManager.search(studyFqn, new Query(), options, ownerToken);
         assertEquals(2, result.getNumResults());
-        assertEquals(13, result.getNumMatches());
+        assertEquals(14, result.getNumMatches());
     }
 //
 //    @Test
@@ -2350,7 +2506,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         Path studyPath = Paths.get(study.getUri());
         // Register in workspace folder
-        OpenCGAResult<File> result = fileManager.moveAndRegister(studyFqn, copy, studyPath.resolve("myFolder"), "myFolder", ownerToken);
+        OpenCGAResult<File> result = fileManager.moveAndRegister(studyFqn, copy, studyPath.resolve("myFolder"), "myFolder", false, ownerToken);
         assertEquals("myFolder/variant-test-file.vcf.gz", result.first().getPath());
         assertEquals(studyPath.resolve("myFolder").resolve("variant-test-file.vcf.gz").toString(),
                 Paths.get(result.first().getUri()).toString());
@@ -2364,7 +2520,7 @@ public class FileManagerTest extends AbstractManagerTest {
         Files.copy(sourcePath, copy);
 
         // Register without passing the path
-        result = fileManager.moveAndRegister(studyFqn, copy, studyPath.resolve("myFolder"), null, ownerToken);
+        result = fileManager.moveAndRegister(studyFqn, copy, studyPath.resolve("myFolder"), null, false, ownerToken);
         assertEquals("myFolder/variant-test-file.vcf.gz", result.first().getPath());
         assertEquals(studyPath.resolve("myFolder").resolve("variant-test-file.vcf.gz").toString(), Paths.get(result.first().getUri()).toString());
         assertTrue(Files.exists(studyPath.resolve("myFolder").resolve("variant-test-file.vcf.gz")));
@@ -2377,7 +2533,7 @@ public class FileManagerTest extends AbstractManagerTest {
         Files.copy(sourcePath, copy);
 
         // Register without passing the destiny path
-        result = fileManager.moveAndRegister(studyFqn, copy, null, "myFolder", ownerToken);
+        result = fileManager.moveAndRegister(studyFqn, copy, null, "myFolder", false, ownerToken);
         assertEquals("myFolder/variant-test-file.vcf.gz", result.first().getPath());
         assertEquals(studyPath.resolve("myFolder").resolve("variant-test-file.vcf.gz").toString(), Paths.get(result.first().getUri()).toString());
         assertTrue(Files.exists(studyPath.resolve("myFolder").resolve("variant-test-file.vcf.gz")));
@@ -2389,9 +2545,22 @@ public class FileManagerTest extends AbstractManagerTest {
         assertEquals(0, fileManager.search(studyFqn, query, QueryOptions.empty(), ownerToken).getNumResults());
         Files.copy(sourcePath, copy);
 
+        // Try to register to the root path directory
+        result = fileManager.moveAndRegister(studyFqn, copy, null, "/", false, normalToken1);
+        assertEquals("variant-test-file.vcf.gz", result.first().getPath());
+        assertEquals(studyPath.resolve("variant-test-file.vcf.gz").toString(), Paths.get(result.first().getUri()).toString());
+        assertTrue(Files.exists(studyPath.resolve("variant-test-file.vcf.gz")));
+
+        // We remove the file to start again
+        query = new Query(FileDBAdaptor.QueryParams.UID.key(), result.first().getUid());
+        setToPendingDelete(studyFqn, query);
+        fileManager.delete(studyFqn, query, new QueryOptions(Constants.SKIP_TRASH, true), ownerToken);
+        assertEquals(0, fileManager.search(studyFqn, query, QueryOptions.empty(), ownerToken).getNumResults());
+        Files.copy(sourcePath, copy);
+
         // Register to an incorrect path
         try {
-            fileManager.moveAndRegister(studyFqn, copy, studyPath.resolve("myFolder"), "otherFolder", ownerToken);
+            fileManager.moveAndRegister(studyFqn, copy, studyPath.resolve("myFolder"), "otherFolder", false, ownerToken);
             fail("The method should have raised an error saying the path does not match the one corresponding to the uri. It should both "
                     + "point to myFolder or to otherFolder, but not to different paths.");
         } catch (CatalogException e) {
@@ -2404,7 +2573,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         // Now, instead of moving it to the user's workspace, we will move it to an external path
         try {
-            fileManager.moveAndRegister(studyFqn, copy, Paths.get("/tmp/other/"), "a/b/c/", normalToken2);
+            fileManager.moveAndRegister(studyFqn, copy, Paths.get("/tmp/other/"), "a/b/c/", false, normalToken2);
             fail("user2 should not have permissions to move to an external folder");
         } catch (CatalogAuthorizationException e) {
             assertTrue(e.getMessage().contains("owners or administrative users"));
@@ -2415,14 +2584,252 @@ public class FileManagerTest extends AbstractManagerTest {
                 new GroupUpdateParams(Collections.singletonList(normalUserId2)), ownerToken);
 
         // and try the same action again
-        result = fileManager.moveAndRegister(studyFqn, copy, Paths.get("/tmp/other/"), "a/b/c/", normalToken2);
+        result = fileManager.moveAndRegister(studyFqn, copy, Paths.get("/tmp/other/"), "a/b/c/", false, normalToken2);
         assertEquals("a/b/c/variant-test-file.vcf.gz", result.first().getPath());
         assertEquals("/tmp/other/variant-test-file.vcf.gz", Paths.get(result.first().getUri()).toString());
         assertTrue(Files.exists(Paths.get("/tmp/other/variant-test-file.vcf.gz")));
         assertTrue(result.first().isExternal());
     }
 
-//    @Test
+    @Test
+    public void testFacet() throws CatalogException {
+        OpenCGAResult<File> results = fileManager.search(studyFqn, new Query(), QueryOptions.empty(), normalToken1);
+        System.out.println("results.getResults() = " + results.getResults());
+        OpenCGAResult<FacetField> facets = fileManager.facet(studyFqn, new Query(), "format", normalToken1);
+
+        long totalCount = 0;
+        Map<String, Integer> formatMap = new HashMap<>();
+        for (File result : results.getResults()) {
+            String key;
+            if (result.getFormat() == null) {
+                key = "null";
+            } else {
+                key = result.getFormat().name();
+            }
+            if (!formatMap.containsKey(key)) {
+                formatMap.put(key, 0);
+            }
+            formatMap.put(key, 1 + formatMap.get(key));
+            totalCount++;
+        }
+
+        Assert.assertEquals(1, facets.getResults().size());
+        for (FacetField result : facets.getResults()) {
+            Assert.assertEquals(totalCount, result.getCount());
+            Assert.assertEquals(formatMap.size(), result.getBuckets().size());
+            for (FacetField.Bucket bucket : result.getBuckets()) {
+                Assert.assertEquals(1L * formatMap.get(bucket.getValue()), bucket.getCount());
+            }
+        }
+    }
+
+
+    @Test
+    public void testFacetDotNotation() throws CatalogException {
+        OpenCGAResult<File> results = fileManager.search(studyFqn, new Query(), QueryOptions.empty(), normalToken1);
+        System.out.println("results.getResults() = " + results.getResults());
+        String facetName = "internal.status.id";
+        OpenCGAResult<FacetField> facets = fileManager.facet(studyFqn, new Query(), facetName, normalToken1);
+
+        long totalCount = 0;
+        Map<String, Integer> internalStatusIdMap = new HashMap<>();
+        for (File result : results.getResults()) {
+            String key;
+            if (result.getInternal() == null || result.getInternal().getStatus() == null || result.getInternal().getStatus().getId() == null) {
+                key = "null";
+            } else {
+                key = result.getInternal().getStatus().getId();
+            }
+            if (!internalStatusIdMap.containsKey(key)) {
+                internalStatusIdMap.put(key, 0);
+            }
+            internalStatusIdMap.put(key, 1 + internalStatusIdMap.get(key));
+            totalCount++;
+        }
+
+        Assert.assertEquals(1, facets.getResults().size());
+        for (FacetField result : facets.getResults()) {
+            Assert.assertEquals(totalCount, result.getCount());
+            Assert.assertEquals(internalStatusIdMap.size(), result.getBuckets().size());
+            Assert.assertEquals(facetName, result.getName());
+            for (FacetField.Bucket bucket : result.getBuckets()) {
+                Assert.assertEquals(1L * internalStatusIdMap.get(bucket.getValue()), bucket.getCount());
+            }
+        }
+    }
+
+    @Test
+    public void testMultipleFacets() throws CatalogException {
+        OpenCGAResult<File> results = fileManager.search(studyFqn, new Query(), QueryOptions.empty(), normalToken1);
+        long totalCount = 0;
+
+        Map<String, Integer> formatMap = new HashMap<>();
+        Map<String, Integer> bioformatMap = new HashMap<>();
+        for (File result : results.getResults()) {
+            String key;
+            if (result.getFormat() == null) {
+                key = "null";
+            } else {
+                key = result.getFormat().name();
+            }
+            if (!formatMap.containsKey(key)) {
+                formatMap.put(key, 0);
+            }
+            formatMap.put(key, 1 + formatMap.get(key));
+
+            if (result.getBioformat() == null) {
+                key = "null";
+            } else {
+                key = result.getBioformat().name();
+            }
+            if (!bioformatMap.containsKey(key)) {
+                bioformatMap.put(key, 0);
+            }
+            bioformatMap.put(key, 1 + bioformatMap.get(key));
+
+            totalCount++;
+        }
+
+        OpenCGAResult<FacetField> facets = fileManager.facet(studyFqn, new Query(), "format;bioformat", normalToken1);
+        System.out.println("facets = " + facets);
+
+        Assert.assertEquals(2, facets.getNumResults());
+        for (FacetField result : facets.getResults()) {
+            Assert.assertEquals(totalCount, result.getCount());
+            Map<String, Integer> map = null;
+            if (result.getName().equals("format")) {
+                map = formatMap;
+            } else if (result.getName().equals("bioformat")) {
+                map = bioformatMap;
+            } else {
+                fail();
+            }
+            Assert.assertEquals(map.size(), result.getBuckets().size());
+            for (FacetField.Bucket bucket : result.getBuckets()) {
+                Assert.assertEquals(1L * map.get(bucket.getValue()), bucket.getCount());
+            }
+        }
+    }
+
+    @Test
+    public void testCombineFacets() throws CatalogException {
+        OpenCGAResult<File> results = fileManager.search(studyFqn, new Query(), QueryOptions.empty(), normalToken1);
+        long totalCount = 0;
+
+        Map<String, Integer> map = new HashMap<>();
+        for (File result : results.getResults()) {
+            String key = result.getFormat() + SEPARATOR + result.getBioformat();
+            if (!map.containsKey(key)) {
+                map.put(key, 0);
+            }
+            map.put(key, 1 + map.get(key));
+
+            totalCount++;
+        }
+
+        OpenCGAResult<FacetField> facets = fileManager.facet(studyFqn, new Query(), "format,bioformat", normalToken1);
+        System.out.println("facets = " + facets);
+
+        Assert.assertEquals(1, facets.getNumResults());
+        for (FacetField result : facets.getResults()) {
+            Assert.assertEquals(totalCount, result.getCount());
+            Assert.assertEquals(map.size(), result.getBuckets().size());
+            for (FacetField.Bucket bucket : result.getBuckets()) {
+                Assert.assertTrue(map.containsKey(bucket.getValue()));
+                Assert.assertEquals(1L * map.get(bucket.getValue()), bucket.getCount());
+            }
+        }
+    }
+
+    @Test
+    public void testCreationDate() throws CatalogException {
+        OpenCGAResult<File> results = fileManager.search(studyFqn, new Query(), QueryOptions.empty(), normalToken1);
+
+        Map<String, Integer> yearCounter = new HashMap<>();
+        Map<String, Integer> monthCounter = new HashMap<>();
+        Map<String, Integer> dayCounter = new HashMap<>();
+
+        String yearKey = "";
+        String monthKey = "";
+        String dayKey = "";
+
+        for (File file : results.getResults()) {
+            String year = file.getCreationDate().substring(0, 4);
+            String month = file.getCreationDate().substring(4, 6);
+            String day = file.getCreationDate().substring(6, 8);
+
+            yearKey = year;
+            if (!yearCounter.containsKey(yearKey)) {
+                yearCounter.put(yearKey, 0);
+            }
+            yearCounter.put(yearKey, 1 + yearCounter.get(yearKey));
+
+            monthKey = MONTH_MAP.get(month) + " " + yearKey;
+            if (!monthCounter.containsKey(monthKey)) {
+                monthCounter.put(monthKey, 0);
+            }
+            monthCounter.put(monthKey, 1 + monthCounter.get(monthKey));
+
+            dayKey = day + " " + monthKey;
+            if (!dayCounter.containsKey(dayKey)) {
+                dayCounter.put(dayKey, 0);
+            }
+            dayCounter.put(dayKey, 1 + dayCounter.get(dayKey));
+        }
+
+        OpenCGAResult<FacetField> facets = fileManager.facet(studyFqn, new Query(), "creationDate[YEAR]", normalToken1);
+        System.out.println("facets.first().toString() = " + facets.first().toString());
+        System.out.println("yearCounter.toString() = " + yearCounter.toString());
+        Assert.assertEquals(1, facets.getResults().size());
+        for (FacetField result : facets.getResults()) {
+            Assert.assertEquals("creationDate", result.getName());
+            Assert.assertEquals(yearCounter.values().stream()
+                    .mapToInt(Integer::intValue)
+                    .sum(), result.getCount());
+            Assert.assertEquals(yearCounter.size(), result.getBuckets().size());
+            Assert.assertEquals("year", result.getAggregationName());
+            for (FacetField.Bucket bucket : result.getBuckets()) {
+                Assert.assertTrue(yearCounter.containsKey(bucket.getValue()));
+                Assert.assertEquals(1L * yearCounter.get(bucket.getValue()), bucket.getCount());
+            }
+        }
+
+        facets = fileManager.facet(studyFqn, new Query(), "creationDate[MONTH]", normalToken1);
+        System.out.println("facets.first().toString() = " + facets.first().toString());
+        System.out.println("monthCounter.toString() = " + monthCounter.toString());
+        Assert.assertEquals(1, facets.getResults().size());
+        for (FacetField result : facets.getResults()) {
+            Assert.assertEquals("creationDate", result.getName());
+            Assert.assertEquals(monthCounter.values().stream()
+                    .mapToInt(Integer::intValue)
+                    .sum(), result.getCount());
+            Assert.assertEquals(monthCounter.size(), result.getBuckets().size());
+            Assert.assertEquals("year" + SEPARATOR + "month", result.getAggregationName());
+            for (FacetField.Bucket bucket : result.getBuckets()) {
+                Assert.assertTrue(monthCounter.containsKey(bucket.getValue()));
+                Assert.assertEquals(1L * monthCounter.get(bucket.getValue()), bucket.getCount());
+            }
+        }
+
+        facets = fileManager.facet(studyFqn, new Query(), "creationDate[DAY]", normalToken1);
+        System.out.println("facets.first().toString() = " + facets.first().toString());
+        System.out.println("dayCounter.toString() = " + dayCounter.toString());
+        Assert.assertEquals(1, facets.getResults().size());
+        for (FacetField result : facets.getResults()) {
+            Assert.assertEquals("creationDate", result.getName());
+            Assert.assertEquals(dayCounter.values().stream()
+                    .mapToInt(Integer::intValue)
+                    .sum(), result.getCount());
+            Assert.assertEquals(dayCounter.size(), result.getBuckets().size());
+            Assert.assertEquals("year" + SEPARATOR + "month" + SEPARATOR + "day", result.getAggregationName());
+            for (FacetField.Bucket bucket : result.getBuckets()) {
+                Assert.assertTrue(dayCounter.containsKey(bucket.getValue()));
+                Assert.assertEquals(1L * dayCounter.get(bucket.getValue()), bucket.getCount());
+            }
+        }
+    }
+
+    //    @Test
 //    public void testIndex() throws Exception {
 //        URI uri = getClass().getResource("/biofiles/variant-test-file.vcf.gz").toURI();
 //        File file = fileManager.link(studyFqn, uri, "", null, sessionIdUser).first();

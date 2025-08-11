@@ -46,6 +46,50 @@ export default class File extends OpenCGAParentClass {
         return this._post("files", null, "acl", members, "update", data, {action, ...params});
     }
 
+    /** Fetch catalog file stats
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
+    * @param {String} [params.id] - Comma separated list of file IDs up to a maximum of 100. Also admits basic regular expressions using the
+    *     operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+    * @param {String} [params.uuid] - Comma separated list file UUIDs up to a maximum of 100.
+    * @param {String} [params.name] - Comma separated list of file names. Also admits basic regular expressions using the operator '~', i.e.
+    *     '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+    * @param {String} [params.path] - Comma separated list of paths. Also admits basic regular expressions using the operator '~', i.e.
+    *     '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+    * @param {String} [params.uri] - Comma separated list of uris. Also admits basic regular expressions using the operator '~', i.e.
+    *     '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+    * @param {String} [params.type] - File type, either FILE or DIRECTORY.
+    * @param {String} [params.bioformat] - Comma separated Bioformat values. For existing Bioformats see files/bioformats.
+    * @param {String} [params.format] - Comma separated Format values. For existing Formats see files/formats.
+    * @param {Boolean} [params.external] - Boolean field indicating whether to filter by external or non external files.
+    * @param {String} [params.status] - Filter by status.
+    * @param {String} [params.internalStatus] - Filter by internal status.
+    * @param {String} [params.internalVariantIndexStatus] - Filter by internal variant index status.
+    * @param {String} [params.softwareName] - Software name.
+    * @param {String} [params.directory] - Directory under which we want to look for files or folders.
+    * @param {String} [params.creationDate] - Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+    * @param {String} [params.modificationDate] - Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
+    * @param {String} [params.description] - Description.
+    * @param {String} [params.tags] - Tags. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value'
+    *     for case sensitive, '~/value/i' for case insensitive search.
+    * @param {String} [params.size] - File size.
+    * @param {String} [params.sampleIds] - Comma separated list sample IDs or UUIDs up to a maximum of 100.
+    * @param {String} [params.jobId] - Job ID that created the file(s) or folder(s).
+    * @param {String} [params.annotation] - Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit
+    *     http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.
+    * @param {String} [params.acl] - Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}.
+    *     Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS
+    *     permissions. Only study owners or administrators can query by this field. .
+    * @param {Boolean} [params.deleted = "false"] - Boolean to retrieve deleted entries. The default value is false.
+    * @param {String} [params.release] - Release when it was created.
+    * @param {String} [params.field] - Field to apply aggregation statistics to (or a list of fields separated by semicolons), e.g.:
+    *     studies;type;numSamples[0..10]:1;format:sum(size).
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    aggregationStats(params) {
+        return this._get("files", null, null, null, "aggregationStats", params);
+    }
+
     /** Load annotation sets from a TSV file
     * @param {Object} [data] - JSON containing the 'content' of the TSV file if this has not yet been registered into OpenCGA.
     * @param {String} variableSetId - Variable set ID or name.
@@ -97,6 +141,7 @@ export default class File extends OpenCGAParentClass {
     * @param {String} [params.bioformat] - Comma separated Bioformat values. For existing Bioformats see files/bioformats.
     * @param {String} [params.format] - Comma separated Format values. For existing Formats see files/formats.
     * @param {Boolean} [params.external] - Boolean field indicating whether to filter by external or non external files.
+    * @param {Boolean} [params.resource] - Boolean field indicating whether the file is a resource or not.
     * @param {String} [params.status] - Filter by status.
     * @param {String} [params.internalStatus] - Filter by internal status.
     * @param {String} [params.internalVariantIndexStatus] - Filter by internal variant index status.
@@ -222,6 +267,7 @@ export default class File extends OpenCGAParentClass {
     * @param {String} [params.bioformat] - Comma separated Bioformat values. For existing Bioformats see files/bioformats.
     * @param {String} [params.format] - Comma separated Format values. For existing Formats see files/formats.
     * @param {Boolean} [params.external] - Boolean field indicating whether to filter by external or non external files.
+    * @param {Boolean} [params.resource] - Boolean field indicating whether the file is a resource or not.
     * @param {String} [params.status] - Filter by status.
     * @param {String} [params.internalStatus] - Filter by internal status.
     * @param {String} [params.internalVariantIndexStatus] - Filter by internal variant index status.
@@ -251,16 +297,20 @@ export default class File extends OpenCGAParentClass {
     /** Resource to upload a file by chunks
     * @param {Object} [params] - The Object containing the following optional parameters:
     * @param {InputStream} [params.file] - File to upload.
-    * @param {String} [params.fileName] - File name to overwrite the input fileName.
+    * @param {String} [params.name] - File name to overwrite the input fileName.
+    * @param {String} [params.fileName] - [DEPRECATED] File name to overwrite the input fileName.
     * @param {"VCF BCF GVCF TBI BIGWIG SAM BAM BAI CRAM CRAI FASTQ FASTA PED TAB_SEPARATED_VALUES COMMA_SEPARATED_VALUES XML PROTOCOL_BUFFER
-    *     JSON AVRO PARQUET PDF IMAGE PLAIN BINARY NONE UNKNOWN"} [params.fileFormat] - File format.
+    *     JSON AVRO PARQUET PDF IMAGE PLAIN BINARY NONE UNKNOWN"} [params.format] - File format.
+    * @param {"VCF BCF GVCF TBI BIGWIG SAM BAM BAI CRAM CRAI FASTQ FASTA PED TAB_SEPARATED_VALUES COMMA_SEPARATED_VALUES XML PROTOCOL_BUFFER
+    *     JSON AVRO PARQUET PDF IMAGE PLAIN BINARY NONE UNKNOWN"} [params.fileFormat] - [DEPRECATED] File format.
     * @param {"MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT MICROARRAY_EXPRESSION_ONECHANNEL_AFFYMETRIX MICROARRAY_EXPRESSION_ONECHANNEL_GENEPIX
     *     MICROARRAY_EXPRESSION_TWOCHANNELS_AGILENT MICROARRAY_EXPRESSION_TWOCHANNELS_GENEPIX DATAMATRIX_EXPRESSION IDLIST IDLIST_RANKED
     *     ANNOTATION_GENEVSANNOTATION OTHER_NEWICK OTHER_BLAST OTHER_INTERACTION OTHER_GENOTYPE OTHER_PLINK OTHER_VCF OTHER_PED VCF4 VARIANT
     *     ALIGNMENT COVERAGE SEQUENCE PEDIGREE REFERENCE_GENOME NONE UNKNOWN"} [params.bioformat] - File bioformat.
     * @param {String} [params.checksum] - Expected MD5 file checksum.
+    * @param {Boolean} [params.resource] - Boolean field indicating whether the file is a resource or not.
     * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
-    * @param {String} [params.relativeFilePath] - Path within catalog where the file will be located (default: root folder).
+    * @param {String} [params.relativeFilePath] - Path within catalog (directory) where the file will be located (default: root folder).
     * @param {String} [params.description] - description.
     * @param {Boolean} [params.parents] - Create the parent directories if they do not exist.
     * @returns {Promise} Promise object in the form of RestResponse instance.

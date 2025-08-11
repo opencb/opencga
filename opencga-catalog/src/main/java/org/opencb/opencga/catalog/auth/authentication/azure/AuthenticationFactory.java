@@ -10,7 +10,11 @@ import org.opencb.opencga.catalog.managers.OrganizationManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.JwtPayload;
+import org.opencb.opencga.core.models.federation.FederationClientParams;
+import org.opencb.opencga.core.models.federation.FederationServerParams;
 import org.opencb.opencga.core.models.organizations.Organization;
+import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -51,10 +55,11 @@ public final class AuthenticationFactory {
                     switch (authOrigin.getType()) {
                         case LDAP:
                             tmpAuthenticationManagerMap.put(authOrigin.getId(),
-                                    new LDAPAuthenticationManager(authOrigin, algorithm, secretKey, expiration));
+                                    new LDAPAuthenticationManager(authOrigin, algorithm, secretKey, catalogDBAdaptorFactory, expiration));
                             break;
                         case AzureAD:
-                            tmpAuthenticationManagerMap.put(authOrigin.getId(), new AzureADAuthenticationManager(authOrigin));
+                            tmpAuthenticationManagerMap.put(authOrigin.getId(), new AzureADAuthenticationManager(authOrigin,
+                                    catalogDBAdaptorFactory));
                             break;
                         case OPENCGA:
                             CatalogAuthenticationManager catalogAuthenticationManager =
@@ -65,7 +70,7 @@ public final class AuthenticationFactory {
                             break;
                         case SSO:
                             tmpAuthenticationManagerMap.put(authOrigin.getId(), new SSOAuthenticationManager(algorithm, secretKey,
-                                    expiration));
+                                    catalogDBAdaptorFactory, expiration));
                             break;
                         default:
                             logger.warn("Unexpected authentication origin type '{}' for id '{}' found in organization '{}'. "
@@ -98,15 +103,45 @@ public final class AuthenticationFactory {
         return getOrganizationAuthenticationManager(organizationId, authOriginId).createToken(organizationId, userId);
     }
 
-    public void validateToken(String organizationId, String authOriginId, String token) throws CatalogException {
-        getOrganizationAuthenticationManager(organizationId, authOriginId).getUserId(token);
+    public void validateToken(String organizationId, Account.AuthenticationOrigin authenticationOrigin, JwtPayload jwtPayload)
+            throws CatalogException {
+        String securityKey = null;
+        if (authenticationOrigin.isFederation()) {
+            // The user is a federated user, so the token should have been encrypted using the security key
+            securityKey = getFederationSecurityKey(organizationId, jwtPayload.getUserId());
+        }
+        getOrganizationAuthenticationManager(organizationId, authenticationOrigin.getId()).validateToken(jwtPayload.getToken(),
+                securityKey);
     }
 
-    public AuthenticationResponse authenticate(String organizationId, String authenticationOriginId, String userId, String password)
-            throws CatalogException {
+    public AuthenticationResponse authenticate(String organizationId, Account.AuthenticationOrigin authenticationOrigin, String userId,
+                                               String password) throws CatalogException {
         AuthenticationManager organizationAuthenticationManager = getOrganizationAuthenticationManager(organizationId,
-                authenticationOriginId);
+                authenticationOrigin.getId());
         return organizationAuthenticationManager.authenticate(organizationId, userId, password);
+    }
+
+    private String getFederationSecurityKey(String organizationId, String userId) throws CatalogException {
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, OrganizationDBAdaptor.QueryParams.FEDERATION.key());
+        Organization organization = catalogDBAdaptorFactory.getCatalogOrganizationDBAdaptor(organizationId).get(options).first();
+        if (organization.getFederation() == null) {
+            throw new CatalogException("Could not find federation information for federated user '" + userId + "'");
+        }
+        if (CollectionUtils.isNotEmpty(organization.getFederation().getServers())) {
+            for (FederationServerParams server : organization.getFederation().getServers()) {
+                if (server.getUserId().equals(userId)) {
+                    return server.getSecurityKey();
+                }
+            }
+        }
+        if (CollectionUtils.isNotEmpty(organization.getFederation().getClients())) {
+            for (FederationClientParams client : organization.getFederation().getClients()) {
+                if (client.getUserId().equals(userId)) {
+                    return client.getSecurityKey();
+                }
+            }
+        }
+        throw new CatalogException("Could not find federation information for federated user '" + userId + "'");
     }
 
     public void changePassword(String organizationId, String authOriginId, String userId, String oldPassword, String newPassword)

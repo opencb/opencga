@@ -27,8 +27,9 @@ import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.session.SessionManager;
-import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.core.config.client.ClientConfiguration;
+import org.opencb.opencga.core.config.client.HostConfig;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
@@ -67,7 +68,7 @@ public abstract class CommandExecutor {
     protected StorageConfiguration storageConfiguration;
     protected ClientConfiguration clientConfiguration;
 
-    protected String host;
+    protected HostConfig hostConfig;
     protected SessionManager sessionManager;
 
     protected GeneralCliOptions.CommonCommandOptions options;
@@ -127,22 +128,21 @@ public abstract class CommandExecutor {
             // We need to check if parameter --host has been provided.
             // Then set the host and make it the default
             if (StringUtils.isNotEmpty(options.host)) {
-                this.host = options.host;
                 try {
-                    clientConfiguration.setDefaultIndexByName(this.host);
+                    clientConfiguration.setDefaultIndexByName(options.host);
                 } catch (Exception e) {
-                    PrintUtils.printError("Invalid host " + host);
+                    PrintUtils.printError("Invalid host " + options.host);
                     System.exit(-1);
                 }
-            } else {
-                this.host = clientConfiguration.getCurrentHost().getName();
             }
+            this.hostConfig = clientConfiguration.getCurrentHost();
+
             // Create the SessionManager and store current session
-            sessionManager = new SessionManager(clientConfiguration, this.host);
+            sessionManager = new SessionManager(clientConfiguration, this.hostConfig);
 
             // Let's check the session file, maybe the session is still valid
 //            privateLogger.debug("CLI session file is: {}", CliSessionManager.getInstance().getCurrentFile());
-            privateLogger.debug("CLI session file is: {}", this.sessionManager.getSessionPath(this.host).toString());
+            privateLogger.debug("CLI session file is: {}", this.sessionManager.getSessionPath(this.hostConfig.getName()).toString());
 
             if (StringUtils.isNotBlank(options.token)) {
                 this.token = options.token;

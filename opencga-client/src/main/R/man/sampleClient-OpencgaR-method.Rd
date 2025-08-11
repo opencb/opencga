@@ -6,37 +6,23 @@
 \usage{
 \S4method{sampleClient}{OpencgaR}(
   OpencgaR,
-  samples,
-  members,
   annotationSet,
+  members,
   sample,
+  samples,
   endpointName,
   params = NULL,
   ...
 )
 }
 \arguments{
-\item{samples}{Comma separated list sample IDs or UUIDs up to a maximum of 100.}
+\item{annotationSet}{AnnotationSet ID to be updated.}
 
 \item{members}{Comma separated list of user or group ids.}
 
-\item{annotationSet}{AnnotationSet ID to be updated.}
-
 \item{sample}{Sample ID.}
 
-\item{source}{Source.}
-
-\item{creationYear}{Creation year.}
-
-\item{creationMonth}{Creation month (JANUARY, FEBRUARY...).}
-
-\item{creationDay}{Creation day.}
-
-\item{creationDayOfWeek}{Creation day of week (MONDAY, TUESDAY...).}
-
-\item{type}{Type.}
-
-\item{default}{Calculate default stats.}
+\item{samples}{Comma separated list sample IDs or UUIDs up to a maximum of 100.}
 
 \item{variableSetId}{Variable set ID or name.}
 
@@ -46,7 +32,7 @@
 
 \item{annotationSetId}{Annotation set id. If not provided, variableSetId will be used.}
 
-\item{field}{Field for which to obtain the distinct values.}
+\item{field}{Comma separated list of fields for which to obtain the distinct values.}
 
 \item{file}{file.}
 
@@ -58,7 +44,7 @@
 
 \item{count}{Get the total number of results matching the query. Deactivated by default.}
 
-\item{id}{Comma separated list sample IDs up to a maximum of 100.}
+\item{id}{Comma separated list sample IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.}
 
 \item{uuid}{Comma separated list sample UUIDs up to a maximum of 100.}
 
@@ -92,13 +78,13 @@
 
 \item{collectionMethod}{Collection method.}
 
-\item{phenotypes}{Comma separated list of phenotype ids or names.}
+\item{phenotypes}{Comma separated list of phenotype ids or names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.}
 
 \item{annotation}{Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.}
 
 \item{acl}{Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators can query by this field. .}
 
-\item{internalRgaStatus}{Index status of the sample for the Recessive Gene Analysis.}
+\item{internalRgaStatus}{Index status of the sample for the Recessive Gene Analysis. Allowed values: \link{'NOT_INDEXED INDEXED INVALID_PERMISSIONS INVALID_METADATA INVALID'}}
 
 \item{release}{Release when it was created.}
 
@@ -152,17 +138,15 @@
 
 \item{exclude}{Fields excluded in the response, whole JSON path must be provided.}
 
-\item{annotationSetsAction}{Action to be performed if the array of annotationSets is being updated. Allowed values: \link{'ADD', 'SET', 'REMOVE'}}
+\item{annotationSetsAction}{Action to be performed if the array of annotationSets is being updated. Allowed values: \link{'ADD SET REMOVE'}}
 
-\item{phenotypesAction}{Action to be performed if the array of phenotypes is being updated \link{SET, ADD, REMOVE}. Allowed values: \link{'ADD', 'SET', 'REMOVE'}}
+\item{phenotypesAction}{Action to be performed if the array of phenotypes is being updated \link{SET, ADD, REMOVE}. Allowed values: \link{'ADD SET REMOVE'}}
 
 \item{includeResult}{Flag indicating to include the created or updated document result in the response.}
 
-\item{study}{Study [\link{user@}project:]study where study and project can be either the ID or UUID.}
+\item{study}{Study [\link{organization@}project:]study where study and project can be either the ID or UUID.}
 
-\item{action}{Action to be performed: ADD to add new annotations; REPLACE to replace the value of an already existing annotation; SET to set the new list of annotations removing any possible old annotations; REMOVE to remove some annotations; RESET to set some annotations to the default value configured in the corresponding variables of the VariableSet if any. Allowed values: \link{'ADD', 'SET', 'REMOVE', 'RESET', 'REPLACE'}}
-
-\item{incVersion}{Create a new version of sample.}
+\item{action}{Action to be performed: ADD to add new annotations; REPLACE to replace the value of an already existing annotation; SET to set the new list of annotations removing any possible old annotations; REMOVE to remove some annotations; RESET to set some annotations to the default value configured in the corresponding variables of the VariableSet if any. Allowed values: \link{'ADD SET REMOVE RESET REPLACE'}}
 
 \item{data}{Json containing the map of annotations when the action is ADD, SET or REPLACE, a json with only the key 'remove' containing the comma separated variables to be removed as a value when the action is REMOVE or a json with only the key 'reset' containing the comma separated variables that will be set to the default value when the action is RESET.}
 }
@@ -171,7 +155,7 @@ This function implements the OpenCGA calls for managing Samples.
 The following table summarises the available \emph{actions} for this client:\tabular{llr}{
    endpointName \tab Endpoint WS \tab parameters accepted \cr
    updateAcl \tab /{apiVersion}/samples/acl/{members}/update \tab study, members\link{*}, action\link{*}, body\link{*} \cr
-   aggregationStats \tab /{apiVersion}/samples/aggregationStats \tab study, source, creationYear, creationMonth, creationDay, creationDayOfWeek, status, type, phenotypes, release, version, somatic, annotation, default, field \cr
+   aggregationStats \tab /{apiVersion}/samples/aggregationStats \tab study, id, uuid, somatic, individualId, fileIds, cohortIds, creationDate, modificationDate, internalStatus, status, processingProduct, processingPreparationMethod, processingExtractionMethod, processingLabSampleId, collectionFrom, collectionType, collectionMethod, phenotypes, annotation, acl, internalRgaStatus, release, snapshot, deleted, statsId, statsVariantCount, statsChromosomeCount, statsTypeCount, statsGenotypeCount, statsTiTvRatio, statsQualityAvg, statsQualityStdDev, statsHeterozygosityRate, statsDepthCount, statsBiotypeCount, statsClinicalSignificanceCount, statsConsequenceTypeCount, field \cr
    loadAnnotationSets \tab /{apiVersion}/samples/annotationSets/load \tab study, variableSetId\link{*}, path\link{*}, parents, annotationSetId, body \cr
    create \tab /{apiVersion}/samples/create \tab include, exclude, study, includeResult, body\link{*} \cr
    distinct \tab /{apiVersion}/samples/distinct \tab study, id, uuid, somatic, individualId, fileIds, cohortIds, creationDate, modificationDate, internalStatus, status, processingProduct, processingPreparationMethod, processingExtractionMethod, processingLabSampleId, collectionFrom, collectionType, collectionMethod, phenotypes, annotation, acl, internalRgaStatus, release, snapshot, deleted, statsId, statsVariantCount, statsChromosomeCount, statsTypeCount, statsGenotypeCount, statsTiTvRatio, statsQualityAvg, statsQualityStdDev, statsHeterozygosityRate, statsDepthCount, statsBiotypeCount, statsClinicalSignificanceCount, statsConsequenceTypeCount, field\link{*} \cr
@@ -180,8 +164,8 @@ The following table summarises the available \emph{actions} for this client:\tab
    acl \tab /{apiVersion}/samples/{samples}/acl \tab samples\link{*}, study, member, silent \cr
    delete \tab /{apiVersion}/samples/{samples}/delete \tab force, emptyFilesAction, deleteEmptyCohorts, study, samples\link{*} \cr
    info \tab /{apiVersion}/samples/{samples}/info \tab include, exclude, includeIndividual, flattenAnnotations, samples\link{*}, study, version, deleted \cr
-   update \tab /{apiVersion}/samples/{samples}/update \tab include, exclude, samples\link{*}, study, incVersion, annotationSetsAction, phenotypesAction, includeResult, body \cr
-   updateAnnotationSetsAnnotations \tab /{apiVersion}/samples/{sample}/annotationSets/{annotationSet}/annotations/update \tab sample\link{*}, study, annotationSet\link{*}, action, incVersion, body \cr
+   update \tab /{apiVersion}/samples/{samples}/update \tab include, exclude, samples\link{*}, study, annotationSetsAction, phenotypesAction, includeResult, body \cr
+   updateAnnotationSetsAnnotations \tab /{apiVersion}/samples/{sample}/annotationSets/{annotationSet}/annotations/update \tab sample\link{*}, study, annotationSet\link{*}, action, body \cr
 }
 }
 \section{Endpoint /{apiVersion}/samples/acl/{members}/update}{

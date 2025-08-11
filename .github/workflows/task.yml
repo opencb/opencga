@@ -12,7 +12,7 @@ jobs:
   build:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      maven_opts: -P storage-hadoop,${{ vars.TASK_HADOOP_FLAVOUR }},RClient,opencga-storage-hadoop-deps -Dopencga.war.name=opencga -Dcheckstyle.skip -pl ':opencga-app' --also-make
+      maven_opts: -Phdp3.1 -Dopencga.war.name=opencga -Dcheckstyle.skip
 
   test:
     uses: ./.github/workflows/test-analysis.yml
@@ -21,9 +21,16 @@ jobs:
       test_profile: runShortTests
     secrets: inherit
 
-  deploy-docker:
-    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
-    needs: test
+  deploy-zetta-docker:
+    uses: opencb/java-common-libs/.github/workflows/deploy-zetta-docker-hub-workflow.yml@develop
+    needs: build
     with:
-      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag ${{ github.ref_name }}
+      cli: python3 ./build/cloud/docker/docker-build.py push --images base --tag ${{ github.ref_name }}
+    secrets: inherit
+
+  deploy-docker-workflow:
+    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+    needs: build
+    with:
+      cli: python3 ./build/cloud/docker/docker-build.py push --images workflow --tag ${{ github.ref_name }}
     secrets: inherit

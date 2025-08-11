@@ -1,0 +1,43 @@
+name: Clients builder
+
+on:
+  workflow_dispatch:
+    inputs:
+      language:
+        description: 'Select the language to build'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - r
+          - python
+          - javascript
+      branch:
+        description: "The branch, tag or SHA of the source code to build docker."
+        type: string
+        required: true
+jobs:
+  call-build-r-docker:
+    if: ${{ github.event.inputs.language == 'r' || github.event.inputs.language == 'all' }}
+    name: Call Reusable Build R Client Workflow
+    uses: opencb/opencga/.github/workflows/reusable-build-r-client.yml@develop
+    with:
+      branch: ${{ github.event.inputs.branch }}
+    secrets: inherit
+
+  call-build-python-docker:
+    if: ${{ github.event.inputs.language == 'python' || github.event.inputs.language == 'all' }}
+    name: Call Reusable Build Python Client Workflow
+    uses: opencb/opencga/.github/workflows/reusable-build-python-client.yml@develop
+    with:
+      branch: ${{ github.event.inputs.branch }}
+    secrets: inherit
+
+  call-build-javascript-docker:
+    if: ${{ github.event.inputs.language == 'javascript' || github.event.inputs.language == 'all' }}
+    name: Call Reusable Build JavaScript Client Workflow
+    uses: opencb/opencga/.github/workflows/reusable-build-javascript-client.yml@develop
+    with:
+      branch: ${{ github.event.inputs.branch }}
+    secrets: inherit

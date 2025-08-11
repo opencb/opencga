@@ -53,8 +53,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Created on 26/08/15
@@ -63,7 +65,7 @@ import java.util.*;
  */
 public class OpenCGATestExternalResource extends ExternalResource {
 
-    private final CatalogManagerExternalResource catalogManagerExternalResource = new CatalogManagerExternalResource();
+    private final CatalogManagerExternalResource catalogManagerExternalResource;
     private Path opencgaHome;
     private String storageEngine;
     private boolean initiated = false;
@@ -72,21 +74,27 @@ public class OpenCGATestExternalResource extends ExternalResource {
     private StorageConfiguration storageConfiguration;
     private StorageEngineFactory storageEngineFactory;
     private ToolRunner toolRunner;
-
+    protected Path sourceAnalysisPath;
 
     public static HadoopVariantStorageTest.HadoopExternalResource hadoopExternalResource
             = new HadoopVariantStorageTest.HadoopExternalResource();
 
     public OpenCGATestExternalResource() {
-        this(false);
+        this(false, Paths.get("../opencga-app/app/analysis/"));
     }
 
     public OpenCGATestExternalResource(boolean storageHadoop) {
+        this(storageHadoop, Paths.get("../opencga-app/app/analysis/"));
+    }
+
+    public OpenCGATestExternalResource(boolean storageHadoop, Path sourceAnalysisPath) {
         if (storageHadoop) {
             this.storageEngine = HadoopVariantStorageEngine.STORAGE_ENGINE_ID;
         } else {
             this.storageEngine = DummyVariantStorageEngine.STORAGE_ENGINE_ID;
         }
+        this.sourceAnalysisPath = sourceAnalysisPath;
+        catalogManagerExternalResource = new CatalogManagerExternalResource(sourceAnalysisPath);
     }
 
     @Override
@@ -218,6 +226,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
         Files.createDirectories(conf);
         Files.createDirectories(userHome);
         Files.createDirectories(scratch);
+        Files.createDirectories(opencgaHome.resolve("analysis/resources"));
 
         Configuration configuration = catalogManagerExternalResource.getConfiguration();
         configuration.getAnalysis().setScratchDir(scratch.toAbsolutePath().toString());
@@ -272,7 +281,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
         }
 
         // Exomiser analysis files
-        List<String> exomiserVersions = Arrays.asList("13.1", "14.0");
+        List<String> exomiserVersions = Arrays.asList("13.1.0", "14.0.0");
         List<String> exomiserFiles = Arrays.asList("application.properties", "exomiser-analysis.yml", "output.yml");
         for (String exomiserVersion : exomiserVersions) {
             analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/exomiser").resolve(exomiserVersion).toAbsolutePath());
@@ -281,6 +290,12 @@ public class OpenCGATestExternalResource extends ExternalResource {
                 String resource = exomiserVersion + "/" + exomiserFile;
                 Files.copy(exomiserPath.resolve(resource).toAbsolutePath(), analysisPath.resolve(exomiserFile), StandardCopyOption.REPLACE_EXISTING);
             }
+        }
+
+        // Liftover analysis
+        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/liftover")).toAbsolutePath();
+        try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/liftover/liftover.sh")) {
+            Files.copy(inputStream, analysisPath.resolve("liftover.sh"), StandardCopyOption.REPLACE_EXISTING);
         }
 
         return opencgaHome;
@@ -349,27 +364,15 @@ public class OpenCGATestExternalResource extends ExternalResource {
     }
 
     public String createTmpOutdir(String studyId, String suffix, String sessionId) throws CatalogException, IOException {
-        return createTmpOutdir(suffix);
+        return catalogManagerExternalResource.createTmpOutdir(suffix);
     }
 
     public String createTmpOutdir() throws IOException {
-        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-        // stackTrace[0] = "Thread.currentThread"
-        // stackTrace[1] = "newOutputUri"
-        // stackTrace[2] =  caller method
-        String testName = stackTrace[2].getMethodName();
-        return createTmpOutdir(testName);
+        return catalogManagerExternalResource.createTmpOutdir();
     }
 
     public String createTmpOutdir(String suffix) throws IOException {
-        if (suffix.endsWith("_")) {
-            suffix = suffix.substring(0, suffix.length() - 1);
-        }
-        String folder = "I_tmp_" + new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss.SSS").format(new Date()) + suffix;
-        Path tmpOutDir = Paths.get(getCatalogManager().getConfiguration().getJobDir()).resolve(folder);
-        Files.createDirectories(tmpOutDir);
-        return tmpOutDir.toString();
-//        return getCatalogManager().getJobManager().createJobOutDir(studyId, "I_tmp_" + date + sufix, sessionId).toString();
+        return catalogManagerExternalResource.createTmpOutdir(suffix);
     }
 
     public void restore(URL resource) throws Exception {

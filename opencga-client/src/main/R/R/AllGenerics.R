@@ -29,6 +29,11 @@ setGeneric("jobClient", function(OpencgaR, job, jobs, members, endpointName, par
     standardGeneric("jobClient"))
 
 # ##############################################################################
+## WorkflowClient
+setGeneric("workflowClient", function(OpencgaR, members, workflowId, workflows, endpointName, params=NULL, ...)
+    standardGeneric("workflowClient"))
+
+# ##############################################################################
 ## SampleClient
 setGeneric("sampleClient", function(OpencgaR, annotationSet, members, sample, samples, endpointName, params=NULL, ...)
     standardGeneric("sampleClient"))
@@ -79,12 +84,12 @@ setGeneric("metaClient", function(OpencgaR, endpointName, params=NULL, ...)
     standardGeneric("metaClient"))
 
 # ##############################################################################
-## GA4GHClient
-setGeneric("ga4ghClient", function(OpencgaR, file, study, endpointName, params=NULL, ...)
-    standardGeneric("ga4ghClient"))
-
-# ##############################################################################
 ## AdminClient
 setGeneric("adminClient", function(OpencgaR, user, endpointName, params=NULL, ...)
     standardGeneric("adminClient"))
+
+# ##############################################################################
+## GA4GHClient
+setGeneric("ga4ghClient", function(OpencgaR, file, study, endpointName, params=NULL, ...)
+    standardGeneric("ga4ghClient"))
 

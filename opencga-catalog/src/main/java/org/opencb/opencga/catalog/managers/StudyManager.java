@@ -27,23 +27,20 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.result.Error;
+import org.opencb.opencga.catalog.auth.authentication.azure.AuthenticationFactory;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogIOException;
+import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
-import org.opencb.opencga.catalog.utils.AnnotationUtils;
-import org.opencb.opencga.catalog.utils.CatalogFqn;
-import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.catalog.utils.UuidUtils;
+import org.opencb.opencga.catalog.utils.*;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.cellbase.CellBaseValidator;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.AclEntryList;
@@ -53,8 +50,8 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysisPermissions;
 import org.opencb.opencga.core.models.cohort.CohortPermissions;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.FamilyPermissions;
+import org.opencb.opencga.core.models.federation.FederationClientParamsRef;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileInternal;
 import org.opencb.opencga.core.models.file.FilePermissions;
 import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.individual.IndividualPermissions;
@@ -67,6 +64,7 @@ import org.opencb.opencga.core.models.summaries.StudySummary;
 import org.opencb.opencga.core.models.summaries.VariableSetSummary;
 import org.opencb.opencga.core.models.summaries.VariableSummary;
 import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.models.variant.InternalVariantOperationIndex;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
@@ -95,6 +93,7 @@ public class StudyManager extends AbstractManager {
 
     private final CatalogIOManager catalogIOManager;
     private final IOManagerFactory ioManagerFactory;
+    private final AuthenticationFactory authenticationFactory;
 
     public static final String MEMBERS = ParamConstants.MEMBERS_GROUP;
     public static final String ADMINS = ParamConstants.ADMINS_GROUP;
@@ -113,19 +112,20 @@ public class StudyManager extends AbstractManager {
     static final QueryOptions INCLUDE_VARIABLE_SET = keepFieldInQueryOptions(INCLUDE_STUDY_IDS,
             StudyDBAdaptor.QueryParams.VARIABLE_SET.key());
     static final QueryOptions INCLUDE_CONFIGURATION = keepFieldInQueryOptions(INCLUDE_STUDY_IDS,
-            StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION.key());
+            StudyDBAdaptor.QueryParams.INTERNAL.key());
     static final QueryOptions INCLUDE_VARIABLE_SET_AND_CONFIGURATION = keepFieldsInQueryOptions(INCLUDE_STUDY_IDS,
-            Arrays.asList(StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION.key(), StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
+            Arrays.asList(StudyDBAdaptor.QueryParams.INTERNAL.key(), StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
     protected Logger logger;
 
     StudyManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                  DBAdaptorFactory catalogDBAdaptorFactory, IOManagerFactory ioManagerFactory, CatalogIOManager catalogIOManager,
-                 Configuration configuration) {
+                 AuthenticationFactory authenticationFactory, Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
 
         this.catalogIOManager = catalogIOManager;
         this.ioManagerFactory = ioManagerFactory;
+        this.authenticationFactory = authenticationFactory;
         logger = LoggerFactory.getLogger(StudyManager.class);
     }
 
@@ -168,6 +168,10 @@ public class StudyManager extends AbstractManager {
         }
 
         return studyDataResult.first();
+    }
+
+    Study resolveId(CatalogFqn catalogFqn, JwtPayload payload) throws CatalogException {
+        return resolveId(catalogFqn, QueryOptions.empty(), payload);
     }
 
     Study resolveId(CatalogFqn catalogFqn, QueryOptions options, JwtPayload payload) throws CatalogException {
@@ -225,15 +229,22 @@ public class StudyManager extends AbstractManager {
             fixQueryOptions(queryOptions, INCLUDE_STUDY_IDS.getAsStringList(QueryOptions.INCLUDE));
         }
 
+        String payloadOrgId = payload.getOrganization();
+        String fqnOrgId = catalogFqn.getOrganizationId();
+        boolean isOpenCGAAdmin = authorizationManager.isOpencgaAdministrator(payload);
+        if (!payloadOrgId.equals(fqnOrgId) && !isOpenCGAAdmin) {
+            // User may be trying to fetch a federated project
+            fqnOrgId = payloadOrgId;
+        }
+
         OpenCGAResult<Study> studyDataResult;
-        if (!payload.getOrganization().equals(catalogFqn.getOrganizationId())) {
+        if (isOpenCGAAdmin) {
             // If it is the administrator, we allow it without checking the user anymore
-            authorizationManager.checkIsOpencgaAdministrator(payload);
-            studyDataResult = getStudyDBAdaptor(catalogFqn.getOrganizationId()).get(query, queryOptions);
+            studyDataResult = getStudyDBAdaptor(fqnOrgId).get(query, queryOptions);
         } else {
-            studyDataResult = getStudyDBAdaptor(catalogFqn.getOrganizationId()).get(query, queryOptions, userId);
+            studyDataResult = getStudyDBAdaptor(fqnOrgId).get(query, queryOptions, userId);
             if (studyDataResult.getNumResults() == 0) {
-                studyDataResult = getStudyDBAdaptor(catalogFqn.getOrganizationId()).get(query, queryOptions);
+                studyDataResult = getStudyDBAdaptor(fqnOrgId).get(query, queryOptions);
                 if (studyDataResult.getNumResults() != 0) {
                     throw CatalogAuthorizationException.denyAny(userId, "view", "study");
                 }
@@ -314,14 +325,12 @@ public class StudyManager extends AbstractManager {
             }
         }
 
-        if (organizationFqn != null && !organizationId.equals(organizationFqn)
-                && !ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)) {
-            logger.error("User '{}' belonging to organization '{}' requested access to organization '{}'", userId, organizationId,
-                    organizationFqn);
-            throw new CatalogAuthorizationException("Cannot access data from a different organization.");
-        } else {
-            // If organization is not part of the FQN, assign it with the organization the user belongs to.
+        if (!organizationId.equals(organizationFqn) && !ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)) {
+            // User may be trying to fetch a federated study
             organizationFqn = organizationId;
+        } else if (ParamConstants.ADMIN_ORGANIZATION.equals(organizationId) && organizationFqn == null) {
+            // If the user is an admin and the study is not provided, set the organizationFqn to ADMIN_ORGANIZATION
+            organizationFqn = ParamConstants.ADMIN_ORGANIZATION;
         }
 
         query.putIfNotEmpty(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), project);
@@ -406,7 +415,6 @@ public class StudyManager extends AbstractManager {
         String organizationId = catalogFqn.getOrganizationId();
         String userId = tokenPayload.getUserId(organizationId);
         Project project = catalogManager.getProjectManager().resolveId(catalogFqn, null, tokenPayload).first();
-
         ObjectMap auditParams = new ObjectMap()
                 .append("projectId", projectStr)
                 .append("study", study)
@@ -417,7 +425,16 @@ public class StudyManager extends AbstractManager {
             options = ParamUtils.defaultObject(options, QueryOptions::new);
 
             authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
-
+            String cellbaseVersion;
+            if (project.getCellbase() != null && StringUtils.isNotEmpty(project.getCellbase().getUrl())) {
+                CellBaseValidator cellBaseValidator = new CellBaseValidator(
+                        project.getCellbase(),
+                        project.getOrganism().getScientificName(),
+                        project.getOrganism().getAssembly());
+                cellbaseVersion = cellBaseValidator.getVersionFromServer();
+            } else {
+                cellbaseVersion = null;
+            }
             long projectUid = project.getUid();
 
             // Initialise fields
@@ -427,7 +444,12 @@ public class StudyManager extends AbstractManager {
             study.setType(ParamUtils.defaultObject(study.getType(), StudyType::init));
             study.setSources(ParamUtils.defaultObject(study.getSources(), Collections::emptyList));
             study.setDescription(ParamUtils.defaultString(study.getDescription(), ""));
-            study.setInternal(StudyInternal.init());
+            study.setInternal(StudyInternal.init(cellbaseVersion));
+            study.setFederation(ParamUtils.defaultObject(study.getFederation(), new FederationClientParamsRef("", "", "")));
+            if (StringUtils.isNotEmpty(study.getFederation().getId())) {
+                FederationUtils.validateFederationId(organizationId, study.getFederation().getId(), catalogDBAdaptorFactory);
+                study.getInternal().setFederated(true);
+            }
             study.setStatus(ParamUtils.defaultObject(study.getStatus(), Status::new));
             study.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(study.getCreationDate(),
                     StudyDBAdaptor.QueryParams.CREATION_DATE.key()));
@@ -439,68 +461,76 @@ public class StudyManager extends AbstractManager {
             study.setAdditionalInfo(ParamUtils.defaultObject(study.getAdditionalInfo(), Collections::emptyList));
             study.setAttributes(ParamUtils.defaultObject(study.getAttributes(), HashMap::new));
 
-            study.setVariableSets(ParamUtils.defaultObject(study.getVariableSets(), ArrayList::new));
-
-            LinkedList<File> files = new LinkedList<>();
-            File rootFile = new File(".", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.UNKNOWN, "", null, "study root folder",
-                    FileInternal.init(), 0, project.getCurrentRelease());
-            File jobsFile = new File("JOBS", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.UNKNOWN, "JOBS/",
-                    catalogIOManager.getJobsUri(), "Default jobs folder", FileInternal.init(), 0, project.getCurrentRelease());
-            files.add(rootFile);
-            files.add(jobsFile);
+            // Scan and add default VariableSets
+            List<VariableSet> variableSetList = scanDefaultVariableSets(study.getRelease());
+            study.setVariableSets(variableSetList);
 
             // Get organization owner and admins
             Organization organization = catalogManager.getOrganizationManager().get(organizationId,
-                    OrganizationManager.INCLUDE_ORGANIZATION_ADMINS, token).first();
-            Set<String> users = new HashSet<>();
-            users.add(organization.getOwner());
-            users.addAll(organization.getAdmins());
+                    OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION, token).first();
+            Set<String> admins = new HashSet<>();
+            admins.add(organization.getOwner());
+            admins.addAll(organization.getAdmins());
+
+            Set<String> members = new HashSet<>(admins);
+            if (organization.getConfiguration().getUser() != null && organization.getConfiguration().getUser().isAddToStudyMembers()) {
+                // Fetch all users
+                List<User> userList = getUserDBAdaptor(organizationId).get(new Query(),
+                        new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.ID.key())).getResults();
+                userList.forEach(u -> members.add(u.getId()));
+            }
 
             List<Group> groups = Arrays.asList(
-                    new Group(MEMBERS, new ArrayList<>(users)),
-                    new Group(ADMINS, new ArrayList<>(users))
+                    new Group(MEMBERS, new ArrayList<>(members)),
+                    new Group(ADMINS, new ArrayList<>(admins))
             );
             study.setGroups(groups);
 
             /* CreateStudy */
-            getStudyDBAdaptor(organizationId).insert(project, study, files, options);
-            OpenCGAResult<Study> result = getStudy(organizationId, projectUid, study.getUuid(), options);
-            study = result.getResults().get(0);
-
-            URI uri;
-            try {
-                uri = catalogIOManager.createStudy(organizationId, Long.toString(project.getUid()), Long.toString(study.getUid()));
-            } catch (CatalogIOException e) {
-                try {
-                    getStudyDBAdaptor(organizationId).delete(study);
-                } catch (Exception e1) {
-                    logger.error("Can't delete study after failure creating study", e1);
-                }
-                throw e;
-            }
-
-            // Update uri of study
-            getStudyDBAdaptor(organizationId).update(study.getUid(), new ObjectMap("uri", uri), QueryOptions.empty());
-            study.setUri(uri);
-
-            long rootFileId = getFileDBAdaptor(organizationId).getId(study.getUid(), "");    //Set studyUri to the root folder too
-            getFileDBAdaptor(organizationId).update(rootFileId, new ObjectMap("uri", uri), QueryOptions.empty());
-
-            // Read and process installation variable sets
-            createDefaultVariableSets(organizationId, study, token);
+            OpenCGAResult<Study> result = getStudyDBAdaptor(organizationId).insert(project, study, options);
 
             auditManager.auditCreate(organizationId, userId, Enums.Resource.STUDY, study.getId(), study.getUuid(), study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
-                result.setResults(Arrays.asList(study));
+                OpenCGAResult<Study> tmpResult = getStudy(organizationId, projectUid, study.getUuid(), options);
+                result.setResults(tmpResult.getResults());
             }
             return result;
-        } catch (CatalogException e) {
-            auditManager.auditCreate(organizationId, userId, Enums.Resource.STUDY, study.getId(), "", study.getId(), "", auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
+        } catch (Exception e) {
+            auditManager.auditError(organizationId, userId, Enums.Action.CREATE, Enums.Resource.STUDY, study.getId(),
+                    "", study.getId(), "", auditParams, e);
+            if (e instanceof CatalogException) {
+                throw (CatalogException) e;
+            } else {
+                throw new CatalogException("Error creating study '" + study.getId() + "'", e);
+            }
         }
+    }
+
+    public List<VariableSet> scanDefaultVariableSets(int release) throws CatalogException {
+        Set<String> variablesets = new Reflections(new ResourcesScanner(), "variablesets/").getResources(Pattern.compile(".*\\.json"));
+        List<VariableSet> variableSetList = new ArrayList<>(variablesets.size());
+        for (String variableSetFile : variablesets) {
+            VariableSet vs;
+            try {
+                vs = JacksonUtils.getDefaultNonNullObjectMapper().readValue(
+                        getClass().getClassLoader().getResourceAsStream(variableSetFile), VariableSet.class);
+            } catch (IOException e) {
+                throw new CatalogException("Could not parse default variable set '" + variableSetFile + "'.", e);
+            }
+            if (vs != null) {
+                if (vs.getAttributes() == null) {
+                    vs.setAttributes(new HashMap<>());
+                }
+                vs.getAttributes().put("resource", variableSetFile);
+                validateNewVariableSet(vs, release);
+                variableSetList.add(vs);
+            } else {
+                throw new CatalogException("Default VariableSet object is null after parsing file '" + variableSetFile + "'");
+            }
+        }
+        return variableSetList;
     }
 
     public void createDefaultVariableSets(String studyStr, String token) throws CatalogException {
@@ -512,27 +542,13 @@ public class StudyManager extends AbstractManager {
     }
 
     private void createDefaultVariableSets(String organizationId, Study study, String token) throws CatalogException {
-        Set<String> variablesets = new Reflections(new ResourcesScanner(), "variablesets/").getResources(Pattern.compile(".*\\.json"));
-        for (String variableSetFile : variablesets) {
-            VariableSet vs;
-            try {
-                vs = JacksonUtils.getDefaultNonNullObjectMapper().readValue(
-                        getClass().getClassLoader().getResourceAsStream(variableSetFile), VariableSet.class);
-            } catch (IOException e) {
-                logger.error("Could not parse variable set '{}'", variableSetFile, e);
-                continue;
-            }
-            if (vs != null) {
-                if (vs.getAttributes() == null) {
-                    vs.setAttributes(new HashMap<>());
-                }
-                vs.getAttributes().put("resource", variableSetFile);
+        List<VariableSet> variableSetList = scanDefaultVariableSets(study.getRelease());
 
-                if (study.getVariableSets().stream().anyMatch(tvs -> tvs.getId().equals(vs.getId()))) {
-                    logger.debug("Skip already existing variable set " + vs.getId());
-                } else {
-                    createVariableSet(organizationId, study, vs, token);
-                }
+        for (VariableSet vs : variableSetList) {
+            if (study.getVariableSets().stream().anyMatch(tvs -> tvs.getId().equals(vs.getId()))) {
+                logger.debug("Skip already existing variable set " + vs.getId());
+            } else {
+                createVariableSet(organizationId, study, vs, token);
             }
         }
     }
@@ -979,6 +995,203 @@ public class StudyManager extends AbstractManager {
         return results;
     }
 
+    /**
+     * Synchronise a group with an external group.
+     *
+     * @param studyStr            Study id or fqn.
+     * @param groupSyncParams     Parameters to synchronise the group with an external group.
+     * @param token               JWT token of the user performing the operation.
+     * @return                    OpenCGAResult with the created group.
+     * @throws CatalogException   If the group already exists, or if the user does not have permissions to perform the operation.
+     */
+    public OpenCGAResult<Group> syncGroup(String studyStr, GroupSyncParams groupSyncParams, String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn catalogFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = catalogFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        Study study = resolveId(catalogFqn, QueryOptions.empty(), tokenPayload);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("groupSyncParams", groupSyncParams)
+                .append("token", token);
+        try {
+            authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
+
+            ParamUtils.checkObj(groupSyncParams, "Group sync parameters");
+            String authOriginId = groupSyncParams.getAuthenticationOriginId();
+            String localGroupId = groupSyncParams.getLocalGroupId();
+            String remoteGroup = groupSyncParams.getRemoteGroupId();
+            ParamUtils.checkParameter(authOriginId, "Authentication origin id");
+            ParamUtils.checkParameter(localGroupId, "Local group id");
+            ParamUtils.checkParameter(remoteGroup, "Remote group id");
+
+            // Check if the local group already exists
+            OpenCGAResult<Group> groupResult = catalogManager.getStudyManager().getGroup(studyStr, localGroupId, token);
+            if (groupResult.getNumResults() == 1) {
+                throw new CatalogException("Cannot synchronise with group " + localGroupId + ". The group already exists.");
+            }
+
+            // Check if the authentication origin exists
+            Organization organization = catalogManager.getOrganizationManager()
+                    .get(organizationId, OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION, token).first();
+            boolean authOriginExists = false;
+            for (AuthenticationOrigin authenticationOrigin : organization.getConfiguration().getAuthenticationOrigins()) {
+                if (authenticationOrigin.getId().equals(authOriginId)) {
+                    // Authentication origin exists
+                    authOriginExists = true;
+                    break;
+                }
+            }
+            if (!authOriginExists) {
+                List<String> supportedAuthOriginIds = organization.getConfiguration().getAuthenticationOrigins().stream()
+                        .map(AuthenticationOrigin::getId).collect(Collectors.toList());
+                throw new CatalogException("Cannot synchronise with group " + localGroupId + ". The authentication origin '"
+                        + authOriginId + "' does not exist in organization '" + organizationId + "'. Supported authentication origins: "
+                        + supportedAuthOriginIds);
+            }
+
+            // Create new group associating it to the remote group
+            try {
+                logger.info("Attempting to register group '{}' in study '{}'", localGroupId, study.getFqn());
+                Group.Sync groupSync = new Group.Sync(authOriginId, remoteGroup);
+                Group group = new Group(localGroupId, Collections.emptyList(), groupSync);
+                OpenCGAResult<Group> result = catalogManager.getStudyManager().createGroup(studyStr, group, token);
+                logger.info("Group '{}' created and synchronised with external group", localGroupId);
+                auditManager.audit(organizationId, userId, Enums.Action.IMPORT_EXTERNAL_GROUP_OF_USERS, Enums.Resource.STUDY,
+                        group.getId(), "", study.getFqn(), study.getUuid(), auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+                return result;
+            } catch (CatalogException e) {
+                throw new CatalogException("Could not register group '" + localGroupId + "' in study '" + studyStr + "': " + e.getMessage(),
+                        e);
+            }
+
+        } catch (CatalogException e) {
+            auditManager.audit(organizationId, userId, Enums.Action.IMPORT_EXTERNAL_GROUP_OF_USERS, Enums.Resource.STUDY, "", "",
+                    study.getFqn(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+    }
+
+    /**
+     * Synchronise the users belonging to an external authentication origin.
+     *
+     * @param studyStr        Study id or fqn.
+     * @param authOriginId    Authentication origin id.
+     * @param token           JWT token of the user performing the operation.
+     * @return OpenCGAResult with the number of updated groups.
+     * @throws CatalogException If the user does not have permissions to perform the operation, or if there is an error retrieving the users
+     *                          from the external authentication origin.
+     */
+    public OpenCGAResult<?> syncUsers(String studyStr, String authOriginId, String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn catalogFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = catalogFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        Study study = resolveId(catalogFqn, QueryOptions.empty(), tokenPayload);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("authenticationOriginId", authOriginId)
+                .append("token", token);
+        try {
+            // Because we could potentially create users, we need to check that the user has at least organization
+            // owner or admin permissions
+            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
+
+            ParamUtils.checkParameter(authOriginId, "Authentication origin id");
+
+            // Check if the authentication origin exists
+            Organization organization = catalogManager.getOrganizationManager()
+                    .get(organizationId, OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION, token).first();
+            boolean authOriginExists = false;
+            for (AuthenticationOrigin authenticationOrigin : organization.getConfiguration().getAuthenticationOrigins()) {
+                if (authenticationOrigin.getId().equals(authOriginId)) {
+                    // Authentication origin exists
+                    authOriginExists = true;
+                    break;
+                }
+            }
+            if (!authOriginExists) {
+                List<String> supportedAuthOriginIds = organization.getConfiguration().getAuthenticationOrigins().stream()
+                        .map(AuthenticationOrigin::getId).collect(Collectors.toList());
+                throw new CatalogException("The authentication origin '" + authOriginId + "' does not exist in organization '"
+                        + organizationId + "'. Supported authentication origins: " + supportedAuthOriginIds);
+            }
+
+            OpenCGAResult<Group> allGroups = catalogManager.getStudyManager().getGroup(study.getFqn(), null, token);
+
+            int numGroupsUpdated = 0;
+            List<Event> events = new ArrayList<>();
+            for (Group group : allGroups.getResults()) {
+                if (group.getSyncedFrom() != null && group.getSyncedFrom().getAuthOrigin().equals(authOriginId)) {
+                    logger.info("Fetching users of group '{}' from authentication origin '{}'", group.getSyncedFrom().getRemoteGroup(),
+                            group.getSyncedFrom().getAuthOrigin());
+
+                    List<User> userList;
+                    try {
+                        userList = authenticationFactory.getUsersFromRemoteGroup(organizationId, group.getSyncedFrom().getAuthOrigin(),
+                                group.getSyncedFrom().getRemoteGroup());
+                    } catch (CatalogException e) {
+                        // There was some kind of issue for which we could not retrieve the group information.
+                        logger.info("Removing all users from group '{}' belonging to group '{}' in the external authentication origin",
+                                group.getId(), group.getSyncedFrom().getAuthOrigin());
+                        logger.info("Please, manually remove group '{}' if external group '{}' was removed from the authentication origin",
+                                group.getId(), group.getSyncedFrom().getAuthOrigin());
+                        catalogManager.getStudyManager().updateGroup(study.getFqn(), group.getId(), ParamUtils.BasicUpdateAction.SET,
+                                new GroupUpdateParams(Collections.emptyList()), token);
+                        events.add(new Event(Event.Type.ERROR, group.getId(), "Could not retrieve users from external group '"
+                                + group.getSyncedFrom().getRemoteGroup() + "' in authentication origin '" + group.getSyncedFrom()
+                                .getAuthOrigin() + "'. All users associated to group '" + group.getId() + "' were removed. Please,"
+                                + " manually remove group '" + group.getId() + "' if external group '"
+                                + group.getSyncedFrom().getRemoteGroup() + "' was removed from the authentication origin."));
+                        continue;
+                    }
+                    Iterator<User> iterator = userList.iterator();
+                    while (iterator.hasNext()) {
+                        User user = iterator.next();
+                        user.setOrganization(organizationId);
+                        try {
+                            catalogManager.getUserManager().create(user, null, token);
+                            logger.info("User '{}' ({}) successfully created", user.getId(), user.getName());
+                        } catch (CatalogException e) {
+                            if (!e.getMessage().contains("already exists")) {
+                                logger.warn("Could not create user '{}' ({}). {}", user.getId(), user.getName(), e.getMessage());
+                                iterator.remove();
+                                events.add(new Event(Event.Type.ERROR, group.getId(), "Could not automatically create user '"
+                                        + user.getId() + "' (" + user.getName() + "). " + e.getMessage()));
+                            }
+                        }
+                    }
+
+                    GroupUpdateParams updateParams;
+                    if (CollectionUtils.isEmpty(userList)) {
+                        logger.info("No members associated to the external group");
+                        updateParams = new GroupUpdateParams(Collections.emptyList());
+                    } else {
+                        logger.info("Associating members to the internal OpenCGA group");
+                        updateParams = new GroupUpdateParams(new ArrayList<>(userList.stream().map(User::getId)
+                                .collect(Collectors.toSet())));
+                    }
+                    catalogManager.getStudyManager().updateGroup(study.getFqn(), group.getId(), ParamUtils.BasicUpdateAction.SET,
+                            updateParams, token);
+                    numGroupsUpdated++;
+                }
+            }
+            if (numGroupsUpdated == 0) {
+                logger.info("No synced groups found in study '{}' from authentication origin '{}'", study.getFqn(), authOriginId);
+            }
+            auditManager.audit(organizationId, userId, Enums.Action.SYNC_EXTERNAL_GROUP_OF_USERS, Enums.Resource.STUDY,
+                    "", "", study.getFqn(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            return new OpenCGAResult<>(0, events, 0, Collections.emptyList(), 0, 0, numGroupsUpdated, 0, new ObjectMap());
+        } catch (CatalogException e) {
+            auditManager.audit(organizationId, userId, Enums.Action.SYNC_EXTERNAL_GROUP_OF_USERS, Enums.Resource.STUDY, "", "",
+                    study.getFqn(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+    }
+
     public OpenCGAResult<Group> createGroup(String studyStr, String groupId, List<String> users, String token) throws CatalogException {
         ParamUtils.checkParameter(groupId, "group id");
         return createGroup(studyStr, new Group(groupId, users, null), token);
@@ -1011,6 +1224,13 @@ public class StudyManager extends AbstractManager {
             }
 
             authorizationManager.checkCreateDeleteGroupPermissions(organizationId, study.getUid(), userId, group.getId());
+            if (study.getInternal().isFederated()) {
+                try {
+                    checkIsNotAFederatedUser(organizationId, group.getUserIds());
+                } catch (CatalogException e) {
+                    throw new CatalogException("Cannot provide access to federated users to a federated study.", e);
+                }
+            }
 
             // Check group exists
             if (existsGroup(organizationId, study.getUid(), group.getId())) {
@@ -1177,6 +1397,21 @@ public class StudyManager extends AbstractManager {
 
             authorizationManager.checkUpdateGroupPermissions(organizationId, study.getUid(), userId, groupId, action);
 
+            if (study.getInternal().isFederated()) {
+                if (!groupId.equals(MEMBERS)) {
+                    throw new CatalogException("Cannot modify groups other than the '" + MEMBERS + "' group in federated studies.");
+                }
+            }
+
+            if (MEMBERS.equals(groupId) && action == ParamUtils.BasicUpdateAction.REMOVE) {
+                Organization organization = catalogManager.getOrganizationManager().get(organizationId,
+                        OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION, token).first();
+                if (organization.getConfiguration().getUser() != null && organization.getConfiguration().getUser().isAddToStudyMembers()) {
+                    throw new CatalogException("Cannot remove users from the '" + MEMBERS + "' group. The organization configuration "
+                            + "is set to add all users to the members group.");
+                }
+            }
+
             if (CollectionUtils.isNotEmpty(updateParams.getUsers())) {
                 List<String> tmpUsers = updateParams.getUsers();
                 if (groupId.equals(MEMBERS) || groupId.equals(ADMINS)) {
@@ -1189,6 +1424,14 @@ public class StudyManager extends AbstractManager {
                 }
                 if (tmpUsers.size() > 0) {
                     getUserDBAdaptor(organizationId).checkIds(tmpUsers);
+                }
+
+                if (study.getInternal().isFederated()) {
+                    try {
+                        checkIsNotAFederatedUser(organizationId, updateParams.getUsers());
+                    } catch (CatalogException e) {
+                        throw new CatalogException("Cannot provide access to federated users to a federated study.", e);
+                    }
                 }
             } else {
                 updateParams.setUsers(Collections.emptyList());
@@ -1408,6 +1651,28 @@ public class StudyManager extends AbstractManager {
         return new OpenCGAResult<>(dbTime, Collections.emptyList(), 1, Collections.singletonList(variableSetSummary), 1);
     }
 
+    private void validateNewVariableSet(VariableSet variableSet, int release) throws CatalogException {
+        ParamUtils.checkParameter(variableSet.getId(), "id");
+        ParamUtils.checkObj(variableSet.getVariables(), "Variables from VariableSet");
+
+        variableSet.setDescription(ParamUtils.defaultString(variableSet.getDescription(), ""));
+        variableSet.setAttributes(ParamUtils.defaultObject(variableSet.getAttributes(), new HashMap<>()));
+        variableSet.setEntities(ParamUtils.defaultObject(variableSet.getEntities(), Collections.emptyList()));
+        variableSet.setName(ParamUtils.defaultString(variableSet.getName(), variableSet.getId()));
+        variableSet.setRelease(release);
+
+        for (Variable variable : variableSet.getVariables()) {
+            ParamUtils.checkParameter(variable.getId(), "variable ID");
+            ParamUtils.checkObj(variable.getType(), "variable Type");
+            variable.setAllowedValues(ParamUtils.defaultObject(variable.getAllowedValues(), Collections.emptyList()));
+            variable.setAttributes(ParamUtils.defaultObject(variable.getAttributes(), Collections.emptyMap()));
+            variable.setCategory(ParamUtils.defaultString(variable.getCategory(), ""));
+            variable.setDependsOn(ParamUtils.defaultString(variable.getDependsOn(), ""));
+            variable.setDescription(ParamUtils.defaultString(variable.getDescription(), ""));
+            variable.setName(ParamUtils.defaultString(variable.getName(), variable.getId()));
+//            variable.setRank(defaultString(variable.getDescription(), ""));
+        }
+    }
 
     /*
      * Variables Methods
@@ -1709,6 +1974,9 @@ public class StudyManager extends AbstractManager {
             if (action == null) {
                 throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
             }
+            if (study.getInternal().isFederated()) {
+                throw new CatalogException("Cannot modify ACLs of a federated study.");
+            }
 
             List<String> permissions = Collections.emptyList();
             if (StringUtils.isNotEmpty(aclParams.getPermissions())) {
@@ -1762,6 +2030,13 @@ public class StudyManager extends AbstractManager {
             }
             authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
             checkMembers(organizationId, study.getUid(), members);
+            if (study.getInternal().isFederated()) {
+                try {
+                    checkIsNotAFederatedUser(organizationId, members);
+                } catch (CatalogException e) {
+                    throw new CatalogException("Cannot provide access to federated users to a federated study.", e);
+                }
+            }
 
             switch (action) {
                 case SET:
@@ -1818,6 +2093,37 @@ public class StudyManager extends AbstractManager {
 
         ObjectMap parameters = new ObjectMap(StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION_VARIANT_ENGINE.key(), configuration);
         getStudyDBAdaptor(organizationId).update(study.getUid(), parameters, QueryOptions.empty());
+    }
+
+    public OpenCGAResult<Study> setStudyInternalVariantSecondarySampleIndex(
+            String studyStr, InternalVariantOperationIndex variant, QueryOptions options, String token) throws CatalogException {
+        return setStudyInternalVariant(studyStr, new StudyInternalVariant().setSecondarySampleIndex(variant), options, token);
+    }
+
+    public OpenCGAResult<Study> setStudyInternalVariant(String studyStr, StudyInternalVariant variant, QueryOptions options,
+                                                            String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn catalogFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = catalogFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+
+        Study study = resolveId(catalogFqn, null, tokenPayload);
+
+        authorizationManager.isAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
+        ParamUtils.checkObj(variant, "StudyInternalVariant");
+
+        ObjectMap parameters = new ObjectMap();
+        if (variant.getSecondarySampleIndex() != null) {
+            parameters.put(StudyDBAdaptor.QueryParams.INTERNAL_VARIANT_SECONDARY_SAMPLE_INDEX.key(), variant.getSecondarySampleIndex());
+        }
+
+        OpenCGAResult<Study> updateResult = getStudyDBAdaptor(organizationId).update(study.getUid(), parameters, QueryOptions.empty());
+        if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+            // Fetch updated study
+            OpenCGAResult<Study> result = getStudyDBAdaptor(organizationId).get(study.getUid(), options);
+            updateResult.setResults(result.getResults());
+        }
+        return updateResult;
     }
 
     public void setVariantEngineSetupOptions(String studyStr, VariantSetupResult variantSetupResult, String token) throws CatalogException {
@@ -2026,7 +2332,7 @@ public class StudyManager extends AbstractManager {
             throw e;
         } catch (Exception e) {
             auditManager.auditCreate(organizationId, userId, Enums.Action.UPLOAD_TEMPLATE, Enums.Resource.STUDY, templateId, "",
-             study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
+                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                             new Error(-1, "template upload", e.getMessage())));
             throw e;
         } finally {
@@ -2086,9 +2392,19 @@ public class StudyManager extends AbstractManager {
             throw e;
         } catch (Exception e) {
             auditManager.auditCreate(organizationId, userId, Enums.Action.DELETE_TEMPLATE, Enums.Resource.STUDY, templateId, "",
-             study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
+                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                             new Error(-1, "template delete", e.getMessage())));
             throw e;
+        }
+    }
+
+    List<Study> listStudies(String organizationId) throws CatalogDBException {
+        return getStudyDBAdaptor(organizationId).get(new Query(), INCLUDE_STUDY_IDS).getResults();
+    }
+
+    void addToMembersGroup(String organizationId, List<Study> studyList, List<String> userIds) throws CatalogDBException {
+        for (Study study : studyList) {
+            getStudyDBAdaptor(organizationId).addUsersToGroup(study.getUid(), MEMBERS, userIds);
         }
     }
 
