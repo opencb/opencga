@@ -49,8 +49,5 @@ fi
 
 
 # Call the function with the input branch name
-<<<<<<< HEAD
 get_xetabase_branch "$1" "$2"
-=======
-get_xetabase_branch "$1" "$2"
->>>>>>> release-4.x.x
+
