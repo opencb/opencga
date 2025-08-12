@@ -32,7 +32,7 @@ import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 
 @Path("/{apiVersion}/tools")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "External Tools", description = "Methods for working with 'tools' endpoint")
+@Api(value = "User Tools", description = "Methods for working with 'tools' endpoint")
 public class ExternalToolWSServer extends OpenCGAWSServer {
 
     private ExternalToolManager externalToolManager;
@@ -45,7 +45,7 @@ public class ExternalToolWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{tools}/info")
-    @ApiOperation(value = "Get external tool information", response = ExternalTool.class)
+    @ApiOperation(value = "Get user tool information", response = ExternalTool.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, format = "", example = "name,attributes",
                     dataType = "string", paramType = "query"),
@@ -66,7 +66,7 @@ public class ExternalToolWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/search")
-    @ApiOperation(value = "External tool search method", response = ExternalTool.class)
+    @ApiOperation(value = "User tool search method", response = ExternalTool.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes",
                     dataType = "string", paramType = "query"),
@@ -105,7 +105,7 @@ public class ExternalToolWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/aggregationStats")
-    @ApiOperation(value = "Fetch external tool stats", response = FacetField.class)
+    @ApiOperation(value = "Fetch user tool stats", response = FacetField.class)
     public Response getAggregationStats(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.EXTERNAL_TOOL_ID_DESCRIPTION) @QueryParam(ParamConstants.EXTERNAL_TOOL_ID_PARAM) String id,
@@ -136,7 +136,7 @@ public class ExternalToolWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/distinct")
-    @ApiOperation(value = "External tool distinct method", response = Object.class)
+    @ApiOperation(value = "User tool distinct method", response = Object.class)
     public Response distinct(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.EXTERNAL_TOOL_ID_DESCRIPTION) @QueryParam(ParamConstants.EXTERNAL_TOOL_ID_PARAM) String id,
@@ -166,7 +166,7 @@ public class ExternalToolWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{tools}/acl")
-    @ApiOperation(value = "Returns the acl of the external tools. If member is provided, it will only return the acl for the member.",
+    @ApiOperation(value = "Returns the acl of the user tools. If member is provided, it will only return the acl for the member.",
             response = ExternalToolAclEntryList.class)
     public Response getAcls(@ApiParam(value = ParamConstants.EXTERNAL_TOOLS_DESCRIPTION, required = true) @PathParam("tools") String toolsStr,
                             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
@@ -180,7 +180,7 @@ public class ExternalToolWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/acl/{members}/update")
-    @ApiOperation(value = "Update the set of external tool permissions granted for the member", response = ExternalToolAclEntryList.class)
+    @ApiOperation(value = "Update the set of user tool permissions granted for the member", response = ExternalToolAclEntryList.class)
     public Response updateAcl(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberIds,
@@ -192,7 +192,7 @@ public class ExternalToolWSServer extends OpenCGAWSServer {
 
     @DELETE
     @Path("/{tools}/delete")
-    @ApiOperation(value = "Delete external tools", response = ExternalTool.class)
+    @ApiOperation(value = "Delete user tools", response = ExternalTool.class)
     public Response delete(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.EXTERNAL_TOOLS_DESCRIPTION) @PathParam("tools") String toolsStr) {
@@ -220,7 +220,7 @@ public class ExternalToolWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/custom/create")
-    @ApiOperation(value = "Register a new external tool of type CUSTOM_TOOL", response = ExternalTool.class)
+    @ApiOperation(value = "Register a new user tool of type CUSTOM_TOOL", response = ExternalTool.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
                     dataType = "string", paramType = "query"),
@@ -237,7 +237,7 @@ public class ExternalToolWSServer extends OpenCGAWSServer {
     @POST
     @Path("/custom/{toolId}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some custom external tool attributes", response = ExternalTool.class)
+    @ApiOperation(value = "Update some custom user tool attributes", response = ExternalTool.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
                     dataType = "string", paramType = "query"),
@@ -297,7 +297,7 @@ public class ExternalToolWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/workflow/create")
-    @ApiOperation(value = "Register a new external tool of type WORKFLOW", response = ExternalTool.class)
+    @ApiOperation(value = "Register a new user tool of type WORKFLOW", response = ExternalTool.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
                     dataType = "string", paramType = "query"),
@@ -314,7 +314,7 @@ public class ExternalToolWSServer extends OpenCGAWSServer {
     @POST
     @Path("/workflow/{toolId}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some external tool attributes", response = ExternalTool.class)
+    @ApiOperation(value = "Update some user tool attributes", response = ExternalTool.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
                     dataType = "string", paramType = "query"),
@@ -336,7 +336,7 @@ public class ExternalToolWSServer extends OpenCGAWSServer {
     @POST
     @Path("/workflow/import")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Import an external tool of type WORKFLOW", response = ExternalTool.class)
+    @ApiOperation(value = "Import a user tool of type WORKFLOW", response = ExternalTool.class)
     public Response importWorkflow(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = "Repository parameters", required = true) WorkflowRepositoryParams params) {
@@ -346,7 +346,7 @@ public class ExternalToolWSServer extends OpenCGAWSServer {
     @POST
     @Path("/workflow/{toolId}/run")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Execute an external tool of type WORKFLOW", response = Job.class)
+    @ApiOperation(value = "Execute a user tool of type WORKFLOW", response = Job.class)
     public Response executeWorkflow(
             @ApiParam(value = ParamConstants.EXTERNAL_TOOL_ID_DESCRIPTION, required = true) @PathParam("toolId") String toolId,
             @ApiParam(value = "Tool version. If not provided, the latest version will be used.") @QueryParam(ParamConstants.EXTERNAL_TOOL_VERSION_PARAM) Integer version,

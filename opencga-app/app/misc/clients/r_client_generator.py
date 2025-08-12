@@ -19,7 +19,7 @@ class RClientGenerator(RestClientGenerator):
             'Files': 'File',
             'Jobs': 'Job',
             'Workflows': 'Workflow',
-            'External Tools': 'ExternalTool',
+            'User Tools': 'UserTool',
             'Samples': 'Sample',
             'Individuals': 'Individual',
             'Families': 'Family',

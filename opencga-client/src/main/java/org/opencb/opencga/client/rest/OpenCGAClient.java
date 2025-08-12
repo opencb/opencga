@@ -131,8 +131,8 @@ public class OpenCGAClient {
         return getClient(WorkflowClient.class, () -> new WorkflowClient(token, clientConfiguration));
     }
 
-    public ExternalToolClient getExternalToolClient() {
-        return getClient(ExternalToolClient.class, () -> new ExternalToolClient(token, clientConfiguration));
+    public UserToolClient getUserToolClient() {
+        return getClient(UserToolClient.class, () -> new UserToolClient(token, clientConfiguration));
     }
 
     public AlignmentClient getAlignmentClient() {

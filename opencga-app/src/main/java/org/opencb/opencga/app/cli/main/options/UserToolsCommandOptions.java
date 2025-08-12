@@ -24,11 +24,11 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 */
 
 /**
- * This class contains methods for the External Tools command line.
+ * This class contains methods for the User Tools command line.
  *    PATH: /{apiVersion}/tools
  */
-@Parameters(commandNames = {"tools"}, commandDescription = "External Tools commands")
-public class ExternalToolsCommandOptions {
+@Parameters(commandNames = {"tools"}, commandDescription = "User Tools commands")
+public class UserToolsCommandOptions {
 
         public JCommander jCommander;
         public CommonCommandOptions commonCommandOptions;
@@ -51,7 +51,7 @@ public class ExternalToolsCommandOptions {
         public InfoCommandOptions infoCommandOptions;
 
 
-    public ExternalToolsCommandOptions(CommonCommandOptions commonCommandOptions, JCommander jCommander) {
+    public UserToolsCommandOptions(CommonCommandOptions commonCommandOptions, JCommander jCommander) {
     
         this.jCommander = jCommander;
         this.commonCommandOptions = commonCommandOptions;
@@ -74,7 +74,7 @@ public class ExternalToolsCommandOptions {
     
     }
     
-    @Parameters(commandNames = {"acl-update"}, commandDescription ="Update the set of external tool permissions granted for the member")
+    @Parameters(commandNames = {"acl-update"}, commandDescription ="Update the set of user tool permissions granted for the member")
     public class UpdateAclCommandOptions {
     
         @ParametersDelegate
@@ -103,7 +103,7 @@ public class ExternalToolsCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"aggregationstats"}, commandDescription ="Fetch external tool stats")
+    @Parameters(commandNames = {"aggregationstats"}, commandDescription ="Fetch user tool stats")
     public class AggregationStatsCommandOptions {
     
         @ParametersDelegate
@@ -227,7 +227,7 @@ public class ExternalToolsCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"custom-create"}, commandDescription ="Register a new external tool of type CUSTOM_TOOL")
+    @Parameters(commandNames = {"custom-create"}, commandDescription ="Register a new user tool of type CUSTOM_TOOL")
     public class CreateCustomCommandOptions {
     
         @ParametersDelegate
@@ -416,7 +416,7 @@ public class ExternalToolsCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"custom-update"}, commandDescription ="Update some custom external tool attributes")
+    @Parameters(commandNames = {"custom-update"}, commandDescription ="Update some custom user tool attributes")
     public class UpdateCustomCommandOptions {
     
         @ParametersDelegate
@@ -493,7 +493,7 @@ public class ExternalToolsCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"distinct"}, commandDescription ="External tool distinct method")
+    @Parameters(commandNames = {"distinct"}, commandDescription ="User tool distinct method")
     public class DistinctCommandOptions {
     
         @ParametersDelegate
@@ -555,7 +555,7 @@ public class ExternalToolsCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"search"}, commandDescription ="External tool search method")
+    @Parameters(commandNames = {"search"}, commandDescription ="User tool search method")
     public class SearchCommandOptions {
     
         @ParametersDelegate
@@ -629,7 +629,7 @@ public class ExternalToolsCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"workflow-create"}, commandDescription ="Register a new external tool of type WORKFLOW")
+    @Parameters(commandNames = {"workflow-create"}, commandDescription ="Register a new user tool of type WORKFLOW")
     public class CreateWorkflowCommandOptions {
     
         @ParametersDelegate
@@ -700,7 +700,7 @@ public class ExternalToolsCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"workflow-import"}, commandDescription ="Import an external tool of type WORKFLOW")
+    @Parameters(commandNames = {"workflow-import"}, commandDescription ="Import a user tool of type WORKFLOW")
     public class ImportWorkflowCommandOptions {
     
         @ParametersDelegate
@@ -729,7 +729,7 @@ public class ExternalToolsCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"workflow-run"}, commandDescription ="Execute an external tool of type WORKFLOW")
+    @Parameters(commandNames = {"workflow-run"}, commandDescription ="Execute a user tool of type WORKFLOW")
     public class RunWorkflowCommandOptions {
     
         @ParametersDelegate
@@ -773,7 +773,7 @@ public class ExternalToolsCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"workflow-update"}, commandDescription ="Update some external tool attributes")
+    @Parameters(commandNames = {"workflow-update"}, commandDescription ="Update some user tool attributes")
     public class UpdateWorkflowCommandOptions {
     
         @ParametersDelegate
@@ -835,7 +835,7 @@ public class ExternalToolsCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"acl"}, commandDescription ="Returns the acl of the external tools. If member is provided, it will only return the acl for the member.")
+    @Parameters(commandNames = {"acl"}, commandDescription ="Returns the acl of the user tools. If member is provided, it will only return the acl for the member.")
     public class AclCommandOptions {
     
         @ParametersDelegate
@@ -855,7 +855,7 @@ public class ExternalToolsCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"delete"}, commandDescription ="Delete external tools")
+    @Parameters(commandNames = {"delete"}, commandDescription ="Delete user tools")
     public class DeleteCommandOptions {
     
         @ParametersDelegate
@@ -869,7 +869,7 @@ public class ExternalToolsCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"info"}, commandDescription ="Get external tool information")
+    @Parameters(commandNames = {"info"}, commandDescription ="Get user tool information")
     public class InfoCommandOptions {
     
         @ParametersDelegate

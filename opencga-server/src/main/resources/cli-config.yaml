@@ -161,7 +161,7 @@ apiConfig:
           rename: importPanels
     - name: tools
       ignore: False
-      key: ExternalTool
+      key: UserTool
     - name: workflows
       commandName: workflows
       ignore: False

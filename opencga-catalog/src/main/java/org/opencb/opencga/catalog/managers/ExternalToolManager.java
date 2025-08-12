@@ -106,7 +106,7 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
         OpenCGAResult<ExternalTool> resultsNoCheck = getWorkflowDBAdaptor(organizationId).get(queryCopy, queryOptions);
 
         if (resultsNoCheck.getNumResults() == externalToolResult.getNumResults()) {
-            throw CatalogException.notFound("external tools", getMissingFields(uniqueList, externalToolResult.getResults(),
+            throw CatalogException.notFound("user tools", getMissingFields(uniqueList, externalToolResult.getResults(),
                     externalToolStringFunction));
         } else {
             throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see some or none of the external"

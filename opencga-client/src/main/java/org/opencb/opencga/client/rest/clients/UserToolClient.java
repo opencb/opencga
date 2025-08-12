@@ -49,17 +49,17 @@ import org.opencb.opencga.core.response.RestResponse;
 
 
 /**
- * This class contains methods for the ExternalTool webservices.
+ * This class contains methods for the UserTool webservices.
  *    PATH: tools
  */
-public class ExternalToolClient extends ParentClient {
+public class UserToolClient extends ParentClient {
 
-    public ExternalToolClient(String token, ClientConfiguration configuration) {
+    public UserToolClient(String token, ClientConfiguration configuration) {
         super(token, configuration);
     }
 
     /**
-     * Update the set of external tool permissions granted for the member.
+     * Update the set of user tool permissions granted for the member.
      * @param members Comma separated list of user or group ids.
      * @param action Action to be performed [ADD, SET, REMOVE or RESET].
      * @param data JSON containing the parameters to update the permissions.
@@ -77,7 +77,7 @@ public class ExternalToolClient extends ParentClient {
     }
 
     /**
-     * Fetch external tool stats.
+     * Fetch user tool stats.
      * @param params Map containing any of the following optional parameters.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       id: Comma separated list of external tool IDs up to a maximum of 100. Also admits basic regular expressions using the operator
@@ -133,7 +133,7 @@ public class ExternalToolClient extends ParentClient {
     }
 
     /**
-     * Register a new external tool of type CUSTOM_TOOL.
+     * Register a new user tool of type CUSTOM_TOOL.
      * @param data JSON containing workflow information.
      * @param params Map containing any of the following optional parameters.
      *       include: Fields included in the response, whole JSON path must be provided.
@@ -197,7 +197,7 @@ public class ExternalToolClient extends ParentClient {
     }
 
     /**
-     * Update some custom external tool attributes.
+     * Update some custom user tool attributes.
      * @param toolId Comma separated list of external tool IDs up to a maximum of 100. Also admits basic regular expressions using the
      *     operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
      * @param data body.
@@ -216,7 +216,7 @@ public class ExternalToolClient extends ParentClient {
     }
 
     /**
-     * External tool distinct method.
+     * User tool distinct method.
      * @param field Comma separated list of fields for which to obtain the distinct values.
      * @param params Map containing any of the following optional parameters.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
@@ -250,7 +250,7 @@ public class ExternalToolClient extends ParentClient {
     }
 
     /**
-     * External tool search method.
+     * User tool search method.
      * @param params Map containing any of the following optional parameters.
      *       include: Fields included in the response, whole JSON path must be provided.
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
@@ -287,7 +287,7 @@ public class ExternalToolClient extends ParentClient {
     }
 
     /**
-     * Register a new external tool of type WORKFLOW.
+     * Register a new user tool of type WORKFLOW.
      * @param data JSON containing workflow information.
      * @param params Map containing any of the following optional parameters.
      *       include: Fields included in the response, whole JSON path must be provided.
@@ -304,7 +304,7 @@ public class ExternalToolClient extends ParentClient {
     }
 
     /**
-     * Import an external tool of type WORKFLOW.
+     * Import a user tool of type WORKFLOW.
      * @param data Repository parameters.
      * @param params Map containing any of the following optional parameters.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
@@ -318,7 +318,7 @@ public class ExternalToolClient extends ParentClient {
     }
 
     /**
-     * Execute an external tool of type WORKFLOW.
+     * Execute a user tool of type WORKFLOW.
      * @param toolId Comma separated list of external tool IDs up to a maximum of 100. Also admits basic regular expressions using the
      *     operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
      * @param data External tool run parameters.
@@ -343,7 +343,7 @@ public class ExternalToolClient extends ParentClient {
     }
 
     /**
-     * Update some external tool attributes.
+     * Update some user tool attributes.
      * @param toolId Comma separated list of external tool IDs up to a maximum of 100. Also admits basic regular expressions using the
      *     operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
      * @param data body.
@@ -362,7 +362,7 @@ public class ExternalToolClient extends ParentClient {
     }
 
     /**
-     * Returns the acl of the external tools. If member is provided, it will only return the acl for the member.
+     * Returns the acl of the user tools. If member is provided, it will only return the acl for the member.
      * @param tools Comma separated of external tool ids.
      * @param params Map containing any of the following optional parameters.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
@@ -378,7 +378,7 @@ public class ExternalToolClient extends ParentClient {
     }
 
     /**
-     * Delete external tools.
+     * Delete user tools.
      * @param tools Comma separated of external tool ids.
      * @param params Map containing any of the following optional parameters.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
@@ -391,7 +391,7 @@ public class ExternalToolClient extends ParentClient {
     }
 
     /**
-     * Get external tool information.
+     * Get user tool information.
      * @param tools Comma separated of external tool ids.
      * @param params Map containing any of the following optional parameters.
      *       include: Fields included in the response, whole JSON path must be provided.

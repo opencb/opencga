@@ -51,7 +51,7 @@ class RestClientGenerator(ABC):
             'Disease Panels': 'DiseasePanel',
             'Notes': 'Note',
             'Workflows': 'Workflow',
-            'External Tools': 'ExternalTool',
+            'User Tools': 'UserTool',
             'Analysis - Alignment': 'Alignment',
             'Analysis - Variant': 'Variant',
             'Analysis - Clinical': 'ClinicalAnalysis',

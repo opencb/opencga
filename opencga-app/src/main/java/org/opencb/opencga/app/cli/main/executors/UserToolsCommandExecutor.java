@@ -10,7 +10,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
-import org.opencb.opencga.app.cli.main.options.ExternalToolsCommandOptions;
+import org.opencb.opencga.app.cli.main.options.UserToolsCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
 import org.opencb.opencga.core.common.JacksonUtils;
@@ -49,25 +49,25 @@ import org.opencb.opencga.core.response.RestResponse;
 *  
 */
 /**
- * This class contains methods for the External Tools command line.
+ * This class contains methods for the User Tools command line.
  *    PATH: /{apiVersion}/tools
  */
-public class ExternalToolsCommandExecutor extends OpencgaCommandExecutor {
+public class UserToolsCommandExecutor extends OpencgaCommandExecutor {
 
     public String categoryName = "tools";
-    public ExternalToolsCommandOptions externalToolsCommandOptions;
+    public UserToolsCommandOptions userToolsCommandOptions;
 
-    public ExternalToolsCommandExecutor(ExternalToolsCommandOptions externalToolsCommandOptions) throws CatalogAuthenticationException {
-        super(externalToolsCommandOptions.commonCommandOptions);
-        this.externalToolsCommandOptions = externalToolsCommandOptions;
+    public UserToolsCommandExecutor(UserToolsCommandOptions userToolsCommandOptions) throws CatalogAuthenticationException {
+        super(userToolsCommandOptions.commonCommandOptions);
+        this.userToolsCommandOptions = userToolsCommandOptions;
     }
 
     @Override
     public void execute() throws Exception {
 
-        logger.debug("Executing External Tools command line");
+        logger.debug("Executing User Tools command line");
 
-        String subCommandString = getParsedSubCommand(externalToolsCommandOptions.jCommander);
+        String subCommandString = getParsedSubCommand(userToolsCommandOptions.jCommander);
 
         RestResponse queryResponse = null;
 
@@ -130,9 +130,9 @@ public class ExternalToolsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<ExternalToolAclEntryList> updateAcl() throws Exception {
-        logger.debug("Executing updateAcl in External Tools command line");
+        logger.debug("Executing updateAcl in User Tools command line");
 
-        ExternalToolsCommandOptions.UpdateAclCommandOptions commandOptions = externalToolsCommandOptions.updateAclCommandOptions;
+        UserToolsCommandOptions.UpdateAclCommandOptions commandOptions = userToolsCommandOptions.updateAclCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -159,13 +159,13 @@ public class ExternalToolsCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), ExternalToolAclUpdateParams.class);
         }
-        return openCGAClient.getExternalToolClient().updateAcl(commandOptions.members, commandOptions.action, externalToolAclUpdateParams, queryParams);
+        return openCGAClient.getUserToolClient().updateAcl(commandOptions.members, commandOptions.action, externalToolAclUpdateParams, queryParams);
     }
 
     private RestResponse<FacetField> aggregationStats() throws Exception {
-        logger.debug("Executing aggregationStats in External Tools command line");
+        logger.debug("Executing aggregationStats in User Tools command line");
 
-        ExternalToolsCommandOptions.AggregationStatsCommandOptions commandOptions = externalToolsCommandOptions.aggregationStatsCommandOptions;
+        UserToolsCommandOptions.AggregationStatsCommandOptions commandOptions = userToolsCommandOptions.aggregationStatsCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -190,13 +190,13 @@ public class ExternalToolsCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getExternalToolClient().aggregationStats(queryParams);
+        return openCGAClient.getUserToolClient().aggregationStats(queryParams);
     }
 
     private RestResponse<Job> buildCustom() throws Exception {
-        logger.debug("Executing buildCustom in External Tools command line");
+        logger.debug("Executing buildCustom in User Tools command line");
 
-        ExternalToolsCommandOptions.BuildCustomCommandOptions commandOptions = externalToolsCommandOptions.buildCustomCommandOptions;
+        UserToolsCommandOptions.BuildCustomCommandOptions commandOptions = userToolsCommandOptions.buildCustomCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -236,13 +236,13 @@ public class ExternalToolsCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), JobToolBuildParams.class);
         }
-        return openCGAClient.getExternalToolClient().buildCustom(jobToolBuildParams, queryParams);
+        return openCGAClient.getUserToolClient().buildCustom(jobToolBuildParams, queryParams);
     }
 
     private RestResponse<ExternalTool> createCustom() throws Exception {
-        logger.debug("Executing createCustom in External Tools command line");
+        logger.debug("Executing createCustom in User Tools command line");
 
-        ExternalToolsCommandOptions.CreateCustomCommandOptions commandOptions = externalToolsCommandOptions.createCustomCommandOptions;
+        UserToolsCommandOptions.CreateCustomCommandOptions commandOptions = userToolsCommandOptions.createCustomCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
@@ -290,13 +290,13 @@ public class ExternalToolsCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CustomToolCreateParams.class);
         }
-        return openCGAClient.getExternalToolClient().createCustom(customToolCreateParams, queryParams);
+        return openCGAClient.getUserToolClient().createCustom(customToolCreateParams, queryParams);
     }
 
     private RestResponse<Job> runCustomDocker() throws Exception {
-        logger.debug("Executing runCustomDocker in External Tools command line");
+        logger.debug("Executing runCustomDocker in User Tools command line");
 
-        ExternalToolsCommandOptions.RunCustomDockerCommandOptions commandOptions = externalToolsCommandOptions.runCustomDockerCommandOptions;
+        UserToolsCommandOptions.RunCustomDockerCommandOptions commandOptions = userToolsCommandOptions.runCustomDockerCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -333,13 +333,13 @@ public class ExternalToolsCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), Docker.class);
         }
-        return openCGAClient.getExternalToolClient().runCustomDocker(docker, queryParams);
+        return openCGAClient.getUserToolClient().runCustomDocker(docker, queryParams);
     }
 
     private RestResponse<Job> runCustom() throws Exception {
-        logger.debug("Executing runCustom in External Tools command line");
+        logger.debug("Executing runCustom in User Tools command line");
 
-        ExternalToolsCommandOptions.RunCustomCommandOptions commandOptions = externalToolsCommandOptions.runCustomCommandOptions;
+        UserToolsCommandOptions.RunCustomCommandOptions commandOptions = userToolsCommandOptions.runCustomCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotNull("version", commandOptions.version);
@@ -374,13 +374,13 @@ public class ExternalToolsCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CustomToolRunParams.class);
         }
-        return openCGAClient.getExternalToolClient().runCustom(commandOptions.toolId, customToolRunParams, queryParams);
+        return openCGAClient.getUserToolClient().runCustom(commandOptions.toolId, customToolRunParams, queryParams);
     }
 
     private RestResponse<ExternalTool> updateCustom() throws Exception {
-        logger.debug("Executing updateCustom in External Tools command line");
+        logger.debug("Executing updateCustom in User Tools command line");
 
-        ExternalToolsCommandOptions.UpdateCustomCommandOptions commandOptions = externalToolsCommandOptions.updateCustomCommandOptions;
+        UserToolsCommandOptions.UpdateCustomCommandOptions commandOptions = userToolsCommandOptions.updateCustomCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
@@ -424,13 +424,13 @@ public class ExternalToolsCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CustomToolUpdateParams.class);
         }
-        return openCGAClient.getExternalToolClient().updateCustom(commandOptions.toolId, customToolUpdateParams, queryParams);
+        return openCGAClient.getUserToolClient().updateCustom(commandOptions.toolId, customToolUpdateParams, queryParams);
     }
 
     private RestResponse<Object> distinct() throws Exception {
-        logger.debug("Executing distinct in External Tools command line");
+        logger.debug("Executing distinct in User Tools command line");
 
-        ExternalToolsCommandOptions.DistinctCommandOptions commandOptions = externalToolsCommandOptions.distinctCommandOptions;
+        UserToolsCommandOptions.DistinctCommandOptions commandOptions = userToolsCommandOptions.distinctCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -454,13 +454,13 @@ public class ExternalToolsCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getExternalToolClient().distinct(commandOptions.field, queryParams);
+        return openCGAClient.getUserToolClient().distinct(commandOptions.field, queryParams);
     }
 
     private RestResponse<ExternalTool> search() throws Exception {
-        logger.debug("Executing search in External Tools command line");
+        logger.debug("Executing search in User Tools command line");
 
-        ExternalToolsCommandOptions.SearchCommandOptions commandOptions = externalToolsCommandOptions.searchCommandOptions;
+        UserToolsCommandOptions.SearchCommandOptions commandOptions = userToolsCommandOptions.searchCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
@@ -489,13 +489,13 @@ public class ExternalToolsCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getExternalToolClient().search(queryParams);
+        return openCGAClient.getUserToolClient().search(queryParams);
     }
 
     private RestResponse<ExternalTool> createWorkflow() throws Exception {
-        logger.debug("Executing createWorkflow in External Tools command line");
+        logger.debug("Executing createWorkflow in User Tools command line");
 
-        ExternalToolsCommandOptions.CreateWorkflowCommandOptions commandOptions = externalToolsCommandOptions.createWorkflowCommandOptions;
+        UserToolsCommandOptions.CreateWorkflowCommandOptions commandOptions = userToolsCommandOptions.createWorkflowCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
@@ -538,13 +538,13 @@ public class ExternalToolsCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), WorkflowCreateParams.class);
         }
-        return openCGAClient.getExternalToolClient().createWorkflow(workflowCreateParams, queryParams);
+        return openCGAClient.getUserToolClient().createWorkflow(workflowCreateParams, queryParams);
     }
 
     private RestResponse<ExternalTool> importWorkflow() throws Exception {
-        logger.debug("Executing importWorkflow in External Tools command line");
+        logger.debug("Executing importWorkflow in User Tools command line");
 
-        ExternalToolsCommandOptions.ImportWorkflowCommandOptions commandOptions = externalToolsCommandOptions.importWorkflowCommandOptions;
+        UserToolsCommandOptions.ImportWorkflowCommandOptions commandOptions = userToolsCommandOptions.importWorkflowCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -573,13 +573,13 @@ public class ExternalToolsCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), WorkflowRepositoryParams.class);
         }
-        return openCGAClient.getExternalToolClient().importWorkflow(workflowRepositoryParams, queryParams);
+        return openCGAClient.getUserToolClient().importWorkflow(workflowRepositoryParams, queryParams);
     }
 
     private RestResponse<Job> runWorkflow() throws Exception {
-        logger.debug("Executing runWorkflow in External Tools command line");
+        logger.debug("Executing runWorkflow in User Tools command line");
 
-        ExternalToolsCommandOptions.RunWorkflowCommandOptions commandOptions = externalToolsCommandOptions.runWorkflowCommandOptions;
+        UserToolsCommandOptions.RunWorkflowCommandOptions commandOptions = userToolsCommandOptions.runWorkflowCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotNull("version", commandOptions.version);
@@ -606,13 +606,13 @@ public class ExternalToolsCommandExecutor extends OpencgaCommandExecutor {
             objectMap = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), ObjectMap.class);
         }
-        return openCGAClient.getExternalToolClient().runWorkflow(commandOptions.toolId, objectMap, queryParams);
+        return openCGAClient.getUserToolClient().runWorkflow(commandOptions.toolId, objectMap, queryParams);
     }
 
     private RestResponse<ExternalTool> updateWorkflow() throws Exception {
-        logger.debug("Executing updateWorkflow in External Tools command line");
+        logger.debug("Executing updateWorkflow in User Tools command line");
 
-        ExternalToolsCommandOptions.UpdateWorkflowCommandOptions commandOptions = externalToolsCommandOptions.updateWorkflowCommandOptions;
+        UserToolsCommandOptions.UpdateWorkflowCommandOptions commandOptions = userToolsCommandOptions.updateWorkflowCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
@@ -651,13 +651,13 @@ public class ExternalToolsCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), WorkflowUpdateParams.class);
         }
-        return openCGAClient.getExternalToolClient().updateWorkflow(commandOptions.toolId, workflowUpdateParams, queryParams);
+        return openCGAClient.getUserToolClient().updateWorkflow(commandOptions.toolId, workflowUpdateParams, queryParams);
     }
 
     private RestResponse<ExternalToolAclEntryList> acl() throws Exception {
-        logger.debug("Executing acl in External Tools command line");
+        logger.debug("Executing acl in User Tools command line");
 
-        ExternalToolsCommandOptions.AclCommandOptions commandOptions = externalToolsCommandOptions.aclCommandOptions;
+        UserToolsCommandOptions.AclCommandOptions commandOptions = userToolsCommandOptions.aclCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -667,13 +667,13 @@ public class ExternalToolsCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getExternalToolClient().acl(commandOptions.tools, queryParams);
+        return openCGAClient.getUserToolClient().acl(commandOptions.tools, queryParams);
     }
 
     private RestResponse<ExternalTool> delete() throws Exception {
-        logger.debug("Executing delete in External Tools command line");
+        logger.debug("Executing delete in User Tools command line");
 
-        ExternalToolsCommandOptions.DeleteCommandOptions commandOptions = externalToolsCommandOptions.deleteCommandOptions;
+        UserToolsCommandOptions.DeleteCommandOptions commandOptions = userToolsCommandOptions.deleteCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -681,13 +681,13 @@ public class ExternalToolsCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getExternalToolClient().delete(commandOptions.tools, queryParams);
+        return openCGAClient.getUserToolClient().delete(commandOptions.tools, queryParams);
     }
 
     private RestResponse<ExternalTool> info() throws Exception {
-        logger.debug("Executing info in External Tools command line");
+        logger.debug("Executing info in User Tools command line");
 
-        ExternalToolsCommandOptions.InfoCommandOptions commandOptions = externalToolsCommandOptions.infoCommandOptions;
+        UserToolsCommandOptions.InfoCommandOptions commandOptions = userToolsCommandOptions.infoCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
@@ -699,6 +699,6 @@ public class ExternalToolsCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getExternalToolClient().info(commandOptions.tools, queryParams);
+        return openCGAClient.getUserToolClient().info(commandOptions.tools, queryParams);
     }
 }
