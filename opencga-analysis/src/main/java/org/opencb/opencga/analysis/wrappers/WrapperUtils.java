@@ -195,10 +195,15 @@ public class WrapperUtils {
 
     public static String processParamsFile(ObjectMap params, Path outDir, List<AbstractMap.SimpleEntry<String, String>> bindings,
                                            Set<String> readOnlyBindings) {
+        return processParamsFile(params, !params.containsKey("params"), outDir, bindings, readOnlyBindings);
+    }
+
+    public static String processParamsFile(ObjectMap params, boolean addInParams, Path outDir,
+                                           List<AbstractMap.SimpleEntry<String, String>> bindings, Set<String> readOnlyBindings) {
         String paramsFilename = "params.json";
         String virtualParamsPath = "/outdir/" + paramsFilename;
         ObjectMap newParams = new ObjectMap();
-        if (!params.containsKey("params")) {
+        if (addInParams) {
             newParams.put("params", params);
         } else {
             newParams.putAll(params);
@@ -211,7 +216,6 @@ public class WrapperUtils {
 
         return virtualParamsPath;
     }
-
 
     public static void writeParamsFile(ObjectMap params, Path path) {
         try (OutputStream outputStream = Files.newOutputStream(path)) {

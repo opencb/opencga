@@ -316,6 +316,15 @@ public class OpenCGATestExternalResource extends ExternalResource {
             Files.copy(inputStream, analysisPath.resolve("star_wrapper.py"), StandardCopyOption.REPLACE_EXISTING);
         }
 
+        // Scripts for DESeq2
+        List<String> filenames = Arrays.asList("run_deseq2.py", "deseq2_script.R");
+        for (String filename : filenames) {
+            analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/deseq2")).toAbsolutePath();
+            try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/deseq2/" + filename)) {
+                Files.copy(inputStream, analysisPath.resolve(filename), StandardCopyOption.REPLACE_EXISTING);
+            }
+        }
+
         return opencgaHome;
     }
 
