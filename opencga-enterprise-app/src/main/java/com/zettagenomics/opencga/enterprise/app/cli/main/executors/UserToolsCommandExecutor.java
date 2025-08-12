@@ -3,7 +3,7 @@ package com.zettagenomics.opencga.enterprise.app.cli.main.executors;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor;
-import com.zettagenomics.opencga.enterprise.app.cli.main.options.ExternalToolsCommandOptions;
+import com.zettagenomics.opencga.enterprise.app.cli.main.options.UserToolsCommandOptions;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,25 +49,25 @@ import org.opencb.opencga.core.response.RestResponse;
 *  
 */
 /**
- * This class contains methods for the External Tools command line.
+ * This class contains methods for the User Tools command line.
  *    PATH: /{apiVersion}/tools
  */
-public class ExternalToolsCommandExecutor extends com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor {
+public class UserToolsCommandExecutor extends com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor {
 
     public String categoryName = "tools";
-    public ExternalToolsCommandOptions externalToolsCommandOptions;
+    public UserToolsCommandOptions userToolsCommandOptions;
 
-    public ExternalToolsCommandExecutor(ExternalToolsCommandOptions externalToolsCommandOptions) throws CatalogAuthenticationException {
-        super(externalToolsCommandOptions.commonCommandOptions);
-        this.externalToolsCommandOptions = externalToolsCommandOptions;
+    public UserToolsCommandExecutor(UserToolsCommandOptions userToolsCommandOptions) throws CatalogAuthenticationException {
+        super(userToolsCommandOptions.commonCommandOptions);
+        this.userToolsCommandOptions = userToolsCommandOptions;
     }
 
     @Override
     public void execute() throws Exception {
 
-        logger.debug("Executing External Tools command line");
+        logger.debug("Executing User Tools command line");
 
-        String subCommandString = getParsedSubCommand(externalToolsCommandOptions.jCommander);
+        String subCommandString = getParsedSubCommand(userToolsCommandOptions.jCommander);
 
         RestResponse queryResponse = null;
 
@@ -130,9 +130,9 @@ public class ExternalToolsCommandExecutor extends com.zettagenomics.opencga.ente
     }
 
     private RestResponse<ExternalToolAclEntryList> updateAcl() throws Exception {
-        logger.debug("Executing updateAcl in External Tools command line");
+        logger.debug("Executing updateAcl in User Tools command line");
 
-        ExternalToolsCommandOptions.UpdateAclCommandOptions commandOptions = externalToolsCommandOptions.updateAclCommandOptions;
+        UserToolsCommandOptions.UpdateAclCommandOptions commandOptions = userToolsCommandOptions.updateAclCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -159,13 +159,13 @@ public class ExternalToolsCommandExecutor extends com.zettagenomics.opencga.ente
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), ExternalToolAclUpdateParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseExternalToolClient().updateAcl(commandOptions.members, commandOptions.action, externalToolAclUpdateParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseUserToolClient().updateAcl(commandOptions.members, commandOptions.action, externalToolAclUpdateParams, queryParams);
     }
 
     private RestResponse<FacetField> aggregationStats() throws Exception {
-        logger.debug("Executing aggregationStats in External Tools command line");
+        logger.debug("Executing aggregationStats in User Tools command line");
 
-        ExternalToolsCommandOptions.AggregationStatsCommandOptions commandOptions = externalToolsCommandOptions.aggregationStatsCommandOptions;
+        UserToolsCommandOptions.AggregationStatsCommandOptions commandOptions = userToolsCommandOptions.aggregationStatsCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -190,13 +190,13 @@ public class ExternalToolsCommandExecutor extends com.zettagenomics.opencga.ente
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseExternalToolClient().aggregationStats(queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseUserToolClient().aggregationStats(queryParams);
     }
 
     private RestResponse<Job> buildCustom() throws Exception {
-        logger.debug("Executing buildCustom in External Tools command line");
+        logger.debug("Executing buildCustom in User Tools command line");
 
-        ExternalToolsCommandOptions.BuildCustomCommandOptions commandOptions = externalToolsCommandOptions.buildCustomCommandOptions;
+        UserToolsCommandOptions.BuildCustomCommandOptions commandOptions = userToolsCommandOptions.buildCustomCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -236,13 +236,13 @@ public class ExternalToolsCommandExecutor extends com.zettagenomics.opencga.ente
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), JobToolBuildParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseExternalToolClient().buildCustom(jobToolBuildParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseUserToolClient().buildCustom(jobToolBuildParams, queryParams);
     }
 
     private RestResponse<ExternalTool> createCustom() throws Exception {
-        logger.debug("Executing createCustom in External Tools command line");
+        logger.debug("Executing createCustom in User Tools command line");
 
-        ExternalToolsCommandOptions.CreateCustomCommandOptions commandOptions = externalToolsCommandOptions.createCustomCommandOptions;
+        UserToolsCommandOptions.CreateCustomCommandOptions commandOptions = userToolsCommandOptions.createCustomCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
@@ -290,13 +290,13 @@ public class ExternalToolsCommandExecutor extends com.zettagenomics.opencga.ente
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CustomToolCreateParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseExternalToolClient().createCustom(customToolCreateParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseUserToolClient().createCustom(customToolCreateParams, queryParams);
     }
 
     private RestResponse<Job> runCustomDocker() throws Exception {
-        logger.debug("Executing runCustomDocker in External Tools command line");
+        logger.debug("Executing runCustomDocker in User Tools command line");
 
-        ExternalToolsCommandOptions.RunCustomDockerCommandOptions commandOptions = externalToolsCommandOptions.runCustomDockerCommandOptions;
+        UserToolsCommandOptions.RunCustomDockerCommandOptions commandOptions = userToolsCommandOptions.runCustomDockerCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -333,13 +333,13 @@ public class ExternalToolsCommandExecutor extends com.zettagenomics.opencga.ente
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), Docker.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseExternalToolClient().runCustomDocker(docker, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseUserToolClient().runCustomDocker(docker, queryParams);
     }
 
     private RestResponse<Job> runCustom() throws Exception {
-        logger.debug("Executing runCustom in External Tools command line");
+        logger.debug("Executing runCustom in User Tools command line");
 
-        ExternalToolsCommandOptions.RunCustomCommandOptions commandOptions = externalToolsCommandOptions.runCustomCommandOptions;
+        UserToolsCommandOptions.RunCustomCommandOptions commandOptions = userToolsCommandOptions.runCustomCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotNull("version", commandOptions.version);
@@ -374,13 +374,13 @@ public class ExternalToolsCommandExecutor extends com.zettagenomics.opencga.ente
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CustomToolRunParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseExternalToolClient().runCustom(commandOptions.toolId, customToolRunParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseUserToolClient().runCustom(commandOptions.toolId, customToolRunParams, queryParams);
     }
 
     private RestResponse<ExternalTool> updateCustom() throws Exception {
-        logger.debug("Executing updateCustom in External Tools command line");
+        logger.debug("Executing updateCustom in User Tools command line");
 
-        ExternalToolsCommandOptions.UpdateCustomCommandOptions commandOptions = externalToolsCommandOptions.updateCustomCommandOptions;
+        UserToolsCommandOptions.UpdateCustomCommandOptions commandOptions = userToolsCommandOptions.updateCustomCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
@@ -424,13 +424,13 @@ public class ExternalToolsCommandExecutor extends com.zettagenomics.opencga.ente
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), CustomToolUpdateParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseExternalToolClient().updateCustom(commandOptions.toolId, customToolUpdateParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseUserToolClient().updateCustom(commandOptions.toolId, customToolUpdateParams, queryParams);
     }
 
     private RestResponse<Object> distinct() throws Exception {
-        logger.debug("Executing distinct in External Tools command line");
+        logger.debug("Executing distinct in User Tools command line");
 
-        ExternalToolsCommandOptions.DistinctCommandOptions commandOptions = externalToolsCommandOptions.distinctCommandOptions;
+        UserToolsCommandOptions.DistinctCommandOptions commandOptions = userToolsCommandOptions.distinctCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -454,13 +454,13 @@ public class ExternalToolsCommandExecutor extends com.zettagenomics.opencga.ente
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseExternalToolClient().distinct(commandOptions.field, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseUserToolClient().distinct(commandOptions.field, queryParams);
     }
 
     private RestResponse<ExternalTool> search() throws Exception {
-        logger.debug("Executing search in External Tools command line");
+        logger.debug("Executing search in User Tools command line");
 
-        ExternalToolsCommandOptions.SearchCommandOptions commandOptions = externalToolsCommandOptions.searchCommandOptions;
+        UserToolsCommandOptions.SearchCommandOptions commandOptions = userToolsCommandOptions.searchCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
@@ -489,13 +489,13 @@ public class ExternalToolsCommandExecutor extends com.zettagenomics.opencga.ente
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseExternalToolClient().search(queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseUserToolClient().search(queryParams);
     }
 
     private RestResponse<ExternalTool> createWorkflow() throws Exception {
-        logger.debug("Executing createWorkflow in External Tools command line");
+        logger.debug("Executing createWorkflow in User Tools command line");
 
-        ExternalToolsCommandOptions.CreateWorkflowCommandOptions commandOptions = externalToolsCommandOptions.createWorkflowCommandOptions;
+        UserToolsCommandOptions.CreateWorkflowCommandOptions commandOptions = userToolsCommandOptions.createWorkflowCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
@@ -538,13 +538,13 @@ public class ExternalToolsCommandExecutor extends com.zettagenomics.opencga.ente
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), WorkflowCreateParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseExternalToolClient().createWorkflow(workflowCreateParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseUserToolClient().createWorkflow(workflowCreateParams, queryParams);
     }
 
     private RestResponse<ExternalTool> importWorkflow() throws Exception {
-        logger.debug("Executing importWorkflow in External Tools command line");
+        logger.debug("Executing importWorkflow in User Tools command line");
 
-        ExternalToolsCommandOptions.ImportWorkflowCommandOptions commandOptions = externalToolsCommandOptions.importWorkflowCommandOptions;
+        UserToolsCommandOptions.ImportWorkflowCommandOptions commandOptions = userToolsCommandOptions.importWorkflowCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -573,13 +573,13 @@ public class ExternalToolsCommandExecutor extends com.zettagenomics.opencga.ente
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), WorkflowRepositoryParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseExternalToolClient().importWorkflow(workflowRepositoryParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseUserToolClient().importWorkflow(workflowRepositoryParams, queryParams);
     }
 
     private RestResponse<Job> runWorkflow() throws Exception {
-        logger.debug("Executing runWorkflow in External Tools command line");
+        logger.debug("Executing runWorkflow in User Tools command line");
 
-        ExternalToolsCommandOptions.RunWorkflowCommandOptions commandOptions = externalToolsCommandOptions.runWorkflowCommandOptions;
+        UserToolsCommandOptions.RunWorkflowCommandOptions commandOptions = userToolsCommandOptions.runWorkflowCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotNull("version", commandOptions.version);
@@ -606,13 +606,13 @@ public class ExternalToolsCommandExecutor extends com.zettagenomics.opencga.ente
             objectMap = JacksonUtils.getDefaultObjectMapper()
                     .readValue(new java.io.File(commandOptions.jsonFile), ObjectMap.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseExternalToolClient().runWorkflow(commandOptions.toolId, objectMap, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseUserToolClient().runWorkflow(commandOptions.toolId, objectMap, queryParams);
     }
 
     private RestResponse<ExternalTool> updateWorkflow() throws Exception {
-        logger.debug("Executing updateWorkflow in External Tools command line");
+        logger.debug("Executing updateWorkflow in User Tools command line");
 
-        ExternalToolsCommandOptions.UpdateWorkflowCommandOptions commandOptions = externalToolsCommandOptions.updateWorkflowCommandOptions;
+        UserToolsCommandOptions.UpdateWorkflowCommandOptions commandOptions = userToolsCommandOptions.updateWorkflowCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
@@ -651,13 +651,13 @@ public class ExternalToolsCommandExecutor extends com.zettagenomics.opencga.ente
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), WorkflowUpdateParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseExternalToolClient().updateWorkflow(commandOptions.toolId, workflowUpdateParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseUserToolClient().updateWorkflow(commandOptions.toolId, workflowUpdateParams, queryParams);
     }
 
     private RestResponse<ExternalToolAclEntryList> acl() throws Exception {
-        logger.debug("Executing acl in External Tools command line");
+        logger.debug("Executing acl in User Tools command line");
 
-        ExternalToolsCommandOptions.AclCommandOptions commandOptions = externalToolsCommandOptions.aclCommandOptions;
+        UserToolsCommandOptions.AclCommandOptions commandOptions = userToolsCommandOptions.aclCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -667,13 +667,13 @@ public class ExternalToolsCommandExecutor extends com.zettagenomics.opencga.ente
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseExternalToolClient().acl(commandOptions.tools, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseUserToolClient().acl(commandOptions.tools, queryParams);
     }
 
     private RestResponse<ExternalTool> delete() throws Exception {
-        logger.debug("Executing delete in External Tools command line");
+        logger.debug("Executing delete in User Tools command line");
 
-        ExternalToolsCommandOptions.DeleteCommandOptions commandOptions = externalToolsCommandOptions.deleteCommandOptions;
+        UserToolsCommandOptions.DeleteCommandOptions commandOptions = userToolsCommandOptions.deleteCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -681,13 +681,13 @@ public class ExternalToolsCommandExecutor extends com.zettagenomics.opencga.ente
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseExternalToolClient().delete(commandOptions.tools, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseUserToolClient().delete(commandOptions.tools, queryParams);
     }
 
     private RestResponse<ExternalTool> info() throws Exception {
-        logger.debug("Executing info in External Tools command line");
+        logger.debug("Executing info in User Tools command line");
 
-        ExternalToolsCommandOptions.InfoCommandOptions commandOptions = externalToolsCommandOptions.infoCommandOptions;
+        UserToolsCommandOptions.InfoCommandOptions commandOptions = userToolsCommandOptions.infoCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
@@ -699,6 +699,6 @@ public class ExternalToolsCommandExecutor extends com.zettagenomics.opencga.ente
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return enterpriseOpenCGAClient.getEnterpriseExternalToolClient().info(commandOptions.tools, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseUserToolClient().info(commandOptions.tools, queryParams);
     }
 }

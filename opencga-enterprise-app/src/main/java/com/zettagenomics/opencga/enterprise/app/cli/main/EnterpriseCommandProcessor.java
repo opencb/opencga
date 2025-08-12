@@ -221,6 +221,9 @@ public class EnterpriseCommandProcessor extends CommandProcessor{
             case "families":
                 commandExecutor = new FamiliesCommandExecutor(cliOptionsParser.getFamiliesCommandOptions());
                 break;
+            case "tools":
+                commandExecutor = new UserToolsCommandExecutor(cliOptionsParser.getUserToolsCommandOptions());
+                break;
             case "alignments":
                 commandExecutor =
                         new AnalysisAlignmentCommandExecutor(cliOptionsParser.getAnalysisAlignmentCommandOptions());
