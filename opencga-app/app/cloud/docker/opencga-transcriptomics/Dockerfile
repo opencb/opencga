@@ -8,7 +8,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-pip \
     python3-venv \
     build-essential \
-    && rm -rf /var/lib/apt/lists/* \
+    xorg-dev \
+    libxt-dev \
+    libcairo2-dev \
+    libpango1.0-dev && \
+    rm -rf /var/lib/apt/lists/* \
+
 
 ## Install local dependencies
 # --- MultiQC virtual environment setup ---
@@ -40,6 +45,25 @@ RUN wget -O hisat2-source.zip https://github.com/DaehwanKimLab/hisat2/archive/v2
     make && \
     ln -s /usr/bin/python3 /usr/bin/python && \
     cd ..
+
+# Download and install R 4.3.1
+RUN wget https://cran.r-project.org/src/base/R-4/R-4.3.1.tar.gz && \
+    tar -xzf R-4.3.1.tar.gz && \
+    cd R-4.3.1 && \
+    ./configure --enable-R-shlib && \
+    make && \
+    make install && \
+    cd .. && \
+    rm -rf R-4.3.1*
+
+# Install BiocManager and DESeq2 (using Bioconductor 3.18 for R 4.3.1)
+RUN Rscript -e " \
+  if (!requireNamespace('BiocManager', quietly = TRUE)) \
+    install.packages('BiocManager', repos = 'https://cloud.r-project.org'); \
+  BiocManager::install(version = '3.18', ask = FALSE, update = TRUE); \
+  BiocManager::install('DESeq2', ask = FALSE); \
+  print(packageVersion('DESeq2')) \
+"
 
 ENV PATH="/opt/opencga/hisat2-2.2.1:${PATH}"
 
