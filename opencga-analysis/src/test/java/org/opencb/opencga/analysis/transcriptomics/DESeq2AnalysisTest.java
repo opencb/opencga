@@ -190,7 +190,7 @@ public class DESeq2AnalysisTest {
         try (InputStream stream = this.getClass().getClassLoader().getResourceAsStream(metadataPath.getFileName().toString())) {
             Files.copy(stream, metadataPath, StandardCopyOption.REPLACE_EXISTING);
         }
-        
+
         File countsFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(countsPath.toAbsolutePath().toString(), "", "", "", null, null,
                 null, null, null), false, token).first();
         File metadataFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(metadataPath.toAbsolutePath().toString(), "", "", "", null, null,
