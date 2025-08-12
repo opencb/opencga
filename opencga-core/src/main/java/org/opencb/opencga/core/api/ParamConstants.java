@@ -575,9 +575,16 @@ public class ParamConstants {
     public static final String JOB_INTERNAL_KILL_JOB_REQUESTED_PARAM = "internal.killJobRequested";
     public static final String JOB_INTERNAL_KILL_JOB_REQUESTED_DESCRIPTION = "Flag indicating that the user requested to kill the job.";
     public static final String JOB_TOOL_TYPE_PARAM = "toolType";
+    public static final String JOB_TOOL_REQUIREMENTS_PROCESSOR_TYPE_PARAM = "tool.minimumRequirements.processorType";
+    public static final String JOB_TOOL_REQUIREMENTS_QUEUE_PARAM = "tool.minimumRequirements.queue";
+    public static final String JOB_EXECUTION_QUEUE_ID_PARAM = "execution.queue.id";
     public static final String JOB_TYPE_DESCRIPTION = "Job type (NATIVE, WORKFLOW, CUSTOM or WALKER)";
     public static final String JOB_TOOL_ID_DESCRIPTION = "Tool ID executed by the job" + REGEX_SUPPORT;
     public static final String JOB_TOOL_TYPE_DESCRIPTION = "Tool type executed by the job [OPERATION, ANALYSIS]";
+    public static final String JOB_TOOL_REQUIREMENTS_PROCESSOR_TYPE_DESCRIPTION = "Processor type required to run the job. "
+            + "Allowed values: [CPU, GPU, FPGA]";
+    public static final String JOB_TOOL_REQUIREMENTS_QUEUE_DESCRIPTION = "Queue where the job is expected to be executed.";
+    public static final String JOB_EXECUTION_QUEUE_ID_DESCRIPTION = "Queue id where the job has been submitted to be executed.";
     public static final String JOB_USER_PARAM = "userId";
     public static final String JOB_USER_DESCRIPTION = "User that created the job";
     public static final String JOB_PRIORITY_PARAM = "priority";

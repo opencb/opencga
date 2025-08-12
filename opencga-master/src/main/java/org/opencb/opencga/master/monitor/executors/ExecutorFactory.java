@@ -16,47 +16,93 @@
 
 package org.opencb.opencga.master.monitor.executors;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.Execution;
+import org.opencb.opencga.core.config.ExecutionQueue;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by pfurio on 22/08/16.
  */
-public class ExecutorFactory {
+public class ExecutorFactory implements Closeable {
 
-    // TODO: Change for a map
-    private BatchExecutor executor;
+    private Map<String, String> queueToExecutorMap;
+    private Map<String, BatchExecutor> executor;
 
     public ExecutorFactory(Configuration configuration) {
-        Execution execution = configuration.getAnalysis().getExecution();
-        String mode = StringUtils.isEmpty(execution.getId())
-                ? "local" : execution.getId().toLowerCase();
+        this.queueToExecutorMap = new HashMap<>();
+        this.executor = new HashMap<>();
 
-        switch (mode) {
-            case "local":
-                this.executor = new LocalExecutor(execution);
-                break;
-            case "sge":
-                this.executor = new SGEExecutor(execution);
-                break;
+        Set<String> executorIds = new HashSet<>();
+        if (CollectionUtils.isNotEmpty(configuration.getAnalysis().getExecution().getQueues())) {
+            for (ExecutionQueue queue : configuration.getAnalysis().getExecution().getQueues()) {
+                if (StringUtils.isEmpty(queue.getId())) {
+                    throw new IllegalArgumentException("Queue id cannot be null or empty");
+                }
+                if (StringUtils.isEmpty(queue.getExecutor())) {
+                    throw new IllegalArgumentException("Queue " + queue.getId() + " does not have an associated executor");
+                }
+                if (queueToExecutorMap.containsKey(queue.getId())) {
+                    throw new IllegalArgumentException("Queue " + queue.getId() + " is already defined");
+                }
+                queueToExecutorMap.put(queue.getId(), queue.getExecutor().toLowerCase());
+                executorIds.add(queue.getExecutor());
+            }
+        } else {
+            queueToExecutorMap.put("default", "local");
+            executorIds.add("local");
+        }
+
+        Execution execution = configuration.getAnalysis().getExecution();
+        for (String executorId : executorIds) {
+            switch (executorId) {
+                case "local":
+                    LocalExecutor localExecutor = new LocalExecutor(execution);
+                    this.executor.put("local", localExecutor);
+                    break;
+                case "sge":
+                    SGEExecutor sgeExecutor = new SGEExecutor(execution);
+                    this.executor.put("sge", sgeExecutor);
+                    break;
 //            case "azure":
 //            case "azure-batch":
 //                this.executor = new AzureBatchExecutor(execution);
 //                break;
-            case "k8s":
-            case "kubernetes":
-                this.executor = new K8SExecutor(configuration);
-                break;
-            default:
-                throw new UnsupportedOperationException("nonsoupported execution mode { " + mode
-                        + " }, accepted modes are : local, sge, azure");
+                case "k8s":
+                case "kubernetes":
+                    K8SExecutor k8SExecutor = new K8SExecutor(configuration);
+                    this.executor.put(executorId, k8SExecutor);
+                    break;
+                default:
+                    throw new UnsupportedOperationException("Unsupported execution mode { " + executorId
+                            + " }, accepted modes are : local, sge, k8s, kubernetes");
+            }
         }
     }
 
-    public BatchExecutor getExecutor() {
-        return this.executor;
+    public BatchExecutor getExecutor(String queueId) {
+        if (!queueToExecutorMap.containsKey(queueId)) {
+            throw new IllegalArgumentException("Queue " + queueId + " does not have an associated executor");
+        }
+        String executorId = queueToExecutorMap.get(queueId);
+        if (!executor.containsKey(executorId)) {
+            throw new IllegalArgumentException("Executor " + executorId + " does not exist");
+        }
+        return executor.get(executorId);
     }
 
-    // TODO: CreateCommandLine (static method)
+    @Override
+    public void close() throws IOException {
+        for (BatchExecutor executor : this.executor.values()) {
+            executor.close();
+        }
+    }
 }
