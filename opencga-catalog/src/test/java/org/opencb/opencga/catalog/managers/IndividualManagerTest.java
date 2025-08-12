@@ -145,7 +145,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
         assertEquals(3, result.getNumResults());
 
         OpenCGAResult<Individual> search = catalogManager.getIndividualManager().search(studyFqn,
-                new Query(IndividualDBAdaptor.QueryParams.DISORDERS.key(), "disorder1, description 1,disorder2, description 2"),
+                new Query(IndividualDBAdaptor.QueryParams.DISORDERS.key(), "\"disorder1, description 1\",\"disorder2, description 2\""),
                 IndividualManager.INCLUDE_INDIVIDUAL_IDS, ownerToken);
         assertEquals(2, search.getNumResults());
         assertTrue(Arrays.asList("i1", "i2").containsAll(search.getResults().stream().map(Individual::getId).collect(Collectors.toList())));
