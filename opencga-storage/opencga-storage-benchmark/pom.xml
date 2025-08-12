@@ -28,6 +28,8 @@
 
     <artifactId>opencga-storage-benchmark</artifactId>
     <packaging>jar</packaging>
+    <name>OpenCGA Storage Benchmark</name>
+
     <dependencies>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
