@@ -20,12 +20,9 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
-import org.opencb.opencga.analysis.wrappers.multiqc.MultiQcWrapperAnalysisExecutor;
-import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.wrapper.Hisat2WrapperParams;
-import org.opencb.opencga.core.models.wrapper.MultiQcWrapperParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
@@ -36,7 +33,6 @@ import java.util.List;
 
 import static org.opencb.opencga.analysis.wrappers.WrapperUtils.*;
 import static org.opencb.opencga.analysis.wrappers.hisat2.Hisat2WrapperAnalysisExecutor.*;
-import static org.opencb.opencga.analysis.wrappers.multiqc.MultiQcWrapperAnalysisExecutor.OUTDIR_PARAM;
 
 @Tool(id = Hisat2WrapperAnalysis.ID, resource = Enums.Resource.ALIGNMENT, description = Hisat2WrapperAnalysis.DESCRIPTION)
 public class Hisat2WrapperAnalysis extends OpenCgaToolScopeStudy {

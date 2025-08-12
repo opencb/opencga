@@ -5,21 +5,13 @@ import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
-import org.opencb.opencga.analysis.wrappers.multiqc.MultiQcWrapperAnalysis;
-import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.models.wrapper.StarWrapperParams;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 
-import java.nio.file.Paths;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.opencb.opencga.analysis.wrappers.WrapperUtils.*;
-import static org.opencb.opencga.analysis.wrappers.WrapperUtils.buildVirtualPaths;
-import static org.opencb.opencga.analysis.wrappers.WrapperUtils.buildWrapperCli;
-import static org.opencb.opencga.analysis.wrappers.WrapperUtils.processParamsFile;
-import static org.opencb.opencga.analysis.wrappers.WrapperUtils.updateParams;
 import static org.opencb.opencga.analysis.wrappers.multiqc.MultiQcWrapperAnalysis.ID;
 
 @ToolExecutor(id = StarWrapperAnalysisExecutor.ID,

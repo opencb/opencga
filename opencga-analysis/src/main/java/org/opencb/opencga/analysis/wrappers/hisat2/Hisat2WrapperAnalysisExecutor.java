@@ -9,7 +9,6 @@ import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecu
 import org.opencb.opencga.analysis.wrappers.multiqc.MultiQcWrapperAnalysis;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.models.wrapper.Hisat2WrapperParams;
-import org.opencb.opencga.core.models.wrapper.MultiQcWrapperParams;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 
 import java.nio.file.Path;
