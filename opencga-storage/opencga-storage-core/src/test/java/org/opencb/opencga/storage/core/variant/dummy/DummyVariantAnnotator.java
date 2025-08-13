@@ -13,6 +13,7 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorExcept
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -42,7 +43,7 @@ public class DummyVariantAnnotator extends VariantAnnotator {
             DataRelease dataRelease = new DataRelease();
             dataRelease.setRelease(dataReleaseId);
             metadata = new ProjectMetadata.VariantAnnotationMetadata(-1, null, null,
-                    new ProjectMetadata.VariantAnnotatorProgram(key, version, null),
+                    new ProjectMetadata.VariantAnnotatorProgram(key, version, null), new HashMap<>(),
                     Collections.singletonList(new ObjectMap("data", "genes")), dataRelease, null);
         }
     }
