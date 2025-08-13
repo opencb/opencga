@@ -57,9 +57,28 @@ dds <- DESeqDataSetFromMatrix(countData = counts_data,
 
 cat("Running DESeq2 analysis...\n")
 if (config$analysis$testMethod == "LRT") {
-  # Note: A proper LRT test requires a 'reduced' formula, which should be added
-  # to the JSON config if this test method is to be used.
-  stop("Error: 'LRT' test method is specified but handling for 'reduced_formula' is not defined in this script version.", call.=FALSE)
+  if (is.null(config$analysis$reducedFormula)) {
+        stop("Error: 'reducedFormula' must be provided in config for LRT test.", call. = FALSE)
+  }
+  cat("   - Using Likelihood Ratio Test (LRT).\n")
+  tryCatch({
+      dds <- DESeq(dds, test = "LRT", reduced = as.formula(config$analysis$reducedFormula))
+    }, error = function(e) {
+      if (grepl("all gene-wise dispersion estimates are within", e$message)) {
+        cat("DESeq2 warning: Dispersion estimates are too close. Using gene-wise estimates directly.\n")
+        dds <<- estimateSizeFactors(dds)
+        dds <<- estimateDispersionsGeneEst(dds)
+        dispersions(dds) <- mcols(dds)$dispGeneEst
+        dds <<- nbinomLRT(dds, reduced = as.formula(config$analysis$reducedFormula))
+      } else {
+        stop(e)
+      }
+    })
+
+  # Get results
+  cat("   - Getting results for the test LRT (interaction term).\n")
+  res <- results(dds)
+
 } else {
   cat("   - Using Wald Test.\n")
   tryCatch({
@@ -75,17 +94,23 @@ if (config$analysis$testMethod == "LRT") {
       stop(e)
     }
   })
+
+  # Get results
+  cat("   - Getting results for the test Wald.\n")
+  if (is.null(config$analysis$contrast$factorName)) {
+    stop("Error: 'contrast' must be provided in config for Wald test.", call. = FALSE)
+  }
+  contrast_vector <- c(
+    config$analysis$contrast$factorName,
+    config$analysis$contrast$numeratorLevel,
+    config$analysis$contrast$denominatorLevel
+  )
+  cat(paste0("   - Using contrast: ", paste(contrast_vector, collapse=" vs "), "\n"))
+  res <- results(dds, contrast = contrast_vector)
 }
 
 # --- 6. Extract and Save Results ---
-cat("Extracting and saving results...\n")
-contrast_vector <- c(
-  config$analysis$contrast$factorName,
-  config$analysis$contrast$numeratorLevel,
-  config$analysis$contrast$denominatorLevel
-)
-cat(paste0("   - Using contrast: ", paste(contrast_vector, collapse=" vs "), "\n"))
-res <- results(dds, contrast = contrast_vector)
+cat("Saving results...\n")
 
 res_ordered <- res[order(res$pvalue), ]
 output_results_file <- paste0(config$output$basename, ".csv")

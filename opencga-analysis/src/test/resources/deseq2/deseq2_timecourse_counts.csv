@@ -1,0 +1,5 @@
+gene,A_T0_rep1,A_T0_rep2,A_T1_rep1,A_T1_rep2,A_T2_rep1,A_T2_rep2,B_T0_rep1,B_T0_rep2,B_T1_rep1,B_T1_rep2,B_T2_rep1,B_T2_rep2
+interaction_gene,10,12,50,55,200,210,180,185,90,95,20,18
+time_gene,8,11,45,42,150,160,9,13,55,51,170,165
+genotype_gene,30,33,28,35,31,29,350,360,340,355,365,345
+noise_gene,25,19,22,28,21,24,26,18,23,29,20,27

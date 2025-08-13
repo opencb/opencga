@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.analysis.wrappers;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -219,7 +221,13 @@ public class WrapperUtils {
 
     public static void writeParamsFile(ObjectMap params, Path path) {
         try (OutputStream outputStream = Files.newOutputStream(path)) {
-            JacksonUtils.getDefaultObjectMapper().writeValue(outputStream, params);
+
+            // Get the default ObjectMapper instance and configure the ObjectMapper to ignore all fields with null values
+            ObjectMapper objectMapper = JacksonUtils.getDefaultObjectMapper()
+                    .setSerializationInclusion(JsonInclude.Include.NON_NULL);
+
+            // Write the params to the output stream
+            objectMapper.writeValue(outputStream, params);
         } catch (IOException e) {
             logger.error("Error writing params file to '{}'", path, e);
         }

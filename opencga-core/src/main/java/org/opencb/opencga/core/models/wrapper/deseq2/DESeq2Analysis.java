@@ -3,6 +3,7 @@ package org.opencb.opencga.core.models.wrapper.deseq2;
 public class DESeq2Analysis {
 
         private String designFormula;
+        private String reducedFormula;
         private int prefilterMinCount;
         private String testMethod;
         private DESeq2AnalysisContrast contrast;
@@ -11,8 +12,10 @@ public class DESeq2Analysis {
         this.contrast = new DESeq2AnalysisContrast();
     }
 
-    public DESeq2Analysis(String designFormula, int prefilterMinCount, String testMethod, DESeq2AnalysisContrast contrast) {
+    public DESeq2Analysis(String designFormula, String reducedFormula, int prefilterMinCount, String testMethod,
+                          DESeq2AnalysisContrast contrast) {
         this.designFormula = designFormula;
+        this.reducedFormula = reducedFormula;
         this.prefilterMinCount = prefilterMinCount;
         this.testMethod = testMethod;
         this.contrast = contrast;
@@ -22,6 +25,7 @@ public class DESeq2Analysis {
     public String toString() {
         final StringBuilder sb = new StringBuilder("DESeq2Analysis{");
         sb.append("designFormula='").append(designFormula).append('\'');
+        sb.append(", reducedFormula='").append(reducedFormula).append('\'');
         sb.append(", prefilterMinCount=").append(prefilterMinCount);
         sb.append(", testMethod='").append(testMethod).append('\'');
         sb.append(", contrast=").append(contrast);
@@ -35,6 +39,15 @@ public class DESeq2Analysis {
 
     public DESeq2Analysis setDesignFormula(String designFormula) {
         this.designFormula = designFormula;
+        return this;
+    }
+
+    public String getReducedFormula() {
+        return reducedFormula;
+    }
+
+    public DESeq2Analysis setReducedFormula(String reducedFormula) {
+        this.reducedFormula = reducedFormula;
         return this;
     }
 

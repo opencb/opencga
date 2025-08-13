@@ -28,7 +28,6 @@ import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.wrappers.deseq2.DESeq2WrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.hisat2.Hisat2WrapperAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -39,7 +38,6 @@ import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.user.User;
-import org.opencb.opencga.core.models.wrapper.Hisat2WrapperParams;
 import org.opencb.opencga.core.models.wrapper.deseq2.DESeq2AnalysisContrast;
 import org.opencb.opencga.core.models.wrapper.deseq2.DESeq2Output;
 import org.opencb.opencga.core.models.wrapper.deseq2.DESeq2WrapperParams;
@@ -178,16 +176,16 @@ public class DESeq2AnalysisTest {
     }
 
     @Test
-    public void testDESeq2() throws IOException, ToolException, CatalogException {
+    public void testDESeq2Wald() throws IOException, ToolException, CatalogException {
         Path outdir = Paths.get(opencga.createTmpOutdir("_deseq2"));
 
         Path datadir = Paths.get(opencga.createTmpOutdir("_deseq2_data"));
         Path countsPath = datadir.resolve("deseq2_counts.csv");
-        try (InputStream stream = this.getClass().getClassLoader().getResourceAsStream(countsPath.getFileName().toString())) {
+        try (InputStream stream = this.getClass().getClassLoader().getResourceAsStream("deseq2/" + countsPath.getFileName().toString())) {
             Files.copy(stream, countsPath, StandardCopyOption.REPLACE_EXISTING);
         }
         Path metadataPath = datadir.resolve("deseq2_metadata.csv");
-        try (InputStream stream = this.getClass().getClassLoader().getResourceAsStream(metadataPath.getFileName().toString())) {
+        try (InputStream stream = this.getClass().getClassLoader().getResourceAsStream("deseq2/" + metadataPath.getFileName().toString())) {
             Files.copy(stream, metadataPath, StandardCopyOption.REPLACE_EXISTING);
         }
 
@@ -196,7 +194,7 @@ public class DESeq2AnalysisTest {
         File metadataFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(metadataPath.toAbsolutePath().toString(), "", "", "", null, null,
                 null, null, null), false, token).first();
 
-        String basename = "deseq2_results";
+        String basename = "deseq2_results_wald";
         DESeq2WrapperParams params = new DESeq2WrapperParams();
         params.getDESeq2Params2Params().getInput().setCountsFile(FILE_PREFIX + countsFile.getId());
         params.getDESeq2Params2Params().getInput().setMetadataFile(FILE_PREFIX + metadataFile.getId());
@@ -208,6 +206,47 @@ public class DESeq2AnalysisTest {
 
         List<String> outFilenames = Arrays.asList(basename + RESULTS_FILE_SUFIX, basename + PCA_PLOT_RESULTS_FILE_SUFIX,
                 basename + MA_PLOT_RESULTS_FILE_SUFIX, basename + VST_COUNTS_RESULTS_FILE_SUFIX);
+        for (String outFilename : outFilenames) {
+            System.out.println("Checking output file: " + outdir.resolve(outFilename).toAbsolutePath());
+            Assert.assertTrue(Files.exists(outdir.resolve(outFilename)));
+            System.out.println("OK.");
+        }
+    }
+
+    @Test
+    public void testDESeq2Lrt() throws IOException, ToolException, CatalogException {
+        Path outdir = Paths.get(opencga.createTmpOutdir("_deseq2"));
+
+        Path datadir = Paths.get(opencga.createTmpOutdir("_deseq2_data"));
+        Path countsPath = datadir.resolve("deseq2_timecourse_counts.csv");
+        try (InputStream stream = this.getClass().getClassLoader().getResourceAsStream("deseq2/" + countsPath.getFileName().toString())) {
+            Files.copy(stream, countsPath, StandardCopyOption.REPLACE_EXISTING);
+        }
+        Path metadataPath = datadir.resolve("deseq2_timecourse_metadata.csv");
+        try (InputStream stream = this.getClass().getClassLoader().getResourceAsStream("deseq2/" + metadataPath.getFileName().toString())) {
+            Files.copy(stream, metadataPath, StandardCopyOption.REPLACE_EXISTING);
+        }
+
+        File countsFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(countsPath.toAbsolutePath().toString(), "", "", "", null, null,
+                null, null, null), false, token).first();
+        File metadataFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(metadataPath.toAbsolutePath().toString(), "", "", "", null, null,
+                null, null, null), false, token).first();
+
+        String basename = "deseq2_results_lrt";
+        DESeq2WrapperParams params = new DESeq2WrapperParams();
+        params.getDESeq2Params2Params().getInput().setCountsFile(FILE_PREFIX + countsFile.getId());
+        params.getDESeq2Params2Params().getInput().setMetadataFile(FILE_PREFIX + metadataFile.getId());
+        params.getDESeq2Params2Params().getAnalysis().setDesignFormula("~genotype + time + genotype:time");
+        params.getDESeq2Params2Params().getAnalysis().setReducedFormula("~genotype + time");
+        params.getDESeq2Params2Params().getAnalysis().setTestMethod(LRT_TEST_METHOD);
+//        params.getDESeq2Params2Params().getAnalysis().setContrast(new DESeq2AnalysisContrast("condition", "treated", "control"));
+        params.getDESeq2Params2Params().setOutput(new DESeq2Output(basename, false, false, false));
+
+        toolRunner.execute(DESeq2WrapperAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outdir, "deseq2", false, token);
+
+        List<String> outFilenames = Arrays.asList(basename + RESULTS_FILE_SUFIX);
+//        , basename + PCA_PLOT_RESULTS_FILE_SUFIX,
+//                basename + MA_PLOT_RESULTS_FILE_SUFIX, basename + VST_COUNTS_RESULTS_FILE_SUFIX);
         for (String outFilename : outFilenames) {
             System.out.println("Checking output file: " + outdir.resolve(outFilename).toAbsolutePath());
             Assert.assertTrue(Files.exists(outdir.resolve(outFilename)));
