@@ -100,7 +100,7 @@ analysis:
   # Dockers used by OpenCGA analyses, they contain external tools such as samtools, bcftools, tabix, fastqc, plink1.9, bwa and r-base
   # You can indicate the version, e.g: opencb/opencga-ext-tools:2.12.0, otherwise the current OpenCGA version will be used
   opencgaDockers:
-    ex-tools: "opencb/opencga-ext-tools"
+    ext-tools: "opencb/opencga-ext-tools"
     genomics: "opencb/opencga-genomics"
     transcriptomics: "opencb/opencga-transcriptomics"
 
