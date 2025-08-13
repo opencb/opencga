@@ -115,7 +115,7 @@ public class Hisat2WrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor
 
         // Build Python command line with params file and execute it in docker
 //        String wrapperCli = buildWrapperCli("python3", virtualAnalysisPath, StarWrapperAnalysis.ID, WRAPPER_SCRIPT, virtualParamsPath);
-        String wrapperCli = buildWrapperCli("python3", virtualAnalysisPath, hisat2WrapperParams.getHisat2Params().getCommand(),
+        String wrapperCli = buildWrapperCommandLine("python3", virtualAnalysisPath, hisat2WrapperParams.getHisat2Params().getCommand(),
                 virtualParamsPath);
         String dockerImage = getDockerFullImageName(Analysis.TRASNSCRIPTOMICS_DOCKER_KEY);
 

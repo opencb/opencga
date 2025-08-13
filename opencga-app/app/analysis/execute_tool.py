@@ -30,8 +30,8 @@ def build_command_list(tool: str, params: dict) -> list:
         command_list.append(params["command"])
 
     # Add params
-    if "params" in params and params["params"]:
-        for key, value in params["params"].items():
+    if "options" in params and params["options"]:
+        for key, value in params["options"].items():
             command_list.append(key)
             if isinstance(value, list):
                 command_list.extend(value)

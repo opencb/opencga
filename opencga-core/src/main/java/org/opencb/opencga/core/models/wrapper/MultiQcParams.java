@@ -1,33 +1,49 @@
 package org.opencb.opencga.core.models.wrapper;
 
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 public class MultiQcParams {
 
+    // General params
+    public static String FILENAME_PARAM = "--filename";
+    public static String OUTDIR_PARAM = "--outdir";
+    public static String O_PARAM = "-o";
+
+    // File params
+    public static String CONFIG_FILE_PARAM = "--config";
+    public static String C_FILE_PARAM = "-c";
+    public static String REPLACE_NAMES_FILE_PARAM = "--replace-names";
+    public static String SAMPLE_NAMES_FILE_PARAM = "--sample-names";
+    public static String SAMPLE_FILTERS_FILE_PARAM = "--sample-filters";
+    public static String CUSTOM_CSS_FILE_PARAM = "--custom-css-file";
+    public static List<String> FILE_PARAMS = Arrays.asList(CONFIG_FILE_PARAM, C_FILE_PARAM, REPLACE_NAMES_FILE_PARAM,
+            SAMPLE_NAMES_FILE_PARAM, SAMPLE_FILTERS_FILE_PARAM, CUSTOM_CSS_FILE_PARAM);
+
+    // Skip params
+    public static List<String> SKIP_PARAMS = Arrays.asList(OUTDIR_PARAM, O_PARAM);
+
     protected List<String> input;
-    protected ObjectMap params;
+    protected ObjectMap options;
 
     public MultiQcParams() {
         this.input = new ArrayList<>();
-        this.params = new ObjectMap();
+        this.options = new ObjectMap();
     }
 
-    public MultiQcParams(List<String> input, ObjectMap params) {
+    public MultiQcParams(List<String> input, ObjectMap options) {
         this.input = input;
-        this.params = params;
+        this.options = options;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("MultiQcParams{");
         sb.append("input=").append(input);
-        sb.append(", params=").append(params);
+        sb.append(", options=").append(options);
         sb.append('}');
         return sb.toString();
     }
@@ -41,12 +57,12 @@ public class MultiQcParams {
         return this;
     }
 
-    public ObjectMap getParams() {
-        return params;
+    public ObjectMap getOptions() {
+        return options;
     }
 
-    public MultiQcParams setParams(ObjectMap params) {
-        this.params = params;
+    public MultiQcParams setOptions(ObjectMap options) {
+        this.options = options;
         return this;
     }
 }

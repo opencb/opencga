@@ -21,6 +21,7 @@ import org.apache.commons.collections4.MapUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.wrapper.MultiQcParams;
 import org.opencb.opencga.core.models.wrapper.MultiQcWrapperParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
@@ -30,7 +31,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.opencb.opencga.analysis.wrappers.WrapperUtils.*;
-import static org.opencb.opencga.analysis.wrappers.multiqc.MultiQcWrapperAnalysisExecutor.OUTDIR_PARAM;
+import static org.opencb.opencga.core.models.wrapper.MultiQcParams.*;
+import static org.opencb.opencga.core.models.wrapper.MultiQcParams.SKIP_PARAMS;
 
 @Tool(id = MultiQcWrapperAnalysis.ID, resource = Enums.Resource.ALIGNMENT, description = MultiQcWrapperAnalysis.DESCRIPTION)
 public class MultiQcWrapperAnalysis extends OpenCgaToolScopeStudy {
@@ -61,25 +63,21 @@ public class MultiQcWrapperAnalysis extends OpenCgaToolScopeStudy {
         List<String> input = checkPaths(analysisParams.getMultiQcParams().getInput(), study, catalogManager, token);
         updatedParams.getMultiQcParams().setInput(input);
 
-        // Check MultiQC parameters
-        if (MapUtils.isNotEmpty(analysisParams.getMultiQcParams().getParams())) {
-            updatedParams.getMultiQcParams().setParams(checkParams(analysisParams.getMultiQcParams().getParams(), study, catalogManager,
-                    token));
+        // Check MultiQC options, but before remove the output directory parameter if it exists
+        if (MapUtils.isNotEmpty(analysisParams.getMultiQcParams().getOptions())) {
+            updatedParams.getMultiQcParams().setOptions(checkParams(analysisParams.getMultiQcParams().getOptions(), FILE_PARAMS,
+                    SKIP_PARAMS, study, catalogManager, token));
         }
 
         // Set output directory to the JOB directory
-        logger.warn("The parameter '{}' will be overwritten by the JOB directory instead.", OUTDIR_PARAM);
-        updatedParams.getMultiQcParams().getParams().put(OUTDIR_PARAM, OUTPUT_FILE_PREFIX + getOutDir().toAbsolutePath());
-    }
-
-    @Override
-    protected List<String> getSteps() {
-        return Arrays.asList(ID);
+        logger.warn("The output dir parameter ('{}' or '{}') is set to the JOB directory.", OUTDIR_PARAM, O_PARAM);
+        updatedParams.getMultiQcParams().getOptions().remove(O_PARAM);
+        updatedParams.getMultiQcParams().getOptions().put(OUTDIR_PARAM, OUTPUT_FILE_PREFIX + getOutDir().toAbsolutePath());
     }
 
     protected void run() throws ToolException, IOException {
         // Run MultiQC
-        step(ID, this::runMultiQc);
+        step(this::runMultiQc);
     }
 
     protected void runMultiQc() throws ToolException {

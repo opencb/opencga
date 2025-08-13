@@ -18,29 +18,25 @@ package org.opencb.opencga.analysis.wrappers;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.wrappers.multiqc.MultiQcWrapperAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.wrapper.WrapperParams;
 import org.opencb.opencga.core.tools.ResourceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-
-import static org.opencb.opencga.analysis.wrappers.multiqc.MultiQcWrapperAnalysisExecutor.OUTDIR_PARAM;
 
 public class WrapperUtils {
 
@@ -50,8 +46,11 @@ public class WrapperUtils {
 
     public static final String EXECUTE_TOOL_SCRIPT = "execute_tool.py";
 
+    @Deprecated
     public static final String COMMAND = "command";
+    @Deprecated
     public static final String INPUT = "input";
+    @Deprecated
     public static final String PARAMS = "params";
 
     private static Logger logger = LoggerFactory.getLogger(WrapperUtils.class);
@@ -62,7 +61,7 @@ public class WrapperUtils {
 
     public static String checkPath(String fileId, String study, CatalogManager catalogManager, String token) throws ToolException {
         try {
-            File file = catalogManager.getFileManager().get(study, fileId.substring(FILE_PREFIX.length()), QueryOptions.empty(), token)
+            File file = catalogManager.getFileManager().get(study, fileId, QueryOptions.empty(), token)
                     .first();
             Path path = Paths.get(file.getUri().getPath());
             if (Files.exists(path)) {
@@ -84,19 +83,28 @@ public class WrapperUtils {
         return updatedPaths;
     }
 
-    public static List<Object> checkPathsEx(List<Object> input, String study, CatalogManager catalogManager, String token) {
-        return null;
-    }
-
+    @Deprecated
     public static ObjectMap checkParams(ObjectMap params, String study, CatalogManager catalogManager, String token)
             throws ToolException {
+        return checkParams(params, Collections.emptyList(), Collections.emptyList(), study, catalogManager, token);
+    }
+
+    public static ObjectMap checkParams(ObjectMap params, List<String> fileParams, List<String> skipParams, String study,
+                                        CatalogManager catalogManager, String token) throws ToolException {
         ObjectMap updatedParams = new ObjectMap();
         for (Map.Entry<String, Object> entry : params.entrySet()) {
-            if (entry.getValue() instanceof List) {
-                updatedParams.put(entry.getKey(), WrapperUtils.checkPaths((List<String>) entry.getValue(), study, catalogManager, token));
-            } else if (entry.getValue() instanceof String && ((String) entry.getValue()).startsWith(FILE_PREFIX)) {
-                // If the entry value starts with "file://", it is a file path, so we need to check it
-                updatedParams.put(entry.getKey(), WrapperUtils.checkPath((String) entry.getValue(), study, catalogManager, token));
+            if (skipParams.contains(entry.getKey())) {
+                // Skip this parameter
+                logger.warn("Skipping parameter '{}'", entry.getKey());
+                continue;
+            }
+            if (fileParams.contains(entry.getKey())) {
+                if (entry.getValue() instanceof String) {
+                    updatedParams.put(entry.getKey(), WrapperUtils.checkPath((String) entry.getValue(), study, catalogManager, token));
+                } else {
+                    throw new ToolException("Parameter '" + entry.getKey() + "' should be a String representing a file path, but found: "
+                            + entry.getValue().getClass().getSimpleName());
+                }
             } else {
                 // Otherwise, we assume it's a regular parameter
                 updatedParams.put(entry.getKey(), entry.getValue());
@@ -195,11 +203,13 @@ public class WrapperUtils {
         return virtualAnalysisPath;
     }
 
+    @Deprecated
     public static String processParamsFile(ObjectMap params, Path outDir, List<AbstractMap.SimpleEntry<String, String>> bindings,
                                            Set<String> readOnlyBindings) {
         return processParamsFile(params, !params.containsKey("params"), outDir, bindings, readOnlyBindings);
     }
 
+    @Deprecated
     public static String processParamsFile(ObjectMap params, boolean addInParams, Path outDir,
                                            List<AbstractMap.SimpleEntry<String, String>> bindings, Set<String> readOnlyBindings) {
         String paramsFilename = "params.json";
@@ -219,6 +229,7 @@ public class WrapperUtils {
         return virtualParamsPath;
     }
 
+    @Deprecated
     public static void writeParamsFile(ObjectMap params, Path path) {
         try (OutputStream outputStream = Files.newOutputStream(path)) {
 
@@ -233,8 +244,28 @@ public class WrapperUtils {
         }
     }
 
-    public static String buildWrapperCli(String interpreter, String virtualAnalysisPath, String analysisId, String wrapperScript,
-                                         String virtualParamsPath) {
+    public static String createParamsFile(WrapperParams params, Path outDir, List<AbstractMap.SimpleEntry<String, String>> bindings,
+                                          Set<String> readOnlyBindings) throws IOException {
+        String paramsFilename = "params.json";
+        String virtualParamsPath = "/outdir/" + paramsFilename;
+        bindings.add(new AbstractMap.SimpleEntry<>(outDir.resolve(paramsFilename).toAbsolutePath().toString(), virtualParamsPath));
+        readOnlyBindings.add(virtualParamsPath);
+
+        // Write the parameters to a file
+        try (OutputStream outputStream = Files.newOutputStream(outDir.resolve(paramsFilename))) {
+            // Get the default ObjectMapper instance and configure the ObjectMapper to ignore all fields with null values
+            ObjectMapper objectMapper = JacksonUtils.getDefaultObjectMapper()
+                    .setSerializationInclusion(JsonInclude.Include.NON_NULL);
+
+            // Write the params to the output stream
+            objectMapper.writeValue(outputStream, params);
+        }
+
+        return virtualParamsPath;
+    }
+
+    public static String buildWrapperCommandLine(String interpreter, String virtualAnalysisPath, String analysisId, String wrapperScript,
+                                                 String virtualParamsPath) {
         StringBuilder cli = new StringBuilder();
         if (StringUtils.isNotEmpty(interpreter)) {
             cli.append(interpreter).append(" ");
@@ -244,7 +275,7 @@ public class WrapperUtils {
 
         return cli.toString();
     }
-    public static String buildWrapperCli(String interpreter, String virtualAnalysisPath, String tool, String virtualParamsPath) {
+    public static String buildWrapperCommandLine(String interpreter, String virtualAnalysisPath, String tool, String virtualParamsPath) {
         StringBuilder cli = new StringBuilder();
         if (StringUtils.isNotEmpty(interpreter)) {
             cli.append(interpreter).append(" ");

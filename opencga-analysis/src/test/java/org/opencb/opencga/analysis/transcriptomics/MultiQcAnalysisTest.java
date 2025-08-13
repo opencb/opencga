@@ -39,6 +39,7 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
+import org.opencb.opencga.core.models.wrapper.MultiQcParams;
 import org.opencb.opencga.core.models.wrapper.MultiQcWrapperParams;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.models.wrapper.StarWrapperParams;
@@ -195,16 +196,19 @@ public class MultiQcAnalysisTest {
         File fastqcResultDir = catalogManager.getFileManager().link(STUDY, new FileLinkParams(fastqcResultPath.toString(), "", "", "", null, null,
                 null, null, null), false, token).first();
 
+        String basename = "toto";
         MultiQcWrapperParams params = new MultiQcWrapperParams();
-        params.getMultiQcParams().getInput().add(WrapperUtils.FILE_PREFIX + fastqcResultDir.getId());
+        params.getMultiQcParams().getInput().add(fastqcResultDir.getId());
+        params.getMultiQcParams().getOptions().put(MultiQcParams.FILENAME_PARAM, basename);
 
         toolRunner.execute(MultiQcWrapperAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outdir, "multiqc-fastqc-results", false, token);
 
-//        List<String> outFilenames = Arrays.asList("chrStart.txt", "chrName.txt", "chrNameLength.txt", "chrLength.txt",
-//                "genomeParameters.txt", "Genome", "SA", "SAindex", "Log.out");
-//        for (String outFilename : outFilenames) {
-//            Assert.assertTrue(Files.exists(outdir.resolve(outFilename)));
-//        }
+        List<String> outFilenames = Arrays.asList(basename + ".html", basename + "_data");
+        for (String outFilename : outFilenames) {
+            System.out.println("Checking output file: " + outFilename);
+            Assert.assertTrue(Files.exists(outdir.resolve(outFilename)));
+            System.out.println("Ok.");
+        }
     }
 
     private void prepareMultiQcData(Path datadir) throws IOException {
