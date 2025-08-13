@@ -10,7 +10,9 @@ import org.opencb.commons.exec.Command;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.ConfigurationUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.core.config.Analysis;
 import org.opencb.opencga.core.config.AnalysisTool;
+import org.opencb.opencga.core.config.ResourceFile;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 import org.slf4j.Logger;
@@ -48,15 +50,39 @@ public abstract class DockerWrapperAnalysisExecutor extends OpenCgaToolExecutor 
     }
 
     public String getDockerImageName() throws ToolException {
-        return getConfiguration().getAnalysis().getOpencgaExtTools().split(":")[0];
+        return getDockerImageName(Analysis.BASE_DOCKER_KEY);
     }
 
-    public String getDockerImageVersion() {
-        if (getConfiguration().getAnalysis().getOpencgaExtTools().contains(":")) {
-            return getConfiguration().getAnalysis().getOpencgaExtTools().split(":")[1];
-        } else {
-            return GitRepositoryState.getInstance().getBuildVersion();
+    public String getDockerImageName(String key) throws ToolException {
+        return getDockerFullImageName(key).split(":")[0];
+    }
+
+    public String getDockerImageVersion() throws ToolException {
+        return getDockerImageVersion(Analysis.BASE_DOCKER_KEY);
+    }
+
+    public String getDockerImageVersion(String key) throws ToolException {
+        return getDockerFullImageName(key).split(":")[1];
+    }
+
+    public String getDockerFullImageName(String key) throws ToolException {
+        // Check if the key is valid
+        if (!getConfiguration().getAnalysis().getOpencgaDockers().containsKey(key)) {
+            throw new ToolException("Invalid docker key '" + key + "'. Available keys: "
+                    + String.join(", ", getConfiguration().getAnalysis().getOpencgaDockers().keySet()));
         }
+        String imageName = getConfiguration().getAnalysis().getOpencgaDockers().get(key);
+
+        // Check if the image name is valid
+        if (StringUtils.isEmpty(imageName)) {
+            throw new ToolException("Docker image name for key '" + key + "' is empty.");
+        }
+
+        if (!imageName.contains(":")) {
+            imageName += ":" + GitRepositoryState.getInstance().getBuildVersion();
+        }
+
+        return imageName;
     }
 
     public String getDockerImageName(String toolId, String version) throws ToolException {

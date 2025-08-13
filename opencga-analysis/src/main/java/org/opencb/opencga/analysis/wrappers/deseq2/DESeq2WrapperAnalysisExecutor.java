@@ -6,6 +6,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
 import org.opencb.opencga.analysis.wrappers.multiqc.MultiQcWrapperAnalysis;
+import org.opencb.opencga.core.config.Analysis;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.models.wrapper.deseq2.DESeq2Input;
 import org.opencb.opencga.core.models.wrapper.deseq2.DESeq2Params;
@@ -62,7 +63,7 @@ public class DESeq2WrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor
         // Build Python command line with params file and execute it in docker
         String wrapperCli = "python3 " + virtualAnalysisPath + "/" + DESeq2WrapperAnalysis.ID + "/" + WRAPPER_SCRIPT + " "
                 + virtualParamsPath;
-        String dockerImage = "opencb/opencga-transcriptomics:" + getDockerImageVersion();
+        String dockerImage = getDockerFullImageName(Analysis.TRASNSCRIPTOMICS_DOCKER_KEY);
 
         // User: array of two strings, the first string, the user; the second, the group
         String[] user = FileUtils.getUserAndGroup(getOutDir(), true);

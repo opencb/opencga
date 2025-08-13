@@ -17,11 +17,17 @@
 package org.opencb.opencga.core.config;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.opencb.opencga.core.config.Configuration.reportUnusedField;
 
 public class Analysis {
+
+    public static final String BASE_DOCKER_KEY = "ext-tools";
+    public static final String GENOMICS_DOCKER_KEY = "genomics";
+    public static final String TRASNSCRIPTOMICS_DOCKER_KEY = "transcriptomics";
 
     private List<String> packages;
     private WorkflowConfiguration workflow;
@@ -33,7 +39,11 @@ public class Analysis {
 
     private Resource resource;
 
+    @Deprecated
     private String opencgaExtTools;
+
+    private Map<String, String> opencgaDockers;
+
     private List<AnalysisTool> tools;
 
     private Execution execution;
@@ -41,11 +51,13 @@ public class Analysis {
     private List<FrameworkConfiguration> frameworks;
 
     public Analysis() {
-        workflow = new WorkflowConfiguration();
-        packages = new ArrayList<>();
-        tools = new ArrayList<>();
-        execution = new Execution();
-        frameworks = new ArrayList<>();
+        this.workflow = new WorkflowConfiguration();
+        this.packages = new ArrayList<>();
+        this.resource = new Resource();
+        this.opencgaDockers = new HashMap<>();
+        this.tools = new ArrayList<>();
+        this.execution = new Execution();
+        this.frameworks = new ArrayList<>();
     }
 
     @Override
@@ -54,7 +66,7 @@ public class Analysis {
         sb.append("packages=").append(packages);
         sb.append(", scratchDir='").append(scratchDir).append('\'');
         sb.append(", resource=").append(resource);
-        sb.append(", opencgaExtTools='").append(opencgaExtTools).append('\'');
+        sb.append(", opencgaDockers='").append(opencgaDockers).append('\'');
         sb.append(", tools=").append(tools);
         sb.append(", execution=").append(execution);
         sb.append(", frameworks=").append(frameworks);
@@ -110,12 +122,23 @@ public class Analysis {
         return this;
     }
 
+    @Deprecated
     public String getOpencgaExtTools() {
-        return opencgaExtTools;
+        return opencgaDockers.get(BASE_DOCKER_KEY);
     }
 
+    @Deprecated
     public Analysis setOpencgaExtTools(String opencgaExtTools) {
-        this.opencgaExtTools = opencgaExtTools;
+        this.opencgaDockers.put(BASE_DOCKER_KEY, opencgaExtTools);
+        return this;
+    }
+
+    public Map<String, String> getOpencgaDockers() {
+        return opencgaDockers;
+    }
+
+    public Analysis setOpencgaDockers(Map<String, String> opencgaDockers) {
+        this.opencgaDockers = opencgaDockers;
         return this;
     }
 

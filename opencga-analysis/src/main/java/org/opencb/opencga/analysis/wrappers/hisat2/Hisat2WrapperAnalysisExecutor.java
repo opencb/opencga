@@ -7,6 +7,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
 import org.opencb.opencga.analysis.wrappers.multiqc.MultiQcWrapperAnalysis;
+import org.opencb.opencga.core.config.Analysis;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.models.wrapper.Hisat2WrapperParams;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
@@ -116,7 +117,7 @@ public class Hisat2WrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor
 //        String wrapperCli = buildWrapperCli("python3", virtualAnalysisPath, StarWrapperAnalysis.ID, WRAPPER_SCRIPT, virtualParamsPath);
         String wrapperCli = buildWrapperCli("python3", virtualAnalysisPath, hisat2WrapperParams.getHisat2Params().getCommand(),
                 virtualParamsPath);
-        String dockerImage = "opencb/opencga-transcriptomics:" + getDockerImageVersion();
+        String dockerImage = getDockerFullImageName(Analysis.TRASNSCRIPTOMICS_DOCKER_KEY);
 
         // User: array of two strings, the first string, the user; the second, the group
         String[] user = FileUtils.getUserAndGroup(getOutDir(), true);

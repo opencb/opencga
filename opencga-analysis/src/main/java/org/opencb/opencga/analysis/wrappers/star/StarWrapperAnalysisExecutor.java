@@ -5,6 +5,7 @@ import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
+import org.opencb.opencga.core.config.Analysis;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.models.wrapper.StarWrapperParams;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
@@ -72,7 +73,7 @@ public class StarWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor {
         // Build Python command line with params file and execute it in docker
 //        String wrapperCli = buildWrapperCli("python3", virtualAnalysisPath, StarWrapperAnalysis.ID, WRAPPER_SCRIPT, virtualParamsPath);
         String wrapperCli = buildWrapperCli("python3", virtualAnalysisPath, TOOL, virtualParamsPath);
-        String dockerImage = "opencb/opencga-transcriptomics:" + getDockerImageVersion();
+        String dockerImage = getDockerFullImageName(Analysis.TRASNSCRIPTOMICS_DOCKER_KEY);
 
         // User: array of two strings, the first string, the user; the second, the group
         String[] user = FileUtils.getUserAndGroup(getOutDir(), true);

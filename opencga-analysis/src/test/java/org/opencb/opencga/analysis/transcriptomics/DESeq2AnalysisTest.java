@@ -211,6 +211,7 @@ public class DESeq2AnalysisTest {
         for (String outFilename : outFilenames) {
             System.out.println("Checking output file: " + outdir.resolve(outFilename).toAbsolutePath());
             Assert.assertTrue(Files.exists(outdir.resolve(outFilename)));
+            System.out.println("OK.");
         }
     }
 }
