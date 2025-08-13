@@ -14,7 +14,7 @@ jobs:
       maven_opts: -P storage-hadoop,${{ vars.HADOOP_FLAVOUR }},RClient,opencga-storage-hadoop-deps -Dopencga.war.name=opencga -Dcheckstyle.skip -pl ':opencga-app' --also-make
       build_folder: build-folder
 
-  # Add the deploy-docker-hdp job that depends on the build-hdp job
+  # Add the deploy-zetta-docker job that depends on the build-hdp job
   deploy-zetta-docker:
     uses: opencb/java-common-libs/.github/workflows/deploy-zetta-docker-hub-workflow.yml@develop
     needs: build-hdp
@@ -39,9 +39,29 @@ jobs:
       maven_opts: -P hdp3.1 -Dopencga.war.name=opencga
     secrets: inherit
 
-  deploy-python:
-    uses: opencb/java-common-libs/.github/workflows/deploy-python-workflow.yml@develop
+  check-pypi-version:
+    runs-on: ubuntu-latest
     needs: build-hdp
+    outputs:
+      exists: ${{ steps.check.outputs.exists }}
+    steps:
+      - name: Check if python package exists on PyPI
+        id: check
+        run: |
+          if curl --silent --fail "https://pypi.org/pypi/pyopencga/${{ needs.build-hdp.outputs.version }}/json" > /dev/null; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "The python package with version ${{ needs.build-hdp.outputs.version }} already exists on pypi" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "The python package with version ${{ needs.build-hdp.outputs.version }} does not exist in pypi and must be pushed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  deploy-python:
+    needs:
+      - build-hdp
+      - check-pypi-version
+    if: needs.check-pypi-version.outputs.exists == 'false'
+    uses: opencb/java-common-libs/.github/workflows/deploy-python-workflow.yml@develop
     with:
       cli: ./clients/python/python-build.sh push
       artifact: build-folder
@@ -50,7 +70,7 @@ jobs:
   # Add the release job that depends on all the previous jobs
   release:
     uses: opencb/java-common-libs/.github/workflows/release-github-workflow.yml@develop
-    needs: [ build-hdp, deploy-docker-hdp, deploy-maven, deploy-python, deploy-docker-python-notebook]
+    needs: [ build-hdp, deploy-zetta-docker, deploy-maven, deploy-python, deploy-docker-python-notebook]
     with:
       artifact: build-folder
       file: |

@@ -98,12 +98,11 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
     )));
 
     public static final Set<String> COSMIC_VARIANTS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
-            "1:169607124:G:T",
-            "1:169611640:T:G",
-            "1:169617058:A:T",
-            "1:169617158:C:A",
-            "12:124372173:T:A",
-            "12:124336867:G:A"
+            "8:67154047:C:T",
+            "22:26027001:A:T",
+            "6:25864933:G:A",
+            "12:48660498:C:T",
+            "20:17605163:A:G"
     )));
 
     public static final String VCF_TEST_FILE_NAME = "10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz";
@@ -166,6 +165,10 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
 
     public static URI getResourceUri(String resourceName, String targetName) throws IOException {
         return getResourceUri(resourceName, targetName, getTmpRootDir());
+    }
+
+    public static URI getResourceUri(String resourceName, Path rootDir) throws IOException {
+        return getResourceUri(resourceName, Paths.get(resourceName).getFileName().toString(), rootDir);
     }
 
     public static URI getResourceUri(String resourceName, String targetName, Path rootDir) throws IOException {

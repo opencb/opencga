@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -340,11 +341,24 @@ public class UserManager extends AbstractManager {
         return jwtPayload;
     }
 
+    @Deprecated
     public void syncAllUsersOfExternalGroup(String organizationId, String study, String authOrigin, String token) throws CatalogException {
         JwtPayload payload = validateToken(token);
         authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, payload.getUserId());
 
-        OpenCGAResult<Group> allGroups = catalogManager.getStudyManager().getGroup(study, null, token);
+
+    }
+
+    public void syncAllUsersOfExternalGroup(String studyStr, String authOrigin, String token) throws CatalogException {
+        JwtPayload tokenPayload = validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        Study study = catalogManager.getStudyManager().resolveId(studyFqn, null, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+
+        authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
+
+        OpenCGAResult<Group> allGroups = catalogManager.getStudyManager().getGroup(studyStr, null, token);
 
         boolean foundAny = false;
         for (Group group : allGroups.getResults()) {
@@ -363,7 +377,7 @@ public class UserManager extends AbstractManager {
                             group.getId(), group.getSyncedFrom().getAuthOrigin());
                     logger.info("Please, manually remove group '{}' if external group '{}' was removed from the authentication origin",
                             group.getId(), group.getSyncedFrom().getAuthOrigin());
-                    catalogManager.getStudyManager().updateGroup(study, group.getId(), ParamUtils.BasicUpdateAction.SET,
+                    catalogManager.getStudyManager().updateGroup(studyStr, group.getId(), ParamUtils.BasicUpdateAction.SET,
                             new GroupUpdateParams(Collections.emptyList()), token);
                     continue;
                 }
@@ -393,28 +407,16 @@ public class UserManager extends AbstractManager {
                     logger.info("Associating members to the internal OpenCGA group");
                     updateParams = new GroupUpdateParams(new ArrayList<>(userList.stream().map(User::getId).collect(Collectors.toSet())));
                 }
-                catalogManager.getStudyManager().updateGroup(study, group.getId(), ParamUtils.BasicUpdateAction.SET,
+                catalogManager.getStudyManager().updateGroup(studyStr, group.getId(), ParamUtils.BasicUpdateAction.SET,
                         updateParams, token);
             }
         }
         if (!foundAny) {
-            logger.info("No synced groups found in study '{}' from authentication origin '{}'", study, authOrigin);
+            logger.info("No synced groups found in study '{}' from authentication origin '{}'", studyStr, authOrigin);
         }
     }
 
-    /**
-     * Register all the users belonging to a remote group. If internalGroup and study are not null, it will also associate the remote group
-     * to the internalGroup defined.
-     *
-     * @param organizationId Organization id.
-     * @param authOrigin     Authentication origin.
-     * @param remoteGroup    Group name of the remote authentication origin.
-     * @param internalGroup  Group name in Catalog that will be associated to the remote group.
-     * @param study          Study where the internal group will be associated.
-     * @param sync           Boolean indicating whether the remote group will be synced with the internal group or not.
-     * @param token          JWT token. The token should belong to the root user.
-     * @throws CatalogException If any of the parameters is wrong or there is any internal error.
-     */
+    @Deprecated
     public void importRemoteGroupOfUsers(String organizationId, String authOrigin, String remoteGroup, @Nullable String internalGroup,
                                          @Nullable String study, boolean sync, String token) throws CatalogException {
         JwtPayload payload = validateToken(token);
@@ -479,6 +481,108 @@ public class UserManager extends AbstractManager {
                 } catch (CatalogException e) {
                     logger.error("Could not register group '{}' in study '{}'\n{}", internalGroup, study, e.getMessage(), e);
                     throw new CatalogException("Could not register group '" + internalGroup + "' in study '" + study + "': "
+                            + e.getMessage(), e);
+                }
+            }
+        } catch (CatalogException e) {
+            auditManager.audit(organizationId, userId, Enums.Action.IMPORT_EXTERNAL_GROUP_OF_USERS, Enums.Resource.USER, "", "", "", "",
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+    }
+
+    /**
+     * Register all the users belonging to a remote group. If internalGroup and study are not null, it will also associate the remote group
+     * to the internalGroup defined.
+     *
+     * @param authOrigin     Authentication origin.
+     * @param remoteGroup    Group name of the remote authentication origin.
+     * @param internalGroup  Group name in Catalog that will be associated to the remote group.
+     * @param studyStr       Study where the internal group will be associated.
+     * @param sync           Boolean indicating whether the remote group will be synced with the internal group or not.
+     * @param token          JWT token. The token should belong to the root user.
+     * @throws CatalogException If any of the parameters is wrong or there is any internal error.
+     */
+    @Deprecated
+    public void importRemoteGroupOfUsers(String authOrigin, String remoteGroup, @Nullable String internalGroup,
+                                         @Nullable String studyStr, boolean sync, String token) throws CatalogException {
+        JwtPayload tokenPayload = validateToken(token);
+        String organizationId;
+        String userId;
+        Study study = null;
+        if (StringUtils.isNotEmpty(studyStr)) {
+            CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+            study = catalogManager.getStudyManager().resolveId(studyFqn, null, tokenPayload);
+            organizationId = studyFqn.getOrganizationId();
+            userId = tokenPayload.getUserId(organizationId);
+        } else {
+            organizationId = tokenPayload.getOrganization();
+            userId = tokenPayload.getUserId();
+        }
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("organizationId", organizationId)
+                .append("authOrigin", authOrigin)
+                .append("remoteGroup", remoteGroup)
+                .append("internalGroup", internalGroup)
+                .append("study", studyStr)
+                .append("sync", sync)
+                .append("token", token);
+        try {
+            if (studyStr != null) {
+                authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
+            } else {
+                authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
+            }
+
+            ParamUtils.checkParameter(authOrigin, "Authentication origin");
+            ParamUtils.checkParameter(remoteGroup, "Remote group");
+
+            List<User> userList;
+            if (sync) {
+                // We don't create any user as they will be automatically populated during login
+                userList = Collections.emptyList();
+            } else {
+                logger.info("Fetching users from authentication origin '{}'", authOrigin);
+
+                // Register the users
+                userList = authenticationFactory.getUsersFromRemoteGroup(organizationId, authOrigin, remoteGroup);
+                for (User user : userList) {
+                    user.setOrganization(organizationId);
+                    try {
+                        create(user, null, token);
+                        logger.info("User '{}' successfully created", user.getId());
+                    } catch (CatalogException e) {
+                        logger.warn("{}", e.getMessage());
+                    }
+                }
+            }
+
+            if (StringUtils.isNotEmpty(internalGroup) && StringUtils.isNotEmpty(studyStr)) {
+                // Check if the group already exists
+                OpenCGAResult<Group> groupResult = catalogManager.getStudyManager().getGroup(studyStr, internalGroup, token);
+                if (groupResult.getNumResults() == 1) {
+                    logger.error("Cannot synchronise with group {}. The group already exists and is already in use.", internalGroup);
+                    throw new CatalogException("Cannot synchronise with group " + internalGroup
+                            + ". The group already exists and is already in use.");
+                }
+
+                // Create new group associating it to the remote group
+                try {
+                    logger.info("Attempting to register group '{}' in study '{}'", internalGroup, studyStr);
+                    Group.Sync groupSync = null;
+                    if (sync) {
+                        groupSync = new Group.Sync(authOrigin, remoteGroup);
+                    }
+                    Group group = new Group(internalGroup, userList.stream().map(User::getId).collect(Collectors.toList()))
+                            .setSyncedFrom(groupSync);
+                    catalogManager.getStudyManager().createGroup(studyStr, group, token);
+                    logger.info("Group '{}' created and synchronised with external group", internalGroup);
+                    auditManager.audit(organizationId, userId, Enums.Action.IMPORT_EXTERNAL_GROUP_OF_USERS, Enums.Resource.USER,
+                            group.getId(), "", studyStr, "", auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+                } catch (CatalogException e) {
+                    logger.error("Could not register group '{}' in study '{}'\n{}", internalGroup, studyStr, e.getMessage(), e);
+                    throw new CatalogException("Could not register group '" + internalGroup + "' in study '" + studyStr + "': "
                             + e.getMessage(), e);
                 }
             }
@@ -907,7 +1011,7 @@ public class UserManager extends AbstractManager {
                     response = authenticationManager.authenticate(organizationId, username, password);
                     authId = entry.getKey();
                     break;
-                } catch (CatalogAuthenticationException e) {
+                } catch (NotImplementedException | CatalogAuthenticationException e) {
                     logger.debug("Attempted authentication failed with {} for user '{}'\n{}", entry.getKey(), username, e.getMessage(), e);
                 }
             }
@@ -935,7 +1039,6 @@ public class UserManager extends AbstractManager {
                 new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
         String userId = authenticationFactory.getUserId(organizationId, authId, response.getToken());
         if (!CatalogAuthenticationManager.OPENCGA.equals(authId) && !CatalogAuthenticationManager.INTERNAL.equals(authId)) {
-            // External authorization
             try {
                 // If the user is not registered, an exception will be raised
                 getUserDBAdaptor(organizationId).checkId(userId);
@@ -949,7 +1052,6 @@ public class UserManager extends AbstractManager {
                         CatalogAuthenticationManager.OPENCGA, OPENCGA);
                 create(user, null, rootToken);
             }
-
             try {
                 List<String> remoteGroups = authenticationFactory.getRemoteGroups(organizationId, authId, response.getToken());
 

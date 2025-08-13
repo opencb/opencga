@@ -77,6 +77,35 @@ class ClientConfiguration(object):
             raise Exception('Unreachable host "{}"'.format(self.host))
 
     @property
+    def host(self):
+        return self._config['rest']['host']
+
+    @host.setter
+    def host(self, new_host):
+        self._config['rest']['host'] = new_host
+
+    @property
+    def tlsAllowInvalidCertificates(self):
+        if ('tlsAllowInvalidCertificates' in self._config['rest']
+                and self._config['rest']['tlsAllowInvalidCertificates'] is not None):
+            return self._config['rest']['tlsAllowInvalidCertificates']
+        else:
+            return False
+
+    @property
+    def version(self):
+        return self._config['version'] if 'version' in self._config else 'v2'
+
+    @property
+    def cookies(self):
+        if 'cookies' in self._config and self._config['cookies']:
+            python_session_fhand = open(os.path.expanduser("~/.opencga/python_session.json"), 'r')
+            session_info = json.loads(python_session_fhand.read())
+            return session_info['cookies']
+        else:
+            return None
+
+    @property
     def configuration(self):
         return self._config
 

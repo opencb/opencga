@@ -2,7 +2,6 @@ package org.opencb.opencga.storage.core.variant.annotation.annotators;
 
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -96,7 +95,7 @@ public class VariantAnnotatorTest {
     }
 
     @Test
-    public void testErrorVariant() throws VariantAnnotatorException {
+    public void testErrorVariant() throws Exception {
         ObjectMap options = new ObjectMap(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER.toString())
                 .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), TestCellBaseRestVariantAnnotator.class.getName());
         VariantAnnotator variantAnnotator = VariantAnnotatorFactory.buildVariantAnnotator(storageConfiguration, projectMetadata, options);
@@ -111,7 +110,7 @@ public class VariantAnnotatorTest {
     }
 
     @Test
-    public void useCellBaseApiKeys() throws VariantAnnotatorException {
+    public void useCellBaseApiKeys() throws Exception {
         storageConfiguration.getCellbase().setUrl("https://uk.ws.zettagenomics.com/cellbase/");
         storageConfiguration.getCellbase().setVersion("v5.8");
         storageConfiguration.getCellbase().setDataRelease("3");

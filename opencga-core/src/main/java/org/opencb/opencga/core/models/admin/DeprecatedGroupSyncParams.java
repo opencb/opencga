@@ -16,7 +16,8 @@
 
 package org.opencb.opencga.core.models.admin;
 
-public class GroupSyncParams {
+@Deprecated
+public class DeprecatedGroupSyncParams {
 
     private String authenticationOriginId;
     private String from;
@@ -25,10 +26,10 @@ public class GroupSyncParams {
     private boolean syncAll;
     private boolean force;
 
-    public GroupSyncParams() {
+    public DeprecatedGroupSyncParams() {
     }
 
-    public GroupSyncParams(String authenticationOriginId, String from, String to, String study, boolean syncAll, boolean force) {
+    public DeprecatedGroupSyncParams(String authenticationOriginId, String from, String to, String study, boolean syncAll, boolean force) {
         this.authenticationOriginId = authenticationOriginId;
         this.from = from;
         this.to = to;
@@ -54,7 +55,7 @@ public class GroupSyncParams {
         return authenticationOriginId;
     }
 
-    public GroupSyncParams setAuthenticationOriginId(String authenticationOriginId) {
+    public DeprecatedGroupSyncParams setAuthenticationOriginId(String authenticationOriginId) {
         this.authenticationOriginId = authenticationOriginId;
         return this;
     }
@@ -63,7 +64,7 @@ public class GroupSyncParams {
         return from;
     }
 
-    public GroupSyncParams setFrom(String from) {
+    public DeprecatedGroupSyncParams setFrom(String from) {
         this.from = from;
         return this;
     }
@@ -72,7 +73,7 @@ public class GroupSyncParams {
         return to;
     }
 
-    public GroupSyncParams setTo(String to) {
+    public DeprecatedGroupSyncParams setTo(String to) {
         this.to = to;
         return this;
     }
@@ -81,7 +82,7 @@ public class GroupSyncParams {
         return study;
     }
 
-    public GroupSyncParams setStudy(String study) {
+    public DeprecatedGroupSyncParams setStudy(String study) {
         this.study = study;
         return this;
     }
@@ -90,7 +91,7 @@ public class GroupSyncParams {
         return syncAll;
     }
 
-    public GroupSyncParams setSyncAll(boolean syncAll) {
+    public DeprecatedGroupSyncParams setSyncAll(boolean syncAll) {
         this.syncAll = syncAll;
         return this;
     }
@@ -99,7 +100,7 @@ public class GroupSyncParams {
         return force;
     }
 
-    public GroupSyncParams setForce(boolean force) {
+    public DeprecatedGroupSyncParams setForce(boolean force) {
         this.force = force;
         return this;
     }
