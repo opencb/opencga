@@ -373,6 +373,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         operationsVariantStorageSubCommands.addCommand("cellbase-configure", operationsVariantStorageCommandOptions.configureCellbaseCommandOptions);
         operationsVariantStorageSubCommands.addCommand("variant-aggregate", operationsVariantStorageCommandOptions.aggregateVariantCommandOptions);
         operationsVariantStorageSubCommands.addCommand("variant-annotation-delete", operationsVariantStorageCommandOptions.deleteVariantAnnotationCommandOptions);
+        operationsVariantStorageSubCommands.addCommand("variant-annotation-extension-configure", operationsVariantStorageCommandOptions.variantAnnotationExtensionConfigureCommandOptions);
         operationsVariantStorageSubCommands.addCommand("variant-annotation-index", operationsVariantStorageCommandOptions.indexVariantAnnotationCommandOptions);
         operationsVariantStorageSubCommands.addCommand("variant-annotation-save", operationsVariantStorageCommandOptions.saveVariantAnnotationCommandOptions);
         operationsVariantStorageSubCommands.addCommand("variant-configure", operationsVariantStorageCommandOptions.configureVariantCommandOptions);
