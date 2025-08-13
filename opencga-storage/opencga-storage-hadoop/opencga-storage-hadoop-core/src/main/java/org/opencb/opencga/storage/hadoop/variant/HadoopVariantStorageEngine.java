@@ -336,6 +336,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
 
         String dockerMemory = getOptions().getString(WALKER_DOCKER_MEMORY.key(), WALKER_DOCKER_MEMORY.defaultValue());
         long dockerMemoryBytes = IOUtils.fromHumanReadableToByte(dockerMemory, true);
+        long maxBytesPerMap = getOptions().getLong(WALKER_DOCKER_MAX_BYTES_PER_MAP.key(), dockerMemoryBytes / 2);
 
         String dockerHost = getOptions().getString(MR_STREAM_DOCKER_HOST.key(), MR_STREAM_DOCKER_HOST.defaultValue());
         if (StringUtils.isNotEmpty(dockerHost)) {
@@ -347,7 +348,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                 getVariantTableName(), studyId, null,
                 params
                         .append(MR_HEAP_MAP_OTHER_MB.key(), dockerMemoryBytes / 1024 / 1204)
-                        .append(StreamVariantDriver.MAX_BYTES_PER_MAP_PARAM, dockerMemoryBytes / 2)
+                        .append(StreamVariantDriver.MAX_BYTES_PER_MAP_PARAM, maxBytesPerMap)
                         .append(StreamVariantDriver.COMMAND_LINE_BASE64_PARAM, Base64.getEncoder().encodeToString(commandLine.getBytes()))
                         .append(StreamVariantDriver.INPUT_FORMAT_PARAM, format.toString())
                         .append(StreamVariantDriver.OUTPUT_PARAM, outputFile)

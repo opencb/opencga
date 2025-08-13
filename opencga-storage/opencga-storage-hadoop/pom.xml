@@ -29,6 +29,7 @@
 
     <artifactId>opencga-storage-hadoop</artifactId>
     <packaging>pom</packaging>
+    <name>OpenCGA Storage Hadoop</name>
 
     <modules>
         <module>opencga-storage-hadoop-core</module>

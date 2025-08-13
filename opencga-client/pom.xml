@@ -28,6 +28,7 @@
 
     <artifactId>opencga-client</artifactId>
     <packaging>jar</packaging>
+    <name>OpenCGA Client</name>
 
     <dependencies>
         <dependency>

@@ -379,7 +379,7 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
     @Test
     public void testCosmicAnnotatorExtensionInvalidCosmicFile() throws Exception {
         // Setup COSMIC directory
-        Path cosmicFile = CosmicVariantAnnotatorExtensionTaskTest.initInvalidCosmicPath();
+        Path cosmicFile = CosmicVariantAnnotatorExtensionTaskTest.initInvalidCosmicPath(Paths.get(newOutputUri("cosmic")));
 
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
         runETL(variantStorageEngine, annotatorExtensionInputUri, STUDY_NAME,

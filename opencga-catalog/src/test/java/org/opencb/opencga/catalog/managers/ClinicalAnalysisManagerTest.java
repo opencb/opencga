@@ -62,9 +62,8 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SamplePermissions;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.study.*;
-import org.opencb.opencga.core.models.study.configuration.ClinicalConsent;
 import org.opencb.opencga.core.models.study.configuration.*;
-import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.models.study.configuration.ClinicalConsent;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
@@ -4131,4 +4130,87 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         annotDataResult = catalogManager.getClinicalAnalysisManager().search(studyFqn, query, QueryOptions.empty(), ownerToken);
         assertEquals(0, annotDataResult.getNumResults());
     }
+
+    @Test
+    public void updateClinicalAnalysisFilesWithActions() throws CatalogException {
+        Individual individual = new Individual()
+                .setId("proband")
+                .setSamples(Collections.singletonList(new Sample().setId("sample")));
+        catalogManager.getIndividualManager().create(studyFqn, individual, QueryOptions.empty(), ownerToken);
+
+        // Register and associate files to sample "sample"
+        List<File> files = registerDummyFiles();
+        for (File file : files) {
+            catalogManager.getFileManager().update(studyFqn, file.getPath(),
+                    new FileUpdateParams().setSampleIds(Collections.singletonList("sample")), QueryOptions.empty(), ownerToken);
+        }
+
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("Clinical")
+                .setType(ClinicalAnalysis.Type.SINGLE)
+                .setProband(individual);
+        OpenCGAResult<ClinicalAnalysis> clinical = catalogManager.getClinicalAnalysisManager().create(studyFqn, clinicalAnalysis,
+                INCLUDE_RESULT, ownerToken);
+        assertEquals(1, clinical.getNumResults());
+        assertEquals(4, clinical.first().getFiles().size());
+        for (File file : clinical.first().getFiles()) {
+            assertNotNull(file.getPath());
+            assertNotNull(file.getName());
+        }
+
+        // Test SET action - replace all files
+        List<FileReferenceParam> setFiles = Arrays.asList(
+                new FileReferenceParam("HG00096.chrom20.small.bam"),
+                new FileReferenceParam("NA19600.chrom20.small.bam")
+        );
+
+        QueryOptions setOptions = new QueryOptions()
+                .append(Constants.ACTIONS, new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.FILES.key(), ParamUtils.UpdateAction.SET))
+                .append(ParamConstants.INCLUDE_RESULT_PARAM, true);
+
+        OpenCGAResult<ClinicalAnalysis> result = catalogManager.getClinicalAnalysisManager().update(studyFqn, clinicalAnalysis.getId(),
+                new ClinicalAnalysisUpdateParams().setFiles(setFiles), setOptions, ownerToken);
+
+        assertEquals(2, result.first().getFiles().size());
+        Set<String> fileIds = result.first().getFiles().stream().map(File::getId).collect(Collectors.toSet());
+        assertTrue(fileIds.contains("HG00096.chrom20.small.bam"));
+        assertTrue(fileIds.contains("NA19600.chrom20.small.bam"));
+
+        // Test ADD action - add new files
+        List<FileReferenceParam> addFiles = Arrays.asList(
+                new FileReferenceParam("variant-test-file.vcf.gz")
+        );
+
+        QueryOptions addOptions = new QueryOptions()
+                .append(Constants.ACTIONS, new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.FILES.key(), ParamUtils.UpdateAction.ADD))
+                .append(ParamConstants.INCLUDE_RESULT_PARAM, true);
+
+        result = catalogManager.getClinicalAnalysisManager().update(studyFqn, clinicalAnalysis.getId(),
+                new ClinicalAnalysisUpdateParams().setFiles(addFiles), addOptions, ownerToken);
+
+        assertEquals(3, result.first().getFiles().size());
+        fileIds = result.first().getFiles().stream().map(File::getId).collect(Collectors.toSet());
+        assertTrue(fileIds.contains("HG00096.chrom20.small.bam"));
+        assertTrue(fileIds.contains("NA19600.chrom20.small.bam"));
+        assertTrue(fileIds.contains("variant-test-file.vcf.gz"));
+
+        // Test REMOVE action - remove specific files
+        List<FileReferenceParam> removeFiles = Arrays.asList(
+                new FileReferenceParam("NA19600.chrom20.small.bam")
+        );
+
+        QueryOptions removeOptions = new QueryOptions()
+                .append(Constants.ACTIONS, new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.FILES.key(), ParamUtils.UpdateAction.REMOVE))
+                .append(ParamConstants.INCLUDE_RESULT_PARAM, true);
+
+        result = catalogManager.getClinicalAnalysisManager().update(studyFqn, clinicalAnalysis.getId(),
+                new ClinicalAnalysisUpdateParams().setFiles(removeFiles), removeOptions, ownerToken);
+
+        assertEquals(2, result.first().getFiles().size());
+        fileIds = result.first().getFiles().stream().map(File::getId).collect(Collectors.toSet());
+        assertTrue(fileIds.contains("HG00096.chrom20.small.bam"));
+        assertTrue(fileIds.contains("variant-test-file.vcf.gz"));
+        assertFalse(fileIds.contains("NA19600.chrom20.small.bam"));
+    }
+
 }

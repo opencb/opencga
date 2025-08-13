@@ -12,6 +12,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.operations.variant.VariantAnnotationExtensionConfigureParams;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
+import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.cosmic.CosmicVariantAnnotatorExtensionTask;
 
@@ -144,7 +145,7 @@ public class CosmicVariantAnnotatorExtensionTaskTest {
         Assert.assertEquals("PMID:33888599", outputVariantAnnotations.get(1).getTraitAssociation().get(0).getBibliography().get(0));
     }
 
-    public static Path initCosmicPath() throws IOException {
+    private static Path initCosmicPath() throws IOException {
         return initCosmicPath(getTempPath());
     }
 
@@ -172,9 +173,7 @@ public class CosmicVariantAnnotatorExtensionTaskTest {
         if (!Files.isDirectory(cosmicPath) && !cosmicPath.toFile().mkdirs()) {
             throw new IOException("Error creating the COSMIC path: " + cosmicPath.toAbsolutePath());
         }
-        Path cosmicFile = Paths.get(CosmicVariantAnnotatorExtensionTaskTest.class.getResource("/custom_annotation/myannot.vcf").getPath());
-        Path targetPath = cosmicPath.resolve(cosmicFile.getFileName());
-        Files.copy(cosmicFile, targetPath);
+        Path targetPath = Paths.get(VariantStorageBaseTest.getResourceUri("custom_annotation/myannot.vcf", cosmicPath));
 
         if (!Files.exists(targetPath)) {
             throw new IOException("Error copying COSMIC file to " + targetPath);
@@ -183,7 +182,7 @@ public class CosmicVariantAnnotatorExtensionTaskTest {
         return targetPath;
     }
 
-    public static Path getTempPath() {
+    private static Path getTempPath() {
         return Paths.get("target/test-data").resolve(TimeUtils.getTimeMillis() + "_" + RandomStringUtils.random(8, true, false));
     }
 }

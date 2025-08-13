@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -1010,7 +1011,7 @@ public class UserManager extends AbstractManager {
                     response = authenticationManager.authenticate(organizationId, username, password);
                     authId = entry.getKey();
                     break;
-                } catch (CatalogAuthenticationException e) {
+                } catch (NotImplementedException | CatalogAuthenticationException e) {
                     logger.debug("Attempted authentication failed with {} for user '{}'\n{}", entry.getKey(), username, e.getMessage(), e);
                 }
             }
@@ -1038,7 +1039,6 @@ public class UserManager extends AbstractManager {
                 new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
         String userId = authenticationFactory.getUserId(organizationId, authId, response.getToken());
         if (!CatalogAuthenticationManager.OPENCGA.equals(authId) && !CatalogAuthenticationManager.INTERNAL.equals(authId)) {
-            // External authorization
             try {
                 // If the user is not registered, an exception will be raised
                 getUserDBAdaptor(organizationId).checkId(userId);
@@ -1052,7 +1052,6 @@ public class UserManager extends AbstractManager {
                         CatalogAuthenticationManager.OPENCGA, OPENCGA);
                 create(user, null, rootToken);
             }
-
             try {
                 List<String> remoteGroups = authenticationFactory.getRemoteGroups(organizationId, authId, response.getToken());
 
