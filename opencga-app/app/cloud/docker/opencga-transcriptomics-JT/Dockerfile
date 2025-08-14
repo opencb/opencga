@@ -128,5 +128,19 @@ RUN cp -v /opt/opencga/salmon-1.10.1/bin/salmon /usr/local/bin/ && \
     cp -r -v /opt/opencga/salmon-1.10.1/lib/* /usr/local/lib/ && \
     rm -rf /opt/opencga/salmon-1.10.1
 
+# Install kallisto
+RUN wget https://github.com/pachterlab/kallisto/archive/refs/tags/v0.51.1.tar.gz && \
+	tar -xzf v0.51.1.tar.gz && \
+	cd kallisto-0.51.1 && \
+	mkdir build && cd build && \
+	cmake .. && \
+	make
+
+RUN cp -v /opt/opencga/kallisto-0.51.1/build/src/kallisto /usr/local/bin/ && \
+    cp -r -v /opt/opencga/kallisto-0.51.1/build/src/libkallisto_core.a /usr/local/lib/ && \
+    rm -rf /opt/opencga/kallisto-0.51.1
+
+
+
 ENV PATH="/opt/opencga/hisat2-2.2.1:${PATH}"
 
