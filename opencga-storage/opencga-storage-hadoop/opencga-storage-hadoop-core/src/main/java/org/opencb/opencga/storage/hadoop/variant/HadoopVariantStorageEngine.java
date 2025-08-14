@@ -32,6 +32,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.IOUtils;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.DatabaseCredentials;
@@ -74,6 +75,7 @@ import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.io.HDFSIOConnector;
 import org.opencb.opencga.storage.hadoop.utils.DeleteHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
+import org.opencb.opencga.storage.hadoop.utils.MapReduceOutputFile;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.HBaseColumnIntersectVariantQueryExecutor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
@@ -110,6 +112,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
@@ -333,24 +336,26 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
 
         String dockerMemory = getOptions().getString(WALKER_DOCKER_MEMORY.key(), WALKER_DOCKER_MEMORY.defaultValue());
         long dockerMemoryBytes = IOUtils.fromHumanReadableToByte(dockerMemory, true);
+        long maxBytesPerMap = getOptions().getLong(WALKER_DOCKER_MAX_BYTES_PER_MAP.key(), dockerMemoryBytes / 2);
 
         String dockerHost = getOptions().getString(MR_STREAM_DOCKER_HOST.key(), MR_STREAM_DOCKER_HOST.defaultValue());
         if (StringUtils.isNotEmpty(dockerHost)) {
             params.put(StreamVariantDriver.ENVIRONMENT_VARIABLES, "DOCKER_HOST=" + dockerHost);
         }
 
-        getMRExecutor().run(StreamVariantDriver.class, StreamVariantDriver.buildArgs(
+        ObjectMap counters = getMRExecutor().run(StreamVariantDriver.class, StreamVariantDriver.buildArgs(
                 null,
                 getVariantTableName(), studyId, null,
                 params
                         .append(MR_HEAP_MAP_OTHER_MB.key(), dockerMemoryBytes / 1024 / 1204)
-                        .append(StreamVariantDriver.MAX_BYTES_PER_MAP_PARAM, dockerMemoryBytes / 2)
+                        .append(StreamVariantDriver.MAX_BYTES_PER_MAP_PARAM, maxBytesPerMap)
                         .append(StreamVariantDriver.COMMAND_LINE_BASE64_PARAM, Base64.getEncoder().encodeToString(commandLine.getBytes()))
                         .append(StreamVariantDriver.INPUT_FORMAT_PARAM, format.toString())
                         .append(StreamVariantDriver.OUTPUT_PARAM, outputFile)
         ), "Walk data");
         List<URI> uris = new ArrayList<>();
         URI stderrFile = UriUtils.createUriSafe(outputFile.toString() + StreamVariantDriver.STDERR_TXT_GZ);
+        URI countersFile = UriUtils.createUriSafe(outputFile.toString() + ".counters.json");
         try {
             IOConnector ioConnector = ioConnectorProvider.get(outputFile);
             if (ioConnector.exists(outputFile)) {
@@ -362,6 +367,13 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                 uris.add(stderrFile);
             } else {
                 logger.warn("Stderr file not found: {}", stderrFile);
+            }
+            try (OutputStream outputStream = ioConnector.newOutputStream(countersFile)) {
+                counters.entrySet().removeIf(entry -> entry.getKey().startsWith(MapReduceOutputFile.EXTRA_OUTPUT_PREFIX)
+                        || entry.getKey().startsWith(MapReduceOutputFile.EXTRA_NAMED_OUTPUT_PREFIX)
+                        || entry.getKey().equals(MapReduceOutputFile.NAMED_OUTPUT));
+                JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValue(outputStream, counters);
+                uris.add(countersFile);
             }
         } catch (IOException e) {
             throw new StorageEngineException("Error checking output file", e);

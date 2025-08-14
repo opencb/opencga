@@ -171,6 +171,7 @@ public class ParamConstants {
     public static final String USER_DESCRIPTION = "User ID";
     public static final String USERS_DESCRIPTION = "Comma separated list of user IDs";
     public static final String USER_AUTHENTICATION_ORIGIN = "authenticationId";
+    public static final String AUTHENTICATION_ORIGIN_PARAM = "authenticationOriginId";
     public static final String USER_AUTHENTICATION_ORIGIN_DESCRIPTION = "Authentication origin ID";
     public static final String USER_CREATION_DATE = "creationDate";
     public static final String USER_CREATION_DATE_DESCRIPTION = CREATION_DATE_DESCRIPTION;
@@ -1591,4 +1592,13 @@ public class ParamConstants {
     public static final String STUDIES_DESCRIPTION = "Comma separated list of Studies [[organization@]project:]study where study "
             + "and project can be either the ID or UUID" + UP_TO_100;
     public static final String PANELS_DESCRIPTION = "Comma separated list of panel IDs" + UP_TO_100;
+
+
+    // Parameter descriptions for variant annotation extension configure operation
+    public static final String VARIANT_ANNOTATION_EXTENSION_NAME_DESCR = "Name of the variant annotation extension.";
+    public static final String VARIANT_ANNOTATION_EXTENSION_RESOURCE_LIST_DESCR = "List of resources of the variant annotation"
+            + " extension.";
+    public static final String VARIANT_ANNOTATION_EXTENSION_PARAMS_DESCR = "Parameters of the variant annotation"
+            +" extension based on a key-value map, example of key-value: \"version\"=\"v101\"";
+    public static final String VARIANT_ANNOTATION_EXTENSION_OVERWRITE_DESCR = "Overwrite.";
 }

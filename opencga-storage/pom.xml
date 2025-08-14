@@ -28,7 +28,7 @@
 
     <artifactId>opencga-storage</artifactId>
     <packaging>pom</packaging>
-
+    <name>OpenCGA Storage</name>
     <properties>
         <storage.configuration.file>storage-configuration.yml</storage.configuration.file>
     </properties>

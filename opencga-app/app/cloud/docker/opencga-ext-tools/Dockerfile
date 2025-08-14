@@ -7,7 +7,7 @@ LABEL org.label-schema.vendor="OpenCB" \
       maintainer="Joaquin Tarraga <joaquintarraga@gmail.com>" \
       org.label-schema.schema-version="1.0"
 
-## Run update and install necessary packages
+## Run update and install necessary packages for ext-tools
 RUN apt-get update -y && \
     ## 1. Install system dependencies
     DEBIAN_FRONTEND="noninteractive" TZ="Europe/London" apt-get install -y libcurl4 git libgmp-dev libcurl4-openssl-dev libgit2-dev build-essential \
@@ -34,6 +34,20 @@ RUN apt-get update -y && \
     make && \
     bash -c '/bin/cp bcftools plugins/{munge,liftover,score,metal,pgs,blup}.so /usr/local/bin/' && \
     wget -P /usr/local/bin http://raw.githubusercontent.com/freeseek/score/master/assoc_plot.R && \
+<<<<<<< HEAD
+    chmod a+x /usr/local/bin/assoc_plot.R
+    ## Installation dependencies using R install.packages() is slower than apt-get but final size is 400GB smaller.
+RUN R -e "install.packages(c('BiocManager', 'RCircos', 'nnls', 'ggplot2', 'jsonlite', 'optparse', 'knitr', 'configr', 'dplyr', 'rmarkdown', 'tidyr', 'httr', 'kinship2', 'limSolve'))" && \
+    R -e "BiocManager::install('BiocStyle')" && \
+    R -e "BiocManager::install('BSgenome.Hsapiens.UCSC.hg38')" && \
+    ## signature.tools.lib installation \
+    R -e 'install.packages(c("devtools", "getopt"), repos=c("http://cran.rstudio.com/", "https://www.stats.bris.ac.uk/R/"))' && \
+    git clone https://github.com/Nik-Zainal-Group/signature.tools.lib.git /opt/opencga/signature.tools.lib
+
+WORKDIR /opt/opencga/signature.tools.lib
+
+RUN git fetch origin --tags && \
+=======
     chmod a+x /usr/local/bin/assoc_plot.R && \
     cd .. && \
 
@@ -47,15 +61,22 @@ RUN apt-get update -y && \
     git clone https://github.com/Nik-Zainal-Group/signature.tools.lib.git /opt/opencga/signature.tools.lib && \
     cd /opt/opencga/signature.tools.lib && \
     git fetch origin --tags && \
+>>>>>>> release-4.x.x
     git checkout tags/v2.4.4 && \
     sed -i '/Mmusculus/d' DESCRIPTION && \
     sed -i '/Cfamiliaris/d' DESCRIPTION && \
     sed -i '/1000genomes/d' DESCRIPTION && \
+<<<<<<< HEAD
+    R -e 'options(timeout = 3600);devtools::install(repos="https://www.stats.bris.ac.uk/R/")' && \
+    ## Clean up
+    rm -rf /var/lib/apt/lists/* /tmp/* /opt/opencga/signature.tools.lib/.git && \
+=======
     R -e "options(timeout = 3600);devtools::install(repos='https://www.stats.bris.ac.uk/R/')" && \
     cd .. && \
 
     ## 6. Clean up
     rm -rf samtools-1.21 bcftools-1.21 /var/lib/apt/lists/* /tmp/* /opt/opencga/signature.tools.lib/.git && \
+>>>>>>> release-4.x.x
     strip --remove-section=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so.5
 
 ENV BCFTOOLS_PLUGINS="/usr/local/bin"
