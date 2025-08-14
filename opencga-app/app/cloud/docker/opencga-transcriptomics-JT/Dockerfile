@@ -29,15 +29,6 @@ ENV PATH="/app/multiqc_venv/bin:$PATH"
 # Install MultiQC into the virtual environment
 RUN pip install --no-cache-dir multiqc
 
-# Install STAR from source code and make
-RUN wget https://github.com/alexdobin/STAR/archive/2.7.11b.tar.gz && \
-	tar -xzf 2.7.11b.tar.gz  && \
-	cd STAR-2.7.11b/source  && \
-	make STAR && \
-    cp -v STAR /usr/local/bin/ && \
-    cd ../..  && \
-    rm -rf STAR-2.7.11b
-
 # Install HISAT2 source code and make
 RUN wget -O hisat2-source.zip https://github.com/DaehwanKimLab/hisat2/archive/v2.2.1.zip && \
     unzip hisat2-source.zip  && \
@@ -62,8 +53,63 @@ RUN Rscript -e " \
     install.packages('BiocManager', repos = 'https://cloud.r-project.org'); \
   BiocManager::install(version = '3.18', ask = FALSE, update = TRUE); \
   BiocManager::install('DESeq2', ask = FALSE); \
-  print(packageVersion('DESeq2')) \
+  print(packageVersion('DESeq2')); \
+  BiocManager::install('edgeR', ask = FALSE); \
+  print(packageVersion('edgeR')) \
 "
+
+## Install Salmon
+#RUN wget https://github.com/COMBINE-lab/salmon/archive/refs/tags/v1.10.1.tar.gz && \
+#    tar xzf v1.10.1.tar.gz && \
+#    mv salmon-1.10.1/bin/salmon /usr/local/bin/ && \
+#    rm -rf salmon-*
+#
+## Install Kallisto
+#RUN wget https://github.com/pachterlab/kallisto/releases/download/v0.48.0/kallisto_linux-v0.48.0.tar.gz && \
+#    tar xzf kallisto_linux-v0.48.0.tar.gz && \
+#    mv kallisto_linux-v0.48.0/kallisto /usr/local/bin/ && \
+#    rm -rf kallisto_*
+
+# Install STAR from source code and make
+RUN wget https://github.com/alexdobin/STAR/archive/2.7.11b.tar.gz && \
+	tar -xzf 2.7.11b.tar.gz  && \
+	cd STAR-2.7.11b/source  && \
+	make STAR && \
+    cp -v STAR /usr/local/bin/ && \
+    cd ../..  && \
+    rm -rf STAR-2.7.11b
+
+
+# Install required R packages for FusionInspector
+RUN Rscript -e 'install.packages(c("ranger", "getopt", "jsonlite", "tidyverse"), repos="http://cran.us.r-project.org")'
+
+#
+## Install STAR-Fusion
+#RUN git clone --recursive https://github.com/STAR-Fusion/STAR-Fusion.git \
+#    && cd STAR-Fusion \
+#    && make \
+#    && cp STAR-Fusion /usr/local/bin/ \
+#    && cp FusionInspector/FusionInspector /usr/local/bin/ \
+#    && cp FusionFilter/FusionFilter /usr/local/bin/ \
+#    && cp Prep_Reference_for_STAR_Fusion.pl /usr/local/bin/ \
+#    && rm -rf /var/cache/git/* \
+#    && cd .. \
+#    && rm -rf STAR-Fusion
+#
+## Install Perl modules for STAR-Fusion
+#RUN apt-get update && apt-get install -y \
+#    perl \
+#    cpanminus \
+#    && rm -rf /var/lib/apt/lists/*
+#
+#RUN cpanm --notest File::Basename \
+#    && cpanm --notest Getopt::Long \
+#    && cpanm --notest FindBin \
+#    && cpanm --notest strict \
+#    && cpanm --notest warnings \
+#    && cpanm --notest Carp \
+#    && cpanm --notest Cwd \
+#    && cpanm --notest IPC::Open3
 
 ENV PATH="/opt/opencga/hisat2-2.2.1:${PATH}"
 
