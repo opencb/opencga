@@ -64,10 +64,36 @@ jobs:
           password: ${{ env.DOCKER_HUB_PASSWORD }}
       - name: Install sshpass
         run: sudo apt-get install sshpass
-      - name: Add SSH Host to known_hosts
+      - name: Prepare SSH and scan host
+        continue-on-error: true
         run: |
+          set +e  # temporarily disable exit-on-error to capture failures without aborting
+
+          echo "Creating ~/.ssh directory and setting permissions"
           mkdir -p ~/.ssh
-          ssh-keyscan -p ${{ env.SSH_PORT }} ${{ env.SSH_HOST }} >> ~/.ssh/known_hosts
+          chmod 700 ~/.ssh
+
+          echo "Scanning SSH host $SSH_HOST on port $SSH_PORT"
+          ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> ~/.ssh/known_hosts 2>&1
+          scan_status=$?
+          if [ $scan_status -ne 0 ]; then
+            echo "ssh-keyscan exited with status $scan_status"
+          fi
+
+          echo "Setting permissions on known_hosts"
+          chmod 644 ~/.ssh/known_hosts
+
+          echo " Showing contents of ~/.ssh/known_hosts:"
+          cat ~/.ssh/known_hosts || echo "(known_hosts is empty or unreadable)"
+
+          set -e  # re-enable exit-on-error for subsequent steps
+
+          echo "SSH keyscan step completed (errors ignored here)"
+        #
+        #      - name: Add SSH Host to known_hosts
+        #        run: |
+        #          mkdir -p ~/.ssh
+        #          ssh-keyscan -p ${{ env.SSH_PORT }} ${{ env.SSH_HOST }} >> ~/.ssh/known_hosts
         env:
           SSH_HOST: ${{ env.SSH_HOST }}
           SSH_PORT: ${{ env.SSH_PORT }}

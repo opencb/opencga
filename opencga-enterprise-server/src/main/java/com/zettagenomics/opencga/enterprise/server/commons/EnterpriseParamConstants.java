@@ -8,9 +8,7 @@ public class EnterpriseParamConstants {
 
 
     public static final String CVDB_INDEX_TASK_PARAMS_DESCRIPTION = "Parameters: " + CvdbIndexTask.DESCRIPTION;
-    public static final String META_TOKEN_DESCRIPTION = "Token to log in";
-    public static final String META_ENVIRONMENT_DESCRIPTION = "Environment of the app";
-    public static final String META_HOST_DESCRIPTION = "Opencga host without environment";
+    public static final String META_HOST_DESCRIPTION = "Opencga host with environment";
     public static final String API_CATEGORY_DESCRIPTION = "List of categories to get API from";
     public static final String SSO_LOGIN_CALLBACK_DESCRIPTION = "Callback URL";
     public static final String SSO_LOGOUT_CALLBACK_DESCRIPTION = "Callback URL";
