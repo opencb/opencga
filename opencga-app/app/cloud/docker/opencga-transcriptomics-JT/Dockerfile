@@ -111,5 +111,22 @@ RUN Rscript -e 'install.packages(c("ranger", "getopt", "jsonlite", "tidyverse"),
 #    && cpanm --notest Cwd \
 #    && cpanm --notest IPC::Open3
 
+# Install salmon and its dependencies
+RUN apt-get update && apt-get install -y \
+    curl cmake libboost-all-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN wget https://github.com/COMBINE-lab/salmon/archive/refs/tags/v1.10.1.tar.gz && \
+    tar -xzf v1.10.1.tar.gz && \
+	cd salmon-1.10.1 && \
+	mkdir build && cd build && \
+	cmake ..  && \
+	make && \
+	make install
+
+RUN cp -v /opt/opencga/salmon-1.10.1/bin/salmon /usr/local/bin/ && \
+    cp -r -v /opt/opencga/salmon-1.10.1/lib/* /usr/local/lib/ && \
+    rm -rf /opt/opencga/salmon-1.10.1
+
 ENV PATH="/opt/opencga/hisat2-2.2.1:${PATH}"
 
