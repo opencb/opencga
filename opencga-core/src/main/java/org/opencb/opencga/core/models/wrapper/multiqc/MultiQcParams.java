@@ -1,4 +1,4 @@
-package org.opencb.opencga.core.models.wrapper;
+package org.opencb.opencga.core.models.wrapper.multiqc;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 

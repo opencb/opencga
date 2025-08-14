@@ -7,7 +7,7 @@ import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
 import org.opencb.opencga.core.config.Analysis;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
-import org.opencb.opencga.core.models.wrapper.StarWrapperParams;
+import org.opencb.opencga.core.models.wrapper.star.StarWrapperParams;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 
 import java.util.*;

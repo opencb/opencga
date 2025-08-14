@@ -1,4 +1,4 @@
-package org.opencb.opencga.core.models.wrapper;
+package org.opencb.opencga.core.models.wrapper.star;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.tools.ToolParams;

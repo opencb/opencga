@@ -6,8 +6,8 @@ import org.opencb.opencga.analysis.wrappers.WrapperUtils;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
 import org.opencb.opencga.core.config.Analysis;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
-import org.opencb.opencga.core.models.wrapper.MultiQcParams;
-import org.opencb.opencga.core.models.wrapper.MultiQcWrapperParams;
+import org.opencb.opencga.core.models.wrapper.multiqc.MultiQcParams;
+import org.opencb.opencga.core.models.wrapper.multiqc.MultiQcWrapperParams;
 import org.opencb.opencga.core.models.wrapper.WrapperParams;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 

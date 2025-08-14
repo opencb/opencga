@@ -1,4 +1,4 @@
-package org.opencb.opencga.core.models.wrapper;
+package org.opencb.opencga.core.models.wrapper.hisat2;
 
 import org.opencb.opencga.core.tools.ToolParams;
 

@@ -21,18 +21,16 @@ import org.apache.commons.collections4.MapUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.wrapper.MultiQcParams;
-import org.opencb.opencga.core.models.wrapper.MultiQcWrapperParams;
+import org.opencb.opencga.core.models.wrapper.multiqc.MultiQcWrapperParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 
 import static org.opencb.opencga.analysis.wrappers.WrapperUtils.*;
-import static org.opencb.opencga.core.models.wrapper.MultiQcParams.*;
-import static org.opencb.opencga.core.models.wrapper.MultiQcParams.SKIP_PARAMS;
+import static org.opencb.opencga.core.models.wrapper.multiqc.MultiQcParams.*;
+import static org.opencb.opencga.core.models.wrapper.multiqc.MultiQcParams.SKIP_PARAMS;
 
 @Tool(id = MultiQcWrapperAnalysis.ID, resource = Enums.Resource.ALIGNMENT, description = MultiQcWrapperAnalysis.DESCRIPTION)
 public class MultiQcWrapperAnalysis extends OpenCgaToolScopeStudy {

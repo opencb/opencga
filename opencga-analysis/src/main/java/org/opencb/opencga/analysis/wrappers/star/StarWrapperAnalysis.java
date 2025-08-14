@@ -20,7 +20,7 @@ import org.apache.commons.collections4.MapUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.wrapper.StarWrapperParams;
+import org.opencb.opencga.core.models.wrapper.star.StarWrapperParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 

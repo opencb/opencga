@@ -22,7 +22,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.wrapper.Hisat2WrapperParams;
+import org.opencb.opencga.core.models.wrapper.hisat2.Hisat2WrapperParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
