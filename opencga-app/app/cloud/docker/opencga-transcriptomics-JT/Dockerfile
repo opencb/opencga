@@ -83,34 +83,6 @@ RUN wget https://github.com/alexdobin/STAR/archive/2.7.11b.tar.gz && \
 # Install required R packages for FusionInspector
 RUN Rscript -e 'install.packages(c("ranger", "getopt", "jsonlite", "tidyverse"), repos="http://cran.us.r-project.org")'
 
-#
-## Install STAR-Fusion
-#RUN git clone --recursive https://github.com/STAR-Fusion/STAR-Fusion.git \
-#    && cd STAR-Fusion \
-#    && make \
-#    && cp STAR-Fusion /usr/local/bin/ \
-#    && cp FusionInspector/FusionInspector /usr/local/bin/ \
-#    && cp FusionFilter/FusionFilter /usr/local/bin/ \
-#    && cp Prep_Reference_for_STAR_Fusion.pl /usr/local/bin/ \
-#    && rm -rf /var/cache/git/* \
-#    && cd .. \
-#    && rm -rf STAR-Fusion
-#
-## Install Perl modules for STAR-Fusion
-#RUN apt-get update && apt-get install -y \
-#    perl \
-#    cpanminus \
-#    && rm -rf /var/lib/apt/lists/*
-#
-#RUN cpanm --notest File::Basename \
-#    && cpanm --notest Getopt::Long \
-#    && cpanm --notest FindBin \
-#    && cpanm --notest strict \
-#    && cpanm --notest warnings \
-#    && cpanm --notest Carp \
-#    && cpanm --notest Cwd \
-#    && cpanm --notest IPC::Open3
-
 # Install salmon and its dependencies
 RUN apt-get update && apt-get install -y \
     curl cmake libboost-all-dev && \
@@ -140,7 +112,53 @@ RUN cp -v /opt/opencga/kallisto-0.51.1/build/src/kallisto /usr/local/bin/ && \
     cp -r -v /opt/opencga/kallisto-0.51.1/build/src/libkallisto_core.a /usr/local/lib/ && \
     rm -rf /opt/opencga/kallisto-0.51.1
 
+RUN cd /opt/opencga
 
+# Install STAR-Fusion and dependencies
+RUN apt-get update && apt-get install -y \
+    perl \
+    libarchive-extract-perl \
+    libjson-perl \
+    liblwp-protocol-https-perl \
+    libtry-tiny-perl \
+    liburi-perl \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN wget https://github.com/STAR-Fusion/STAR-Fusion/releases/download/STAR-Fusion-v1.15.1/STAR-Fusion-v1.15.1.FULL.tar.gz && \
+    tar -xzf STAR-Fusion-v1.15.1.FULL.tar.gz && \
+	cd STAR-Fusion-v1.15.1 && \
+	make
+
+RUN	cp -v /opt/opencga/STAR-Fusion-v1.15.1/STAR-Fusion /usr/local/bin/ && \
+    cp -r /opt/opencga/STAR-Fusion-v1.15.1/FusionInspector /usr/local/bin && \
+    cp -r /opt/opencga/STAR-Fusion-v1.15.1/util /usr/local/bin && \
+    cp -r /opt/opencga/STAR-Fusion-v1.15.1/PerlLib /usr/local/bin && \
+	rm -rf /opt/opencga/STAR-Fusion-v1.15.1
+
+# Set PERL5LIB to include STAR-Fusion's PerlLib directory
+ENV PERL5LIB /usr/local/bin/PerlLib:$PERL5LIB
+
+# Verify installation
+RUN STAR-Fusion --help
+
+#
+#RUN apt-get update && apt-get install -y \
+#    cpanminus
+#
+## Install Perl modules
+#RUN cpanm Pipeliner.pm && \
+#    cpanm Set::IntervalTree && \
+#    cpanm DB_File && \
+#    cpanm Carp::Assert && \
+#    cpanm JSON && \
+#    cpanm PerlIO::gzip
+ \
+    # Download CTAT genome lib (same as in Option 1)
+#RUN mkdir -p /opt/opencga/star-fusion-db && \
+#    cd /opt/opencga/star-fusion-db && \
+#    wget https://data.broadinstitute.org/Trinity/CTAT_RESOURCE_LIB/GRCh38_gencode_v37_CTAT_lib_Mar012021.plug-n-play.tar.gz && \
+#    tar xvf GRCh38_gencode_v37_CTAT_lib_Mar012021.plug-n-play.tar.gz && \
+#    rm GRCh38_gencode_v37_CTAT_lib_Mar012021.plug-n-play.tar.gz
 
 ENV PATH="/opt/opencga/hisat2-2.2.1:${PATH}"
 
