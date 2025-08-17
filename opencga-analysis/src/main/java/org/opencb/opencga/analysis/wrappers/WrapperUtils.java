@@ -16,42 +16,27 @@
 
 package org.opencb.opencga.analysis.wrappers;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.wrapper.WrapperParams;
-import org.opencb.opencga.core.tools.ResourceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 public class WrapperUtils {
 
-    public static final String FILE_PREFIX = "file://";
     public static final String INPUT_FILE_PREFIX = "input://";
     public static final String OUTPUT_FILE_PREFIX = "output://";
-
-    public static final String EXECUTE_TOOL_SCRIPT = "execute_tool.py";
-
-    @Deprecated
-    public static final String COMMAND = "command";
-    @Deprecated
-    public static final String INPUT = "input";
-    @Deprecated
-    public static final String PARAMS = "params";
 
     private static Logger logger = LoggerFactory.getLogger(WrapperUtils.class);
 
@@ -95,7 +80,7 @@ public class WrapperUtils {
         for (Map.Entry<String, Object> entry : params.entrySet()) {
             if (skipParams.contains(entry.getKey())) {
                 // Skip this parameter
-                logger.warn("Skipping parameter '{}'", entry.getKey());
+                logger.info("Skipping parameter '{}' since it will be set later or ignored", entry.getKey());
                 continue;
             }
             if (fileParams.contains(entry.getKey())) {
@@ -111,179 +96,5 @@ public class WrapperUtils {
             }
         }
         return updatedParams;
-    }
-
-    public static String buildVirtualPath(String inputPath, String prefix, List<AbstractMap.SimpleEntry<String, String>> bindings,
-                                          Set<String> readOnlyBindings) throws ToolException {
-        // Sanity check
-        if (!inputPath.startsWith(INPUT_FILE_PREFIX) && !inputPath.startsWith(OUTPUT_FILE_PREFIX)) {
-            throw new ToolException("Input path '" + inputPath + "' must start with '" + INPUT_FILE_PREFIX + "' or '"
-                    + OUTPUT_FILE_PREFIX + "'.");
-        }
-
-        // Process paths
-        String filePrefix = INPUT_FILE_PREFIX;
-        if (inputPath.startsWith(OUTPUT_FILE_PREFIX)) {
-            filePrefix = OUTPUT_FILE_PREFIX;
-        }
-        Path path = Paths.get(inputPath.substring(filePrefix.length()));
-
-        // Check if the path exists already in the bindings
-        for (AbstractMap.SimpleEntry<String, String> binding : bindings) {
-            if (binding.getKey().equals(path.toAbsolutePath().toString())) {
-                return binding.getValue();
-            }
-        }
-
-        // Otherwise, we need to create a new binding
-        String virtualPath = "/" + prefix + "/";
-        if (path.toFile().isFile()) {
-            virtualPath += path.getFileName().toString();
-        }
-        bindings.add(new AbstractMap.SimpleEntry<>(path.toAbsolutePath().toString(), virtualPath));
-        if (filePrefix.equals(INPUT_FILE_PREFIX)) {
-            readOnlyBindings.add(virtualPath);
-        }
-        return virtualPath;
-    }
-
-    public static List<String> buildVirtualPaths(List<String> inputPaths, String prefix,
-                                                 List<AbstractMap.SimpleEntry<String, String>> bindings,
-                                                 Set<String> readOnlyBindings) throws ToolException {
-        int counter = 0;
-        List<String> virtualPaths = new ArrayList<>(inputPaths.size());
-        for (String inputPath : inputPaths) {
-            String virtualPath = WrapperUtils.buildVirtualPath(inputPath, prefix + "_" + counter, bindings, readOnlyBindings);
-            counter++;
-            virtualPaths.add(virtualPath);
-        }
-        return virtualPaths;
-    }
-
-    public static ObjectMap updateParams(ObjectMap params, String prefix, List<AbstractMap.SimpleEntry<String, String>> bindings,
-                                         Set<String> readOnlyBindings) throws ToolException {
-        int counter = 0;
-        ObjectMap updatedParams = new ObjectMap();
-        for (Map.Entry<String, Object> entry : params.entrySet()) {
-            if (entry.getValue() instanceof List) {
-                List<String> values = (List<String>) entry.getValue();
-                if (values.get(0).startsWith(INPUT_FILE_PREFIX) || values.get(0).startsWith(OUTPUT_FILE_PREFIX)) {
-                    updatedParams.put(entry.getKey(), WrapperUtils.buildVirtualPaths((List<String>) entry.getValue(),
-                            prefix + "_" + counter, bindings, readOnlyBindings));
-                    counter++;
-                } else {
-                    // Otherwise, we assume it's a regular parameter
-                    updatedParams.put(entry.getKey(), entry.getValue());
-                }
-            } else if (entry.getValue() instanceof String) {
-                String value = (String) entry.getValue();
-                if (value.startsWith(INPUT_FILE_PREFIX) || value.startsWith(OUTPUT_FILE_PREFIX)) {
-                    // If the entry value starts with INPUT_FILE_PREFIX or OUTPUT_FILE_PREFIX, it has to be converted to a virtual path
-                    String virtualPath = WrapperUtils.buildVirtualPath(value, prefix + "_" + counter, bindings, readOnlyBindings);
-                    counter++;
-                    updatedParams.put(entry.getKey(), virtualPath);
-                } else {
-                    // Otherwise, we assume it's a regular parameter
-                    updatedParams.put(entry.getKey(), entry.getValue());
-                }
-            } else {
-                // Otherwise, we assume it's a regular parameter
-                updatedParams.put(entry.getKey(), entry.getValue());
-            }
-        }
-        return updatedParams;
-    }
-
-    public static String buildVirtualAnalysisPath(String opencgaHome, List<AbstractMap.SimpleEntry<String, String>> bindings,
-                                                  Set<String> readOnlyBindings) {
-        Path analysisPath = Paths.get(opencgaHome).resolve(ResourceManager.ANALYSIS_DIRNAME);
-        String virtualAnalysisPath = "/analysis";
-        bindings.add(new AbstractMap.SimpleEntry<>(analysisPath.toAbsolutePath().toString(), virtualAnalysisPath));
-        readOnlyBindings.add(virtualAnalysisPath);
-        return virtualAnalysisPath;
-    }
-
-    @Deprecated
-    public static String processParamsFile(ObjectMap params, Path outDir, List<AbstractMap.SimpleEntry<String, String>> bindings,
-                                           Set<String> readOnlyBindings) {
-        return processParamsFile(params, !params.containsKey("params"), outDir, bindings, readOnlyBindings);
-    }
-
-    @Deprecated
-    public static String processParamsFile(ObjectMap params, boolean addInParams, Path outDir,
-                                           List<AbstractMap.SimpleEntry<String, String>> bindings, Set<String> readOnlyBindings) {
-        String paramsFilename = "params.json";
-        String virtualParamsPath = "/outdir/" + paramsFilename;
-        ObjectMap newParams = new ObjectMap();
-        if (addInParams) {
-            newParams.put("params", params);
-        } else {
-            newParams.putAll(params);
-        }
-        bindings.add(new AbstractMap.SimpleEntry<>(outDir.resolve(paramsFilename).toAbsolutePath().toString(), virtualParamsPath));
-        readOnlyBindings.add(virtualParamsPath);
-
-        // Write the parameters to a file
-        WrapperUtils.writeParamsFile(newParams, outDir.resolve(paramsFilename));
-
-        return virtualParamsPath;
-    }
-
-    @Deprecated
-    public static void writeParamsFile(ObjectMap params, Path path) {
-        try (OutputStream outputStream = Files.newOutputStream(path)) {
-
-            // Get the default ObjectMapper instance and configure the ObjectMapper to ignore all fields with null values
-            ObjectMapper objectMapper = JacksonUtils.getDefaultObjectMapper()
-                    .setSerializationInclusion(JsonInclude.Include.NON_NULL);
-
-            // Write the params to the output stream
-            objectMapper.writeValue(outputStream, params);
-        } catch (IOException e) {
-            logger.error("Error writing params file to '{}'", path, e);
-        }
-    }
-
-    public static String createParamsFile(WrapperParams params, Path outDir, List<AbstractMap.SimpleEntry<String, String>> bindings,
-                                          Set<String> readOnlyBindings) throws IOException {
-        String paramsFilename = "params.json";
-        String virtualParamsPath = "/outdir/" + paramsFilename;
-        bindings.add(new AbstractMap.SimpleEntry<>(outDir.resolve(paramsFilename).toAbsolutePath().toString(), virtualParamsPath));
-        readOnlyBindings.add(virtualParamsPath);
-
-        // Write the parameters to a file
-        try (OutputStream outputStream = Files.newOutputStream(outDir.resolve(paramsFilename))) {
-            // Get the default ObjectMapper instance and configure the ObjectMapper to ignore all fields with null values
-            ObjectMapper objectMapper = JacksonUtils.getDefaultObjectMapper()
-                    .setSerializationInclusion(JsonInclude.Include.NON_NULL);
-
-            // Write the params to the output stream
-            objectMapper.writeValue(outputStream, params);
-        }
-
-        return virtualParamsPath;
-    }
-
-    public static String buildWrapperCommandLine(String interpreter, String virtualAnalysisPath, String analysisId, String wrapperScript,
-                                                 String virtualParamsPath) {
-        StringBuilder cli = new StringBuilder();
-        if (StringUtils.isNotEmpty(interpreter)) {
-            cli.append(interpreter).append(" ");
-        }
-        cli.append(virtualAnalysisPath).append("/").append(analysisId).append("/").append(wrapperScript)
-                .append(" -p ").append(virtualParamsPath);
-
-        return cli.toString();
-    }
-    public static String buildWrapperCommandLine(String interpreter, String virtualAnalysisPath, String tool, String virtualParamsPath) {
-        StringBuilder cli = new StringBuilder();
-        if (StringUtils.isNotEmpty(interpreter)) {
-            cli.append(interpreter).append(" ");
-        }
-        cli.append(virtualAnalysisPath).append("/").append(EXECUTE_TOOL_SCRIPT)
-                .append(" -t ").append(tool)
-                .append(" -p ").append(virtualParamsPath);
-
-        return cli.toString();
     }
 }

@@ -38,6 +38,7 @@ import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.models.wrapper.hisat2.Hisat2Params;
 import org.opencb.opencga.core.models.wrapper.hisat2.Hisat2WrapperParams;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -52,8 +53,6 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-
-import static org.opencb.opencga.analysis.wrappers.WrapperUtils.FILE_PREFIX;
 
 @RunWith(Parameterized.class)
 @Category(MediumTests.class)
@@ -200,13 +199,11 @@ public class Hisat2AnalysisTest {
                 null, null, null), false, token).first();
 
         Hisat2WrapperParams params = new Hisat2WrapperParams();
-        params.getHisat2Params().setCommand("hisat2-build");
-        List<Object> input = Arrays.asList(
-                Arrays.asList(FILE_PREFIX + fastaFile.getId()),
-                FILE_PREFIX + genomeDir.getId() + "/" + indexBasename);
+        params.getHisat2Params().setCommand(Hisat2Params.HISAT2_BUILD_TOOL);
+        List<String> input = Arrays.asList(fastaFile.getId(), indexBasename);
         params.getHisat2Params().setInput(input);
-        params.getHisat2Params().getParams().put("--bmaxdivn", "4");
-        params.getHisat2Params().getParams().put("--dcv", "1024");
+        params.getHisat2Params().getOptions().put(Hisat2Params.BMAXDIVN_PARAM, "4");
+        params.getHisat2Params().getOptions().put(Hisat2Params.DCV_PARAM, "1024");
 
         toolRunner.execute(Hisat2WrapperAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outdir, "hisat2-build", false, token);
 
@@ -237,13 +234,11 @@ public class Hisat2AnalysisTest {
                 null, null, null), false, token).first();
 
         Hisat2WrapperParams params = new Hisat2WrapperParams();
-        params.getHisat2Params().setCommand("hisat2-build");
-        List<Object> input = Arrays.asList(
-                Arrays.asList(FILE_PREFIX + fastaFile.getId()),
-                FILE_PREFIX + genomeDir.getId() + "/" + indexBasename);
+        params.getHisat2Params().setCommand(Hisat2Params.HISAT2_BUILD_TOOL);
+        List<String> input = Arrays.asList(fastaFile.getId(), indexBasename);
         params.getHisat2Params().setInput(input);
-        params.getHisat2Params().getParams().put("--bmaxdivn", "4");
-        params.getHisat2Params().getParams().put("--dcv", "1024");
+        params.getHisat2Params().getOptions().put(Hisat2Params.BMAXDIVN_PARAM, "4");
+        params.getHisat2Params().getOptions().put(Hisat2Params.DCV_PARAM, "1024");
 
         toolRunner.execute(Hisat2WrapperAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outdir1, "hisat2-build", false, token);
 
@@ -254,7 +249,7 @@ public class Hisat2AnalysisTest {
 
         Path outdir2 = Paths.get(opencga.createTmpOutdir("_hisat2"));
 
-        File genomeIndexFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(outdir1.resolve(indexBasename + ".1.ht2").toString(), "", "testHisat2", "", null, null,
+        File genomeIndexDir = catalogManager.getFileManager().link(STUDY, new FileLinkParams(outdir1.toString(), "", "testHisat2", "", null, null,
                 null, null, null), false, token).first();
         Path fastqFilePath = datadir.resolve(fastqRelativePath).resolve(fastqFilename).toAbsolutePath();
         File fastqFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(fastqFilePath.toString(), "", "testHisat2", "", null, null,
@@ -262,10 +257,10 @@ public class Hisat2AnalysisTest {
 
         String samFilename = "my_output.sam";
         Hisat2WrapperParams params2 = new Hisat2WrapperParams();
-        params2.getHisat2Params().getParams().put("-x", FILE_PREFIX + genomeIndexFile.getId());
-        params2.getHisat2Params().getParams().put("-U", FILE_PREFIX + fastqFile.getId());
-        params2.getHisat2Params().getParams().put("-S", FILE_PREFIX + samFilename);
-        params2.getHisat2Params().getParams().put("--n-ceil", "L,0,0.15");
+        params2.getHisat2Params().getOptions().put(Hisat2Params.X_PARAM, genomeIndexDir.getId());
+        params2.getHisat2Params().getOptions().put(Hisat2Params.U_PARAM, fastqFile.getId());
+        params2.getHisat2Params().getOptions().put(Hisat2Params.S_PARAM, samFilename);
+        params2.getHisat2Params().getOptions().put(Hisat2Params.N_CEIL_PARAM, "L,0,0.15");
         toolRunner.execute(Hisat2WrapperAnalysis.class, params2, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outdir2, "hisat2", false, token);
 
         Assert.assertTrue(Files.exists(outdir2.resolve(samFilename)));

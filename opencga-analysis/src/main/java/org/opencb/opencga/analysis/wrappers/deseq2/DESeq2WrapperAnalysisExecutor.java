@@ -1,87 +1,93 @@
 package org.opencb.opencga.analysis.wrappers.deseq2;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.FileUtils;
+import org.opencb.opencga.analysis.wrappers.BaseDockerWrapperAnalysisExecutor;
+import org.opencb.opencga.analysis.wrappers.WrapperUtils;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
+import org.opencb.opencga.analysis.wrappers.hisat2.Hisat2WrapperAnalysisExecutor;
 import org.opencb.opencga.analysis.wrappers.multiqc.MultiQcWrapperAnalysis;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.Analysis;
+import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
+import org.opencb.opencga.core.models.wrapper.WrapperParams;
 import org.opencb.opencga.core.models.wrapper.deseq2.DESeq2Input;
 import org.opencb.opencga.core.models.wrapper.deseq2.DESeq2Params;
 import org.opencb.opencga.core.models.wrapper.deseq2.DESeq2WrapperParams;
+import org.opencb.opencga.core.models.wrapper.hisat2.Hisat2Params;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 import static org.opencb.opencga.analysis.wrappers.WrapperUtils.*;
+import static org.opencb.opencga.core.models.wrapper.hisat2.Hisat2Params.X_PARAM;
 
 @ToolExecutor(id = DESeq2WrapperAnalysisExecutor.ID,
-        tool = MultiQcWrapperAnalysis.ID,
+        tool = DESeq2WrapperAnalysis.ID,
         source = ToolExecutor.Source.FILE,
         framework = ToolExecutor.Framework.DOCKER)
-public class DESeq2WrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor {
+public class DESeq2WrapperAnalysisExecutor extends BaseDockerWrapperAnalysisExecutor {
 
     public static final String ID = DESeq2WrapperAnalysis.ID + "-docker";
 
-    private static final String WRAPPER_SCRIPT = "run_deseq2.py";
-
-    private String study;
-    private DESeq2WrapperParams deSeq2WrapperParams;
+    private DESeq2Params deSeq2Params;
+    private DESeq2Params updatedParams = new DESeq2Params();
 
     @Override
-    protected void run() throws Exception {
-
-        // DESeq2 parameters to be executed in the docker container, it must contain virtual paths
-        DESeq2Params updatedParams = new DESeq2Params();
-
-        // Input and output bindings
-        List<AbstractMap.SimpleEntry<String, String>> bindings = new ArrayList<>();
-        Set<String> readOnlyBindings = new HashSet<>();
-
-        // Script path
-        String virtualAnalysisPath = buildVirtualAnalysisPath(getExecutorParams().getString("opencgaHome"), bindings, readOnlyBindings);
-
-        // DESeq2 input
-        DESeq2Input input = deSeq2WrapperParams.getDESeq2Params2Params().getInput();
-        updatedParams.getInput().setCountsFile(buildVirtualPath(input.getCountsFile(), "counts", bindings, readOnlyBindings));
-        updatedParams.getInput().setMetadataFile(buildVirtualPath(input.getMetadataFile(), "metadata", bindings, readOnlyBindings));
-
-        // DESeq2 analysis
-        updatedParams.setAnalysis(deSeq2WrapperParams.getDESeq2Params2Params().getAnalysis());
-
-        // DESeq2 output
-        updatedParams.setOutput(deSeq2WrapperParams.getDESeq2Params2Params().getOutput());
-        String output = buildVirtualPath(OUTPUT_FILE_PREFIX + getOutDir().toAbsolutePath(), "output", bindings, readOnlyBindings);
-        updatedParams.getOutput().setBasename(output + deSeq2WrapperParams.getDESeq2Params2Params().getOutput().getBasename());
-
-        // Params file path
-        Map<String, Object> params = new ObjectMapper().convertValue(updatedParams, Map.class);
-        String virtualParamsPath = processParamsFile(new ObjectMap(params), false, getOutDir(), bindings, readOnlyBindings);
-
-        // Build Python command line with params file and execute it in docker
-        String wrapperCli = "python3 " + virtualAnalysisPath + "/" + DESeq2WrapperAnalysis.ID + "/" + WRAPPER_SCRIPT + " "
-                + virtualParamsPath;
-        String dockerImage = getDockerFullImageName(Analysis.TRASNSCRIPTOMICS_DOCKER_KEY);
-
-        // User: array of two strings, the first string, the user; the second, the group
-        String[] user = FileUtils.getUserAndGroup(getOutDir(), true);
-        Map<String, String> dockerParams = new HashMap<>();
-        dockerParams.put("user", user[0] + ":" + user[1]);
-
-        String dockerCli = buildCommandLine(dockerImage, bindings, readOnlyBindings, wrapperCli, dockerParams);
-        addEvent(Event.Type.INFO, "Docker command line: " + dockerCli);
-        logger.info("Docker command line: {}", dockerCli);
-        int exitValue = runCommandLine(dockerCli);
-
-        if (exitValue != 0) {
-            throw new ToolExecutorException("Error executing DESeq2: exit value " + exitValue + ". Check the logs for more details.");
-        }
+    protected String getTool() {
+        return "Rscript " + ANALYSIS_VIRTUAL_PATH + "/" + DESeq2WrapperAnalysis.ID + "/" + "deseq2_script.R";
     }
 
-    public String getStudy() {
-        return study;
+    @Override
+    protected WrapperParams getWrapperParams() {
+        return new WrapperParams();
+    }
+
+    @Override
+    protected void validateOutputDirectory() throws ToolExecutorException {
+        // Nothing to do
+    }
+
+    @Override
+    protected void buildVirtualParams(WrapperParams params, List<AbstractMap.SimpleEntry<String, String>> bindings,
+                                      Set<String> readOnlyBindings) throws ToolException {
+        // DESeq2 input
+        updatedParams.getInput().setCountsFile(buildVirtualPath(deSeq2Params.getInput().getCountsFile(), "counts", bindings,
+                readOnlyBindings));
+        updatedParams.getInput().setMetadataFile(buildVirtualPath(deSeq2Params.getInput().getMetadataFile(), "metadata", bindings,
+                readOnlyBindings));
+
+        // DESeq2 analysis
+        updatedParams.setAnalysis(deSeq2Params.getAnalysis());
+
+        // DESeq2 output
+        updatedParams.setOutput(deSeq2Params.getOutput());
+        String virtualOutputPath = buildVirtualPath(OUTPUT_FILE_PREFIX + getOutDir().toAbsolutePath(), "output", bindings, readOnlyBindings);
+        updatedParams.getOutput().setBasename(virtualOutputPath + deSeq2Params.getOutput().getBasename());
+
+        // Write updated parameters to file in the output directory, it will be the input
+        Path deSeq2ParamsPath = getOutDir().resolve(DESeq2WrapperAnalysis.ID + ".params.json");
+        try (OutputStream outputStream = Files.newOutputStream(deSeq2ParamsPath)) {
+            // Get the default ObjectMapper instance and configure the ObjectMapper to ignore all fields with null values
+            ObjectMapper objectMapper = JacksonUtils.getDefaultObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL);
+            objectMapper.writeValue(outputStream, updatedParams);
+        } catch (IOException e) {
+            logger.error("Error writing DESeq2 parameters to file '{}'", deSeq2ParamsPath, e);
+        }
+
+        // And finally, set the input parameter to the virtual path of the DESeq2 parameters file
+        params.setInput(Collections.singletonList(virtualOutputPath + deSeq2ParamsPath.getFileName()));
     }
 
     public DESeq2WrapperAnalysisExecutor setStudy(String study) {
@@ -89,13 +95,12 @@ public class DESeq2WrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor
         return this;
     }
 
-    public DESeq2WrapperParams getDESeq2WrapperParams() {
-        return deSeq2WrapperParams;
+    public DESeq2Params getDESeq2Params() {
+        return deSeq2Params;
     }
 
-    public DESeq2WrapperAnalysisExecutor setDESeq2WrapperParams(DESeq2WrapperParams deSeq2WrapperParams) {
-        this.deSeq2WrapperParams = deSeq2WrapperParams;
+    public DESeq2WrapperAnalysisExecutor setDESeq2Params(DESeq2Params deSeq2Params) {
+        this.deSeq2Params = deSeq2Params;
         return this;
     }
 }
-

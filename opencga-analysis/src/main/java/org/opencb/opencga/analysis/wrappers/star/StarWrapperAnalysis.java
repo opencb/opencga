@@ -20,17 +20,20 @@ import org.apache.commons.collections4.MapUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.wrapper.star.StarParams;
 import org.opencb.opencga.core.models.wrapper.star.StarWrapperParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.analysis.wrappers.WrapperUtils.OUTPUT_FILE_PREFIX;
 import static org.opencb.opencga.analysis.wrappers.WrapperUtils.checkParams;
-import static org.opencb.opencga.analysis.wrappers.star.StarWrapperAnalysisExecutor.*;
+import static org.opencb.opencga.core.models.wrapper.star.StarParams.*;
 
 @Tool(id = StarWrapperAnalysis.ID, resource = Enums.Resource.ALIGNMENT, description = StarWrapperAnalysis.DESCRIPTION)
 public class StarWrapperAnalysis extends OpenCgaToolScopeStudy {
@@ -43,7 +46,7 @@ public class StarWrapperAnalysis extends OpenCgaToolScopeStudy {
     @ToolParams
     protected final StarWrapperParams analysisParams = new StarWrapperParams();
 
-    private StarWrapperParams updatedParams;
+    private StarParams updatedParams = new StarParams();;
 
     protected void check() throws Exception {
         // IMPORTANT: the first thing to do since it initializes "study" from params.get(STUDY_PARAM)
@@ -51,24 +54,52 @@ public class StarWrapperAnalysis extends OpenCgaToolScopeStudy {
 
         setUpStorageEngineExecutor(study);
 
-        if (MapUtils.isEmpty(analysisParams.getStarParams())) {
+        if (analysisParams.getStarParams() == null || MapUtils.isEmpty(analysisParams.getStarParams().getOptions())) {
             throw new ToolException("Missing STAR parameters.");
         }
 
-        updatedParams = new StarWrapperParams();
-
         // Check parameters, and get physical paths from OpenCGA catalog files before passing them to the executor
-        updatedParams.setStarParams(checkParams(analysisParams.getStarParams(), study, catalogManager, token));
+        updatedParams.setOptions(checkParams(analysisParams.getStarParams().getOptions(), study, catalogManager, token));
 
         // Set output directory to the JOB directory
-        if (analysisParams.getStarParams().containsKey(RUN_MODE_PARAM)
-                && analysisParams.getStarParams().get(RUN_MODE_PARAM).equals(GENOME_GENERATE_VALUE)) {
-            // If the run mode is genomeGenerate, the output directory is the parameter --genomeDir
-            logger.warn(PARAMETER_SET_TO_THE_JOB_DIRECTORY_LOG, GENOME_DIR_PARAM, getOutDir().toAbsolutePath());
-            updatedParams.getStarParams().put(GENOME_DIR_PARAM, OUTPUT_FILE_PREFIX + getOutDir().toAbsolutePath() + "/");
+        String runMode = analysisParams.getStarParams().getOptions().getString(RUN_MODE_PARAM, ALIGN_READS_VALUE);
+        switch (runMode) {
+            case ALIGN_READS_VALUE: {
+                // Remove the OUT_FILE_NAME_PREFIX_PARAM if it exists, since it will be set to the JOB directory
+                List<String> ignoredParams = new ArrayList<>(SKIP_PARAMS);
+                ignoredParams.add(OUT_FILE_NAME_PREFIX_PARAM);
+                updatedParams.setOptions(checkParams(analysisParams.getStarParams().getOptions(), StarParams.FILE_PARAMS, ignoredParams,
+                        study, catalogManager, token));
+                break;
+            }
+
+            case GENOME_GENERATE_VALUE: {
+                // Remove the GENOME_DIR_PARAM if it exists, since it will be set to the JOB directory
+                List<String> ignoredParams = new ArrayList<>(SKIP_PARAMS);
+                ignoredParams.add(GENOME_DIR_PARAM);
+                updatedParams.setOptions(checkParams(analysisParams.getStarParams().getOptions(), StarParams.FILE_PARAMS, ignoredParams,
+                        study, catalogManager, token));
+
+                // Set the GENOME_DIR_PARAM to the JOB directory
+                logger.info(PARAMETER_SET_TO_THE_JOB_DIRECTORY_LOG, GENOME_DIR_PARAM, getOutDir().toAbsolutePath());
+                updatedParams.getOptions().put(GENOME_DIR_PARAM, OUTPUT_FILE_PREFIX + getOutDir().toAbsolutePath() + "/");
+                break;
+            }
+
+            case INPUT_ALIGNMENTS_FROM_BAM_VALUE:
+            case LIFT_OVER_VALUE:
+            case SOLO_CELL_FILTERING_VALUE: {
+                throw new ToolException("Run mode '" + runMode + "' is not supported yet.");
+            }
+
+            default:
+                throw new ToolException("Unknown run mode: " + runMode + ". Supported run modes are: "
+                        + Arrays.asList(ALIGN_READS_VALUE, GENOME_GENERATE_VALUE));
         }
-        logger.warn(PARAMETER_SET_TO_THE_JOB_DIRECTORY_LOG, OUT_FILE_NAME_PREFIX_PARAM, getOutDir().toAbsolutePath() + "/");
-        updatedParams.getStarParams().put(OUT_FILE_NAME_PREFIX_PARAM, OUTPUT_FILE_PREFIX + getOutDir().toAbsolutePath() + "/");
+
+        // For all run modes, set the OUT_FILE_NAME_PREFIX_PARAM to the JOB directory
+        logger.info(PARAMETER_SET_TO_THE_JOB_DIRECTORY_LOG, OUT_FILE_NAME_PREFIX_PARAM, getOutDir().toAbsolutePath());
+        updatedParams.getOptions().put(OUT_FILE_NAME_PREFIX_PARAM, OUTPUT_FILE_PREFIX + getOutDir().toAbsolutePath() + "/");
     }
 
     @Override
@@ -87,7 +118,7 @@ public class StarWrapperAnalysis extends OpenCgaToolScopeStudy {
 
         // Set parameters and execute
         executor.setStudy(study)
-                .setStarWrapperParams(updatedParams)
+                .setStarParams(updatedParams)
                 .execute();
     }
 }

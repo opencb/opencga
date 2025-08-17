@@ -21,6 +21,7 @@ import org.apache.commons.collections4.MapUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.wrapper.multiqc.MultiQcParams;
 import org.opencb.opencga.core.models.wrapper.multiqc.MultiQcWrapperParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
@@ -30,7 +31,6 @@ import java.util.List;
 
 import static org.opencb.opencga.analysis.wrappers.WrapperUtils.*;
 import static org.opencb.opencga.core.models.wrapper.multiqc.MultiQcParams.*;
-import static org.opencb.opencga.core.models.wrapper.multiqc.MultiQcParams.SKIP_PARAMS;
 
 @Tool(id = MultiQcWrapperAnalysis.ID, resource = Enums.Resource.ALIGNMENT, description = MultiQcWrapperAnalysis.DESCRIPTION)
 public class MultiQcWrapperAnalysis extends OpenCgaToolScopeStudy {
@@ -42,15 +42,13 @@ public class MultiQcWrapperAnalysis extends OpenCgaToolScopeStudy {
     @ToolParams
     protected final MultiQcWrapperParams analysisParams = new MultiQcWrapperParams();
 
-    private MultiQcWrapperParams updatedParams;
+    private MultiQcParams updatedParams = new MultiQcParams();
 
     protected void check() throws Exception {
         // IMPORTANT: the first thing to do since it initializes "study" from params.get(STUDY_PARAM)
         super.check();
 
         setUpStorageEngineExecutor(study);
-
-         updatedParams = new MultiQcWrapperParams();
 
         // Check parameters, and get physical paths from OpenCGA catalog files before passing them to the executor
 
@@ -59,18 +57,18 @@ public class MultiQcWrapperAnalysis extends OpenCgaToolScopeStudy {
             throw new ToolException("Missing input paths. At least one input path must be provided.");
         }
         List<String> input = checkPaths(analysisParams.getMultiQcParams().getInput(), study, catalogManager, token);
-        updatedParams.getMultiQcParams().setInput(input);
+        updatedParams.setInput(input);
 
         // Check MultiQC options, but before remove the output directory parameter if it exists
         if (MapUtils.isNotEmpty(analysisParams.getMultiQcParams().getOptions())) {
-            updatedParams.getMultiQcParams().setOptions(checkParams(analysisParams.getMultiQcParams().getOptions(), FILE_PARAMS,
+            updatedParams.setOptions(checkParams(analysisParams.getMultiQcParams().getOptions(), FILE_PARAMS,
                     SKIP_PARAMS, study, catalogManager, token));
         }
 
         // Set output directory to the JOB directory
         logger.warn("The output dir parameter ('{}' or '{}') is set to the JOB directory.", OUTDIR_PARAM, O_PARAM);
-        updatedParams.getMultiQcParams().getOptions().remove(O_PARAM);
-        updatedParams.getMultiQcParams().getOptions().put(OUTDIR_PARAM, OUTPUT_FILE_PREFIX + getOutDir().toAbsolutePath());
+        updatedParams.getOptions().remove(O_PARAM);
+        updatedParams.getOptions().put(OUTDIR_PARAM, OUTPUT_FILE_PREFIX + getOutDir().toAbsolutePath());
     }
 
     protected void run() throws ToolException, IOException {
@@ -84,7 +82,7 @@ public class MultiQcWrapperAnalysis extends OpenCgaToolScopeStudy {
 
         // Set parameters and execute
         executor.setStudy(study)
-                .setMultiQcWrapperParams(updatedParams)
+                .setMultiQcParams(updatedParams)
                 .execute();
     }
 }

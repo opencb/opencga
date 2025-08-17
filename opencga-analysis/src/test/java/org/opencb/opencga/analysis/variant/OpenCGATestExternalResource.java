@@ -297,27 +297,12 @@ public class OpenCGATestExternalResource extends ExternalResource {
 
         // Python base wrapper
         analysisPath = Files.createDirectories(opencgaHome.resolve("analysis")).toAbsolutePath();
-        try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/base_wrapper.py")) {
-            Files.copy(inputStream, analysisPath.resolve("base_wrapper.py"), StandardCopyOption.REPLACE_EXISTING);
-        }
         try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/execute_tool.py")) {
             Files.copy(inputStream, analysisPath.resolve("execute_tool.py"), StandardCopyOption.REPLACE_EXISTING);
         }
 
-        // Python wrapper for MultiQC
-        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/multiqc")).toAbsolutePath();
-        try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/multiqc/multiqc_wrapper.py")) {
-            Files.copy(inputStream, analysisPath.resolve("multiqc_wrapper.py"), StandardCopyOption.REPLACE_EXISTING);
-        }
-
-        // Python wrapper for STAR
-        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/star")).toAbsolutePath();
-        try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/star/star_wrapper.py")) {
-            Files.copy(inputStream, analysisPath.resolve("star_wrapper.py"), StandardCopyOption.REPLACE_EXISTING);
-        }
-
         // Scripts for DESeq2
-        List<String> filenames = Arrays.asList("run_deseq2.py", "deseq2_script.R");
+        List<String> filenames = Arrays.asList("deseq2_script.R");
         for (String filename : filenames) {
             analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/deseq2")).toAbsolutePath();
             try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/deseq2/" + filename)) {

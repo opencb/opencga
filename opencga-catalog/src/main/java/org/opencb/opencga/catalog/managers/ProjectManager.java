@@ -249,21 +249,21 @@ public class ProjectManager extends AbstractManager {
                 || StringUtils.isEmpty(project.getOrganism().getScientificName())) {
             throw new CatalogParameterException("Missing mandatory organism information");
         }
-        try {
-            //TODO: Should the datarelease be undefined? When undefined, it'd be read from cellbase meta endpoints.
-            String defaultDataRelease = project.getOrganism().getAssembly().equalsIgnoreCase("grch38")
-                    ? ParamConstants.CELLBASE_DATA_RELEASE_GRCH38
-                    : null;
-            CellBaseConfiguration cellBaseConfiguration = ParamUtils.defaultObject(project.getCellbase(),
-                    new CellBaseConfiguration(ParamConstants.CELLBASE_URL, ParamConstants.CELLBASE_VERSION,
-                            defaultDataRelease, ParamConstants.CELLBASE_APIKEY));
-            cellBaseConfiguration = CellBaseValidator.validate(cellBaseConfiguration,
-                    project.getOrganism().getScientificName(),
-                    project.getOrganism().getAssembly(), true);
-            project.setCellbase(cellBaseConfiguration);
-        } catch (IOException e) {
-            throw new CatalogParameterException(e);
-        }
+//        try {
+//            //TODO: Should the datarelease be undefined? When undefined, it'd be read from cellbase meta endpoints.
+//            String defaultDataRelease = project.getOrganism().getAssembly().equalsIgnoreCase("grch38")
+//                    ? ParamConstants.CELLBASE_DATA_RELEASE_GRCH38
+//                    : null;
+//            CellBaseConfiguration cellBaseConfiguration = ParamUtils.defaultObject(project.getCellbase(),
+//                    new CellBaseConfiguration(ParamConstants.CELLBASE_URL, ParamConstants.CELLBASE_VERSION,
+//                            defaultDataRelease, ParamConstants.CELLBASE_APIKEY));
+//            cellBaseConfiguration = CellBaseValidator.validate(cellBaseConfiguration,
+//                    project.getOrganism().getScientificName(),
+//                    project.getOrganism().getAssembly(), true);
+//            project.setCellbase(cellBaseConfiguration);
+//        } catch (IOException e) {
+//            throw new CatalogParameterException(e);
+//        }
         project.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.PROJECT));
         if (project.getStudies() != null && !project.getStudies().isEmpty()) {
             throw new CatalogParameterException("Creating project and studies in a single transaction is forbidden");

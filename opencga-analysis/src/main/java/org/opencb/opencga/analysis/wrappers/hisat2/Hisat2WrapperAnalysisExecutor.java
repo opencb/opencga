@@ -1,141 +1,99 @@
 package org.opencb.opencga.analysis.wrappers.hisat2;
 
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.Event;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
-import org.opencb.opencga.analysis.wrappers.multiqc.MultiQcWrapperAnalysis;
-import org.opencb.opencga.core.config.Analysis;
+import org.opencb.opencga.analysis.wrappers.BaseDockerWrapperAnalysisExecutor;
+import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
-import org.opencb.opencga.core.models.wrapper.hisat2.Hisat2WrapperParams;
+import org.opencb.opencga.core.models.wrapper.WrapperParams;
+import org.opencb.opencga.core.models.wrapper.hisat2.Hisat2Params;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-import static org.opencb.opencga.analysis.wrappers.WrapperUtils.*;
 import static org.opencb.opencga.analysis.wrappers.multiqc.MultiQcWrapperAnalysis.ID;
+import static org.opencb.opencga.core.models.wrapper.hisat2.Hisat2Params.X_PARAM;
 
 @ToolExecutor(id = Hisat2WrapperAnalysisExecutor.ID,
         tool = ID,
         source = ToolExecutor.Source.FILE,
         framework = ToolExecutor.Framework.DOCKER)
-public class Hisat2WrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor {
+public class Hisat2WrapperAnalysisExecutor extends BaseDockerWrapperAnalysisExecutor {
 
-    public static final String ID = MultiQcWrapperAnalysis.ID + "-docker";
+    public static final String ID = Hisat2WrapperAnalysis.ID + "-docker";
 
-    public static final String X_PARAM = "-x";
-    public static final String S_PARAM = "-S";
-
-    public static final String HISAT2_TOOL = "hisat2";
-    public static final String HISAT2_BUILD_TOOL = "hisat2-build";
-    public static final String HISAT2_BUILD_L_TOOL = "hisat2-build-l";
-    public static final String HISAT2_BUILD_S_TOOL = "hisat2-build-s";
-
-    private static final String WRAPPER_SCRIPT = "multiqc_wrapper.py";
-
-    private String study;
-    private Hisat2WrapperParams hisat2WrapperParams;
+    private Hisat2Params hisat2Params;
 
     @Override
-    protected void run() throws Exception {
-        // Sanity check, outdir must match the output directory
-        String outDir;
-        if (hisat2WrapperParams.getHisat2Params().getParams().containsKey(S_PARAM)) {
-            outDir = hisat2WrapperParams.getHisat2Params().getParams().getString(S_PARAM).substring(OUTPUT_FILE_PREFIX.length());
-        } else {
-            outDir = ((String) hisat2WrapperParams.getHisat2Params().getInput().get(1)).substring(OUTPUT_FILE_PREFIX.length());
-        }
-//        if (!getOutDir().toAbsolutePath().toString().startsWith(outDir)) {
-//            throw new ToolExecutorException("Output directory '" + outDir + "' does not match the expected output directory '"
-//                    + getOutDir() + "'");
-//        }
-
-        // HISAT2 parameters to be executed in the docker container, it must contain virtual paths
-        ObjectMap updatedParams = new ObjectMap();
-
-        // Input and output bindings
-        List<AbstractMap.SimpleEntry<String, String>> bindings = new ArrayList<>();
-        Set<String> readOnlyBindings = new HashSet<>();
-
-        // Script path
-        String virtualAnalysisPath = buildVirtualAnalysisPath(getExecutorParams().getString("opencgaHome"), bindings, readOnlyBindings);
-
-        // HISAT2 input
-        String indexBasename ;
-        if (CollectionUtils.isNotEmpty(hisat2WrapperParams.getHisat2Params().getInput())) {
-            List<String> input = new ArrayList<>();
-            List<String> input0 = buildVirtualPaths((List<String>) hisat2WrapperParams.getHisat2Params().getInput().get(0), "input",
-                    bindings, readOnlyBindings);
-            input.add(StringUtils.join(input0, ","));
-
-            // If the command is hisat2-build, we need to get index basename
-            Path path = Paths.get(((String) hisat2WrapperParams.getHisat2Params().getInput().get(1))
-                    .substring(OUTPUT_FILE_PREFIX.length()));
-            indexBasename = path.getFileName().toString();
-            String input1 = buildVirtualPath(OUTPUT_FILE_PREFIX + path.getParent().toAbsolutePath(), "output", bindings, readOnlyBindings);
-            input.add(input1 + indexBasename);
-
-            updatedParams.put(INPUT, input);
-        }
-
-        // HISAT params
-        // Save SAM file path if it exists, so we can update it later
-        String samFile = hisat2WrapperParams.getHisat2Params().getParams().getString(S_PARAM);
-        if (StringUtils.isNotEmpty(samFile)) {
-            hisat2WrapperParams.getHisat2Params().getParams().remove(S_PARAM);
-        }
-        // Save index file path if it exists, so we can update it later
-        String indexFile = hisat2WrapperParams.getHisat2Params().getParams().getString(X_PARAM);
-        if (StringUtils.isNotEmpty(indexFile)) {
-            hisat2WrapperParams.getHisat2Params().getParams().remove(X_PARAM);
-        }
-        updatedParams.put(PARAMS, updateParams(hisat2WrapperParams.getHisat2Params().getParams(), "data", bindings, readOnlyBindings));
-        // Restore SAM file path if it exists
-        if (StringUtils.isNotEmpty(samFile)) {
-            String output = buildVirtualPath(OUTPUT_FILE_PREFIX + Paths.get(samFile.substring(OUTPUT_FILE_PREFIX.length())).getParent()
-                            .toAbsolutePath(), "output", bindings, readOnlyBindings);
-            String samFilename = Paths.get(samFile.substring(OUTPUT_FILE_PREFIX.length())).getFileName().toString();
-            updatedParams.getMap(PARAMS).put(S_PARAM, output + samFilename);
-        }
-        // Restore index file path if it exists
-        if (StringUtils.isNotEmpty(indexFile)) {
-            String index = buildVirtualPath(INPUT_FILE_PREFIX + Paths.get(indexFile.substring(INPUT_FILE_PREFIX.length())).getParent()
-                    .toAbsolutePath(), "index", bindings, readOnlyBindings);
-            String indexFilename = Paths.get(indexFile.substring(INPUT_FILE_PREFIX.length())).getFileName().toString();
-            String basename = indexFilename.substring(0, indexFilename.indexOf('.'));
-            updatedParams.getMap(PARAMS).put(X_PARAM, index + basename);
-        }
-
-        // Params file path
-        String virtualParamsPath = processParamsFile(updatedParams, getOutDir(), bindings, readOnlyBindings);
-
-        // Build Python command line with params file and execute it in docker
-//        String wrapperCli = buildWrapperCli("python3", virtualAnalysisPath, StarWrapperAnalysis.ID, WRAPPER_SCRIPT, virtualParamsPath);
-        String wrapperCli = buildWrapperCommandLine("python3", virtualAnalysisPath, hisat2WrapperParams.getHisat2Params().getCommand(),
-                virtualParamsPath);
-        String dockerImage = getDockerFullImageName(Analysis.TRASNSCRIPTOMICS_DOCKER_KEY);
-
-        // User: array of two strings, the first string, the user; the second, the group
-        String[] user = FileUtils.getUserAndGroup(getOutDir(), true);
-        Map<String, String> dockerParams = new HashMap<>();
-        dockerParams.put("user", user[0] + ":" + user[1]);
-
-        String dockerCli = buildCommandLine(dockerImage, bindings, readOnlyBindings, wrapperCli, dockerParams);
-        addEvent(Event.Type.INFO, "Docker command line: " + dockerCli);
-        logger.info("Docker command line: {}", dockerCli);
-        int exitValue = runCommandLine(dockerCli);
-
-        if (exitValue != 0) {
-            throw new ToolExecutorException("Error executing HISAT2: exit value " + exitValue + ". Check the logs for more details.");
-        }
+    protected String getTool() {
+        return hisat2Params.getCommand();
     }
 
-    public String getStudy() {
-        return study;
+    @Override
+    protected WrapperParams getWrapperParams() {
+        WrapperParams params = new WrapperParams();
+        params.setCommand(hisat2Params.getCommand());
+        params.setInput(hisat2Params.getInput());
+        params.setOptions(hisat2Params.getOptions());
+        return params;
+    }
+
+    @Override
+    protected void validateOutputDirectory() throws ToolExecutorException {
+        // Nothing to do
+    }
+
+    @Override
+    protected void buildVirtualParams(WrapperParams params, List<AbstractMap.SimpleEntry<String, String>> bindings,
+                                      Set<String> readOnlyBindings) throws ToolException {
+        switch (hisat2Params.getCommand()) {
+            case Hisat2Params.HISAT2_TOOL: {
+                // Set S_SAM parameter to the output directory
+                String output = buildVirtualPath(OUTPUT_FILE_PREFIX + getOutDir().toAbsolutePath(), "output", bindings, readOnlyBindings);
+                params.getOptions().put(Hisat2Params.S_PARAM, output + params.getOptions().getString(Hisat2Params.S_PARAM));
+
+                // Add the index basename to the X_PARAM parameter
+                Path indexPath = Paths.get(params.getOptions().getString(X_PARAM).substring(INPUT_FILE_PREFIX.length()));
+                String virtualIndexPath = null;
+                String indexBasename = null;
+                for (File file : indexPath.toFile().listFiles()) {
+                    if (file.isFile() && file.getName().endsWith(".ht2")) {
+                        // Add index files to the input bindings
+                        indexBasename = file.getName().substring(0, file.getName().indexOf('.'));
+                        virtualIndexPath = buildVirtualPath(INPUT_FILE_PREFIX + file.getParent(), "index", bindings, readOnlyBindings);
+                        break;
+                    }
+                }
+                if (StringUtils.isEmpty(virtualIndexPath) && StringUtils.isEmpty(indexBasename)) {
+                    throw new ToolExecutorException("No index files found in the specified path: " + indexPath);
+                }
+                params.getOptions().put(X_PARAM, virtualIndexPath + indexBasename);
+                break;
+            }
+
+            case Hisat2Params.HISAT2_BUILD_TOOL: {
+                // Update input
+                List<String> input = new ArrayList<>();
+                List<String> input0 = buildVirtualPaths(Arrays.asList(hisat2Params.getInput().get(0).split(",")), "input", bindings,
+                        readOnlyBindings);
+                input.add(StringUtils.join(input0, ","));
+
+                String indexBasename = hisat2Params.getInput().get(1);
+                String input1 = buildVirtualPath(OUTPUT_FILE_PREFIX + getOutDir().toAbsolutePath(), "output", bindings, readOnlyBindings);
+                input.add(input1 + indexBasename);
+
+                params.setInput(input);
+                break;
+            }
+
+            default:
+                throw new ToolExecutorException("Unsupported HISAT2 command: " + hisat2Params.getCommand());
+        }
+
+        // Handle options
+        params.setOptions(updateParams(params.getOptions(), "data", bindings, readOnlyBindings));
     }
 
     public Hisat2WrapperAnalysisExecutor setStudy(String study) {
@@ -143,12 +101,12 @@ public class Hisat2WrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor
         return this;
     }
 
-    public Hisat2WrapperParams getHisat2WrapperParams() {
-        return hisat2WrapperParams;
+    public Hisat2Params getHisat2Params() {
+        return hisat2Params;
     }
 
-    public Hisat2WrapperAnalysisExecutor setHisat2WrapperParams(Hisat2WrapperParams hisat2WrapperParams) {
-        this.hisat2WrapperParams = hisat2WrapperParams;
+    public Hisat2WrapperAnalysisExecutor setHisat2WrapperParams(Hisat2Params hisat2Params) {
+        this.hisat2Params = hisat2Params;
         return this;
     }
 }

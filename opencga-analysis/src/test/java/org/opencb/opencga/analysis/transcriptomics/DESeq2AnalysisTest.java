@@ -57,7 +57,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import static org.opencb.opencga.analysis.wrappers.WrapperUtils.FILE_PREFIX;
 import static org.opencb.opencga.analysis.wrappers.deseq2.DESeq2WrapperAnalysis.*;
 
 @RunWith(Parameterized.class)
@@ -196,8 +195,8 @@ public class DESeq2AnalysisTest {
 
         String basename = "deseq2_results_wald";
         DESeq2WrapperParams params = new DESeq2WrapperParams();
-        params.getDESeq2Params2Params().getInput().setCountsFile(FILE_PREFIX + countsFile.getId());
-        params.getDESeq2Params2Params().getInput().setMetadataFile(FILE_PREFIX + metadataFile.getId());
+        params.getDESeq2Params2Params().getInput().setCountsFile(countsFile.getId());
+        params.getDESeq2Params2Params().getInput().setMetadataFile(metadataFile.getId());
         params.getDESeq2Params2Params().getAnalysis().setDesignFormula("~condition");
         params.getDESeq2Params2Params().getAnalysis().setContrast(new DESeq2AnalysisContrast("condition", "treated", "control"));
         params.getDESeq2Params2Params().setOutput(new DESeq2Output(basename, true, true, true));
@@ -234,8 +233,8 @@ public class DESeq2AnalysisTest {
 
         String basename = "deseq2_results_lrt";
         DESeq2WrapperParams params = new DESeq2WrapperParams();
-        params.getDESeq2Params2Params().getInput().setCountsFile(FILE_PREFIX + countsFile.getId());
-        params.getDESeq2Params2Params().getInput().setMetadataFile(FILE_PREFIX + metadataFile.getId());
+        params.getDESeq2Params2Params().getInput().setCountsFile(countsFile.getId());
+        params.getDESeq2Params2Params().getInput().setMetadataFile(metadataFile.getId());
         params.getDESeq2Params2Params().getAnalysis().setDesignFormula("~genotype + time + genotype:time");
         params.getDESeq2Params2Params().getAnalysis().setReducedFormula("~genotype + time");
         params.getDESeq2Params2Params().getAnalysis().setTestMethod(LRT_TEST_METHOD);

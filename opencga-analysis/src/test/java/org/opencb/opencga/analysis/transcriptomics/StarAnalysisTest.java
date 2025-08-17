@@ -54,8 +54,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-
 @RunWith(Parameterized.class)
 @Category(MediumTests.class)
 public class StarAnalysisTest {
@@ -264,10 +262,10 @@ public class StarAnalysisTest {
                 null, null, null), false, token).first();
 
         StarWrapperParams params = new StarWrapperParams();
-        params.getStarParams().put("--runMode", "genomeGenerate");
-        params.getStarParams().put("--genomeDir", WrapperUtils.FILE_PREFIX + genomeDir.getId());
-        params.getStarParams().put("--genomeFastaFiles", WrapperUtils.FILE_PREFIX + fastaFile.getId());
-        params.getStarParams().put("--runThreadN", "8");
+        params.getStarParams().getOptions().put("--runMode", "genomeGenerate");
+        params.getStarParams().getOptions().put("--genomeDir", genomeDir.getId());
+        params.getStarParams().getOptions().put("--genomeFastaFiles", fastaFile.getId());
+        params.getStarParams().getOptions().put("--runThreadN", "8");
 
         toolRunner.execute(StarWrapperAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outdir, "star-generate-genome", false, token);
 
@@ -279,6 +277,7 @@ public class StarAnalysisTest {
     }
 
     @Test
+    
     public void testStarAlignReads() throws IOException, ToolException, CatalogException {
         // Assume STAR data exists
         Assume.assumeTrue(Files.exists(starDataPath));
@@ -297,10 +296,10 @@ public class StarAnalysisTest {
                 null, null, null), false, token).first();
 
         StarWrapperParams params = new StarWrapperParams();
-        params.getStarParams().put("--runMode", "genomeGenerate");
-        params.getStarParams().put("--genomeDir", WrapperUtils.FILE_PREFIX + genomeDir.getId());
-        params.getStarParams().put("--genomeFastaFiles", WrapperUtils.FILE_PREFIX + fastaFile.getId());
-        params.getStarParams().put("--runThreadN", "8");
+        params.getStarParams().getOptions().put("--runMode", "genomeGenerate");
+        params.getStarParams().getOptions().put("--genomeDir", genomeDir.getId());
+        params.getStarParams().getOptions().put("--genomeFastaFiles", fastaFile.getId());
+        params.getStarParams().getOptions().put("--runThreadN", "8");
 
         toolRunner.execute(StarWrapperAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outdir1, "star-generate-genome", false, token);
 
@@ -319,9 +318,9 @@ public class StarAnalysisTest {
                 null, null, null), false, token).first();
 
         StarWrapperParams params2 = new StarWrapperParams();
-        params2.getStarParams().put("--runMode", "alignReads");
-        params2.getStarParams().put("--genomeDir", WrapperUtils.FILE_PREFIX + genomeIndexDir.getId());
-        params2.getStarParams().put("--readFilesIn", WrapperUtils.FILE_PREFIX + fastqFile.getId());
+        params2.getStarParams().getOptions().put("--runMode", "alignReads");
+        params2.getStarParams().getOptions().put("--genomeDir", genomeIndexDir.getId());
+        params2.getStarParams().getOptions().put("--readFilesIn", fastqFile.getId());
 
         toolRunner.execute(StarWrapperAnalysis.class, params2, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outdir2, "star-align-reads", false, token);
 

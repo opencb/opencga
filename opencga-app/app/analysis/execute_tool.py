@@ -25,8 +25,8 @@ def build_command_list(tool: str, params: dict) -> list:
     """
     command_list = [tool]
 
-    # Add optional sub-command if it exists
-    if "command" in params and params["command"]:
+    # Add optional sub-command if it exists and is not the same as the tool name
+    if "command" in params and params["command"] and params["command"] != tool:
         command_list.append(params["command"])
 
     # Add params
