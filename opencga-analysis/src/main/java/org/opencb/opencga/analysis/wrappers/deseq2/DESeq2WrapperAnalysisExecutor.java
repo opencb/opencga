@@ -46,7 +46,7 @@ public class DESeq2WrapperAnalysisExecutor extends BaseDockerWrapperAnalysisExec
 
     @Override
     protected String getTool() {
-        return "Rscript " + ANALYSIS_VIRTUAL_PATH + "/" + DESeq2WrapperAnalysis.ID + "/" + "deseq2_script.R";
+        return "Rscript";
     }
 
     @Override
@@ -87,7 +87,8 @@ public class DESeq2WrapperAnalysisExecutor extends BaseDockerWrapperAnalysisExec
         }
 
         // And finally, set the input parameter to the virtual path of the DESeq2 parameters file
-        params.setInput(Collections.singletonList(virtualOutputPath + deSeq2ParamsPath.getFileName()));
+        params.setInput(Arrays.asList(ANALYSIS_VIRTUAL_PATH + "/" + DESeq2WrapperAnalysis.ID + "/" + "deseq2_script.R",
+                virtualOutputPath + deSeq2ParamsPath.getFileName()));
     }
 
     public DESeq2WrapperAnalysisExecutor setStudy(String study) {

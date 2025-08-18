@@ -277,7 +277,6 @@ public class StarAnalysisTest {
     }
 
     @Test
-    
     public void testStarAlignReads() throws IOException, ToolException, CatalogException {
         // Assume STAR data exists
         Assume.assumeTrue(Files.exists(starDataPath));
