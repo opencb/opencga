@@ -61,6 +61,7 @@ public class SecondaryIndexPendingVariantsFileBasedDescriptor implements Pending
         private final HBaseToVariantAnnotationConverter annotationConverter = new HBaseToVariantAnnotationConverter();
         private final HBaseToVariantStatsConverter statsConverter = new HBaseToVariantStatsConverter();
         private final Map<Integer, Integer> cohortsSize;
+        private final Map<Integer, String> studyNames;
         private final VariantStorageMetadataManager metadataManager;
 
         public PendingVariantConverter(VariantStorageMetadataManager metadataManager, SearchIndexMetadata indexMetadata) {
@@ -75,6 +76,7 @@ public class SecondaryIndexPendingVariantsFileBasedDescriptor implements Pending
             } else {
                 this.cohortsSize = null;
             }
+            studyNames = metadataManager.getStudies().inverse();
         }
 
         private Variant checkAndConvert(Result value, long creationDateTs, long lastUpdateTs) {
@@ -107,11 +109,10 @@ public class SecondaryIndexPendingVariantsFileBasedDescriptor implements Pending
                     }).walk();
             for (Map.Entry<Integer, Map<Integer, VariantStats>> entry : stats.entrySet()) {
                 int studyId = entry.getKey();
-                StudyEntry studyEntry = new StudyEntry(metadataManager.getStudyName(studyId));
+                StudyEntry studyEntry = new StudyEntry(studyNames.get(studyId));
                 variant.addStudyEntry(studyEntry);
                 Map<Integer, VariantStats> cohortStats = entry.getValue();
                 for (Map.Entry<Integer, VariantStats> cohortEntry : cohortStats.entrySet()) {
-                    // TODO: TASK-6217 Include only modified variantStats
                     int cohortId = cohortEntry.getKey();
                     VariantStats variantStats = cohortEntry.getValue();
                     variantStats.setCohortId(metadataManager.getCohortName(studyId, cohortId));
