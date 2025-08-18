@@ -10,6 +10,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
@@ -98,7 +99,7 @@ public abstract class PendingVariantsFileBasedManager {
                         }
                         throw new StorageEngineException("Duplicated file name " + cleanName + " in pending variants directory");
                     }
-                    Path dst = new Path(pendingVariantsDir.resolve(cleanName));
+                    Path dst = new Path(pendingVariantsDir.resolve(UriUtils.toUriRelative(cleanName)));
                     if (fs.exists(dst)) {
                         fs.delete(dst, true);
                     }

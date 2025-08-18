@@ -155,7 +155,7 @@ public class SshMRExecutor extends MRExecutor {
         int outputIdx = argsList.indexOf(AbstractHBaseDriver.OUTPUT_PARAM);
         if (outputIdx > 0 && argsList.size() > outputIdx + 1) {
             String output = argsList.get(outputIdx + 1);
-            URI outputUri = UriUtils.createUriSafe(output);
+            URI outputUri = UriUtils.toUri(output);
             if (MapReduceOutputFile.isLocal(outputUri)) {
                 logger.info("This MapReduce will produce some output. Change output location from file:// to a temporary hdfs:// file"
                         + " so it can be copied to the local filesystem after the execution");
@@ -202,7 +202,7 @@ public class SshMRExecutor extends MRExecutor {
     }
 
     private Path copyOutputFiles(String output, List<String> env) throws StorageEngineException {
-        URI targetOutputUri = UriUtils.createUriSafe(output);
+        URI targetOutputUri = UriUtils.toUri(output);
         if (!MapReduceOutputFile.isLocal(targetOutputUri)) {
             logger.info("Output to non-local destination. Skip \"copy to local\" file {}", targetOutputUri);
             return null;

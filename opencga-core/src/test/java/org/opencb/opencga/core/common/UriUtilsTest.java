@@ -52,8 +52,11 @@ public class UriUtilsTest {
         assertEquals("file", UriUtils.fileName(URI.create("file:///file")));
         assertEquals("file", UriUtils.fileName(URI.create("/file")));
         assertEquals("file", UriUtils.fileName(URI.create("file")));
-        assertEquals("file#2", UriUtils.fileName(UriUtils.createUriSafe("s3:///other/dir/file%232")));
-        assertEquals("file%3A2", UriUtils.fileName(UriUtils.createUriSafe("/other/dir/file%3A2")));
+        assertEquals("file#2", UriUtils.fileName(UriUtils.toUri("s3:///other/dir/file%232")));
+        assertEquals("file%3A2", UriUtils.fileName(UriUtils.toUri("/other/dir/file%3A2")));
+        assertEquals("file%232", UriUtils.toUriRelative("./file#2").toString());
+        assertEquals("file%232", UriUtils.toUriRelative("./././dir/../file#2").toString());
+        assertEquals("d/file%232", UriUtils.toUriRelative("./././dir/../d/file#2").toString());
 
         assertEquals("", UriUtils.fileName(URI.create("dir/")));
         assertEquals("", UriUtils.fileName(URI.create("/dir/")));

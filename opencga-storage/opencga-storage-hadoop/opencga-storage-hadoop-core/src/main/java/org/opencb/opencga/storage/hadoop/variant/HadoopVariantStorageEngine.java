@@ -361,7 +361,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                         .append(StreamVariantDriver.OUTPUT_PARAM, outputFile)
         ), "Walk data");
         List<URI> uris = new ArrayList<>();
-        URI stderrFile = UriUtils.createUriSafe(outputFile.toString() + StreamVariantDriver.STDERR_TXT_GZ);
+        URI stderrFile = UriUtils.toUri(outputFile.toString() + StreamVariantDriver.STDERR_TXT_GZ);
         try {
             IOConnector ioConnector = ioConnectorProvider.get(outputFile);
             if (ioConnector.exists(outputFile)) {

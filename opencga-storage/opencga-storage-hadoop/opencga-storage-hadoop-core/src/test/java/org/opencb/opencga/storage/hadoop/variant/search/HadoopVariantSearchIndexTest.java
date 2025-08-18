@@ -166,4 +166,13 @@ public class HadoopVariantSearchIndexTest extends VariantSearchIndexTest impleme
         }
     }
 
+    @Test
+    public void testSearchIndexWithWeirdContigs() throws Exception {
+        URI file = getResourceUri("variant-test-unusual-contigs_nocomit.vcf");
+        runETL(variantStorageEngine, file, "study", new ObjectMap());
+        HadoopVariantStorageEngine variantStorageEngine = (HadoopVariantStorageEngine) this.variantStorageEngine;
+
+        searchIndex();
+    }
+
 }
