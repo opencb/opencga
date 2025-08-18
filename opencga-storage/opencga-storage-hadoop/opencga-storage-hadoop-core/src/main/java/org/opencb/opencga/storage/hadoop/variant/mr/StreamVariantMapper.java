@@ -153,7 +153,7 @@ public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
                     // or if the chromosome changes
                     if (processedBytes > maxInputBytesPerProcess) {
                         LOG.info("Processed bytes = " + processedBytes + " > " + maxInputBytesPerProcess + ". Restarting process.");
-                        restartProcess(context, "bytes_limit", false);
+                        restartProcess(context, "bytes_limit", true);
                     } else if (!VariantLocusKey.naturalConsecutiveChromosomes(currentChromosome, currentValue.getChromosome())) {
                         LOG.info("Chromosome changed from " + currentChromosome + " to " + currentValue.getChromosome()
                                 + ". Restarting process.");

@@ -192,6 +192,27 @@ public abstract class VariantAnnotationManager {
             }
         }
 
+        // Check extensions
+        Map<String, ObjectMap> currentExtensions = current.getExtensions();
+        Map<String, ObjectMap> newExtensions = newVariantAnnotationMetadata.getExtensions();
+        if (currentExtensions == null) {
+            currentExtensions = Collections.emptyMap();
+        }
+        if (newExtensions == null) {
+            newExtensions = Collections.emptyMap();
+        }
+        if (!currentExtensions.equals(newExtensions)) {
+            String msg = "Annotator extensions has changed. "
+                    + "Existing annotation calculated with extensions " + currentExtensions
+                    + ", attempting to annotate with " + newExtensions;
+
+            if (overwrite) {
+                logger.info(msg);
+            } else {
+                throw new VariantAnnotatorException(msg);
+            }
+        }
+
         return current;
     }
 
@@ -262,10 +283,11 @@ public abstract class VariantAnnotationManager {
         current.setSourceVersion(newSourceVersion);
         current.setDataRelease(newAnnotationMetadata.getDataRelease());
         current.setPrivateSources(newAnnotationMetadata.getPrivateSources());
+        current.setExtensions(newAnnotationMetadata.getExtensions());
     }
 
     protected final VariantAnnotationMetadata registerNewAnnotationSnapshot(String name, VariantAnnotator annotator,
-                                                                                            ProjectMetadata projectMetadata)
+                                                                            ProjectMetadata projectMetadata)
             throws VariantAnnotatorException {
         VariantAnnotationMetadata current = projectMetadata.getAnnotation().getCurrent();
         if (current == null) {
@@ -288,6 +310,7 @@ public abstract class VariantAnnotationManager {
                 name,
                 Date.from(Instant.now()),
                 current.getAnnotator(),
+                current.getExtensions(),
                 current.getSourceVersion(),
                 current.getDataRelease(),
                 current.getPrivateSources());
