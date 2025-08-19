@@ -81,7 +81,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         usersSubCommands.addCommand("import", usersCommandOptions.importCommandOptions);
         usersSubCommands.addCommand("sync", usersCommandOptions.syncCommandOptions);
         usersSubCommands.addCommand("delete", usersCommandOptions.deleteUserCommandOptions);
-        usersSubCommands.addCommand("quota", usersCommandOptions.quotaUserCommandOptions);
         usersSubCommands.addCommand("stats", usersCommandOptions.statsUserCommandOptions);
 
         auditCommandOptions = new AuditCommandOptions();
@@ -238,7 +237,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public SyncCommandOptions syncCommandOptions;
         public DeleteUserCommandOptions deleteUserCommandOptions;
         public StatsUserCommandOptions statsUserCommandOptions;
-        public QuotaUserCommandOptions quotaUserCommandOptions;
 
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
@@ -248,7 +246,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
             this.syncCommandOptions = new SyncCommandOptions();
             this.deleteUserCommandOptions = new DeleteUserCommandOptions();
             this.statsUserCommandOptions = new StatsUserCommandOptions();
-            this.quotaUserCommandOptions = new QuotaUserCommandOptions();
         }
     }
 
@@ -656,21 +653,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
 
     }
 
-
-    @Parameters(commandNames = {"quota"}, commandDescription = "Set a new disk quota for an user")
-    public class QuotaUserCommandOptions extends CatalogDatabaseCommandOptions {
-
-        @ParametersDelegate
-        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
-
-
-        @Parameter(names = {"-u", "--user-id"}, description = "User id to get stats from", required = true, arity = 1)
-        public String userId;
-
-        @Parameter(names = {"--quota"}, description = "Disk quota in GB", required = true, arity = 1)
-        public long quota;
-    }
-
     @Parameters(commandNames = {"stats"}, commandDescription = "Print summary stats for an user")
     public class StatsUserCommandOptions extends CatalogDatabaseCommandOptions {
 
@@ -682,7 +664,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public String userId;
 
     }
-
 
     /*
      * TOOL SUB-COMMANDS

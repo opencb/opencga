@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -41,6 +42,7 @@ import org.opencb.opencga.core.models.federation.FederationClientParamsRef;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.project.*;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -268,6 +270,59 @@ public class ProjectManager extends AbstractManager {
         if (project.getStudies() != null && !project.getStudies().isEmpty()) {
             throw new CatalogParameterException("Creating project and studies in a single transaction is forbidden");
         }
+    }
+
+    List<String> getProjectAdmins(Project project) throws CatalogParameterException {
+        ParamUtils.checkObj(project, "project");
+        if (CollectionUtils.isEmpty(project.getStudies())) {
+            throw new CatalogParameterException("Internal error: Project " + project.getId() + " does not have any studies.");
+        }
+
+        List<List<String>> studyAdmins = new ArrayList<>(project.getStudies().size());
+        for (Study tmpStudy : project.getStudies()) {
+            if (CollectionUtils.isEmpty(tmpStudy.getGroups())) {
+                throw new CatalogParameterException("Internal error: Study " + tmpStudy.getId() + " does not have any groups.");
+            }
+            for (Group group : tmpStudy.getGroups()) {
+                if (StudyManager.ADMINS.equals(group.getId())) {
+                    studyAdmins.add(group.getUserIds());
+                    break;
+                }
+            }
+        }
+
+        // A project admin is a user that is admin in all the studies
+        Set<String> projectAdmins = new HashSet<>(studyAdmins.get(0));
+        if (studyAdmins.size() > 1) {
+            for (int i = 1; i < studyAdmins.size(); i++) {
+                // Remove from the projectAdmins object those users that are not admin in the current study
+                projectAdmins.retainAll(studyAdmins.get(i));
+            }
+        }
+
+        return new ArrayList<>(projectAdmins);
+    }
+
+    List<String> getProjectMembers(Project project) throws CatalogParameterException {
+        ParamUtils.checkObj(project, "project");
+        if (CollectionUtils.isEmpty(project.getStudies())) {
+            throw new CatalogParameterException("Internal error: Project " + project.getId() + " does not have any studies.");
+        }
+
+        Set<String> studyMembers = new HashSet<>();
+        for (Study tmpStudy : project.getStudies()) {
+            if (CollectionUtils.isEmpty(tmpStudy.getGroups())) {
+                throw new CatalogParameterException("Internal error: Study " + tmpStudy.getId() + " does not have any groups.");
+            }
+            for (Group group : tmpStudy.getGroups()) {
+                if (StudyManager.MEMBERS.equals(group.getId())) {
+                    studyMembers.addAll(group.getUserIds());
+                    break;
+                }
+            }
+        }
+
+        return new ArrayList<>(studyMembers);
     }
 
     /**

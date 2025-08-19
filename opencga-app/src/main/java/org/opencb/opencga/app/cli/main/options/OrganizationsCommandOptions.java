@@ -296,10 +296,10 @@ public class OrganizationsCommandOptions {
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
         public boolean includeResult = false; 
     
-        @Parameter(names = {"--name", "-n"}, description = "The body web service name parameter", required = false, arity = 1)
+        @Parameter(names = {"--name", "-n"}, description = "User name.", required = false, arity = 1)
         public String name;
     
-        @Parameter(names = {"--email"}, description = "The body web service email parameter", required = false, arity = 1)
+        @Parameter(names = {"--email"}, description = "User email.", required = false, arity = 1)
         public String email;
     
         @Parameter(names = {"--quota-disk-usage"}, description = "The body web service diskUsage parameter", required = false, arity = 1)

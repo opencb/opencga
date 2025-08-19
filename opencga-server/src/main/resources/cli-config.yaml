@@ -44,6 +44,9 @@ apiConfig:
     - name: organizations
       ignore: False
       key: Organization
+    - name: notifications
+      ignore: False
+      key: Notification
     - name: users
       ignore: False
       key: User

@@ -35,6 +35,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
     private final StudiesCommandOptions studiesCommandOptions;
     private final FilesCommandOptions filesCommandOptions;
     private final OperationsVariantStorageCommandOptions operationsVariantStorageCommandOptions;
+    private final NotificationsCommandOptions notificationsCommandOptions;
     private final CohortsCommandOptions cohortsCommandOptions;
 
     enum OutputFormat {IDS, ID_CSV, NAME_ID_MAP, ID_LIST, RAW, PRETTY_JSON, PLAIN_JSON}
@@ -397,6 +398,15 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         operationsVariantStorageSubCommands.addCommand("variant-stats-index", operationsVariantStorageCommandOptions.indexVariantStatsCommandOptions);
         operationsVariantStorageSubCommands.addCommand("variant-study-delete", operationsVariantStorageCommandOptions.deleteVariantStudyCommandOptions);
 
+        notificationsCommandOptions = new NotificationsCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("notifications", notificationsCommandOptions);
+        JCommander notificationsSubCommands = jCommander.getCommands().get("notifications");
+        notificationsSubCommands.addCommand("aggregationstats", notificationsCommandOptions.aggregationStatsCommandOptions);
+        notificationsSubCommands.addCommand("create", notificationsCommandOptions.createCommandOptions);
+        notificationsSubCommands.addCommand("search", notificationsCommandOptions.searchCommandOptions);
+        notificationsSubCommands.addCommand("info", notificationsCommandOptions.infoCommandOptions);
+        notificationsSubCommands.addCommand("visit", notificationsCommandOptions.visitCommandOptions);
+
         cohortsCommandOptions = new CohortsCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("cohorts", cohortsCommandOptions);
         JCommander cohortsSubCommands = jCommander.getCommands().get("cohorts");
@@ -496,6 +506,11 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
     
     public OperationsVariantStorageCommandOptions getOperationsVariantStorageCommandOptions() {
         return operationsVariantStorageCommandOptions;
+    }
+    
+    
+    public NotificationsCommandOptions getNotificationsCommandOptions() {
+        return notificationsCommandOptions;
     }
     
     

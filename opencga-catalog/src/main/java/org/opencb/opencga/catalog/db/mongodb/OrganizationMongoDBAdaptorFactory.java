@@ -30,6 +30,7 @@ import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper
 public class OrganizationMongoDBAdaptorFactory {
 
     public static final String NOTE_COLLECTION = "note";
+    public static final String NOTIFICATION_COLLECTION = "notification";
     public static final String ORGANIZATION_COLLECTION = "organization";
     public static final String USER_COLLECTION = "user";
     public static final String PROJECT_COLLECTION = "project";
@@ -74,6 +75,7 @@ public class OrganizationMongoDBAdaptorFactory {
     public static final String AUDIT_COLLECTION = "audit";
 
     public static final List<String> COLLECTIONS_LIST = Arrays.asList(
+            NOTIFICATION_COLLECTION,
             NOTE_COLLECTION,
             ORGANIZATION_COLLECTION,
             USER_COLLECTION,
@@ -126,6 +128,7 @@ public class OrganizationMongoDBAdaptorFactory {
     private final String organizationId;
     private final String database;
 
+    private final NotificationMongoDBAdaptor notificationDBAdaptor;
     private final NoteMongoDBAdaptor notesDBAdaptor;
     private final OrganizationMongoDBAdaptor organizationDBAdaptor;
     private final UserMongoDBAdaptor userDBAdaptor;
@@ -168,6 +171,7 @@ public class OrganizationMongoDBAdaptorFactory {
         MongoDBCollection migrationCollection = mongoDataStore.getCollection(MIGRATION_COLLECTION);
 
         organizationCollection = mongoDataStore.getCollection(ORGANIZATION_COLLECTION);
+        MongoDBCollection notificationCollection = mongoDataStore.getCollection(NOTIFICATION_COLLECTION);
         MongoDBCollection notesCollection = mongoDataStore.getCollection(NOTE_COLLECTION);
         MongoDBCollection userCollection = mongoDataStore.getCollection(USER_COLLECTION);
         MongoDBCollection projectCollection = mongoDataStore.getCollection(PROJECT_COLLECTION);
@@ -209,6 +213,7 @@ public class OrganizationMongoDBAdaptorFactory {
 
         MongoDBCollection auditCollection = mongoDataStore.getCollection(AUDIT_COLLECTION);
 
+        notificationDBAdaptor = new NotificationMongoDBAdaptor(notificationCollection, configuration, this);
         notesDBAdaptor = new NoteMongoDBAdaptor(notesCollection, notesArchivedCollection, deletedNotesCollection,
                 configuration, this);
         organizationDBAdaptor = new OrganizationMongoDBAdaptor(organizationCollection, configuration, this);
@@ -241,6 +246,7 @@ public class OrganizationMongoDBAdaptorFactory {
 //        mongoDBCollectionMap.put(METADATA_COLLECTION, metaCollection);
         mongoDBCollectionMap.put(MIGRATION_COLLECTION, migrationCollection);
 
+        mongoDBCollectionMap.put(NOTIFICATION_COLLECTION, notificationCollection);
         mongoDBCollectionMap.put(NOTE_COLLECTION, notesCollection);
         mongoDBCollectionMap.put(ORGANIZATION_COLLECTION, organizationCollection);
         mongoDBCollectionMap.put(PROJECT_COLLECTION, projectCollection);
@@ -345,6 +351,7 @@ public class OrganizationMongoDBAdaptorFactory {
             throw new UncheckedIOException(e);
         }
 
+        createIndexes(OrganizationMongoDBAdaptorFactory.NOTIFICATION_COLLECTION, indexes);
         createIndexes(OrganizationMongoDBAdaptorFactory.PROJECT_COLLECTION, indexes);
         createIndexes(OrganizationMongoDBAdaptorFactory.USER_COLLECTION, indexes);
         createIndexes(OrganizationMongoDBAdaptorFactory.STUDY_COLLECTION, indexes);
@@ -437,6 +444,10 @@ public class OrganizationMongoDBAdaptorFactory {
 
     public MetaMongoDBAdaptor getCatalogMetaDBAdaptor() {
         return null;
+    }
+
+    public NotificationMongoDBAdaptor getCatalogNotificationDBAdaptor() {
+        return notificationDBAdaptor;
     }
 
     public NoteMongoDBAdaptor getCatalogNotesDBAdaptor() {

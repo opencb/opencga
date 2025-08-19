@@ -284,3 +284,15 @@
 {"collections": ["workflow", "workflow_archive"], "fields": {"internal.registrationUserId": 1, "studyUid": 1}, "options": {}}
 {"collections": ["workflow", "workflow_archive"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {}}
 {"collections": ["workflow", "workflow_archive"], "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {}}
+
+{"collections": ["notification"], "fields": {"uid": 1}, "options": {"unique": true}}
+{"collections": ["notification"], "fields": {"uuid": 1}, "options": {"unique": true}}
+{"collections": ["notification"], "fields": {"type": 1}, "options": {}}
+{"collections": ["notification"], "fields": {"scope": 1}, "options": {}}
+{"collections": ["notification"], "fields": {"fqn": 1}, "options": {}}
+{"collections": ["notification"], "fields": {"sender": 1}, "options": {}}
+{"collections": ["notification"], "fields": {"target": 1}, "options": {}}
+{"collections": ["notification"], "fields": {"internal.status.id": 1}, "options": {}}
+{"collections": ["notification"], "fields": {"internal.visited": 1}, "options": {}}
+{"collections": ["notification"], "fields": {"_creationDate": 1}, "options": {}}
+{"collections": ["notification"], "fields": {"_modificationDate": 1}, "options": {}}

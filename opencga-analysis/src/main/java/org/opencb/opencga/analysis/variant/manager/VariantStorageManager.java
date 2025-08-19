@@ -1080,7 +1080,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     private VariantStorageEngine getVariantStorageEngineByDatastore(DataStore dataStore, String alias, String projectFqnStr, String token) throws StorageEngineException, CatalogException {
         VariantStorageEngine variantStorageEngine = storageEngineFactory
                 .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName(), alias);
-        CatalogFqn projectFqn = CatalogFqn.fromProjectFqn(projectFqnStr);
+        CatalogFqn projectFqn = CatalogFqn.extractFqnFromProjectFqn(projectFqnStr);
         variantStorageEngine.getOptions().put("catalog.organization", projectFqn.getOrganizationId());
         variantStorageEngine.getOptions().put("catalog.project", projectFqn.getProjectId());
         setCellbaseConfiguration(variantStorageEngine, projectFqnStr, token);

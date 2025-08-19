@@ -38,6 +38,7 @@ class RestClientGenerator(ABC):
         self.categories = {
         	'Federations': 'Federation',
             'Organizations': 'Organization',
+            'Notifications': 'Notification',
             'Users': 'User',
             'Projects': 'Project',
             'Studies': 'Study',

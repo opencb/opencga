@@ -20,10 +20,10 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
+import org.opencb.opencga.client.rest.clients.*;
 import org.opencb.opencga.core.client.ParentClient;
 import org.opencb.opencga.core.config.client.ClientConfiguration;
 import org.opencb.opencga.core.exceptions.ClientException;
-import org.opencb.opencga.client.rest.clients.*;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.LoginParams;
 import org.opencb.opencga.core.response.RestResponse;
@@ -85,6 +85,10 @@ public class OpenCGAClient {
 
     public OrganizationClient getOrganizationClient() {
         return getClient(OrganizationClient.class, () -> new OrganizationClient(token, clientConfiguration));
+    }
+
+    public NotificationClient getNotificationClient() {
+        return getClient(NotificationClient.class, () -> new NotificationClient(token, clientConfiguration));
     }
 
     public UserClient getUserClient() {

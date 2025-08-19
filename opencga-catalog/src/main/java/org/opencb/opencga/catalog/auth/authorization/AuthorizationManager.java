@@ -177,6 +177,17 @@ public interface AuthorizationManager {
     boolean isAtLeastOrganizationOwnerOrAdmin(String organization, String userId) throws CatalogException;
 
     /**
+     * Check if the user is part of the {@link ParamConstants#ADMINS_GROUP} group of all the studies of the project.
+     *
+     * @param organizationId Organization id
+     * @param projectUid        Project uid
+     * @param userId         User id
+     * @return true if the user is part of the admins group of the study
+     * @throws CatalogException CatalogException
+     */
+    boolean isAtLeastProjectAdministrator(String organizationId, long projectUid, String userId) throws CatalogException;
+
+    /**
      * Check if the user is part of the {@link ParamConstants#ADMINS_GROUP} group of the study.
      * Keep in mind that all organization admins and the organization owner are also study admins.
      * It does not include the opencga admins.
@@ -190,17 +201,28 @@ public interface AuthorizationManager {
     boolean isAtLeastStudyAdministrator(String organizationId, long studyId, String userId) throws CatalogException;
 
     /**
+     * Check if the user is part of the {@link ParamConstants#ADMINS_GROUP} group of all the studies of the project.
+     * If the check fails, it will throw an exception.
+     *
+     * @param organizationId Organization id
+     * @param projectUid     Project uid
+     * @param userId       User id
+     * @throws CatalogException CatalogException
+     */
+    void checkIsAtLeastProjectAdministrator(String organizationId, long projectUid, String userId) throws CatalogException;
+
+    /**
      * Check if the user is part of the {@link ParamConstants#ADMINS_GROUP} group of the study.
      * Keep in mind that all organization admins and the organization owner are also study admins.
      * It does not include the opencga admins.
      * If the check fails, it will throw an exception.
      *
      * @param organizationId Organization id
-     * @param studyId       Study id
+     * @param studyUid      Study uid
      * @param userId       User id
      * @throws CatalogException CatalogException
      */
-    void checkIsAtLeastStudyAdministrator(String organizationId, long studyId, String userId) throws CatalogException;
+    void checkIsAtLeastStudyAdministrator(String organizationId, long studyUid, String userId) throws CatalogException;
 
     void checkFilePermission(String organizationId, long studyId, long fileId, String userId, FilePermissions permission)
             throws CatalogException;

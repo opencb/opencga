@@ -143,11 +143,16 @@ public abstract class AbstractManager {
     }
 
     protected WorkflowDBAdaptor getWorkflowDBAdaptor(String organization) throws CatalogDBException {
-        return catalogDBAdaptorFactory.getWorkflowDBAdaptor(organization);
+        return getCatalogDBAdaptorFactory().getWorkflowDBAdaptor(organization);
     }
 
+    protected NotificationDBAdaptor getNotificationDBAdaptor(String organization) throws CatalogDBException {
+        return getCatalogDBAdaptorFactory().getNotificationDBAdaptor(organization);
+    }
+
+
     protected void fixQueryObject(Query query) {
-        changeQueryId(query, ParamConstants.INTERNAL_STATUS_PARAM, "internal.status");
+        changeQueryId(query, ParamConstants.INTERNAL_STATUS_PARAM, "internal.status.id");
     }
 
     /**

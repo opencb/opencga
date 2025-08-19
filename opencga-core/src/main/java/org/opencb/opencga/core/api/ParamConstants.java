@@ -163,6 +163,27 @@ public class ParamConstants {
     public static final String ORGANIZATION_DESCRIPTION = "Organization id";
     public static final String ORGANIZATION = "organization";
     // ---------------------------------------------
+    public static final String NOTIFICATION_DESCRIPTION = "Notification UUID";
+    public static final String NOTIFICATION = "notification";
+    public static final String NOTIFICATION_UUID_PARAM = "uuid";
+    public static final String NOTIFICATION_TYPE_PARAM = "type";
+    public static final String NOTIFICATION_TYPE_DESCRIPTION = "Notification type: INFO, WARNING, ERROR or URGENT";
+    public static final String NOTIFICATION_SCOPE_PARAM = "scope";
+    public static final String NOTIFICATION_SCOPE_DESCRIPTION = "Notification scope: GLOBAL, ORGANIZATION, PROJECT or STUDY";
+    public static final String NOTIFICATION_FQN_PARAM = "fqn";
+    public static final String NOTIFICATION_FQN_DESCRIPTION = "Organization, project or study fqn where the notification is associated";
+    public static final String NOTIFICATION_SENDER_PARAM = "sender";
+    public static final String NOTIFICATION_SENDER_DESCRIPTION = "User ID of the sender";
+    public static final String NOTIFICATION_TARGET_PARAM = "target";
+    public static final String NOTIFICATION_TARGET_DESCRIPTION = "Target of the notification.";
+    public static final String NOTIFICATION_RECEIVER_PARAM = "receiver";
+    public static final String NOTIFICATION_RECEIVER_DESCRIPTION = "User ID receiver of the notification";
+    public static final String NOTIFICATION_VISITED_PARAM = "visited";
+    public static final String NOTIFICATION_VISITED_DESCRIPTION = "Boolean parameter indicating whether the notification has been visited"
+            + " or not.";
+    public static final String NOTIFICATION_STATUS_DESCRIPTION = "Notification status: PENDING, SUCCESS, ERROR or DISCARDED";
+
+    // ---------------------------------------------
     public static final String USER_ID_DESCRIPTION = "Comma separated list user IDs" + UP_TO_100 + REGEX_SUPPORT;
     public static final String USER_ID_PARAM = "id";
     public static final String USER_DESCRIPTION = "User ID";

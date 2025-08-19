@@ -146,6 +146,10 @@ public class CatalogAuthorizationException extends CatalogException {
         return new CatalogAuthorizationException("Permission denied: Only the owner or administrators of the organization can " + action);
     }
 
+    public static CatalogAuthorizationException notProjectAdmin(String action) {
+        return new CatalogAuthorizationException("Permission denied: Only the project administrators can " + action);
+    }
+
     public static CatalogAuthorizationException notStudyAdmin(String action) {
         return new CatalogAuthorizationException("Permission denied: Only the study administrators can " + action);
     }

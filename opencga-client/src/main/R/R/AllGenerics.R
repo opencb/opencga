@@ -4,6 +4,11 @@ setGeneric("organizationClient", function(OpencgaR, id, organization, user, endp
     standardGeneric("organizationClient"))
 
 # ##############################################################################
+## NotificationClient
+setGeneric("notificationClient", function(OpencgaR, notification, endpointName, params=NULL, ...)
+    standardGeneric("notificationClient"))
+
+# ##############################################################################
 ## UserClient
 setGeneric("userClient", function(OpencgaR, filterId, user, users, endpointName, params=NULL, ...)
     standardGeneric("userClient"))

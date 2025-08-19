@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.server.rest;
 
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -204,15 +203,7 @@ public class UserWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(value = "JSON containing the params to be updated.", required = true) UserUpdateParams parameters) {
-        try {
-            ObjectUtils.defaultIfNull(parameters, new UserUpdateParams());
-
-            ObjectMap params = new ObjectMap(getUpdateObjectMapper().writeValueAsString(parameters));
-            OpenCGAResult<User> result = catalogManager.getUserManager().update(userId, params, queryOptions, token);
-            return createOkResponse(result);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+        return run(() -> catalogManager.getUserManager().update(userId, parameters, queryOptions, token));
     }
 
     @POST

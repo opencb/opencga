@@ -75,6 +75,7 @@ public class CatalogManager implements AutoCloseable {
 
     private AdminManager adminManager;
     private NoteManager noteManager;
+    private NotificationManager notificationManager;
     private OrganizationManager organizationManager;
     private UserManager userManager;
     private ProjectManager projectManager;
@@ -140,8 +141,9 @@ public class CatalogManager implements AutoCloseable {
                 authenticationFactory.configureOrganizationAuthenticationManager(organization);
             }
         }
-        authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptorFactory, authorizationDBAdaptorFactory);
+        authorizationManager = new CatalogAuthorizationManager(this, catalogDBAdaptorFactory, authorizationDBAdaptorFactory);
         auditManager = new AuditManager(authorizationManager, this, this.catalogDBAdaptorFactory, configuration);
+        notificationManager = new NotificationManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
         migrationManager = new MigrationManager(this, catalogDBAdaptorFactory, configuration);
 
         noteManager = new NoteManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
@@ -380,6 +382,10 @@ public class CatalogManager implements AutoCloseable {
     @Override
     public void close() throws CatalogException {
         catalogDBAdaptorFactory.close();
+    }
+
+    public NotificationManager getNotificationManager() {
+        return notificationManager;
     }
 
     public AdminManager getAdminManager() {

@@ -99,6 +99,7 @@ public class FileManagerTest extends AbstractManagerTest {
         MONTH_MAP.put("11", "Nov");
         MONTH_MAP.put("12", "Dec");
     }
+
     @Before
     public void setUp() throws Exception {
         super.setUp();

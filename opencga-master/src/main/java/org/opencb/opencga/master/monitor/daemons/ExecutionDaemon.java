@@ -1225,8 +1225,8 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
         try {
             jobManager.update(job.getStudy().getId(), job.getId(), updateParams, QueryOptions.empty(), token);
         } catch (CatalogException e) {
-            logger.error("[{}] - Catastrophic error. Could not update job information with final result {}: {}", job.getId(),
-                    updateParams.toString(), e.getMessage(), e);
+            logger.error("[{}] - Catastrophic error. Could not update job information with final result {}: {}", job.getId(), updateParams,
+                    e.getMessage(), e);
             return 0;
         }
 

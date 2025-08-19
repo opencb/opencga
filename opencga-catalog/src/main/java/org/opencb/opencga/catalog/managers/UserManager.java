@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -44,6 +46,9 @@ import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.InternalStatus;
+import org.opencb.opencga.core.models.notification.NotificationCreateParams;
+import org.opencb.opencga.core.models.notification.NotificationLevel;
+import org.opencb.opencga.core.models.notification.NotificationScope;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.GroupUpdateParams;
@@ -58,6 +63,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.utils.ParamUtils.checkEmail;
+import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -681,7 +687,7 @@ public class UserManager extends AbstractManager {
         }
     }
 
-    public OpenCGAResult<User> update(String userId, ObjectMap parameters, QueryOptions options, String token)
+    public OpenCGAResult<User> update(String userId, UserUpdateParams userUpdateParams, QueryOptions options, String token)
             throws CatalogException {
         JwtPayload payload = validateToken(token);
         String organizationId = payload.getOrganization();
@@ -689,26 +695,27 @@ public class UserManager extends AbstractManager {
 
         ObjectMap auditParams = new ObjectMap()
                 .append("userId", userId)
-                .append("updateParams", parameters)
+                .append("updateParams", userUpdateParams)
                 .append("options", options)
                 .append("token", token);
         try {
             options = ParamUtils.defaultObject(options, QueryOptions::new);
             ParamUtils.checkParameter(userId, "userId");
-            ParamUtils.checkObj(parameters, "parameters");
+            ParamUtils.checkObj(userUpdateParams, "updateParams");
             ParamUtils.checkParameter(token, "token");
 
             userId = getValidUserId(userId, payload);
-            for (String s : parameters.keySet()) {
-                if (!s.matches("name|email")) {
-                    throw new CatalogDBException("Parameter '" + s + "' can't be changed");
-                }
+            if (StringUtils.isNotEmpty(userUpdateParams.getEmail())) {
+                checkEmail(userUpdateParams.getEmail());
             }
 
-            if (parameters.containsKey("email")) {
-                checkEmail(parameters.getString("email"));
+            ObjectMap updateParams;
+            try {
+                updateParams = new ObjectMap(getUpdateObjectMapper().writeValueAsString(userUpdateParams));
+            } catch (JsonProcessingException e) {
+                throw new CatalogException("Could not serialize user update params", e);
             }
-            OpenCGAResult<User> updateResult = getUserDBAdaptor(organizationId).update(userId, parameters);
+            OpenCGAResult<User> updateResult = getUserDBAdaptor(organizationId).update(userId, updateParams);
             auditManager.auditUpdate(organizationId, loggedUser, Enums.Resource.USER, userId, "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
@@ -859,6 +866,26 @@ public class UserManager extends AbstractManager {
             // We check
             if (userCanBeBanned) {
                 eventList.addAll(checkValidUserAccountStatus(username, user));
+                if (CollectionUtils.isNotEmpty(eventList)) {
+                    for (Event event : eventList) {
+                        NotificationLevel level;
+                        switch (event.getType()) {
+                            case WARNING:
+                                level = NotificationLevel.WARNING;
+                                break;
+                            case ERROR:
+                                level = NotificationLevel.ERROR;
+                                break;
+                            case INFO:
+                            default:
+                                level = NotificationLevel.INFO;
+                                break;
+                        }
+                        NotificationCreateParams notificationCreateParams = new NotificationCreateParams("User account", event.getMessage(),
+                                level, NotificationScope.ORGANIZATION, organizationId, Collections.singletonList(userId));
+                        catalogManager.getNotificationManager().createSystemNotification(organizationId, notificationCreateParams, null);
+                    }
+                }
             }
             Account.AuthenticationOrigin authentication = user.getInternal().getAccount().getAuthentication();
             authId = user.getInternal().getAccount().getAuthentication().getId();
@@ -1133,6 +1160,12 @@ public class UserManager extends AbstractManager {
         return expiration != null
                 ? authManager.createToken(organizationId, userId, attributes, expiration)
                 : authManager.createToken(organizationId, userId, attributes);
+    }
+
+    String getOpencgaToken() throws CatalogException {
+        AuthenticationManager authManager = getAuthenticationManagerForUser(ParamConstants.ADMIN_ORGANIZATION,
+                ParamConstants.OPENCGA_USER_ID);
+        return authManager.createToken(ParamConstants.ADMIN_ORGANIZATION, ParamConstants.OPENCGA_USER_ID);
     }
 
     /**

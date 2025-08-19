@@ -13,6 +13,9 @@ public class ExecutorProvider {
             case "organizations":
                 commandExecutor = new OrganizationsCommandExecutor(cliOptionsParser.getOrganizationsCommandOptions());
                 break;
+            case "notifications":
+                commandExecutor = new NotificationsCommandExecutor(cliOptionsParser.getNotificationsCommandOptions());
+                break;
             case "users":
                 commandExecutor = new UsersCommandExecutor(cliOptionsParser.getUsersCommandOptions());
                 break;

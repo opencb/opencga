@@ -37,8 +37,8 @@ public class InternalStatus extends Status {
      */
     public static final String DELETED = "DELETED";
     public static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED);
-    private String version;
-    private String commit;
+    protected String version;
+    protected String commit;
 
 
     public InternalStatus() {
