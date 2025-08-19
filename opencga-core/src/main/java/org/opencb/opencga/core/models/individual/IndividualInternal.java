@@ -19,28 +19,44 @@ package org.opencb.opencga.core.models.individual;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Internal;
 import org.opencb.opencga.core.models.common.InternalStatus;
+import org.opencb.opencga.core.models.common.QualityControlStatus;
 
 public class IndividualInternal extends Internal {
+
+    private QualityControlStatus qualityControlStatus;
 
     public IndividualInternal() {
     }
 
-    public IndividualInternal(InternalStatus status, String registrationDate, String modificationDate) {
+    public IndividualInternal(QualityControlStatus qualityControlStatus, InternalStatus status, String registrationDate,
+                              String modificationDate) {
         super(status, registrationDate, modificationDate);
+        this.qualityControlStatus = qualityControlStatus;
     }
 
     public static IndividualInternal init() {
-        return new IndividualInternal(new InternalStatus(InternalStatus.READY), TimeUtils.getTime(), TimeUtils.getTime());
+        return new IndividualInternal(QualityControlStatus.init(), new InternalStatus(InternalStatus.READY), TimeUtils.getTime(),
+                TimeUtils.getTime());
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("IndividualInternal{");
-        sb.append("status=").append(status);
+        sb.append("qualityControlStatus=").append(qualityControlStatus);
+        sb.append(", status=").append(status);
         sb.append(", registrationDate='").append(registrationDate).append('\'');
-        sb.append(", modificationDate='").append(lastModified).append('\'');
+        sb.append(", lastModified='").append(lastModified).append('\'');
         sb.append('}');
         return sb.toString();
+    }
+
+    public QualityControlStatus getQualityControlStatus() {
+        return qualityControlStatus;
+    }
+
+    public IndividualInternal setQualityControlStatus(QualityControlStatus qualityControlStatus) {
+        this.qualityControlStatus = qualityControlStatus;
+        return this;
     }
 
     public InternalStatus getStatus() {

@@ -41,6 +41,7 @@ import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.QualityControlStatus;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.*;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -58,6 +59,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
+import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 /**
  * Created by hpccoll1 on 19/06/15.
@@ -896,7 +898,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         while (iterator.hasNext()) {
             Individual individual = iterator.next();
             try {
-                OpenCGAResult updateResult = update(organizationId, study, individual, updateParams, options, userId);
+                OpenCGAResult updateResult = update(organizationId, study, individual, updateParams, options, userId, token);
                 result.append(updateResult);
 
                 auditManager.auditUpdate(organizationId, userId, Enums.Resource.INDIVIDUAL, individual.getId(), individual.getUuid(),
@@ -956,7 +958,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             individualId = individual.getId();
             individualUuid = individual.getUuid();
 
-            OpenCGAResult updateResult = update(organizationId, study, individual, updateParams, options, userId);
+            OpenCGAResult updateResult = update(organizationId, study, individual, updateParams, options, userId, token);
             result.append(updateResult);
 
             auditManager.auditUpdate(organizationId, userId, Enums.Resource.INDIVIDUAL, individual.getId(), individual.getUuid(),
@@ -1035,7 +1037,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 individualId = individual.getId();
                 individualUuid = individual.getUuid();
 
-                OpenCGAResult updateResult = update(organizationId, study, individual, updateParams, options, userId);
+                OpenCGAResult updateResult = update(organizationId, study, individual, updateParams, options, userId, token);
                 result.append(updateResult);
 
                 auditManager.auditUpdate(organizationId, userId, Enums.Resource.INDIVIDUAL, individual.getId(), individual.getUuid(),
@@ -1056,7 +1058,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     private OpenCGAResult update(String organizationId, Study study, Individual individual, IndividualUpdateParams updateParams,
-                                 QueryOptions options, String userId) throws CatalogException {
+                                 QueryOptions options, String userId, String token) throws CatalogException {
         ObjectMap parameters = new ObjectMap();
         if (updateParams != null) {
             try {
@@ -1173,8 +1175,53 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         checkUpdateAnnotations(organizationId, study, individual, parameters, options, VariableSet.AnnotableDataModels.INDIVIDUAL,
                 getIndividualDBAdaptor(organizationId), userId);
 
+        if (updateParams != null && updateParams.getQualityControl() != null) {
+            QualityControlStatus qualityControlStatus = new QualityControlStatus(QualityControlStatus.READY);
+            ObjectMap valueAsObjectMap;
+            try {
+                valueAsObjectMap = new ObjectMap(getUpdateObjectMapper().writeValueAsString(qualityControlStatus));
+            } catch (JsonProcessingException e) {
+                throw new CatalogException("Internal error serializing quality control status.\n" + e.getMessage(), e);
+            }
+            // If user is updating the quality control object, we set its status to READY
+            logger.info("Setting internal quality control status automatically to READY for individual '{}'", individual.getId());
+            parameters.put(IndividualDBAdaptor.QueryParams.INTERNAL_QUALITY_CONTROL_STATUS.key(), valueAsObjectMap);
+        }
+
         OpenCGAResult<Individual> update = getIndividualDBAdaptor(organizationId).update(individual.getUid(), parameters,
                 study.getVariableSets(), options);
+
+        if (updateParams != null && updateParams.getQualityControl() != null) {
+            // Check if individual belongs to any family and the quality control status is not ready
+            Query query = new Query()
+                    .append(FamilyDBAdaptor.QueryParams.MEMBER_UID.key(), individual.getUid())
+                    .append(FamilyDBAdaptor.QueryParams.INTERNAL_QUALITY_CONTROL_STATUS_ID.key(),
+                            Arrays.asList(QualityControlStatus.NONE, QualityControlStatus.ERROR));
+            OpenCGAResult<Family> search = catalogManager.getFamilyManager().search(study.getFqn(), query,
+                    FamilyManager.INCLUDE_FAMILY_MEMBERS, token);
+            if (search.getNumResults() > 0) {
+                // Check if all individual QC status are set to READY for each family. If so, we can set the family QC status to PENDING
+                // so it is processed by the Quality Control Manager.
+                for (Family family : search.getResults()) {
+                    boolean calculateQC = true;
+                    for (Individual member : family.getMembers()) {
+                        if (member.getInternal() == null || member.getInternal().getQualityControlStatus() == null
+                                || !QualityControlStatus.READY.equals(member.getInternal().getQualityControlStatus().getId())) {
+                            calculateQC = false;
+                            break;
+                        }
+                    }
+                    if (calculateQC) {
+                        logger.info("Setting internal quality control status automatically to PENDING for family '{}'", family.getId());
+                        // All members have a READY QC status, so we can set the family QC status to PENDING so it is processed
+                        QualityControlStatus qualityControlStatus = new QualityControlStatus(QualityControlStatus.PENDING);
+                        catalogManager.getFamilyManager().updateInternalQualityControlStatus(
+                                study.getFqn(), family, qualityControlStatus, token);
+                    }
+                }
+            }
+        }
+
         if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
             // Fetch updated individual
             OpenCGAResult<Individual> result = getIndividualDBAdaptor(organizationId).get(study.getUid(),
@@ -1182,6 +1229,39 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             update.setResults(result.getResults());
         }
         return update;
+    }
+
+    public OpenCGAResult<?> updateInternalQualityControlStatus(String studyFqn, Individual individual,
+                                                               QualityControlStatus qualityControlStatus, String token)
+            throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn catalogFqn = CatalogFqn.extractFqnFromStudy(studyFqn, tokenPayload);
+        String organizationId = catalogFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        Study study = getStudyDBAdaptor(organizationId).get(individual.getStudyUid(), StudyManager.INCLUDE_STUDY_IDS).first();
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyFqn", studyFqn)
+                .append("individual", individual.getId())
+                .append("internal.qualityControlStatus", qualityControlStatus)
+                .append("token", token);
+
+        long studyId = study.getUid();
+        authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, studyId, userId);
+
+        ObjectMap params;
+        try {
+            ObjectMap valueAsObjectMap = new ObjectMap(getUpdateObjectMapper().writeValueAsString(qualityControlStatus));
+            params = new ObjectMap(IndividualDBAdaptor.QueryParams.INTERNAL_QUALITY_CONTROL_STATUS.key(), valueAsObjectMap);
+        } catch (JsonProcessingException e) {
+            throw new CatalogException("Cannot parse IndividualInternalQualityControlStatus object: " + e.getMessage(), e);
+        }
+        OpenCGAResult<?> update = getIndividualDBAdaptor(organizationId).update(individual.getUid(), params, QueryOptions.empty());
+        auditManager.audit(organizationId, userId, Enums.Action.UPDATE_INTERNAL, Enums.Resource.INDIVIDUAL, individual.getId(),
+                individual.getUuid(), study.getId(), study.getUuid(), auditParams,
+                new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+        return new OpenCGAResult<>(update.getTime(), update.getEvents(), 1, Collections.emptyList(), 1);
     }
 
     @Override

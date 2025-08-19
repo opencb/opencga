@@ -48,6 +48,7 @@ import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.QualityControlStatus;
 import org.opencb.opencga.core.models.family.*;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualReferenceParam;
@@ -67,6 +68,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
 import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
+import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 /**
  * Created by pfurio on 02/05/17.
@@ -1079,6 +1081,19 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         checkUpdateAnnotations(organizationId, study, family, parameters, options, VariableSet.AnnotableDataModels.FAMILY,
                 getFamilyDBAdaptor(organizationId), userId);
 
+        if (updateParams != null && updateParams.getQualityControl() != null) {
+            QualityControlStatus qualityControlStatus = new QualityControlStatus(QualityControlStatus.READY);
+            ObjectMap valueAsObjectMap;
+            try {
+                valueAsObjectMap = new ObjectMap(getUpdateObjectMapper().writeValueAsString(qualityControlStatus));
+            } catch (JsonProcessingException e) {
+                throw new CatalogException("Internal error serializing quality control status.\n" + e.getMessage(), e);
+            }
+            // If user is updating the quality control object, we set its status to READY
+            logger.info("Setting internal quality control status automatically to READY for family '{}'", family.getId());
+            parameters.put(FamilyDBAdaptor.QueryParams.INTERNAL_QUALITY_CONTROL_STATUS.key(), valueAsObjectMap);
+        }
+
         OpenCGAResult<Family> update = getFamilyDBAdaptor(organizationId).update(family.getUid(), parameters, study.getVariableSets(),
                 options);
         if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
@@ -1088,6 +1103,38 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             update.setResults(result.getResults());
         }
         return update;
+    }
+
+    public OpenCGAResult<?> updateInternalQualityControlStatus(String studyFqn, Family family, QualityControlStatus qualityControlStatus,
+                                                               String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn catalogFqn = CatalogFqn.extractFqnFromStudy(studyFqn, tokenPayload);
+        String organizationId = catalogFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        Study study = getStudyDBAdaptor(organizationId).get(family.getStudyUid(), StudyManager.INCLUDE_STUDY_IDS).first();
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyFqn", studyFqn)
+                .append("family", family.getId())
+                .append("internal.qualityControlStatus", qualityControlStatus)
+                .append("token", token);
+
+        long studyId = study.getUid();
+        authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, studyId, userId);
+
+        ObjectMap params;
+        try {
+            ObjectMap valueAsObjectMap = new ObjectMap(getUpdateObjectMapper().writeValueAsString(qualityControlStatus));
+            params = new ObjectMap(FamilyDBAdaptor.QueryParams.INTERNAL_QUALITY_CONTROL_STATUS.key(), valueAsObjectMap);
+        } catch (JsonProcessingException e) {
+            throw new CatalogException("Cannot parse FamilyInternalQualityControlStatus object: " + e.getMessage(), e);
+        }
+        OpenCGAResult<?> update = getFamilyDBAdaptor(organizationId).update(family.getUid(), params, QueryOptions.empty());
+        auditManager.audit(organizationId, userId, Enums.Action.UPDATE_INTERNAL, Enums.Resource.FAMILY, family.getId(),
+                family.getUuid(), study.getId(), study.getUuid(), auditParams,
+                new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+        return new OpenCGAResult<>(update.getTime(), update.getEvents(), 1, Collections.emptyList(), 1);
     }
 
     public Map<String, List<String>> calculateFamilyGenotypes(String studyStr, String clinicalAnalysisId, String familyId,

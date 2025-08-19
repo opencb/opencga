@@ -241,7 +241,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         }
     }
 
-    private void validateConfiguration(AdminCliOptionsParser.CatalogDatabaseCommandOptions catalogOptions) {
+    protected void validateConfiguration(AdminCliOptionsParser.CatalogDatabaseCommandOptions catalogOptions) {
         if (catalogOptions.databaseUser != null) {
             configuration.getCatalog().getDatabase().setUser(catalogOptions.databaseUser);
         }
