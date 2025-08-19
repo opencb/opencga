@@ -9,12 +9,14 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.List;
 
 public class SolrInputDocumentDataWriter implements DataWriter<SolrInputDocument> {
 
     private final String collection;
     private final SolrClient solrClient;
+    private boolean closeSolrClient;
     private final int insertBatchSize;
     private int serverBufferSize = 0;
     private int insertedDocuments = 0;
@@ -23,8 +25,13 @@ public class SolrInputDocumentDataWriter implements DataWriter<SolrInputDocument
     private final Logger logger = LoggerFactory.getLogger(SolrInputDocumentDataWriter.class);
 
     public SolrInputDocumentDataWriter(String collection, SolrClient solrClient, int insertBatchSize) {
+        this(collection, solrClient, false, insertBatchSize);
+    }
+
+    public SolrInputDocumentDataWriter(String collection, SolrClient solrClient, boolean closeSolrClient, int insertBatchSize) {
         this.collection = collection;
         this.solrClient = solrClient;
+        this.closeSolrClient = closeSolrClient;
         this.insertBatchSize = insertBatchSize;
     }
 
@@ -51,6 +58,18 @@ public class SolrInputDocumentDataWriter implements DataWriter<SolrInputDocument
         logger.info("Finish Solr Bulk Load: {} inserted documents.", insertedDocuments);
         logger.info("Push (add) time: {}", TimeUtils.durationToString(addTimeMs));
         logger.info("Commit time: {}", TimeUtils.durationToString(commitTimeMs));
+        return true;
+    }
+
+    @Override
+    public boolean close() {
+        if (closeSolrClient) {
+            try {
+                solrClient.close();
+            } catch (IOException e) {
+                Throwables.propagate(e);
+            }
+        }
         return true;
     }
 

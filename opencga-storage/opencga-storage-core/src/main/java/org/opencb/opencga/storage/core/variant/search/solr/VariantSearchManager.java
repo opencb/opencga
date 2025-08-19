@@ -693,11 +693,6 @@ public class VariantSearchManager {
         return solrManager.getSolrClient();
     }
 
-    public VariantSearchManager setSolrClient(SolrClient solrClient) {
-        this.solrManager.setSolrClient(solrClient);
-        return this;
-    }
-
     public SolrQueryParser getSolrQueryParser() {
         return solrQueryParser;
     }
