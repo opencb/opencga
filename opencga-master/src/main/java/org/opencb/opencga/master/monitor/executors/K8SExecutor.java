@@ -554,7 +554,7 @@ public class K8SExecutor implements BatchExecutor {
         // If the job was interrupted, exit with error
         String exitIfInterrupted = "if [ -f INTERRUPTED ]; then\n"
                 + "  exit 1\n"
-                + "fi";
+                + "fi \n";
 
         // Capture error code and forward it
         String captureErrorCode = "wait $PID\n"
