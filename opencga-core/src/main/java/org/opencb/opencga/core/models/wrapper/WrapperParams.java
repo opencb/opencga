@@ -13,12 +13,17 @@ public class WrapperParams {
     private ObjectMap options;
 
     public WrapperParams() {
+        this("", new ArrayList<>(), new ObjectMap());
     }
 
     public WrapperParams(String command, List<String> input, ObjectMap options) {
         this.command = command;
         this.input = input;
         this.options = options;
+    }
+
+    public static <T extends WrapperParams> WrapperParams copy(T src) {
+        return new WrapperParams(src.getCommand(), new ArrayList<>(src.getInput()), new ObjectMap(src.getOptions()));
     }
 
     @Override
