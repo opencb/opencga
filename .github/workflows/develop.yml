@@ -13,6 +13,7 @@ jobs:
     with:
       maven_opts: -P storage-hadoop,${{ vars.HADOOP_FLAVOUR }} -Dopencga.war.name=opencga
 
+
   deploy-maven:
     uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
     needs: build

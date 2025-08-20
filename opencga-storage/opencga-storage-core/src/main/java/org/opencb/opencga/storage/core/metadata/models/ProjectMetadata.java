@@ -111,20 +111,24 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
         private String name;
         private Date creationDate;
         private VariantAnnotatorProgram annotator;
+        private Map<String, ObjectMap> extensions;
         private List<ObjectMap> sourceVersion;
         private DataRelease dataRelease;
         private List<String> privateSources;
 
         public VariantAnnotationMetadata() {
+            extensions = new HashMap<>();
             sourceVersion = new ArrayList<>();
         }
 
         public VariantAnnotationMetadata(int id, String name, Date creationDate, VariantAnnotatorProgram annotator,
-                                         List<ObjectMap> sourceVersion, DataRelease dataRelease, List<String> privateSources) {
+                                         Map<String, ObjectMap> extensions, List<ObjectMap> sourceVersion, DataRelease dataRelease,
+                                         List<String> privateSources) {
             this.id = id;
             this.name = name;
             this.creationDate = creationDate;
             this.annotator = annotator;
+            this.extensions = extensions;
             this.sourceVersion = sourceVersion != null ? sourceVersion : new ArrayList<>();
             this.dataRelease = dataRelease;
             this.privateSources = privateSources;
@@ -135,6 +139,7 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
             this.name = other.name;
             this.creationDate = other.creationDate;
             this.annotator = other.annotator;
+            this.extensions = other.extensions;
             this.sourceVersion = new ArrayList<>(other.sourceVersion.size());
             for (ObjectMap source : other.sourceVersion) {
                 this.sourceVersion.add(new ObjectMap(source));
@@ -179,6 +184,19 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
             return this;
         }
 
+        public Map<String, ObjectMap> getExtensions() {
+            return extensions;
+        }
+
+        public VariantAnnotationMetadata setExtensions(Map<String, ObjectMap> extensions) {
+            this.extensions = extensions;
+            return this;
+        }
+
+        public void addExtension(String id, ObjectMap metadata) {
+            this.extensions.put(id, metadata);
+        }
+
         public List<ObjectMap> getSourceVersion() {
             return sourceVersion;
         }
@@ -218,6 +236,7 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
             return id == that.id && Objects.equals(name, that.name)
                     && Objects.equals(creationDate, that.creationDate)
                     && Objects.equals(annotator, that.annotator)
+                    && Objects.equals(extensions, that.extensions)
                     && Objects.equals(sourceVersion, that.sourceVersion)
                     && Objects.equals(dataRelease, that.dataRelease)
                     && Objects.equals(privateSources, that.privateSources);
@@ -225,7 +244,7 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
 
         @Override
         public int hashCode() {
-            return Objects.hash(id, name, creationDate, annotator, sourceVersion, dataRelease, privateSources);
+            return Objects.hash(id, name, creationDate, annotator, extensions, sourceVersion, dataRelease, privateSources);
         }
     }
 

@@ -28,6 +28,7 @@
 
     <artifactId>opencga-storage-core</artifactId>
     <packaging>jar</packaging>
+    <name>OpenCGA Storage Core</name>
 
     <dependencies>
         <dependency>
