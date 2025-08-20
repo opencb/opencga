@@ -11,6 +11,7 @@ import org.opencb.biodata.formats.variant.cosmic.CosmicParser101;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.EvidenceEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
@@ -181,8 +182,10 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
 
         // Call COSMIC parser
         try {
-            CosmicExtensionTaskCallback callback = new CosmicExtensionTaskCallback(rdb);
-            CosmicParser101.parse(genomeScreensMutantFile, classificationFile, tmpCosmicVersion, ID, tmpCosmicVersion, callback);
+            ProgressLogger progressLogger = new ProgressLogger("Preparing RocksDB for Cosmic");
+            progressLogger.setBatchSize(10000);
+            CosmicExtensionTaskCallback callback = new CosmicExtensionTaskCallback(rdb, progressLogger);
+            CosmicParser101.parse(genomeScreensMutantFile, classificationFile, cosmicVersion, ID, cosmicAssembly, callback);
         } catch (IOException e) {
             throw new ToolException(e);
         }
@@ -315,9 +318,11 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
     private void closeRocksDB() {
         if (rdb != null) {
             rdb.close();
+            rdb = null;
         }
         if (dbOption != null) {
-            dbOption.dispose();
+            dbOption.close();
+            dbOption = null;
         }
     }
 
