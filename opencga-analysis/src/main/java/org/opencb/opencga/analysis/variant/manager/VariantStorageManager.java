@@ -1817,7 +1817,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         }
 
         if (dataStore == null) { //get default datastore
-            dataStore = defaultDataStore(catalogManager, project);
+            dataStore = defaultDataStore(catalogManager, bioformat, project);
         }
         if (dataStore.getOptions() == null) {
             dataStore.setOptions(new ObjectMap());
@@ -1826,7 +1826,22 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return dataStore;
     }
 
-    public static DataStore defaultDataStore(CatalogManager catalogManager, Project project) throws CatalogException {
+    private static DataStore defaultDataStore(CatalogManager catalogManager, File.Bioformat bioformat, Project project) {
+        DataStore dataStore;
+        switch (bioformat) {
+            case VARIANT:
+                dataStore = defaultDataStore(catalogManager, project);
+                break;
+            case CVDB:
+                dataStore = defaultCvdbDataStore(catalogManager, project);
+                break;
+            default:
+                throw new IllegalStateException("Unexpected bioformat '" + bioformat + "'. Expected values are VARIANT or CVDB.");
+        }
+        return dataStore;
+    }
+
+    public static DataStore defaultDataStore(CatalogManager catalogManager, Project project) {
         return defaultDataStore(catalogManager.getConfiguration().getDatabasePrefix(), project.getFqn());
     }
 
@@ -1837,7 +1852,22 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return new DataStore(StorageEngineFactory.get().getDefaultStorageEngineId(), dbName);
     }
 
+    public static DataStore defaultCvdbDataStore(CatalogManager catalogManager, Project project) {
+        return defaultCvdbDataStore(catalogManager.getConfiguration().getDatabasePrefix(), project.getFqn());
+    }
+
+    public static DataStore defaultCvdbDataStore(String databasePrefix, String projectFqnStr) {
+        CatalogFqn projectFqn = CatalogFqn.extractFqnFromProjectFqn(projectFqnStr);
+
+        String dbName = buildDatabaseName(databasePrefix, "cvdb", projectFqn.getOrganizationId(), projectFqn.getProjectId());
+        return new DataStore("solr", dbName);
+    }
+
     public static String buildDatabaseName(String databasePrefix, String organizationId, String projectId) {
+        return buildDatabaseName(databasePrefix, null, organizationId, projectId);
+    }
+
+    public static String buildDatabaseName(String databasePrefix, String suffix, String organizationId, String projectId) {
         // Replace possible dots at the organization. Usually a special character in almost all databases. See #532
         organizationId = organizationId.replace('.', '_');
 
@@ -1857,7 +1887,10 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             projectId = projectId.substring(idx + 1);
         }
 
-        return prefix + organizationId + '_' + projectId;
+        if (StringUtils.isNotEmpty(suffix)) {
+            return prefix + suffix + "_" + organizationId + '_' + projectId;
+        } else {
+            return prefix + organizationId + '_' + projectId;
+        }
     }
-
 }

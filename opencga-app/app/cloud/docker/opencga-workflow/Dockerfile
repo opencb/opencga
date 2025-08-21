@@ -3,7 +3,6 @@
 ## 1. Based on Ubuntu 24.04 (noble)
 FROM eclipse-temurin:17.0.15_6-jre-noble AS base
 
-
 ARG BUILD_PATH="."
 
 ENV OPENCGA_HOME=/opt/opencga
