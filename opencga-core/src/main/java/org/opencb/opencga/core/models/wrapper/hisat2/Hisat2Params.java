@@ -1,11 +1,11 @@
 package org.opencb.opencga.core.models.wrapper.hisat2;
 
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.models.wrapper.WrapperParams;
 
 import java.util.ArrayList;
-import java.util.List;
 
-public class Hisat2Params {
+public class Hisat2Params extends WrapperParams {
 
     // Main HISAT2 tools (stored in command)
     public static final String HISAT2_TOOL = "hisat2";
@@ -24,28 +24,8 @@ public class Hisat2Params {
     public static final String BMAXDIVN_PARAM = "--bmaxdivn";
     public static final String DCV_PARAM = "--dcv";
 
-    protected String command;
-    protected List<String> input;
-    protected ObjectMap options;
-
     public Hisat2Params() {
-        this("hisat2", new ArrayList<>(), new ObjectMap());
-    }
-
-    public Hisat2Params(String command, List<String> input, ObjectMap options) {
-        this.command = command;
-        this.input = input;
-        this.options = options;
-    }
-
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("Hisat2Params{");
-        sb.append("command='").append(command).append('\'');
-        sb.append(", input=").append(input);
-        sb.append(", options=").append(options);
-        sb.append('}');
-        return sb.toString();
+        super("hisat2", new ArrayList<>(), new ObjectMap());
     }
 
     public static boolean isFileParam(String command, String param) {
@@ -64,32 +44,5 @@ public class Hisat2Params {
 
     public static boolean isSkippedParam(String command, String param) {
         return false;
-    }
-
-    public String getCommand() {
-        return command;
-    }
-
-    public Hisat2Params setCommand(String command) {
-        this.command = command;
-        return this;
-    }
-
-    public List<String> getInput() {
-        return input;
-    }
-
-    public Hisat2Params setInput(List<String> input) {
-        this.input = input;
-        return this;
-    }
-
-    public ObjectMap getOptions() {
-        return options;
-    }
-
-    public Hisat2Params setOptions(ObjectMap options) {
-        this.options = options;
-        return this;
     }
 }
