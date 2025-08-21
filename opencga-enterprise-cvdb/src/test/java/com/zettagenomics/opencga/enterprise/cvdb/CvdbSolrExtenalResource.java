@@ -4,6 +4,7 @@ import com.zettagenomics.opencga.enterprise.core.GitUtils;
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -22,8 +23,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
+import java.util.stream.Collectors;
 
-import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.*;
 import static org.junit.Assert.fail;
 
 public class CvdbSolrExtenalResource extends ExternalResource {
@@ -34,6 +36,8 @@ public class CvdbSolrExtenalResource extends ExternalResource {
     private String organizationId;
     private String projectId;
 
+    private String collectionPrefix;
+
     private String solrHost = "http://localhost:8983/solr"; // "localhost:2181"; //"http://localhost:8983/solr";
     private String solrMode = "core"; //"cloud";
     private int solrTimeout = 30000;
@@ -43,10 +47,11 @@ public class CvdbSolrExtenalResource extends ExternalResource {
     private Configuration configuration;
     private EnterpriseConfiguration enterpriseConfiguration;
 
-    public CvdbSolrExtenalResource(boolean embeded, String organizationId, String projectId) {
+    public CvdbSolrExtenalResource(boolean embeded, String organizationId, String projectId, String collectionPrefix) {
         this.embeded = embeded;
         this.organizationId = organizationId;
         this.projectId = projectId;
+        this.collectionPrefix = collectionPrefix;
 
         try {
             this.configuration = Configuration.load(CvdbSolrExtenalResource.class.getResourceAsStream("/configuration-test.yml"));
@@ -63,7 +68,7 @@ public class CvdbSolrExtenalResource extends ExternalResource {
     protected void before() throws Throwable {
         super.before();
 
-//        Path rootDir = getTmpRootDir();
+        //        Path rootDir = getTmpRootDir();
 
         String caConfigSet = "opencga-ca-configset-" + GitUtils.getEnterprise().getBuildVersion();
         String ciConfigSet = "opencga-ci-configset-" + GitUtils.getEnterprise().getBuildVersion();
@@ -79,12 +84,12 @@ public class CvdbSolrExtenalResource extends ExternalResource {
         String solrHome = rootDir.resolve("solr").toString();
 
         if (embeded) {
-            solrClient = create(solrHome, rootDir.resolve("configsets").toString(),
-                    CvdbUtils.getCollectionName(configuration.getDatabasePrefix(), organizationId, projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX)
-                            + "," + CvdbUtils.getCollectionName(configuration.getDatabasePrefix(), organizationId, projectId, INTERPRETATIONS_COLLECTION_SUFFIX)
-                            + "," + CvdbUtils.getCollectionName(configuration.getDatabasePrefix(), organizationId, projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX)
-                            + "," + CvdbUtils.getCollectionName(configuration.getDatabasePrefix(), organizationId, projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX)
-                            + "," + CvdbUtils.getCollectionName(configuration.getDatabasePrefix(), organizationId, projectId, CLINICAL_VIEWERS_COLLECTION_SUFFIX));
+            CollectionNameGenerator collectionNameGenerator = new CollectionNameGenerator(null);
+            List<String> suffixes = collectionNameGenerator.getCollectionSuffixes();
+            // Given the suffixes, create a string with the collection names separated by commas
+            String name = StringUtils.join(suffixes.stream().map(
+                    s -> collectionNameGenerator.getCollectionName(collectionPrefix, s)).collect(Collectors.toList()), ",");
+            solrClient = create(solrHome, rootDir.resolve("configsets").toString(), name);
         } else {
             SolrManager solrManager = new SolrManager(solrHost, solrMode, solrTimeout);
             this.solrClient = solrManager.getSolrClient();

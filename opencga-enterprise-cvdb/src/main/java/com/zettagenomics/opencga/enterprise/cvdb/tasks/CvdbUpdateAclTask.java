@@ -46,6 +46,8 @@ public class CvdbUpdateAclTask extends OpenCgaToolScopeStudy {
     private Project project = null;
     private String organizationId = null;
 
+    private String collectionPrefix;
+
     private int numUpdated = 0;
     private int numTotal = 0;
 
@@ -79,8 +81,9 @@ public class CvdbUpdateAclTask extends OpenCgaToolScopeStudy {
         EnterpriseConfiguration enterpriseConfiguration = EnterpriseConfiguration.load(getOpencgaHome());
         cvdbEngine = new CvdbSolrEngine(enterpriseConfiguration.getCvdb(), catalogManager, null);
         try {
-            if (!cvdbEngine.existCollections(organizationId, project.getId())) {
-                cvdbEngine.createCollections(organizationId, project.getId());
+            collectionPrefix = cvdbEngine.getCollectionNameGenerator().getCollectionPrefix(organizationId, project.getId(), token);
+            if (!cvdbEngine.existCollections(collectionPrefix)) {
+                cvdbEngine.createCollections(project.getFqn(), collectionPrefix, token);
             }
         } catch (CvdbException e) {
             String msg = "Could not perform update ACLs for organization '" + organizationId + "' and project '" + project.getId() + "'";
@@ -149,7 +152,7 @@ public class CvdbUpdateAclTask extends OpenCgaToolScopeStudy {
         for (Acl acl : aclResult.getResults()) {
             try {
                 // Only one permission (VIEW) has been queried, so the first item has to be taken
-                cvdbEngine.indexViewers(acl.getId(), studyId, acl.getPermissions().get(0).getUserIds(), organizationId, project.getId());
+                cvdbEngine.indexViewers(acl.getId(), studyId, acl.getPermissions().get(0).getUserIds(), collectionPrefix);
                 numUpdated++;
             } catch (CvdbException | SolrServerException | IOException e) {
                 logger.warn("Could not update ACLs for clinical analysis '{}': {}", acl.getId(), e.getMessage());
