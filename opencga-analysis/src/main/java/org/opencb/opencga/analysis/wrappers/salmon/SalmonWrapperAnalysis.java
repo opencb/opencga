@@ -28,6 +28,8 @@ import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -120,7 +122,19 @@ public class SalmonWrapperAnalysis extends OpenCgaToolScopeStudy {
     }
 
     private void checkSalmonIndexParams() throws ToolException {
-        // Check options
+        List<String> fileParams = getFileParams(INDEX_CMD, analysisParams.getSalmonParams().getOptions());
+        List<String> skippedParams = getSkippedParams(INDEX_CMD, analysisParams.getSalmonParams().getOptions());
+        updatedParams.setOptions(checkParams(analysisParams.getSalmonParams().getOptions(), fileParams, skippedParams, study,
+                catalogManager, token));
+
+        // Set index directory
+        logger.warn("The index directory parameter ('{}') is set to the JOB dir.", INDEX_PARAM);
+        updatedParams.getOptions().remove(I_PARAM);
+        updatedParams.getOptions().put(INDEX_PARAM, OUTPUT_FILE_PREFIX + getOutDir().toAbsolutePath());
+    }
+
+    private void checkSalmonQuantParams() throws ToolException {
+        // Check mandatory options
         if (MapUtils.isEmpty(analysisParams.getSalmonParams().getOptions())
                 || (!analysisParams.getSalmonParams().getOptions().containsKey(INDEX_PARAM)
                 && !analysisParams.getSalmonParams().getOptions().containsKey(I_PARAM))
@@ -129,23 +143,24 @@ public class SalmonWrapperAnalysis extends OpenCgaToolScopeStudy {
             throw new ToolException("Missing mandatory parameter 'index'. Please, specify the output index file name."
                     + " It can be set using the '" + INDEX_PARAM + "' or '" + I_PARAM + "' parameters.");
         }
-        List<String> fileParams = getFileParams(INDEX_CMD, analysisParams.getSalmonParams().getOptions());
-        List<String> skippedParams = getSkippedParams(INDEX_CMD, analysisParams.getSalmonParams().getOptions());
+        if (MapUtils.isEmpty(analysisParams.getSalmonParams().getOptions())
+                || (!analysisParams.getSalmonParams().getOptions().containsKey(LIB_TYPE_PARAM)
+                && !analysisParams.getSalmonParams().getOptions().containsKey(L_PARAM))
+                || (StringUtils.isEmpty(analysisParams.getSalmonParams().getOptions().getString(LIB_TYPE_PARAM))
+                && StringUtils.isEmpty(analysisParams.getSalmonParams().getOptions().getString(L_PARAM)))) {
+            throw new ToolException("Missing mandatory parameter 'library type'. Please, specify the library type."
+                    + " It can be set using the '" + LIB_TYPE_PARAM + "' or '" + L_PARAM + "' parameters.");
+        }
+
+        List<String> fileParams = getFileParams(QUANT_CMD, analysisParams.getSalmonParams().getOptions());
+        List<String> skippedParams = getSkippedParams(QUANT_CMD, analysisParams.getSalmonParams().getOptions());
         updatedParams.setOptions(checkParams(analysisParams.getSalmonParams().getOptions(), fileParams, skippedParams, study,
                 catalogManager, token));
 
-        // Index directory
-        logger.warn("The index directory parameter ('{}') is set to the JOB dir.", INDEX_PARAM);
-        updatedParams.getOptions().remove(I_PARAM);
-        updatedParams.getOptions().put(INDEX_PARAM, OUTPUT_FILE_PREFIX + getOutDir().toAbsolutePath());
-
-        // Temporary output directory
-        logger.warn("The tmp directory parameter ('{}') is set to the JOB scratch dir.", TMPDIR_PARAM);
-        updatedParams.getOptions().put(TMPDIR_PARAM, OUTPUT_FILE_PREFIX + getScratchDir().toAbsolutePath());
-    }
-
-    private void checkSalmonQuantParams() throws ToolException {
-        throw new ToolException("Salmon command '" + QUANT_CMD + "' is not yet supported.");
+        // Set output directory
+        logger.warn("The output directory parameter ('{}') is set to the JOB dir.", OUTPUT_PARAM);
+        updatedParams.getOptions().remove(O_PARAM);
+        updatedParams.getOptions().put(OUTPUT_PARAM, OUTPUT_FILE_PREFIX + getOutDir().toAbsolutePath());
     }
 
     private void checkSalmonAlevinParams() throws ToolException {
@@ -179,5 +194,17 @@ public class SalmonWrapperAnalysis extends OpenCgaToolScopeStudy {
             }
         }
         return skippedParams;
+    }
+
+
+    public static void checkGeneratedIndexFiles(Path indexPath) throws ToolException {
+        // Check that the index files have been created
+        List<String> expectedFiles = Arrays.asList("rank.bin", "info.json", "versionInfo.json", "seq.bin", "pos.bin", "refseq.bin");
+
+        for (String expectedFile : expectedFiles) {
+            if (!Files.exists(indexPath.resolve(expectedFile))) {
+                throw new ToolException("Index file '" + expectedFile + "' not found in path '" + indexPath + "'");
+            }
+        }
     }
 }

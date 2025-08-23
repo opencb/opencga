@@ -25,9 +25,24 @@ public class SalmonParams {
     public static final String D_PARAM = "-d";
     public static final String DECOYS_PARAM = "--decoys";
 
+    public static final String R_PARAM = "-r";
+    public static final String UNMATED_READS_PARAM = "--unmatedReads";
+    public static final String ONE_PARAM = "-1";
+    public static final String MATES1_PARAM = "--mates1";
+    public static final String TWO_PARAM = "-2";
+    public static final String MATES2_PARAM = "--mates2";
+    public static final String O_PARAM = "--o";
+    public static final String OUTPUT_PARAM = "--output";
+    public static final String G_PARAM = "-g";
+    public static final String GENE_MAP_PARAM = "--geneMap";
+    public static final String AUX_TARGET_FILE_PARAM = "--auxTargetFile";
+    public static final String AUX_DIR_PARAM = "--auxDir";
+
     // Common options
     public static final String VERSION_PARAM = "--version";
     public static final String CITE_PARAM = "--cite";
+    public static final String L_PARAM = "-l";
+    public static final String LIB_TYPE_PARAM = "--libType";
 
     // Quant command options
 
@@ -73,17 +88,20 @@ public class SalmonParams {
                 switch (param) {
                     case I_PARAM:
                     case INDEX_PARAM:
+                    case R_PARAM:
+                    case UNMATED_READS_PARAM:
+                    case ONE_PARAM:
+                    case MATES1_PARAM:
+                    case TWO_PARAM:
+                    case MATES2_PARAM:
+                    case O_PARAM:
+                    case OUTPUT_PARAM:
+                    case G_PARAM:;
+                    case GENE_MAP_PARAM:
+                    case AUX_TARGET_FILE_PARAM: {
                         return true;
-                    default:
-                        return false;
-                }
-            }
+                    }
 
-            case SWIM_CMD: {
-                switch (param) {
-                    case I_PARAM:
-                    case INDEX_PARAM:
-                        return true;
                     default:
                         return false;
                 }
@@ -109,14 +127,18 @@ public class SalmonParams {
                 }
             }
 
-//            case QUANT_CMD:
-//            case SWIM_CMD: {
-//                switch (param) {
-//                        return true;
-//                    default:
-//                        return false;
-//                }
-//            }
+            case QUANT_CMD: {
+                switch (param) {
+                    case O_PARAM:
+                    case OUTPUT_PARAM:
+                    case AUX_DIR_PARAM: {
+                        return true;
+                    }
+                    default: {
+                        return false;
+                    }
+                }
+            }
 
             default: {
                 return false;

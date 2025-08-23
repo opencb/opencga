@@ -28,7 +28,6 @@ import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
-import org.opencb.opencga.analysis.wrappers.kallisto.KallistoWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.salmon.SalmonWrapperAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -40,7 +39,6 @@ import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.user.User;
-import org.opencb.opencga.core.models.wrapper.kallisto.KallistoWrapperParams;
 import org.opencb.opencga.core.models.wrapper.salmon.SalmonParams;
 import org.opencb.opencga.core.models.wrapper.salmon.SalmonWrapperParams;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
@@ -183,80 +181,71 @@ public class SalmonAnalysisTest {
 
     @Test
     public void testSalmonIndex() throws IOException, ToolException, CatalogException {
-        // Assume Kallisto data exists
+        // Assume Salmon data exists
         Assume.assumeTrue(Files.exists(salmonDataPath));
 
         Path datadir = Paths.get(opencga.createTmpOutdir("_salmon_index_data"));
         Path outdir = Paths.get(opencga.createTmpOutdir("_salmon_index"));
 
-        // Prepare STAR data, copying it to the data dir
+        // Prepare Salmon data, copying it to the data dir
         prepareSalmonData(datadir);
 
         Path fastaFilePath = datadir.resolve(genomeRelativePath).resolve(fastaFilename).toAbsolutePath();
         File fastaFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(fastaFilePath.toString(), "", "", "", null, null,
                 null, null, null), false, token).first();
 
-        KallistoWrapperParams params = new KallistoWrapperParams();
-        String kallistoIndexFilename = "kallisto.idx";
-//        params.getKallistoParams().setCommand(INDEX_CMD);
-//        params.getKallistoParams().getInput().add(fastaFile.getId());
-//        params.getKallistoParams().getOptions().put(INDEX_PARAM, kallistoIndexFilename);
+        SalmonWrapperParams params = new SalmonWrapperParams();
+        params.getSalmonParams().setCommand(SalmonParams.INDEX_CMD);
+        params.getSalmonParams().getOptions().put(SalmonParams.TRANSCRIPTS_PARAM, fastaFile.getId());
 
-        toolRunner.execute(KallistoWrapperAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outdir, "kallisto-index", false, token);
+        toolRunner.execute(SalmonWrapperAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outdir, "salmon-index", false, token);
 
-        System.out.println("Checking Kallisto index filename " + outdir.resolve(kallistoIndexFilename));
-        Assert.assertTrue(Files.exists(outdir.resolve(kallistoIndexFilename)));
-        System.out.println("Ok");
+        SalmonWrapperAnalysis.checkGeneratedIndexFiles(outdir);
     }
 
     @Test
-    public void testKallistoQuant() throws IOException, ToolException, CatalogException {
-        // Assume Kallisto data exists
+    public void testSalmonQuant() throws IOException, ToolException, CatalogException {
+        // Assume Salmon data exists
         Assume.assumeTrue(Files.exists(salmonDataPath));
 
-        Path datadir = Paths.get(opencga.createTmpOutdir("_kallisto_quant_data"));
-        Path outdir = Paths.get(opencga.createTmpOutdir("_kallisto_index"));
+        Path datadir = Paths.get(opencga.createTmpOutdir("_salmon_index_data"));
+        Path outdir = Paths.get(opencga.createTmpOutdir("_salmon_index"));
 
-        // Prepare STAR data, copying it to the data dir
+        // Prepare Salmon data, copying it to the data dir
         prepareSalmonData(datadir);
 
         Path fastaFilePath = datadir.resolve(genomeRelativePath).resolve(fastaFilename).toAbsolutePath();
         File fastaFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(fastaFilePath.toString(), "", "", "", null, null,
                 null, null, null), false, token).first();
 
-        KallistoWrapperParams params = new KallistoWrapperParams();
-        String kallistoIndexFilename = "kallisto.idx";
-//        params.getKallistoParams().setCommand(INDEX_CMD);
-//        params.getKallistoParams().getInput().add(fastaFile.getId());
-//        params.getKallistoParams().getOptions().put(INDEX_PARAM, kallistoIndexFilename);
+        SalmonWrapperParams params = new SalmonWrapperParams();
+        params.getSalmonParams().setCommand(SalmonParams.INDEX_CMD);
+        params.getSalmonParams().getOptions().put(SalmonParams.TRANSCRIPTS_PARAM, fastaFile.getId());
 
-        toolRunner.execute(KallistoWrapperAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outdir, "kallisto-index", false, token);
+        toolRunner.execute(SalmonWrapperAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outdir, "salmon-index", false, token);
 
-        System.out.println("Checking Kallisto index filename " + outdir.resolve(kallistoIndexFilename));
-        Assert.assertTrue(Files.exists(outdir.resolve(kallistoIndexFilename)));
-        System.out.println("Ok");
+        SalmonWrapperAnalysis.checkGeneratedIndexFiles(outdir);
 
-        Path outdir2 = Paths.get(opencga.createTmpOutdir("_kallisto_quant"));
+        Path outdir2 = Paths.get(opencga.createTmpOutdir("_salmon_quant"));
 
         Path fastqFilePath = datadir.resolve(fastqRelativePath).resolve(fastqFilename).toAbsolutePath();
         File fastqFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(fastqFilePath.toString(), "", "", "", null, null,
                 null, null, null), false, token).first();
 
-        File indexFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(outdir.resolve(kallistoIndexFilename).toAbsolutePath().toString(), "", "", "", null, null,
+        File indexFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams(outdir.toAbsolutePath().toString(), "", "", "", null, null,
                 null, null, null), false, token).first();
 
-        KallistoWrapperParams params2 = new KallistoWrapperParams();
-//        params2.getKallistoParams().setCommand(QUANT_CMD);
-//        params2.getKallistoParams().getInput().add(fastqFile.getId());
-//        params2.getKallistoParams().getOptions().put(INDEX_PARAM, indexFile.getId());
-//        params2.getKallistoParams().getOptions().put(SINGLE_PARAM, " ");
-//        params2.getKallistoParams().getOptions().put(FRAGMENT_LENGTH_PARAM, "100");
-//        params2.getKallistoParams().getOptions().put(SD_PARAM, "2.0");
+        SalmonWrapperParams params2 = new SalmonWrapperParams();
+        params2.getSalmonParams().setCommand(SalmonParams.QUANT_CMD);
+        params2.getSalmonParams().getOptions().put(SalmonParams.LIB_TYPE_PARAM, "A");
+        params2.getSalmonParams().getOptions().put(SalmonParams.UNMATED_READS_PARAM, fastqFile.getId());
+        params2.getSalmonParams().getOptions().put(SalmonParams.INDEX_PARAM, indexFile.getId());
 
-        toolRunner.execute(KallistoWrapperAnalysis.class, params2, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outdir2, "kallisto-quant", false, token);
+        toolRunner.execute(SalmonWrapperAnalysis.class, params2, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outdir2, "salmon-quant", false, token);
 
-        System.out.println("Checking Kallisto index filename " + outdir2.resolve(kallistoIndexFilename));
-        Assert.assertTrue(Files.exists(outdir2.resolve(kallistoIndexFilename)));
+        String quantOutFilename = "quant.sf";
+        System.out.println("Checking Salmon output filename " + outdir2.resolve(quantOutFilename));
+        Assert.assertTrue(Files.exists(outdir2.resolve(quantOutFilename)));
         System.out.println("Ok");
     }
 
