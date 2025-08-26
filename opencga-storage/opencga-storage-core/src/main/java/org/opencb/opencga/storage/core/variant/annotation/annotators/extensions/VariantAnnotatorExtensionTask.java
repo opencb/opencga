@@ -6,7 +6,6 @@ import org.opencb.commons.run.Task;
 import org.opencb.opencga.core.models.operations.variant.VariantAnnotationExtensionConfigureParams;
 
 import java.net.URI;
-import java.util.List;
 
 public interface VariantAnnotatorExtensionTask extends Task<VariantAnnotation, VariantAnnotation> {
 
