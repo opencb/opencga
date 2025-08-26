@@ -29,7 +29,7 @@ public interface VariantAnnotatorExtensionTask extends Task<VariantAnnotation, V
      * @return ObjectMap with the configuration options of the annotator extension
      * @throws Exception if the annotator extension set up fails
      */
-    List<URI> setup(VariantAnnotationExtensionConfigureParams configureParams, URI outDir) throws Exception;
+    ObjectMap setup(VariantAnnotationExtensionConfigureParams configureParams, URI outDir) throws Exception;
 
     /**
      * Check extension parameters and if they are compatibly with the options.

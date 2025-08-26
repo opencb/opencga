@@ -34,7 +34,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
@@ -85,7 +84,7 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
         this.objectReader = JacksonUtils.getDefaultObjectMapper().readerFor(new TypeReference<List<EvidenceEntry>>() {});
     }
 
-    public List<URI> setup(VariantAnnotationExtensionConfigureParams configureParams, URI outDir) throws Exception {
+    public ObjectMap setup(VariantAnnotationExtensionConfigureParams configureParams, URI outDir) throws Exception {
         ObjectMapper defaultObjectMapper = JacksonUtils.getDefaultObjectMapper();
 
         // Sanity check
@@ -116,7 +115,8 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
 
         Path cosmicConfigFile = outDirPath.resolve(COSMIC_ANNOTATOR_CONFIG_FILENAME);
         Path tmpDbLocation = outDirPath.resolve(cosmicFile.getFileName() + COSMIC_ANNOTATOR_INDEX_SUFFIX);
-        if (Files.exists(cosmicConfigFile) && Files.exists(tmpDbLocation) && Boolean.FALSE.equals(configureParams.getOverwrite())) {
+        boolean overwrite = configureParams.getOverwrite() == null ? false : configureParams.getOverwrite();
+        if (Files.exists(cosmicConfigFile) && Files.exists(tmpDbLocation) && !overwrite) {
             // Load existing config file
             VariantAnnotationExtensionConfigureParams previousParams = defaultObjectMapper.readerFor(
                     VariantAnnotationExtensionConfigureParams.class).readValue(cosmicConfigFile.toFile());
@@ -145,7 +145,7 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
 
 //            initRockDB(false);
 
-            return Collections.singletonList(dbLocation.toUri());
+            return getOptions();
         }
 
 
@@ -213,7 +213,7 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
         }
 
 
-        return Collections.singletonList(dbLocation.toUri());
+        return getOptions();
     }
 
     @Override
