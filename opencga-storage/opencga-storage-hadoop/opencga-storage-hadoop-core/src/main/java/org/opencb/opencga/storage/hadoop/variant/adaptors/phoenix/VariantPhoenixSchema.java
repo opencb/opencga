@@ -18,7 +18,6 @@ package org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.PTable;
@@ -52,16 +51,16 @@ public final class VariantPhoenixSchema {
     // TODO: Make default varants table type configurable
     public static final PTableType DEFAULT_TABLE_TYPE = PTableType.VIEW;
 
-    public static final String ANNOTATION_PREFIX = "A_";
+    private static final String ANNOTATION_PREFIX = "A_";
     public static final String POPULATION_FREQUENCY_PREFIX = ANNOTATION_PREFIX + "PF_";
-    public static final String FUNCTIONAL_SCORE_PREFIX = ANNOTATION_PREFIX + "FS_";
+    private static final String FUNCTIONAL_SCORE_PREFIX = ANNOTATION_PREFIX + "FS_";
 
-    public static final String SAMPLE_DATA_SUFIX = "_S";
-    public static final byte[] SAMPLE_DATA_SUFIX_BYTES = Bytes.toBytes(SAMPLE_DATA_SUFIX);
-    public static final String FILE_SUFIX = "_F";
-    public static final byte[] FILE_SUFIX_BYTES = Bytes.toBytes(FILE_SUFIX);
-    public static final String STUDY_SUFIX = "_ST";
-    public static final byte[] STUDY_SUFIX_BYTES = Bytes.toBytes(STUDY_SUFIX);
+    private static final String SAMPLE_DATA_SUFIX = "_S";
+    private static final byte[] SAMPLE_DATA_SUFIX_BYTES = Bytes.toBytes(SAMPLE_DATA_SUFIX);
+    private static final String FILE_SUFIX = "_F";
+    private static final byte[] FILE_SUFIX_BYTES = Bytes.toBytes(FILE_SUFIX);
+    private static final String STUDY_SUFIX = "_ST";
+    private static final byte[] STUDY_SUFIX_BYTES = Bytes.toBytes(STUDY_SUFIX);
 
     public static final int COHORT_STATS_COLUMNS_PER_COHORT = 5;
 
@@ -483,7 +482,7 @@ public final class VariantPhoenixSchema {
     }
 
     public static Integer extractSampleIdOrNull(byte[] columnValue, int offset, int length) {
-        if (AbstractPhoenixConverter.endsWith(columnValue, offset, length, SAMPLE_DATA_SUFIX_BYTES)) {
+        if (isSampleDataColumn(columnValue, offset, length)) {
             return extractId(Bytes.toString(columnValue, offset, length), false, "sample");
         } else {
             return null;
@@ -518,12 +517,26 @@ public final class VariantPhoenixSchema {
         }
     }
 
+    public static boolean isStudyColumn(String columnKey) {
+        return columnKey.endsWith(STUDY_SUFIX);
+    }
+
     public static boolean isSampleDataColumn(String columnKey) {
-        return columnKey.endsWith(SAMPLE_DATA_SUFIX);
+        // Ensure doesn't start with `_` as in `_IDX_S`
+        return columnKey.endsWith(SAMPLE_DATA_SUFIX) && !columnKey.startsWith("_");
+    }
+
+    public static boolean isSampleDataColumn(byte[] columnKey, int offset, int length) {
+        // Ensure doesn't start with `_` as in `_IDX_S`
+        return AbstractPhoenixConverter.endsWith(columnKey, offset, length, SAMPLE_DATA_SUFIX_BYTES) && columnKey[offset] != '_';
     }
 
     public static boolean isFileColumn(String columnKey) {
         return columnKey.endsWith(FILE_SUFIX);
+    }
+
+    public static boolean isFileColumn(byte[] columnKey) {
+        return AbstractPhoenixConverter.endsWith(columnKey, FILE_SUFIX_BYTES);
     }
 
     public static int extractFileId(String columnKey) {
@@ -655,6 +668,10 @@ public final class VariantPhoenixSchema {
                 .append(sampleId).append(COLUMN_KEY_SEPARATOR).append(fileId).append(SAMPLE_DATA_SUFIX);
     }
 
+    public static String buildSampleDataColumnRegex(int studyId) {
+        return buildStudyColumnsPrefix(studyId) + "[0-9_]*" + SAMPLE_DATA_SUFIX;
+    }
+
     public static List<Column> getSampleColumns(SampleMetadata sampleMetadata) {
         return getSampleColumns(sampleMetadata, null);
     }
@@ -689,11 +706,6 @@ public final class VariantPhoenixSchema {
 
     protected static Column getSampleColumn(int studyId, int sampleId, int fileId) {
         return Column.build(buildSampleColumnKey(studyId, sampleId, fileId, new StringBuilder()).toString(), PVarcharArray.INSTANCE);
-    }
-
-    public static boolean isSampleCell(Cell cell) {
-        return AbstractPhoenixConverter.endsWith(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength(),
-                VariantPhoenixSchema.SAMPLE_DATA_SUFIX_BYTES);
     }
 
     public static byte[] buildFileColumnKey(int studyId, int fileId) {

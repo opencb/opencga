@@ -17,6 +17,7 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.HBaseToVariantStatsConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
@@ -134,12 +135,12 @@ public class VariantRow {
                     if (bytes == null) {
                         continue;
                     }
-                    if (file && columnName.endsWith(FILE_SUFIX)) {
+                    if (file && VariantPhoenixSchema.isFileColumn(columnName)) {
                         walker.file(new BytesFileColumn(bytes, extractStudyId(columnName), extractFileId(columnName)));
-                    } else if (sample && columnName.endsWith(SAMPLE_DATA_SUFIX)) {
+                    } else if (sample && VariantPhoenixSchema.isSampleDataColumn(columnName)) {
                         walker.sample(new BytesSampleColumn(bytes, extractStudyId(columnName), extractSampleId(columnName),
                                 extractFileIdFromSampleColumn(columnName, false)));
-                    } else if (columnName.endsWith(STUDY_SUFIX)) {
+                    } else if (VariantPhoenixSchema.isStudyColumn(columnName)) {
                         walker.study(extractStudyId(columnName));
                     } else if (cohort && columnName.endsWith(COHORT_STATS_PROTOBUF_SUFFIX)) {
                         walker.stats(new BytesStatsColumn(bytes, extractStudyId(columnName), extractCohortStatsId(columnName)));
@@ -163,12 +164,12 @@ public class VariantRow {
             for (Cell cell : result.rawCells()) {
                 String columnName = Bytes.toString(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
 
-                if (file && columnName.endsWith(FILE_SUFIX)) {
+                if (file && VariantPhoenixSchema.isFileColumn(columnName)) {
                     walker.file(new BytesFileColumn(cell, extractStudyId(columnName), extractFileId(columnName)));
-                } else if (sample && columnName.endsWith(SAMPLE_DATA_SUFIX)) {
+                } else if (sample && VariantPhoenixSchema.isSampleDataColumn(columnName)) {
                     walker.sample(new BytesSampleColumn(cell, extractStudyId(columnName), extractSampleId(columnName),
                             extractFileIdFromSampleColumn(columnName, false)));
-                } else if (columnName.endsWith(STUDY_SUFIX)) {
+                } else if (VariantPhoenixSchema.isStudyColumn(columnName)) {
                     walker.study(extractStudyId(columnName));
                 } else if (cohort && columnName.endsWith(COHORT_STATS_PROTOBUF_SUFFIX)) {
                         walker.stats(new BytesStatsColumn(cell, extractStudyId(columnName), extractCohortStatsId(columnName)));
