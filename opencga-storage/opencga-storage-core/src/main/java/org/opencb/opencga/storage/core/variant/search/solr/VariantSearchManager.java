@@ -42,10 +42,12 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.commons.datastore.solr.SolrCollection;
 import org.opencb.commons.datastore.solr.SolrManager;
+import org.opencb.commons.io.DataReader;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.common.IOUtils;
+import org.opencb.opencga.core.common.ShutdownHookUtils;
 import org.opencb.opencga.core.config.SearchConfiguration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -57,7 +59,6 @@ import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchModel;
@@ -495,16 +496,16 @@ public class VariantSearchManager {
      * Load a Solr core/collection from a variant DB iterator.
      *
      * @param indexMetadata     solr collection metadata
-     * @param variantDBIterator Iterator to retrieve the variants to load
+     * @param variantReader     Variant DataReader to retrieve the variants to load
      * @param writer Data Writer
      * @return VariantSearchLoadResult
      * @throws VariantSearchException VariantSearchException
      */
     public VariantSearchLoadResult load(SearchIndexMetadata indexMetadata,
-                                        VariantDBIterator variantDBIterator,
+                                        DataReader<Variant> variantReader,
                                         VariantSolrInputDocumentDataWriter writer)
             throws VariantSearchException {
-        if (variantDBIterator == null) {
+        if (variantReader == null) {
             throw new VariantSearchException("Missing variant DB iterator when loading Solr variant collection");
         }
 
@@ -525,36 +526,37 @@ public class VariantSearchManager {
                 indexMetadata, metadataManager);
         VariantSearchLoadingWatchdog watchdog = new VariantSearchLoadingWatchdog(metadataManager);
 
+        logger.info("Loading Solr collection '{}' with in batches of {} and hard commit every {} documents.",
+                buildCollectionName(indexMetadata), batchSize, getInsertBatchSize());
         ParallelTaskRunner<Variant, VariantSearchUpdateDocument> ptr = new ParallelTaskRunner<>(
-                new VariantDBReader(variantDBIterator),
+                variantReader,
                 converterTask,
                 writer.then(progressLogger
                         .asTask(d -> "up to position " + d.getVariant().toString())),
                 ParallelTaskRunner.Config.builder()
                         .setSorted(true)
                         .setBatchSize(batchSize)
-                        .setCapacity(4)
+                        .setCapacity(2)
                         .setNumTasks(1)
                         .build());
 
-        Thread hook = new Thread(() -> {
-            logger.warn("Shutdown hook triggered. Stopping Variant Search loading...");
-            writer.printStats();
-        });
         try {
-            Runtime.getRuntime().addShutdownHook(hook);
             watchdog.start();
-            ptr.run();
+            ShutdownHookUtils.run(() -> {
+                ptr.run();
+            }, () -> {
+                logger.warn("Stopping Variant Search loading...");
+                writer.printStats();
+            });
         } catch (ExecutionException e) {
             throw new VariantSearchException("Error loading secondary index", e);
         } finally {
             watchdog.stopWatchdog();
-            Runtime.getRuntime().removeShutdownHook(hook);
         }
 
         waitForReplicasInSync(indexMetadata, 5, TimeUnit.MINUTES, false);
         logCollectionsStatus(indexMetadata);
-        return new VariantSearchLoadResult(variantDBIterator.getCount(), writer.getUpdatedDocuments(),
+        return new VariantSearchLoadResult(progressLogger.getCount(), writer.getUpdatedDocuments(),
                 0, writer.getInsertedDocuments(), writer.getPartiallyUpdatedDocuments());
     }
 

@@ -35,6 +35,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataReader;
 import org.opencb.opencga.core.common.IOUtils;
+import org.opencb.opencga.core.common.ShutdownHookUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.DatabaseCredentials;
@@ -58,7 +59,6 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleDataManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
@@ -625,17 +625,19 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                 updateStartTimestamp
         );
 
-        try (VariantDBIterator iterator = VariantDBIterator.wrapper(reader.iterator())) {
-            VariantSearchLoadResult load = variantSearchManager.load(indexMetadata, iterator, writer);
-            cleaner.success();
-            return load;
-        } catch (StorageEngineException e) {
+        return ShutdownHookUtils.run(() -> {
+            try {
+                VariantSearchLoadResult load = variantSearchManager.load(indexMetadata, reader, writer);
+                cleaner.success();
+                return load;
+            } catch (Exception e) {
+                throw new StorageEngineException("Exception building secondary index", e);
+            }
+        }, () -> {
+            logger.warn("Abort cleaning pending variants files.");
+            // If the shutdown hook is triggered, we abort the cleaner to avoid deleting files
             cleaner.abort();
-            throw e;
-        } catch (Exception e) {
-            cleaner.abort();
-            throw new StorageEngineException("Exception building secondary index", e);
-        }
+        });
     }
 
     @Override
