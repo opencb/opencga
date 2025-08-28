@@ -38,11 +38,21 @@ def read_response_times(file_path):
     values = {} # { query -> [ time1, time2, ] }
     with open(file_path, 'r') as file:
         csv_reader = csv.reader(file)
-        next(csv_reader)  # Skip the header
+        # Read header
+        row = next(csv_reader)
+        # Identify the columns for elapsed time and query
+        # timeStamp,elapsed,label,responseCode,responseMessage,threadName,dataType,success,failureMessage,bytes,sentBytes,grpThreads,allThreads,URL,Latency,IdleTime,Connect
+        try:
+            elapsed_idx = row.index('elapsed')
+            query_idx = row.index('label')
+        except ValueError:
+            raise Exception(f"Error: Could not find 'elapsed' or 'label' columns in {file_path}")
+
         for row in csv_reader:
-            if len(row) > 1:
-                elapsed = row[1]
-                query = row[2]
+
+            if valid_row(row):
+                elapsed = row[elapsed_idx]
+                query = row[query_idx]
                 try:
                     query_times = values.setdefault(query, [])
                     query_times.append(float(elapsed))
@@ -56,11 +66,22 @@ def read_response_codes(file_path):
     print(f"Reading response codes from {file_path}")
     with open(file_path, 'r') as file:
         csv_reader = csv.reader(file)
-        next(csv_reader)  # Skip the header
+        # Read header
+        row = next(csv_reader)
+        # Identify the columns for response code and query
+        # timeStamp,elapsed,label,responseCode,responseMessage,threadName,dataType,success,failureMessage,bytes,sentBytes,grpThreads,allThreads,URL,Latency,IdleTime,Connect
+        try:
+            query_idx = row.index('label')
+            response_code_idx = row.index('responseCode')
+            response_message_idx = row.index('responseMessage')
+        except ValueError:
+            raise Exception(f"Error: Could not find 'responseCode' or 'label' columns in {file_path}")
+
+
         for row in csv_reader:
-            if len(row) > 4:
-                query = row[2]
-                response_code = row[3] + ': ' + row[4]
+            if valid_row(row):
+                query = row[query_idx]
+                response_code = row[response_code_idx] + ': ' + row[response_message_idx]
                 query_counts = code_query_counts.setdefault(response_code, {})
                 query_counts.setdefault(query, 0)
                 query_counts[query] += 1
@@ -72,6 +93,15 @@ def read_response_codes(file_path):
         for query, count in query_counts.items():
             query_counts[query] = count * 100 / query_totals.get(query)
     return code_query_counts
+
+def valid_row(row):
+    # Discard rows starting with `#`
+    if row[0].startswith('#'):
+        return False
+    elif len(row) < 5:
+        return False
+    else:
+        return True
 
 def get_run_size_from_folder_name(file_path):
     pattern = r'\_(\d+)x(\d+)'
