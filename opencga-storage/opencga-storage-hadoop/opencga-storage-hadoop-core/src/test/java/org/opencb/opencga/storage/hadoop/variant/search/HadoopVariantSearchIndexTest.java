@@ -95,13 +95,13 @@ public class HadoopVariantSearchIndexTest extends VariantSearchIndexTest impleme
         variantStorageEngine.getVariantSearchManager().createCollections(indexMetadata);
 
         // Run DiscoverPendingVariants and update timestamp
-        Assert.assertTrue(variantStorageEngine.shouldRunDiscoverPendingVariantsSecondaryAnnotationIndex(variantStorageEngine.getVariantSearchManager().getSearchIndexMetadata(), false));
+        Assert.assertTrue(variantStorageEngine.shouldRunDiscoverPendingVariantsSecondaryAnnotationIndex(variantStorageEngine.getVariantSearchManager().getSearchIndexMetadataForLoading(), false));
         variantStorageEngine.runDiscoverPendingVariantsSecondaryAnnotationIndex(new Query(), new QueryOptions(), false, indexMetadata, System.currentTimeMillis());
-        Assert.assertFalse(variantStorageEngine.shouldRunDiscoverPendingVariantsSecondaryAnnotationIndex(variantStorageEngine.getVariantSearchManager().getSearchIndexMetadata(), false));
+        Assert.assertFalse(variantStorageEngine.shouldRunDiscoverPendingVariantsSecondaryAnnotationIndex(variantStorageEngine.getVariantSearchManager().getSearchIndexMetadataForLoading(), false));
 
         // Update variant stats. This stats won't be included in the DiscoverPendingVariants files.
         variantStorageEngine.calculateStats("study", Collections.singletonList(StudyEntry.DEFAULT_COHORT), new QueryOptions());
-        Assert.assertTrue(variantStorageEngine.shouldRunDiscoverPendingVariantsSecondaryAnnotationIndex(variantStorageEngine.getVariantSearchManager().getSearchIndexMetadata(), false));
+        Assert.assertTrue(variantStorageEngine.shouldRunDiscoverPendingVariantsSecondaryAnnotationIndex(variantStorageEngine.getVariantSearchManager().getSearchIndexMetadataForLoading(), false));
 
         // Run secondaryAnnotationIndex but skip DiscoverPendingVariants. Should load search index without stats.
         variantStorageEngine.getOptions().put("skipDiscoverPendingVariantsToSecondaryIndex", true);
@@ -112,7 +112,7 @@ public class HadoopVariantSearchIndexTest extends VariantSearchIndexTest impleme
         Assert.assertFalse(result.getAttributes().getBoolean("runDiscoverPendingVariantsToSecondaryIndexMr"));
 
         // It should still need to run the DiscoverPendingVariants
-        Assert.assertTrue(variantStorageEngine.shouldRunDiscoverPendingVariantsSecondaryAnnotationIndex(variantStorageEngine.getVariantSearchManager().getSearchIndexMetadata(), false));
+        Assert.assertTrue(variantStorageEngine.shouldRunDiscoverPendingVariantsSecondaryAnnotationIndex(variantStorageEngine.getVariantSearchManager().getSearchIndexMetadataForLoading(), false));
         result = searchIndex();
         System.out.println("result = " + result);
         Assert.assertEquals(variants.longValue(), result.getNumLoadedVariantsPartialStatsUpdate());
@@ -141,7 +141,7 @@ public class HadoopVariantSearchIndexTest extends VariantSearchIndexTest impleme
         cohorts.put("cohort2", samples);
         variantStorageEngine.calculateStats("study", cohorts, new QueryOptions());
 
-        variantStorageEngine.runDiscoverPendingVariantsSecondaryAnnotationIndex(new Query(), new QueryOptions(), false, variantStorageEngine.getVariantSearchManager().getSearchIndexMetadata(), System.currentTimeMillis());
+        variantStorageEngine.runDiscoverPendingVariantsSecondaryAnnotationIndex(new Query(), new QueryOptions(), false, variantStorageEngine.getVariantSearchManager().getSearchIndexMetadataForLoading(), System.currentTimeMillis());
         SecondaryIndexPendingVariantsFileBasedManager pendingManager = new SecondaryIndexPendingVariantsFileBasedManager(variantStorageEngine.getVariantTableName(), variantStorageEngine.getConf());
 
         int count = 0;

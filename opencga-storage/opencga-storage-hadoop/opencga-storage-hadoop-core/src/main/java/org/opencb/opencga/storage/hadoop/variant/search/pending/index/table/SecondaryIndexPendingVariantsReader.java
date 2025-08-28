@@ -28,7 +28,7 @@ public class SecondaryIndexPendingVariantsReader extends PendingVariantsReader {
 
         SearchIndexMetadata indexMetadata = dbAdaptor.getMetadataManager().getProjectMetadata()
                 .getSecondaryAnnotationIndex()
-                .getLastStagingOrActiveIndex();
+                .getSearchIndexMetadataForLoading();
         converter = HBaseToVariantConverter.fromResult(dbAdaptor.getMetadataManager())
                 .configure(HBaseVariantConverterConfiguration.builder()
                         .setMutableSamplesPosition(false)

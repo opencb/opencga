@@ -26,7 +26,7 @@ public class AddVariantSearchMetadata extends StorageMigrationTool {
                 if (projectMetadata.getSecondaryAnnotationIndex().getValues().isEmpty()) {
                     VariantSearchManager variantSearchManager = engine.getVariantSearchManager();
 
-                    SearchIndexMetadata indexMetadata = variantSearchManager.getSearchIndexMetadata();
+                    SearchIndexMetadata indexMetadata = variantSearchManager.getSearchIndexMetadataForLoading();
 
                     if (indexMetadata == null) {
                         String dbName = engine.getDBName();

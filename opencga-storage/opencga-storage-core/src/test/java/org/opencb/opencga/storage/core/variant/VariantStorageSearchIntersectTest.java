@@ -89,7 +89,8 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
             loadFile();
             loaded = true;
         }
-        indexMetadata = variantStorageEngine.getMetadataManager().getProjectMetadata().getSecondaryAnnotationIndex().getLastStagingOrActiveIndex();
+        indexMetadata = variantStorageEngine.getMetadataManager().getProjectMetadata().getSecondaryAnnotationIndex()
+                .getSearchIndexMetadataForQueries();
         solrClient = spy(solr.getSolrClient());
 //        doAnswer(invocation -> {
 //            new Exception().printStackTrace();

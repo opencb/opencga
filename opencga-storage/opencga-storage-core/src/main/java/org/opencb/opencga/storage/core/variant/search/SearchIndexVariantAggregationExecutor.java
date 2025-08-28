@@ -30,7 +30,7 @@ public class SearchIndexVariantAggregationExecutor extends VariantAggregationExe
 
     @Override
     protected VariantQueryResult<FacetField> aggregation(Query query, QueryOptions options, String facet) throws Exception {
-        SearchIndexMetadata indexMetadata = searchManager.getSearchIndexMetadata();
+        SearchIndexMetadata indexMetadata = searchManager.getSearchIndexMetadataForQueries();
         DataResult<FacetField> r = searchManager.facetedQuery(indexMetadata, query, options);
         return new VariantQueryResult<>(r)
                 .setSource(VariantSearchManager.SEARCH_ENGINE_ID);

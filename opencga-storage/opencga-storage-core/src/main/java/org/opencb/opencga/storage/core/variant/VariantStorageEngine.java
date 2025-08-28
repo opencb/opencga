@@ -724,7 +724,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
 
         VariantSearchManager variantSearchManager = getVariantSearchManager();
-        SearchIndexMetadata indexMetadata = variantSearchManager.getSearchIndexMetadata();
+        SearchIndexMetadata indexMetadata = variantSearchManager.getSearchIndexMetadataForLoading();
 
         if (indexMetadata == null) {
             if (variantSearchManager.existsCollection(dbName)) {
@@ -932,8 +932,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             // Search is not active
             return false;
         }
-        SearchIndexMetadata indexMetadata = getMetadataManager().getProjectMetadata().getSecondaryAnnotationIndex()
-                .getLastStagingOrActiveIndex();
+        SearchIndexMetadata indexMetadata = getVariantSearchManager().getSearchIndexMetadataForQueries();
         if (indexMetadata == null) {
             // No index metadata
             // TODO: Add a migration step to create the index metadata if it does not exist

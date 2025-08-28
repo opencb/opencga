@@ -144,8 +144,7 @@ public class HadoopVariantExporter extends VariantExporter {
                             EXPORT_SMALL_QUERY_SCAN_VARIANTS_THRESHOLD.defaultValue());
                     if (engine.secondaryAnnotationIndexActiveAndAlive()) {
                         try {
-                            SearchIndexMetadata indexMetadata = engine.getMetadataManager().getProjectMetadata()
-                                    .getSecondaryAnnotationIndex().getLastStagingOrActiveIndex();
+                            SearchIndexMetadata indexMetadata = engine.getVariantSearchManager().getSearchIndexMetadataForQueries();
                             long totalCount = engine.getVariantSearchManager().count(indexMetadata, new Query());
                             long count = engine.getVariantSearchManager().count(indexMetadata, getSearchEngineQuery(query));
                             if (count < variantsThreshold) {
@@ -175,8 +174,7 @@ public class HadoopVariantExporter extends VariantExporter {
                         EXPORT_SMALL_QUERY_SEARCH_INDEX_MATCH_RATIO_THRESHOLD.key(),
                         EXPORT_SMALL_QUERY_SEARCH_INDEX_MATCH_RATIO_THRESHOLD.defaultValue());
                 try {
-                    SearchIndexMetadata indexMetadata = engine.getMetadataManager().getProjectMetadata()
-                            .getSecondaryAnnotationIndex().getLastStagingOrActiveIndex();
+                    SearchIndexMetadata indexMetadata = engine.getVariantSearchManager().getSearchIndexMetadataForQueries();
                     long totalCount = engine.getVariantSearchManager().count(indexMetadata, new Query());
                     long count = engine.getVariantSearchManager().count(indexMetadata, getSearchEngineQuery(query));
                     double matchRate = ((double) count) / ((double) totalCount);

@@ -755,8 +755,8 @@ public class VariantCommandExecutor extends CommandExecutor {
         }
 
         String mode = variantStorageEngine.getConfiguration().getSearch().getMode();
-        SearchIndexMetadata indexMetadata = variantSearchManager.getSearchIndexMetadata();
         if (querying) {
+            SearchIndexMetadata indexMetadata = variantSearchManager.getSearchIndexMetadataForQueries();
 
             if (!variantSearchManager.exists(indexMetadata)) {
                 throw new IllegalArgumentException("Search " + mode + " '" + variantSearchManager.buildCollectionName(indexMetadata) + "' does not exists");

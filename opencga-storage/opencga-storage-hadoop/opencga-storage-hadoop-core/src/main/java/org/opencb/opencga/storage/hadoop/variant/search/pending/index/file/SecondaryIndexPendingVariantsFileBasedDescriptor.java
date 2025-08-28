@@ -40,7 +40,7 @@ public class SecondaryIndexPendingVariantsFileBasedDescriptor implements Pending
 
     public Function<Result, Variant> getPendingEvaluatorMapper(VariantStorageMetadataManager metadataManager, boolean overwrite) {
         SearchIndexMetadata indexMetadata = metadataManager.getProjectMetadata().getSecondaryAnnotationIndex()
-                .getLastStagingOrActiveIndex();
+                .getSearchIndexMetadataForLoading();
         PendingVariantConverter converter = new PendingVariantConverter(metadataManager, indexMetadata);
         long creationTs = indexMetadata.getCreationDateTimestamp();
         long updateTs = indexMetadata.getLastUpdateDateTimestamp();

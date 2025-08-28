@@ -1113,8 +1113,12 @@ public class VariantSearchManager {
         values.add(indexMetadata);
     }
 
-    public SearchIndexMetadata getSearchIndexMetadata() {
-        return metadataManager.getProjectMetadata().getSecondaryAnnotationIndex().getLastStagingOrActiveIndex();
+    public SearchIndexMetadata getSearchIndexMetadataForLoading() {
+        return metadataManager.getProjectMetadata().getSecondaryAnnotationIndex().getSearchIndexMetadataForLoading();
+    }
+
+    public SearchIndexMetadata getSearchIndexMetadataForQueries() {
+        return metadataManager.getProjectMetadata().getSecondaryAnnotationIndex().getSearchIndexMetadataForQueries();
     }
 
     public ProjectMetadata setActiveIndex(SearchIndexMetadata indexMetadata, long newTimestamp) throws StorageEngineException {

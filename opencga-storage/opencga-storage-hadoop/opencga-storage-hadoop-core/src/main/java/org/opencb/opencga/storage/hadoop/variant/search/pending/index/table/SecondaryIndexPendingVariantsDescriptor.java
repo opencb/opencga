@@ -61,7 +61,7 @@ public class SecondaryIndexPendingVariantsDescriptor implements PendingVariantsT
             return (value) -> getMutation(value, true);
         } else {
             SearchIndexMetadata indexMetadata = metadataManager.getProjectMetadata().getSecondaryAnnotationIndex()
-                    .getLastStagingOrActiveIndex();
+                    .getSearchIndexMetadataForLoading();
             long creationDate = indexMetadata.getCreationDateTimestamp();
             long lastUpdate = indexMetadata.getLastUpdateDateTimestamp();
             Map<Integer, Integer> cohortsSize;

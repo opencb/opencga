@@ -77,8 +77,7 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
     public boolean canUseThisExecutor(ParsedVariantQuery variantQuery) throws StorageEngineException {
         VariantQuery query = variantQuery.getQuery();
         QueryOptions options = variantQuery.getInputOptions();
-        SearchIndexMetadata indexMetadata = metadataManager.getProjectMetadata().getSecondaryAnnotationIndex()
-                .getLastStagingOrActiveIndex();
+        SearchIndexMetadata indexMetadata = searchManager.getSearchIndexMetadataForQueries();
         return doQuerySearchManager(indexMetadata, query, options) || doIntersectWithSearch(indexMetadata, query, options);
     }
 
@@ -94,7 +93,7 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
             variantQuery.getEvents().add(new Event(Event.Type.WARNING, message));
         }
         SearchIndexMetadata indexMetadata = projectMetadata.getSecondaryAnnotationIndex()
-                .getLastStagingOrActiveIndex();
+                .getSearchIndexMetadataForQueries();
         if (indexMetadata == null) {
             throw new VariantQueryException("No search index available");
         }

@@ -137,7 +137,7 @@ public class VariantPruneManager {
                 logger.info("Found {} variants to prune, {}", totalCount, countByType);
                 checkReportedVariants(report, totalCount);
             } else {
-                SearchIndexMetadata indexMetadata = engine.getVariantSearchManager().getSearchIndexMetadata();
+                SearchIndexMetadata indexMetadata = engine.getVariantSearchManager().getSearchIndexMetadataForLoading();
                 if (engine.getVariantSearchManager().isAlive(indexMetadata)) {
                     logger.info("Pruned {} variants, {}", totalCount, countByType);
                     pruneFromSecondaryIndex(indexMetadata, countByType.getOrDefault(VariantPruneReportRecord.Type.FULL, 0L));

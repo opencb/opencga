@@ -47,8 +47,33 @@ public class VariantSecondaryAnnotationIndexSets {
         return stagingIndexes;
     }
 
+    public SearchIndexMetadata getActiveOrStaging() {
+        SearchIndexMetadata index = getActiveIndex();
+        if (index == null) {
+            index = getLastStaging();
+        }
+        return index;
+    }
+
+    public SearchIndexMetadata getSearchIndexMetadataForLoading() {
+        return getLastStagingOrActiveIndex();
+    }
+
+    public SearchIndexMetadata getSearchIndexMetadataForQueries() {
+        return getActiveOrStaging();
+    }
+
     public SearchIndexMetadata getLastStagingOrActiveIndex() {
         SearchIndexMetadata index = getActiveIndex();
+        index = getLastStaging(index);
+        return index;
+    }
+
+    public SearchIndexMetadata getLastStaging() {
+        return getLastStaging(null);
+    }
+
+    private SearchIndexMetadata getLastStaging(SearchIndexMetadata index) {
         for (SearchIndexMetadata thisIndexMetadata : values) {
             if (thisIndexMetadata.getStatus() == SearchIndexMetadata.Status.STAGING) {
                 if (index == null || index.getCreationDate().before(thisIndexMetadata.getCreationDate())) {
