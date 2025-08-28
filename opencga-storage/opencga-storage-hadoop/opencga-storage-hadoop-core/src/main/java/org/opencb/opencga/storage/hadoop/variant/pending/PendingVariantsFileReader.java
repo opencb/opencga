@@ -55,7 +55,7 @@ public class PendingVariantsFileReader implements DataReader<Variant> {
         }
         Path path = pathsToRead.remove(0);
         try {
-            fileReader = new VariantJsonReader(new GZIPInputStream(fs.open(path)));
+            fileReader = new VariantJsonReader(new GZIPInputStream(fs.open(path)), 10 * 1024 * 1024);
             fileReader.open();
             fileReader.pre();
         } catch (IOException e) {
@@ -69,8 +69,8 @@ public class PendingVariantsFileReader implements DataReader<Variant> {
             return Collections.emptyList();
         }
         List<Variant> variants = new ArrayList<>(batch);
-        while (variants.size() < batch) {
-            List<Variant> read = fileReader.read(batch - variants.size());
+        while (variants.isEmpty()) {
+            List<Variant> read = fileReader.read(batch);
             if (read.isEmpty()) {
                 nextFile();
                 if (fileReader == null) {

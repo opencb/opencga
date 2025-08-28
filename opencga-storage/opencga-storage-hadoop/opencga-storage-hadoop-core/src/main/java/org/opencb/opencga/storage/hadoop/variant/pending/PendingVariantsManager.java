@@ -35,8 +35,8 @@ public abstract class PendingVariantsManager {
         return new PendingVariantsReader(query, descriptor, hBaseManager, tableNameGenerator);
     }
 
-    public VariantDBIterator iterator(Query query) {
-        return VariantDBIterator.wrapper(reader(query).iterator());
+    public VariantDBIterator iterator(Query query, int batchSize) {
+        return VariantDBIterator.wrapper(reader(query).iterator(batchSize));
     }
 
     public PendingVariantsDBCleaner cleaner() {

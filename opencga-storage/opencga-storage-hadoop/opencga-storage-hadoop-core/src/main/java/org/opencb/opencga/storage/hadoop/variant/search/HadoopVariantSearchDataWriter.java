@@ -70,7 +70,8 @@ public class HadoopVariantSearchDataWriter extends VariantSolrInputDocumentDataW
             List<Variant> variants = new ArrayList<>(batch.size());
 
             for (VariantSearchUpdateDocument updateDocument : batch) {
-                variants.add(updateDocument.getVariant());
+                // Save a simplified version of the variant to clean later
+                variants.add(new Variant(updateDocument.getVariant().toString()));
                 mutations.add(HadoopVariantSearchIndexUtils.updateSyncStatus(updateDocument, updateTs));
             }
             variantsToClean.addAll(variants);

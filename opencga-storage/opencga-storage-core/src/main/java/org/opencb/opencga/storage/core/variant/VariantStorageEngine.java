@@ -59,6 +59,7 @@ import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
+import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
@@ -908,7 +909,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 getVariantSearchManager(), indexMetadata);
 
         try (VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions)) {
-            return variantSearchManager.load(indexMetadata, iterator, writer);
+            return variantSearchManager.load(indexMetadata, new VariantDBReader(iterator), writer);
         } catch (StorageEngineException e) {
             throw e;
         } catch (Exception e) {

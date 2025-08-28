@@ -50,8 +50,8 @@ public abstract class PendingVariantsFileBasedManager {
         return new PendingVariantsFileReader(descriptor, fs, pendingVariantsDir, regions);
     }
 
-    public VariantDBIterator iterator(Query query) {
-        return VariantDBIterator.wrapper(reader(query).iterator());
+    public VariantDBIterator iterator(Query query, int batchSize) {
+        return VariantDBIterator.wrapper(reader(query).iterator(batchSize));
     }
 
     public PendingVariantsFileCleaner cleaner() {

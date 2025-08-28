@@ -63,7 +63,7 @@ public class PendingVariantsMain extends AbstractMain {
                 break;
             }
             case "count": {
-                try (VariantDBIterator iterator = getPendingVariantsManager(hBaseManager, tableName).iterator(new Query(argsMap))) {
+                try (VariantDBIterator iterator = getPendingVariantsManager(hBaseManager, tableName).iterator(new Query(argsMap), 100)) {
                     int count = 0;
                     while (iterator.hasNext()) {
                         iterator.next();
@@ -74,7 +74,7 @@ public class PendingVariantsMain extends AbstractMain {
                 break;
             }
             case "query": {
-                try (VariantDBIterator iterator = getPendingVariantsManager(hBaseManager, tableName).iterator(new Query(argsMap))) {
+                try (VariantDBIterator iterator = getPendingVariantsManager(hBaseManager, tableName).iterator(new Query(argsMap), 100)) {
                     while (iterator.hasNext()) {
                         println(iterator.next().toString());
                     }

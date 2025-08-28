@@ -1,19 +1,19 @@
 package org.opencb.opencga.storage.core.variant.search.solr;
 
 import com.google.common.base.Throwables;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.opencga.core.common.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 public class SolrInputDocumentDataWriter implements DataWriter<SolrInputDocument> {
 
@@ -22,6 +22,7 @@ public class SolrInputDocumentDataWriter implements DataWriter<SolrInputDocument
     private final SolrClient solrClient;
     private final int insertBatchSize;
     private int serverBufferSize = 0;
+    private int serverBufferSizeBytes = 0;
     private int insertedDocuments = 0;
     private long addTimeMs = 0;
     private long commitTimeMs = 0;
@@ -76,7 +77,8 @@ public class SolrInputDocumentDataWriter implements DataWriter<SolrInputDocument
     public final boolean write(List<SolrInputDocument> batch) {
         try {
             add(batch);
-            if (serverBufferSize > insertBatchSize) {
+            if (serverBufferSize >= insertBatchSize || serverBufferSizeBytes >= (300 * 1024 * 1024) /* 300 MB */) {
+                // If the buffer size exceeds the insert batch size or 300 MB, commit the changes
                 commit();
                 return true;
             } else {
@@ -99,8 +101,47 @@ public class SolrInputDocumentDataWriter implements DataWriter<SolrInputDocument
 
     protected void add(List<SolrInputDocument> batch) throws Exception {
         UpdateResponse response = retry(() -> solrClient.add(collection, batch));
+        for (SolrInputDocument document : batch) {
+            long docSize = getSize(document);
+            serverBufferSizeBytes += docSize;
+        }
         addTimeMs += response.getElapsedTime();
         serverBufferSize += batch.size();
+    }
+
+    /**
+     * Get an approximation of the size of the value in bytes.
+     * @param value The value to estimate the size of.
+     *             It can be a String, Number, Collection, SolrInputDocument, Map
+     * @return The estimated size in bytes.
+     */
+    private static long getSize(Object value) {
+        long size = 0;
+
+        if (value instanceof Number || value instanceof String) {
+            size += value.toString().length();
+        } else if (value instanceof Collection) {
+            for (Object item : ((Collection) value)) {
+                size += getSize(item);
+            }
+        } else if (value instanceof SolrInputDocument) {
+            SolrInputDocument document = (SolrInputDocument) value;
+            for (SolrInputField field : document.values()) {
+                if (field == null || field.getValue() == null) {
+                    continue;
+                }
+                size += field.getName().length(); // Field name length
+                size += getSize(field.getValue());
+            }
+        } else if (value instanceof Map) {
+            for (Map.Entry entry : ((Map<?, ?>) value).entrySet()) {
+                size += getSize(entry.getKey());
+                size += getSize(entry.getValue());
+            }
+        } else {
+            size += value.toString().length(); // Fallback for other types
+        }
+        return size;
     }
 
     public final void commit() throws Exception {
@@ -109,12 +150,20 @@ public class SolrInputDocumentDataWriter implements DataWriter<SolrInputDocument
 
     public void commit(boolean openSearcher) throws Exception {
         boolean waitSearcher = openSearcher;
+        StopWatch stopWatch = StopWatch.createStarted();
         UpdateResponse response = retry(() -> new UpdateRequest()
                 .setAction(UpdateRequest.ACTION.COMMIT, true, waitSearcher, 1, false, false, openSearcher)
                 .process(solrClient, collection));
         commitTimeMs += response.getElapsedTime();
         insertedDocuments += serverBufferSize;
+        if (logger.isDebugEnabled()) {
+            logger.debug("Committed {} documents to Solr in {} s. Buffer size : {}",
+                    serverBufferSize,
+                    (stopWatch.getTime(TimeUnit.MILLISECONDS)) / 1000.0,
+                    IOUtils.humanReadableByteCount(serverBufferSizeBytes, false));
+        }
         serverBufferSize = 0;
+        serverBufferSizeBytes = 0;
     }
 
     public long getCommitTimeMs() {
