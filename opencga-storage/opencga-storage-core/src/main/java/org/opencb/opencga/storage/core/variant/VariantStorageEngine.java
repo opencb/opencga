@@ -772,6 +772,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                                 numShards, numNodes * shardsPerNode, numNodes, shardsPerNode);
                         shouldCreateNewIndex = true;
                     }
+                    // Check for any attribute change
                     if (!shouldCreateNewIndex) {
                         ObjectMap defaultAttributes = getVariantSearchManager().getDefaultIndexMetadataAttributes();
                         ObjectMap attributes = new ObjectMap();
@@ -787,6 +788,15 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                             logger.info("Index metadata attributes '{}' do not match default attributes '{}'. "
                                             + "Creating new secondary annotation index to match new attributes",
                                     attributes.toJson(), defaultAttributes.toJson());
+                        }
+                    }
+                    // If nothing else, check if blue-green deployment is enabled
+                    if (!shouldCreateNewIndex) {
+                        boolean blueGreen = getOptions().getBoolean(SEARCH_LOAD_BLUE_GREEN_ON_OVERWRITE.key(),
+                                SEARCH_LOAD_BLUE_GREEN_ON_OVERWRITE.defaultValue());
+                        if (blueGreen) {
+                            shouldCreateNewIndex = true;
+                            logger.info("Blue-green deployment enabled. Creating new secondary annotation index.");
                         }
                     }
                 }
