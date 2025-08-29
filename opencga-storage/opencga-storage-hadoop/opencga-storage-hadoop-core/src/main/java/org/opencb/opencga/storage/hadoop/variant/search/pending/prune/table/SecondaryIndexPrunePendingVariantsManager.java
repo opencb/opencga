@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.hadoop.variant.prune;
+package org.opencb.opencga.storage.hadoop.variant.search.pending.prune.table;
 
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsManager;

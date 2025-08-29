@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.variant.adaptors;
 
+import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang3.EnumUtils;
 import org.hamcrest.*;
 import org.hamcrest.core.Every;
@@ -468,10 +469,28 @@ public class VariantMatchers {
     }
 
     public static Matcher<StudyEntry> withStats(final String cohortName, Matcher<? super VariantStats> subMatcher) {
-        return new FeatureMatcher<StudyEntry, VariantStats>(subMatcher, "with stats " + cohortName, "Stats") {
+        return new FeatureMatcher<StudyEntry, VariantStats>(subMatcher, "with stats from cohort '" + cohortName + "'", "Stats") {
             @Override
             protected VariantStats featureValueOf(StudyEntry actual) {
                 return actual.getStats(cohortName);
+            }
+        };
+    }
+
+    public static Matcher<VariantStats> withAlt(Matcher<? super Float> subMatcher) {
+        return new FeatureMatcher<VariantStats, Float>(subMatcher, "with altFreq", "ALT_FREQ") {
+            @Override
+            protected Float featureValueOf(VariantStats actual) {
+                return actual.getAltAlleleFreq();
+            }
+        };
+    }
+
+    public static Matcher<VariantStats> withRef(Matcher<? super Float> subMatcher) {
+        return new FeatureMatcher<VariantStats, Float>(subMatcher, "with refFreq", "REF_FREQ") {
+            @Override
+            protected Float featureValueOf(VariantStats actual) {
+                return actual.getRefAlleleFreq() == -1 ? Float.POSITIVE_INFINITY : actual.getRefAlleleFreq();
             }
         };
     }
@@ -481,6 +500,15 @@ public class VariantMatchers {
             @Override
             protected Float featureValueOf(VariantStats actual) {
                 return actual.getMaf();
+            }
+        };
+    }
+
+    public static Matcher<VariantStats> withPass(Matcher<? super Float> subMatcher) {
+        return new FeatureMatcher<VariantStats, Float>(subMatcher, "with PASS", "PASS") {
+            @Override
+            protected Float featureValueOf(VariantStats actual) {
+                return actual.getFilterFreq().getOrDefault(VCFConstants.PASSES_FILTERS_v4, 0F);
             }
         };
     }

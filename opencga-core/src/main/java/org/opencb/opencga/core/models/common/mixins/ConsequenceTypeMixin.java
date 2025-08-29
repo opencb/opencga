@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.variant.io.json.mixin;
+package org.opencb.opencga.core.models.common.mixins;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;

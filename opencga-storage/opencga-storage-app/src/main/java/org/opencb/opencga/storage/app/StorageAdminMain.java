@@ -87,16 +87,22 @@ public class StorageAdminMain {
                     if (commandExecutor != null) {
                         try {
                             commandExecutor.loadStorageConfiguration();
-                            commandExecutor.execute();
                         } catch (IOException ex) {
                             if (commandExecutor.getLogger() == null) {
                                 ex.printStackTrace();
                             } else {
-                                commandExecutor.getLogger().error("Error reading OpenCGA Storage configuration: " + ex.getMessage());
+                                commandExecutor.getLogger().error("Error reading OpenCGA Storage configuration", ex);
                             }
                             return 1;
+                        }
+                        try {
+                            commandExecutor.execute();
                         } catch (Exception e) {
-                            e.printStackTrace();
+                            if (commandExecutor.getLogger() == null) {
+                                e.printStackTrace();
+                            } else {
+                                commandExecutor.getLogger().error("Error executing command", e);
+                            }
                             return 1;
                         }
                     } else {

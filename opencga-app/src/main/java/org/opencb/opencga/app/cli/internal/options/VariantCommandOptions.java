@@ -67,7 +67,6 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSampleQueryCommandOptions.SAMPLE_QUERY_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
-import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexDeleteCommandOptions.SECONDARY_INDEX_DELETE_COMMAND;
 import static org.opencb.opencga.core.api.FieldConstants.EXOMISER_SAMPLE_DESCRIPTION;
 import static org.opencb.opencga.core.api.FieldConstants.EXOMISER_VERSION_DESCRIPTION;
 import static org.opencb.opencga.core.api.ParamConstants.*;
@@ -97,7 +96,6 @@ public class VariantCommandOptions {
     public final VariantIndexCommandOptions indexVariantCommandOptions;
     public final VariantDeleteCommandOptions variantDeleteCommandOptions;
     public final VariantSecondaryIndexCommandOptions variantSecondaryIndexCommandOptions;
-    public final VariantSecondaryIndexDeleteCommandOptions variantSecondaryIndexDeleteCommandOptions;
     public final VariantQueryCommandOptions queryVariantCommandOptions;
     public final VariantExportCommandOptions exportVariantCommandOptions;
     public final VariantStatsCommandOptions statsVariantCommandOptions;
@@ -168,7 +166,6 @@ public class VariantCommandOptions {
         this.indexVariantCommandOptions = new VariantIndexCommandOptions();
         this.variantDeleteCommandOptions = new VariantDeleteCommandOptions();
         this.variantSecondaryIndexCommandOptions = new VariantSecondaryIndexCommandOptions();
-        this.variantSecondaryIndexDeleteCommandOptions = new VariantSecondaryIndexDeleteCommandOptions();
         this.queryVariantCommandOptions = new VariantQueryCommandOptions();
         this.exportVariantCommandOptions = new VariantExportCommandOptions();
         this.statsVariantCommandOptions = new VariantStatsCommandOptions();
@@ -268,37 +265,11 @@ public class VariantCommandOptions {
         @Parameter(names = {"-r", "--region"}, description = REGION_DESCR)
         public String region;
 
-        @Parameter(names = {"--sample"}, description = "Samples to index."
-                + " If provided, all sample data will be added to the secondary index.", arity = 1)
-        public List<String> sample;
-
         @Parameter(names = {"--overwrite"}, description = "Overwrite search index for all files and variants. Repeat operation for already"
                 + " processed variants.")
         public boolean overwrite;
 
         @Parameter(names = {"--outdir"}, description = "Output directory", hidden = true)
-        public String outdir;
-    }
-
-    @Parameters(commandNames = {SECONDARY_INDEX_DELETE_COMMAND}, commandDescription = "Remove a secondary index from the search engine")
-    public class VariantSecondaryIndexDeleteCommandOptions extends GeneralCliOptions.StudyOption {
-
-        public static final String SECONDARY_INDEX_DELETE_COMMAND = "secondary-index-delete";
-        @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
-
-        @ParametersDelegate
-        public Object jobOptions = commonJobOptionsObject;
-
-        @ParametersDelegate
-        public Object internalJobOptions = internalJobOptionsObject;
-
-        @Parameter(names = {"--sample"}, description = "Samples to remove. Needs to provide all the samples in the secondary index.",
-                required = true, arity = 1)
-        public String sample;
-
-        // TODO Use this outdir to store the operation-status.json
-        @Parameter(names = {"--outdir"}, description = "[PENDING]", hidden = true)
         public String outdir;
     }
 

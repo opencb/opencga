@@ -131,11 +131,16 @@ public abstract class CommandExecutor {
                 try {
                     clientConfiguration.setDefaultIndexByName(this.host);
                 } catch (Exception e) {
-                    PrintUtils.printError("Invalid host " + host);
+                    PrintUtils.printError(e.getMessage());
                     System.exit(-1);
                 }
             } else {
-                this.host = clientConfiguration.getCurrentHost().getName();
+                try {
+                    this.host = clientConfiguration.getCurrentHost().getName();
+                } catch (ClientException e) {
+                    PrintUtils.printError(e.getMessage());
+                    System.exit(-1);
+                }
             }
             // Create the SessionManager and store current session
             sessionManager = new SessionManager(clientConfiguration, this.host);
@@ -155,8 +160,6 @@ public abstract class CommandExecutor {
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
-        } catch (ClientException e) {
-            e.printStackTrace();
         }
 
         // Update the timestamp every time one executed command finishes

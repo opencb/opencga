@@ -45,7 +45,7 @@ public class AdminCliOptionsParser extends GeneralCliOptions {
         jcommander.addCommand("benchmark", benchmarkCommandOptions);
         JCommander benchmarkSubCommands = jcommander.getCommands().get("benchmark");
         benchmarkSubCommands.addCommand("variant", benchmarkCommandOptions.variantBenchmarkCommandOptions);
-        benchmarkSubCommands.addCommand("alignment", benchmarkCommandOptions.alignmentBenchmarkCommandOptions);
+//        benchmarkSubCommands.addCommand("alignment", benchmarkCommandOptions.alignmentBenchmarkCommandOptions);
     }
 
 //    //    private final IndexSequenceCommandOptions indexSequenceCommandOptions;

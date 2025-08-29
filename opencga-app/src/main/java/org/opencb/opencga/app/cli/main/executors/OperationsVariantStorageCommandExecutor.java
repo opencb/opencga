@@ -148,9 +148,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             case "variant-secondary-index":
                 queryResponse = secondaryIndexVariant();
                 break;
-            case "variant-secondary-index-delete":
-                queryResponse = deleteVariantSecondaryIndex();
-                break;
             case "variant-setup":
                 queryResponse = setupVariant();
                 break;
@@ -1008,7 +1005,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "region", commandOptions.region, true);
-            putNestedIfNotNull(beanParams, "sample", commandOptions.sample, true);
             putNestedIfNotNull(beanParams, "overwrite", commandOptions.overwrite, true);
 
             variantSecondaryAnnotationIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
@@ -1119,7 +1115,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "region", commandOptions.region, true);
-            putNestedIfNotNull(beanParams, "sample", commandOptions.sample, true);
             putNestedIfNotNull(beanParams, "overwrite", commandOptions.overwrite, true);
 
             variantSecondaryAnnotationIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
@@ -1127,28 +1122,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .readValue(beanParams.toJson(), VariantSecondaryAnnotationIndexParams.class);
         }
         return openCGAClient.getVariantOperationClient().secondaryIndexVariant(variantSecondaryAnnotationIndexParams, queryParams);
-    }
-
-    private RestResponse<Job> deleteVariantSecondaryIndex() throws Exception {
-        logger.debug("Executing deleteVariantSecondaryIndex in Operations - Variant Storage command line");
-
-        OperationsVariantStorageCommandOptions.DeleteVariantSecondaryIndexCommandOptions commandOptions = operationsVariantStorageCommandOptions.deleteVariantSecondaryIndexCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
-        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
-        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
-        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
-        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
-        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
-        queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotEmpty("samples", commandOptions.samples);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
-
-        return openCGAClient.getVariantOperationClient().deleteVariantSecondaryIndex(queryParams);
     }
 
     private RestResponse<VariantSetupResult> setupVariant() throws Exception {

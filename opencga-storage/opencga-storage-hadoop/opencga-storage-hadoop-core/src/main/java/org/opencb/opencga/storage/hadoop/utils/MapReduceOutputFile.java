@@ -12,6 +12,7 @@ import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.parquet.hadoop.ParquetFileWriter;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.storage.hadoop.io.HDFSIOConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xerial.snappy.SnappyInputStream;
@@ -89,23 +90,16 @@ public class MapReduceOutputFile {
             if (!isHdfs(tmpDir, conf)) {
                 LOGGER.info("Temporary directory is not in hdfs:// . Hdfs is required for this temporary file.");
                 LOGGER.info("   Default file system : " + FileSystem.getDefaultUri(conf));
-                for (String nameServiceId : conf.getTrimmedStringCollection("dfs.nameservices")) {
-                    try {
-                        Path hdfsTmpPath = new Path("hdfs", nameServiceId, "/tmp/");
-                        FileSystem hdfsFileSystem = hdfsTmpPath.getFileSystem(conf);
-                        if (hdfsFileSystem != null) {
-                            LOGGER.info("Change to file system : " + hdfsFileSystem.getUri());
-                            tmpDir = hdfsTmpPath;
-                            break;
-                        }
-                    } catch (Exception e) {
-                        LOGGER.debug("This file system is not hdfs:// . Skip!", e);
-                    }
+                Path hdfsRootPath = HDFSIOConnector.getHdfsRootPath(conf);
+                if (hdfsRootPath != null) {
+                    LOGGER.info("Change to file system : " + hdfsRootPath.getFileSystem(conf).getUri());
+                    tmpDir = new Path(hdfsRootPath, "/tmp/");
                 }
             }
         }
         return new Path(tmpDir, fileName);
     }
+
 
     /**
      * Check if a given Hadoop path is local.

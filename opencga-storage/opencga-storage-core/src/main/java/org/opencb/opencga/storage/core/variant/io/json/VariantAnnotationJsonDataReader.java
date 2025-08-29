@@ -20,11 +20,9 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.io.DataReader;
-import org.opencb.opencga.storage.core.variant.io.json.mixin.ConsequenceTypeMixin;
-import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantAnnotationMixin;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,9 +72,7 @@ public class VariantAnnotationJsonDataReader implements DataReader<VariantAnnota
         /** Innitialice Json parse**/
         JsonFactory factory = new JsonFactory();
         ObjectMapper jsonObjectMapper = new ObjectMapper(factory);
-
-        jsonObjectMapper.addMixIn(VariantAnnotation.class, VariantAnnotationMixin.class);
-        jsonObjectMapper.addMixIn(ConsequenceType.class, ConsequenceTypeMixin.class);
+        JacksonUtils.addVariantMixIn(jsonObjectMapper);
         jsonObjectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         try {
             parser = jsonObjectMapper.createParser(inputStream);

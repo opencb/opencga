@@ -192,6 +192,16 @@ public class HBaseToStudyEntryConverterTest {
             public String getSampleData(int idx) {
                 return sampleData.get(idx);
             }
+
+            @Override
+            public boolean hasTimestamp() {
+                return false;
+            }
+
+            @Override
+            public long getTimestamp() {
+                return -1;
+            }
         };
     }
 

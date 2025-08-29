@@ -8,6 +8,8 @@ import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.models.common.mixins.ConsequenceTypeMixin;
+import org.opencb.opencga.core.models.common.mixins.VariantAnnotationMixin;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
 import java.util.Arrays;

@@ -9,7 +9,7 @@ rest:
   hosts:
     - name: "opencga"
       url: "${OPENCGA.CLIENT.REST.HOST}"
-  defaultHostIndex: 0
+  defaultHost: "opencga"
   tokenAutoRefresh: true
   tlsAllowInvalidCertificates: false
   query:

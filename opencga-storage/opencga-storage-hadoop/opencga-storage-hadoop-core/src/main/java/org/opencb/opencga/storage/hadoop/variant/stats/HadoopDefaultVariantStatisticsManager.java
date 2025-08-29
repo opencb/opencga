@@ -20,6 +20,7 @@ import org.apache.hadoop.hbase.client.Put;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -34,10 +35,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.LAST_VARIANT_STATS_INDEX_TS;
 
 /**
  * Created on 07/12/16.
@@ -121,5 +121,16 @@ public class HadoopDefaultVariantStatisticsManager extends DefaultVariantStatist
         };
     }
 
+    @Override
+    public void postCalculateStats(VariantStorageMetadataManager metadataManager, StudyMetadata sm,
+                                   Collection<String> cohorts, boolean error) throws StorageEngineException {
+        super.postCalculateStats(metadataManager, sm, cohorts, error);
+
+        dbAdaptor.getMetadataManager().updateProjectMetadata(projectMetadata -> {
+            projectMetadata.getAttributes().put(LAST_VARIANT_STATS_INDEX_TS, System.currentTimeMillis());
+            return projectMetadata;
+        });
+
+    }
 
 }

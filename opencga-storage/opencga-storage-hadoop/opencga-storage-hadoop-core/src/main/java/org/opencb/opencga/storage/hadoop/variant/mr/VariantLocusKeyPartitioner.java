@@ -4,7 +4,7 @@ import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Partitioner;
-import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.core.utils.GenomeSplitFactory;
 
 import java.io.IOException;
 import java.util.List;
@@ -28,7 +28,7 @@ public class VariantLocusKeyPartitioner<V> extends Partitioner<VariantLocusKey, 
     }
 
     public TreeMap<VariantLocusKey, Integer> setup(int numPartitions) {
-        List<VariantLocusKey> splits = GenomeHelper.generateBootPreSplitsHuman(
+        List<VariantLocusKey> splits = GenomeSplitFactory.generateBootPreSplitsHuman(
                 numPartitions, VariantLocusKey::new, VariantLocusKey::compareTo, false);
         regionSplitsMap.put(new VariantLocusKey("0", 0), 0);
         for (int i = 0; i < splits.size(); i++) {

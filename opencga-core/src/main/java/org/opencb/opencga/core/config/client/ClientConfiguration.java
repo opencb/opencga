@@ -32,6 +32,7 @@ import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Created by imedina on 04/05/16.
@@ -83,20 +84,6 @@ public final class ClientConfiguration {
                 break;
         }
 
-        // Multiple hosts can exist, we must check and set a valid defaultHostIndex
-        if (clientConfiguration.getRest().getHosts() != null && clientConfiguration.getRest().getHosts().size() > 0) {
-            // If hosts are defined then defaultHostIndex must be a value between 0 and the number of hosts
-            int defaultHostIndex = clientConfiguration.getRest().getDefaultHostIndex();
-            if (defaultHostIndex < 0 || defaultHostIndex >= clientConfiguration.getRest().getHosts().size()) {
-                logger.warn("Setting defaultHostIndex to first host");
-                clientConfiguration.getRest().setDefaultHostIndex(0);
-            }
-        } else {
-            // If no hosts exist then defaultHostIndex is set to -1
-            logger.warn("No hosts found, setting defaultHostIndex to -1");
-            clientConfiguration.getRest().setDefaultHostIndex(-1);
-        }
-
         // Overwrite client configuration file with environment variables
         parseEnvironmentVariables(clientConfiguration);
 
@@ -145,10 +132,24 @@ public final class ClientConfiguration {
     }
 
     public HostConfig getCurrentHost() throws ClientException {
-        if (rest.getHosts() == null
-                || rest.getDefaultHostIndex() < 0 || rest.getDefaultHostIndex() >= rest.getHosts().size()) {
-
+        if (rest.getHosts() == null) {
             throw new ClientException("Hosts not found");
+        }
+        if (rest.getDefaultHostIndex() < 0 && !rest.getDefaultHost().isEmpty()) {
+            int index = 0;
+            for (HostConfig host : rest.getHosts()) {
+                if (host.getName().equalsIgnoreCase(rest.getDefaultHost())) {
+                    rest.setDefaultHostIndex(index);
+                    logger.debug("Setting default host index to {}", rest.getDefaultHostIndex());
+                    return host;
+                }
+                index++;
+            }
+            throw new ClientException("Default host '" + rest.getDefaultHost() + "' not found in the list of hosts: "
+                    + rest.getHosts().stream().map(HostConfig::getName).collect(Collectors.toList()));
+        }
+        if (rest.getDefaultHostIndex() < 0 || rest.getDefaultHostIndex() >= rest.getHosts().size()) {
+            throw new ClientException("Default host index is invalid: " + rest.getDefaultHostIndex());
         }
         logger.debug("Default host index: {}, value: {}", rest.getDefaultHostIndex(),
                 rest.getHosts().get(rest.getDefaultHostIndex()));
@@ -171,19 +172,29 @@ public final class ClientConfiguration {
     }
 
     public void setDefaultIndexByName(String name) throws ClientException {
-        if (CollectionUtils.isEmpty(rest.getHosts()) || rest.getDefaultHostIndex() < 0
-                || rest.getDefaultHostIndex() > rest.getHosts().size()) {
+        if (CollectionUtils.isEmpty(rest.getHosts())) {
             throw new ClientException("Hosts not found");
         }
-        boolean finded = false;
+        boolean found = false;
         for (int i = 0; i < rest.getHosts().size(); i++) {
             if (rest.getHosts().get(i).getName().equalsIgnoreCase(name)) {
                 rest.setDefaultHostIndex(i);
-                finded = true;
+                logger.debug("Setting default host index to {}", i);
+                found = true;
             }
         }
-        if (!finded) {
-            throw new ClientException("Invalid name. Host not found");
+        if (!found) {
+            // Check if the name is a valid host URL
+            if (name.startsWith("http://") || name.startsWith("https://")) {
+                rest.getHosts().add(new HostConfig(name, name));
+                rest.setDefaultHostIndex(rest.getHosts().size() - 1);
+            } else {
+                throw new ClientException("Invalid host name '" + name
+                        + "' not found in the list of hosts: " + getRest().getHosts()
+                        .stream()
+                        .map(HostConfig::getName)
+                        .collect(Collectors.toList()));
+            }
         }
     }
 

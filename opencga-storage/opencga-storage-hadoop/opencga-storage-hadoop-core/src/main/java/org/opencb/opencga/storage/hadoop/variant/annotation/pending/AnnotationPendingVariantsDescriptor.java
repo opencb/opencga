@@ -9,7 +9,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
-import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsDescriptor;
+import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsTableBasedDescriptor;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +19,7 @@ import java.util.function.Function;
 
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.VariantColumn.*;
 
-public class AnnotationPendingVariantsDescriptor implements PendingVariantsDescriptor {
+public class AnnotationPendingVariantsDescriptor implements PendingVariantsTableBasedDescriptor {
 
     public static final byte[] FAMILY = GenomeHelper.COLUMN_FAMILY_BYTES;
     public static final byte[] COLUMN = Bytes.toBytes("v");

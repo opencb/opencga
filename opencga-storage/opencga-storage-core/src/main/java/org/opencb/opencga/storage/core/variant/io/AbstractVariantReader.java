@@ -58,9 +58,13 @@ public abstract class AbstractVariantReader implements VariantReader {
     public AbstractVariantReader(InputStream metadataInputStream, VariantStudyMetadata metadata) {
         this.metadataInputStream = metadataInputStream;
         this.samplesPositions = null;
+        if (metadata.getFiles() == null) {
+            metadata.setFiles(new ArrayList<>());
+        }
         if (metadata.getFiles().isEmpty()) {
             fileMetadata = new VariantFileMetadata("", "");
             metadata.getFiles().add(fileMetadata.getImpl());
+            fileMetadata.setSampleIds(Collections.emptyList());
         } else {
             fileMetadata = new VariantFileMetadata(metadata.getFiles().get(0));
         }

@@ -610,6 +610,15 @@ public final class VariantQueryUtils {
         }
     }
 
+    public static String[] splitStudyResource(String defaultStudy, String value) {
+        int idx = value.lastIndexOf(STUDY_RESOURCE_SEPARATOR);
+        if (idx <= 0 || idx == value.length() - 1) {
+            return new String[]{defaultStudy, value};
+        } else {
+            return new String[]{value.substring(0, idx), value.substring(idx + 1)};
+        }
+    }
+
     public static boolean isOutputMultiStudy(Query query, QueryOptions options, Collection<?> studies) {
         Set<VariantField> fields = VariantField.getIncludeFields(options);
         if (!fields.contains(VariantField.STUDIES)) {

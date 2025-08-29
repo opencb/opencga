@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.core.variant.search.solr;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+import org.opencb.commons.datastore.core.ObjectMap;
 
 /**
  * Created on 23/04/18.
@@ -16,7 +17,9 @@ public class VariantSearchLoadResult {
     private final long numProcessedVariants;
 
     /**
-     * Number of loaded variants. This number will always be lower equal than {@link #numProcessedVariants}.
+     * Number of loaded variants. Includes inserted and partially updated variants.
+     *
+     * This number will always be lower equal than {@link #numProcessedVariants}.
      */
     private final long numLoadedVariants;
 
@@ -26,10 +29,33 @@ public class VariantSearchLoadResult {
      */
     private final long numDeletedVariants;
 
-    public VariantSearchLoadResult(long numProcessedVariants, long numLoadedVariants, long numDeletedVariants) {
+    /**
+     * Number of inserted variants. This number will always be lower equal than {@link #numLoadedVariants}.
+     *
+     * This number does not include variants that were partially updated.
+     */
+    private final long numInsertedVariants;
+
+    /**
+     * Number of variants that were partially updated. This number will always be lower equal than {@link #numLoadedVariants}.
+     *
+     * This number does not include variants that were inserted.
+     */
+    private final long numLoadedVariantsPartialStatsUpdate;
+
+    /**
+     * Additional attributes that may be used to store extra information about the load operation.
+     */
+    private ObjectMap attributes;
+
+    public VariantSearchLoadResult(long numProcessedVariants, long numLoadedVariants, long numDeletedVariants,
+                                   long numInsertedVariants, long numLoadedVariantsPartialStatsUpdate) {
         this.numProcessedVariants = numProcessedVariants;
         this.numLoadedVariants = numLoadedVariants;
         this.numDeletedVariants = numDeletedVariants;
+        this.numInsertedVariants = numInsertedVariants;
+        this.numLoadedVariantsPartialStatsUpdate = numLoadedVariantsPartialStatsUpdate;
+        this.attributes = new ObjectMap();
     }
 
     public long getNumProcessedVariants() {
@@ -44,12 +70,27 @@ public class VariantSearchLoadResult {
         return numDeletedVariants;
     }
 
+    public long getNumInsertedVariants() {
+        return numInsertedVariants;
+    }
+
+    public long getNumLoadedVariantsPartialStatsUpdate() {
+        return numLoadedVariantsPartialStatsUpdate;
+    }
+
+    public ObjectMap getAttributes() {
+        return attributes;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this, ToStringStyle.JSON_STYLE)
                 .append("numProcessedVariants", numProcessedVariants)
                 .append("numLoadedVariants", numLoadedVariants)
                 .append("numDeletedVariants", numDeletedVariants)
+                .append("numInsertedVariants", numInsertedVariants)
+                .append("numLoadedVariantsPartialStatsUpdate", numLoadedVariantsPartialStatsUpdate)
+                .append("attributes", attributes.toJson())
                 .toString();
     }
 }

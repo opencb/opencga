@@ -181,9 +181,9 @@ public class VariantHbaseTestUtils {
                             || key.endsWith(VariantPhoenixSchema.COHORT_STATS_FREQ_SUFFIX)
                             || key.endsWith(VariantPhoenixSchema.VARIANT_SCORE_SUFIX)) {
                         os.println("\t" + key + " = " + length(entry.getValue()) + ", " + PFloatArray.INSTANCE.toObject(entry.getValue()));
-                    } else if (key.endsWith(VariantPhoenixSchema.STUDY_SUFIX)) {
+                    } else if (VariantPhoenixSchema.isStudyColumn(key)) {
                         os.println("\t" + key + " = " + PUnsignedInt.INSTANCE.toObject(entry.getValue()));
-                    } else if (key.endsWith(VariantPhoenixSchema.SAMPLE_DATA_SUFIX) || key.endsWith(VariantPhoenixSchema.FILE_SUFIX)) {
+                    } else if (VariantPhoenixSchema.isFileColumn(key) || VariantPhoenixSchema.isSampleDataColumn(key)) {
                         os.println("\t" + key + " = " + result.getColumnLatestCell(GenomeHelper.COLUMN_FAMILY_BYTES, entry.getKey()).getTimestamp()+", " + PVarcharArray.INSTANCE.toObject(entry.getValue()));
                     } else if (key.endsWith(VariantPhoenixSchema.COHORT_STATS_MAF_SUFFIX)
                             || key.endsWith(VariantPhoenixSchema.COHORT_STATS_MGF_SUFFIX)) {

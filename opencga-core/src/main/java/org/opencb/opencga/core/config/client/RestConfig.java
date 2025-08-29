@@ -24,7 +24,8 @@ import java.util.List;
 public class RestConfig {
 
     private List<HostConfig> hosts;
-    private int defaultHostIndex = 0;
+    private String defaultHost;
+    private int defaultHostIndex = -1;
     private boolean tokenAutoRefresh;
     private boolean tlsAllowInvalidCertificates;
     private QueryRestConfig query;
@@ -94,6 +95,15 @@ public class RestConfig {
 
     public RestConfig setQuery(QueryRestConfig query) {
         this.query = query;
+        return this;
+    }
+
+    public String getDefaultHost() {
+        return defaultHost;
+    }
+
+    public RestConfig setDefaultHost(String defaultHost) {
+        this.defaultHost = defaultHost;
         return this;
     }
 

@@ -104,9 +104,7 @@ public class HBaseColumnIntersectVariantQueryExecutor extends VariantQueryExecut
                 .append(QueryOptions.INCLUDE, Arrays.asList(CHROMOSOME, START, END, REFERENCE, ALTERNATE));
 
         scanQuery.putIfNotNull(STUDY.key(), query.get(STUDY.key()));
-        if (query.getBoolean(VARIANTS_TO_INDEX.key(), false)) {
-            scanQuery.put(VARIANTS_TO_INDEX.key(), true);
-        } else if (isValidParam(query, SAMPLE)) {
+        if (isValidParam(query, SAMPLE)) {
             // At any case, filter only by first sample
             // TODO: Use sample with less variants?
 

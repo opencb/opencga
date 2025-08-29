@@ -19,6 +19,8 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchIdGenerator;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
@@ -26,6 +28,8 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenix
 import org.opencb.opencga.storage.hadoop.variant.annotation.pending.AnnotationPendingVariantsDescriptor;
 import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsDBCleaner;
 import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchDataDeleter;
+import org.opencb.opencga.storage.hadoop.variant.search.pending.prune.table.SecondaryIndexPrunePendingVariantsDescriptor;
+import org.opencb.opencga.storage.hadoop.variant.search.pending.prune.table.SecondaryIndexPrunePendingVariantsManager;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -133,9 +137,10 @@ public class VariantPruneManager {
                 logger.info("Found {} variants to prune, {}", totalCount, countByType);
                 checkReportedVariants(report, totalCount);
             } else {
-                if (engine.getVariantSearchManager().isAlive(engine.getDBName())) {
+                SearchIndexMetadata indexMetadata = engine.getVariantSearchManager().getSearchIndexMetadataForLoading();
+                if (engine.getVariantSearchManager().isAlive(indexMetadata)) {
                     logger.info("Pruned {} variants, {}", totalCount, countByType);
-                    pruneFromSecondaryIndex(countByType.getOrDefault(VariantPruneReportRecord.Type.FULL, 0L));
+                    pruneFromSecondaryIndex(indexMetadata, countByType.getOrDefault(VariantPruneReportRecord.Type.FULL, 0L));
                     updateSecondaryIndex(countByType.getOrDefault(VariantPruneReportRecord.Type.PARTIAL, 0L));
                 }
             }
@@ -251,7 +256,7 @@ public class VariantPruneManager {
         }
     }
 
-    private void pruneFromSecondaryIndex(long count) throws StorageEngineException {
+    private void pruneFromSecondaryIndex(SearchIndexMetadata indexMetadata, long count) throws StorageEngineException {
         logger.info("Deleting {} variants from secondary index", count);
         logger.info("In case of resuming operation, the total number of variants to remove could be larger.");
         SecondaryIndexPrunePendingVariantsManager manager = new SecondaryIndexPrunePendingVariantsManager(engine.getDBAdaptor());
@@ -261,16 +266,24 @@ public class VariantPruneManager {
         PendingVariantsDBCleaner cleaner = manager.cleaner();
 
         VariantSearchManager searchManager = engine.getVariantSearchManager();
+        String collection = searchManager.buildCollectionName(indexMetadata);
         ParallelTaskRunner<Variant, Variant> ptr = new ParallelTaskRunner<>(
                 manager.reader(new Query()),
                 progressTask,
-                new HadoopVariantSearchDataDeleter(engine.getDBName(), searchManager.getSolrClient(), cleaner),
+                new HadoopVariantSearchDataDeleter(collection, VariantSearchIdGenerator.getGenerator(indexMetadata),
+                        searchManager.getSolrClient(), cleaner),
                 ParallelTaskRunner.Config.builder().setNumTasks(1).setBatchSize(searchManager.getInsertBatchSize()).build());
 
         try {
             ptr.run();
         } catch (ExecutionException e) {
             throw new StorageEngineException("Error checking variant prune report", e);
+        }
+
+        try {
+            searchManager.waitForReplicasInSync(indexMetadata);
+        } catch (VariantSearchException e) {
+            throw new StorageEngineException("Error waiting for replicas in sync after pruning from secondary index", e);
         }
     }
 

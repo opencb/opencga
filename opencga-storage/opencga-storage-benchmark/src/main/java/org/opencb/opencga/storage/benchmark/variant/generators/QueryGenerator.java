@@ -21,6 +21,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.base.Throwables;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.benchmark.variant.queries.RandomQueries;
+import org.opencb.opencga.storage.core.io.plain.StringDataReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,16 +41,31 @@ public abstract class QueryGenerator {
     public static final String ARITY = "arity";
     public static final String FILE = "file";
     public static final String OUT_DIR = "outDir";
-    public static final String BASE_QUERY_REFIX = "baseQuery.prefix";
+    public static final String BASE_QUERY_REFIX = "baseQuery.prefix.";
     public static final String USER_PROPERTIES_FILE = "user.properties";
     protected Random random;
 
     private Logger logger = LoggerFactory.getLogger(getClass());
     private int arity;
+    private Map<String, String> params;
 
     public void setUp(Map<String, String> params) {
         random = new Random(System.nanoTime());
         arity = Integer.parseInt(params.getOrDefault(ARITY, "1"));
+        this.params = params;
+    }
+
+    public RandomQueries readRandomQueriesConfig(Path path) {
+        RandomQueries randomQueries = readYmlFile(path, RandomQueries.class);
+        if (randomQueries.getGeneFile() != null) {
+            if (randomQueries.getGene() == null) {
+                randomQueries.setGene(new ArrayList<>());
+            }
+            new StringDataReader(path.toAbsolutePath().getParent().resolve(randomQueries.getGeneFile())).forEach(gene -> {
+                randomQueries.getGene().add(gene);
+            });
+        }
+        return randomQueries;
     }
 
     public <T> T readYmlFile(Path path, Class<T> clazz) {
@@ -77,13 +93,22 @@ public abstract class QueryGenerator {
         return this;
     }
 
+    public Map<String, String> getParams() {
+        return params;
+    }
+
+    public QueryGenerator setParams(Map<String, String> params) {
+        this.params = params;
+        return this;
+    }
+
     protected void appendRandomSessionId(List<String> sessionIds, Query query) {
-        if (Objects.nonNull(sessionIds)) {
+        if (Objects.nonNull(sessionIds) && !sessionIds.isEmpty()) {
             query.append("sid", sessionIds.get(random.nextInt(sessionIds.size())));
         }
     }
 
-    protected void appendbaseQuery(RandomQueries randomQueries, Query query) {
+    protected void appendBaseQuery(RandomQueries randomQueries, Query query) {
         if (Objects.nonNull(randomQueries.getBaseQuery())) {
             query.putAll(randomQueries.getBaseQuery());
         }

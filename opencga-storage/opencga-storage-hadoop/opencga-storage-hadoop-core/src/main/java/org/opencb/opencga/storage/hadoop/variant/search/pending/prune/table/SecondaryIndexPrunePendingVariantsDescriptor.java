@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.hadoop.variant.prune;
+package org.opencb.opencga.storage.hadoop.variant.search.pending.prune.table;
 
 import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Result;
@@ -7,7 +7,7 @@ import org.apache.hadoop.hbase.io.compress.Compression;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
-import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsDescriptor;
+import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsTableBasedDescriptor;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 
 import java.io.IOException;
@@ -18,7 +18,7 @@ import java.util.function.Function;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class SecondaryIndexPrunePendingVariantsDescriptor implements PendingVariantsDescriptor {
+public class SecondaryIndexPrunePendingVariantsDescriptor implements PendingVariantsTableBasedDescriptor {
 
     @Override
     public String name() {

@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant.prune;
 import org.opencb.biodata.models.variant.Variant;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -25,7 +26,8 @@ public class VariantPruneReportRecord {
         String[] split = line.split("\t");
         variant = new Variant(split[0]);
         type = Type.valueOf(split[1]);
-        studies = Arrays.stream(split[2].split(",")).map(Integer::valueOf).collect(Collectors.toList());
+        studies = split.length == 2 ? Collections.emptyList()  // No studies provided
+                : Arrays.stream(split[2].split(",")).map(Integer::valueOf).collect(Collectors.toList());
     }
 
     public Variant getVariant() {

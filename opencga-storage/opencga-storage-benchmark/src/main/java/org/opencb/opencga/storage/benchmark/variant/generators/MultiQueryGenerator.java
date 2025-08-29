@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -39,10 +40,11 @@ public class MultiQueryGenerator extends QueryGenerator {
 
     public static final String MULTI_QUERY = "multi-query";
     public static final String RANDOM_QUERIES_FILE = "randomQueries.yml";
+    public static final String RANDOM_QUERIES_DEFAULT_FILE = "randomQueriesDefault.txt";
     private List<QueryGenerator> generators;
     private RandomQueries randomQueries;
     private Map<String, String> baseQueriesFromCLI;
-    private Pattern pattern = Pattern.compile("(?<param>[^(]+)(\\((?<extraParam>[^)]+)\\))?");
+    private Pattern pattern = Pattern.compile("(?<param>[^,(]+)(\\((?<extraParam>[^)]+)\\))?");
     private Logger logger = LoggerFactory.getLogger(getClass());
     private String query;
 
@@ -60,21 +62,30 @@ public class MultiQueryGenerator extends QueryGenerator {
         }
 
         generators = new ArrayList<>();
-        randomQueries = readYmlFile(queryFilePath, RandomQueries.class);
+        randomQueries = readRandomQueriesConfig(queryFilePath);
         baseQueriesFromCLI = getBaseQueryFromCLI(params);
 
-        for (String param : query.split(",")) {
-            String extraParam = null;
-            Integer arity = 1;
+        Matcher matcher = pattern.matcher(query);
+        while (matcher.find()) {
+            String param = matcher.group("param");
+            String extraParam = matcher.group("extraParam");
 
-            Matcher matcher = pattern.matcher(param);
-            if (matcher.find()) {
-                param = matcher.group("param");
-                extraParam = matcher.group("extraParam");
-            }
-
-            if (StringUtils.isNumeric(extraParam)) {
-                arity = Integer.parseInt(extraParam);
+            Map<String, String> extraParamsMap = new HashMap<>();
+            if (extraParam != null) {
+                if (StringUtils.isNumeric(extraParam)) {
+                    int arity = Integer.parseInt(extraParam);
+                    extraParamsMap.put(ARITY, String.valueOf(arity));
+                } else {
+                    for (String s : extraParam.split(",")) {
+                        String[] split = s.split("=", 2);
+                        if (split.length != 2) {
+                            int arity = Integer.parseInt(s);
+                            extraParamsMap.put(ARITY, String.valueOf(arity));
+                        } else {
+                            extraParamsMap.put(split[0].trim(), split[1].trim());
+                        }
+                    }
+                }
             }
 
             ConfiguredQueryGenerator queryGenerator;
@@ -136,6 +147,15 @@ public class MultiQueryGenerator extends QueryGenerator {
                 case "proteinSubstitution":
                     queryGenerator = new ScoreQueryGenerator.ProteinSubstQueryGenerator(randomQueries);
                     break;
+                case "cohortStatsRef":
+                    queryGenerator = new ScoreQueryGenerator.CohortStatsRefQueryGenerator(randomQueries);
+                    break;
+                case "cohortStatsAlt":
+                    queryGenerator = new ScoreQueryGenerator.CohortStatsAltQueryGenerator(randomQueries);
+                    break;
+                case "cohortStatsMaf":
+                    queryGenerator = new ScoreQueryGenerator.CohortStatsMafQueryGenerator(randomQueries);
+                    break;
                 case "populationFrequencyAlt":
                     queryGenerator = new ScoreQueryGenerator.PopulationFrequenciesAltQueryGenerator(randomQueries);
                     break;
@@ -155,9 +175,10 @@ public class MultiQueryGenerator extends QueryGenerator {
                 default:
                     throw new IllegalArgumentException("Unknwon query param " + param);
             }
-            logger.debug("Using sub query generator: " + queryGenerator.getClass() + " , arity = " + arity);
-            params.put(ARITY, arity.toString());
-            queryGenerator.setUp(params, randomQueries);
+            logger.debug("Using sub query generator: " + queryGenerator.getClass() + " , " + extraParamsMap);
+            Map<String, String> thisQueryGeneratorParams = new HashMap<>(params);
+            params.putAll(extraParamsMap);
+            queryGenerator.setUp(thisQueryGeneratorParams, randomQueries);
             generators.add(queryGenerator);
         }
     }
@@ -172,7 +193,7 @@ public class MultiQueryGenerator extends QueryGenerator {
         for (QueryGenerator generator : generators) {
             generator.generateQuery(query);
         }
-        appendbaseQuery(randomQueries, query);
+        appendBaseQuery(randomQueries, query);
         appendRandomSessionId(randomQueries.getSessionIds(), query);
         query.putAll(baseQueriesFromCLI);
         return query;

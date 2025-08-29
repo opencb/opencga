@@ -44,7 +44,7 @@ public class VariantAnnotatorByApiKeyTest {
         CellBaseUtils cellBaseUtils = new CellBaseUtils(new CellBaseClient(storageConfiguration.getCellbase().toClientConfiguration()));
         Assume.assumeTrue(cellBaseUtils.isMinVersion("v5.8"));
 
-        projectMetadata = new ProjectMetadata("hsapiens", "grch38", "3", 1, null, null, null);
+        projectMetadata = new ProjectMetadata("hsapiens", "grch38", "3", 1, null, null, null, null);
     }
 
     @Test

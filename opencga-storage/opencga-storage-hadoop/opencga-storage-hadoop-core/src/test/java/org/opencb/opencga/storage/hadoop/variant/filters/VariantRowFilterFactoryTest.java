@@ -113,6 +113,16 @@ public class VariantRowFilterFactoryTest {
             public String getSampleData(int idx) {
                 return strings.get(idx);
             }
+
+            @Override
+            public boolean hasTimestamp() {
+                return false;
+            }
+
+            @Override
+            public long getTimestamp() {
+                return -1;
+            }
         };
     }
 
@@ -143,6 +153,16 @@ public class VariantRowFilterFactoryTest {
             @Override
             public String getString(int idx) {
                 return strings.get(idx);
+            }
+
+            @Override
+            public boolean hasTimestamp() {
+                return false;
+            }
+
+            @Override
+            public long getTimestamp() {
+                return -1;
             }
         };
     }

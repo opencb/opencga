@@ -1672,6 +1672,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return sampleId;
     }
 
+    @Deprecated
     public int registerSecondaryIndexSamples(int studyId, List<String> samples, boolean resume)
             throws StorageEngineException {
         if (samples == null || samples.isEmpty()) {
