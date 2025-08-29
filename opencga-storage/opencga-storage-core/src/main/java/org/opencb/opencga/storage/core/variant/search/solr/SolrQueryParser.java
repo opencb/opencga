@@ -189,8 +189,6 @@ public abstract class SolrQueryParser {
 
         // now we continue with the other AND conditions...
         // Study (study)
-        @Deprecated
-        boolean studiesOr = false;
         String defaultStudyName = getDefaultStudyName(query);
         String key = STUDY.key();
         if (isValidParam(query, STUDY)) {
@@ -199,10 +197,9 @@ public abstract class SolrQueryParser {
             List<String> studyNames = parseStudyNames(splitValue(value, op));
             if (!studyNames.isEmpty()) {
                 if (op == null || op == QueryOperation.OR) {
-                    filterList.add(parseCategoryTermValue("studies", StringUtils.join(studyNames, ",")));
-                    studiesOr = true;
+                    filterList.add(parseCategoryTermValue("studies", StringUtils.join(studyNames, QueryOperation.OR.separator())));
                 } else {
-                    filterList.add(parseCategoryTermValue("studies", StringUtils.join(studyNames, ";")));
+                    filterList.add(parseCategoryTermValue("studies", StringUtils.join(studyNames, QueryOperation.AND.separator())));
                 }
             }
         }
