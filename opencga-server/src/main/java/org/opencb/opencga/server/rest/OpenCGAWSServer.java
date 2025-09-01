@@ -65,8 +65,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.*;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.File;
 import java.io.FileInputStream;
@@ -77,6 +77,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -269,6 +270,37 @@ public class OpenCGAWSServer {
         logger.info("| - Version {}", GitRepositoryState.getInstance().getBuildVersion());
         logger.info("| - Git version: {} {}", GitRepositoryState.getInstance().getBranch(), GitRepositoryState.getInstance().getCommitId());
         logger.info("========================================================================\n");
+
+        logMigrationSummary();
+    }
+
+    private static void logMigrationSummary() {
+        Executors.newSingleThreadExecutor().submit(() -> {
+            try {
+                Map<String, MigrationSummary> migrationSummaryMap = catalogManager.getMigrationManager().getMigrationSummary();
+                logger.info("========================================================================");
+                logger.info("| Migration summary:");
+                boolean pendingMigrations = false;
+                for (Map.Entry<String, MigrationSummary> entry : migrationSummaryMap.entrySet()) {
+                    if (entry.getValue().getMigrationsToBeApplied() > 0) {
+                        pendingMigrations = true;
+                        logger.info("|  * Pending migrations for organization {}: {}", entry.getKey(),
+                                entry.getValue().getMigrationsToBeApplied());
+                        for (Map.Entry<MigrationRun.MigrationStatus, Long> entry2 : entry.getValue().getStatusCount().entrySet()) {
+                            if (entry2.getKey().toBeApplied() && entry2.getValue() > 0) {
+                                logger.info("|  *     {}: {}", entry2.getKey(), entry2.getValue());
+                            }
+                        }
+                    }
+                }
+                if (!pendingMigrations) {
+                    logger.info("|  All organizations are up to date. No pending migrations found.");
+                }
+                logger.info("========================================================================");
+            } catch (CatalogException e) {
+                logger.error("Error retrieving migration summary", e);
+            }
+        });
     }
 
     /**
@@ -302,19 +334,6 @@ public class OpenCGAWSServer {
             variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
             healthCheckMonitor = new OpenCGAHealthCheckMonitor(configuration, catalogManager, storageEngineFactory, variantManager);
             healthCheckMonitor.asyncUpdate();
-
-            Map<String, MigrationSummary> migrationSummaryMap = catalogManager.getMigrationManager().getMigrationSummary();
-            for (Map.Entry<String, MigrationSummary> entry : migrationSummaryMap.entrySet()) {
-                if (entry.getValue().getMigrationsToBeApplied() > 0) {
-                    logger.info("|  * Pending migrations for organization {}: {}", entry.getKey(),
-                            entry.getValue().getMigrationsToBeApplied());
-                    for (Map.Entry<MigrationRun.MigrationStatus, Long> entry2 : entry.getValue().getStatusCount().entrySet()) {
-                        if (entry2.getKey().toBeApplied() && entry2.getValue() > 0) {
-                            logger.info("|  *     {}: {}", entry2.getKey(), entry2.getValue());
-                        }
-                    }
-                }
-            }
         } catch (Exception e) {
             errorMessage = e.getMessage();
 //            e.printStackTrace();

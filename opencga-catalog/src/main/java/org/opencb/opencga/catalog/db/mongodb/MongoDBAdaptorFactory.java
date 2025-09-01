@@ -17,7 +17,6 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.core.Query;
@@ -46,11 +45,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Created by pfurio on 08/01/16.
  */
 public class MongoDBAdaptorFactory implements DBAdaptorFactory {
+
+    private static final ExecutorService FUTURE_EXECUTOR = Executors.newSingleThreadExecutor();
 
     private final IOManagerFactory ioManagerFactory;
     private final MongoDataStoreManager mongoManager;
@@ -285,17 +288,21 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
                 String orgSummaryString = JacksonUtils.getDefaultObjectMapper().writeValueAsString(organizationSummary);
                 Map<String, Object> value = JacksonUtils.getDefaultObjectMapper().readerFor(Map.class).readValue(orgSummaryString);
                 noteCreateParams.setValue(value);
-            } catch (JsonMappingException e) {
-                throw new RuntimeException(e);
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
             }
             Note note = noteCreateParams.toNote(Note.Scope.ORGANIZATION, userId);
             NoteManager.validateNewNote(note, userId);
 
-            // Create new database and indexes
-            organizationDBAdaptorFactory.createAllCollections();
-            organizationDBAdaptorFactory.createIndexes();
+            // Create new database and indexes in a non-blocking future transaction (~10 seconds)
+            FUTURE_EXECUTOR.submit(() -> {
+                try {
+                    organizationDBAdaptorFactory.createAllCollections();
+                    organizationDBAdaptorFactory.createIndexes();
+                } catch (Exception e) {
+                    logger.error("Could not create collections/indexes for Organization {}: {}", organization.getId(), e.getMessage(), e);
+                }
+            });
 
             // Create organization
             OpenCGAResult<Organization> result = organizationDBAdaptorFactory.getCatalogOrganizationDBAdaptor()
