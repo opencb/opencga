@@ -11,7 +11,7 @@ from pathlib import Path
 parser = argparse.ArgumentParser()
 parser.add_argument('action', help="Action to execute", choices=["build", "push", "delete"], default="build")
 parser.add_argument('--images',
-                    help="comma separated list of images to be made, e.g. base,workflow,init,ext-tools,python-notebook,r-builder")
+                    help="comma separated list of images to be made, e.g. base,workflow,init,ext-tools,genomics,transcriptomics,python-notebook,r-builder")
 parser.add_argument('--tag', help="the tag for this code, e.g. v2.0.0-hdp3.1")
 parser.add_argument('--build-folder', help="the location of the build folder, if not default location")
 parser.add_argument('--org', help="Docker organization", default="opencb")
@@ -65,24 +65,30 @@ def login(loginRequired=False):
 
 def build():
     print_header('Building docker images: ' + ', '.join(images))
-
     for i in images:
-        image = org + "/opencga-" + i + ":" + tag
+        ## OpenCGA 'base' and 'init' image MUST be built with the hadoop flavour
+        ## Other images do not need the hadoop flavour, just the version
+        if i == "base" or i == "init":
+            image = org + "/opencga-" + i + ":" + tag + "-" + hadoop_flavour
+        else:
+            image = org + "/opencga-" + i + ":" + tag
+
+        ## Print image being built
         print("\n" + shell_colors['blue'] + "Building " + image + " ..." + shell_colors['reset'])
 
         if i == "init" or i == "demo":
-            command = ("docker build"
+            command = ("docker build --debug"
                        + " -t " + image
                        + " -f " + build_folder + "/cloud/docker/opencga-" + i + "/Dockerfile"
                        + " --build-arg TAG=" + tag
                        + " --build-arg ORG=" + org
-                       + " " + args.docker_build_args + " "
+                       + " " + args.docker_build_args
                        + " " + build_folder)
         else:
-            command = ("docker build"
+            command = ("docker build --debug"
                        + " -t " + image
                        + " -f " + build_folder + "/cloud/docker/opencga-" + i + "/Dockerfile"
-                       + " " + args.docker_build_args + " "
+                       + " " + args.docker_build_args
                        + " " + build_folder)
         run(command)
 
@@ -184,8 +190,8 @@ else:
 
     # Create docker tag
     tag = version
-    if hadoop_flavour:
-        tag = tag + "-" + hadoop_flavour
+    # if hadoop_flavour:
+    #     tag = tag + "-" + hadoop_flavour
 
 # 3. Set docker org to default value if not set
 if args.org is not None:
