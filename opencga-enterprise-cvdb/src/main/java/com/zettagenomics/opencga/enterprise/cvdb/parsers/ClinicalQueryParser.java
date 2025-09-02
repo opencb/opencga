@@ -16,7 +16,7 @@
 
 package com.zettagenomics.opencga.enterprise.cvdb.parsers;
 
-import com.zettagenomics.opencga.enterprise.cvdb.CvdbUtils;
+import com.zettagenomics.opencga.enterprise.cvdb.CollectionNameGenerator;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -34,18 +34,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.text.ParseException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
-import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.CLINICAL_VIEWERS_COLLECTION_SUFFIX;
 import static com.zettagenomics.opencga.enterprise.cvdb.converters.SearchConverter.simpleDateFormat;
 import static com.zettagenomics.opencga.enterprise.cvdb.converters.SearchConverter.solrDateFormat;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
 
 public class ClinicalQueryParser {
-
-    protected String collectionPrefix;
-
-    private SolrQueryParser solrParser;
 
     public static final String CA_FACET_FIELDS = "studyId, type, disorderId, fileNames, probandId, probandDisorderIds,"
         + " probandPhenotypeNames, familyId, familyPhenotypeNames, familyMemberIds, panelIds, status";
@@ -63,10 +60,25 @@ public class ClinicalQueryParser {
         + " soTermNames, xrefIds, panelId, mois, penetrance, acmgs, tier, clinicalSignificance, drugResponse, traitAssociation,"
         + " functionalEffect, tumorigenesis, otherClassifications, rolesInCancer, reviewAcmgs, reviewTier, reviewClinicalSignificance";
 
+    private SolrQueryParser solrParser;
+
+    protected String collectionPrefix;
+    protected String caCollectionName;
+    protected String ciCollectionName;
+    protected String cvCollectionName;
+    protected String cveCollectionName;
+    protected String viewerCollectionName;
+
     protected static Logger logger = LoggerFactory.getLogger(ClinicalQueryParser.class);
 
     protected ClinicalQueryParser(String collectionPrefix, VariantStorageMetadataManager variantStorageMetadataManager) {
         this.collectionPrefix = collectionPrefix;
+        this.caCollectionName = CollectionNameGenerator.getClinicalAnalysisCollectionName(collectionPrefix);
+        this.ciCollectionName = CollectionNameGenerator.getClinicalInterpretationCollectionName(collectionPrefix);
+        this.cvCollectionName = CollectionNameGenerator.getClinicalVariantCollectionName(collectionPrefix);
+        this.cveCollectionName = CollectionNameGenerator.getClinicalVariantEvidenceCollectionName(collectionPrefix);
+        this.viewerCollectionName = CollectionNameGenerator.getClinicalViewerCollectionName(collectionPrefix);
+
         this.solrParser = new SolrQueryParser(variantStorageMetadataManager);
     }
 
@@ -877,12 +889,11 @@ public class ClinicalQueryParser {
 //        }
 //    }
 
-    protected void addViewerFilter(Query query, String toValue, String projectId, SolrQuery solrQuery) {
+    protected void addViewerFilter(Query query, String toValue, SolrQuery solrQuery) {
         List<String> filters = new ArrayList<>();
         addStringFilters("viewers", query.getString(ClinicalQueryParam.VIEWER_NAME), filters);
         addStringFilters("studyId", query.getString(ClinicalQueryParam.STUDY_ID.key()), filters);
-        String join = "{!join from=id to=" + toValue + " fromIndex=" + CvdbUtils.getCollectionName(collectionPrefix, projectId,
-                CLINICAL_VIEWERS_COLLECTION_SUFFIX) + "}";
+        String join = "{!join from=id to=" + toValue + " fromIndex=" + viewerCollectionName + "}";
         addStringFilters(filters, join, solrQuery);
     }
 

@@ -53,7 +53,7 @@ public class EnterpriseCvdbWebService extends OpenCGAWSServer {
         EnterpriseFactory.init(catalogManager, opencgaHome);
     }
 
-    private CvdbSolrEngine getCvdbEngine() {
+    private CvdbSolrEngine getCvdbEngine() throws IOException {
         CvdbSolrEngine cvdbEngine = cvdbEngineAtomicRef.get();
         if (cvdbEngine == null) {
             synchronized(cvdbEngineAtomicRef) {

@@ -32,7 +32,6 @@ import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.study.StudyAclParams;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -53,6 +52,7 @@ import static org.opencb.commons.datastore.core.QueryOptions.LIMIT;
 public class CvdbSolrEngineQueryPermissionsTest {
 
     protected static CvdbSolrEngine cvdbEngine;
+    protected static CollectionNameGenerator collectionNameGenerator;
     protected static String organizationId = "test";
     protected static String projectId = "project1";
     protected static Study study;
@@ -66,14 +66,14 @@ public class CvdbSolrEngineQueryPermissionsTest {
     protected static String userToken;
     private static FamilyManager familyManager;
 
+    private static String collectionPrefix;
+
     public static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
 
     protected static String user2ViewerforCaId = null;
 
     @BeforeClass
     public static void before() throws Throwable {
-        cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, organizationId, projectId);
-        cvdbSolrExternalResource.before();
 
         catalogManagerResource = new OpenCGAEnterpriseCatalogManagerExternalResource();
         catalogManagerResource.before();
@@ -84,19 +84,25 @@ public class CvdbSolrEngineQueryPermissionsTest {
         setUpCatalogManager(catalogManager);
 
         // CVDB
+        collectionNameGenerator = new CollectionNameGenerator(catalogManager);
+        collectionPrefix = collectionNameGenerator.getCollectionPrefix(organizationId, projectId, userToken);
+        cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, organizationId, projectId, collectionPrefix);
+        cvdbSolrExternalResource.before();
+
         cvdbEngine = cvdbSolrExternalResource.configure();
         cvdbEngine.setCatalogManager(catalogManager);
+        cvdbEngine.setCollectionNameGenerator(collectionNameGenerator);
         cvdbEngine.setVariantStorageMetadataManager(new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory()));
 
-        if (!cvdbEngine.existCollections(organizationId, projectId)) {
-            cvdbEngine.createCollections(organizationId, projectId);
+        if (!cvdbEngine.existCollections(collectionPrefix)) {
+            cvdbEngine.createCollections(projectId, collectionPrefix, userToken);
         }
 
         // Load and index
         loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca3.json.gz"), study);
 
         // CVDB index from catalog
-        CvdbIndexResult indexResult = cvdbEngine.indexProject(projectId, catalogManager, true, userToken);
+        CvdbIndexResult indexResult = cvdbEngine.indexProject(projectId, true, userToken);
         System.out.println(indexResult.getFailures());
         assertEquals(2, indexResult.getNumIndexed());
         assertEquals(0, indexResult.getFailures().size());
@@ -341,7 +347,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
 
             OpenCGAResult<Acl> aclResult = catalogManager.getAdminManager().getEffectivePermissions(study.getFqn(), Collections.singletonList(clinicalAnalysis.getId()),
                     Collections.singletonList(ClinicalAnalysisPermissions.VIEW.name()), Enums.Resource.CLINICAL_ANALYSIS.name(), opencgaToken);
-            cvdbEngine.indexViewers(aclResult.first().getId(), study.getId(), aclResult.first().getPermissions().get(0).getUserIds(), organizationId, projectId);
+            cvdbEngine.indexViewers(aclResult.first().getId(), study.getId(), aclResult.first().getPermissions().get(0).getUserIds(), collectionPrefix);
             // Only one clinical analysis is updated
             break;
         }
@@ -385,8 +391,7 @@ public class CvdbSolrEngineQueryPermissionsTest {
         for (ClinicalAnalysis clinicalAnalysis : results.getResults()) {
             OpenCGAResult<Acl> aclResult = catalogManager.getAdminManager().getEffectivePermissions(study.getFqn(), Collections.singletonList(clinicalAnalysis.getId()),
                     Collections.singletonList(ClinicalAnalysisPermissions.VIEW.name()), Enums.Resource.CLINICAL_ANALYSIS.name(), opencgaToken);
-
-            cvdbEngine.indexViewers(aclResult.first().getId(), study.getId(), aclResult.first().getPermissions().get(0).getUserIds(), organizationId, projectId);
+            cvdbEngine.indexViewers(aclResult.first().getId(), study.getId(), aclResult.first().getPermissions().get(0).getUserIds(), collectionPrefix);
             // Only one clinical analysis is updated
             break;
         }
