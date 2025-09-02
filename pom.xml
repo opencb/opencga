@@ -22,7 +22,7 @@
 
     <groupId>org.opencb.opencga</groupId>
     <artifactId>opencga</artifactId>
-    <version>4.0.0-SNAPSHOT</version>
+    <version>5.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>OpenCGA</name>
@@ -43,12 +43,12 @@
     </modules>
 
     <properties>
-        <pyopencga.version>4.0.0_dev</pyopencga.version>
-        <opencgar.version>4.0.0_dev</opencgar.version>
-        <cellbase.version>7.0.0-SNAPSHOT</cellbase.version>
-        <biodata.version>4.0.0-SNAPSHOT</biodata.version>
-        <java-common-libs.version>6.0.0-SNAPSHOT</java-common-libs.version>
-        <iva.version>4.0.0-SNAPSHOT</iva.version>
+        <pyopencga.version>5.0.0_dev</pyopencga.version>
+        <opencgar.version>5.0.0_dev</opencgar.version>
+        <cellbase.version>8.0.0-SNAPSHOT</cellbase.version>
+        <biodata.version>5.0.0-SNAPSHOT</biodata.version>
+        <java-common-libs.version>7.0.0-SNAPSHOT</java-common-libs.version>
+        <iva.version>5.0.0-SNAPSHOT</iva.version>
         <oskar.version>0.2.0</oskar.version>
 
         <jackson.version>2.14.3</jackson.version>
@@ -67,7 +67,7 @@
         <guava.version>28.0-jre</guava.version>
         <htsjdk.version>2.23.0</htsjdk.version>
         <snpeff.version>4.3.1</snpeff.version>
-        <mongodb-driver.version>4.11.4</mongodb-driver.version>
+        <mongodb-driver.version>4.11.5</mongodb-driver.version>
         <commons-io.version>2.8.0</commons-io.version>
         <commons-lang3.version>3.14.0</commons-lang3.version>
         <commons-codec.version>1.7</commons-codec.version>
