@@ -714,6 +714,12 @@ while [[ $# -gt 0 ]]; do
     shift # past argument
     shift # past value
     ;;
+  -c | --cellbase-db)
+    DB_CELLBASE="$value"
+    echo "DB_CELLBASE is a deprecated value and will be ignored"
+    shift # past argument
+    shift # past value
+    ;;
   -H | --storage-hadoop)
     STORAGE_HADOOP_DEPS="$value"
     shift # past argument
