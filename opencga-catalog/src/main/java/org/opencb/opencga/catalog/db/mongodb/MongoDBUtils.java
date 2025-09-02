@@ -485,11 +485,17 @@ public class MongoDBUtils {
      * @param bsonList List to which we will add the ontology terms search.
      */
     public static void addDefaultOrQueryFilter(String mongoKey, String queryKey, Query query, List<Bson> bsonList) {
-        Bson ontologyId = MongoDBQueryUtils.createStringFilter(mongoKey + ".id", queryKey, query,
-                ObjectMap.COMMA_SEPARATED_LIST_SPLIT_PATTERN);
-        Bson ontologyName = MongoDBQueryUtils.createStringFilter(mongoKey + ".name", queryKey, query,
-                ObjectMap.COMMA_SEPARATED_LIST_SPLIT_PATTERN);
-        bsonList.add(Filters.or(ontologyId, ontologyName));
+        String value = query.getString(queryKey);
+        Bson ontologyId = MongoDBQueryUtils.createAutoFilter(mongoKey + ".id", queryKey, query, QueryParam.Type.STRING);
+        Bson ontologyName = MongoDBQueryUtils.createAutoFilter(mongoKey + ".name", queryKey, query, QueryParam.Type.STRING);
+
+        if (!value.startsWith("!")) {
+            bsonList.add(Filters.or(ontologyId, ontologyName));
+        } else {
+            // If the value starts with "!", we need to perform and AND between the two filters
+            // This is the case when we want to filter out the ontology terms
+            bsonList.add(Filters.and(ontologyId, ontologyName));
+        }
     }
 
     static List<Document> addCompQueryFilter(QueryParam option, String optionKey, String queryKey,
