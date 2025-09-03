@@ -292,7 +292,8 @@ public class ProjectMongoDBAdaptor extends CatalogMongoDBAdaptor implements Proj
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
         final String[] acceptedObjectParams = {QueryParams.INTERNAL_STATUS.key(), QueryParams.CELLBASE.key(),
-                QueryParams.INTERNAL_DATASTORES_VARIANT.key(), QueryParams.INTERNAL_DATASTORES.key(),
+                QueryParams.INTERNAL_DATASTORES_VARIANT.key(), QueryParams.INTERNAL_DATASTORES_CVDB.key(),
+                QueryParams.INTERNAL_DATASTORES.key(),
                 QueryParams.INTERNAL_VARIANT_ANNOTATION_INDEX.key(), QueryParams.INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
 
@@ -334,7 +335,7 @@ public class ProjectMongoDBAdaptor extends CatalogMongoDBAdaptor implements Proj
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
         final String[] acceptedObjectParams = {QueryParams.CELLBASE.key(), QueryParams.INTERNAL_DATASTORES_VARIANT.key(),
-                QueryParams.INTERNAL_DATASTORES.key(), QueryParams.INTERNAL_STATUS.key()};
+                QueryParams.INTERNAL_DATASTORES_CVDB.key(), QueryParams.INTERNAL_DATASTORES.key(), QueryParams.INTERNAL_STATUS.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
 
         if (!document.toFinalUpdateDocument().isEmpty()) {

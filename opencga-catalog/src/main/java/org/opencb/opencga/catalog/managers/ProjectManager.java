@@ -74,9 +74,9 @@ public class ProjectManager extends AbstractManager {
             ProjectDBAdaptor.QueryParams.ATTRIBUTES.key()
     ));
     private static final Set<String> PROTECTED_UPDATABLE_FIELDS = new HashSet<>(Arrays.asList(
+            ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES_VARIANT.key(), ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES_CVDB.key(),
             ProjectDBAdaptor.QueryParams.INTERNAL_VARIANT_ANNOTATION_INDEX.key(),
             ProjectDBAdaptor.QueryParams.INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX.key(),
-            ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES_VARIANT.key(),
             ProjectDBAdaptor.QueryParams.CELLBASE.key()
     ));
     public static final QueryOptions INCLUDE_PROJECT_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
@@ -554,6 +554,11 @@ public class ProjectManager extends AbstractManager {
     public OpenCGAResult<Project> setDatastoreVariant(String projectStr, DataStore dataStore, String token) throws CatalogException {
         return update(projectStr,
                 new ObjectMap(ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES_VARIANT.key(), dataStore), new QueryOptions(), true, token);
+    }
+
+    public OpenCGAResult<Project> setDatastoreCvdb(String projectStr, DataStore dataStore, String token) throws CatalogException {
+        return update(projectStr,
+                new ObjectMap(ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES_CVDB.key(), dataStore), new QueryOptions(), true, token);
     }
 
     public OpenCGAResult<Project> setCellbaseConfiguration(String projectStr, CellBaseConfiguration configuration, boolean validate,
