@@ -4022,9 +4022,9 @@ public class FileManager extends AnnotationSetManager<File> {
             String fileId = oldPath.toString();
             String fileUuid = "";
             try {
-                if (Files.exists(oldPath)) {
-                    throw new CatalogException("File " + param.getOriginal() + " still exists in the path.");
-                }
+//                if (Files.exists(oldPath)) {
+//                    throw new CatalogException("File " + param.getOriginal() + " still exists in the path.");
+//                }
                 if (Files.notExists(newPath)) {
                     throw new CatalogException("File " + param.getUpdated() + " not found in the path.");
                 }
