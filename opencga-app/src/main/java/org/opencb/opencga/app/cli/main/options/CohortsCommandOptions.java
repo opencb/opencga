@@ -222,6 +222,9 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--type"}, description = "Enum param allowed values: CASE_CONTROL, CASE_SET, CONTROL_SET, PAIRED, PAIRED_TUMOR, AGGREGATE, TIME_SERIES, FAMILY, TRIO, COLLECTION", required = false, arity = 1)
         public String type;
     
+        @Parameter(names = {"--tags"}, description = "The body web service tags parameter", required = false, arity = 1)
+        public String tags;
+    
         @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String description;
     
@@ -372,6 +375,9 @@ public class CohortsCommandOptions {
     
         @Parameter(names = {"--type"}, description = "Enum param allowed values: CASE_CONTROL, CASE_SET, CONTROL_SET, PAIRED, PAIRED_TUMOR, AGGREGATE, TIME_SERIES, FAMILY, TRIO, COLLECTION", required = false, arity = 1)
         public String type;
+    
+        @Parameter(names = {"--tags"}, description = "The body web service tags parameter", required = false, arity = 1)
+        public String tags;
     
         @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String description;
@@ -562,6 +568,9 @@ public class CohortsCommandOptions {
     
         @Parameter(names = {"--type"}, description = "Enum param allowed values: CASE_CONTROL, CASE_SET, CONTROL_SET, PAIRED, PAIRED_TUMOR, AGGREGATE, TIME_SERIES, FAMILY, TRIO, COLLECTION", required = false, arity = 1)
         public String type;
+    
+        @Parameter(names = {"--tags"}, description = "The body web service tags parameter", required = false, arity = 1)
+        public String tags;
     
         @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String description;

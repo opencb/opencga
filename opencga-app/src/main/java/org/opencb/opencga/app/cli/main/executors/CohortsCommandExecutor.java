@@ -236,6 +236,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
             putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
             putNestedIfNotNull(beanParams, "type", commandOptions.type, true);
+            putNestedIfNotNull(beanParams, "tags", commandOptions.tags, true);
             putNestedIfNotEmpty(beanParams, "description", commandOptions.description, true);
             putNestedIfNotEmpty(beanParams, "creationDate", commandOptions.creationDate, true);
             putNestedIfNotEmpty(beanParams, "modificationDate", commandOptions.modificationDate, true);
@@ -321,6 +322,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "id", commandOptions.bodyId, true);
             putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
             putNestedIfNotNull(beanParams, "type", commandOptions.type, true);
+            putNestedIfNotNull(beanParams, "tags", commandOptions.tags, true);
             putNestedIfNotEmpty(beanParams, "description", commandOptions.description, true);
             putNestedIfNotEmpty(beanParams, "creationDate", commandOptions.bodyCreationDate, true);
             putNestedIfNotEmpty(beanParams, "modificationDate", commandOptions.bodyModificationDate, true);
@@ -447,6 +449,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
             putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
             putNestedIfNotNull(beanParams, "type", commandOptions.type, true);
+            putNestedIfNotNull(beanParams, "tags", commandOptions.tags, true);
             putNestedIfNotEmpty(beanParams, "description", commandOptions.description, true);
             putNestedIfNotEmpty(beanParams, "creationDate", commandOptions.creationDate, true);
             putNestedIfNotEmpty(beanParams, "modificationDate", commandOptions.modificationDate, true);

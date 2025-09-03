@@ -557,9 +557,8 @@ public class VariantFileIndexerOperationManager extends OperationManager {
 
     private Cohort createDefaultCohort(String studyFqn, String sessionId) throws CatalogException {
         return catalogManager.getCohortManager().create(studyFqn, new CohortCreateParams(StudyEntry.DEFAULT_COHORT,
-                        "", Enums.CohortType.COLLECTION, DEFAULT_COHORT_DESCRIPTION, null, null, Collections.emptyList(), null, null, null),
-                null, null,
-                QueryOptions.empty(), sessionId).first();
+                        "", Enums.CohortType.COLLECTION, Collections.emptyList(), DEFAULT_COHORT_DESCRIPTION, null, null,
+                        Collections.emptyList(), null, null, null), null, null, QueryOptions.empty(), sessionId).first();
     }
 
     private void updateDefaultCohortStatus(Study study, StorageEngineException exception, String sessionId) throws CatalogException {
