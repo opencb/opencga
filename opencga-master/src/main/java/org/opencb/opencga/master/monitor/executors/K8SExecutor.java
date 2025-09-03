@@ -122,7 +122,8 @@ public class K8SExecutor implements BatchExecutor {
     public K8SExecutor(Configuration configuration, ExecutionQueue executionQueue) {
         Execution execution = configuration.getAnalysis().getExecution();
         String k8sClusterMaster = execution.getOptions().getString(K8S_MASTER_NODE);
-        this.namespace = execution.getOptions().getString(K8S_NAMESPACE);
+//        this.namespace = execution.getOptions().getString(K8S_NAMESPACE);
+        this.namespace = executionQueue.getId();
         this.imageName = execution.getOptions().getString(K8S_IMAGE_NAME);
         this.volumeMounts = buildVolumeMounts(execution.getOptions().getList(K8S_VOLUME_MOUNTS));
         this.volumes = buildVolumes(execution.getOptions().getList(K8S_VOLUMES));
@@ -134,7 +135,7 @@ public class K8SExecutor implements BatchExecutor {
                 // Read timeout in ms
                 .withRequestTimeout(execution.getOptions().getInt(K8S_CLIENT_TIMEOUT, 30000))
                 .build();
-        this.kubernetesClient = new DefaultKubernetesClient(k8sConfig).inNamespace(executionQueue.getId());
+        this.kubernetesClient = new DefaultKubernetesClient(k8sConfig).inNamespace(namespace);
         this.imagePullPolicy = execution.getOptions().getString(K8S_IMAGE_PULL_POLICY, "IfNotPresent");
         this.imagePullSecrets = buildLocalObjectReference(execution.getOptions().get(K8S_IMAGE_PULL_SECRETS));
         this.ttlSecondsAfterFinished = execution.getOptions().getInt(K8S_TTL_SECONDS_AFTER_FINISHED, 3600);
