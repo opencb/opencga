@@ -54,8 +54,6 @@ jobs:
               echo "opencga_branch=${opencga_branch}" >> $GITHUB_OUTPUT
             fi
           fi
-          echo "OpenCGA branch: __\"${opencga_branch}\"__" | tee -a ${GITHUB_STEP_SUMMARY}
-          echo "OpenCGA branch: __\"${opencga_branch}\"__"
       - uses: actions/checkout@v4
         with:
           repository: opencb/opencga
@@ -70,11 +68,11 @@ jobs:
           cache: 'maven'
       - name: OpenCGA Enterprise Maven Build (skip tests)
         run: |
-          branch_name=$(git rev-parse --abbrev-ref HEAD)
           if [ -n "${{ inputs.task }}" ]; then
-              branch_name="${{ inputs.task }}"           
+              ./build.sh --storage-hadoop ${{ inputs.storage_hadoop }} -b -T "${{ inputs.task }}"
+          else
+              ./build.sh --storage-hadoop ${{ inputs.storage_hadoop }} -b
           fi
-          ./build.sh --storage-hadoop ${{ inputs.storage_hadoop }} -b -T "$branch_name"
       - uses: actions/upload-artifact@v4
         with:
           name: build-folder
