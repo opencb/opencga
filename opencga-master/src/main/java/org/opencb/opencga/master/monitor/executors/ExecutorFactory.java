@@ -41,7 +41,7 @@ public class ExecutorFactory implements Closeable {
         this.queueToExecutorMap = new HashMap<>();
         this.executor = new HashMap<>();
 
-        Set<String> executorIds = new HashSet<>();
+        Set<ExecutionQueue> executorQueues = new HashSet<>();
         if (CollectionUtils.isNotEmpty(configuration.getAnalysis().getExecution().getQueues())) {
             for (ExecutionQueue queue : configuration.getAnalysis().getExecution().getQueues()) {
                 if (StringUtils.isEmpty(queue.getId())) {
@@ -54,16 +54,16 @@ public class ExecutorFactory implements Closeable {
                     throw new IllegalArgumentException("Queue " + queue.getId() + " is already defined");
                 }
                 queueToExecutorMap.put(queue.getId(), queue.getExecutor().toLowerCase());
-                executorIds.add(queue.getExecutor());
+                executorQueues.add(queue);
             }
         } else {
             queueToExecutorMap.put("default", "local");
-            executorIds.add("local");
+            executorQueues.add(new ExecutionQueue().setId("local"));
         }
 
         Execution execution = configuration.getAnalysis().getExecution();
-        for (String executorId : executorIds) {
-            switch (executorId) {
+        for (ExecutionQueue executorQueue : executorQueues) {
+            switch (executorQueue.getId()) {
                 case "local":
                     LocalExecutor localExecutor = new LocalExecutor(execution);
                     this.executor.put("local", localExecutor);
@@ -78,11 +78,11 @@ public class ExecutorFactory implements Closeable {
 //                break;
                 case "k8s":
                 case "kubernetes":
-                    K8SExecutor k8SExecutor = new K8SExecutor(configuration);
-                    this.executor.put(executorId, k8SExecutor);
+                    K8SExecutor k8SExecutor = new K8SExecutor(configuration, executorQueue);
+                    this.executor.put(executorQueue.getId(), k8SExecutor);
                     break;
                 default:
-                    throw new UnsupportedOperationException("Unsupported execution mode { " + executorId
+                    throw new UnsupportedOperationException("Unsupported execution mode { " + executorQueue.getId()
                             + " }, accepted modes are : local, sge, k8s, kubernetes");
             }
         }
