@@ -221,19 +221,19 @@ analysis:
       - id: "scpu"
         executor: "k8s"
         description: "Small queue for execution"
-        type: "CPU"
+        processorType: "CPU"
         cpu: 8
         memory: "32G"
       - id: "mcpu"
         executor: "k8s"
         description: "Medium queue for execution"
-        type: "CPU"
+        processorType: "CPU"
         cpu: 16
         memory: "64G"
       - id: "sgpu"
         executor: "k8s"
         description: "Small queue for GPU executions"
-        type: "GPU"
+        processorType: "GPU"
         cpu: 6
         memory: "112G"
     defaultRequest:

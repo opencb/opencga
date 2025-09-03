@@ -14,7 +14,7 @@ public class ExecutionQueue {
     @DataField(id = "description", description = "Description of the queue")
     private String description;
 
-    @DataField(id = "type", description = "Execution type for the queue")
+    @DataField(id = "processorType", description = "Execution type for the queue")
     private ProcessorType processorType;
 
     @DataField(id = "cpu", description = "Number of CPUs allocated for this queue")
