@@ -76,11 +76,12 @@ jobs:
           ./build.sh --storage-hadoop ${{ inputs.storage_hadoop }} -b -T "$branch_name"
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.artifact_name }}
+          name: build-folder
           path: build
-      - id: get_project_version
-        name: Get project version
-        run: |
-          echo "version=`mvn help:evaluate -q -Dexpression=project.version -DforceStdout`" >> $GITHUB_OUTPUT
-      - name: test-version-from-check
-        run: echo "Project version is " ${{ steps.get_project_version.outputs.version }}
+
+  deploy-emr13-docker:
+    uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
+    needs:  build
+    secrets: inherit
+    with:
+      artifact_name: build-folder
