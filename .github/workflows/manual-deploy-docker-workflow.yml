@@ -25,11 +25,6 @@ on:
           - hdi5.1
           - emr6.1
           - emr6.13
-      release:
-        type: boolean
-        required: false
-        default: ""
-
 
 jobs:
   build:
@@ -72,7 +67,7 @@ jobs:
           name: build-folder
           path: build
 
-  deploy-emr13-docker:
+  deploy-docker:
     uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
     needs:  build
     secrets: inherit
