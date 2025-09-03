@@ -37,7 +37,6 @@ import org.opencb.commons.run.Task;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.BatchUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.adaptors.*;
@@ -73,6 +72,7 @@ import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.re
  */
 public class VariantStorageMetadataManager implements AutoCloseable {
     public static final String SECONDARY_INDEX_PREFIX = "__SECONDARY_INDEX_COHORT_";
+    public static final int DUPLICATED_NAME_ID = -999;
 
     protected static Logger logger = LoggerFactory.getLogger(VariantStorageMetadataManager.class);
 
@@ -151,7 +151,29 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             }
         });
 
-        fileIdCache = new MetadataCache<>(fileDBAdaptor::getFileId);
+        fileIdCache = new MetadataCache<>((studyId, file) -> {
+            Integer fileId = fileDBAdaptor.getFileId(studyId, file);
+            if (fileId == null && file.contains("/")) {
+                // Input is a file path. Try reading by fileName. Then ensure that the filePath matches.
+                String fileName = Paths.get(file).getFileName().toString();
+                fileId = fileDBAdaptor.getFileId(studyId, fileName);
+                if (fileId == null) {
+                    return null;
+                } else if (fileId == DUPLICATED_NAME_ID) {
+                    // The fileName exists, but it's duplicated. Input filePath doesn't exist
+                    return null;
+                } else {
+                    FileMetadata fileMetadata = fileDBAdaptor.getFileMetadata(studyId, fileId, null);
+                    if (fileMetadata.getPath().equals(file)) {
+                        return fileId;
+                    } else {
+                        // FileName exists, but in a different path!
+                        return null;
+                    }
+                }
+            }
+            return fileId;
+        });
         fileNameCache = new MetadataCache<>((studyId, fileId) -> {
             FileMetadata fileMetadata = fileDBAdaptor.getFileMetadata(studyId, fileId, null);
             if (fileMetadata == null) {
@@ -275,6 +297,17 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 return t;
             };
         }
+    }
+
+    public void renameStudy(int studyId, String newStudyName) throws StorageEngineException {
+        updateStudyMetadata(studyId, studyMetadata -> {
+            String currentStudyName = studyMetadata.getName();
+            studyMetadata.setName(newStudyName);
+            studyMetadata.getAttributes().put("rename_" + TimeUtils.getTime(), new ObjectMap()
+                    .append("newName", newStudyName)
+                    .append("oldName", currentStudyName)
+            );
+        });
     }
 
     public <E extends Exception> StudyMetadata updateStudyMetadata(Object study, UpdateConsumer<StudyMetadata, E> updater)
@@ -679,6 +712,50 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         }
     }
 
+    public void renameFile(int studyId, int fileId, String newFileName) throws StorageEngineException {
+        moveFile(studyId, fileId, newFileName, null);
+    }
+
+    public void moveFile(int studyId, int fileId, Path newFilePath) throws StorageEngineException {
+        moveFile(studyId, fileId, newFilePath.getFileName().toString(), newFilePath.toString());
+    }
+
+    private void moveFile(int studyId, int fileId, String newFileName, String newFilePath) throws StorageEngineException {
+        if (StringUtils.isEmpty(newFileName)) {
+            throw new IllegalArgumentException("File name can not be empty");
+        }
+        Integer existingFileId = getFileIdOrDuplicated(studyId, newFileName);
+        boolean newFileNameExists = existingFileId != null;
+        if (newFileNameExists) {
+            if (existingFileId != DUPLICATED_NAME_ID) {
+                markFileAsDuplicated(studyId, existingFileId);
+            } // else {} // Already marked as duplicated
+        }
+        updateFileMetadata(studyId, fileId, fileMetadata -> {
+            String currentName = fileMetadata.getName();
+            String currentPath = fileMetadata.getPath();
+            String newPath = newFilePath;
+            if (newPath == null) {
+                newPath = Paths.get(currentPath).getParent().resolve(newFileName).toString();
+            }
+            if (fileMetadata.isDuplicatedName() || newFileNameExists) {
+                // FileName is duplicated
+                fileMetadata.setDuplicatedName(newFileName);
+                fileMetadata.setName(newPath);
+                fileMetadata.setPath(newPath);
+            } else {
+                fileMetadata.setName(newFileName);
+                fileMetadata.setPath(newPath);
+            }
+            fileMetadata.getAttributes().put("rename_" + TimeUtils.getTime(), new ObjectMap()
+                    .append("newName", newFileName)
+                    .append("oldName", currentName)
+                    .append("oldPath", currentPath)
+                    .append("newPath", newPath)
+            );
+        });
+    }
+
     public void unsecureUpdateFileMetadata(int studyId, FileMetadata file) {
         file.setStudyId(studyId);
         fileDBAdaptor.updateFileMetadata(studyId, file, null);
@@ -699,6 +776,25 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     private Integer getFileId(int studyId, String fileName) {
+        Integer fileId = getFileIdOrDuplicated(studyId, fileName);
+        if (fileId != null) {
+            if (fileId == DUPLICATED_NAME_ID) {
+                throw VariantQueryException.fileNotFoundDuplicatedName(fileName, getStudyName(studyId));
+            }
+        }
+        return fileId;
+    }
+
+    private boolean isFileNameDuplicated(int studyId, String fileName) {
+        Integer fileId = getFileIdOrDuplicated(studyId, fileName);
+        return fileId != null && fileId == DUPLICATED_NAME_ID;
+    }
+
+    private boolean fileExists(int studyId, String fileName) {
+        return getFileIdOrDuplicated(studyId, fileName) != null;
+    }
+
+    private Integer getFileIdOrDuplicated(int studyId, String fileName) {
         checkName("File name", fileName);
         // Allow fileIds as fileName
         if (StringUtils.isNumeric(fileName)) {
@@ -730,9 +826,9 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
     private Integer getFileId(int studyId, Object fileObj, boolean onlyIndexed, boolean validate) {
         if (fileObj instanceof URI) {
-            fileObj = UriUtils.fileName(((URI) fileObj));
+            fileObj = ((URI) fileObj).getPath();
         } else if (fileObj instanceof Path) {
-            fileObj = ((Path) fileObj).getFileName().toString();
+            fileObj = ((Path) fileObj).toAbsolutePath().toString();
         }
         Integer fileId = parseResourceId(studyId, fileObj,
                 o -> getFileId(studyId, o),
@@ -1785,21 +1881,25 @@ public class VariantStorageMetadataManager implements AutoCloseable {
      * @throws StorageEngineException if the file is not valid for being loaded
      */
     private int registerFile(int studyId, String filePath, FileMetadata.Type type) throws StorageEngineException {
-
+        Integer fileId = getFileId(studyId, filePath);
+        if (fileId != null) {
+            return fileId;
+        }
         String fileName = Paths.get(filePath).getFileName().toString();
-        Integer fileId = getFileId(studyId, fileName);
+        fileId = getFileIdOrDuplicated(studyId, fileName);
 
         if (fileId != null) {
-            updateFileMetadata(studyId, fileId, fileMetadata -> {
-                if (fileMetadata.getIndexStatus() == TaskMetadata.Status.INVALID) {
-                    throw StorageEngineException.invalidFileStatus(fileMetadata.getId(), fileName);
-                }
-                if (fileMetadata.isIndexed()) {
-                    throw StorageEngineException.alreadyLoaded(fileMetadata.getId(), fileName);
-                }
-
-                // The file is not loaded. Check if it's being loaded.
-                if (!fileMetadata.getPath().equals(filePath)) {
+            if (fileId != DUPLICATED_NAME_ID) {
+                FileMetadata fileMetadata = getFileMetadata(studyId, fileId);
+                if (fileMetadata.getPath().equals(filePath)) {
+                    if (fileMetadata.getIndexStatus() == TaskMetadata.Status.INVALID) {
+                        throw StorageEngineException.invalidFileStatus(fileMetadata.getId(), fileName);
+                    }
+                    if (fileMetadata.isIndexed()) {
+                        throw StorageEngineException.alreadyLoaded(fileMetadata.getId(), fileName);
+                    }
+                } else {
+                    // The file is not loaded. Check if it's being loaded.
 //                    // Only register if the file is being loaded. Otherwise, replace the filePath
 //                    Iterator<TaskMetadata> iterator = taskIterator(studyId, null, true);
 //                    while (iterator.hasNext()) {
@@ -1814,16 +1914,39 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 //                            }
 //                        }
 //                    }
-                    if (fileMetadata.getIndexStatus().equals(TaskMetadata.Status.NONE)) {
+                    if (fileMetadata.getIndexStatus() == TaskMetadata.Status.NONE) {
+                        // FIXME: What if the file is being transformed?!?
                         // Replace filePath
-                        fileMetadata.setPath(filePath);
+                        updateFileMetadata(studyId, fileId, fm -> {
+                            fm.setPath(filePath);
+                        });
                     } else {
-                        throw StorageEngineException.unableToExecute("Already registered with a different path",
-                                fileMetadata.getId(), fileName);
+                        if (!fileMetadata.isDuplicatedName()) {
+                            markFileAsDuplicated(studyId, fileId);
+                        }
+                        fileIdCache.clear();
+                        fileNameCache.clear();
+                        fileId = DUPLICATED_NAME_ID;
                     }
                 }
-            });
+            }
+            // Don't use an "else" statement here, as fileId might have been modified
+            if (fileId == DUPLICATED_NAME_ID) {
+                logger.info("A file with name '{}' is already indexed. Register new file with file path as file name", fileName);
+                // Found file metadata with same name but different path. Need to create the new file.
+                fileId = newFileId(studyId);
+                try (Lock lock = lockStudy(studyId)) {
+                    FileMetadata fm = new FileMetadata()
+                            .setId(fileId)
+                            .setName(filePath)
+                            .setPath(filePath)
+                            .setDuplicatedName(fileName)
+                            .setType(type);
+                    unsecureUpdateFileMetadata(studyId, fm);
+                }
+            }
         } else {
+            getFileIdOrDuplicated(studyId, filePath);
             fileId = newFileId(studyId);
             try (Lock lock = lockStudy(studyId)) {
                 FileMetadata fileMetadata = new FileMetadata()
@@ -1836,6 +1959,14 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         }
 
         return fileId;
+    }
+
+    private void markFileAsDuplicated(int studyId, int fileId) throws StorageEngineException {
+        updateFileMetadata(studyId, fileId, fm -> {
+            logger.info("Mark file '{}' as duplicated file name", fm.getPath());
+            fm.setDuplicatedName(fm.getName());
+            fm.setName(fm.getPath());
+        });
     }
 
     public FileMetadata registerVirtualFile(int studyId, String virtualFileName) throws StorageEngineException {

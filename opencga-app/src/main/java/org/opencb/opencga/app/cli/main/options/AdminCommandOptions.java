@@ -36,6 +36,7 @@ public class AdminCommandOptions {
         public GroupByAuditCommandOptions groupByAuditCommandOptions;
         public InstallCatalogCommandOptions installCatalogCommandOptions;
         public JwtCatalogCommandOptions jwtCatalogCommandOptions;
+        public UpdateCatalogWorkspaceCommandOptions updateCatalogWorkspaceCommandOptions;
         public FetchResourceCommandOptions fetchResourceCommandOptions;
         public CreateUsersCommandOptions createUsersCommandOptions;
         public ImportUsersCommandOptions importUsersCommandOptions;
@@ -52,6 +53,7 @@ public class AdminCommandOptions {
         this.groupByAuditCommandOptions = new GroupByAuditCommandOptions();
         this.installCatalogCommandOptions = new InstallCatalogCommandOptions();
         this.jwtCatalogCommandOptions = new JwtCatalogCommandOptions();
+        this.updateCatalogWorkspaceCommandOptions = new UpdateCatalogWorkspaceCommandOptions();
         this.fetchResourceCommandOptions = new FetchResourceCommandOptions();
         this.createUsersCommandOptions = new CreateUsersCommandOptions();
         this.importUsersCommandOptions = new ImportUsersCommandOptions();
@@ -134,6 +136,26 @@ public class AdminCommandOptions {
     
         @Parameter(names = {"--secret-key"}, description = "The body web service secretKey parameter", required = false, arity = 1)
         public String secretKey;
+    
+    }
+
+    @Parameters(commandNames = {"catalog-workspace-update"}, commandDescription ="Update the OpenCGA Catalog workspace")
+    public class UpdateCatalogWorkspaceCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--old-workspace"}, description = "The body web service oldWorkspace parameter", required = false, arity = 1)
+        public String oldWorkspace;
+    
+        @Parameter(names = {"--new-workspace"}, description = "The body web service newWorkspace parameter", required = false, arity = 1)
+        public String newWorkspace;
     
     }
 

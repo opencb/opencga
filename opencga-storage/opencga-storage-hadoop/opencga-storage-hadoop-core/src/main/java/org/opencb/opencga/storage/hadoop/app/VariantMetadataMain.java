@@ -6,11 +6,12 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.io.plain.StringDataReader;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.*;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
@@ -21,6 +22,8 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.URI;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -62,7 +65,8 @@ public class VariantMetadataMain extends AbstractMain {
             addSubCommand(Arrays.asList("study-metadata", "sm", "study", "studies"), "[help|list|id|read|write|replace|rename] "
                             + "<metadata_table> ..",
                     new StudyCommandExecutor());
-            addSubCommand(Arrays.asList("file-metadata", "fm", "file", "files"), "[help|list|id|read|write] <metadata_table> ...",
+            addSubCommand(Arrays.asList("file-metadata", "fm", "file", "files"), "[help|list|id|read|write|rename|move|move-bulk] "
+                            + "<metadata_table> ...",
                     new FileCommandExecutor());
             addSubCommand(Arrays.asList("variant-file-metadata", "vfm"), "[help|list|id|read|write] <metadata_table> ...",
                     new VariantFileCommandExecutor());
@@ -206,13 +210,7 @@ public class VariantMetadataMain extends AbstractMain {
                 throw new IllegalStateException("New study name already exists!");
             }
             int studyId = mm.getStudyId(currentStudyName);
-            mm.updateStudyMetadata(studyId, studyMetadata -> {
-                studyMetadata.setName(newStudyName);
-                studyMetadata.getAttributes().put("rename_" + TimeUtils.getTime(), new ObjectMap()
-                        .append("newName", newStudyName)
-                        .append("oldName", currentStudyName)
-                );
-            });
+            mm.renameStudy(studyId, newStudyName);
         }
     }
 
@@ -222,6 +220,9 @@ public class VariantMetadataMain extends AbstractMain {
             addSubCommand(Collections.singletonList("create-virtual-file"),
                     "<metadata_table> <study> " + new CreateVirtualFileParams().toCliHelp(), this::createVirtualFile);
             addSubCommand(Collections.singletonList("list-indexed"), "<metadata_table> <study> [--includePartial]", this::listIndexed);
+            addSubCommand(Arrays.asList("rename"), "<metadata_table> <study> <currentFileName> <newFileName>", this::rename);
+            addSubCommand(Arrays.asList("move", "mv"), "<metadata_table> <study> <currentFileName> <newFilePath>", this::move);
+            addSubCommand(Arrays.asList("move-bulk"), "<metadata_table> <study> <mapping-file.tsv> [--ignoreMissing]", this::moveBulk);
         }
 
         @Override
@@ -242,6 +243,66 @@ public class VariantMetadataMain extends AbstractMain {
         @Override
         protected void write(int studyId, FileMetadata file) {
             mm.unsecureUpdateFileMetadata(studyId, file);
+        }
+
+        protected void rename(String[] args) throws Exception {
+            int studyId = mm.getStudyId(getArg(args, 1));
+            String currentFileName = getArg(args, 2);
+            String newFileName = getArg(args, 3);
+
+            int fileId = mm.getFileIdOrFail(studyId, currentFileName);
+            mm.renameFile(studyId, fileId, newFileName);
+        }
+
+        protected void move(String[] args) throws Exception {
+            int studyId = mm.getStudyId(getArg(args, 1));
+            String currentFileName = getArg(args, 2);
+            String newFilePath = getArg(args, 3);
+
+            int fileId = mm.getFileIdOrFail(studyId, currentFileName);
+            mm.moveFile(studyId, fileId, Paths.get(newFilePath));
+        }
+
+        protected void moveBulk(String[] args) throws Exception {
+            int studyId = mm.getStudyId(getArg(args, 1));
+            String mappingFile = getArg(args, 2);
+            boolean ignoreMissing = getArgsMap(args, 3, "ignoreMissing").getBoolean("ignoreMissing", false);
+
+            long numFiles = new StringDataReader(Paths.get(mappingFile)).stream()
+                    .filter(line-> !(line.isEmpty() || line.startsWith("#")))
+                    .count();
+            ProgressLogger progressLogger = new ProgressLogger("Moving files", numFiles);
+
+            for (String line : new StringDataReader(Paths.get(mappingFile))) {
+                if (line.isEmpty() || line.startsWith("#")) {
+                    continue;
+                }
+                String[] kv = line.split("\t");
+                if (kv.length != 2) {
+                    throw new IllegalArgumentException("Invalid mapping line: " + line);
+                }
+                progressLogger.increment(1);
+                String currentFilePath = kv[0];
+                String newFilePath = kv[1];
+
+                if (currentFilePath.startsWith("file:/")) {
+                    currentFilePath = URI.create(currentFilePath).getPath();
+                }
+                if (newFilePath.startsWith("file:/")) {
+                    newFilePath = URI.create(newFilePath).getPath();
+                }
+
+                Integer fileId = mm.getFileId(studyId, currentFilePath);
+                if (fileId == null) {
+                    if (ignoreMissing) {
+                        LOGGER.warn("File '{}' does not exist in study {}. Skipping.", currentFilePath, studyId);
+                        continue;
+                    } else {
+                        throw new IllegalArgumentException("File '" + currentFilePath + "' does not exist in study " + studyId);
+                    }
+                }
+                mm.moveFile(studyId, fileId, Paths.get(newFilePath));
+            }
         }
 
         public static class CreateVirtualFileParams extends ToolParams {

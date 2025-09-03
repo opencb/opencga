@@ -148,6 +148,50 @@ public class AdminManager extends AbstractManager {
 
     }
 
+    public OpenCGAResult<Boolean> updateWorkspace(String oldInstallationDirectory, String newInstallationDirectory, String token)
+            throws CatalogException {
+        ObjectMap auditParams = new ObjectMap()
+                .append("oldDirectory", oldInstallationDirectory)
+                .append("newDirectory", newInstallationDirectory)
+                .append("token", token);
+        StopWatch stopWatch = StopWatch.createStarted();
+
+        JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
+        try {
+            authorizationManager.checkIsOpencgaAdministrator(jwtPayload);
+
+            if (!configuration.getWorkspace().contains(newInstallationDirectory)
+                    && !newInstallationDirectory.contains(configuration.getWorkspace())) {
+                throw new CatalogException("The new installation directory '" + newInstallationDirectory
+                        + "' must be contained within the workspace directory '" + configuration.getWorkspace() + "'. Please, first "
+                        + "change the workspace directory in the configuration file.");
+            }
+        } catch (CatalogException e) {
+            auditManager.audit(ParamConstants.ADMIN_ORGANIZATION, jwtPayload.getUserId(), Enums.Action.UPDATE_WORKSPACE_URI,
+                    Enums.Resource.ORGANIZATION, "", "", "", "", auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+
+        for (String organizationId : getCatalogDBAdaptorFactory().getOrganizationIds()) {
+            try {
+                getCatalogDBAdaptorFactory().getCatalogStudyDBAdaptor(organizationId)
+                        .updateWorkspaceUri(oldInstallationDirectory, newInstallationDirectory);
+
+                auditManager.audit(organizationId, jwtPayload.getUserId(), Enums.Action.UPDATE_WORKSPACE_URI,
+                        Enums.Resource.ORGANIZATION, "", "", "", "", auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            } catch (CatalogException e) {
+                auditManager.audit(organizationId, jwtPayload.getUserId(), Enums.Action.UPDATE_WORKSPACE_URI,
+                        Enums.Resource.ORGANIZATION, "", "", "", "", auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+                throw e;
+            }
+        }
+
+        return new OpenCGAResult<>((int) stopWatch.getTime(TimeUnit.MILLISECONDS), Collections.singletonList(true));
+    }
+
     /**
      * Add a user to all the remote groups he/she may belong for a particular authentication origin.
      * Also remove the user from other groups he/she may have been associated in the past for the same authentication origin.

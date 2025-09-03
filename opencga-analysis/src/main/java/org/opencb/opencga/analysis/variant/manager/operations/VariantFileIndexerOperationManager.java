@@ -236,7 +236,8 @@ public class VariantFileIndexerOperationManager extends OperationManager {
         String virtualFile = null;
         for (File fileToIndex : filesToIndex) {
             if (!fileNamesToIndexSet.add(fileToIndex.getName())) {
-                throw new CatalogException("Unable to " + step + " multiple files with the same name");
+                throw new CatalogException("Unable to " + step + " multiple files with the same name in the same job. "
+                        + "Please split into multiple jobs.");
             }
             if (FileUtils.isPartial(fileToIndex)) {
                 String thisVirtualFile = FileUtils.getVirtualFileFromPartial(fileToIndex).getName();
@@ -369,15 +370,15 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                                 Integer release, boolean saveIntermediateFiles, ObjectMap options, String sessionId)
             throws CatalogException, IOException {
 
-        Map<String, StoragePipelineResult> map;
+        Map<URI, StoragePipelineResult> map;
         try {
             map = storagePipelineResults
                     .stream()
                     .collect(Collectors.toMap(s -> {
                         String input = s.getInput().getPath();
-                        String inputFileName = Paths.get(input).getFileName().toString();
+                        String inputFileName = Paths.get(input).toString();
                         // Input file may be the transformed one. Convert into original file.
-                        return VariantReaderUtils.getOriginalFromTransformedFile(inputFileName);
+                        return UriUtils.createUriSafe(VariantReaderUtils.getOriginalFromTransformedFile(inputFileName));
                     }, i -> i));
         } catch (IllegalStateException e) {
             throw e;
@@ -387,7 +388,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
             // Fetch from catalog. {@link #copyResult} may modify the content
             indexedFile = catalogManager.getFileManager().get(study, indexedFile.getId(), null, sessionId).first();
             // Suppose that the missing results are due to errors, and those files were not indexed.
-            StoragePipelineResult storagePipelineResult = map.get(indexedFile.getName());
+            StoragePipelineResult storagePipelineResult = map.get(indexedFile.getUri());
 
             boolean jobFailed = storagePipelineResult == null || storagePipelineResult.getLoadError() != null
                     || storagePipelineResult.getTransformError() != null;

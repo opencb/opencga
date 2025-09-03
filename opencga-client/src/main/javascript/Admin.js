@@ -69,6 +69,14 @@ export default class Admin extends OpenCGAParentClass {
         return this._post("admin", null, "catalog", null, "jwt", data, params);
     }
 
+    /** Update the OpenCGA Catalog workspace
+    * @param {Object} data - JSON containing the workspace parameters.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    updateCatalogWorkspace(data) {
+        return this._post("admin", null, "catalog/workspace", null, "update", data);
+    }
+
     /** Fetch resources from the public server and save them into the OpenCGA local installation
     * @param {Object} data - Download-resources tool parameters.
     * @param {Object} [params] - The Object containing the following optional parameters:

@@ -56,6 +56,10 @@ public class UriUtils {
             if (HAS_SCHEMA.matcher(input).matches()) {
                 // Already a URI. Assume it is already escaped.
                 // Avoid double code escaping
+                // Replace file:/ with file:/// when necessary
+                if (input.startsWith("file:/") && !input.startsWith("file://")) {
+                    input = "file:///" + input.substring("file:/".length());
+                }
                 sourceUri = new URI(input);
             } else {
                 // Assume direct path name.

@@ -43,6 +43,8 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
  */
 public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
 
+    String SKIP_MOVE_FILE = "_SKIP_MOVE_FILE";
+
     enum QueryParams implements QueryParam {
         ID("id", TEXT, ""),
         UID("uid", INTEGER_ARRAY, ""),
