@@ -110,12 +110,7 @@ function manage_dependency() {
       log "Testing $REPO branch $BRANCH_NAME."
       local pwd=$(pwd)
       echo "${pwd} $REPO" >> "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
-      if [ "$REPO" == "cellbase" ]; then
-        log "mvn install surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip -DJUNIT.CELLBASE.DB.MONGODB.HOST=${DB_CELLBASE} --no-transfer-progress $MVN_OPTS"
-        mvn install -B surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip -DJUNIT.CELLBASE.DB.MONGODB.HOST=${DB_CELLBASE} --no-transfer-progress $MVN_OPTS
-      else
-        mvn install -B surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip --no-transfer-progress $MVN_OPTS
-      fi
+      mvn install -B surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip --no-transfer-progress $MVN_OPTS
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND $REPO with $VERSION in $BRANCH_NAME FAILED!!!!!"
       else
@@ -160,7 +155,6 @@ function print_usage() {
   echo "     -s     --test-save-reports   FLAG           Save OpenCGA JUnit test reports to XetaBase Report server (Quality Team)."
   echo "     -d     --docker              FLAG           Publish docker of OpenCGA-enterprise."
   echo "     -p     --docker-tag          FLAG           Tag for docker of OpenCGA-enterprise."
-  echo "     -c     --cellbase-db         STRING         Connection to mongodb to test cellbase (host:port)."
   echo "     -A     --activate-profiles   STRING         Comma delimited list of profiles to activate."
   echo "     -P     --python-client       STRING         Also builds opencga-enterprise python client"
   echo "     -W     --javascript-client   STRING         Also builds opencga-enterprise javascript client."
@@ -241,7 +235,7 @@ function validate() {
       -pl :opencga $MVN_OPTS || (error "OpenCGA storage hadoop '$STORAGE_HADOOP_DEPS' not found!" && exit 1)
 }
 
-# Function to download and compile java-common-libs, cellbase and biodata dependencies
+# Function to download and compile java-common-libs and biodata dependencies
 function prepare_branches() {
   ## Only if you pass the parameter: --prepare-branch -b
 
@@ -253,10 +247,6 @@ function prepare_branches() {
     BIODATA_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=biodata.version -q -DforceStdout $MVN_OPTS)"
     echo "Downloading and compiling biodata $BIODATA_DEPENDENCY_VERSION"
     manage_dependency "biodata" "$BIODATA_DEPENDENCY_VERSION"
-
-    CELLBASE_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=cellbase.version -q -DforceStdout $MVN_OPTS)"
-    echo "Downloading and compiling cellbase $CELLBASE_DEPENDENCY_VERSION"
-    manage_dependency "cellbase" "$CELLBASE_DEPENDENCY_VERSION"
   else
     log_summary "Skipped prepare branches"
   fi
@@ -552,7 +542,6 @@ if [[ -n "$value" ]]; then
 # Function to log parameters and global variables
 function log_initial_state() {
     log_param_summary "COMMAND,$COMMAND"
-    log_param_summary "DB_CELLBASE,$DB_CELLBASE"
     log_param_summary "OPENCGA_HOME_DIR,$OPENCGA_HOME_DIR"
     log_param_summary "STORAGE_HADOOP_DEPS,$STORAGE_HADOOP_DEPS"
     log_param_summary "TEST_TAG,$TEST_TAG"
@@ -691,7 +680,6 @@ function print_log() {
 
 # Initialize the global variable LOG_SUMMARY
 LOG_SUMMARY=""
-DB_CELLBASE="localhost:27017"
 OPENCGA_HOME_DIR="$PWD/opencga-home/"
 STORAGE_HADOOP_DEPS="hdp3.1"
 TEST_TAG="runShortTests"
@@ -733,6 +721,7 @@ while [[ $# -gt 0 ]]; do
     ;;
   -c | --cellbase-db)
     DB_CELLBASE="$value"
+    echo "DB_CELLBASE is a deprecated value and will be ignored"
     shift # past argument
     shift # past value
     ;;

@@ -62,12 +62,6 @@ jobs:
         with:
           username: ${{ env.DOCKER_HUB_USER }}
           password: ${{ env.DOCKER_HUB_PASSWORD }}
-      - name: K8s Tunnel MongoDB
-        run: |
-          wget https://dl.k8s.io/release/v1.28.2/bin/linux/amd64/kubectl
-          chmod +x ./kubectl
-          echo "${{ env.AZURE_KUBE_CONFIG }}" > admin.conf
-          ./kubectl -n cellbase-db port-forward services/cellbase-rs0-svc 27018:27017 --kubeconfig ./admin.conf &
       - name: Install sshpass
         run: sudo apt-get install sshpass
       - name: Prepare SSH and scan host
@@ -103,6 +97,6 @@ jobs:
         env:
           SSH_HOST: ${{ env.SSH_HOST }}
           SSH_PORT: ${{ env.SSH_PORT }}
-      - name: Run all OpenCB Junit tests, ie. java-common-libs, biodata, cellbase, opencga and opencga-enterprise
+      - name: Run all OpenCB Junit tests, ie. java-common-libs, biodata, opencga and opencga-enterprise
         run: |
-          ./build.sh -t -l runShortTests -d -b -s -T ${{ github.event.pull_request.head.ref }} -c localhost:27018 -H hdp3.1 --R-client --python-client --javascript-client
+          ./build.sh -t -l runShortTests -d -b -s -T ${{ github.event.pull_request.head.ref }} --R-client --python-client --javascript-client
