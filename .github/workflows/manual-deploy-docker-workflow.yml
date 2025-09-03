@@ -11,7 +11,6 @@ on:
         description: "The task to be built (e.g., 'TASK-1234'). Only necessary if not exists branch for enterprise in this task"
         type: string
         required: false
-        default: enterprise
       tag:
         description: "The tag for the new docker."
         type: string
