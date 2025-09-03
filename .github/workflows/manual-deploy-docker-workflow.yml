@@ -66,21 +66,15 @@ jobs:
           distribution: 'temurin'
           java-version: '8'
           cache: 'maven'
+      - name: Docker Login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
       - name: OpenCGA Enterprise Maven Build (skip tests)
         run: |
           if [ -n "${{ inputs.task }}" ]; then
-              ./build.sh -b -T "${{ inputs.task }}" --storage-hadoop ${{ inputs.hadoop }} 
+              ./build.sh -b -T "${{ inputs.task }}" --storage-hadoop ${{ inputs.hadoop }} -d -p "${{ inputs.task }}"
           else
-              ./build.sh -b --storage-hadoop ${{ inputs.hadoop }}
+              ./build.sh -b --storage-hadoop ${{ inputs.hadoop }} -d 
           fi
-      - uses: actions/upload-artifact@v4
-        with:
-          name: build-folder
-          path: build
-
-  deploy-docker:
-    uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
-    needs:  build
-    secrets: inherit
-    with:
-      artifact_name: build-folder
