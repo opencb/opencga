@@ -28,18 +28,20 @@ CLEAN_BUILD_VERSION=$(echo "$BUILD_VERSION" | cut -d "-" -f 1)
 ## Read the numbers separately to compose the name of the branch
 MAJOR=$(echo "$CLEAN_BUILD_VERSION" | cut -d "." -f 1)
 MINOR=$(echo "$CLEAN_BUILD_VERSION" | cut -d "." -f 2)
+PATCH=$(echo "$CLEAN_BUILD_VERSION" | cut -d "." -f 3)
 
 ## it's a HOTFIX. Patch is great than 0
 
-if [ "$MINOR" -gt 0 ]; then
+if [ "$PATCH" -gt 0 ]; then
   echo "release-$MAJOR.$MINOR.x"
   exit 0
 fi
 
 ## It's develop branch
 if [[ "$MINOR" ==  "0" ]]; then
+  echo "develop"
+  exit 0
+else #Is release branch
   echo "release-$MAJOR.x.x"
   exit 0
 fi
-
-echo "develop"
