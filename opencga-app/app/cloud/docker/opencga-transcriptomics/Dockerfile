@@ -87,7 +87,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends && \
     cp -r -v /opt/opencga/kallisto-0.51.1/build/src/libkallisto_core.a /usr/local/lib/ && \
     cd ../.. && \
 
-    rm -rf STAR-2.7.11b STAR-Fusion-v1.15.1 hisat2-2.2.1 salmon-1.10.1 kallisto-0.51.1 /var/lib/apt/lists/* /tmp/*
+    rm -rf STAR-2.7.11b STAR-Fusion-v1.15.1 hisat2-source.zip salmon-1.10.1 kallisto-0.51.1 /var/lib/apt/lists/* /tmp/*
 
 # Set the PATH to include the virtual environment's bin directory
 # This makes multiqc, pip, etc. available automatically
