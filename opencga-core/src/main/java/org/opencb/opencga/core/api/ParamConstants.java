@@ -395,6 +395,7 @@ public class ParamConstants {
     public static final String COHORT_NAME_PARAM = "name";
     public static final String COHORT_UUID_PARAM = "uuid";
     public static final String COHORT_TYPE_PARAM = "type";
+    public static final String COHORT_TAGS_PARAM = "tags";
     public static final String COHORT_CREATION_DATE_PARAM = CREATION_DATE_PARAM;
     public static final String COHORT_MODIFICATION_DATE_PARAM = MODIFICATION_DATE_PARAM;
     public static final String COHORT_DELETED_PARAM = DELETED_PARAM;
@@ -419,6 +420,7 @@ public class ParamConstants {
     public static final String COHORT_ACL_DESCRIPTION = ACL_PARAM;
     public static final String COHORT_SAMPLES_DESCRIPTION = "Cohort sample IDs";
     public static final String COHORT_NUMBER_OF_SAMPLES_DESCRIPTION = "Number of samples";
+    public static final String COHORT_TAGS_DESCRIPTION = "Tags" + REGEX_SUPPORT;
     public static final String COHORT_RELEASE_DESCRIPTION = RELEASE_PARAM;
     public static final String CLINICAL_ID_PARAM = "id";
     public static final String CLINICAL_UUID_PARAM = "uuid";

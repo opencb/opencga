@@ -512,6 +512,29 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             }
         }
 
+        // Check if the tags exist.
+        if (parameters.containsKey(QueryParams.TAGS.key())) {
+            List<String> tagList = parameters.getAsStringList(QueryParams.TAGS.key());
+
+            ParamUtils.BasicUpdateAction tagsOperation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.TAGS.key(),
+                    ParamUtils.BasicUpdateAction.ADD);
+            if (ParamUtils.BasicUpdateAction.SET.equals(tagsOperation) || !tagList.isEmpty()) {
+                switch (tagsOperation) {
+                    case SET:
+                        document.getSet().put(QueryParams.TAGS.key(), tagList);
+                        break;
+                    case REMOVE:
+                        document.getPullAll().put(QueryParams.TAGS.key(), tagList);
+                        break;
+                    case ADD:
+                        document.getAddToSet().put(QueryParams.TAGS.key(), tagList);
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Unknown operation " + tagsOperation);
+                }
+            }
+        }
+
         String[] acceptedObjectParams = {STATUS.key(), INTERNAL_STATUS.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         if (document.getSet().containsKey(STATUS.key())) {
@@ -956,6 +979,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                         addAutoOrQuery(QueryParams.INTERNAL_STATUS_ID.key(), queryParam.key(), finalQuery,
                                 QueryParams.INTERNAL_STATUS_ID.type(), andBsonList);
                         break;
+                    case TAGS:
                     case UUID:
                     case ID:
                     case NAME:
