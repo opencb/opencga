@@ -11,6 +11,7 @@ import org.opencb.biodata.formats.variant.cosmic.CosmicParser101;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.EvidenceEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
@@ -33,7 +34,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
@@ -84,7 +84,7 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
         this.objectReader = JacksonUtils.getDefaultObjectMapper().readerFor(new TypeReference<List<EvidenceEntry>>() {});
     }
 
-    public List<URI> setup(VariantAnnotationExtensionConfigureParams configureParams, URI outDir) throws Exception {
+    public ObjectMap setup(VariantAnnotationExtensionConfigureParams configureParams, URI outDir) throws Exception {
         ObjectMapper defaultObjectMapper = JacksonUtils.getDefaultObjectMapper();
 
         // Sanity check
@@ -115,7 +115,8 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
 
         Path cosmicConfigFile = outDirPath.resolve(COSMIC_ANNOTATOR_CONFIG_FILENAME);
         Path tmpDbLocation = outDirPath.resolve(cosmicFile.getFileName() + COSMIC_ANNOTATOR_INDEX_SUFFIX);
-        if (Files.exists(cosmicConfigFile) && Files.exists(tmpDbLocation) && Boolean.FALSE.equals(configureParams.getOverwrite())) {
+        boolean overwrite = configureParams.getOverwrite() == null ? false : configureParams.getOverwrite();
+        if (Files.exists(cosmicConfigFile) && Files.exists(tmpDbLocation) && !overwrite) {
             // Load existing config file
             VariantAnnotationExtensionConfigureParams previousParams = defaultObjectMapper.readerFor(
                     VariantAnnotationExtensionConfigureParams.class).readValue(cosmicConfigFile.toFile());
@@ -144,7 +145,7 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
 
 //            initRockDB(false);
 
-            return Collections.singletonList(dbLocation.toUri());
+            return getOptions();
         }
 
 
@@ -181,8 +182,10 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
 
         // Call COSMIC parser
         try {
-            CosmicExtensionTaskCallback callback = new CosmicExtensionTaskCallback(rdb);
-            CosmicParser101.parse(genomeScreensMutantFile, classificationFile, tmpCosmicVersion, ID, tmpCosmicVersion, callback);
+            ProgressLogger progressLogger = new ProgressLogger("Preparing RocksDB for Cosmic");
+            progressLogger.setBatchSize(10000);
+            CosmicExtensionTaskCallback callback = new CosmicExtensionTaskCallback(rdb, progressLogger);
+            CosmicParser101.parse(genomeScreensMutantFile, classificationFile, cosmicVersion, ID, cosmicAssembly, callback);
         } catch (IOException e) {
             throw new ToolException(e);
         }
@@ -210,7 +213,7 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
         }
 
 
-        return Collections.singletonList(dbLocation.toUri());
+        return getOptions();
     }
 
     @Override
@@ -315,9 +318,11 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
     private void closeRocksDB() {
         if (rdb != null) {
             rdb.close();
+            rdb = null;
         }
         if (dbOption != null) {
-            dbOption.dispose();
+            dbOption.close();
+            dbOption = null;
         }
     }
 

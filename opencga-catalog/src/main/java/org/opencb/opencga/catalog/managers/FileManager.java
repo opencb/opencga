@@ -163,11 +163,13 @@ public class FileManager extends AnnotationSetManager<File> {
         Function<File, String> fileStringFunction = File::getPath;
         boolean canBeSearchedAsName = true;
         List<String> correctedFileList = new ArrayList<>(uniqueList.size());
+        Map<String, String> entriesIdMap = new HashMap<>();
         FileDBAdaptor.QueryParams idQueryParam = null;
         for (String entry : uniqueList) {
+            final String correctedEntryId;
             FileDBAdaptor.QueryParams param = FileDBAdaptor.QueryParams.PATH;
             if (UuidUtils.isOpenCgaUuid(entry)) {
-                correctedFileList.add(entry);
+                correctedEntryId = entry;
                 param = FileDBAdaptor.QueryParams.UUID;
                 fileStringFunction = File::getUuid;
             } else {
@@ -183,7 +185,7 @@ public class FileManager extends AnnotationSetManager<File> {
                     // Remove the starting /. Absolute paths are not supported.
                     fileName = fileName.substring(1);
                 }
-                correctedFileList.add(fileName);
+                correctedEntryId = fileName;
 
                 if (fileName.contains("/")) {
                     canBeSearchedAsName = false;
@@ -192,6 +194,9 @@ public class FileManager extends AnnotationSetManager<File> {
             if (idQueryParam == null) {
                 idQueryParam = param;
             }
+            correctedFileList.add(correctedEntryId);
+            entriesIdMap.put(correctedEntryId, entry);
+
             if (idQueryParam != param) {
                 throw new CatalogException("Found uuids and paths in the same query. Please, choose one or do two different queries.");
             }
@@ -222,7 +227,16 @@ public class FileManager extends AnnotationSetManager<File> {
         if (fileDataResult.getNumResults() > correctedFileList.size()) {
             throw new CatalogException("Error: More than one file found for at least one of the files introduced");
         } else if (ignoreException || fileDataResult.getNumResults() == correctedFileList.size()) {
-            return keepOriginalOrder(correctedFileList, fileStringFunction, fileDataResult, ignoreException, false);
+            InternalGetDataResult<File> result = keepOriginalOrder(correctedFileList, fileStringFunction, fileDataResult,
+                    ignoreException, false);
+            if (result.getMissing() != null) {
+                for (InternalGetDataResult.Missing missing : result.getMissing()) {
+                    String inputId = entriesIdMap.getOrDefault(missing.getId(), missing.getId());
+                    // Ensure input Ids are preserved on "missing" object.
+                    missing.setId(inputId);
+                }
+            }
+            return result;
         } else {
             // The file could not be found or the user does not have permissions to see it
             // Check if the file can be found without adding the user restriction
@@ -928,7 +942,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 file.getSampleIds(), SampleManager.INCLUDE_SAMPLE_IDS, userId, true);
 
         existingSamples.addAll(sampleResult.getResults());
-        for (InternalGetDataResult<Sample>.Missing missing : sampleResult.getMissing()) {
+        for (InternalGetDataResult.Missing missing : sampleResult.getMissing()) {
             Sample sample = new Sample().setId(missing.getId());
             catalogManager.getSampleManager().validateNewSample(organizationId, study, sample, userId);
             nonExistingSamples.add(sample);

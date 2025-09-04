@@ -207,6 +207,16 @@ public class FileManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testSearchByIdButMissing() throws CatalogException {
+        List<String> entries = Arrays.asList("fakeFolder:fakeFile.gz", "fakeFile2.txt", "fakeThis/fakeFile3.vcf");
+        OpenCGAResult<File> result = catalogManager.getFileManager().get(studyFqn, entries, new QueryOptions(), true, normalToken1);
+        assertEquals(entries.size(), result.getEvents().size());
+        for (Event event : result.getEvents()) {
+            assertTrue(entries.contains(event.getId()));
+        }
+    }
+
+    @Test
     public void testLinkCram() throws CatalogException {
         String reference = getClass().getResource("/biofiles/cram/hg19mini.fasta").getFile();
         File referenceFile = fileManager.link(studyFqn, Paths.get(reference).toUri(), "", null, ownerToken).first();

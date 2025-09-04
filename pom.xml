@@ -154,6 +154,7 @@
         <kryo.version>2.23.0</kryo.version>
         <lombok.version>1.18.30</lombok.version>
         <maven-war-plugin.version>3.4.0</maven-war-plugin.version>
+        <rocksdbjni.version>10.2.1</rocksdbjni.version>
     </properties>
 
     <scm>
@@ -1161,7 +1162,11 @@
                 <artifactId>kryo</artifactId>
                 <version>${kryo.version}</version>
             </dependency>
-
+            <dependency>
+                <groupId>org.rocksdb</groupId>
+                <artifactId>rocksdbjni</artifactId>
+                <version>${rocksdbjni.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
