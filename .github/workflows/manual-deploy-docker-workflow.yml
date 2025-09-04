@@ -36,7 +36,7 @@ jobs:
           fetch-depth: '10'
           ref: "${{ inputs.branch }}"
       - id: get_opencga_branch
-        name: Get OpenCGA branch from pom.xml property
+        name: If not exists TASK branch get OpenCGA branch from pom.xml property
         run: |
           task_name="${{ inputs.task }}"
           # If task_name is provided and starts with "TASK-"
