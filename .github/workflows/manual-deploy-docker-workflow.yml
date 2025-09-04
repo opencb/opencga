@@ -50,7 +50,7 @@ jobs:
               echo "Warning: Branch '$task_name' does not exist in the remote repository." | tee -a ${GITHUB_STEP_SUMMARY}
               echo "Warning: Branch '$task_name' does not exist in the remote repository."
               chmod +x ./.github/workflows/scripts/opencga_branch.sh
-              opencga_branch=$(./.github/workflows/scripts/opencga_branch.sh "${{ inputs.release }}" )
+              opencga_branch=$(./.github/workflows/scripts/opencga_branch.sh "false" )
               echo "opencga_branch=${opencga_branch}" >> $GITHUB_OUTPUT
             fi
           fi
