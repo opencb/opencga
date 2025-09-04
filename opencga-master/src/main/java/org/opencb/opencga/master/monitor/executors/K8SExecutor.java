@@ -122,8 +122,7 @@ public class K8SExecutor implements BatchExecutor {
     public K8SExecutor(Configuration configuration, ExecutionQueue executionQueue) {
         Execution execution = configuration.getAnalysis().getExecution();
         String k8sClusterMaster = execution.getOptions().getString(K8S_MASTER_NODE);
-//        this.namespace = execution.getOptions().getString(K8S_NAMESPACE);
-        this.namespace = executionQueue.getId();
+        this.namespace = execution.getOptions().getString(K8S_NAMESPACE);
         this.imageName = execution.getOptions().getString(K8S_IMAGE_NAME);
         this.volumeMounts = buildVolumeMounts(execution.getOptions().getList(K8S_VOLUME_MOUNTS));
         this.volumes = buildVolumes(execution.getOptions().getList(K8S_VOLUMES));
@@ -142,7 +141,8 @@ public class K8SExecutor implements BatchExecutor {
         this.terminationGracePeriodSeconds = execution.getOptions().getInt(K8S_TERMINATION_GRACE_PERIOD_SECONDS, 5 * 60);
         this.logToStdout = execution.getOptions().getBoolean(K8S_LOG_TO_STDOUT, true);
         this.requestFactor = execution.getRequestFactor();
-        nodeSelector = getMap(execution.getOptions(), K8S_NODE_SELECTOR);
+        this.nodeSelector = new HashMap<>();
+        this.nodeSelector.put("agentpool", executionQueue.getId());
         if (execution.getOptions().containsKey(K8S_SECURITY_CONTEXT)) {
             securityContext = buildObject(execution.getOptions().get(K8S_SECURITY_CONTEXT), SecurityContext.class);
         } else {

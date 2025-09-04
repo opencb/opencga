@@ -47,7 +47,8 @@ public class ExecutionQueue {
     }
 
     public static ExecutionQueue defaultQueue() {
-        return new ExecutionQueue("job", "k8s", "Default queue", ProcessorType.CPU, 8, "32GB", new ObjectMap());
+        return new ExecutionQueue("default", "local", "Default local executor", ExecutionQueue.ProcessorType.CPU, 8, "16G",
+                new ObjectMap());
     }
 
     @Override
