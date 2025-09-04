@@ -1,7 +1,7 @@
 package org.opencb.opencga.storage.core.variant.annotation;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -41,8 +41,6 @@ import java.util.*;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.internal.matchers.ThrowableMessageMatcher.hasMessage;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
 import static org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.CosmicVariantAnnotatorExtensionTaskTest.COSMIC_ASSEMBLY;
 import static org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.CosmicVariantAnnotatorExtensionTaskTest.COSMIC_VERSION;

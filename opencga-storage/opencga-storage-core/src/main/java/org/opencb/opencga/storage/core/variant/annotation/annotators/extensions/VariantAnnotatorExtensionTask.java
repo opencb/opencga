@@ -6,7 +6,6 @@ import org.opencb.commons.run.Task;
 import org.opencb.opencga.core.models.operations.variant.VariantAnnotationExtensionConfigureParams;
 
 import java.net.URI;
-import java.util.List;
 
 public interface VariantAnnotatorExtensionTask extends Task<VariantAnnotation, VariantAnnotation> {
 
@@ -29,7 +28,7 @@ public interface VariantAnnotatorExtensionTask extends Task<VariantAnnotation, V
      * @return ObjectMap with the configuration options of the annotator extension
      * @throws Exception if the annotator extension set up fails
      */
-    List<URI> setup(VariantAnnotationExtensionConfigureParams configureParams, URI outDir) throws Exception;
+    ObjectMap setup(VariantAnnotationExtensionConfigureParams configureParams, URI outDir) throws Exception;
 
     /**
      * Check extension parameters and if they are compatibly with the options.
