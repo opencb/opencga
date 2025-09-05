@@ -1,21 +1,20 @@
-package org.opencb.opencga.core.models.workflow;
-
-import org.opencb.opencga.core.tools.ToolParams;
+package org.opencb.opencga.core.models.externalTool;
 
 import java.util.Map;
 
-public class NextFlowRunParams extends ToolParams {
+@Deprecated
+public class DeprecatedWorkflowRunParams {
 
-    public static final String DESCRIPTION = "NextFlow run parameters";
+    public static final String DESCRIPTION = "Workflow tool run parameters";
 
     private String id;
     private Integer version;
     private Map<String, String> params;
 
-    public NextFlowRunParams() {
+    public DeprecatedWorkflowRunParams() {
     }
 
-    public NextFlowRunParams(String id, Integer version, Map<String, String> params) {
+    public DeprecatedWorkflowRunParams(String id, Integer version, Map<String, String> params) {
         this.id = id;
         this.version = version;
         this.params = params;
@@ -23,10 +22,10 @@ public class NextFlowRunParams extends ToolParams {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("NextFlowRunParams{");
+        final StringBuilder sb = new StringBuilder("DeprecatedWorkflowRunParams{");
         sb.append("id='").append(id).append('\'');
         sb.append(", version=").append(version);
-        sb.append(", params='").append(params).append('\'');
+        sb.append(", params=").append(params);
         sb.append('}');
         return sb.toString();
     }
@@ -35,7 +34,7 @@ public class NextFlowRunParams extends ToolParams {
         return id;
     }
 
-    public NextFlowRunParams setId(String id) {
+    public DeprecatedWorkflowRunParams setId(String id) {
         this.id = id;
         return this;
     }
@@ -44,7 +43,7 @@ public class NextFlowRunParams extends ToolParams {
         return version;
     }
 
-    public NextFlowRunParams setVersion(Integer version) {
+    public DeprecatedWorkflowRunParams setVersion(Integer version) {
         this.version = version;
         return this;
     }
@@ -53,7 +52,7 @@ public class NextFlowRunParams extends ToolParams {
         return params;
     }
 
-    public NextFlowRunParams setParams(Map<String, String> params) {
+    public DeprecatedWorkflowRunParams setParams(Map<String, String> params) {
         this.params = params;
         return this;
     }

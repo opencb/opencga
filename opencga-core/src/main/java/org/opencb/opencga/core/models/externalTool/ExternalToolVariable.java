@@ -1,6 +1,6 @@
-package org.opencb.opencga.core.models.workflow;
+package org.opencb.opencga.core.models.externalTool;
 
-public class WorkflowVariable {
+public class ExternalToolVariable {
 
     private String id;
     private String name;
@@ -19,11 +19,11 @@ public class WorkflowVariable {
         FILE
     }
 
-    public WorkflowVariable() {
+    public ExternalToolVariable() {
     }
 
-    public WorkflowVariable(String id, String name, String description, WorkflowVariableType type, boolean required, String defaultValue,
-                            boolean output) {
+    public ExternalToolVariable(String id, String name, String description, WorkflowVariableType type, boolean required,
+                                String defaultValue, boolean output) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -51,7 +51,7 @@ public class WorkflowVariable {
         return id;
     }
 
-    public WorkflowVariable setId(String id) {
+    public ExternalToolVariable setId(String id) {
         this.id = id;
         return this;
     }
@@ -60,7 +60,7 @@ public class WorkflowVariable {
         return name;
     }
 
-    public WorkflowVariable setName(String name) {
+    public ExternalToolVariable setName(String name) {
         this.name = name;
         return this;
     }
@@ -69,7 +69,7 @@ public class WorkflowVariable {
         return description;
     }
 
-    public WorkflowVariable setDescription(String description) {
+    public ExternalToolVariable setDescription(String description) {
         this.description = description;
         return this;
     }
@@ -78,7 +78,7 @@ public class WorkflowVariable {
         return type;
     }
 
-    public WorkflowVariable setType(WorkflowVariableType type) {
+    public ExternalToolVariable setType(WorkflowVariableType type) {
         this.type = type;
         return this;
     }
@@ -87,7 +87,7 @@ public class WorkflowVariable {
         return required;
     }
 
-    public WorkflowVariable setRequired(boolean required) {
+    public ExternalToolVariable setRequired(boolean required) {
         this.required = required;
         return this;
     }
@@ -96,7 +96,7 @@ public class WorkflowVariable {
         return defaultValue;
     }
 
-    public WorkflowVariable setDefaultValue(String defaultValue) {
+    public ExternalToolVariable setDefaultValue(String defaultValue) {
         this.defaultValue = defaultValue;
         return this;
     }
@@ -105,7 +105,7 @@ public class WorkflowVariable {
         return output;
     }
 
-    public WorkflowVariable setOutput(boolean output) {
+    public ExternalToolVariable setOutput(boolean output) {
         this.output = output;
         return this;
     }

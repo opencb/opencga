@@ -1,15 +1,17 @@
-package org.opencb.opencga.core.models.workflow;
+package org.opencb.opencga.core.models.externalTool.workflow;
 
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
+import org.opencb.opencga.core.models.externalTool.*;
 import org.opencb.opencga.core.models.job.MinimumRequirements;
 
 import java.util.List;
 import java.util.Map;
 
-public class WorkflowUpdateParams {
+@Deprecated
+public class DeprecatedWorkflowUpdateParams {
 
-    @DataField(id = "name", description = FieldConstants.WORKFLOW_NAME_DESCRIPTION)
+    @DataField(id = "name", description = FieldConstants.EXTERNAL_TOOL_NAME_DESCRIPTION)
     private String name;
 
     @DataField(id = "description", description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
@@ -18,13 +20,13 @@ public class WorkflowUpdateParams {
     @DataField(id = "manager", description = FieldConstants.WORKFLOW_MANAGER_DESCRIPTION)
     private WorkflowSystem manager;
 
-    @DataField(id = "type", description = FieldConstants.WORKFLOW_TYPE_DESCRIPTION)
-    private Workflow.Type type;
+    @DataField(id = "scope", description = FieldConstants.EXTERNAL_TOOL_SCOPE_DESCRIPTION)
+    private ExternalToolScope scope;
 
-    @DataField(id = "tags", description = FieldConstants.WORKFLOW_TAGS_DESCRIPTION)
+    @DataField(id = "tags", description = FieldConstants.EXTERNAL_TOOL_TAGS_DESCRIPTION)
     private List<String> tags;
 
-    @DataField(id = "draft", description = FieldConstants.WORKFLOW_DRAFT_DESCRIPTION)
+    @DataField(id = "draft", description = FieldConstants.EXTERNAL_TOOL_DRAFT_DESCRIPTION)
     private boolean draft;
 
     @DataField(id = "repository", description = FieldConstants.WORKFLOW_REPOSITORY_DESCRIPTION)
@@ -33,8 +35,8 @@ public class WorkflowUpdateParams {
     @DataField(id = "scripts", description = FieldConstants.WORKFLOW_SCRIPTS_DESCRIPTION)
     private List<WorkflowScript> scripts;
 
-    @DataField(id = "variables", description = FieldConstants.WORKFLOW_VARIABLES_DESCRIPTION)
-    private List<WorkflowVariable> variables;
+    @DataField(id = "variables", description = FieldConstants.EXTERNAL_TOOL_VARIABLES_DESCRIPTION)
+    private List<ExternalToolVariable> variables;
 
     @DataField(id = "minimumRequirements", description = FieldConstants.MINIMUM_REQUIREMENTS_DESCRIPTION)
     private MinimumRequirements minimumRequirements;
@@ -48,17 +50,17 @@ public class WorkflowUpdateParams {
     @DataField(id = "attributes", description = FieldConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
-    public WorkflowUpdateParams() {
+    public DeprecatedWorkflowUpdateParams() {
     }
 
-    public WorkflowUpdateParams(String name, String description, WorkflowSystem manager, Workflow.Type type, List<String> tags,
-                                boolean draft, WorkflowRepository repository, List<WorkflowScript> scripts,
-                                List<WorkflowVariable> variables, MinimumRequirements minimumRequirements, String creationDate,
-                                String modificationDate, Map<String, Object> attributes) {
+    public DeprecatedWorkflowUpdateParams(String name, String description, WorkflowSystem manager, ExternalToolScope scope, List<String> tags,
+                                          boolean draft, WorkflowRepository repository, List<WorkflowScript> scripts,
+                                          List<ExternalToolVariable> variables, MinimumRequirements minimumRequirements, String creationDate,
+                                          String modificationDate, Map<String, Object> attributes) {
         this.name = name;
         this.description = description;
         this.manager = manager;
-        this.type = type;
+        this.scope = scope;
         this.tags = tags;
         this.draft = draft;
         this.repository = repository;
@@ -70,13 +72,22 @@ public class WorkflowUpdateParams {
         this.attributes = attributes;
     }
 
+    public WorkflowUpdateParams toWorkflowUpdateParams() {
+        Workflow workflow = null;
+        if (manager != null || scripts != null || repository != null) {
+            workflow = new Workflow(manager, scripts, repository);
+        }
+        return new WorkflowUpdateParams(name, description, scope, tags, variables, minimumRequirements, draft, creationDate,
+                modificationDate, attributes, workflow);
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("WorkflowUpdateParams{");
         sb.append("name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", manager=").append(manager);
-        sb.append(", type=").append(type);
+        sb.append(", scope=").append(scope);
         sb.append(", tags=").append(tags);
         sb.append(", draft=").append(draft);
         sb.append(", repository=").append(repository);
@@ -94,7 +105,7 @@ public class WorkflowUpdateParams {
         return name;
     }
 
-    public WorkflowUpdateParams setName(String name) {
+    public DeprecatedWorkflowUpdateParams setName(String name) {
         this.name = name;
         return this;
     }
@@ -103,7 +114,7 @@ public class WorkflowUpdateParams {
         return description;
     }
 
-    public WorkflowUpdateParams setDescription(String description) {
+    public DeprecatedWorkflowUpdateParams setDescription(String description) {
         this.description = description;
         return this;
     }
@@ -112,17 +123,17 @@ public class WorkflowUpdateParams {
         return manager;
     }
 
-    public WorkflowUpdateParams setManager(WorkflowSystem manager) {
+    public DeprecatedWorkflowUpdateParams setManager(WorkflowSystem manager) {
         this.manager = manager;
         return this;
     }
 
-    public Workflow.Type getType() {
-        return type;
+    public ExternalToolScope getScope() {
+        return scope;
     }
 
-    public WorkflowUpdateParams setType(Workflow.Type type) {
-        this.type = type;
+    public DeprecatedWorkflowUpdateParams setScope(ExternalToolScope scope) {
+        this.scope = scope;
         return this;
     }
 
@@ -130,7 +141,7 @@ public class WorkflowUpdateParams {
         return tags;
     }
 
-    public WorkflowUpdateParams setTags(List<String> tags) {
+    public DeprecatedWorkflowUpdateParams setTags(List<String> tags) {
         this.tags = tags;
         return this;
     }
@@ -139,7 +150,7 @@ public class WorkflowUpdateParams {
         return draft;
     }
 
-    public WorkflowUpdateParams setDraft(boolean draft) {
+    public DeprecatedWorkflowUpdateParams setDraft(boolean draft) {
         this.draft = draft;
         return this;
     }
@@ -148,7 +159,7 @@ public class WorkflowUpdateParams {
         return repository;
     }
 
-    public WorkflowUpdateParams setRepository(WorkflowRepository repository) {
+    public DeprecatedWorkflowUpdateParams setRepository(WorkflowRepository repository) {
         this.repository = repository;
         return this;
     }
@@ -157,16 +168,16 @@ public class WorkflowUpdateParams {
         return scripts;
     }
 
-    public WorkflowUpdateParams setScripts(List<WorkflowScript> scripts) {
+    public DeprecatedWorkflowUpdateParams setScripts(List<WorkflowScript> scripts) {
         this.scripts = scripts;
         return this;
     }
 
-    public List<WorkflowVariable> getVariables() {
+    public List<ExternalToolVariable> getVariables() {
         return variables;
     }
 
-    public WorkflowUpdateParams setVariables(List<WorkflowVariable> variables) {
+    public DeprecatedWorkflowUpdateParams setVariables(List<ExternalToolVariable> variables) {
         this.variables = variables;
         return this;
     }
@@ -175,7 +186,7 @@ public class WorkflowUpdateParams {
         return creationDate;
     }
 
-    public WorkflowUpdateParams setCreationDate(String creationDate) {
+    public DeprecatedWorkflowUpdateParams setCreationDate(String creationDate) {
         this.creationDate = creationDate;
         return this;
     }
@@ -184,7 +195,7 @@ public class WorkflowUpdateParams {
         return modificationDate;
     }
 
-    public WorkflowUpdateParams setModificationDate(String modificationDate) {
+    public DeprecatedWorkflowUpdateParams setModificationDate(String modificationDate) {
         this.modificationDate = modificationDate;
         return this;
     }
@@ -193,7 +204,7 @@ public class WorkflowUpdateParams {
         return minimumRequirements;
     }
 
-    public WorkflowUpdateParams setMinimumRequirements(MinimumRequirements minimumRequirements) {
+    public DeprecatedWorkflowUpdateParams setMinimumRequirements(MinimumRequirements minimumRequirements) {
         this.minimumRequirements = minimumRequirements;
         return this;
     }
@@ -202,7 +213,7 @@ public class WorkflowUpdateParams {
         return attributes;
     }
 
-    public WorkflowUpdateParams setAttributes(Map<String, Object> attributes) {
+    public DeprecatedWorkflowUpdateParams setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
         return this;
     }

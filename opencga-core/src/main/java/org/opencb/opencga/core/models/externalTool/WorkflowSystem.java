@@ -1,4 +1,4 @@
-package org.opencb.opencga.core.models.workflow;
+package org.opencb.opencga.core.models.externalTool;
 
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
@@ -8,7 +8,7 @@ public class WorkflowSystem {
     @DataField(id = "id", description = FieldConstants.WORKFLOW_SYSTEM_ID_DESCRIPTION)
     private SystemId id;
 
-    @DataField(id = "version", description = FieldConstants.WORKFLOW_SYSTEM_ID_DESCRIPTION)
+    @DataField(id = "version", description = FieldConstants.WORKFLOW_SYSTEM_VERSION_DESCRIPTION)
     private String version;
 
     public enum SystemId {
