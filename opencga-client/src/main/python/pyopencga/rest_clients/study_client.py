@@ -139,7 +139,8 @@ class Study(_ParentRestClient):
         :param str resource: Resource involved. Allowed values: ['AUDIT NOTE
             ORGANIZATION USER PROJECT STUDY FILE SAMPLE JOB INDIVIDUAL COHORT
             DISEASE_PANEL FAMILY CLINICAL_ANALYSIS INTERPRETATION VARIANT
-            ALIGNMENT CLINICAL EXPRESSION RGA FUNCTIONAL WORKFLOW RESOURCE']
+            ALIGNMENT CLINICAL EXPRESSION RGA FUNCTIONAL EXTERNAL_TOOL
+            RESOURCE']
         :param str resource_id: Resource ID.
         :param str resource_uuid: resource UUID.
         :param str status: Filter by status. Allowed values: ['SUCCESS ERROR']

@@ -115,5 +115,5 @@ public interface DBAdaptorFactory extends AutoCloseable {
 
     InterpretationDBAdaptor getInterpretationDBAdaptor(String organization) throws CatalogDBException;
 
-    WorkflowDBAdaptor getWorkflowDBAdaptor(String organization) throws CatalogDBException;
+    ExternalToolDBAdaptor getWorkflowDBAdaptor(String organization) throws CatalogDBException;
 }

@@ -142,7 +142,7 @@ public abstract class AbstractManager {
         return getCatalogDBAdaptorFactory().getInterpretationDBAdaptor(organization);
     }
 
-    protected WorkflowDBAdaptor getWorkflowDBAdaptor(String organization) throws CatalogDBException {
+    protected ExternalToolDBAdaptor getWorkflowDBAdaptor(String organization) throws CatalogDBException {
         return catalogDBAdaptorFactory.getWorkflowDBAdaptor(organization);
     }
 

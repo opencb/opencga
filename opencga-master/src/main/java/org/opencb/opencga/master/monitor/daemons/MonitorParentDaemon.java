@@ -16,7 +16,9 @@
 
 package org.opencb.opencga.master.monitor.daemons;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.master.monitor.executors.BatchExecutor;
 import org.opencb.opencga.master.monitor.executors.ExecutorFactory;
 import org.slf4j.Logger;
@@ -32,7 +34,7 @@ public abstract class MonitorParentDaemon implements Runnable, Closeable {
 
     protected final int interval;
     protected final CatalogManager catalogManager;
-    protected BatchExecutor batchExecutor;
+    private final ExecutorFactory executorFactory;
 
     private volatile boolean exit = false;
 
@@ -44,8 +46,7 @@ public abstract class MonitorParentDaemon implements Runnable, Closeable {
         this.catalogManager = catalogManager;
         this.token = token;
         logger = LoggerFactory.getLogger(this.getClass());
-        ExecutorFactory executorFactory = new ExecutorFactory(catalogManager.getConfiguration());
-        this.batchExecutor = executorFactory.getExecutor();
+        this.executorFactory = new ExecutorFactory(catalogManager.getConfiguration());
     }
 
     public boolean isExit() {
@@ -94,4 +95,21 @@ public abstract class MonitorParentDaemon implements Runnable, Closeable {
     }
 
     public abstract void apply() throws Exception;
+
+    protected BatchExecutor getBatchExecutor(Job job) {
+        if (job.getExecution() == null || job.getExecution().getQueue() == null
+                || StringUtils.isEmpty(job.getExecution().getQueue().getId())) {
+            throw new IllegalArgumentException("Job or its queue ID cannot be null");
+        }
+        return getBatchExecutor(job.getExecution().getQueue().getId());
+    }
+
+    protected BatchExecutor getBatchExecutor(String queueId) {
+         return this.executorFactory.getExecutor(queueId);
+    }
+
+    @Override
+    public void close() throws IOException {
+        this.executorFactory.close();
+    }
 }

@@ -9,7 +9,7 @@ import org.opencb.opencga.core.models.individual.IndividualPermissions;
 import org.opencb.opencga.core.models.job.JobPermissions;
 import org.opencb.opencga.core.models.panel.PanelPermissions;
 import org.opencb.opencga.core.models.sample.SamplePermissions;
-import org.opencb.opencga.core.models.workflow.WorkflowPermissions;
+import org.opencb.opencga.core.models.externalTool.ExternalToolPermissions;
 
 import java.util.*;
 
@@ -117,9 +117,9 @@ public class StudyPermissions {
                 ClinicalAnalysisPermissions.ADMIN.name(), CLINICAL_ANALYSIS),
 
         // WORKFLOWS
-        VIEW_WORKFLOWS(Collections.emptyList(), WorkflowPermissions.VIEW.name(), WORKFLOW),
-        WRITE_WORKFLOWS(Collections.singletonList(VIEW_WORKFLOWS), WorkflowPermissions.WRITE.name(), WORKFLOW),
-        DELETE_WORKFLOWS(Arrays.asList(VIEW_WORKFLOWS, WRITE_WORKFLOWS), WorkflowPermissions.DELETE.name(), WORKFLOW);
+        VIEW_WORKFLOWS(Collections.emptyList(), ExternalToolPermissions.VIEW.name(), WORKFLOW),
+        WRITE_WORKFLOWS(Collections.singletonList(VIEW_WORKFLOWS), ExternalToolPermissions.WRITE.name(), WORKFLOW),
+        DELETE_WORKFLOWS(Arrays.asList(VIEW_WORKFLOWS, WRITE_WORKFLOWS), ExternalToolPermissions.DELETE.name(), WORKFLOW);
 
         private final static Map<String, Permissions> map;
 

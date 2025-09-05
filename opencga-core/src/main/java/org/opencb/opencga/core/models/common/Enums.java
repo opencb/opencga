@@ -80,7 +80,7 @@ public final class Enums {
         EXPRESSION,
         RGA,
         FUNCTIONAL,
-        WORKFLOW,
+        EXTERNAL_TOOL,
         RESOURCE;
 
         public List<String> getFullPermissionList() {

@@ -405,7 +405,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     }
 
     @Override
-    public WorkflowDBAdaptor getWorkflowDBAdaptor(String organization) throws CatalogDBException {
+    public ExternalToolDBAdaptor getWorkflowDBAdaptor(String organization) throws CatalogDBException {
         return getOrganizationMongoDBAdaptorFactory(organization).getWorkflowDBAdaptor();
     }
 

@@ -11,9 +11,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -23,6 +21,8 @@ public class InputFileUtils {
 
     private static final Pattern OPENCGA_PATH_PATTERN = Pattern.compile("^(?i)(ocga://|opencga://|file://)(.+)$");
     private static final Pattern OPENCGA_PATH_IN_LINE_PATTERN = Pattern.compile("(?i)(ocga://|opencga://|file://)([^\\s,;]+)");
+
+    private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\$\\{([^{}]+)}");
     private static final String OUTPUT = "$OUTPUT";
     private static final List<String> OUTPUT_LIST = Arrays.asList("$OUTPUT", "$JOB_OUTPUT");
     private static final String FLAG = "$FLAG";
@@ -129,6 +129,80 @@ public class InputFileUtils {
         } else {
             return path + "/" + subpath;
         }
+    }
+
+    /**
+     * Given a command line that may contain OpenCGA file paths and variables using between ${xx}, obtain the final command line.
+     *
+     * Example:
+     *     commandLineTemplate: "run ${INPUT} -o ${OUTPUT}"
+     *     params: {INPUT=ocga://user@study/1.txt, OUTPUT=/tmp/output.txt}
+     * Result: "run /path/to/1.txt -o /tmp/output.txt"
+     *
+     * @param study               Study where the files are located.
+     * @param commandLineTemplate Command line template.
+     * @param params              Map with the parameters to be replaced in the command line template.
+     * @param temporalInputDir    Empty directory where files that require any changes will be copied.
+     * @param inputBindings       Map where it will store the input bindings that need to be mounted in the Docker.
+     * @param outDir              Output directory.
+     * @param token               User token.
+     * @return                    Final command line with the parameters replaced.
+     * @throws CatalogException   If any error occurs while processing the command line.
+     */
+    public String processCommandLine(String study, String commandLineTemplate, Map<String, String> params, Path temporalInputDir,
+                                     List<AbstractMap.SimpleEntry<String, String>> inputBindings, String outDir, String token)
+            throws CatalogException {
+        // Replace variables
+        Matcher matcher = VARIABLE_PATTERN.matcher(commandLineTemplate);
+        StringBuffer sb = new StringBuffer();
+        while (matcher.find()) {
+            String variableName = matcher.group(1);
+            if (params.containsKey(variableName)) {
+                throw new CatalogException("Variable '" + variableName + "' not found in the params object");
+            }
+            String replacement = params.get(variableName);
+            matcher.appendReplacement(sb, Matcher.quoteReplacement(replacement));
+        }
+        matcher.appendTail(sb);
+        String variablesReplaced = sb.toString();
+
+        // Replace input variables
+        matcher = OPENCGA_PATH_IN_LINE_PATTERN.matcher(variablesReplaced);
+        sb = new StringBuffer();
+        while (matcher.find()) {
+            String group = matcher.group(0);
+            File file = findOpenCGAFileFromPattern(study, group, token);
+
+            if (fileMayContainReferencesToOtherFiles(file)) {
+                Path outputFile = temporalInputDir.resolve(file.getName());
+                List<File> files = findAndReplaceFilePathToUrisFromFile(study, file, outputFile, token);
+
+                // Write outputFile as inputBinding
+                inputBindings.add(new AbstractMap.SimpleEntry<>(outputFile.toString(), outputFile.toString()));
+                logger.info("Params: OpenCGA input file: '{}'", outputFile);
+                matcher.appendReplacement(sb, Matcher.quoteReplacement(outputFile.toString()));
+
+                // Add files to inputBindings to ensure they are also mounted (if any)
+                for (File tmpFile : files) {
+                    inputBindings.add(new AbstractMap.SimpleEntry<>(tmpFile.getUri().getPath(), tmpFile.getUri().getPath()));
+                    logger.info("Inner files from '{}': OpenCGA input file: '{}'", outputFile, tmpFile.getUri().getPath());
+                }
+            } else {
+                String path = file.getUri().getPath();
+                inputBindings.add(new AbstractMap.SimpleEntry<>(path, path));
+                logger.info("Params: OpenCGA input file: '{}'", path);
+                matcher.appendReplacement(sb, Matcher.quoteReplacement(path));
+            }
+        }
+        matcher.appendTail(sb);
+        String finalCli = sb.toString();
+
+        // Replace output variables
+        for (String outputVariable : OUTPUT_LIST) {
+            finalCli = finalCli.replaceAll(outputVariable, outDir);
+        }
+
+        return finalCli;
     }
 
 }

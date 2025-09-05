@@ -30,9 +30,9 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.externalTool.DeprecatedWorkflowRunParams;
 import org.opencb.opencga.core.models.file.FileContent;
 import org.opencb.opencga.core.models.job.*;
-import org.opencb.opencga.core.models.workflow.NextFlowRunParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.*;
 
@@ -135,7 +135,7 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
-            @ApiParam(value = NextFlowRunParams.DESCRIPTION, required = true) JobRunParams params) {
+            @ApiParam(value = DeprecatedWorkflowRunParams.DESCRIPTION, required = true) JobRunParams params) {
         ToolInfo toolInfo = new ToolInfo()
                 .setId(params.getDocker().getId());
         return submitJob(study, JobType.CUSTOM, toolInfo, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime,
@@ -238,6 +238,9 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_TYPE_DESCRIPTION) @QueryParam(ParamConstants.JOB_TYPE_PARAM) String type,
             @ApiParam(value = ParamConstants.JOB_TOOL_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_TOOL_ID_PARAM) String toolId,
             @ApiParam(value = ParamConstants.JOB_TOOL_TYPE_DESCRIPTION) @QueryParam(ParamConstants.JOB_TOOL_TYPE_PARAM) String toolType,
+            @ApiParam(value = ParamConstants.JOB_TOOL_REQUIREMENTS_QUEUE_DESCRIPTION) @QueryParam(ParamConstants.JOB_TOOL_REQUIREMENTS_QUEUE_PARAM) String toolQueue,
+            @ApiParam(value = ParamConstants.JOB_TOOL_REQUIREMENTS_PROCESSOR_TYPE_DESCRIPTION) @QueryParam(ParamConstants.JOB_TOOL_REQUIREMENTS_PROCESSOR_TYPE_PARAM) String toolProcessorType,
+            @ApiParam(value = ParamConstants.JOB_EXECUTION_QUEUE_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_EXECUTION_QUEUE_ID_PARAM) String executionQueueId,
             @ApiParam(value = ParamConstants.JOB_TOOL_EXTERNAL_EXECUTOR_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_TOOL_EXTERNAL_EXECUTOR_ID_PARAM) String externalExecutorId,
             @ApiParam(value = ParamConstants.JOB_PARENT_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_PARENT_ID_PARAM) String parentId,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN_PARAM) Boolean dryRun,
@@ -274,6 +277,9 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_TYPE_DESCRIPTION) @QueryParam(ParamConstants.JOB_TYPE_PARAM) String type,
             @ApiParam(value = ParamConstants.JOB_TOOL_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_TOOL_ID_PARAM) String toolId,
             @ApiParam(value = ParamConstants.JOB_TOOL_TYPE_DESCRIPTION) @QueryParam(ParamConstants.JOB_TOOL_TYPE_PARAM) String toolType,
+            @ApiParam(value = ParamConstants.JOB_TOOL_REQUIREMENTS_QUEUE_DESCRIPTION) @QueryParam(ParamConstants.JOB_TOOL_REQUIREMENTS_QUEUE_PARAM) String toolQueue,
+            @ApiParam(value = ParamConstants.JOB_TOOL_REQUIREMENTS_PROCESSOR_TYPE_DESCRIPTION) @QueryParam(ParamConstants.JOB_TOOL_REQUIREMENTS_PROCESSOR_TYPE_PARAM) String toolProcessorType,
+            @ApiParam(value = ParamConstants.JOB_EXECUTION_QUEUE_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_EXECUTION_QUEUE_ID_PARAM) String executionQueueId,
             @ApiParam(value = ParamConstants.JOB_TOOL_EXTERNAL_EXECUTOR_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_TOOL_EXTERNAL_EXECUTOR_ID_PARAM) String externalExecutorId,
             @ApiParam(value = ParamConstants.JOB_PARENT_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_PARENT_ID_PARAM) String parentId,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN_PARAM) Boolean dryRun,
@@ -426,6 +432,9 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_UUIDS_DESCRIPTION) @QueryParam(ParamConstants.JOB_UUID_PARAM) String uuid,
             @ApiParam(value = ParamConstants.JOB_TOOL_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_TOOL_ID_PARAM) String toolId,
             @ApiParam(value = ParamConstants.JOB_TOOL_TYPE_DESCRIPTION) @QueryParam(ParamConstants.JOB_TOOL_TYPE_PARAM) String toolType,
+            @ApiParam(value = ParamConstants.JOB_TOOL_REQUIREMENTS_QUEUE_DESCRIPTION) @QueryParam(ParamConstants.JOB_TOOL_REQUIREMENTS_QUEUE_PARAM) String toolQueue,
+            @ApiParam(value = ParamConstants.JOB_TOOL_REQUIREMENTS_PROCESSOR_TYPE_DESCRIPTION) @QueryParam(ParamConstants.JOB_TOOL_REQUIREMENTS_PROCESSOR_TYPE_PARAM) String toolProcessorType,
+            @ApiParam(value = ParamConstants.JOB_EXECUTION_QUEUE_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_EXECUTION_QUEUE_ID_PARAM) String executionQueueId,
             @ApiParam(value = ParamConstants.JOB_USER_DESCRIPTION) @QueryParam(ParamConstants.JOB_USER_PARAM) String user,
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.JOB_PRIORITY_PARAM) String priority,
             @ApiParam(value = ParamConstants.JOB_STATUS_DESCRIPTION) @QueryParam(ParamConstants.JOB_STATUS_PARAM) String status,

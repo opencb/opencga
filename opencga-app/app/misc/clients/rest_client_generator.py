@@ -33,7 +33,8 @@ class RestClientGenerator(ABC):
             'analysis/clinical/{clinicalAnalysis}/interpretation/{interpretations}/delete': {
                 'method_name': 'delete_interpretation'},
             'panels/import': {'method_name': 'import_panels'},
-            'workflows/import': {'method_name': 'import_workflow'}
+            'workflows/import': {'method_name': 'import_workflow'},
+            'tools/custom/run': {'method_name': 'run_custom_docker'}
         }
         self.categories = {
         	'Federations': 'Federation',
@@ -50,6 +51,7 @@ class RestClientGenerator(ABC):
             'Disease Panels': 'DiseasePanel',
             'Notes': 'Note',
             'Workflows': 'Workflow',
+            'User Tools': 'UserTool',
             'Analysis - Alignment': 'Alignment',
             'Analysis - Variant': 'Variant',
             'Analysis - Clinical': 'ClinicalAnalysis',

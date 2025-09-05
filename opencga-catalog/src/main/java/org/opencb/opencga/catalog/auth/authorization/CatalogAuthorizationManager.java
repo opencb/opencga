@@ -46,7 +46,7 @@ import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.PermissionRule;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyPermissions;
-import org.opencb.opencga.core.models.workflow.WorkflowPermissions;
+import org.opencb.opencga.core.models.externalTool.ExternalToolPermissions;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -446,10 +446,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkWorkflowPermission(String organizationId, long studyUid, long workflowUid, String userId,
-                                        WorkflowPermissions permission) throws CatalogException {
+                                        ExternalToolPermissions permission) throws CatalogException {
         Query query = new Query()
-                .append(WorkflowDBAdaptor.QueryParams.UID.key(), workflowUid)
-                .append(WorkflowDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+                .append(ExternalToolDBAdaptor.QueryParams.UID.key(), workflowUid)
+                .append(ExternalToolDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(ParamConstants.ACL_PARAM, userId + ":" + permission.name());
 
         if (checkUserPermission(organizationId, userId, query, dbAdaptorFactory.getWorkflowDBAdaptor(organizationId))) {
@@ -754,11 +754,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                                 .collect(Collectors.toSet())
                         );
                         break;
-                    case WORKFLOW:
+                    case EXTERNAL_TOOL:
                         allPermissions.addAll(aclParam.getPermissions()
                                 .stream()
-                                .map(WorkflowPermissions::valueOf)
-                                .map(WorkflowPermissions::getDependentPermissions)
+                                .map(ExternalToolPermissions::valueOf)
+                                .map(ExternalToolPermissions::getDependentPermissions)
                                 .flatMap(List::stream)
                                 .collect(Collectors.toSet())
                                 .stream().map(Enum::name)
@@ -879,11 +879,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                             .collect(Collectors.toSet())
                     );
                     break;
-                case WORKFLOW:
+                case EXTERNAL_TOOL:
                     allPermissions.addAll(aclParam.getPermissions()
                             .stream()
-                            .map(WorkflowPermissions::valueOf)
-                            .map(WorkflowPermissions::getImplicitPermissions)
+                            .map(ExternalToolPermissions::valueOf)
+                            .map(ExternalToolPermissions::getImplicitPermissions)
                             .flatMap(List::stream)
                             .collect(Collectors.toSet())
                             .stream().map(Enum::name)
@@ -1002,11 +1002,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                         .collect(Collectors.toSet())
                 );
                 break;
-            case WORKFLOW:
+            case EXTERNAL_TOOL:
                 allPermissions.addAll(permissions
                         .stream()
-                        .map(WorkflowPermissions::valueOf)
-                        .map(WorkflowPermissions::getImplicitPermissions)
+                        .map(ExternalToolPermissions::valueOf)
+                        .map(ExternalToolPermissions::getImplicitPermissions)
                         .flatMap(List::stream)
                         .collect(Collectors.toSet())
                         .stream().map(Enum::name)
