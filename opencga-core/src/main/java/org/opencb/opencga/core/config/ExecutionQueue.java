@@ -18,7 +18,7 @@ public class ExecutionQueue {
     private ProcessorType processorType;
 
     @DataField(id = "cpu", description = "Number of CPUs allocated for this queue")
-    private int cpu;
+    private String cpu;
 
     @DataField(id = "memory", description = "Memory allocated for this queue")
     private String memory;
@@ -35,7 +35,7 @@ public class ExecutionQueue {
     public ExecutionQueue() {
     }
 
-    public ExecutionQueue(String id, String executor, String description, ProcessorType processorType, int cpu, String memory,
+    public ExecutionQueue(String id, String executor, String description, ProcessorType processorType, String cpu, String memory,
                           ObjectMap options) {
         this.id = id;
         this.executor = executor;
@@ -47,7 +47,7 @@ public class ExecutionQueue {
     }
 
     public static ExecutionQueue defaultQueue() {
-        return new ExecutionQueue("default", "local", "Default local executor", ExecutionQueue.ProcessorType.CPU, 8, "16G",
+        return new ExecutionQueue("default", "local", "Default local executor", ExecutionQueue.ProcessorType.CPU, "8", "16G",
                 new ObjectMap());
     }
 
@@ -100,11 +100,11 @@ public class ExecutionQueue {
         return this;
     }
 
-    public int getCpu() {
+    public String getCpu() {
         return cpu;
     }
 
-    public ExecutionQueue setCpu(int cpu) {
+    public ExecutionQueue setCpu(String cpu) {
         this.cpu = cpu;
         return this;
     }

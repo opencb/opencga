@@ -68,10 +68,10 @@ public class JobSchedulerTest {
 
         // Create test queues
         queues = Arrays.asList(
-                new ExecutionQueue().setId("small-queue").setProcessorType(ExecutionQueue.ProcessorType.CPU).setCpu(2).setMemory("4GB"),
-                new ExecutionQueue().setId("medium-queue").setProcessorType(ExecutionQueue.ProcessorType.CPU).setCpu(8).setMemory("16GB"),
-                new ExecutionQueue().setId("large-queue").setProcessorType(ExecutionQueue.ProcessorType.CPU).setCpu(16).setMemory("32GB"),
-                new ExecutionQueue().setId("local-queue").setProcessorType(ExecutionQueue.ProcessorType.GPU).setCpu(4).setMemory("8GB")
+                new ExecutionQueue().setId("small-queue").setProcessorType(ExecutionQueue.ProcessorType.CPU).setCpu("2").setMemory("4GB"),
+                new ExecutionQueue().setId("medium-queue").setProcessorType(ExecutionQueue.ProcessorType.CPU).setCpu("8").setMemory("16GB"),
+                new ExecutionQueue().setId("large-queue").setProcessorType(ExecutionQueue.ProcessorType.CPU).setCpu("16").setMemory("32GB"),
+                new ExecutionQueue().setId("local-queue").setProcessorType(ExecutionQueue.ProcessorType.GPU).setCpu("4").setMemory("8GB")
         );
 
         jobScheduler = new JobScheduler(catalogManager, queues, token);

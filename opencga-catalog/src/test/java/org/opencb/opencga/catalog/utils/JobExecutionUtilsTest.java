@@ -19,9 +19,9 @@ public class JobExecutionUtilsTest {
     @Test
     public void testFindOptimalQueuesBasicFiltering() {
         // Create test queues
-        ExecutionQueue queue1 = new ExecutionQueue().setId("queue1").setProcessorType(ExecutionQueue.ProcessorType.CPU).setCpu(2).setMemory("4GB");
-        ExecutionQueue queue2 = new ExecutionQueue().setId("queue2").setProcessorType(ExecutionQueue.ProcessorType.CPU).setCpu(4).setMemory("8GB");
-        ExecutionQueue queue3 = new ExecutionQueue().setId("queue3").setProcessorType(ExecutionQueue.ProcessorType.GPU).setCpu(8).setMemory("16GB");
+        ExecutionQueue queue1 = new ExecutionQueue().setId("queue1").setProcessorType(ExecutionQueue.ProcessorType.CPU).setCpu("2").setMemory("4GB");
+        ExecutionQueue queue2 = new ExecutionQueue().setId("queue2").setProcessorType(ExecutionQueue.ProcessorType.CPU).setCpu("4").setMemory("8GB");
+        ExecutionQueue queue3 = new ExecutionQueue().setId("queue3").setProcessorType(ExecutionQueue.ProcessorType.GPU).setCpu("8").setMemory("16GB");
 
         List<ExecutionQueue> queues = Arrays.asList(queue1, queue2, queue3);
 
@@ -38,9 +38,9 @@ public class JobExecutionUtilsTest {
     @Test
     public void testFindOptimalQueuesSortingByCpu() {
         // Create queues with different CPU counts but same memory
-        ExecutionQueue queue1 = new ExecutionQueue().setId("queue1").setProcessorType(ExecutionQueue.ProcessorType.CPU).setCpu(8).setMemory("8GB");
-        ExecutionQueue queue2 = new ExecutionQueue().setId("queue2").setProcessorType(ExecutionQueue.ProcessorType.CPU).setCpu(2).setMemory("8GB");
-        ExecutionQueue queue3 = new ExecutionQueue().setId("queue3").setProcessorType(ExecutionQueue.ProcessorType.CPU).setCpu(4).setMemory("8GB");
+        ExecutionQueue queue1 = new ExecutionQueue().setId("queue1").setProcessorType(ExecutionQueue.ProcessorType.CPU).setCpu("8").setMemory("8GB");
+        ExecutionQueue queue2 = new ExecutionQueue().setId("queue2").setProcessorType(ExecutionQueue.ProcessorType.CPU).setCpu("2").setMemory("8GB");
+        ExecutionQueue queue3 = new ExecutionQueue().setId("queue3").setProcessorType(ExecutionQueue.ProcessorType.CPU).setCpu("4").setMemory("8GB");
 
         List<ExecutionQueue> queues = Arrays.asList(queue1, queue2, queue3);
 
@@ -58,9 +58,9 @@ public class JobExecutionUtilsTest {
     @Test
     public void testFindOptimalQueuesSortingByMemory() {
         // Create queues with same CPU but different memory
-        ExecutionQueue queue1 = new ExecutionQueue().setId("queue1").setProcessorType(ExecutionQueue.ProcessorType.CPU).setCpu(4).setMemory("16GB");
-        ExecutionQueue queue2 = new ExecutionQueue().setId("queue2").setProcessorType(ExecutionQueue.ProcessorType.CPU).setCpu(4).setMemory("4GB");
-        ExecutionQueue queue3 = new ExecutionQueue().setId("queue3").setProcessorType(ExecutionQueue.ProcessorType.CPU).setCpu(4).setMemory("8GB");
+        ExecutionQueue queue1 = new ExecutionQueue().setId("queue1").setProcessorType(ExecutionQueue.ProcessorType.CPU).setCpu("4").setMemory("16GB");
+        ExecutionQueue queue2 = new ExecutionQueue().setId("queue2").setProcessorType(ExecutionQueue.ProcessorType.CPU).setCpu("4").setMemory("4GB");
+        ExecutionQueue queue3 = new ExecutionQueue().setId("queue3").setProcessorType(ExecutionQueue.ProcessorType.CPU).setCpu("4").setMemory("8GB");
 
         List<ExecutionQueue> queues = Arrays.asList(queue1, queue2, queue3);
 
@@ -77,8 +77,8 @@ public class JobExecutionUtilsTest {
 
     @Test
     public void testFindOptimalQueuesFiltersByMinimumCpu() {
-        ExecutionQueue queue1 = new ExecutionQueue().setId("queue1").setProcessorType(ExecutionQueue.ProcessorType.CPU).setCpu(1).setMemory("8GB");
-        ExecutionQueue queue2 = new ExecutionQueue().setId("queue2").setProcessorType(ExecutionQueue.ProcessorType.CPU).setCpu(4).setMemory("8GB");
+        ExecutionQueue queue1 = new ExecutionQueue().setId("queue1").setProcessorType(ExecutionQueue.ProcessorType.CPU).setCpu("1").setMemory("8GB");
+        ExecutionQueue queue2 = new ExecutionQueue().setId("queue2").setProcessorType(ExecutionQueue.ProcessorType.CPU).setCpu("4").setMemory("8GB");
 
         List<ExecutionQueue> queues = Arrays.asList(queue1, queue2);
 
@@ -92,8 +92,8 @@ public class JobExecutionUtilsTest {
 
     @Test
     public void testFindOptimalQueuesFiltersByMinimumMemory() {
-        ExecutionQueue queue1 = new ExecutionQueue().setId("queue1").setProcessorType(ExecutionQueue.ProcessorType.CPU).setCpu(4).setMemory("2GB");
-        ExecutionQueue queue2 = new ExecutionQueue().setId("queue2").setProcessorType(ExecutionQueue.ProcessorType.CPU).setCpu(4).setMemory("8GB");
+        ExecutionQueue queue1 = new ExecutionQueue().setId("queue1").setProcessorType(ExecutionQueue.ProcessorType.CPU).setCpu("4").setMemory("2GB");
+        ExecutionQueue queue2 = new ExecutionQueue().setId("queue2").setProcessorType(ExecutionQueue.ProcessorType.CPU).setCpu("4").setMemory("8GB");
 
         List<ExecutionQueue> queues = Arrays.asList(queue1, queue2);
 
@@ -107,8 +107,8 @@ public class JobExecutionUtilsTest {
 
     @Test
     public void testFindOptimalQueuesFiltersByType() {
-        ExecutionQueue queue1 = new ExecutionQueue().setId("queue1").setProcessorType(ExecutionQueue.ProcessorType.GPU).setCpu(4).setMemory("8GB");
-        ExecutionQueue queue2 = new ExecutionQueue().setId("queue2").setProcessorType(ExecutionQueue.ProcessorType.CPU).setCpu(4).setMemory("8GB");
+        ExecutionQueue queue1 = new ExecutionQueue().setId("queue1").setProcessorType(ExecutionQueue.ProcessorType.GPU).setCpu("4").setMemory("8GB");
+        ExecutionQueue queue2 = new ExecutionQueue().setId("queue2").setProcessorType(ExecutionQueue.ProcessorType.CPU).setCpu("4").setMemory("8GB");
 
         List<ExecutionQueue> queues = Arrays.asList(queue1, queue2);
 
@@ -122,7 +122,7 @@ public class JobExecutionUtilsTest {
 
     @Test
     public void testFindOptimalQueuesEmptyResult() {
-        ExecutionQueue queue1 = new ExecutionQueue().setId("queue1").setProcessorType(ExecutionQueue.ProcessorType.CPU).setCpu(2).setMemory("4GB");
+        ExecutionQueue queue1 = new ExecutionQueue().setId("queue1").setProcessorType(ExecutionQueue.ProcessorType.CPU).setCpu("2").setMemory("4GB");
 
         List<ExecutionQueue> queues = Collections.singletonList(queue1);
 

@@ -14,10 +14,10 @@ public class JobExecutionUtils {
         // Also filter out queues that do not meet the minimum requirements
         return queues.stream()
                 .filter(queue -> queue.getProcessorType().equals(requirements.getProcessorType())
-                        && queue.getCpu() >= Integer.parseInt(requirements.getCpu())
+                        && Integer.parseInt(queue.getCpu()) >= Integer.parseInt(requirements.getCpu())
                         && IOUtils.fromHumanReadableToByte(queue.getMemory()) >= IOUtils.fromHumanReadableToByte(requirements.getMemory()))
                 .sorted((q1, q2) -> {
-                    int cpuComparison = Integer.compare(q1.getCpu(), q2.getCpu());
+                    int cpuComparison = Integer.compare(Integer.parseInt(q1.getCpu()), Integer.parseInt(q2.getCpu()));
                     if (cpuComparison != 0) {
                         return cpuComparison;
                     }
