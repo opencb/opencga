@@ -22,7 +22,7 @@
 #' | configureCellbase | /{apiVersion}/operation/cellbase/configure | project, annotationUpdate, annotationSaveId, body |
 #' | aggregateVariant | /{apiVersion}/operation/variant/aggregate | jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, study, body |
 #' | deleteVariantAnnotation | /{apiVersion}/operation/variant/annotation/delete | jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, project, annotationId |
-#' | variantAnnotationExtensionConfigure | /{apiVersion}/operation/variant/annotation/extension/configure | jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, study, body |
+#' | variantAnnotationExtensionConfigure | /{apiVersion}/operation/variant/annotation/extension/configure | jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, project, body |
 #' | indexVariantAnnotation | /{apiVersion}/operation/variant/annotation/index | jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, project, study, body |
 #' | saveVariantAnnotation | /{apiVersion}/operation/variant/annotation/save | jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, project, body |
 #' | configureVariant | /{apiVersion}/operation/variant/configure | project, study, body |
@@ -106,7 +106,7 @@ setMethod("operationClient", "OpencgaR", function(OpencgaR, endpointName, params
         #' @param jobScheduledStartTime Time when the job is scheduled to start.
         #' @param jobPriority Priority of the job.
         #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
-        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param project project.
         #' @param data Parameters to configure a variant annotation extension.
         variantAnnotationExtensionConfigure=fetchOpenCGA(object=OpencgaR, category="operation", categoryId=NULL,
                 subcategory="variant/annotation/extension", subcategoryId=NULL, action="configure", params=params,

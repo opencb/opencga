@@ -96,7 +96,7 @@ export default class VariantOperation extends OpenCGAParentClass {
     * @param {String} [params.jobPriority] - Priority of the job.
     * @param {Boolean} [params.jobDryRun] - Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will
     *     validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
-    * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
+    * @param {String} [params.project] - project.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     variantAnnotationExtensionConfigure(data, params) {

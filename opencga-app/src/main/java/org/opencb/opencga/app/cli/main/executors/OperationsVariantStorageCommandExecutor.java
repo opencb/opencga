@@ -282,10 +282,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
         queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
         queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
-        queryParams.putIfNotEmpty("study", commandOptions.study);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
+        queryParams.putIfNotEmpty("project", commandOptions.project);
 
 
         VariantAnnotationExtensionConfigureParams variantAnnotationExtensionConfigureParams = null;

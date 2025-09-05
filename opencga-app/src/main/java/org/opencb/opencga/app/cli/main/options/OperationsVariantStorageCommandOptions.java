@@ -249,8 +249,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean jobDryRun; 
     
-        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
-        public String study; 
+        @Parameter(names = {"--project", "-p"}, description = "project", required = false, arity = 1)
+        public String project; 
     
         @Parameter(names = {"--extension"}, description = "Name of the variant annotation extension.", required = false, arity = 1)
         public String extension;

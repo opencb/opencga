@@ -141,7 +141,7 @@ public class VariantOperationClient extends ParentClient {
      *       jobPriority: Priority of the job.
      *       jobDryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all
      *            parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
-     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
+     *       project: project.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */

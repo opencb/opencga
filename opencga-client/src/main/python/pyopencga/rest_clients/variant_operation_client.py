@@ -105,8 +105,7 @@ class VariantOperation(_ParentRestClient):
             in dry-run mode. In this mode, OpenCGA will validate that all
             parameters and prerequisites are correctly set for successful
             execution, but the job will not actually run.
-        :param str study: Study [[organization@]project:]study where study and
-            project can be either the ID or UUID.
+        :param str project: project.
         :param dict data: Parameters to configure a variant annotation
             extension.
         """
