@@ -86,7 +86,7 @@ jobs:
       - name: OpenCGA Enterprise Maven Build (skip tests)
         run: |
           if [ -n "${{ inputs.task }}" ]; then
-              ./build.sh -b -T "${{ inputs.task }}" --storage-hadoop ${{ inputs.hadoop }} -d -p "${{ inputs.task }}"
+              ./build.sh -b -T "${{ inputs.task }}" --storage-hadoop ${{ inputs.hadoop }} -d -p ${{ inputs.task }}
           else
               ./build.sh -b --storage-hadoop ${{ inputs.hadoop }} -d 
           fi
