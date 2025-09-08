@@ -1,4 +1,5 @@
 name: Manual Deploy Docker OpenCGA Enterprise
+run-name: "Manual deploy the enterprise branch ${{ inputs.branch }} ${{ inputs.task == '' && '' || 'for task ' inputs.task }} with tag ${{ inputs.tag }} to Zettagenomics docker hub Central"
 
 on:
   workflow_dispatch:
