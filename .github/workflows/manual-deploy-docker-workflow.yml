@@ -50,13 +50,12 @@ jobs:
               echo " Branch '$task_name' will be use to build OpenCGA Enterprise." | tee -a ${GITHUB_STEP_SUMMARY}
               echo "Branch '$task_name' will be use to build OpenCGA Enterprise."
               echo "opencga_branch=$task_name" >> $GITHUB_OUTPUT
-            else
+          else
               echo "Warning: Reading version from pom." | tee -a ${GITHUB_STEP_SUMMARY}
               echo "Warning: Reading version from pom."
               chmod +x ./.github/workflows/scripts/opencga_branch.sh
               opencga_branch=$(./.github/workflows/scripts/opencga_branch.sh ${{ inputs.release && true || false }})
-              echo "opencga_branch=${opencga_branch}" >> $GITHUB_OUTPUT              
-            fi          
+              echo "opencga_branch=${opencga_branch}" >> $GITHUB_OUTPUT                      
           fi
       - uses: actions/checkout@v4
         with:
