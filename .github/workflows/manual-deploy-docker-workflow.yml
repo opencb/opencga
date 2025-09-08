@@ -1,5 +1,5 @@
 name: Manual Deploy Docker OpenCGA Enterprise
-run-name: "Manual deploy the enterprise branch ${{ inputs.branch }} ${{ inputs.task == '' && '' || inputs.task }} with tag ${{ inputs.tag }} to Zettagenomics docker hub Central"
+run-name: "Manual deploy the enterprise branch ${{ inputs.branch }} ${{ inputs.task == inputs.branch && '' || inputs.task }} with tag ${{ inputs.tag }} to Zettagenomics docker hub Central"
 
 on:
   workflow_dispatch:
@@ -45,17 +45,26 @@ jobs:
         name: If not exists TASK branch get OpenCGA branch from pom.xml property
         run: |
           task_name="${{ inputs.task }}"
-          # If task_name is provided and starts with "TASK-" and the branch exists in remote repo, use it
-          if [[ -n "$task_name" && "$task_name" == TASK-* && git ls-remote --heads https://github.com/opencb/opencga.git "refs/heads/$task_name" | grep -q "$task_name" ]]; then
-              echo " Branch '$task_name' will be use to build OpenCGA Enterprise." | tee -a ${GITHUB_STEP_SUMMARY}
-              echo "Branch '$task_name' will be use to build OpenCGA Enterprise."
-              echo "opencga_branch=$task_name" >> $GITHUB_OUTPUT
-          else
-              echo "Warning: Reading version from pom." | tee -a ${GITHUB_STEP_SUMMARY}
-              echo "Warning: Reading version from pom."
+          # Check 1) non-empty, 2) starts with TASK-, 3) remote branch exists
+          if [[ -n "$task_name" && "$task_name" == TASK-* ]]; then
+              # Use ls-remote with --exit-code so it fails when no match
+              if git ls-remote --exit-code --heads https://github.com/opencb/opencga.git "$task_name" >/dev/null 2>&1; then
+                echo "Branch '$task_name' will be used to build OpenCGA Enterprise." | tee -a "${GITHUB_STEP_SUMMARY}"
+                echo "Branch '$task_name' will be used to build OpenCGA Enterprise."
+                echo "opencga_branch=$task_name" >> "$GITHUB_OUTPUT"
+              else
+                echo "Warning: Remote branch '$task_name' not found. Reading version from pom." | tee -a "${GITHUB_STEP_SUMMARY}"
+                echo "Warning: Remote branch '$task_name' not found. Reading version from pom."
+                chmod +x ./.github/workflows/scripts/opencga_branch.sh
+                opencga_branch=$(./.github/workflows/scripts/opencga_branch.sh ${{ inputs.release && true || false }})
+                echo "opencga_branch=${opencga_branch}" >> "$GITHUB_OUTPUT"
+              fi
+            else
+              echo "Warning: 'task_name' is empty or does not start with 'TASK-'. Reading version from pom." | tee -a "${GITHUB_STEP_SUMMARY}"
+              echo "Warning: 'task_name' is empty or does not start with 'TASK-'. Reading version from pom."
               chmod +x ./.github/workflows/scripts/opencga_branch.sh
               opencga_branch=$(./.github/workflows/scripts/opencga_branch.sh ${{ inputs.release && true || false }})
-              echo "opencga_branch=${opencga_branch}" >> $GITHUB_OUTPUT                      
+              echo "opencga_branch=${opencga_branch}" >> "$GITHUB_OUTPUT"
           fi
       - uses: actions/checkout@v4
         with:
