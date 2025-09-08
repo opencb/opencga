@@ -16,7 +16,7 @@ on:
         type: string
         required: false
       release:
-        description: "If true, it will create a release version, otherwise a snapshot version."
+        description: "If true, it will download a released version of opencga otherwise a snapshot version."
         type: boolean
         required: false
         default: false
