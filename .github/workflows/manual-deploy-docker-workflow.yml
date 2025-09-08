@@ -44,21 +44,18 @@ jobs:
         name: If not exists TASK branch get OpenCGA branch from pom.xml property
         run: |
           task_name="${{ inputs.task }}"
-          # If task_name is provided and starts with "TASK-"
-          if [[ -n "$task_name" && "$task_name" == TASK-* ]]; then
-          # Check if the branch exists in the remote repository
-            if git ls-remote --heads https://github.com/opencb/opencga.git "refs/heads/$task_name" | grep -q "$task_name"; then
+          # If task_name is provided and starts with "TASK-" and the branch exists in remote repo, use it
+          if [[ -n "$task_name" && "$task_name" == TASK-* && git ls-remote --heads https://github.com/opencb/opencga.git "refs/heads/$task_name" | grep -q "$task_name" ]]; then
               echo " Branch '$task_name' will be use to build OpenCGA Enterprise." | tee -a ${GITHUB_STEP_SUMMARY}
               echo "Branch '$task_name' will be use to build OpenCGA Enterprise."
               echo "opencga_branch=$task_name" >> $GITHUB_OUTPUT
             else
-              echo "Warning: Branch '$task_name' does not exist in the remote repository." | tee -a ${GITHUB_STEP_SUMMARY}
-              echo "Warning: Branch '$task_name' does not exist in the remote repository."
-              branch_name="${{ inputs.task }}"
+              echo "Warning: Reading version from pom." | tee -a ${GITHUB_STEP_SUMMARY}
+              echo "Warning: Reading version from pom."
               chmod +x ./.github/workflows/scripts/opencga_branch.sh
               opencga_branch=$(./.github/workflows/scripts/opencga_branch.sh ${{ inputs.release && true || false }})
-              echo "opencga_branch=${opencga_branch}" >> $GITHUB_OUTPUT
-            fi
+              echo "opencga_branch=${opencga_branch}" >> $GITHUB_OUTPUT              
+            fi          
           fi
       - uses: actions/checkout@v4
         with:
