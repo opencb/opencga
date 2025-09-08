@@ -20,7 +20,7 @@ jobs:
     needs: build-hdp
     with:
       cli: python3 ./build/cloud/docker/docker-build.py push --images base --tag "${{ needs.build-hdp.outputs.version }}-hdp3.1"
-      artifact: build-folder
+      build_folder: build-folder
     secrets: inherit
 
   deploy-docker-workflow:
@@ -93,7 +93,7 @@ jobs:
       build_folder: build-folder-hdi
 
   deploy-docker-hdi:
-    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/deploy-zetta-docker-hub-workflow.yml@develop
     needs: build-hdi
     with:
       cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag "${{ needs.build-hdi.outputs.version }}-hdi5.1" --org zettagenomics
@@ -108,7 +108,7 @@ jobs:
       build_folder: build-folder-emr
 
   deploy-docker-emr:
-    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/deploy-zetta-docker-hub-workflow.yml@develop
     needs: build-emr
     with:
       cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag "${{ needs.build-emr.outputs.version }}-emr6.1" --org zettagenomics
@@ -123,7 +123,7 @@ jobs:
       build_folder: build-folder-emr613
 
   deploy-docker-emr613:
-    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/deploy-zetta-docker-hub-workflow.yml@develop
     needs: build-emr613
     with:
       cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag "${{ needs.build-emr613.outputs.version }}-emr6.13" --org zettagenomics
