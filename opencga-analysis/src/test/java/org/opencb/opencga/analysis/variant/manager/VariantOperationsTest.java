@@ -50,7 +50,6 @@ import org.opencb.opencga.core.models.cohort.CohortCreateParams;
 import org.opencb.opencga.core.models.common.IndexStatus;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.individual.*;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.*;
@@ -76,7 +75,6 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
-import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.CosmicVariantAnnotatorExtensionTaskTest;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.cosmic.CosmicVariantAnnotatorExtensionTask;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
@@ -87,7 +85,6 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -95,6 +92,7 @@ import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
+import static org.opencb.opencga.analysis.variant.operations.VariantAnnotationExtensionConfigureOperationToolTest.getCosmicResourceFile;
 
 @RunWith(Parameterized.class)
 @Category(LongTests.class)
@@ -858,9 +856,8 @@ public class VariantOperationsTest {
         Assume.assumeThat(storageEngine, CoreMatchers.is(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
 
         VariantOperationsTest.removeCosmicAnnotationExtensionOptions(PROJECT, variantStorageManager, token);
-        Path cosmicPath = VariantOperationsTest.initCosmicPath(Paths.get(opencga.createTmpOutdir()));
-        File cosmicFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams().setUri(cosmicPath.toAbsolutePath().toString()),
-                false, token).first();
+
+        File cosmicFile = getCosmicResourceFile(catalogManager, token);
 
         VariantAnnotationExtensionConfigureParams params = new VariantAnnotationExtensionConfigureParams();
         params.setExtension(CosmicVariantAnnotatorExtensionTask.ID);
@@ -931,9 +928,7 @@ public class VariantOperationsTest {
         Path outdir = Paths.get(opencga.createTmpOutdir());
         System.out.println("outdir.toAbsolutePath() = " + outdir.toAbsolutePath());
 
-        Path cosmicPath = initCosmicPath(Paths.get(opencga.createTmpOutdir()));
-        File cosmicFile = catalogManager.getFileManager().link(STUDY, new FileLinkParams().setUri(cosmicPath.toAbsolutePath().toString()),
-                false, token).first();
+        File cosmicFile = getCosmicResourceFile(catalogManager, token);
 
         VariantAnnotationExtensionConfigureParams params = new VariantAnnotationExtensionConfigureParams();
         params.setExtension(CosmicVariantAnnotatorExtensionTask.ID);
@@ -994,18 +989,4 @@ public class VariantOperationsTest {
         }
         variantStorageManager.configureProject(project.getFqn(), options, token);
     }
-
-    public static Path initCosmicPath(Path cosmicPath) throws IOException {
-        Path cosmicFile = Paths.get(CosmicVariantAnnotatorExtensionTaskTest.class.getResource("/custom_annotation/Small_Cosmic_"
-                + COSMIC_VERSION + "_" + COSMIC_ASSEMBLY + ".tar.gz").getPath());
-        Path targetPath = cosmicPath.resolve(cosmicFile.getFileName());
-        Files.copy(cosmicFile, targetPath);
-
-        if (!Files.exists(targetPath)) {
-            throw new IOException("Error copying COSMIC file to " + targetPath);
-        }
-
-        return targetPath;
-    }
-
 }

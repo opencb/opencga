@@ -10,6 +10,7 @@ import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.operations.variant.VariantAnnotationExtensionConfigureParams;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
@@ -17,6 +18,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.cosmic.CosmicVariantAnnotatorExtensionTask;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -153,10 +155,9 @@ public class CosmicVariantAnnotatorExtensionTaskTest {
         if (!Files.isDirectory(cosmicPath) && !cosmicPath.toFile().mkdirs()) {
             throw new IOException("Error creating the COSMIC path: " + cosmicPath.toAbsolutePath());
         }
-        Path cosmicFile = Paths.get(CosmicVariantAnnotatorExtensionTaskTest.class.getResource("/custom_annotation/Small_Cosmic_"
-                + COSMIC_VERSION + "_" + COSMIC_ASSEMBLY + ".tar.gz").getPath());
-        Path targetPath = cosmicPath.resolve(cosmicFile.getFileName());
-        Files.copy(cosmicFile, targetPath);
+
+        String cosmicFilename = "Small_Cosmic_" + COSMIC_VERSION + "_" + COSMIC_ASSEMBLY + ".tar.gz";
+        Path targetPath = Paths.get(VariantStorageBaseTest.getResourceUri("custom_annotation/" + cosmicFilename, cosmicPath));
 
         if (!Files.exists(targetPath)) {
             throw new IOException("Error copying COSMIC file to " + targetPath);
