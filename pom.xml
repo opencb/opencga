@@ -20,7 +20,7 @@
 
     <properties>
         <opencga.version>4.1.0-SNAPSHOT</opencga.version>
-        <cellbase.version>6.6.0-SNAPSHOT</cellbase.version>
+        <cellbase.version>6.6.0</cellbase.version>
         <biodata.version>4.1.0-SNAPSHOT</biodata.version>
         <java-common-libs.version>6.1.0-SNAPSHOT</java-common-libs.version>
         <iva.version>3.1.0</iva.version>
