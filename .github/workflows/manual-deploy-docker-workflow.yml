@@ -89,7 +89,7 @@ jobs:
             echo "Building OpenCGA Enterprise for task '${{ inputs.task }}' with Hadoop flavour '${{ inputs.hadoop }}'"
             ./build.sh --prepare-branches --task "${{ inputs.task }}" --storage-hadoop ${{ inputs.hadoop }} --docker --docker-tag "${{ inputs.tag }}"
           else
-            if [[ "${{ inputs.branch }}" == v*|| "${{ inputs.branch }}" == "master" ]]; then
+            if [[ "${{ inputs.branch }}" == v* || "${{ inputs.branch }}" == "main" ]]; then
               echo "Building OpenCGA Enterprise for tag '${{ inputs.branch }}' with Hadoop flavour '${{ inputs.hadoop }}'"
               ./build.sh --storage-hadoop ${{ inputs.hadoop }} --docker --docker-tag "${{ inputs.tag }}"
             else
