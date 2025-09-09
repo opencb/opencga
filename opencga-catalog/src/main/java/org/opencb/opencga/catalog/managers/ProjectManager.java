@@ -162,40 +162,41 @@ public class ProjectManager extends AbstractManager<Project> {
 
     public OpenCGAResult<Project> create(ProjectCreateParams projectCreateParams, QueryOptions options, String token)
             throws CatalogException {
-        return create(projectCreateParams, options, token, (organizationId, payload, entryParam) -> {
-            String userId = payload.getUserId(organizationId);
-            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
-            ParamUtils.checkObj(projectCreateParams, "ProjectCreateParams");
-            entryParam.setId(projectCreateParams.getId());
-            Project project = projectCreateParams.toProject();
+        return create(projectCreateParams, options, token, (payload) -> CatalogFqn.fromOrganization(payload.getOrganization(), payload),
+                (fqn, payload, entryParam) -> {
+                    String userId = payload.getUserId(fqn.getOrganizationId());
+                    authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(fqn.getOrganizationId(), userId);
+                    ParamUtils.checkObj(projectCreateParams, "ProjectCreateParams");
+                    entryParam.setId(projectCreateParams.getId());
+                    Project project = projectCreateParams.toProject();
 
-            // Check if we have already reached the limit of projects in the Organisation
-            checkProjectLimitQuota(organizationId);
-            validateProjectForCreation(organizationId, project);
-            entryParam.setUuid(project.getUuid());
+                    // Check if we have already reached the limit of projects in the Organisation
+                    checkProjectLimitQuota(fqn.getOrganizationId());
+                    validateProjectForCreation(fqn.getOrganizationId(), project);
+                    entryParam.setUuid(project.getUuid());
 
-            QueryOptions finalOptions = options != null ? new QueryOptions(options) : new QueryOptions();
-            OpenCGAResult<Project> queryResult = getProjectDBAdaptor(organizationId).insert(project, finalOptions);
-            OpenCGAResult<Project> result = getProject(organizationId, project.getUuid(), finalOptions);
-            if (finalOptions.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
-                // Fetch created project
-                queryResult.setResults(result.getResults());
-            }
+                    QueryOptions finalOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+                    OpenCGAResult<Project> queryResult = getProjectDBAdaptor(fqn.getOrganizationId()).insert(project, finalOptions);
+                    OpenCGAResult<Project> result = getProject(fqn.getOrganizationId(), project.getUuid(), finalOptions);
+                    if (finalOptions.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                        // Fetch created project
+                        queryResult.setResults(result.getResults());
+                    }
 
-            try {
-                catalogIOManager.createProject(organizationId, Long.toString(project.getUid()));
-            } catch (CatalogIOException e) {
-                try {
-                    getProjectDBAdaptor(organizationId).delete(project);
-                } catch (Exception e1) {
-                    logger.error("Error deleting project from catalog after failing creating the folder in the filesystem", e1);
-                    e.addSuppressed(e1);
-                }
-                throw e;
-            }
+                    try {
+                        catalogIOManager.createProject(fqn.getOrganizationId(), Long.toString(project.getUid()));
+                    } catch (CatalogIOException e) {
+                        try {
+                            getProjectDBAdaptor(fqn.getOrganizationId()).delete(project);
+                        } catch (Exception e1) {
+                            logger.error("Error deleting project from catalog after failing creating the folder in the filesystem", e1);
+                            e.addSuppressed(e1);
+                        }
+                        throw e;
+                    }
 
-            return queryResult;
-        });
+                    return queryResult;
+                });
     }
 
     private void checkProjectLimitQuota(String organizationId) throws CatalogException {
@@ -263,15 +264,15 @@ public class ProjectManager extends AbstractManager<Project> {
      * @throws CatalogException CatalogException
      */
     public OpenCGAResult<Project> get(String projectId, QueryOptions options, String token) throws CatalogException {
-        return get(projectId, options, token, (organizationId, payload, entryParam) -> {
-            CatalogFqn projectFqn = CatalogFqn.extractFqnFromProject(projectId, payload);
-            entryParam.setId(projectFqn.getProjectId());
-            entryParam.setUuid(projectFqn.getProjectUuid());
-            OpenCGAResult<Project> queryResult = resolveId(projectFqn, options, payload);
-            entryParam.setId(queryResult.first().getId());
-            entryParam.setUuid(queryResult.first().getUuid());
-            return queryResult;
-        });
+        return get(projectId, options, token, (payload) -> CatalogFqn.extractFqnFromProject(projectId, payload),
+                (fqn, payload, entryParam) -> {
+                    entryParam.setId(fqn.getProjectId());
+                    entryParam.setUuid(fqn.getProjectUuid());
+                    OpenCGAResult<Project> queryResult = resolveId(fqn, options, payload);
+                    entryParam.setId(queryResult.first().getId());
+                    entryParam.setUuid(queryResult.first().getUuid());
+                    return queryResult;
+                });
     }
 
     public OpenCGAResult<Project> get(List<String> projectList, QueryOptions options, boolean ignoreException, String token)
@@ -310,12 +311,13 @@ public class ProjectManager extends AbstractManager<Project> {
      */
     public OpenCGAResult<Project> search(String organizationId, Query query, QueryOptions options, String token) throws CatalogException {
         ObjectMap auditParams = new ObjectMap("organizationId", organizationId);
-        return search(auditParams, query, options, token, (uselessOrgId, payload) -> {
+        return search(auditParams, query, options, token, (payload) -> {
+            String orgId = StringUtils.isNotEmpty(organizationId) ? organizationId : payload.getOrganization();
+            return CatalogFqn.fromOrganization(orgId, payload);
+        }, (fqn, payload) -> {
             Query finalQuery = query != null ? new Query(query) : new Query();
             QueryOptions finalOptions = options != null ? new QueryOptions(options) : new QueryOptions();
-
-            String finalOrgId = StringUtils.isNotEmpty(organizationId) ? organizationId : payload.getOrganization();
-            String userId = payload.getUserId(finalOrgId);
+            String userId = payload.getUserId(fqn.getOrganizationId());
 
             fixQueryObject(finalQuery);
             // If study is provided, we need to check if it will be study alias or id
@@ -360,86 +362,86 @@ public class ProjectManager extends AbstractManager<Project> {
     private OpenCGAResult<Project> update(String projectId, ObjectMap parameters, QueryOptions options, boolean allowProtectedUpdates,
                                           String token) throws CatalogException {
         ObjectMap auditParams = new ObjectMap("allowProtectedUpdates", allowProtectedUpdates);
-        QueryOptions finalOptions = options != null ? new QueryOptions(options) : new QueryOptions();
 
-        return update(auditParams, projectId, parameters, options, token, (organizationId, payload, entryParam) -> {
-            entryParam.setId(projectId);
+        return update(auditParams, projectId, parameters, options, token, (payload) -> CatalogFqn.extractFqnFromProject(projectId, payload),
+                (fqn, payload, entryParam) -> {
+                    entryParam.setId(projectId);
 
-            ParamUtils.checkObj(parameters, "Parameters");
+                    String userId = payload.getUserId(fqn.getOrganizationId());
+                    QueryOptions finalOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+                    Project project = resolveId(fqn, finalOptions, payload).first();
+                    entryParam.setId(project.getId());
+                    entryParam.setUuid(project.getUuid());
 
-            CatalogFqn catalogFqn = CatalogFqn.extractFqnFromProject(projectId, payload);
-            String userId = payload.getUserId(organizationId);
+                    long projectUid = project.getUid();
+                    authorizationManager.checkCanEditProject(fqn.getOrganizationId(), projectUid, userId);
 
-            Project project = resolveId(catalogFqn, finalOptions, payload).first();
-            entryParam.setId(project.getId());
-            entryParam.setUuid(project.getUuid());
+                    ParamUtils.checkObj(parameters, "Parameters");
 
-            long projectUid = project.getUid();
-            authorizationManager.checkCanEditProject(organizationId, projectUid, userId);
+                    for (String s : parameters.keySet()) {
+                        if (UPDATABLE_FIELDS.contains(s)) {
+                            continue;
+                        } else if (allowProtectedUpdates && PROTECTED_UPDATABLE_FIELDS.contains(s)) {
+                            logger.info("Updating protected field '{}' from project '{}'", s, project.getFqn());
+                        } else {
+                            throw new CatalogDBException("Parameter '" + s + "' can't be changed");
+                        }
+                    }
 
-            for (String s : parameters.keySet()) {
-                if (UPDATABLE_FIELDS.contains(s)) {
-                    continue;
-                } else if (allowProtectedUpdates && PROTECTED_UPDATABLE_FIELDS.contains(s)) {
-                    logger.info("Updating protected field '{}' from project '{}'", s, project.getFqn());
-                } else {
-                    throw new CatalogDBException("Parameter '" + s + "' can't be changed");
-                }
-            }
+                    if (parameters.containsKey(ProjectDBAdaptor.QueryParams.CREATION_DATE.key())) {
+                        // Validate creationDate format
+                        String creationDate = parameters.getString(ProjectDBAdaptor.QueryParams.CREATION_DATE.key());
+                        ParamUtils.checkDateFormat(creationDate, ProjectDBAdaptor.QueryParams.CREATION_DATE.key());
+                    }
+                    if (parameters.containsKey(ProjectDBAdaptor.QueryParams.MODIFICATION_DATE.key())) {
+                        // Validate modificationDate format
+                        String modificationDate = parameters.getString(ProjectDBAdaptor.QueryParams.MODIFICATION_DATE.key());
+                        ParamUtils.checkDateFormat(modificationDate, ProjectDBAdaptor.QueryParams.MODIFICATION_DATE.key());
+                    }
 
-            if (parameters.containsKey(ProjectDBAdaptor.QueryParams.CREATION_DATE.key())) {
-                // Validate creationDate format
-                String creationDate = parameters.getString(ProjectDBAdaptor.QueryParams.CREATION_DATE.key());
-                ParamUtils.checkDateFormat(creationDate, ProjectDBAdaptor.QueryParams.CREATION_DATE.key());
-            }
-            if (parameters.containsKey(ProjectDBAdaptor.QueryParams.MODIFICATION_DATE.key())) {
-                // Validate modificationDate format
-                String modificationDate = parameters.getString(ProjectDBAdaptor.QueryParams.MODIFICATION_DATE.key());
-                ParamUtils.checkDateFormat(modificationDate, ProjectDBAdaptor.QueryParams.MODIFICATION_DATE.key());
-            }
+                    // Update organism information only if any of the fields was not properly defined
+                    if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key())
+                            || parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key())
+                            || parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key())) {
+                        OpenCGAResult<Project> projectQR = getProjectDBAdaptor(fqn.getOrganizationId())
+                                .get(projectUid, new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()));
+                        if (projectQR.getNumResults() == 0) {
+                            throw new CatalogException("Project " + projectUid + " not found");
+                        }
+                        boolean canBeUpdated = false;
+                        if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key())
+                                && StringUtils.isEmpty(projectQR.first().getOrganism().getScientificName())) {
+                            canBeUpdated = true;
+                        }
+                        if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key())
+                                && StringUtils.isEmpty(projectQR.first().getOrganism().getCommonName())) {
+                            canBeUpdated = true;
+                        }
+                        if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key())
+                                && StringUtils.isEmpty(projectQR.first().getOrganism().getAssembly())) {
+                            canBeUpdated = true;
+                        }
+                        if (!canBeUpdated) {
+                            throw new CatalogException("Cannot update organism information that is already filled in");
+                        }
+                    }
 
-            // Update organism information only if any of the fields was not properly defined
-            if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key())
-                    || parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key())
-                    || parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key())) {
-                OpenCGAResult<Project> projectQR = getProjectDBAdaptor(organizationId)
-                        .get(projectUid, new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()));
-                if (projectQR.getNumResults() == 0) {
-                    throw new CatalogException("Project " + projectUid + " not found");
-                }
-                boolean canBeUpdated = false;
-                if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key())
-                        && StringUtils.isEmpty(projectQR.first().getOrganism().getScientificName())) {
-                    canBeUpdated = true;
-                }
-                if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key())
-                        && StringUtils.isEmpty(projectQR.first().getOrganism().getCommonName())) {
-                    canBeUpdated = true;
-                }
-                if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key())
-                        && StringUtils.isEmpty(projectQR.first().getOrganism().getAssembly())) {
-                    canBeUpdated = true;
-                }
-                if (!canBeUpdated) {
-                    throw new CatalogException("Cannot update organism information that is already filled in");
-                }
-            }
+                    if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ID.key())) {
+                        ParamUtils.checkIdentifier(parameters.getString(ProjectDBAdaptor.QueryParams.ID.key()), "id");
+                    }
 
-            if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ID.key())) {
-                ParamUtils.checkIdentifier(parameters.getString(ProjectDBAdaptor.QueryParams.ID.key()), "id");
-            }
+                    OpenCGAResult<Project> update = getProjectDBAdaptor(fqn.getOrganizationId()).update(projectUid, parameters,
+                            QueryOptions.empty());
 
-            OpenCGAResult<Project> update = getProjectDBAdaptor(organizationId).update(projectUid, parameters, QueryOptions.empty());
+                    if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                        // Fetch updated project
+                        OpenCGAResult<Project> result = getProjectDBAdaptor(fqn.getOrganizationId())
+                                .get(new Query(ProjectDBAdaptor.QueryParams.UID.key(), projectUid), options, userId);
+                        update.setResults(result.getResults());
+                    }
 
-            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
-                // Fetch updated project
-                OpenCGAResult<Project> result = getProjectDBAdaptor(organizationId)
-                        .get(new Query(ProjectDBAdaptor.QueryParams.UID.key(), projectUid), options, userId);
-                update.setResults(result.getResults());
-            }
-
-            return update;
-        });
+                    return update;
+                });
 
     }
 
@@ -467,55 +469,59 @@ public class ProjectManager extends AbstractManager<Project> {
         ObjectMap params = new ObjectMap()
                 .append("id", projectStr)
                 .append("token", token);
-        return runForSingleEntry(params, Enums.Action.INCREMENT_PROJECT_RELEASE, token, (organizationId, payload, entryParam) -> {
-            CatalogFqn catalogFqn = CatalogFqn.extractFqnFromProject(projectStr, payload);
-            entryParam.setId(catalogFqn.getProjectId());
-            entryParam.setUuid(catalogFqn.getProjectUuid());
+        return runForSingleEntry(params, Enums.Action.INCREMENT_PROJECT_RELEASE, token,
+                (payload) -> CatalogFqn.extractFqnFromProject(projectStr, payload),
+                (fqn, payload, entryParam) -> {
+                    entryParam.setId(fqn.getProjectId());
+                    entryParam.setUuid(fqn.getProjectUuid());
 
-            String userId = payload.getUserId(catalogFqn.getOrganizationId());
+                    String userId = payload.getUserId(fqn.getOrganizationId());
 
-            Project project = resolveId(catalogFqn, null, payload).first();
-            entryParam.setId(project.getId());
-            entryParam.setUuid(project.getUuid());
+                    Project project = resolveId(fqn, null, payload).first();
+                    entryParam.setId(project.getId());
+                    entryParam.setUuid(project.getUuid());
 
-            long projectUid = project.getUid();
+                    long projectUid = project.getUid();
 
-            authorizationManager.checkCanEditProject(organizationId, projectUid, userId);
+                    authorizationManager.checkCanEditProject(fqn.getOrganizationId(), projectUid, userId);
 
-            // Obtain the current release number
-            int currentRelease = project.getCurrentRelease();
+                    // Obtain the current release number
+                    int currentRelease = project.getCurrentRelease();
 
-            // Check current release has been used at least in one study or file or cohort or individual...
-            QueryOptions studyOptions = keepFieldInQueryOptions(StudyManager.INCLUDE_STUDY_IDS, StudyDBAdaptor.QueryParams.RELEASE.key());
-            OpenCGAResult<Study> studyResult = getStudyDBAdaptor(organizationId).getAllStudiesInProject(projectUid, studyOptions);
-            List<Study> allStudiesInProject = studyResult.getResults();
-            if (allStudiesInProject.isEmpty()) {
-                throw new CatalogException("Cannot increment current release number. No studies found for release " + currentRelease);
-            }
+                    // Check current release has been used at least in one study or file or cohort or individual...
+                    QueryOptions studyOptions = keepFieldInQueryOptions(StudyManager.INCLUDE_STUDY_IDS,
+                            StudyDBAdaptor.QueryParams.RELEASE.key());
+                    OpenCGAResult<Study> studyResult = getStudyDBAdaptor(fqn.getOrganizationId())
+                            .getAllStudiesInProject(projectUid, studyOptions);
+                    List<Study> allStudiesInProject = studyResult.getResults();
+                    if (allStudiesInProject.isEmpty()) {
+                        throw new CatalogException("Cannot increment current release number. No studies found for release "
+                                + currentRelease);
+                    }
 
-            if (checkCurrentReleaseInUse(organizationId, allStudiesInProject, currentRelease)) {
-                // Increment current project release
-                OpenCGAResult writeResult = getProjectDBAdaptor(organizationId).incrementCurrentRelease(projectUid);
-                OpenCGAResult<Project> projectDataResult = getProjectDBAdaptor(organizationId).get(projectUid,
-                        new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key()));
-                OpenCGAResult<Integer> queryResult = new OpenCGAResult<>(projectDataResult.getTime() + writeResult.getTime(),
-                        Collections.emptyList(), 1, Collections.singletonList(projectDataResult.first().getCurrentRelease()), 1);
+                    if (checkCurrentReleaseInUse(fqn.getOrganizationId(), allStudiesInProject, currentRelease)) {
+                        // Increment current project release
+                        OpenCGAResult writeResult = getProjectDBAdaptor(fqn.getOrganizationId()).incrementCurrentRelease(projectUid);
+                        OpenCGAResult<Project> projectDataResult = getProjectDBAdaptor(fqn.getOrganizationId()).get(projectUid,
+                                new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key()));
+                        OpenCGAResult<Integer> queryResult = new OpenCGAResult<>(projectDataResult.getTime() + writeResult.getTime(),
+                                Collections.emptyList(), 1, Collections.singletonList(projectDataResult.first().getCurrentRelease()), 1);
 
-                // Upgrade release in every versioned data model
-                for (Study study : allStudiesInProject) {
-                    getSampleDBAdaptor(organizationId).updateProjectRelease(study.getUid(), queryResult.first());
-                    getIndividualDBAdaptor(organizationId).updateProjectRelease(study.getUid(), queryResult.first());
-                    getFamilyDBAdaptor(organizationId).updateProjectRelease(study.getUid(), queryResult.first());
-                    getPanelDBAdaptor(organizationId).updateProjectRelease(study.getUid(), queryResult.first());
-                    getInterpretationDBAdaptor(organizationId).updateProjectRelease(study.getUid(), queryResult.first());
-                }
+                        // Upgrade release in every versioned data model
+                        for (Study study : allStudiesInProject) {
+                            getSampleDBAdaptor(fqn.getOrganizationId()).updateProjectRelease(study.getUid(), queryResult.first());
+                            getIndividualDBAdaptor(fqn.getOrganizationId()).updateProjectRelease(study.getUid(), queryResult.first());
+                            getFamilyDBAdaptor(fqn.getOrganizationId()).updateProjectRelease(study.getUid(), queryResult.first());
+                            getPanelDBAdaptor(fqn.getOrganizationId()).updateProjectRelease(study.getUid(), queryResult.first());
+                            getInterpretationDBAdaptor(fqn.getOrganizationId()).updateProjectRelease(study.getUid(), queryResult.first());
+                        }
 
-                return queryResult;
-            } else {
-                throw new CatalogException("Cannot increment current release number. The current release " + currentRelease
-                        + " has not yet been used in any entry");
-            }
-        }, "");
+                        return queryResult;
+                    } else {
+                        throw new CatalogException("Cannot increment current release number. The current release " + currentRelease
+                                + " has not yet been used in any entry");
+                    }
+                }, "");
     }
 
     public void importReleases(String organizationId, String owner, String inputDirStr, String token)

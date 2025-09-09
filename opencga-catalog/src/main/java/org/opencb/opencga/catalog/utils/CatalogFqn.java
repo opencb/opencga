@@ -36,6 +36,11 @@ public final class CatalogFqn {
         this.providedId = id;
     }
 
+    public static CatalogFqn fromOrganization(String organizationId, JwtPayload payload) {
+        String orgId = StringUtils.isNotEmpty(organizationId) ? organizationId : payload.getOrganization();
+        return new CatalogFqn(orgId, organizationId);
+    }
+
     public static CatalogFqn fromProjectFqn(String projectFqn) {
         if (StringUtils.isEmpty(projectFqn)) {
             throw new IllegalArgumentException("Missing project fqn");

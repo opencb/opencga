@@ -30,6 +30,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
+import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -402,11 +403,15 @@ public abstract class AbstractManager<R extends IPrivateFields> {
      * @param <R> Type of the element that will be processed.
      */
     public interface ExecuteOperationForSingleEntry<R> {
-        OpenCGAResult<R> execute(String organizationId, JwtPayload payload, EntryParam entryParam) throws CatalogException;
+        OpenCGAResult<R> execute(CatalogFqn catalogFqn, JwtPayload payload, EntryParam entryParam) throws CatalogException;
     }
 
     public interface ExecuteQueryOperation<R> {
-        OpenCGAResult<R> execute(String organizationId, JwtPayload payload) throws CatalogException;
+        OpenCGAResult<R> execute(CatalogFqn catalogFqn, JwtPayload payload) throws CatalogException;
+    }
+
+    public interface CatalogFqnProvider {
+        CatalogFqn execute(JwtPayload payload) throws CatalogException;
     }
 
     /**
@@ -416,39 +421,39 @@ public abstract class AbstractManager<R extends IPrivateFields> {
         void execute(String organizationId, String userId, EntryParam entryParam, Exception e) throws CatalogException;
     }
 
-    protected OpenCGAResult<R> create(Object object, QueryOptions options, String token, ExecuteOperationForSingleEntry<R> execution)
-            throws CatalogException {
-        return create(new ObjectMap(), object, options, token, execution);
+    protected OpenCGAResult<R> create(Object object, QueryOptions options, String token, CatalogFqnProvider catalogFqnProvider,
+                                      ExecuteOperationForSingleEntry<R> execution) throws CatalogException {
+        return create(new ObjectMap(), object, options, token, catalogFqnProvider, execution);
     }
 
     protected OpenCGAResult<R> create(ObjectMap params, Object object, QueryOptions options, String token,
-                                      ExecuteOperationForSingleEntry<R> execution) throws CatalogException {
+                                      CatalogFqnProvider catalogFqnProvider, ExecuteOperationForSingleEntry<R> execution)
+            throws CatalogException {
         params = params != null ? params : new ObjectMap();
         params.putIfAbsent("object", object);
         params.putIfAbsent("options", options);
         params.putIfAbsent("token", token);
 
-        return runForSingleEntry(params, Enums.Action.CREATE, token, execution, null);
+        return runForSingleEntry(params, Enums.Action.CREATE, token, catalogFqnProvider, execution, null);
     }
 
-    protected OpenCGAResult<R> get(String id, QueryOptions options, String token, ExecuteOperationForSingleEntry<R> execution)
-            throws CatalogException {
-        return get(new ObjectMap(), id, options, token, execution);
+    protected OpenCGAResult<R> get(String id, QueryOptions options, String token, CatalogFqnProvider catalogFqnProvider,
+                                   ExecuteOperationForSingleEntry<R> execution) throws CatalogException {
+        return get(new ObjectMap(), id, options, token, catalogFqnProvider, execution);
     }
 
-    protected OpenCGAResult<R> get(ObjectMap params, String id, QueryOptions options, String token,
-                                   ExecuteOperationForSingleEntry<R> execution)
-            throws CatalogException {
+    protected OpenCGAResult<R> get(ObjectMap params, String id, QueryOptions options, String token, CatalogFqnProvider catalogFqnProvider,
+                                   ExecuteOperationForSingleEntry<R> execution) throws CatalogException {
         params = params != null ? params : new ObjectMap();
         params.putIfAbsent("id", id);
         params.putIfAbsent("options", options);
         params.putIfAbsent("token", token);
 
-        return runForSingleEntry(params, Enums.Action.INFO, token, execution, null);
+        return runForSingleEntry(params, Enums.Action.INFO, token, catalogFqnProvider, execution, null);
     }
 
     protected OpenCGAResult<R> update(ObjectMap params, String id, ObjectMap updateParams, QueryOptions options, String token,
-                                      ExecuteOperationForSingleEntry<R> execution)
+                                      CatalogFqnProvider catalogFqnProvider, ExecuteOperationForSingleEntry<R> execution)
             throws CatalogException {
         params = params != null ? params : new ObjectMap();
         params.putIfAbsent("id", id);
@@ -456,42 +461,43 @@ public abstract class AbstractManager<R extends IPrivateFields> {
         params.putIfAbsent("options", options);
         params.putIfAbsent("token", token);
 
-        return runForSingleEntry(params, Enums.Action.UPDATE, token, execution, null);
+        return runForSingleEntry(params, Enums.Action.UPDATE, token, catalogFqnProvider, execution, null);
     }
 
 
-    protected OpenCGAResult<R> search(ObjectMap params, Query query, QueryOptions options, String token, ExecuteQueryOperation<R> execution)
-            throws CatalogException {
+    protected OpenCGAResult<R> search(ObjectMap params, Query query, QueryOptions options, String token,
+                                      CatalogFqnProvider catalogFqnProvider, ExecuteQueryOperation<R> execution) throws CatalogException {
         params = params != null ? params : new ObjectMap();
         params.putIfAbsent("query", query);
         params.putIfAbsent("options", options);
         params.putIfAbsent("token", token);
 
-        return runForQueryOperation(params, Enums.Action.SEARCH, token, execution, null);
+        return runForQueryOperation(params, Enums.Action.SEARCH, token, catalogFqnProvider, execution, null);
     }
 
     protected <T> OpenCGAResult<T> runForSingleEntry(ObjectMap params, Enums.Action action, String token,
-                                                     ExecuteOperationForSingleEntry<T> execution, String errorMessage)
-            throws CatalogException {
-        return runForSingleEntry(params, action, token, execution, null, errorMessage);
-    }
-
-    protected <T> OpenCGAResult<T> runForSingleEntry(ObjectMap params, Enums.Action action, String token,
-                                                     ExecuteOperationForSingleEntry<T> execution, ExecuteOnError onError,
+                                                     CatalogFqnProvider catalogFqnProvider, ExecuteOperationForSingleEntry<T> execution,
                                                      String errorMessage) throws CatalogException {
+        return runForSingleEntry(params, action, token, catalogFqnProvider, execution, null, errorMessage);
+    }
+
+    protected <T> OpenCGAResult<T> runForSingleEntry(ObjectMap params, Enums.Action action, String token,
+                                                     CatalogFqnProvider catalogFqnProvider, ExecuteOperationForSingleEntry<T> execution,
+                                                     ExecuteOnError onError, String errorMessage) throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        String organizationId = tokenPayload.getOrganization();
-        String userId = tokenPayload.getUserId(organizationId);
+        CatalogFqn fqn = catalogFqnProvider.execute(tokenPayload);
+        String userId = tokenPayload.getUserId(fqn.getOrganizationId());
 
         String eventId = getResource().name().toLowerCase() + "." + action.name().toLowerCase();
 
         String eventUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.EVENT);
-        OpencgaEvent opencgaEvent = OpencgaEvent.build(eventUuid, eventId, params, organizationId, userId, tokenPayload.getToken());
+        OpencgaEvent opencgaEvent = OpencgaEvent.build(eventUuid, eventId, params, fqn.getOrganizationId(), userId,
+                tokenPayload.getToken());
         CatalogEvent catalogEvent = CatalogEvent.build(opencgaEvent);
         EntryParam entryParam = new EntryParam();
         try {
             // Execute code
-            OpenCGAResult<T> execute = execution.execute(organizationId, tokenPayload, entryParam);
+            OpenCGAResult<T> execute = execution.execute(fqn, tokenPayload, entryParam);
 
             // Fill missing OpencgaEvent entries
             opencgaEvent.setResult(execute);
@@ -505,7 +511,7 @@ public abstract class AbstractManager<R extends IPrivateFields> {
             EventManager.getInstance().notify(catalogEvent, e);
             if (onError != null) {
                 try {
-                    onError.execute(organizationId, userId, entryParam, e);
+                    onError.execute(fqn.getOrganizationId(), userId, entryParam, e);
                 } catch (RuntimeException e1) {
                     logger.error("Error running onErrorRunnable", e1);
                     e.addSuppressed(e1);
@@ -520,19 +526,21 @@ public abstract class AbstractManager<R extends IPrivateFields> {
     }
 
     private <T> OpenCGAResult<T> runForQueryOperation(ObjectMap params, Enums.Action action, String token,
-                                                      ExecuteQueryOperation<T> execution,  String errorMessage) throws CatalogException {
+                                                      CatalogFqnProvider catalogFqnProvider, ExecuteQueryOperation<T> execution,
+                                                      String errorMessage) throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        String organizationId = tokenPayload.getOrganization();
-        String userId = tokenPayload.getUserId(organizationId);
+        CatalogFqn fqn = catalogFqnProvider.execute(tokenPayload);
+        String userId = tokenPayload.getUserId(fqn.getOrganizationId());
 
         String eventId = getResource().name().toLowerCase() + "." + action.name().toLowerCase();
 
         String eventUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.EVENT);
-        OpencgaEvent opencgaEvent = OpencgaEvent.build(eventUuid, eventId, params, organizationId, userId, tokenPayload.getToken());
+        OpencgaEvent opencgaEvent = OpencgaEvent.build(eventUuid, eventId, params, fqn.getOrganizationId(), userId,
+                tokenPayload.getToken());
         CatalogEvent catalogEvent = CatalogEvent.build(opencgaEvent);
         try {
             // Execute code
-            OpenCGAResult<T> execute = execution.execute(organizationId, tokenPayload);
+            OpenCGAResult<T> execute = execution.execute(fqn, tokenPayload);
 
             // Fill missing OpencgaEvent entries
             opencgaEvent.setResult(execute);
