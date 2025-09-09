@@ -41,55 +41,39 @@ function error() {
   log "=========================="
 }
 
-
 # Function to calculate the branch for dependencies
-# Determine the branch to use for a given dependency version
-calculate_branch() {
-  # 1) If TASK reference is provided and exists in the remote, use it
-  if [[ -n "${TASK_REFERENCE:-}" ]] && git ls-remote --exit-code --heads origin "$TASK_REFERENCE" >/dev/null 2>&1; then
+function calculate_branch() {
+  local EXISTS=""
+  if [[ -n $TASK_REFERENCE ]]; then
+    local EXISTS=$(git ls-remote origin "$TASK_REFERENCE")
+  fi
+  if [[ -n $EXISTS ]]; then
     echo "$TASK_REFERENCE"
-    return
-  fi
-
-  # 2) Detect current opencga-enterprise branch (prefer GH Actions env var)
-  local TMP_DIR; TMP_DIR="$(pwd)"
-  cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
-
-  # Prefer GITHUB_REF_NAME when present (e.g., in GitHub Actions)
-  local ENTERPRISE_BRANCH="${GITHUB_REF_NAME:-$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '')}"
-  # In detached HEAD, rev-parse returns 'HEAD' -> treat as empty
-  if [[ "$ENTERPRISE_BRANCH" == "HEAD" ]]; then
-    ENTERPRISE_BRANCH=""
-  fi
-  cd "$TMP_DIR" || exit 2
-
-  # 3) If we have a clear branch (develop/main), reuse it. For TASK-* or release-*,
-  #    or when empty (detached HEAD), derive the dependency branch from the version.
-  if [[ -z "$ENTERPRISE_BRANCH" || "$ENTERPRISE_BRANCH" == TASK-* || "$ENTERPRISE_BRANCH" == release-* ]]; then
-    # Derive from provided version: MAJOR.MINOR.PATCH[-suffix]
-    local VERSION MAJOR MINOR PATCH
-    VERSION="$(echo "$1" | cut -d '-' -f 1)"
-    MAJOR="$(echo "$VERSION" | cut -d '.' -f 1)"
-    MINOR="$(echo "$VERSION" | cut -d '.' -f 2)"
-    PATCH="$(echo "$VERSION" | cut -d '.' -f 3)"
-
-    if [[ -z "$MAJOR" || -z "$MINOR" || -z "$PATCH" ]]; then
-      echo "develop"  # safe fallback
-      return
-    fi
-
-    if (( PATCH > 0 )); then
-      echo "release-$MAJOR.$MINOR.x"   # hotfix
-    elif (( MINOR == 0 )); then
-      echo "develop"                   # next dev line
-    else
-      echo "release-$MAJOR.x.x"        # release train
-    fi
   else
-    echo "$ENTERPRISE_BRANCH"          # main/develop, etc.
+    local TMP_DIR=$(pwd)
+    cd "$OPENCGA_ENTERPRISE_HOME_DIR"
+    ## This is opencga-enterprise
+    ENTERPRISE_BRANCH="$(git branch --show-current)"
+    cd "$TMP_DIR"
+    ## If opencga-enterprise branch name is main, develop then we return the same name.
+    ## Otherwise, we calculate the dependency branch from the dependency version.
+    if [[ "$ENTERPRISE_BRANCH" == "TASK"* || "$ENTERPRISE_BRANCH" == "release"* ]]; then
+      local VERSION=$(echo "$1" | cut -d "-" -f 1)
+      local MAJOR=$(echo "$VERSION" | cut -d "." -f 1)
+      local MINOR=$(echo "$VERSION" | cut -d "." -f 2)
+      local PATCH=$(echo "$VERSION" | cut -d "." -f 3)
+      if [ $PATCH -gt 0 ]; then ## It's a hotfix
+        echo "release-$MAJOR.$MINOR.x"
+      elif [ $MINOR -eq 0 ]; then ## It's a develop branch
+        echo "develop"
+      else  ## It's a release branch
+        echo "release-$MAJOR.x.x"
+      fi
+    else
+      echo "$ENTERPRISE_BRANCH"
+    fi
   fi
 }
-
 
 # Function to manage dependencies
 function manage_dependency() {
@@ -99,23 +83,17 @@ function manage_dependency() {
   cd "$TEMP_DIR" || exit 2
   git clone https://github.com/opencb/"$REPO".git
   if [ -d "./$REPO" ]; then
-    local BRANCH_NAME
-    BRANCH_NAME="$(calculate_branch "$REPO_VERSION")"
-
-    if [[ -z "$BRANCH_NAME" ]]; then
-      log "[ERROR] - Calculated branch is empty for $REPO (version $REPO_VERSION)."
-      log "         Likely detached HEAD and no fallback branch could be inferred."
-      exit 1
-    fi
-    git checkout "$BRANCH_NAME"
+      cd "$REPO" || exit 2
+      local BRANCH_NAME="$(calculate_branch "$REPO_VERSION")"
   else
       log "The $REPO branch $BRANCH_NAME cloning process has failed!"
       exit 1
   fi
+  git checkout "$BRANCH_NAME"
   local VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -q -DforceStdout)
   if [ "$VERSION" == "$REPO_VERSION" ];then
-    log "Version of $REPO downloaded is correct: version $VERSION in branch $BRANCH_NAME"
-    log_summary "Version of $REPO downloaded is correct: version $VERSION in branch $BRANCH_NAME"
+    log "Version of $REPO to download correct $VERSION should be in $BRANCH_NAME"
+    log_summary "Version of $REPO to download correct $VERSION should be in $BRANCH_NAME"
     log_version_summary "$REPO,$VERSION,$BRANCH_NAME"
     if [ "$COMMAND" == "build" ];then
       log "Building $REPO branch $BRANCH_NAME."
@@ -142,7 +120,7 @@ function manage_dependency() {
       fi
     fi
   else
-    log "Version of $REPO to download correct $VERSION should be in $BRANCH_NAME"
+      log "Version of $REPO to download correct $VERSION should be in $BRANCH_NAME"
   fi
   cd "$OPENCGA_ENTERPRISE_HOME_DIR" || exit 2
 }
