@@ -53,7 +53,7 @@ public class DummyProjectMetadataAdaptor implements ProjectMetadataAdaptor {
 
     @Override
     public synchronized DataResult updateProjectMetadata(ProjectMetadata projectMetadata, boolean updateCounters) {
-        DummyProjectMetadataAdaptor.projectMetadata = projectMetadata;
+        DummyProjectMetadataAdaptor.projectMetadata = projectMetadata.copy();
         return new DataResult();
     }
 

@@ -448,10 +448,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @param files         Indexed files
      * @param results       StorageETLResults
      * @param options       Other options
-     * @throws StoragePipelineException  If there is any problem related with the StorageEngine
+     * @throws StorageEngineException  If there is any problem related with the StorageEngine
      */
     protected void annotateLoadedFiles(URI outdirUri, List<URI> files, List<StoragePipelineResult> results, ObjectMap options)
-            throws StoragePipelineException {
+            throws StorageEngineException {
         if (files != null && !files.isEmpty() && options.getBoolean(ANNOTATE.key(),
                 ANNOTATE.defaultValue())) {
             try {
@@ -478,8 +478,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                         .append(DefaultVariantAnnotationManager.FILE_NAME, dbName + "." + TimeUtils.getTime());
 
                 annotate(outdirUri, annotationQuery, annotationOptions);
-            } catch (RuntimeException | StorageEngineException | VariantAnnotatorException | IOException e) {
-                throw new StoragePipelineException("Error annotating.", e, results);
+            } catch (RuntimeException | VariantAnnotatorException | IOException e) {
+                throw new StoragePipelineException("Error annotating: " + e.getMessage(), e, results);
             }
         }
     }
