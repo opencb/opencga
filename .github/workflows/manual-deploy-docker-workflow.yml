@@ -15,7 +15,7 @@ on:
       tag:
         description: "The tag for the new docker."
         type: string
-        required: false
+        required: true
       release:
         description: "If true, it will download a released version of opencga otherwise a snapshot version."
         type: boolean
@@ -86,7 +86,7 @@ jobs:
       - name: OpenCGA Enterprise Maven Build (skip tests)
         run: |
           if [ -n "${{ inputs.task }}" ]; then
-              ./build.sh -b -T "${{ inputs.task }}" --storage-hadoop ${{ inputs.hadoop }} -d  ${{ inputs.task == '' && '' || -p inputs.task }}
+              ./build.sh -b -T "${{ inputs.task }}" --storage-hadoop ${{ inputs.hadoop }} -d -p "${{ inputs.tag }}"
           else
-              ./build.sh -b --storage-hadoop ${{ inputs.hadoop }} -d 
+              ./build.sh -b --storage-hadoop ${{ inputs.hadoop }} -d -p "${{ inputs.tag }}"
           fi
