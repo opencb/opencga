@@ -85,7 +85,7 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}
       - name: OpenCGA Enterprise Maven Build (skip tests)
         run: |
-          if [ -n "${{ inputs.task }}" ]; then
+          if [[ -n "${{ inputs.task }}" ]]; then
               ./build.sh -b -T "${{ inputs.task }}" --storage-hadoop ${{ inputs.hadoop }} -d -p "${{ inputs.tag }}"
           else
               ./build.sh -b --storage-hadoop ${{ inputs.hadoop }} -d -p "${{ inputs.tag }}"
