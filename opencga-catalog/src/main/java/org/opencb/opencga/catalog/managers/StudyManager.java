@@ -871,105 +871,95 @@ public class StudyManager extends AbstractManager {
     }
 
     public OpenCGAResult<Group> getGroup(String studyId, String groupId, String token) throws CatalogException {
-        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, tokenPayload);
-        String organizationId = studyFqn.getOrganizationId();
-        String userId = tokenPayload.getUserId(organizationId);
-        Study study = resolveId(studyFqn, QueryOptions.empty(), tokenPayload);
-
         ObjectMap auditParams = new ObjectMap()
-                .append("studyId", studyId)
-                .append("groupId", groupId)
+                .append("study", studyId)
+                .append("group", groupId)
                 .append("token", token);
-        try {
-            authorizationManager.checkCanViewStudy(organizationId, study.getUid(), userId);
+        return runForSingleEntry(auditParams, Enums.Action.FETCH_STUDY_GROUPS, token,
+                (payload) -> CatalogFqn.extractFqnFromStudy(studyId, payload),
+                (fqn, payload, entryParam) -> {
+                    entryParam.setId(fqn.getStudyId());
+                    entryParam.setUuid(fqn.getStudyUuid());
 
-            // Fix the groupId
-            if (groupId != null && !groupId.startsWith("@")) {
-                groupId = "@" + groupId;
-            }
+                    String userId = payload.getUserId(fqn.getOrganizationId());
+                    Study study = resolveId(fqn, QueryOptions.empty(), payload);
+                    entryParam.setId(study.getId());
+                    entryParam.setUuid(study.getUuid());
+                    authorizationManager.checkCanViewStudy(fqn.getOrganizationId(), study.getUid(), userId);
 
-            OpenCGAResult<Group> result = getStudyDBAdaptor(organizationId).getGroup(study.getUid(), groupId, Collections.emptyList());
-            auditManager.audit(organizationId, userId, Enums.Action.FETCH_STUDY_GROUPS, Enums.Resource.STUDY, study.getId(),
-                    study.getUuid(), study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            return result;
-        } catch (CatalogException e) {
-            auditManager.audit(organizationId, userId, Enums.Action.FETCH_STUDY_GROUPS, Enums.Resource.STUDY, study.getId(),
-                    study.getUuid(), study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
-        }
+                    String fixedGroupId = groupId;
+                    // Fix the groupId
+                    if (StringUtils.isNotEmpty(fixedGroupId) && !fixedGroupId.startsWith("@")) {
+                        fixedGroupId = "@" + fixedGroupId;
+                    }
+
+                    return getStudyDBAdaptor(fqn.getOrganizationId()).getGroup(study.getUid(), fixedGroupId, Collections.emptyList());
+                }, "");
     }
 
     public OpenCGAResult<CustomGroup> getCustomGroups(String studyId, String groupId, String token) throws CatalogException {
-        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, tokenPayload);
-        String organizationId = studyFqn.getOrganizationId();
-        String userId = tokenPayload.getUserId(organizationId);
-        Study study = resolveId(studyFqn, QueryOptions.empty(), tokenPayload);
-
         ObjectMap auditParams = new ObjectMap()
-                .append("studyId", studyId)
-                .append("groupId", groupId)
+                .append("study", studyId)
+                .append("group", groupId)
                 .append("token", token);
-        try {
-            StopWatch stopWatch = new StopWatch();
-            stopWatch.start();
+        return runForSingleEntry(auditParams, Enums.Action.FETCH_STUDY_GROUPS, token,
+                payload -> CatalogFqn.extractFqnFromStudy(studyId, payload),
+                (fqn, payload, entryParam) -> {
+                    StopWatch stopWatch = StopWatch.createStarted();
 
-            authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, study.getUid(), userId);
+                    entryParam.setId(fqn.getStudyId());
+                    entryParam.setUuid(fqn.getStudyUuid());
 
-            // Fix the groupId
-            if (groupId != null && !groupId.startsWith("@")) {
-                groupId = "@" + groupId;
-            }
+                    String userId = payload.getUserId(fqn.getOrganizationId());
+                    Study study = resolveId(fqn, QueryOptions.empty(), payload);
 
-            OpenCGAResult<Group> result = getStudyDBAdaptor(organizationId).getGroup(study.getUid(), groupId, Collections.emptyList());
+                    entryParam.setId(study.getId());
+                    entryParam.setUuid(study.getUuid());
 
-            // Extract all users from all groups
-            Set<String> userIds = new HashSet<>();
-            for (Group group : result.getResults()) {
-                userIds.addAll(group.getUserIds());
-            }
+                    authorizationManager.checkIsAtLeastStudyAdministrator(fqn.getOrganizationId(), study.getUid(), userId);
 
-            Query userQuery = new Query(UserDBAdaptor.QueryParams.ID.key(), new ArrayList<>(userIds));
-            QueryOptions userOptions = new QueryOptions();
-            OpenCGAResult<User> userResult = getUserDBAdaptor(organizationId).get(userQuery, userOptions);
-            Map<String, User> userMap = new HashMap<>();
-            for (User user : userResult.getResults()) {
-                userMap.put(user.getId(), user);
-            }
+                    // Fix the groupId
+                    String fixedGroupId = StringUtils.isNotEmpty(groupId) && !groupId.startsWith("@") ? "@" + groupId : groupId;
 
-            // Generate groups with list of full users
-            List<CustomGroup> customGroupList = new ArrayList<>(result.getNumResults());
-            for (Group group : result.getResults()) {
-                List<User> userList = new ArrayList<>(group.getUserIds().size());
-                for (String tmpUserId : group.getUserIds()) {
-                    if (userMap.containsKey(tmpUserId)) {
-                        userList.add(userMap.get(tmpUserId));
+                    OpenCGAResult<Group> result = getStudyDBAdaptor(fqn.getOrganizationId()).getGroup(study.getUid(), fixedGroupId,
+                            Collections.emptyList());
+
+                    // Extract all users from all groups
+                    Set<String> userIds = new HashSet<>();
+                    for (Group group : result.getResults()) {
+                        userIds.addAll(group.getUserIds());
                     }
-                }
-                customGroupList.add(new CustomGroup(group.getId(), userList, group.getSyncedFrom()));
-            }
 
-            OpenCGAResult<CustomGroup> finalResult = new OpenCGAResult<>(result.getTime(), result.getEvents(), result.getNumResults(),
-                    customGroupList, result.getNumMatches(), result.getNumInserted(), result.getNumUpdated(), result.getNumDeleted(),
-                    result.getNumErrors(), result.getAttributes(), result.getFederationNode());
+                    Query userQuery = new Query(UserDBAdaptor.QueryParams.ID.key(), new ArrayList<>(userIds));
+                    QueryOptions userOptions = new QueryOptions();
+                    OpenCGAResult<User> userResult = getUserDBAdaptor(fqn.getOrganizationId()).get(userQuery, userOptions);
+                    Map<String, User> userMap = new HashMap<>();
+                    for (User user : userResult.getResults()) {
+                        userMap.put(user.getId(), user);
+                    }
 
-            auditManager.audit(organizationId, userId, Enums.Action.FETCH_STUDY_GROUPS, Enums.Resource.STUDY, study.getId(),
-                    study.getUuid(), study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+                    // Generate groups with list of full users
+                    List<CustomGroup> customGroupList = new ArrayList<>(result.getNumResults());
+                    for (Group group : result.getResults()) {
+                        List<User> userList = new ArrayList<>(group.getUserIds().size());
+                        for (String tmpUserId : group.getUserIds()) {
+                            if (userMap.containsKey(tmpUserId)) {
+                                userList.add(userMap.get(tmpUserId));
+                            }
+                        }
+                        customGroupList.add(new CustomGroup(group.getId(), userList, group.getSyncedFrom()));
+                    }
 
-            stopWatch.stop();
-            finalResult.setTime((int) stopWatch.getTime(TimeUnit.MILLISECONDS));
+                    OpenCGAResult<CustomGroup> finalResult = new OpenCGAResult<>(result.getTime(), result.getEvents(),
+                            result.getNumResults(), customGroupList, result.getNumMatches(), result.getNumInserted(),
+                            result.getNumUpdated(), result.getNumDeleted(), result.getNumErrors(), result.getAttributes(),
+                            result.getFederationNode());
 
-            return finalResult;
-        } catch (CatalogException e) {
-            auditManager.audit(organizationId, userId, Enums.Action.FETCH_STUDY_GROUPS, Enums.Resource.STUDY, study.getId(),
-                    study.getUuid(), study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
-        }
+                    stopWatch.stop();
+                    finalResult.setTime((int) stopWatch.getTime(TimeUnit.MILLISECONDS));
+
+                    return finalResult;
+                }, "");
     }
 
     public OpenCGAResult<Group> updateGroup(String studyId, String groupId, ParamUtils.BasicUpdateAction action,
@@ -1664,7 +1654,7 @@ public class StudyManager extends AbstractManager {
         }
     }
 
-    // **************************   Protected internal methods  ******************************** //
+// **************************   Protected internal methods  ******************************** //
 
     public void setVariantEngineConfigurationOptions(String studyStr, ObjectMap options, String token) throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
@@ -1743,7 +1733,7 @@ public class StudyManager extends AbstractManager {
         getStudyDBAdaptor(organizationId).update(study.getUid(), parameters, QueryOptions.empty());
     }
 
-    // **************************   Private methods  ******************************** //
+// **************************   Private methods  ******************************** //
 
     private boolean existsGroup(String organizationId, long studyId, String groupId) throws CatalogDBException {
         Query query = new Query()
