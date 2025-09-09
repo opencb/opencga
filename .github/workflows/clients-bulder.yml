@@ -14,7 +14,7 @@ on:
           - python
           - javascript
       branch:
-        description: "The branch, tag or SHA of the source code to build client."
+        description: "The reference of the source code to build client."
         type: string
         required: true
 
