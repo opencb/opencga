@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.zettagenomics.opencga-enterprise</groupId>
         <artifactId>opencga-enterprise</artifactId>
-        <version>3.0.0</version>
+        <version>3.2.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -17,7 +17,7 @@
         <build.dir>${project.basedir}/../build</build.dir>
         <opencga.build.dir>${project.basedir}/../opencga-home/build</opencga.build.dir>
         <app.dir>${project.basedir}/app</app.dir>
-        <opencga.client.dir>opencga-enterprise-client-${project.parent.version}</opencga.client.dir>
+        <opencga.client.dir>opencga-enterprise-cli-${project.parent.version}</opencga.client.dir>
 <!--        <dep.jline.version>3.12.1</dep.jline.version>-->
 
     </properties>
@@ -57,6 +57,10 @@
             <artifactId>opencga-client</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-analysis</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.opencb.commons</groupId>
             <artifactId>commons-datastore-core</artifactId>
         </dependency>
@@ -83,6 +87,10 @@
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-catalog</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-storage-core</artifactId>
         </dependency>
 
         <!-- General dependencies -->
@@ -338,29 +346,7 @@
                                     <arg value="${build.dir}/misc/git"/>
                                 </exec>
 
-                                <echo>Copying Python, R and JavaScript to ${build.dir}/clients</echo>
-                                <exec executable="cp" failonerror="true">
-                                    <arg value="-r"/>
-                                    <arg value="${project.basedir}/../opencga-enterprise-client/src/main/python"/>
-                                    <arg value="${build.dir}/clients"/>
-                                </exec>
-
-                                <exec executable="cp" failonerror="true">
-                                    <arg value="-r"/>
-                                    <arg value="${project.basedir}/../opencga-enterprise-client/src/main/R"/>
-                                    <arg value="${build.dir}/clients"/>
-                                </exec>
-                                <!-- We need to read DESCRIPTION from target folder because we have renamed the version -->
-<!--                                <exec executable="cp">-->
-<!--                                    <arg value="${project.basedir}/../opencga-enterprise-client/target/classes/DESCRIPTION"/>-->
-<!--                                    <arg value="${build.dir}/clients/R/"/>-->
-<!--                                </exec>-->
-                                <exec executable="cp" failonerror="true">
-                                    <arg value="-r"/>
-                                    <arg value="${project.basedir}/../opencga-enterprise-client/src/main/javascript"/>
-                                    <arg value="${build.dir}/clients"/>
-                                </exec>
-
+                                <!--Building javascript library  -->
                                 <echo>Copying configuration files</echo>
                                 <exec executable="cp" failonerror="true">
                                     <arg value="${project.basedir}/../opencga-enterprise-core/target/classes/enterprise-configuration.yml"/>
@@ -410,7 +396,9 @@
                         <phase>install</phase>
                         <configuration>
                             <target>
-                                <echo>Preparing 'opencga-client' folder</echo>
+
+                                <echo>Preparing 'opencga-enterprise-client' folder</echo>
+                                <echo>============================================</echo>
                                 <exec executable="mkdir" failonerror="true">
                                     <arg value="${build.dir}/${opencga.client.dir}"/>
                                     <arg value="${build.dir}/${opencga.client.dir}/bin"/>
@@ -422,9 +410,6 @@
                                 <exec executable="cp" failonerror="true">
                                     <arg value="-r"/>
                                     <arg value="${build.dir}/libs"/>
-                                    <arg value="${build.dir}/clients/python"/>
-                                    <arg value="${build.dir}/clients/R"/>
-                                    <arg value="${build.dir}/clients/javascript"/>
 <!--                                    <arg value="${build.dir}/LICENSE"/>-->
 <!--                                    <arg value="${build.dir}/README.md"/>-->
                                     <arg value="${build.dir}/${opencga.client.dir}"/>
@@ -449,7 +434,8 @@
                                     <arg value="${build.dir}/${opencga.client.dir}/completion"/>
                                 </exec>
 
-                                <echo>Creating 'opencga-client' tar.gz file</echo>
+                                <echo>Creating 'opencga-enterprise-client' tar.gz file</echo>
+                                <echo>=====================================</echo>
                                 <exec executable="tar" failonerror="true">
                                     <arg value="-C"/>
                                     <arg value="${build.dir}"/>

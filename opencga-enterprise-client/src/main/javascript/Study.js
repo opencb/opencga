@@ -142,6 +142,15 @@ export default class Study extends OpenCGAParentClass {
         return this._get("studies", study, null, null, "groups", params);
     }
 
+    /** Associate a remote group from an authentication origin with a local group in a study
+    * @param {String} study - Study [[organization@]project:]study where study and project can be either the ID or UUID.
+    * @param {Object} data - JSON containing the parameters.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    syncGroups(study, data) {
+        return this._post("studies", study, "groups", null, "sync", data);
+    }
+
     /** Add or remove a group
     * @param {String} study - Study [[organization@]project:]study where study and project can be either the ID or UUID.
     * @param {Object} data - JSON containing the parameters.
@@ -306,6 +315,15 @@ export default class Study extends OpenCGAParentClass {
     */
     update(study, data, params) {
         return this._post("studies", study, null, null, "update", data, params);
+    }
+
+    /** Synchronize all users from the remote groups of a given authentication origin
+    * @param {String} study - Study [[organization@]project:]study where study and project can be either the ID or UUID.
+    * @param {String} authenticationOriginId - Authentication origin ID.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    syncUsers(study, authenticationOriginId) {
+        return this._post("studies", study, "users", null, "sync", null, authenticationOriginId);
     }
 
     /** Fetch variableSets from a study

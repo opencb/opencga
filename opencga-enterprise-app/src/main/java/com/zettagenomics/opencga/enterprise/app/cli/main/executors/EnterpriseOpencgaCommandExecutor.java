@@ -141,7 +141,7 @@ public abstract class EnterpriseOpencgaCommandExecutor extends CommandExecutor {
                 token = options.token;
 
                 // Update SessionManager and OpencgaClient with the new token
-                sessionManager.updateSessionToken(token, host);
+                sessionManager.updateSessionToken(token, this.hostConfig);
                 enterpriseOpenCGAClient = new EnterpriseOpenCGAClient(new AuthenticationResponse(options.token), clientConfiguration);
             } else {
                 privateLogger.debug("No token has been provided, reading session file");
@@ -357,7 +357,7 @@ public abstract class EnterpriseOpencgaCommandExecutor extends CommandExecutor {
     public RestResponse<AuthenticationResponse> refreshToken(AuthenticationResponse response) throws ClientException, IOException {
         RestResponse<AuthenticationResponse> res = new RestResponse<>();
         if (response != null) {
-            this.sessionManager.refreshSession(response.getRefreshToken(), this.host);
+            this.sessionManager.refreshSession(response.getRefreshToken(), this.hostConfig.getName());
             res.setType(QueryType.VOID);
         }
         return res;
