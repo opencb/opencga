@@ -87,13 +87,13 @@ jobs:
         run: |
           if [[ -n "${{ inputs.task }}" ]]; then
             echo "Building OpenCGA Enterprise for task '${{ inputs.task }}' with Hadoop flavour '${{ inputs.hadoop }}'"
-            ./build.sh -b -T "${{ inputs.task }}" --storage-hadoop ${{ inputs.hadoop }} -d -p "${{ inputs.tag }}"
+            ./build.sh --prepare-branches --task "${{ inputs.task }}" --storage-hadoop ${{ inputs.hadoop }} --docker --docker-tag "${{ inputs.tag }}"
           else
             if [[ "${{ inputs.branch }}" == v*|| "${{ inputs.branch }}" == "master" ]]; then
               echo "Building OpenCGA Enterprise for tag '${{ inputs.branch }}' with Hadoop flavour '${{ inputs.hadoop }}'"
-              ./build.sh --storage-hadoop ${{ inputs.hadoop }} -d -p "${{ inputs.tag }}"
+              ./build.sh --storage-hadoop ${{ inputs.hadoop }} --docker --docker-tag "${{ inputs.tag }}"
             else
               echo "Building OpenCGA Enterprise for branch '${{ inputs.branch }}' with Hadoop flavour '${{ inputs.hadoop }}'"
-              ./build.sh -b --storage-hadoop ${{ inputs.hadoop }} -d -p "${{ inputs.tag }}" 
+              ./build.sh --prepare-branches --storage-hadoop ${{ inputs.hadoop }} --docker --docker-tag "${{ inputs.tag }}" 
             fi
           fi
