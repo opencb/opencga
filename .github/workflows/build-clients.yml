@@ -7,6 +7,11 @@ on:
         description: "The branch, tag or SHA of the source code to build client."
         type: string
         required: true
+      release:
+        description: "Set to true if building from a release branch."
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   build-clients:
