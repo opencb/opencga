@@ -29,6 +29,10 @@ public class ClinicalVariantConverter extends SearchConverter<ClinicalVariant, C
 
     protected Logger logger = LoggerFactory.getLogger(ClinicalVariantConverter.class);
 
+    public ClinicalVariantConverter() {
+        this.clinicalVariantReader = mapper.readerFor(ClinicalVariant.class);
+    }
+
     public ClinicalVariantConverter(SearchIndexMetadata searchIndexMetadata) {
         this.variantSearchToVariantConverter = VariantSearchToVariantConverter.converterSimpleStats(searchIndexMetadata);
         this.clinicalVariantReader = mapper.readerFor(ClinicalVariant.class);
@@ -52,7 +56,8 @@ public class ClinicalVariantConverter extends SearchConverter<ClinicalVariant, C
             VariantSearchModel variantSearchModel = variantSearchToVariantConverter.convertToStorageType(cv);
             ClinicalVariantSearch cvs = new ClinicalVariantSearch(variantSearchModel);
 
-            cvs.setId(interpretationId + "-" + variantSearchModel.getFullId());
+            cvs.setId(interpretationId + "-" + variantSearchModel.getId());
+            cvs.setVariantId(variantSearchModel.getId());
 
             cvs.setPrimaryFinding(isPrimaryFinding)
                     .setCiId(interpretationId)
@@ -171,5 +176,10 @@ public class ClinicalVariantConverter extends SearchConverter<ClinicalVariant, C
     @Override
     public ClinicalVariant toModel(ClinicalVariantSearch input) throws CvdbException {
         return toClinicalVariant(input);
+    }
+
+    public ClinicalVariantConverter setVariantSearchToVariantConverter(VariantSearchToVariantConverter variantSearchToVariantConverter) {
+        this.variantSearchToVariantConverter = variantSearchToVariantConverter;
+        return this;
     }
 }

@@ -1,5 +1,6 @@
 package com.zettagenomics.opencga.enterprise.cvdb.parsers;
 
+import com.zettagenomics.opencga.enterprise.core.api.ParamConstants;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.search.solr.SolrQueryParser;
@@ -20,7 +21,6 @@ public class ClinicalSolrQueryParser extends SolrQueryParser {
 
     @Override
     protected String getDefaultStudyName(Query query) {
-        // TODO: Implement this method
-        throw new UnsupportedOperationException("FIXME");
+        return query.getString(ParamConstants.STUDY_PARAM_NAME);
     }
 }

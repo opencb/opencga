@@ -78,6 +78,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
+import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -165,8 +166,6 @@ public class CvdbSolrEngine {
         this.solrManager = new SolrManager(cvdbConfig.getDatabase().getHosts(), cvdbConfig.getDatabase().getMode(),
                 cvdbConfig.getDatabase().getTimeout());
         this.catalogManager = catalogManager;
-        // Ideally, the SearchIndexMetadata should be loaded from some persistent storage, but for now we will use a default one.
-        this.searchIndexMetadata = getDefaultSearchIndexMetadata();
 
         init();
     }
@@ -181,6 +180,9 @@ public class CvdbSolrEngine {
     }
 
     private void init() {
+        // Ideally, the SearchIndexMetadata should be loaded from some persistent storage, but for now we will use a default one.
+        this.searchIndexMetadata = getDefaultSearchIndexMetadata();
+
         this.caConverter = new ClinicalAnalysisConverter();
         this.ciConverter = new ClinicalInterpretationConverter();
         this.cvConverter = new ClinicalVariantConverter(searchIndexMetadata);
@@ -685,8 +687,13 @@ public class CvdbSolrEngine {
         try {
             String collection = getCollectionName(getOrganizationId(token), query.getString(PROJECT_PARAM_NAME),
                     CLINICAL_VARIANTS_COLLECTION_SUFFIX);
-            return new ClinicalIterator(solrManager.getSolrClient(), collection, solrQuery, queryOptions, ClinicalVariantSearch.class,
-                    ClinicalVariantConverter.class);
+            ClinicalIterator iterator = new ClinicalIterator(solrManager.getSolrClient(), collection, solrQuery, queryOptions,
+                    ClinicalVariantSearch.class, ClinicalVariantConverter.class);
+
+            ClinicalVariantConverter converter = (ClinicalVariantConverter) iterator.getConverter();
+            converter.setVariantSearchToVariantConverter(VariantSearchToVariantConverter.converterSimpleStats(searchIndexMetadata));
+
+            return iterator;
         } catch (SolrServerException | NoSuchMethodException | InvocationTargetException | InstantiationException
                 | IllegalAccessException e) {
             throw new CvdbException(e.getMessage(), e);
