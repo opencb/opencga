@@ -209,9 +209,7 @@ public abstract class MRExecutor {
         // Write args to stdin
         DataOutputStream stdin = command.getStdin();
         try {
-            for (String arg : args) {
-                stdin.writeBytes(arg + "\n");
-            }
+            AbstractHBaseDriver.writeArgsToStream(args, stdin);
             // Close stdin
             stdin.close();
         } catch (IOException e) {

@@ -35,7 +35,9 @@ import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -147,17 +149,7 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         HBaseConfiguration.addHbaseResources(conf);
         getConf().setClassLoader(AbstractHBaseDriver.class.getClassLoader());
         if (args.length == 1 && args[0].equals(ARGS_FROM_STDIN)) {
-            // Read args from STDIN
-            List<String> argsFromStdin = new LinkedList<>();
-            Scanner scanner = new Scanner(System.in);
-            while (scanner.hasNextLine()) {
-                String arg = scanner.nextLine();
-                LOGGER.debug("Read arg from STDIN: " + arg);
-                argsFromStdin.add(arg);
-            }
-            LOGGER.info("Read " + argsFromStdin.size() + " args from STDIN");
-            scanner.close();
-            args = argsFromStdin.toArray(new String[0]);
+            args = readArgsFromStream(System.in);
         }
         if (configFromArgs(args)) {
             return 1;
@@ -257,6 +249,34 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         return succeed ? 0 : 1;
     }
 
+    public static void writeArgsToStream(String[] args, DataOutputStream stream) throws IOException {
+        for (String arg : args) {
+            // Deal with new lines in args
+            arg = arg.replaceAll("%", "%25");
+            arg = arg.replaceAll("\n", "%0A");
+            stream.writeBytes(arg + "\n");
+        }
+    }
+
+    public static String[] readArgsFromStream(InputStream in) {
+        String[] args;
+        // Read args from STDIN
+        List<String> argsFromStdin = new LinkedList<>();
+        Scanner scanner = new Scanner(in);
+        while (scanner.hasNextLine()) {
+            String arg = scanner.nextLine();
+            // Deal with new lines in args
+            arg = arg.replaceAll("%0A", "\n");
+            arg = arg.replaceAll("%25", "%");
+            LOGGER.debug("Read arg from STDIN: " + arg);
+            argsFromStdin.add(arg);
+        }
+        LOGGER.info("Read " + argsFromStdin.size() + " args from STDIN");
+        scanner.close();
+        args = argsFromStdin.toArray(new String[0]);
+        return args;
+    }
+
     private static String getExtendedTaskErrorMessage(Job job) {
         try {
             StringBuilder sb = new StringBuilder();
@@ -333,7 +353,9 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
             ToolRunner.printGenericCommandUsage(System.err);
             if (!help) {
 //                System.err.println("Found " + Arrays.toString(args));
-                throw new IllegalArgumentException("Wrong number of arguments!");
+                throw new IllegalArgumentException("Wrong number of arguments! Found " + args.length
+                        + ", expected at least "
+                        + fixedSizeArgs + " and an even number of additional arguments! ");
             }
             return true;
         }
