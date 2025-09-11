@@ -1440,22 +1440,22 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean jobDryRun; 
     
-        @Parameter(names = {"--cohort"}, description = "The body web service cohort parameter", required = false, arity = 1)
+        @Parameter(names = {"--cohort"}, description = "List of cohorts to calculate the stats.", required = false, arity = 1)
         public String cohort;
     
-        @Parameter(names = {"--region"}, description = "The body web service region parameter", required = false, arity = 1)
+        @Parameter(names = {"--region"}, description = "Deprecated. Not used anymore.", required = false, arity = 1)
         public String region;
     
-        @Parameter(names = {"--overwrite-stats"}, description = "The body web service overwriteStats parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--overwrite-stats"}, description = "Overwrite stats if already present.", required = false, help = true, arity = 0)
         public boolean overwriteStats = false;
     
-        @Parameter(names = {"--resume"}, description = "The body web service resume parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--resume"}, description = "Resume a previously failed stats calculation", required = false, help = true, arity = 0)
         public boolean resume = false;
     
-        @Parameter(names = {"--aggregated"}, description = "The body web service aggregated parameter", required = false, arity = 1)
+        @Parameter(names = {"--aggregated"}, description = "Select the type of aggregated VCF file: NONE, BASIC, EVS or EXAC", required = false, arity = 1)
         public String aggregated;
     
-        @Parameter(names = {"--aggregation-mapping-file"}, description = "The body web service aggregationMappingFile parameter", required = false, arity = 1)
+        @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF file", required = false, arity = 1)
         public String aggregationMappingFile;
     
     }

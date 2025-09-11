@@ -1602,10 +1602,4 @@ public class CvdbSolrEngine {
     public SearchIndexMetadata getSearchIndexMetadata() {
         return searchIndexMetadata;
     }
-
-    @Deprecated
-    public void setVariantStorageMetadataManager(Object o) {
-        // TODO: Remove this method
-    }
-
 }
