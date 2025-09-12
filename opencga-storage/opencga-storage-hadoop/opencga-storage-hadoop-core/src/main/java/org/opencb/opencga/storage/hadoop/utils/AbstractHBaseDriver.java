@@ -38,6 +38,8 @@ import org.slf4j.LoggerFactory;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -252,13 +254,12 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
     public static void writeArgsToStream(String[] args, DataOutputStream stream) throws IOException {
         for (String arg : args) {
             // Deal with new lines in args
-            arg = arg.replaceAll("%", "%25");
-            arg = arg.replaceAll("\n", "%0A");
+            arg = URLEncoder.encode(arg, "UTF-8");
             stream.writeBytes(arg + "\n");
         }
     }
 
-    public static String[] readArgsFromStream(InputStream in) {
+    public static String[] readArgsFromStream(InputStream in) throws IOException {
         String[] args;
         // Read args from STDIN
         List<String> argsFromStdin = new LinkedList<>();
@@ -266,8 +267,7 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         while (scanner.hasNextLine()) {
             String arg = scanner.nextLine();
             // Deal with new lines in args
-            arg = arg.replaceAll("%0A", "\n");
-            arg = arg.replaceAll("%25", "%");
+            arg = URLDecoder.decode(arg, "UTF-8");
             LOGGER.debug("Read arg from STDIN: " + arg);
             argsFromStdin.add(arg);
         }
