@@ -12,9 +12,11 @@ import org.opencb.opencga.app.migrations.v3.v3_1_0.UserBanMigration;
 import org.opencb.opencga.app.migrations.v3.v3_2_0.VariantSetupMigration;
 import org.opencb.opencga.app.migrations.v3.v3_2_1.MoveUserAccountToInternalMigration;
 import org.opencb.opencga.app.migrations.v4.v4_0_0.catalog.AddNewNoteTypeMigration;
+import org.opencb.opencga.app.migrations.v4.v4_0_0.storage.EnsureSampleIndexConfigurationIsAlwaysDefined;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.migration.Migration;
 import org.opencb.opencga.catalog.migration.MigrationTool;
+import org.opencb.opencga.core.models.migration.MigrationRun;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -23,6 +25,9 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
 
 @Category(LongTests.class)
 public class MigrationsTest {
@@ -76,6 +81,29 @@ public class MigrationsTest {
         }
     }
 
+    @Test
+    public void testEnsureSampleIndexConfigurationIsAlwaysDefined() throws Exception {
+        setup("v3.2.1", false);
+        String studyName = "test@1000G:phase1";
+
+        VariantStorageMetadataManager metadataManager = opencga.getVariantStorageEngineByProject("test@1000G").getMetadataManager();
+        metadataManager.getAndUpdateProjectMetadata(new ObjectMap());
+        StudyMetadata studyMetadata = metadataManager.createStudy(studyName);
+        int fileId = metadataManager.registerFile(studyMetadata.getId(), "folder/file.vcf", Arrays.asList("s1", "s2"));
+        metadataManager.addIndexedFiles(studyMetadata.getId(), Collections.singletonList(fileId));
+        metadataManager.updateStudyMetadata(studyMetadata, sm -> {
+            sm.setSampleIndexConfigurations(Collections.emptyList());
+        });
+
+        studyMetadata = metadataManager.getStudyMetadata(studyMetadata.getId());
+        Assert.assertNull(studyMetadata.getSampleIndexConfigurationLatest());
+
+        runMigration(EnsureSampleIndexConfigurationIsAlwaysDefined.class);
+
+        studyMetadata = metadataManager.getStudyMetadata(studyMetadata.getId());
+        Assert.assertNotNull(studyMetadata.getSampleIndexConfigurationLatest());
+    }
+
     @After
     public void tearDown() throws Exception {
         if (opencga != null) {
@@ -106,8 +134,11 @@ public class MigrationsTest {
 
     private void runMigration(Class<? extends MigrationTool> migration) throws CatalogException {
         Migration annotation = migration.getAnnotation(Migration.class);
-        opencga.getCatalogManager().getMigrationManager()
+        List<MigrationRun> runs = opencga.getCatalogManager().getMigrationManager()
                 .runManualMigration(annotation.version(), annotation.id(), opencga.getOpencgaHome(), new ObjectMap(), opencga.getAdminToken());
+        for (MigrationRun run : runs) {
+            assertEquals("Migration " + migration + " failed", MigrationRun.MigrationStatus.DONE, run.getStatus());
+        }
     }
 
 }
