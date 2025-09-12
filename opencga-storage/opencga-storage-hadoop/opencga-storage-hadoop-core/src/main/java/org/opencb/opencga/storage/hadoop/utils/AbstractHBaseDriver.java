@@ -353,6 +353,14 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
             ToolRunner.printGenericCommandUsage(System.err);
             if (!help) {
 //                System.err.println("Found " + Arrays.toString(args));
+                for (int i = 0; i < fixedSizeArgs; i++) {
+                    LOGGER.info("Fixed arg " + i + ": " + (i < args.length ? args[i] : "(not found)"));
+                }
+                for (int i = fixedSizeArgs; i < args.length; i++) {
+                    // read in pairs
+                    LOGGER.info("key/value arg " + (i) + " : '" + args[i] + "' -> "
+                            + (i + 1 < args.length ? ("'" + args[i + 1] + "'") : " (no value found)"));
+                }
                 throw new IllegalArgumentException("Wrong number of arguments! Found " + args.length
                         + ", expected at least "
                         + fixedSizeArgs + " and an even number of additional arguments! ");
