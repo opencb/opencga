@@ -1114,6 +1114,30 @@ public class InterpretationMongoDBAdaptor extends CatalogMongoDBAdaptor implemen
                     case ANALYST_ID:
                         addAutoOrQuery(QueryParams.ANALYST_ID.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
+                    case FINDINGS_ID:
+                        List<Bson> idQueryList = new ArrayList<>();
+                        String idPrimaryKey = FINDINGS_ID.key().replace("findings", PRIMARY_FINDINGS.key());
+                        String idSecondaryKey = FINDINGS_ID.key().replace("findings", SECONDARY_FINDINGS.key());
+                        addAutoOrQuery(idPrimaryKey, queryParam.key(), queryCopy, queryParam.type(), idQueryList);
+                        addAutoOrQuery(idSecondaryKey, queryParam.key(), queryCopy, queryParam.type(), idQueryList);
+                        andBsonList.add(Filters.or(idQueryList));
+                        break;
+                    case FINDINGS_HGVS:
+                        List<Bson> hgvsQueryList = new ArrayList<>();
+                        String hgvsPrimaryKey = FINDINGS_HGVS.key().replace("findings", PRIMARY_FINDINGS.key());
+                        String hgvsSecondaryKey = FINDINGS_HGVS.key().replace("findings", SECONDARY_FINDINGS.key());
+                        addAutoOrQuery(hgvsPrimaryKey, queryParam.key(), queryCopy, queryParam.type(), hgvsQueryList);
+                        addAutoOrQuery(hgvsSecondaryKey, queryParam.key(), queryCopy, queryParam.type(), hgvsQueryList);
+                        andBsonList.add(Filters.or(hgvsQueryList));
+                        break;
+                    case FINDINGS_TYPE:
+                        List<Bson> typeQueryList = new ArrayList<>();
+                        String typePrimaryKey = FINDINGS_TYPE.key().replace("findings", PRIMARY_FINDINGS.key());
+                        String typeSecondaryKey = FINDINGS_TYPE.key().replace("findings", SECONDARY_FINDINGS.key());
+                        addAutoOrQuery(typePrimaryKey, queryParam.key(), queryCopy, queryParam.type(), typeQueryList);
+                        addAutoOrQuery(typeSecondaryKey, queryParam.key(), queryCopy, queryParam.type(), typeQueryList);
+                        andBsonList.add(Filters.or(typeQueryList));
+                        break;
                     case FINDINGS_GENE_ID:
                         List<Bson> geneQueryList = new ArrayList<>();
                         String genePrimaryKey = FINDINGS_GENE_ID.key().replace("findings", PRIMARY_FINDINGS.key());

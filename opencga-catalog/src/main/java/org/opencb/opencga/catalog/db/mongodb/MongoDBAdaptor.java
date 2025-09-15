@@ -242,13 +242,7 @@ public abstract class MongoDBAdaptor extends AbstractDBAdaptor {
      */
     protected void addAutoOrQuery(String mongoDbField, String queryParam, Query query, QueryParam.Type paramType, List<Bson> andBsonList) {
         if (query != null && query.getString(queryParam) != null) {
-            Bson filter;
-            if (paramType == QueryParam.Type.STRING || paramType == QueryParam.Type.TEXT || paramType == QueryParam.Type.TEXT_ARRAY) {
-                filter = MongoDBQueryUtils.createStringFilter(mongoDbField, queryParam, query,
-                        ObjectMap.COMMA_SEPARATED_LIST_SPLIT_PATTERN);
-            } else {
-                filter = MongoDBQueryUtils.createAutoFilter(mongoDbField, queryParam, query, paramType);
-            }
+            Bson filter = MongoDBQueryUtils.createAutoFilter(mongoDbField, queryParam, query, paramType);
             if (filter != null) {
                 andBsonList.add(filter);
             }
@@ -611,7 +605,7 @@ public abstract class MongoDBAdaptor extends AbstractDBAdaptor {
     }
 
     /**
-     * Extract a new Query object containing only the key:value pairs of another nested object.
+     * Extract a new Query object containing only the key:value pairs of another nested object and remove them from the original object.
      *
      * @param query Original Query object.
      * @param key   Nested key by which to extract the new query.

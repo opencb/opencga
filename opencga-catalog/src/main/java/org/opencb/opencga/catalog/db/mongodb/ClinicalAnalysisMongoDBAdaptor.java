@@ -17,10 +17,7 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.client.ClientSession;
-import com.mongodb.client.model.Aggregates;
-import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.Projections;
-import com.mongodb.client.model.Variable;
+import com.mongodb.client.model.*;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
@@ -1034,9 +1031,17 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query finalQuery = query != null ? new Query(query) : new Query();
         finalQuery.put(QueryParams.STUDY_UID.key(), studyUid);
-        Bson bson = parseQuery(finalQuery, userId);
 
-        return new OpenCGAResult<>(clinicalCollection.distinct(field, bson));
+        // Check if this is a nested query that requires left join
+        Query nestedQuery = extractNestedQuery(finalQuery, INTERPRETATION.key());
+
+        if (nestedQuery.isEmpty()) {
+            Bson bson = parseQuery(finalQuery, userId);
+            return new OpenCGAResult<>(clinicalCollection.distinct(field, bson));
+        } else {
+            // Complex distinct operation with left join
+            return distinctWithLeftJoin(field, finalQuery, nestedQuery, userId);
+        }
     }
 
     @Override
@@ -1045,15 +1050,94 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
         StopWatch stopWatch = StopWatch.createStarted();
         Query finalQuery = query != null ? new Query(query) : new Query();
         finalQuery.put(QueryParams.STUDY_UID.key(), studyUid);
-        Bson bson = parseQuery(finalQuery, userId);
+
+        // Check if this is a nested query that requires left join
+        Query nestedQuery = extractNestedQuery(finalQuery, INTERPRETATION.key());
 
         Set<String> results = new LinkedHashSet<>();
-        for (String field : fields) {
-            results.addAll(clinicalCollection.distinct(field, bson, String.class).getResults());
+
+        if (nestedQuery.isEmpty()) {
+            // Simple distinct operation - existing logic
+            Bson bson = parseQuery(finalQuery, userId);
+            for (String field : fields) {
+                results.addAll(clinicalCollection.distinct(field, bson, String.class).getResults());
+            }
+        } else {
+            // Complex distinct operation with left join
+            for (String field : fields) {
+                OpenCGAResult<String> fieldResult = distinctWithLeftJoin(field, finalQuery, nestedQuery, userId);
+                results.addAll(fieldResult.getResults());
+            }
         }
 
         return new OpenCGAResult<>((int) stopWatch.getTime(TimeUnit.MILLISECONDS), Collections.emptyList(), results.size(),
                 new ArrayList<>(results), -1);
+    }
+
+    private OpenCGAResult<String> distinctWithLeftJoin(String field, Query query, Query nestedQuery, String userId)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+
+        Bson bson = parseQuery(query, userId);
+        Bson nestedBsonQuery = dbAdaptorFactory.getInterpretationDBAdaptor().parseQuery(nestedQuery);
+
+        List<Variable<String>> let = new ArrayList<>();
+        let.add(new Variable<>("intUid", "$interpretation.uid"));
+        let.add(new Variable<>("intVersion", "$interpretation.version"));
+
+        List<Bson> pipeline = new ArrayList<>();
+        pipeline.add(Aggregates.match(new Document("$and", Arrays.asList(
+                new Document("$expr", new Document("$and", Arrays.asList(
+                        new Document("$eq", Arrays.asList("$uid", "$$intUid")),
+                        new Document("$eq", Arrays.asList("$version", "$$intVersion"))
+                ))),
+                nestedBsonQuery)
+        )));
+
+        // Add group stage to get distinct values
+        pipeline.add(Aggregates.group(null, Accumulators.addToSet("distinctValues", "$" + field)));
+
+        // Use aggregation to perform the left join and get distinct values
+        MongoDBCollection collection = getQueryCollection(query, clinicalCollection, archiveClinicalCollection, deletedClinicalCollection);
+
+        List<Bson> mainPipeline = new ArrayList<>();
+        mainPipeline.add(Aggregates.match(bson));
+
+        // Add lookup stage for left join
+        mainPipeline.add(Aggregates.lookup(
+                OrganizationMongoDBAdaptorFactory.INTERPRETATION_COLLECTION,
+                let,
+                pipeline,
+                "joinedInterpretations"
+        ));
+
+        // Match only documents that have joined interpretations
+        mainPipeline.add(Aggregates.match(Filters.ne("joinedInterpretations", Collections.emptyList())));
+
+        // Group to get distinct values
+        mainPipeline.add(Aggregates.group(null, Accumulators.addToSet("distinctValues", "$" + field)));
+
+        logger.debug("Clinical analysis distinct query : {}", bson.toBsonDocument());
+        for (Bson bsonPipeline : pipeline) {
+            logger.debug("Pipeline stage : {}", bsonPipeline.toBsonDocument());
+        }
+
+        DataResult<Document> result = collection.aggregate(mainPipeline, null);
+
+        Set<String> distinctValues = new HashSet<>();
+        if (!result.getResults().isEmpty()) {
+            Document doc = result.getResults().get(0);
+            List<Object> values = doc.getList("distinctValues", Object.class);
+            if (values != null) {
+                for (Object value : values) {
+                    if (value != null) {
+                        distinctValues.add(value.toString());
+                    }
+                }
+            }
+        }
+
+        return new OpenCGAResult<>(result.getTime(), result.getEvents(), distinctValues.size(),
+                new ArrayList<>(distinctValues), -1);
     }
 
     @Override
