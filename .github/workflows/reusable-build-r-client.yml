@@ -6,7 +6,6 @@ on:
       branch:
         type: string
         required: true
-
 jobs:
   build-r-client:
     runs-on: ${{ vars.UBUNTU_VERSION }}
@@ -31,3 +30,4 @@ jobs:
         with:
           name: opencga-R-client-${{ steps.version.outputs.version }}.tar.gz
           path: build/dist/opencgaR_${{ steps.version.outputs.version }}.tar.gz
+
