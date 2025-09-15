@@ -45,6 +45,9 @@ public class ParamConstants {
     public static final String ENTRY_ID_LIST = "entryIds";
     public static final String PERMISSION_LIST_DESCRIPTION = "Comma separated list of permissions to be retrieved.";
     public static final String PERMISSION_LIST = "permissions";
+    public final static String RGA_INDEX_ID = "rga-index";
+    public final static String RGA_INDEX_DESCRIPTION = "Generate Recessive Gene Analysis secondary index";
+    public static final String FILE = "file";
     private static final String REGEX_SUPPORT = ". Also admits basic regular expressions using the operator '~', "
             + "i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.";
     public static final String RESOURCES_FOLDER = "RESOURCES";
@@ -168,6 +171,7 @@ public class ParamConstants {
     public static final String USER_DESCRIPTION = "User ID";
     public static final String USERS_DESCRIPTION = "Comma separated list of user IDs";
     public static final String USER_AUTHENTICATION_ORIGIN = "authenticationId";
+    public static final String AUTHENTICATION_ORIGIN_PARAM = "authenticationOriginId";
     public static final String USER_AUTHENTICATION_ORIGIN_DESCRIPTION = "Authentication origin ID";
     public static final String USER_CREATION_DATE = "creationDate";
     public static final String USER_CREATION_DATE_DESCRIPTION = CREATION_DATE_DESCRIPTION;
@@ -600,6 +604,14 @@ public class ParamConstants {
             + " not actually run.";
 
     // ---------------------------------------------
+    // INDEX PARAMS DESCRIPTIONS
+    public static final String COVERAGE_INDEX_PARAMS_DESCRIPTION = "Coverage computation parameters";
+    public static final String ALIGNMENT_INDEX_PARAMS_DESCRIPTION = "Alignment index params";
+    public static final String VARIANT_INDEX_PARAMS_DESCRIPTION = "Variant index params";
+    public static final String RGA_ANALYSIS_PARAMS_DESCRIPTION = "Recessive Gene Analysis index params";
+    public static final String EXOMISER_INTERPRETATION_ANALYSIS_PARAMS_DESCRIPTION = "Exomiser interpretation analysis params";
+
+    // ---------------------------------------------
     // WORKFLOWS
     public static final String WORKFLOW_VERSION_PARAM = "version";
     public static final String WORKFLOW_VERSION_DESCRIPTION = "Comma separated list of workflow versions. 'all' to get all the workflow "
@@ -637,6 +649,7 @@ public class ParamConstants {
             "<201805";
     public static final String VARIANTS_QUERY_DESCRIPTION = "Filter and fetch variants from indexed VCF files in the variant storage";
     public static final String OUTPUT_DIRECTORY_DESCRIPTION = "Output directory";
+
     // ---------------------------------------------
     public static final String REGION_DESCRIPTION = "Comma separated list of regions 'chr:start-end, e.g.: 2,3:63500-65000";
     public static final String REGION_PARAM = "region";
@@ -1579,4 +1592,13 @@ public class ParamConstants {
     public static final String STUDIES_DESCRIPTION = "Comma separated list of Studies [[organization@]project:]study where study "
             + "and project can be either the ID or UUID" + UP_TO_100;
     public static final String PANELS_DESCRIPTION = "Comma separated list of panel IDs" + UP_TO_100;
+
+
+    // Parameter descriptions for variant annotation extension configure operation
+    public static final String VARIANT_ANNOTATION_EXTENSION_NAME_DESCR = "Name of the variant annotation extension.";
+    public static final String VARIANT_ANNOTATION_EXTENSION_RESOURCE_LIST_DESCR = "List of resources of the variant annotation"
+            + " extension.";
+    public static final String VARIANT_ANNOTATION_EXTENSION_PARAMS_DESCR = "Parameters of the variant annotation"
+            +" extension based on a key-value map, example of key-value: \"version\"=\"v101\"";
+    public static final String VARIANT_ANNOTATION_EXTENSION_OVERWRITE_DESCR = "Overwrite.";
 }

@@ -173,17 +173,16 @@ public class MetaWSServer extends OpenCGAWSServer {
     @GET
     @Path("/openapi")
     @ApiOperation(value = "Opencga openapi json", response = String.class)
-    public String openApi(@ApiParam(value = "List of categories to get API from") @QueryParam("token") String token, @QueryParam("environment") String environment) {
+    public String openApi(@ApiParam(value = "Opencga host with environment.", required = true) @QueryParam("url") String url,
+                          @ApiParam(value = "Opencga study to be default in queries.") @QueryParam("study") String study) {
         JsonOpenApiGenerator generator = new JsonOpenApiGenerator();
-        Swagger swagger = generator.generateJsonOpenApi(new ApiCommonsImpl(), token, environment);
-        String swaggerJson ="ERROR: Swagger could not be generated";
+        Swagger swagger = generator.generateJsonOpenApi(new ApiCommonsImpl(), token, url, apiVersion, study);
         ObjectMapper mapper = new ObjectMapper();
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         try {
-            swaggerJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(swagger).replace("{apiVersion}", "v2");
+            return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(swagger);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
-        return swaggerJson;
     }
 }

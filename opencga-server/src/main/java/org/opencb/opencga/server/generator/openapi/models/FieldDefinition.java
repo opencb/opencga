@@ -1,37 +1,32 @@
 package org.opencb.opencga.server.generator.openapi.models;
 
-public class FieldDefinition {
+import java.util.List;
 
-    private String type;
-    private String $ref;
+public class FieldDefinition extends Schema {
+
     private String ref;
+    private String description;
+    // List of possible values. If nullable, this list should include null
+    private List<String> enumValues = null; // Enum values
 
 
     public FieldDefinition() {
     }
 
     public FieldDefinition(String ref) {
-        this.$ref = ref;
-    }
-
-    public String getType() {
-        return type;
+        super();
+        set$ref(ref);
     }
 
     public FieldDefinition setType(String type) {
-        this.type = type;
+        super.setType(type);
         return this;
-    }
-
-    public String get$ref() {
-        return $ref;
     }
 
     public FieldDefinition set$ref(String $ref) {
-        this.$ref = $ref;
+        super.set$ref($ref);
         return this;
     }
-
 
     public String getRef() {
         return ref;
@@ -42,6 +37,23 @@ public class FieldDefinition {
         return this;
     }
 
+    public String getDescription() {
+        return description;
+    }
+
+    public FieldDefinition setDescription(String description) {
+        this.description = description;
+        return this;
+    }
+
+    public List<String> getEnum() {
+        return enumValues;
+    }
+
+    public FieldDefinition setEnum(List<String> enumValues) {
+        this.enumValues = enumValues;
+        return this;
+    }
 }
 
 

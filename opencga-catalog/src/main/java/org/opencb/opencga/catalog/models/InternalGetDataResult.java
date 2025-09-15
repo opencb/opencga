@@ -95,7 +95,7 @@ public class InternalGetDataResult<T> extends OpenCGAResult<T> {
         this.missing.add(new Missing(id, errorMsg));
     }
 
-    public class Missing {
+    public static class Missing {
         private String id;
         private String errorMsg;
 
@@ -115,6 +115,11 @@ public class InternalGetDataResult<T> extends OpenCGAResult<T> {
 
         public String getId() {
             return id;
+        }
+
+        public Missing setId(String id) {
+            this.id = id;
+            return this;
         }
 
         public String getErrorMsg() {

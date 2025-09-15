@@ -263,8 +263,9 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
                                            URI resolve) throws IOException, StorageEngineException {
         if (vsm instanceof DefaultVariantStatisticsManager) {
             DefaultVariantStatisticsManager dvsm = (DefaultVariantStatisticsManager) vsm;
+            long startTime = System.currentTimeMillis();
             URI stats = dvsm.createStats(dbAdaptor, resolve, cohorts, cohortIds, studyMetadata, options);
-            dvsm.loadStats(stats, studyMetadata, options);
+            dvsm.loadStats(stats, studyMetadata, options, startTime);
         } else {
             dbAdaptor.getMetadataManager().registerCohorts(studyMetadata.getName(), cohorts);
 //            studyMetadata.getCohortIds().putAll(cohortIds);

@@ -28,6 +28,7 @@
 
     <artifactId>opencga-storage-server</artifactId>
     <packaging>jar</packaging>
+    <name>OpenCGA Storage Server</name>
 
     <dependencies>
         <dependency>

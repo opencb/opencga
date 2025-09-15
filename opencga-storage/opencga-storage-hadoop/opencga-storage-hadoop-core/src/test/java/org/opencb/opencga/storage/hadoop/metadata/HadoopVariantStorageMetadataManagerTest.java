@@ -1,15 +1,13 @@
 package org.opencb.opencga.storage.hadoop.metadata;
 
 import com.google.common.collect.BiMap;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.experimental.categories.Category;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManagerTest;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
@@ -26,7 +24,19 @@ public class HadoopVariantStorageMetadataManagerTest extends VariantStorageMetad
 
     @After
     public void tearDown() throws Exception {
-        VariantHbaseTestUtils.printMetaTable(getVariantStorageEngine().getDBAdaptor(), Paths.get(newOutputUri()));
+        VariantHbaseTestUtils.printMetaTable(getVariantStorageEngine().getDBAdaptor(), Paths.get(VariantStorageBaseTest.newOutputUri()));
+    }
+
+    @Before
+    @Override
+    public void setUp() throws Exception {
+        clearDB();
+        super.setUp();
+    }
+
+    @Override
+    protected VariantStorageMetadataManager getMetadataManager() throws Exception {
+        return getVariantStorageEngine().getMetadataManager();
     }
 
     @Test

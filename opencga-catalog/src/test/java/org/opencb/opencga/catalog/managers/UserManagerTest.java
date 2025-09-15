@@ -22,7 +22,9 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
+import org.opencb.opencga.core.config.UserOrganizationConfiguration;
 import org.opencb.opencga.core.models.JwtPayload;
+import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.organizations.OrganizationConfiguration;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
@@ -709,6 +711,41 @@ public class UserManagerTest extends AbstractManagerTest {
         OpenCGAResult<Group> opencb = catalogManager.getStudyManager().getGroup(studyFqn, "opencb", studyAdminToken1);
         assertEquals(1, opencb.getNumResults());
         assertEquals("@opencb", opencb.first().getId());
+    }
+
+    @Test
+    public void createNewUserAddedAutomaticallyToMembersGroupTest() throws CatalogException {
+        catalogManager.getUserManager().create(new User().setId("newUser1").setName("New User"), TestParamConstants.PASSWORD, ownerToken);
+
+        Organization organization = catalogManager.getOrganizationManager().get(organizationId, QueryOptions.empty(), ownerToken).first();
+        assertFalse(organization.getProjects().isEmpty());
+        for (Project project : organization.getProjects()) {
+            for (Study study : project.getStudies()) {
+                assertFalse(study.getFqn(), study.getGroups().isEmpty());
+                for (Group group : study.getGroups()) {
+                    if (group.getId().equals(ParamConstants.MEMBERS_GROUP)) {
+                        assertFalse(group.getUserIds().contains("newUser1"));
+                    }
+                }
+            }
+        }
+
+        // Configure the organization to add new users to the members group
+        catalogManager.getOrganizationManager().updateConfiguration(organizationId, new OrganizationConfiguration()
+                .setUser(new UserOrganizationConfiguration("21000101000000", true)), QueryOptions.empty(), ownerToken);
+        catalogManager.getUserManager().create(new User().setId("newUser2").setName("New User"), TestParamConstants.PASSWORD, ownerToken);
+        organization = catalogManager.getOrganizationManager().get(organizationId, QueryOptions.empty(), ownerToken).first();
+        assertFalse(organization.getProjects().isEmpty());
+        for (Project project : organization.getProjects()) {
+            for (Study study : project.getStudies()) {
+                assertFalse(study.getGroups().isEmpty());
+                for (Group group : study.getGroups()) {
+                    if (group.getId().equals(ParamConstants.MEMBERS_GROUP)) {
+                        assertTrue(group.getUserIds().contains("newUser2"));
+                    }
+                }
+            }
+        }
     }
 
 }

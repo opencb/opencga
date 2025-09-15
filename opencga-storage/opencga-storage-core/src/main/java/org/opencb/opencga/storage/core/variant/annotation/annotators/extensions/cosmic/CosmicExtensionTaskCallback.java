@@ -10,6 +10,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.EvidenceEntry;
 import org.opencb.biodata.models.variant.exceptions.NonStandardCompliantSampleField;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
@@ -22,16 +23,18 @@ import java.util.stream.Collectors;
 
 public class CosmicExtensionTaskCallback implements CosmicParserCallback {
 
-    private RocksDB rdb;
-    private VariantNormalizer variantNormalizer;
-    private ObjectMapper defaultObjectMapper;
+    private final RocksDB rdb;
+    private final ProgressLogger progressLogger;
+    private final VariantNormalizer variantNormalizer;
+    private final ObjectMapper defaultObjectMapper;
 
     private static Logger logger = LoggerFactory.getLogger(CosmicExtensionTaskCallback.class);
 
     private static final String VARIANT_STRING_PATTERN = "([ACGTN]*)|(<CNV[0-9]+>)|(<DUP>)|(<DEL>)|(<INS>)|(<INV>)";
 
-    public CosmicExtensionTaskCallback(RocksDB rdb) {
+    public CosmicExtensionTaskCallback(RocksDB rdb, ProgressLogger progressLogger) {
         this.rdb = rdb;
+        this.progressLogger = progressLogger;
         this.variantNormalizer = new VariantNormalizer(new VariantNormalizer.VariantNormalizerConfig()
                 .setReuseVariants(true)
                 .setNormalizeAlleles(true)
@@ -51,6 +54,8 @@ public class CosmicExtensionTaskCallback implements CosmicParserCallback {
                 for (String normalisedVariantString : normalisedVariantStringList) {
                     rdb.put(normalisedVariantString.getBytes(), defaultObjectMapper.writeValueAsBytes(evidenceEntries));
                 }
+                progressLogger.increment(evidenceEntries.size(), () -> "up to position "
+                        + sequenceLocation.getChromosome() + ":" + sequenceLocation.getStart());
                 return true;
             }
             return false;

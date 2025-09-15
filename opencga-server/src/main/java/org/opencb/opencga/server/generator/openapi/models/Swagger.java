@@ -7,6 +7,7 @@ import java.util.Map;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Swagger {
+    // https://github.com/OAI/OpenAPI-Specification/blob/main/versions/2.0.md#swagger-object
     private String swagger = "2.0";
     private Info info;
     private String host;
@@ -15,6 +16,7 @@ public class Swagger {
     private List<String> schemes;
     private Map<String, Map<String,Method>> paths;
     private Map<String, Map<String, Object>> securityDefinitions;
+    // https://github.com/OAI/OpenAPI-Specification/blob/main/versions/2.0.md#definitions-object
     private Map<String, Definition> definitions;
 
     public Swagger() {

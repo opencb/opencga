@@ -16,11 +16,18 @@
 
 package org.opencb.opencga.analysis.variant.operations;
 
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
+import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Tool(id = VariantAggregateFamilyOperationTool.ID, description = VariantAggregateFamilyOperationTool.DESCRIPTION,
@@ -33,25 +40,55 @@ public class VariantAggregateFamilyOperationTool extends OperationTool {
     private String study;
 
     @ToolParams
-    protected VariantAggregateFamilyParams variantAggregateFamilyParams;
+    protected VariantAggregateFamilyParams toolParams;
 
 
     @Override
     protected void check() throws Exception {
         super.check();
 
-        List<String> samples = variantAggregateFamilyParams.getSamples();
-        if (samples == null || samples.size() < 2) {
-            throw new IllegalArgumentException("Fill gaps operation requires at least two samples!");
+        study = getStudyFqn();
+
+        // Check exclusivity between family and samples
+        if (StringUtils.isNotEmpty(toolParams.getFamily()) && CollectionUtils.isNotEmpty(toolParams.getSamples())) {
+            throw new IllegalArgumentException("You can not use both 'family' and 'samples' parameters at the same time. "
+                    + "Please, use only one of them.");
         }
 
-        study = getStudyFqn();
+        List<String> samples;
+        if (StringUtils.isNotEmpty(toolParams.getFamily())) {
+            Family family = getCatalogManager().getFamilyManager().get(study, toolParams.getFamily(), new QueryOptions(), getToken())
+                    .first();
+            samples = new ArrayList<>(family.getMembers().size());
+            for (Individual member : family.getMembers()) {
+                for (Sample sample : member.getSamples()) {
+                    if (sample.getInternal().getVariant().getIndex().getStatus().isReady()) {
+                        samples.add(sample.getId());
+                    }
+                }
+            }
+            if (samples.size() < 2) {
+                throw new IllegalArgumentException("Family '" + family.getId() + "' contains " + family.getMembers().size()
+                        + " members, but only " + samples.size() + " of them have a sample indexed in the variant storage."
+                        + " Aggregate family operation requires at least two samples.");
+            }
+            addInfo("Family '" + family.getId() + "' contains " + family.getMembers().size() + " members. "
+                    + samples.size() + " of them have a sample indexed in the variant storage. "
+                    + "The following samples will be used for the aggregation: [" + String.join(", ", samples) + "].");
+
+            toolParams.setSamples(samples); // Set the samples to be used for the aggregation
+        } else {
+            samples = toolParams.getSamples();
+            if (samples == null || samples.size() < 2) {
+                throw new IllegalArgumentException("Aggregate family operation requires at least two samples.");
+            }
+        }
     }
 
     @Override
     protected void run() throws Exception {
         step(() -> {
-            variantStorageManager.aggregateFamily(study, variantAggregateFamilyParams, token);
+            variantStorageManager.aggregateFamily(study, toolParams, token, getOutDir().toUri());
         });
     }
 }

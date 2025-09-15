@@ -23,6 +23,8 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.response.RestResponse;
 import org.slf4j.Logger;
 
+import java.io.DataInputStream;
+
 public class CustomFilesCommandExecutor extends CustomCommandExecutor {
 
     public CustomFilesCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
@@ -50,6 +52,11 @@ public class CustomFilesCommandExecutor extends CustomCommandExecutor {
 //        params.putIfNotEmpty("file", commandOptions.inputFile);
         options.put("uploadServlet", Boolean.FALSE);
         return openCGAClient.getFileClient().upload(options);
+    }
+
+    public RestResponse<DataInputStream> download(CustomFilesCommandOptions.DownloadCommandOptions commandOptions) throws Exception {
+        options.put("OPENCGA_DESTINY", commandOptions.to);
+        return openCGAClient.getFileClient().download(commandOptions.file, options);
     }
 
 }

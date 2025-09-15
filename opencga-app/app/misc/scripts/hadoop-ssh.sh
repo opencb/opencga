@@ -25,6 +25,9 @@ if [ -n "${HADOOP_SSH_KEY}" ] && [ -f "${HADOOP_SSH_KEY}" ] ; then
   SSH_OPTS="${SSH_OPTS} -i ${HADOOP_SSH_KEY}"
 fi
 
+# Directory to store temporary files on the remote server
+HADOOP_SSH_REMOTE_TMP_DIR=${HADOOP_SSH_REMOTE_TMP_DIR:-/tmp}
+
 trap 'echo "SSH Process interrupted! Run time : ${SECONDS}s" && exit 1 1>&2 ' INT TERM
 
 echo "Connect to Hadoop edge node ${HADOOP_SSH_USER}@${HADOOP_SSH_HOST}" 1>&2
@@ -41,12 +44,23 @@ for arg in "$@" ; do
 done
 echo ${CMD} 1>&2
 
-${SSHPASS_CMD} ssh ${SSH_OPTS} "${HADOOP_SSH_USER}@${HADOOP_SSH_HOST}" /bin/bash << EOF
+# Create a script to be executed on the remote server
+## -d '' : read until EOF
+## -r : do not interpret backslash escapes
+## SSH_SCRIPT variable to store the script
+read -d '' -r SSH_SCRIPT << EOF
+export PID=\$\$ # Store the PID of the script
+echo "PID=\$PID" >&2
 
-echo "PID=\$\$" >&2
+CUSTOM_TMPDIR=\$(mktemp --directory --tmpdir=${HADOOP_SSH_REMOTE_TMP_DIR} "opencga-hadoop-jar-$(date +%Y%m%d%H%M%S)-XXXXXXX")
+if [ ! -d "\${CUSTOM_TMPDIR}" ]; then
+    echo "Error creating temporary directory \${CUSTOM_TMPDIR}" 1>&2
+    exit 1
+fi
 
 export HADOOP_CLASSPATH=${HADOOP_CLASSPATH}
 export HADOOP_USER_CLASSPATH_FIRST=${HADOOP_USER_CLASSPATH_FIRST}
+export HADOOP_OPTS="\${HADOOP_OPTS} -Djava.io.tmpdir=\${CUSTOM_TMPDIR}"
 
 if \$(command -v hbase >/dev/null 2>&1) ; then
     hbase_conf=\$(hbase classpath | tr ":" "\n" | grep "/conf" | tr "\n" ":")
@@ -58,10 +72,35 @@ if \$(command -v hbase >/dev/null 2>&1) ; then
     fi
 fi
 
+# Watch the process. Ensure that the temporary directory is removed when the process ends
+nohup bash -c "
+  while ps -p "\$PID"; do
+    sleep 1
+  done
+  if [ -d \"\${CUSTOM_TMPDIR}\" ]; then
+    echo \"Cleaning up temporary directory '\${CUSTOM_TMPDIR}'\"
+    rm -rf \${CUSTOM_TMPDIR:?}
+  else
+    echo \"Temporary directory '\${CUSTOM_TMPDIR}' already removed\"
+  fi
+" > /dev/null 2>&1 &
 
 exec ${CMD}
 
 EOF
+
+STDIN_CONCAT=
+## Check if args are coming from stdin
+if [ -z "${HADOOP_SSH_STDIN_ENABLED}" ]; then
+    # stdin does not contain any data
+    STDIN_CONCAT=""
+else
+    # stdin should be concatenated to the script
+    STDIN_CONCAT="-"
+fi
+
+## Concatenate the script with stdin (if any) and execute it on the remote server
+cat <(echo "${SSH_SCRIPT}") ${STDIN_CONCAT} | ${SSHPASS_CMD} ssh ${SSH_OPTS} "${HADOOP_SSH_USER}@${HADOOP_SSH_HOST}" /bin/bash
 
 EXIT_CODE=$?
 

@@ -28,6 +28,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.Optimizations;
+import org.opencb.opencga.core.config.UserOrganizationConfiguration;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
@@ -294,6 +295,26 @@ public class OrganizationManager extends AbstractManager {
         return result;
     }
 
+    public OpenCGAResult<?> resetUserPassword(String userId, String token) throws CatalogException {
+        ParamUtils.checkParameter(userId, "userId");
+        ParamUtils.checkParameter(token, "token");
+        JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
+        String organizationId = jwtPayload.getOrganization();
+        try {
+            authorizationManager.checkIsAtLeastOrganizationOwnerOrAdmin(organizationId, jwtPayload.getUserId());
+            String authOrigin = catalogManager.getUserManager().getAuthenticationOriginId(organizationId, userId);
+            OpenCGAResult<?> writeResult = authenticationFactory.resetPassword(organizationId, authOrigin, userId);
+
+            auditManager.auditUser(organizationId, jwtPayload.getUserId(organizationId), Enums.Action.RESET_USER_PASSWORD, userId,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            return writeResult;
+        } catch (CatalogException e) {
+            auditManager.auditUser(organizationId, jwtPayload.getUserId(organizationId), Enums.Action.RESET_USER_PASSWORD, userId,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+    }
+
     private void checkIsNotAFederatedUser(String organizationId, OrganizationUpdateParams updateParams) throws CatalogException {
         Set<String> users = new HashSet<>();
         if (StringUtils.isNotEmpty(updateParams.getOwner())) {
@@ -521,6 +542,9 @@ public class OrganizationManager extends AbstractManager {
                     throw new CatalogParameterException("Invalid expiration for JWT token. It must be a positive number.");
                 }
             }
+            if (updateParams.getUser() != null) {
+                validateUserOrganizationConfiguration(updateParams.getUser());
+            }
 
             ObjectMap updateMap = new ObjectMap(OrganizationDBAdaptor.QueryParams.CONFIGURATION.key(), updateConfigurationMap);
             OpenCGAResult<?> update = getOrganizationDBAdaptor(organizationId).update(organizationId, updateMap, queryOptions);
@@ -589,11 +613,20 @@ public class OrganizationManager extends AbstractManager {
                 || StringUtils.isEmpty(organization.getConfiguration().getToken().getSecretKey())) {
             organization.getConfiguration().setToken(TokenConfiguration.init());
         }
-        organization.getConfiguration().setDefaultUserExpirationDate(ParamUtils.defaultString(
-                organization.getConfiguration().getDefaultUserExpirationDate(), Constants.DEFAULT_USER_EXPIRATION_DATE));
+        if (organization.getConfiguration().getUser() == null) {
+            organization.getConfiguration().setUser(new UserOrganizationConfiguration(Constants.DEFAULT_USER_EXPIRATION_DATE, false));
+        }
+        validateUserOrganizationConfiguration(organization.getConfiguration().getUser());
         if (organization.getConfiguration().getOptimizations() == null) {
             organization.getConfiguration().setOptimizations(new Optimizations(false));
         }
+    }
+
+    private static void validateUserOrganizationConfiguration(UserOrganizationConfiguration userConfig) throws CatalogParameterException {
+        if (StringUtils.isEmpty(userConfig.getDefaultExpirationDate())) {
+            userConfig.setDefaultExpirationDate(Constants.DEFAULT_USER_EXPIRATION_DATE);
+        }
+        ParamUtils.checkDateFormat(userConfig.getDefaultExpirationDate(), "configuration.user.defaultExpirationDate");
     }
 
     Set<String> getOrganizationOwnerAndAdmins(String organizationId) throws CatalogException {

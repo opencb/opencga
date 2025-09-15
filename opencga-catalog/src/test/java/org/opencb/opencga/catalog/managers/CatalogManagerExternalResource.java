@@ -107,6 +107,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
         Files.createDirectories(scratch);
         configuration.getAnalysis().setScratchDir(scratch.toAbsolutePath().toString());
         configuration.setWorkspace(opencgaHome.resolve("sessions").toAbsolutePath().toString());
+        configuration.getAnalysis().setScratchDir(opencgaHome.resolve("scratch").toAbsolutePath().toString());
         configuration.setJobDir(opencgaHome.resolve("JOBS").toAbsolutePath().toString());
 
         Path analysisPath = opencgaHome.resolve(ANALYSIS_DIRNAME);

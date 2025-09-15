@@ -184,6 +184,9 @@ public class VariantTransformTask implements Task<Pair<Integer, List<String>>, V
     }
 
     public List<Variant> normalize(List<Variant> variants) {
+        if (normalizer == null) {
+            return variants;
+        }
         long curr;
         curr = System.currentTimeMillis();
         List<Variant> normalizedVariants = new ArrayList<>((int) (variants.size() * 1.1));
@@ -216,8 +219,13 @@ public class VariantTransformTask implements Task<Pair<Integer, List<String>>, V
 
     @Override
     public List<Variant> drain() throws Exception {
-        List<Variant> drain = normalizer.drain();
-        variantStatsTask.apply(drain);
+        List<Variant> drain;
+        if (normalizer != null) {
+            drain = normalizer.drain();
+            variantStatsTask.apply(drain);
+        } else {
+            drain = new ArrayList<>();
+        }
         return drain;
     }
 

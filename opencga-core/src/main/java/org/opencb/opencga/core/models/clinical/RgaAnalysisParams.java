@@ -5,7 +5,6 @@ import org.opencb.opencga.core.tools.ToolParams;
 public class RgaAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Recessive Gene Analysis index params";
     public static final String FILE = "file";
-
     private String file;
 
     public RgaAnalysisParams() {

@@ -185,10 +185,12 @@ public class AdminWSServer extends AnalysisWebService { //OpenCGAWSServer {
         }
     }
 
+    @Deprecated
     @POST
     @Path("/users/sync")
-    @ApiOperation(value = "Synchronise a group of users from an authentication origin with a group in a study from catalog", response = Group.class,
-            notes = "Mandatory fields: <b>authOriginId</b>, <b>study</b><br>"
+    @ApiOperation(value = "[DEPRECATED] Moved to /users/sync", response = Group.class,
+            notes = "Synchronise a group of users from an authentication origin with a group in a study from catalog.<br>"
+                    + "Mandatory fields: <b>authOriginId</b>, <b>study</b><br>"
                     + "<ul>"
                     + "<li><b>authOriginId</b>: Authentication origin id defined in the main Catalog configuration.</li>"
                     + "<li><b>study</b>: Study [[organization@]project:]study where the list of users will be associated to.</li>"
@@ -204,7 +206,7 @@ public class AdminWSServer extends AnalysisWebService { //OpenCGAWSServer {
     )
     public Response externalSync(
             @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION) @QueryParam(ParamConstants.ORGANIZATION) String organizationId,
-            @ApiParam(value = "JSON containing the parameters", required = true) GroupSyncParams syncParams
+            @ApiParam(value = "JSON containing the parameters", required = true) DeprecatedGroupSyncParams syncParams
     ) {
         try {
             // TODO: These two methods should return an OpenCGAResult containing at least the number of changes

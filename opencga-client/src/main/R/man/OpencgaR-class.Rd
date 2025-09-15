@@ -15,10 +15,8 @@ methods to establish the connection with the web services.
 \section{Slots}{
 
 \describe{
-\item{\code{host}}{a character specifying the host URL. Example: 
-"http://bioinfo.hpc.cam.ac.uk/opencga-prod/"}
-
-\item{\code{version}}{a character specifying the API version. Example: "v2"}
+\item{\code{configuration}}{a list containing the OpenCGA configuration.
+This configuration should be exactly like the client-configuration.yml}
 
 \item{\code{user}}{a character string with you OpenCGA username}
 
@@ -26,10 +24,7 @@ methods to establish the connection with the web services.
 
 \item{\code{refreshToken}}{string containing your token}
 
-\item{\code{autoRenew}}{Boolean specifying if the token should be renewed 
-automatically if the session is going to expire in less than 5 minutes}
-
-\item{\code{verbose}}{Boolean specifying if logs should be displayed. Logs include: 
+\item{\code{verbose}}{Boolean specifying if logs should be displayed. Logs include:
 URL (with or without token - see param showToken), query status and number 
 of documents retrieved}
 

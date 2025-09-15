@@ -8,7 +8,12 @@ import java.util.List;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class CohortMetadata extends StudyResourceMetadata<CohortMetadata> {
+
     public static final String INVALID_STATS_NUM_SAMPLES = "invalidStatsNumSamples";
+    public static final String SECONDARY_INDEX_STATUS = "secondaryIndex";
+    public static final String AGGREGATE_FAMILY_STATUS = "aggregateFamily";
+    public static final String SECONDARY_INDEX_PREFIX = "__SECONDARY_INDEX_COHORT_";
+    public static final String AGGREGATE_FAMILY_PREFIX = "__AGGREGATE_FAMILY_COHORT_";
 
 //    private int studyId;
 //    private int id;
@@ -67,11 +72,69 @@ public class CohortMetadata extends StudyResourceMetadata<CohortMetadata> {
         return this;
     }
 
+    public TaskMetadata.Status getStatusByType() {
+        switch (getType()) {
+            case SECONDARY_INDEX:
+                return getSecondaryIndexStatus();
+            case AGGREGATE_FAMILY:
+                return getAggregateFamilyStatus();
+            case USER_DEFINED:
+                return getStatsStatus();
+            default:
+                throw new IllegalArgumentException("Unknown cohort type: " + getType());
+        }
+    }
+
+    public CohortMetadata setStatusByType(TaskMetadata.Status status) {
+        switch (getType()) {
+            case SECONDARY_INDEX:
+                return setSecondaryIndexStatus(status);
+            case AGGREGATE_FAMILY:
+                return setAggregateFamilyStatus(status);
+            case USER_DEFINED:
+                return setStatsStatus(status);
+            default:
+                throw new IllegalArgumentException("Unknown cohort type: " + getType());
+        }
+    }
+
     public TaskMetadata.Status getSecondaryIndexStatus() {
-        return getStatus("secondaryIndex");
+        return getStatus(SECONDARY_INDEX_STATUS);
     }
 
     public CohortMetadata setSecondaryIndexStatus(TaskMetadata.Status status) {
-        return setStatus("secondaryIndex", status);
+        return setStatus(SECONDARY_INDEX_STATUS, status);
     }
+
+    public TaskMetadata.Status getAggregateFamilyStatus() {
+        return getStatus(AGGREGATE_FAMILY_STATUS);
+    }
+
+    public CohortMetadata setAggregateFamilyStatus(TaskMetadata.Status status) {
+        return setStatus(AGGREGATE_FAMILY_STATUS, status);
+    }
+
+    public Type getType() {
+        return getType(getName());
+    }
+
+    public static Type getType(String name) {
+        if (name.startsWith(SECONDARY_INDEX_PREFIX)) {
+            return Type.SECONDARY_INDEX;
+        } else if (name.startsWith(AGGREGATE_FAMILY_PREFIX)) {
+            return Type.AGGREGATE_FAMILY;
+        } else {
+            return Type.USER_DEFINED;
+        }
+    }
+
+    public enum Type {
+        // Standard user defined cohort for variant stats
+        USER_DEFINED,
+        // Cohort created by the secondary index.
+        SECONDARY_INDEX,
+        // Cohort created by the aggregate family.
+        AGGREGATE_FAMILY
+    }
+
 }

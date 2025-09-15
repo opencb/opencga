@@ -28,6 +28,7 @@
 
     <artifactId>opencga-master</artifactId>
     <packaging>jar</packaging>
+    <name>OpenCGA Master</name>
 
     <dependencies>
         <dependency>

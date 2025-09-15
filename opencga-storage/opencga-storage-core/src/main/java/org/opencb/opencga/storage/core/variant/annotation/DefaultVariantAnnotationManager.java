@@ -52,8 +52,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
-import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.VariantAnnotatorExtensionTask;
-import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.VariantAnnotatorExtensionsFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.db.VariantAnnotationDBWriter;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
@@ -102,6 +100,8 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
     protected Map<Integer, List<Integer>> alreadyAnnotatedFiles = new HashMap<>();
     private final IOConnectorProvider ioConnectorProvider;
     private final VariantReaderUtils variantReaderUtils;
+    private boolean annotateAll;
+    private long annotationStartTimestamp;
 
     public DefaultVariantAnnotationManager(VariantAnnotator variantAnnotator, VariantDBAdaptor dbAdaptor,
                                            IOConnectorProvider ioConnectorProvider) {
@@ -253,26 +253,18 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                     }
                 }, 200);
             }
-            Task<Variant, VariantAnnotation> annotationTask = variantList -> {
-                List<VariantAnnotation> variantAnnotationList;
-                long start = System.currentTimeMillis();
-                logger.debug("Annotating batch of {} genomic variants.", variantList.size());
-                variantAnnotationList = variantAnnotator.annotate(variantList);
-                progressLogger.increment(variantList.size(),
-                        () -> ", up to position " + variantList.get(variantList.size() - 1).toString());
-                numAnnotationsToLoad.addAndGet(variantList.size());
-
-                logger.debug("Annotated batch of {} genomic variants. Time: {}s", variantList.size(),
-                        (System.currentTimeMillis() - start) / 1000.0);
-                return variantAnnotationList;
-            };
-
-            List<VariantAnnotatorExtensionTask> extensions = new VariantAnnotatorExtensionsFactory().getVariantAnnotatorExtensions(params);
-            for (VariantAnnotatorExtensionTask extension : extensions) {
-                extension.setup(outDir);
-                extension.checkAvailable();
-                annotationTask = annotationTask.then(extension);
-            }
+            Task<Variant, VariantAnnotation> annotationTask = variantAnnotator.then((List<VariantAnnotation> variantAnnotations) -> {
+                progressLogger.increment(variantAnnotations.size(),
+                        () -> {
+                            VariantAnnotation variantAnnotation = variantAnnotations.get(variantAnnotations.size() - 1);
+                            return ", up to position " + variantAnnotation.getChromosome() + ":"
+                                    + variantAnnotation.getStart() + ":"
+                                    + variantAnnotation.getReference() + ":"
+                                    + variantAnnotation.getAlternate();
+                        });
+                numAnnotationsToLoad.addAndGet(variantAnnotations.size());
+                return variantAnnotations;
+            });
 
             final DataWriter<VariantAnnotation> variantAnnotationDataWriter;
             if (avro) {
@@ -424,11 +416,11 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
         }
 
         VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
-        boolean annotateAll;
         Set<VariantQueryParam> queryParams = VariantQueryUtils.validParams(query, true);
         Set<String> filesFilter = Collections.emptySet();
         queryParams.removeAll(Arrays.asList(VariantQueryParam.ANNOTATION_EXISTS, VariantQueryParam.STUDY));
 
+        annotationStartTimestamp = System.currentTimeMillis();
         if (queryParams.isEmpty()) {
             // There are no invalid filters.
             annotateAll = true;
@@ -519,11 +511,10 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
         if (doLoad && doCreate) {
             ProjectMetadata.VariantAnnotationMetadata newAnnotationMetadata = variantAnnotator.getVariantAnnotationMetadata();
 
-
             dbAdaptor.getMetadataManager().updateProjectMetadata(projectMetadata -> {
                 updateCurrentAnnotation(variantAnnotator, projectMetadata, overwrite, newAnnotationMetadata);
-                return projectMetadata;
             });
+            dbAdaptor.getMetadataManager().updateAnnotationIndexTimestamp(annotateAll, annotationStartTimestamp);
         }
 
         if (doLoad && filesToBeAnnotated != null) {

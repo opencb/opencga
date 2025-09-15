@@ -157,6 +157,17 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
             throw new CatalogAuthenticationException("LDAP: The user id " + userId + " could not be found.");
         }
 
+        for (Attributes attributes : userInfoFromLDAP) {
+            logger.debug("User attributes: {}", attributes);
+            NamingEnumeration<String> iDs = attributes.getIDs();
+            try {
+                while (iDs.hasMore()) {
+                    logger.debug("User id: {}", iDs.next());
+                }
+            } catch (NamingException e) {
+                logger.warn(e.getMessage());
+            }
+        }
         String rdn = getDN(userInfoFromLDAP.get(0));
         claims.put(OPENCGA_DISTINGUISHED_NAME, rdn);
 

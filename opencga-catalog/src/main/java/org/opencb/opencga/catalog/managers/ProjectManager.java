@@ -43,6 +43,7 @@ import org.opencb.opencga.core.models.project.*;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.models.variant.InternalVariantOperationIndex;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.*;
@@ -73,7 +74,9 @@ public class ProjectManager extends AbstractManager {
             ProjectDBAdaptor.QueryParams.ATTRIBUTES.key()
     ));
     private static final Set<String> PROTECTED_UPDATABLE_FIELDS = new HashSet<>(Arrays.asList(
-            ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES_VARIANT.key(),
+            ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES_VARIANT.key(), ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES_CVDB.key(),
+            ProjectDBAdaptor.QueryParams.INTERNAL_VARIANT_ANNOTATION_INDEX.key(),
+            ProjectDBAdaptor.QueryParams.INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX.key(),
             ProjectDBAdaptor.QueryParams.CELLBASE.key()
     ));
     public static final QueryOptions INCLUDE_PROJECT_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
@@ -508,9 +511,54 @@ public class ProjectManager extends AbstractManager {
         }
     }
 
+    public OpenCGAResult<Project> setProjectInternalVariantAnnotationIndex(String projectStr, InternalVariantOperationIndex status,
+                                                                           QueryOptions options,
+                                                                           String token)
+            throws CatalogException {
+        return setProjectInternalVariant(projectStr, new ProjectInternalVariant()
+                .setSecondaryAnnotationIndex(null)
+                .setAnnotationIndex(status), options, token);
+    }
+
+    public OpenCGAResult<Project> setProjectInternalVariantSecondaryAnnotationIndex(String projectStr, InternalVariantOperationIndex status,
+                                                                                    QueryOptions options,
+                                                            String token)
+            throws CatalogException {
+        return setProjectInternalVariant(projectStr, new ProjectInternalVariant()
+                .setSecondaryAnnotationIndex(status)
+                .setAnnotationIndex(null), options, token);
+    }
+
+    public OpenCGAResult<Project> setProjectInternalVariant(String projectStr, ProjectInternalVariant variant, QueryOptions options,
+                                                            String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn catalogFqn = CatalogFqn.extractFqnFromProject(projectStr, tokenPayload);
+        String organizationId = catalogFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+
+        authorizationManager.isAtLeastOrganizationOwnerOrAdmin(organizationId, userId);
+        ParamUtils.checkObj(variant, "ProjectInternalVariant");
+
+        ObjectMap parameters = new ObjectMap();
+        if (variant.getAnnotationIndex() != null) {
+            parameters.put(ProjectDBAdaptor.QueryParams.INTERNAL_VARIANT_ANNOTATION_INDEX.key(), variant.getAnnotationIndex());
+        }
+        if (variant.getSecondaryAnnotationIndex() != null) {
+            parameters.put(ProjectDBAdaptor.QueryParams.INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX.key(),
+                    variant.getSecondaryAnnotationIndex());
+        }
+
+        return update(projectStr, parameters, options, true, token);
+    }
+
     public OpenCGAResult<Project> setDatastoreVariant(String projectStr, DataStore dataStore, String token) throws CatalogException {
         return update(projectStr,
                 new ObjectMap(ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES_VARIANT.key(), dataStore), new QueryOptions(), true, token);
+    }
+
+    public OpenCGAResult<Project> setDatastoreCvdb(String projectStr, DataStore dataStore, String token) throws CatalogException {
+        return update(projectStr,
+                new ObjectMap(ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES_CVDB.key(), dataStore), new QueryOptions(), true, token);
     }
 
     public OpenCGAResult<Project> setCellbaseConfiguration(String projectStr, CellBaseConfiguration configuration, boolean validate,

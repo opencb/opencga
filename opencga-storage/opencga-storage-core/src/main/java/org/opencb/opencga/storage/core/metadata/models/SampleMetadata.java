@@ -27,8 +27,12 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
      */
     private List<Integer> files;
     private Set<Integer> cohorts;
+    // Other cohorts. Should contain all other cohorts.
+    private Set<Integer> internalCohorts;
     // Prepared to have more than one secondary index per sample.
     // Currently only one is allowed.
+    // This is a deprecated field. New cohort types should be stored at {@link #internalCohorts}.
+    @Deprecated
     private Set<Integer> secondaryIndexCohorts;
 
     private VariantStorageEngine.SplitData splitData;
@@ -51,6 +55,7 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
         files = new ArrayList<>(1);
         cohorts = new HashSet<>();
         secondaryIndexCohorts = new HashSet<>();
+        internalCohorts = new HashSet<>();
     }
 
     public SampleMetadata(int studyId, int id, String name) {
@@ -58,6 +63,7 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
         files = new ArrayList<>(1);
         cohorts = new HashSet<>();
         secondaryIndexCohorts = new HashSet<>();
+        internalCohorts = new HashSet<>();
     }
 
     public List<Integer> getFiles() {
@@ -68,6 +74,34 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
         this.files = files;
         return this;
     }
+
+    private Set<Integer> getCohorts(CohortMetadata.Type type) {
+        switch (type) {
+            case USER_DEFINED:
+                return cohorts;
+            case SECONDARY_INDEX:
+                return secondaryIndexCohorts;
+            case AGGREGATE_FAMILY:
+                return internalCohorts;
+            default:
+                throw new IllegalStateException("Unexpected value: " + type);
+        }
+    }
+
+    public boolean containsCohort(CohortMetadata.Type type, int cohortId) {
+        return getCohorts(type).contains(cohortId);
+    }
+
+    public SampleMetadata addCohort(CohortMetadata.Type type, int cohortId) {
+        getCohorts(type).add(cohortId);
+        return this;
+    }
+
+    public SampleMetadata removeCohort(CohortMetadata.Type type, int cohortId) {
+        getCohorts(type).remove(cohortId);
+        return this;
+    }
+
 
     public Set<Integer> getCohorts() {
         return cohorts;
@@ -83,21 +117,34 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
         return this;
     }
 
+    @Deprecated
     public Set<Integer> getSecondaryIndexCohorts() {
         return secondaryIndexCohorts;
     }
 
+    @Deprecated
     public Integer getSecondaryIndexCohort() {
         return secondaryIndexCohorts.isEmpty() ? null : secondaryIndexCohorts.iterator().next();
     }
 
+    @Deprecated
     public SampleMetadata setSecondaryIndexCohorts(Set<Integer> secondaryIndexCohorts) {
         this.secondaryIndexCohorts = secondaryIndexCohorts;
         return this;
     }
 
+    @Deprecated
     public SampleMetadata addSecondaryIndexCohort(int cohortId) {
         this.secondaryIndexCohorts.add(cohortId);
+        return this;
+    }
+
+    public Set<Integer> getInternalCohorts() {
+        return internalCohorts;
+    }
+
+    public SampleMetadata setInternalCohorts(Set<Integer> internalCohorts) {
+        this.internalCohorts = internalCohorts;
         return this;
     }
 

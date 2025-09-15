@@ -34,10 +34,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -121,6 +118,7 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
 
         return new ProjectMetadata.VariantAnnotationMetadata(-1, null, null,
                 getVariantAnnotatorProgram(),
+                new HashMap<>(),
                 getVariantAnnotatorSourceVersion(),
                 dataRelease, privateSources);
     }

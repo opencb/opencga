@@ -133,6 +133,7 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         INTERNAL_VARIANT_SECONDARY_SAMPLE_INDEX("internal.variant.secondarySampleIndex", TEXT_ARRAY, ""),
         INTERNAL_VARIANT_ANNOTATION_INDEX("internal.variant.annotationIndex", TEXT_ARRAY, ""),
         INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX("internal.variant.secondaryAnnotationIndex", TEXT_ARRAY, ""),
+        INTERNAL_VARIANT_AGGREGATE_FAMILY("internal.variant.aggregateFamily", TEXT_ARRAY, ""),
         RELEASE("release", INTEGER, ""), //  Release where the sample was created
         SNAPSHOT("snapshot", INTEGER, ""), // Last version of sample at release = snapshot
         VERSION("version", INTEGER, ""), // Version of the sample

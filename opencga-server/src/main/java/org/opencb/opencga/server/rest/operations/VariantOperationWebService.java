@@ -103,6 +103,23 @@ public class VariantOperationWebService extends OpenCGAWSServer {
     }
 
     @POST
+    @Path("/variant/annotation/extension/configure")
+    @ApiOperation(value = "Install a variant annotation extension and configure the project to use it", response = ObjectMap.class)
+    public Response variantAnnotationExtensionConfigure(
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
+            @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
+            @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
+            @ApiParam(value = ParamConstants.PROJECT_PARAM) @QueryParam(ParamConstants.PROJECT_PARAM) String project,
+            @ApiParam(value = VariantAnnotationExtensionConfigureParams.DESCRIPTION) VariantAnnotationExtensionConfigureParams params) {
+        return submitOperationToProject(VariantAnnotationExtensionConfigureOperationTool.ID, project, params, jobName, jobDescription, dependsOn,
+                jobTags, scheduledStartTime, jobPriority, dryRun);
+    }
+
+    @POST
     @Path("/variant/setup")
     @ApiOperation(value = "Execute Variant Setup to allow using the variant engine. This setup is necessary before starting any variant operation.",
             response = VariantSetupResult.class)
@@ -131,7 +148,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = VariantIndexParams.DESCRIPTION) VariantIndexParams params) {
+            @ApiParam(value = ParamConstants.VARIANT_INDEX_PARAMS_DESCRIPTION) VariantIndexParams params) {
         return submitOperation(VariantIndexOperationTool.ID, study, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 

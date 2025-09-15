@@ -41,4 +41,3 @@ jobs:
       branch: ${{ needs.calculate-xetabase-branch.outputs.xetabase_branch }}
       task: ${{ github.event.pull_request.head.ref }}
     secrets: inherit
-

@@ -29,6 +29,7 @@
 
     <artifactId>opencga-storage-hadoop-lib</artifactId>
     <packaging>pom</packaging>
+    <name>OpenCGA Storage Hadoop Lib</name>
 
     <dependencies>
         <dependency>

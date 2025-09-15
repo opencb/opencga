@@ -165,7 +165,7 @@ class User(_ParentRestClient):
 
     def reset_password(self, user, **options):
         """
-        Reset password.
+        [DEPRECATED].
         PATH: /{apiVersion}/users/{user}/password/reset
 
         :param str user: User ID. (REQUIRED)

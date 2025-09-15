@@ -8,6 +8,7 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -66,6 +67,7 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
             if (inputFiles.size() == 4) {
 //                dbAdaptor.getMetadataManager().updateStudyMetadata(studyMetadata, null);
                 options.put(VariantStorageOptions.STUDY.key(), studyId);
+                options.put(VariantStorageOptions.LOAD_SAMPLE_INDEX.key(), YesNoAuto.NO);
                 storageEngine.getOptions().putAll(options);
                 storageEngine.getOptions().put(VariantStorageOptions.RELEASE.key(), release++);
                 storageEngine.index(inputFiles.subList(0, 2), outputUri, true, true, true);

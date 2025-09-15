@@ -27,6 +27,7 @@
     </parent>
     <artifactId>opencga-storage-mongodb</artifactId>
     <packaging>jar</packaging>
+    <name>OpenCB OpenCGA Storage MongoDB project</name>
 
     <dependencies>
         <dependency>

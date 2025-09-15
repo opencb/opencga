@@ -28,6 +28,7 @@
 
     <artifactId>opencga-storage-app</artifactId>
     <packaging>jar</packaging>
+    <name>OpenCGA Storage App</name>
 
     <properties>
         <build.dir>${project.basedir}/../build</build.dir>

@@ -2,7 +2,6 @@
 % Please edit documentation in R/OpencgaR-methods.R
 \name{opencgaHelp}
 \alias{opencgaHelp}
-\alias{OpencgaHelp}
 \title{Get help from OpenCGA Web Services}
 \usage{
 opencgaHelp(opencga, client = NULL, action = NULL)

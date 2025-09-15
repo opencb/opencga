@@ -11,10 +11,14 @@ import java.util.List;
 public class VariantAnnotatorExtensionsFactory {
 
     public List<VariantAnnotatorExtensionTask> getVariantAnnotatorExtensions(ObjectMap options) {
+        return getVariantAnnotatorExtensions(options, false);
+    }
+
+    public List<VariantAnnotatorExtensionTask> getVariantAnnotatorExtensions(ObjectMap options, boolean check) {
 
         List<VariantAnnotatorExtensionTask> tasks = new LinkedList<>();
         for (String extensionId : options.getAsStringList(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key())) {
-            VariantAnnotatorExtensionTask task = null;
+            VariantAnnotatorExtensionTask task;
             switch (extensionId) {
                 case CosmicVariantAnnotatorExtensionTask.ID:
                     task = new CosmicVariantAnnotatorExtensionTask(options);
@@ -28,8 +32,8 @@ public class VariantAnnotatorExtensionsFactory {
                     }
             }
 
-            if (task == null) {
-                throw new IllegalArgumentException("Unable to create annotator extension '" + extensionId + "'");
+            if (check) {
+                task.check(options);
             }
 
             tasks.add(task);

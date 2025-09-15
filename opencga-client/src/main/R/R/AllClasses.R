@@ -4,15 +4,12 @@
 #' @description This is an S4 class which defines the OpencgaR object
 #' @details This S4 class holds the default configuration required by OpencgaR 
 #' methods to establish the connection with the web services.
-#' @slot host a character specifying the host URL. Example: 
-#' "http://bioinfo.hpc.cam.ac.uk/opencga-prod/"
-#' @slot version a character specifying the API version. Example: "v2"
+#' @slot configuration a list containing the OpenCGA configuration.
+#' This configuration should be exactly like the client-configuration.yml
 #' @slot user a character string with you OpenCGA username
 #' @slot token string containing your token
 #' @slot refreshToken string containing your token
-#' @slot autoRenew Boolean specifying if the token should be renewed 
-#' automatically if the session is going to expire in less than 5 minutes
-#' @slot verbose Boolean specifying if logs should be displayed. Logs include: 
+#' @slot verbose Boolean specifying if logs should be displayed. Logs include:
 #' URL (with or without token - see param showToken), query status and number 
 #' of documents retrieved
 #' @slot showToken Boolean specifying if the token should be displayed in the 
@@ -23,13 +20,11 @@
 #' and the RESTful API documentation 
 #' \url{http://bioinfo.hpc.cam.ac.uk/opencga-prod/webservices/}
 #' @export
-opencgaR <- setClass("OpencgaR", slots = c(host="character", 
-                                           version="character",
+opencgaR <- setClass("OpencgaR", slots = c(configuration="list",
                                            user="character",
                                            token="character",
                                            refreshToken="character",
                                            sessionFile="character",
-                                           autoRenew="logical",
                                            verbose="logical",
                                            showToken="logical",
                                            swagger="list"))
@@ -37,8 +32,7 @@ opencgaR <- setClass("OpencgaR", slots = c(host="character",
 
 setMethod("show", signature = "OpencgaR", definition = function(object){
     cat("An object of class ", class(object), "\n", sep = "")
-    cat(paste("| Host:", object@host))
-    cat(paste("\n| Version:", object@version))
+    cat(paste("| Configuration:", object@configuration))
     if (.hasSlot(object, "token")) {
         cat(paste("\n| Token:", object@token))
     }

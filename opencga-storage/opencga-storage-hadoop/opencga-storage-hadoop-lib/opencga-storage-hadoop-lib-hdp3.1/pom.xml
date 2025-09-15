@@ -12,7 +12,7 @@
     </parent>
 
     <artifactId>opencga-storage-hadoop-lib-hdp3.1</artifactId>
-
+    <name>OpenCGA Storage Hadoop Lib HDP 3.1</name>
     <properties>
         <opencga-hadoop-shaded.id>hdp3.1</opencga-hadoop-shaded.id>
         <opencga-storage-hadoop-compat.id>hbase2.0</opencga-storage-hadoop-compat.id>

@@ -121,5 +121,6 @@ public class AuthenticationOrigin {
         this.options = options;
         return this;
     }
+
 }
 

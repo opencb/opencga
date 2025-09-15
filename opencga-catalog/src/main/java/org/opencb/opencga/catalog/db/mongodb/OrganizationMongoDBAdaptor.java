@@ -265,7 +265,7 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
             throws CatalogParameterException, CatalogDBException {
         checkUpdatedParams(parameters, Arrays.asList(QueryParams.NAME.key(), QueryParams.OWNER.key(),
                 QueryParams.CREATION_DATE.key(), QueryParams.MODIFICATION_DATE.key(), QueryParams.ADMINS.key(),
-                QueryParams.CONFIGURATION_OPTIMIZATIONS.key(), QueryParams.CONFIGURATION_TOKEN.key(),
+                QueryParams.CONFIGURATION_OPTIMIZATIONS.key(), QueryParams.CONFIGURATION_TOKEN.key(), QueryParams.CONFIGURATION_USER.key(),
                 QueryParams.CONFIGURATION_AUTHENTICATION_ORIGINS.key(), QueryParams.FEDERATION_CLIENTS.key(),
                 QueryParams.FEDERATION_SERVERS.key(), QueryParams.CONFIGURATION.key(), QueryParams.ATTRIBUTES.key()));
 
@@ -274,7 +274,8 @@ public class OrganizationMongoDBAdaptor extends MongoDBAdaptor implements Organi
         String[] acceptedParams = { QueryParams.NAME.key() };
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
-        String[] acceptedObjectParams = { QueryParams.CONFIGURATION_OPTIMIZATIONS.key(), QueryParams.CONFIGURATION_TOKEN.key() };
+        String[] acceptedObjectParams = { QueryParams.CONFIGURATION_OPTIMIZATIONS.key(), QueryParams.CONFIGURATION_TOKEN.key(),
+                QueryParams.CONFIGURATION_USER.key() };
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
 
         // Authentication Origins action

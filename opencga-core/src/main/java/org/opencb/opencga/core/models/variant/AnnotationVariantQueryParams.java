@@ -10,7 +10,7 @@ import static org.opencb.opencga.core.models.variant.VariantQueryParams.*;
 public class AnnotationVariantQueryParams extends ToolParams {
     @DataField(description = ID_DESCR)
     private String id;
-    @DataField(description = REFERENCE_DESCR)
+    @DataField(description = REGION_DESCR)
     private String region;
     @DataField(description = GENE_DESCR)
     private String gene;

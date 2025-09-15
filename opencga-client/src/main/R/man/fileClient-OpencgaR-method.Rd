@@ -49,15 +49,11 @@
 
 \item{uuid}{Comma separated list file UUIDs up to a maximum of 100.}
 
-\item{name}{Comma separated list of file names. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.}
-
 \item{path}{Comma separated list of paths. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.}
 
 \item{uri}{Comma separated list of uris. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.}
 
 \item{type}{File type, either FILE or DIRECTORY.}
-
-\item{format}{Comma separated Format values. For existing Formats see files/formats.}
 
 \item{external}{Boolean field indicating whether to filter by external or non external files.}
 
@@ -89,15 +85,21 @@
 
 \item{release}{Release when it was created.}
 
-\item{fileName}{File name to overwrite the input fileName.}
+\item{name}{File name to overwrite the input fileName.}
 
-\item{fileFormat}{File format. Allowed values: \link{'VCF BCF GVCF TBI BIGWIG SAM BAM BAI CRAM CRAI FASTQ FASTA PED TAB_SEPARATED_VALUES COMMA_SEPARATED_VALUES XML PROTOCOL_BUFFER JSON AVRO PARQUET PDF IMAGE PLAIN BINARY NONE UNKNOWN'}}
+\item{fileName}{\link{DEPRECATED} File name to overwrite the input fileName.}
+
+\item{format}{File format. Allowed values: \link{'VCF BCF GVCF TBI BIGWIG SAM BAM BAI CRAM CRAI FASTQ FASTA PED TAB_SEPARATED_VALUES COMMA_SEPARATED_VALUES XML PROTOCOL_BUFFER JSON AVRO PARQUET PDF IMAGE PLAIN BINARY NONE UNKNOWN'}}
+
+\item{fileFormat}{\link{DEPRECATED} File format. Allowed values: \link{'VCF BCF GVCF TBI BIGWIG SAM BAM BAI CRAM CRAI FASTQ FASTA PED TAB_SEPARATED_VALUES COMMA_SEPARATED_VALUES XML PROTOCOL_BUFFER JSON AVRO PARQUET PDF IMAGE PLAIN BINARY NONE UNKNOWN'}}
 
 \item{bioformat}{File bioformat. Allowed values: \link{'MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT MICROARRAY_EXPRESSION_ONECHANNEL_AFFYMETRIX MICROARRAY_EXPRESSION_ONECHANNEL_GENEPIX MICROARRAY_EXPRESSION_TWOCHANNELS_AGILENT MICROARRAY_EXPRESSION_TWOCHANNELS_GENEPIX DATAMATRIX_EXPRESSION IDLIST IDLIST_RANKED ANNOTATION_GENEVSANNOTATION OTHER_NEWICK OTHER_BLAST OTHER_INTERACTION OTHER_GENOTYPE OTHER_PLINK OTHER_VCF OTHER_PED VCF4 VARIANT ALIGNMENT COVERAGE SEQUENCE PEDIGREE REFERENCE_GENOME NONE UNKNOWN'}}
 
 \item{checksum}{Expected MD5 file checksum.}
 
-\item{relativeFilePath}{Path within catalog where the file will be located (default: root folder).}
+\item{resource}{Boolean field indicating whether the file is a resource or not.}
+
+\item{relativeFilePath}{Path within catalog (directory) where the file will be located (default: root folder).}
 
 \item{description}{description.}
 
@@ -154,17 +156,18 @@ This function implements the OpenCGA calls for managing Files.
 The following table summarises the available \emph{actions} for this client:\tabular{llr}{
    endpointName \tab Endpoint WS \tab parameters accepted \cr
    updateAcl \tab /{apiVersion}/files/acl/{members}/update \tab study, members\link{*}, action\link{*}, body\link{*} \cr
+   aggregationStats \tab /{apiVersion}/files/aggregationStats \tab study, id, uuid, name, path, uri, type, bioformat, format, external, status, internalStatus, internalVariantIndexStatus, softwareName, directory, creationDate, modificationDate, description, tags, size, sampleIds, jobId, annotation, acl, deleted, release, field \cr
    loadAnnotationSets \tab /{apiVersion}/files/annotationSets/load \tab study, variableSetId\link{*}, path\link{*}, parents, annotationSetId, body \cr
    bioformats \tab /{apiVersion}/files/bioformats \tab  \cr
    create \tab /{apiVersion}/files/create \tab study, parents, body\link{*} \cr
-   distinct \tab /{apiVersion}/files/distinct \tab study, id, uuid, name, path, uri, type, bioformat, format, external, status, internalStatus, internalVariantIndexStatus, softwareName, directory, creationDate, modificationDate, description, tags, size, sampleIds, jobId, annotation, acl, deleted, release, field\link{*} \cr
+   distinct \tab /{apiVersion}/files/distinct \tab study, id, uuid, name, path, uri, type, bioformat, format, external, resource, status, internalStatus, internalVariantIndexStatus, softwareName, directory, creationDate, modificationDate, description, tags, size, sampleIds, jobId, annotation, acl, deleted, release, field\link{*} \cr
    fetch \tab /{apiVersion}/files/fetch \tab jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, study, body\link{*} \cr
    formats \tab /{apiVersion}/files/formats \tab  \cr
    link \tab /{apiVersion}/files/link \tab study, parents, body\link{*} \cr
    runLink \tab /{apiVersion}/files/link/run \tab study, jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
    runPostlink \tab /{apiVersion}/files/postlink/run \tab study, jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
-   search \tab /{apiVersion}/files/search \tab include, exclude, limit, skip, count, flattenAnnotations, study, id, uuid, name, path, uri, type, bioformat, format, external, status, internalStatus, internalVariantIndexStatus, softwareName, directory, creationDate, modificationDate, description, tags, size, sampleIds, jobId, annotation, acl, deleted, release \cr
-   upload \tab /{apiVersion}/files/upload \tab file, fileName, fileFormat, bioformat, checksum, study, relativeFilePath, description, parents \cr
+   search \tab /{apiVersion}/files/search \tab include, exclude, limit, skip, count, flattenAnnotations, study, id, uuid, name, path, uri, type, bioformat, format, external, resource, status, internalStatus, internalVariantIndexStatus, softwareName, directory, creationDate, modificationDate, description, tags, size, sampleIds, jobId, annotation, acl, deleted, release \cr
+   upload \tab /{apiVersion}/files/upload \tab file, name, fileName, format, fileFormat, bioformat, checksum, resource, study, relativeFilePath, description, parents \cr
    acl \tab /{apiVersion}/files/{files}/acl \tab files\link{*}, study, member, silent \cr
    delete \tab /{apiVersion}/files/{files}/delete \tab study, files\link{*}, skipTrash \cr
    info \tab /{apiVersion}/files/{files}/info \tab include, exclude, flattenAnnotations, files\link{*}, study, deleted \cr
@@ -185,6 +188,11 @@ The following table summarises the available \emph{actions} for this client:\tab
 \section{Endpoint /{apiVersion}/files/acl/{members}/update}{
 
 Update the set of permissions granted for the member.
+}
+
+\section{Endpoint /{apiVersion}/files/aggregationStats}{
+
+Fetch catalog file stats.
 }
 
 \section{Endpoint /{apiVersion}/files/annotationSets/load}{

@@ -188,8 +188,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
     }
 
     private boolean isNotAnIdOrMessage(List<DataResult> queryResultList) {
-        return !(queryResultList.get(0).getResultType().equals("java.lang.String") &&
-                ((OpenCGAResult) queryResultList.get(0)).getNumMatches() == 1);
+        return !"java.lang.String".equals(queryResultList.get(0).getResultType()) && queryResultList.get(0).getNumMatches() == 1;
     }
 
     private boolean isEdition(List<DataResult> queryResultList) {

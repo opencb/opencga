@@ -22,7 +22,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
 public class VariantIndexParams extends ToolParams {
-    public static final String DESCRIPTION = "Variant index params";
+
 
     public VariantIndexParams() {
     }

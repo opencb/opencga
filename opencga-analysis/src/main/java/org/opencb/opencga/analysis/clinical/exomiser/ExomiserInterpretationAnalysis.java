@@ -38,7 +38,6 @@ import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.catalog.utils.ResourceManager;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -48,6 +47,7 @@ import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.tools.ResourceManager;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -298,6 +298,7 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
                         variantTsvMap.get(variantId).add(fields);
                     } catch (NonStandardCompliantSampleField e) {
                         logger.warn("Skipping variant {}, it could not be normalized", variant);
+
                     }
 
                     // Next line
@@ -360,8 +361,13 @@ public class ExomiserInterpretationAnalysis extends InterpretationAnalysis {
                 if (geneScore.containsKey("contributingVariants")) {
                     List<Map<String, Object>> contributingVariants = (ArrayList) geneScore.get("contributingVariants");
                     for (Map<String, Object> contributingVariant : contributingVariants) {
-                        String variantId = contributingVariant.get("contigName") + ":" + contributingVariant.get("start") + ":"
-                                + contributingVariant.get("ref") + ":" + contributingVariant.get("alt");
+                        String variantId = new Variant(
+                                contributingVariant.get("contigName").toString(),
+                                ((Number) contributingVariant.get("start")).intValue(),
+                                ((Number) contributingVariant.get("end")).intValue(),
+                                contributingVariant.get("ref").toString(),
+                                contributingVariant.get("alt").toString())
+                                .toString();
                         if (!results.containsKey(variantId)) {
                             results.put(variantId, new HashSet<>());
                         }

@@ -76,7 +76,7 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
         parameters.add(new Object[]{
                 new ObjectMap()
                         .append(VariantStorageOptions.TRANSFORM_FORMAT.key(), "avro")
-                        .append(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
+                        .append(VariantStorageOptions.LOAD_ARCHIVE.key(), true)
 //                        .append(VariantStorageEngine.Options.EXTRA_FORMAT_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DS,GL")
                         .append(VariantStorageOptions.STATS_CALCULATE.key(), true)
                         .append(VariantStorageOptions.GVCF.key(), false)

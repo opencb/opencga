@@ -33,10 +33,10 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor
 @Category(LongTests.class)
 public class HadoopVariantStorageSearchIntersectTest extends VariantStorageSearchIntersectTest implements HadoopVariantStorageTest {
 
-    @ClassRule(order = 1)
+    @ClassRule(order = -10)
     public static HadoopSolrSupport solrSupport = new HadoopSolrSupport();
 
-    @ClassRule(order = 20)
+    @ClassRule
     public static ExternalResource externalResource = new HadoopExternalResource();
 
     @Override

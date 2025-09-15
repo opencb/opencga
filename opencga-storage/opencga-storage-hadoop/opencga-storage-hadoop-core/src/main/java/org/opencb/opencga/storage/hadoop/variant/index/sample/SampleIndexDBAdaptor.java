@@ -209,7 +209,10 @@ public class SampleIndexDBAdaptor implements VariantIterable {
     }
 
     public Iterator<Map<String, List<Variant>>> iteratorByGt(int study, int sample) throws IOException {
-        SampleIndexSchema schema = schemaFactory.getSchema(study, sample, false);
+        return iteratorByGt(study, sample, schemaFactory.getSchema(study, sample, false));
+    }
+
+    public Iterator<Map<String, List<Variant>>> iteratorByGt(int study, int sample, SampleIndexSchema schema) throws IOException {
         String tableName = getSampleIndexTableName(study, schema.getVersion());
         HBaseToSampleIndexConverter converter = newConverter(schema);
         return hBaseManager.act(tableName, table -> {

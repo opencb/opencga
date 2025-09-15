@@ -516,7 +516,14 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
                     for (Variant variant : variantStorageEngine.get(query, new QueryOptions(options)).getResults()) {
                         StudyEntry studyEntry = variant.getStudies().get(0);
                         assertEquals(0, studyEntry.getIssues().size());
-                        assertEquals(name, studyEntry.getFiles().get(0).getFileId());
+                        List<FileEntry> fileEntries = studyEntry.getFiles();
+                        if (fileEntries.size() > 1) {
+                            fileEntries = new LinkedList<>(fileEntries);
+                            // Some extra file entries might be returned containing only an original call
+                            fileEntries.removeIf(fe -> fe.getData().isEmpty());
+                        }
+                        assertEquals(1, fileEntries.size());
+                        assertEquals(name, fileEntries.get(0).getFileId());
                         assertEquals(Collections.singleton(sampleName), studyEntry.getSamplesName());
                     }
                 }

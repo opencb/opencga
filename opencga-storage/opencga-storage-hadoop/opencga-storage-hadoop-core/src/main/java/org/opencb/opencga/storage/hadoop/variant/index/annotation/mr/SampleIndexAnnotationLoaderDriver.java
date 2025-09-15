@@ -124,7 +124,7 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
             VariantHBaseQueryParser.addRegionFilter(scan, new Region(region));
         }
 
-        VariantMapReduceUtil.configureMapReduceScan(scan, getConf());
+        VariantMapReduceUtil.configureMapReduceScan(scan, job);
 
         boolean multiFileSamples = false;
         for (Integer sampleId : sampleIds) {

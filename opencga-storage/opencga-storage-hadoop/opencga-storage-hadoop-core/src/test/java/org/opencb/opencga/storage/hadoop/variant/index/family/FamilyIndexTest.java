@@ -84,7 +84,7 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
             Trio family = new Trio(father, mother, child);
             Trio family2 = new Trio("FATHER", "MOTHER", "PROBAND");
 
-            variantStorageEngine.aggregateFamily(study, new VariantAggregateFamilyParams(family.toList(), false), new ObjectMap());
+            variantStorageEngine.aggregateFamily(study, new VariantAggregateFamilyParams(family.toList(), false), new ObjectMap(), newOutputUri());
 
             variantStorageEngine.familyIndex(study, Collections.singletonList(family), new ObjectMap());
             variantStorageEngine.familyIndex(study, Collections.singletonList(family2), new ObjectMap());

@@ -84,6 +84,9 @@ apiConfig:
         - name: upload
           executorExtended: True
           optionExtended: True
+        - name: download
+          executorExtended: True
+          optionExtended: True
         - name: update
           subcommands:
             - name: annotationSetsAction

@@ -1,6 +1,8 @@
 package org.opencb.opencga.storage.hadoop.variant.io;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.JobContext;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.OutputFormat;
@@ -9,8 +11,12 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.metadata.adaptors.VariantStorageMetadataDBAdaptorFactory;
+import org.opencb.opencga.storage.core.metadata.local.LocalVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.hadoop.io.HDFSIOConnector;
 import org.opencb.opencga.storage.hadoop.utils.MapReduceOutputFile;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
@@ -19,7 +25,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Map;
+import java.net.URI;
+import java.nio.file.Paths;
+import java.util.List;
 
 import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.getQueryFromConfig;
 import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.getQueryOptionsFromConfig;
@@ -44,6 +52,8 @@ public abstract class VariantDriver extends AbstractVariantsTableDriver {
     private final QueryOptions options = new QueryOptions();
     private static Logger logger = LoggerFactory.getLogger(VariantDriver.class);
     protected boolean useReduceStep;
+    private LocalVariantStorageMetadataDBAdaptorFactory recordMetadataDBAdaptor;
+    private List<URI> recordMetadataFiles;
 
     @Override
     protected void parseAndValidateParameters() throws IOException {
@@ -62,9 +72,23 @@ public abstract class VariantDriver extends AbstractVariantsTableDriver {
         }
 
         logger.info(" * Query:");
-        for (Map.Entry<String, Object> entry : query.entrySet()) {
-            logger.info("   * " + entry.getKey() + " : " + entry.getValue());
+        for (String key : query.keySet()) {
+            String value = query.getString(key);
+            if (value.length() > 100) {
+                List<String> valuesList = query.getAsStringList(key);
+                if (valuesList.size() > 10) {
+                    value = "(" + (valuesList.size()) + " elements) " + StringUtils.join(valuesList.subList(0, 10), ",") + "...";
+                }
+            }
+            logger.info("   - {}: {}", key, value);
         }
+    }
+
+    @Override
+    protected VariantStorageMetadataDBAdaptorFactory newMetadataDbAdaptorFactory() {
+        VariantStorageMetadataDBAdaptorFactory dbAdaptorFactory = super.newMetadataDbAdaptorFactory();
+        recordMetadataDBAdaptor = new LocalVariantStorageMetadataDBAdaptorFactory(dbAdaptorFactory);
+        return recordMetadataDBAdaptor;
     }
 
     @Override
@@ -114,8 +138,27 @@ public abstract class VariantDriver extends AbstractVariantsTableDriver {
         VariantMapReduceUtil.configureVariantConverter(job.getConfiguration(), false, true, true,
                 query.getString(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./."));
 
+        URI recordMetadataOutput;
+        if (output.getLocalOutput() != null) {
+            recordMetadataOutput = output.getLocalOutput().getParent().toUri().resolve("recordMetadata");
+        } else {
+            recordMetadataOutput = Paths.get(System.getProperty("java.io.tmpdir")).resolve(TimeUtils.getTime() + "_recordMetadata").toUri();
+        }
+        FileSystem.get(recordMetadataOutput, job.getConfiguration()).mkdirs(new org.apache.hadoop.fs.Path(recordMetadataOutput));
+        recordMetadataFiles = recordMetadataDBAdaptor.writeToFile(recordMetadataOutput, new HDFSIOConnector(job.getConfiguration()));
+        VariantMapReduceUtil.configureLocalMetadataManager(job, recordMetadataFiles);
 
         return job;
+    }
+
+    @Override
+    protected void postSubmit(Job job) throws IOException {
+        super.postSubmit(job);
+
+        FileSystem fs = FileSystem.get(recordMetadataFiles.get(0), job.getConfiguration());
+        for (URI recordMetadataFile : recordMetadataFiles) {
+            fs.delete(new Path(recordMetadataFile), false);
+        }
     }
 
     protected void setupReducer(Job job, String variantTable) throws IOException {

@@ -155,6 +155,7 @@ This function implements the OpenCGA calls for managing Samples.
 The following table summarises the available \emph{actions} for this client:\tabular{llr}{
    endpointName \tab Endpoint WS \tab parameters accepted \cr
    updateAcl \tab /{apiVersion}/samples/acl/{members}/update \tab study, members\link{*}, action\link{*}, body\link{*} \cr
+   aggregationStats \tab /{apiVersion}/samples/aggregationStats \tab study, id, uuid, somatic, individualId, fileIds, cohortIds, creationDate, modificationDate, internalStatus, status, processingProduct, processingPreparationMethod, processingExtractionMethod, processingLabSampleId, collectionFrom, collectionType, collectionMethod, phenotypes, annotation, acl, internalRgaStatus, release, snapshot, deleted, statsId, statsVariantCount, statsChromosomeCount, statsTypeCount, statsGenotypeCount, statsTiTvRatio, statsQualityAvg, statsQualityStdDev, statsHeterozygosityRate, statsDepthCount, statsBiotypeCount, statsClinicalSignificanceCount, statsConsequenceTypeCount, field \cr
    loadAnnotationSets \tab /{apiVersion}/samples/annotationSets/load \tab study, variableSetId\link{*}, path\link{*}, parents, annotationSetId, body \cr
    create \tab /{apiVersion}/samples/create \tab include, exclude, study, includeResult, body\link{*} \cr
    distinct \tab /{apiVersion}/samples/distinct \tab study, id, uuid, somatic, individualId, fileIds, cohortIds, creationDate, modificationDate, internalStatus, status, processingProduct, processingPreparationMethod, processingExtractionMethod, processingLabSampleId, collectionFrom, collectionType, collectionMethod, phenotypes, annotation, acl, internalRgaStatus, release, snapshot, deleted, statsId, statsVariantCount, statsChromosomeCount, statsTypeCount, statsGenotypeCount, statsTiTvRatio, statsQualityAvg, statsQualityStdDev, statsHeterozygosityRate, statsDepthCount, statsBiotypeCount, statsClinicalSignificanceCount, statsConsequenceTypeCount, field\link{*} \cr
@@ -170,6 +171,11 @@ The following table summarises the available \emph{actions} for this client:\tab
 \section{Endpoint /{apiVersion}/samples/acl/{members}/update}{
 
 Update the set of permissions granted for the member.
+}
+
+\section{Endpoint /{apiVersion}/samples/aggregationStats}{
+
+Fetch catalog sample stats.
 }
 
 \section{Endpoint /{apiVersion}/samples/annotationSets/load}{

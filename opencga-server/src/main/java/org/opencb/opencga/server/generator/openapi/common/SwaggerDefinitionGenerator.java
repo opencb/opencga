@@ -1,231 +1,274 @@
 package org.opencb.opencga.server.generator.openapi.common;
 
+import com.fasterxml.jackson.databind.BeanDescription;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
+import com.fasterxml.jackson.databind.type.TypeFactory;
+import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.annotations.DataClass;
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.server.generator.openapi.models.Definition;
 import org.opencb.opencga.server.generator.openapi.models.FieldDefinition;
 import org.opencb.opencga.server.generator.openapi.models.ListDefinition;
 import org.opencb.opencga.server.generator.openapi.models.MapDefinition;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
+import java.net.URI;
+import java.net.URL;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class SwaggerDefinitionGenerator {
 
-
-    private final static Map<String, Definition> definitions = new HashMap<>();
+    private final static Map<Class<?>, Definition> definitions = new LinkedHashMap<>();
     private final static Set<String> processedFields = new HashSet<>();
-    public static Map<String, Definition> getDefinitions(List<Class<?>> classes) {
-        for (Class<?> clazz : classes) {
-            if (!definitions.containsKey(clazz.getSimpleName()) && isOpencbBean(clazz)) {
-                definitions.put(clazz.getSimpleName(), generateDefinition(clazz));
-            }
-        }
-        return definitions;
+    private final static ObjectMapper objectMapper;
+
+    static {
+        objectMapper = JacksonUtils.getExternalOpencgaObjectMapper();
     }
 
-    private static Definition generateDefinition(Class<?> clazz) {
-        processedFields.add(clazz.getName());
-        Definition definition = new Definition();
-        Map<String, FieldDefinition> properties = new LinkedHashMap<>();
-        Field[] fields = clazz.getDeclaredFields();
+    public static Map<String, Definition> getDefinitions(Collection<Class<?>> classes) {
+        for (Class<?> clazz : classes) {
+            generateDefinition(clazz);
+        }
+        Map<String, Definition> simpleDefinitions = new TreeMap<>();
+        List<Class<?>> duplicatedClasses = new ArrayList<>();
+        for (Map.Entry<Class<?>, Definition> entry : definitions.entrySet()) {
+            String ref = buildRefName(entry.getKey());
+            if (simpleDefinitions.put(ref, entry.getValue()) != null) {
+                for (Class<?> aClass : definitions.keySet()) {
+                    if (buildRefName(aClass).equals(ref)) {
+                        duplicatedClasses.add(aClass);
+                    }
+                }
+            }
+        }
+        if (simpleDefinitions.size() != definitions.size()) {
+            throw new IllegalStateException("Duplicate definitions found. Please check the classes. Duplicated classes: " + duplicatedClasses);
+        }
+        return simpleDefinitions;
 
-        for (Field field : fields) {
-            if(field.getName().equals("serialVersionUID") || field.getName().contains("$")){
-                continue;
+    }
+
+
+    private static void generateDefinition(Class<?> clazz) {
+        // Check if the class is already processed
+        if (definitions.containsKey(clazz)) {
+            return;
+        }
+        if (!isOpencbBean(clazz)) {
+            // Only known OpenCB beans are supported.
+            throw new IllegalArgumentException("Class " + clazz.getName() + " is not an OpenCB bean");
+        }
+        // Avoid infinite recursion in self-referencing classes
+        if (!processedFields.add(clazz.getName())) {
+            return;
+        }
+        Map<String, FieldDefinition> fieldDefinitions = new LinkedHashMap<>();
+        BeanDescription beanDescription = objectMapper.getSerializationConfig().introspect(objectMapper.constructType(clazz));
+        List<BeanPropertyDefinition> properties = beanDescription.findProperties();
+
+        // Jackson introspector will include all the fields, including the ones that are not serializable
+        // Remove the ones that are not serializable or deserializable
+        properties.removeIf(property -> {
+            if (!property.couldSerialize() || !property.couldDeserialize()) {
+                return true;
+            } else {
+                return false;
+            }
+        });
+
+        for (BeanPropertyDefinition property : properties) {
+            if(property.getName().equals("serialVersionUID") || property.getName().contains("$")){
+                throw new IllegalStateException("Field " + property.getName() + " in class " + property.getRawPrimaryType().getName() + " is not supported");
             }
             try {
-                FieldDefinition fieldDefinition;
-                if(isCollection(field.getType())){
-                    fieldDefinition = manageCollectionType(field);
-                }else{
-                    Class<?> fieldType = field.getType();
-                    fieldDefinition = manageField(fieldType);
+                FieldDefinition fieldDefinition = manageField(property.getPrimaryType());
+
+                // Enrich field definition with additional information
+                if (property.getField() != null) {
+                    if (property.getField().hasAnnotation(DataField.class)) {
+                        DataField annotation = property.getField().getAnnotation(DataField.class);
+                        if (annotation.description() != null && !annotation.description().isEmpty()) {
+                            fieldDefinition.setDescription(annotation.description());
+                        }
+                    }
                 }
-                properties.put(field.getName(), fieldDefinition);
+
+                fieldDefinitions.put(property.getName(), fieldDefinition);
+
             } catch (Exception e) {
-                System.err.println("Error processing field: " + field.getType().getSimpleName() + " in class " + field.getType().getName());
-                e.printStackTrace();
+                throw new IllegalStateException(
+                        "Error processing field: " + property.getRawPrimaryType().getSimpleName() + " in class " + property.getRawPrimaryType().getName(), e);
             }
         }
 
+        Definition definition = new Definition();
         definition.setType("object");
-        definition.setProperties(properties);
-        return definition;
+        definition.setProperties(fieldDefinitions);
+        if (clazz.isAnnotationPresent(DataClass.class)) {
+            String description = clazz.getAnnotation(DataClass.class).description();
+            if (StringUtils.isNoneEmpty(description)) {
+                definition.setDescription(description);
+            }
+        }
+        definitions.put(clazz, definition);
     }
 
-    private static FieldDefinition manageField(Class<?> fieldType) {
+
+    private static FieldDefinition manageEnumField(Class<?> enumClass) {
+        if (!enumClass.isEnum()) {
+            throw new IllegalArgumentException("Provided class is not an enum: " + enumClass.getName());
+        }
+
+        List<String> values = Arrays.stream(enumClass.getEnumConstants())
+                .map(Object::toString)
+                .collect(Collectors.toList());
+        // Always accept null as a valid value
+        values.add(null);
+
+        return new FieldDefinition()
+                .setType("string")  // OpenAPI treats enums as strings
+                .setEnum(values);
+    }
+
+    private static FieldDefinition manageField(JavaType type) {
+        Class<?> clazz = type.getRawClass();
         try {
-            if (!isPrimitive(fieldType)) {
-                if (!definitions.containsKey(fieldType.getSimpleName()) && !processedFields.contains(fieldType.getName()) && isOpencbBean(fieldType)) {
-                    definitions.put(fieldType.getSimpleName(), generateDefinition(fieldType));
-                }
-                return manageComplexField(fieldType);
+            if (type.isCollectionLikeType() || type.isArrayType() || type.isMapLikeType()) {
+                return manageCollectionType(type);
+            } else if (isPrimitive(clazz)) {
+                return managePrimitiveField(type);
+            } else if(type.isEnumImplType()) {
+                return manageEnumField(clazz);
             } else {
-                return managePrimitiveField(fieldType);
+                // Other complex fields. Returns a $ref to the definition
+                return manageComplexField(clazz);
             }
         } catch (Exception e) {
-            // Manejar errores inesperados durante la reflexión
-            System.err.println("Error processing field: " + fieldType.getSimpleName() + " in class " + fieldType.getName());
-            e.printStackTrace();
+            throw new IllegalStateException("Error processing field: " + type.getTypeName() + " in class " + type.getRawClass().getName(), e);
         }
-        return null;
     }
 
     public static boolean isOpencbBean(Class<?> fieldType) {
-        return fieldType.getName().contains("org.opencb") || fieldType.getName().contains("com.zettagenomics");
+        return fieldType.getName().contains("org.opencb")
+                || fieldType.getName().contains("com.zettagenomics")
+                || fieldType.getName().contains("org.ga4gh");
     }
 
-    private static FieldDefinition managePrimitiveField(Class<?> fieldType) {
+    private static FieldDefinition managePrimitiveField(JavaType fieldType) {
         FieldDefinition primitiveProperty = new FieldDefinition();
-        if (fieldType.getName().startsWith("[L")) {
-            return manageArrayField(fieldType);
-        }
-        primitiveProperty.setType(mapJavaTypeToSwaggerType(fieldType));
+        primitiveProperty.setType(mapJavaTypeToSwaggerType(fieldType.getRawClass()));
         return primitiveProperty;
     }
 
     private static FieldDefinition manageComplexField(Class<?> fieldType) {
         FieldDefinition complexProperty = new FieldDefinition();
 
-        // Handle Java object arrays
-        if (fieldType.getName().startsWith("[L")) {
-            return manageArrayField(fieldType);
-        }
-
-        // Default behavior for non-array types
-        complexProperty.setType("object");
-        if(isOpencbBean(fieldType)){
-            complexProperty.set$ref("#/definitions/" + fieldType.getSimpleName());
-        }else{
-            complexProperty.setRef(fieldType.getSimpleName());
+        if (isOpencbBean(fieldType)) {
+            generateDefinition(fieldType);
+            complexProperty.setType("object");
+            complexProperty.set$ref(build$ref(fieldType));
+        } else {
+            // Not an OpenCB bean. Check if it is a known non-primitive java type
+            if (fieldType == URI.class) {
+                complexProperty.setType("string");
+                complexProperty.setFormat("uri");
+            } else if (fieldType == URL.class) {
+                complexProperty.setType("string");
+                complexProperty.setFormat("url");
+            } else if (fieldType == Class.class) {
+                complexProperty.setType("string");
+                complexProperty.setFormat("java-class");
+            } else if (fieldType == Date.class) {
+                complexProperty.setType("string");
+                complexProperty.setFormat("full-date");
+            } else if (fieldType == Enum.class) {
+                // Unknown enum type
+                complexProperty.setType("string");
+            } else if (fieldType == Object.class) {
+                complexProperty.setType("object");
+                complexProperty.setRef(fieldType.getSimpleName());
+            } else {
+                throw new IllegalArgumentException("Class " + fieldType.getName() + " is not a supported type");
+            }
         }
         return complexProperty;
     }
 
-    private static FieldDefinition manageArrayField(Class<?> fieldType) {
-        // Extract the class name without "[L" and ";"
-        String className = fieldType.getName().substring(2, fieldType.getName().length() - 1);
-        try {
-            Class<?> arrayElementType = Class.forName(className);
-
-            // Define it as an array in OpenAPI
-            ListDefinition arrayProperty = new ListDefinition();
-            arrayProperty.setType("array");
-            arrayProperty.setItems(manageField(arrayElementType));
-
-            return arrayProperty;
-        } catch (ClassNotFoundException e) {
-            System.err.println("Error resolving array type: " + className);
-            e.printStackTrace();
-        }
-        return null;
+    public static String build$ref(Class<?> fieldType) {
+        return "#/definitions/" + buildRefName(fieldType);
     }
 
-
-    private static boolean isCollection(Class<?> fieldType) {
-        return List.class.isAssignableFrom(fieldType) || Map.class.isAssignableFrom(fieldType);
-    }
-
-    public static FieldDefinition manageCollectionType(Field field) {
-        Type genericType = field.getGenericType();
-        if (genericType instanceof ParameterizedType) {
-            ParameterizedType paramType = (ParameterizedType) genericType;
-            Type[] typeArguments = paramType.getActualTypeArguments();
-
-            if (List.class.isAssignableFrom(field.getType())) {
-                FieldDefinition listDefinition = new ListDefinition();
-                listDefinition.setType("array");
-                // Get the item type of the list
-                Type listItemType = typeArguments[0];
-                ((ListDefinition) listDefinition).setItems(manageGenericType(listItemType));
-                return listDefinition;
-
-            } else if (Map.class.isAssignableFrom(field.getType())) {
-                FieldDefinition mapDefinition = new MapDefinition();
-                mapDefinition.setType("array");
-                Type keyType = typeArguments[0];
-                Type valueType = typeArguments[1];
-                ((MapDefinition) mapDefinition).setKey(manageGenericType(keyType));
-                ((MapDefinition) mapDefinition).setValue(manageGenericType(valueType));
-                return mapDefinition;
+    public static String buildRefName(Class<?> fieldType) {
+        if (isOpencbBean(fieldType)) {
+            String prefix = "";
+            String suffix = "";
+            if (fieldType.getPackage().equals(org.opencb.biodata.models.variant.avro.VariantAvro.class.getPackage())) {
+                if (fieldType != org.opencb.biodata.models.variant.avro.VariantAnnotation.class) {
+                    suffix = "-avro";
+                }
+            } else if (fieldType == org.opencb.biodata.models.common.Status.class) {
+                suffix = "-biodata";
+            } else if (fieldType == org.opencb.biodata.models.metadata.Sample.class) {
+                suffix = "-biodata";
+            } else if (fieldType == org.opencb.biodata.models.metadata.Individual.class) {
+                suffix = "-biodata";
+            } else if (fieldType == org.opencb.biodata.models.metadata.Cohort.class) {
+                suffix = "-biodata";
+            } else if (fieldType == org.opencb.biodata.models.clinical.interpretation.stats.InterpretationStats.class) {
+                suffix = "-stats-biodata";
+            } else if (fieldType == org.opencb.opencga.core.models.family.IndividualCreateParams.class) {
+                suffix = "-family";
+            } else if (fieldType.isMemberClass()) {
+                prefix = fieldType.getEnclosingClass().getSimpleName() + "-";
             }
+            return prefix + fieldType.getSimpleName() + suffix;
+        } else {
+            throw new IllegalArgumentException("Class " + fieldType.getName() + " is not an OpenCB bean");
         }
-        return null;
     }
 
-    /**
-     * Handles different types, including raw classes, generic types, and parameterized types.
-     * Prevents errors caused by trying to resolve generic placeholders like T, K, or V.
-     */
-    public static FieldDefinition manageGenericType(Type type) {
-        if (type instanceof Class<?>) {
-            // If it's a concrete class, process it normally
-            return manageField((Class<?>) type);
-        } else if (type instanceof ParameterizedType) {
-            // If it's another Map/List with generics, handle it recursively
-            return manageCollectionTypeForType(type);
-        } else if (type instanceof java.lang.reflect.TypeVariable) {
-            // If it's a generic placeholder like T, K, or V, assign a default type
-            FieldDefinition genericField = new FieldDefinition();
-            genericField.setType("UnknownType"); // Generic placeholder in OpenAPI
-            return genericField;
-        } else if (type instanceof java.lang.reflect.WildcardType) {
-            // Handle wildcard types like ? extends Number
-            FieldDefinition wildcardField = new FieldDefinition();
-            wildcardField.setType("WildcardType");
-            return wildcardField;
-        } else if (type instanceof java.lang.reflect.GenericArrayType) {
-            // Handle generic arrays like T[]
-            FieldDefinition arrayField = new ListDefinition();
-            arrayField.setType("array");
-            Type componentType = ((java.lang.reflect.GenericArrayType) type).getGenericComponentType();
-            ((ListDefinition) arrayField).setItems(manageGenericType(componentType));
-            return arrayField;
-        }
-        return null;
+    public static boolean isCollection(Class<?> fieldType) {
+        return Collection.class.isAssignableFrom(fieldType) || Map.class.isAssignableFrom(fieldType);
     }
 
-    /**
-     * Handles parameterized types within collections (List<T>, Map<K, V>, etc.).
-     */
-    private static FieldDefinition manageCollectionTypeForType(Type type) {
-        if (type instanceof ParameterizedType) {
-            ParameterizedType paramType = (ParameterizedType) type;
-            Type rawType = paramType.getRawType();
-
-            if (rawType instanceof Class<?> && Map.class.isAssignableFrom((Class<?>) rawType)) {
-                // It's a Map inside another collection
-                Type keyType = paramType.getActualTypeArguments()[0];
-                Type valueType = paramType.getActualTypeArguments()[1];
-
-                FieldDefinition mapDefinition = new MapDefinition();
-                mapDefinition.setType("array");
-
-                ((MapDefinition) mapDefinition).setKey(manageGenericType(keyType));
-                ((MapDefinition) mapDefinition).setValue(manageGenericType(valueType));
-                return mapDefinition;
-
-            } else if (rawType instanceof Class<?> && List.class.isAssignableFrom((Class<?>) rawType)) {
-                // It's a List inside another List or Map
-                Type listItemType = paramType.getActualTypeArguments()[0];
-
-                FieldDefinition listDefinition = new ListDefinition();
-                listDefinition.setType("array");
-                ((ListDefinition) listDefinition).setItems(manageGenericType(listItemType));
-                return listDefinition;
+    public static FieldDefinition manageCollectionType(JavaType type) {
+        Class<?> clazz = type.getRawClass();
+        if (type.isArrayType() || type.isCollectionLikeType()) {
+            // Get the item type of the list
+            FieldDefinition content = manageField(type.getContentType());
+            return new ListDefinition(content);
+        } else if (type.isMapLikeType()) {
+            // Model with Map/Dictionary Properties
+            // https://github.com/OAI/OpenAPI-Specification/blob/main/versions/2.0.md#model-with-mapdictionary-properties
+            JavaType keyType = type.getKeyType();
+            // Ensure the key type is a supported string-like type (string or Enum)
+            if (!String.class.isAssignableFrom(keyType.getRawClass()) && !keyType.isEnumType()) {
+                throw new IllegalArgumentException("Map keys must be of type String or Enum, but found: " + keyType.getRawClass().getName());
             }
+            JavaType valueType = type.getContentType();
+            if (valueType.getRawClass() == Object.class) {
+                // OpenAPI does not support generic types for Map values. Use string instead.
+                valueType = TypeFactory.defaultInstance().constructSimpleType(String.class, null);
+            }
+            FieldDefinition content = manageField(valueType);
+            return new MapDefinition(content);
+        } else {
+            throw new IllegalArgumentException("Unsupported collection type: " + clazz.getName());
         }
-        return null;
     }
-
 
     public static boolean isPrimitive(Class<?> clazz) {
-        return clazz.isPrimitive() || clazz == String.class ||
-                clazz == Integer.class || clazz == Long.class ||
-                clazz == Boolean.class || clazz == Double.class ||
-                clazz == Float.class || clazz == Byte.class ||
-                clazz == Short.class || clazz == Character.class;
+        return clazz.isPrimitive()
+                || clazz == String.class
+                || Number.class.isAssignableFrom(clazz)
+                || clazz == Boolean.class
+                || clazz == Byte.class
+                || clazz == Character.class
+                || clazz == Void.class;
     }
 
     public static String mapJavaTypeToSwaggerType(Class<?> clazz) {
@@ -233,6 +276,7 @@ public class SwaggerDefinitionGenerator {
         if (clazz == Integer.class || clazz == int.class) return "integer";
         if (clazz == Long.class || clazz == long.class) return "integer";
         if (clazz == Boolean.class || clazz == boolean.class) return "boolean";
+        if (clazz == Number.class) return "number";
         if (clazz == Double.class || clazz == double.class) return "number";
         if (clazz == Float.class || clazz == float.class) return "number";
         if (clazz == Byte.class || clazz == byte.class) return "string";

@@ -70,7 +70,7 @@ public class VariantStatsOperationManager extends OperationManager {
         // Synchronize catalog with storage
         CatalogStorageMetadataSynchronizer synchronizer =
                 new CatalogStorageMetadataSynchronizer(catalogManager, variantStorageEngine.getMetadataManager());
-        synchronizer.synchronizeCatalogStudyFromStorage(study, token);
+        synchronizer.synchronizeCatalogFromStorage(study, token);
 
         Map<String, List<String>> cohortsMap = checkCanCalculateCohorts(study, cohorts, overwriteStats, resume, token);
 
@@ -108,7 +108,7 @@ public class VariantStatsOperationManager extends OperationManager {
         // Synchronize catalog with storage
         CatalogStorageMetadataSynchronizer synchronizer =
                 new CatalogStorageMetadataSynchronizer(catalogManager, variantStorageEngine.getMetadataManager());
-        synchronizer.synchronizeCatalogStudyFromStorage(study, token);
+        synchronizer.synchronizeCatalogFromStorage(study, token);
 
         try {
             // Modify cohort status to "INVALID"

@@ -5,7 +5,6 @@ import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
 public class AlignmentIndexParams extends ToolParams {
-    public static final String DESCRIPTION = "Alignment index params";
 
     @DataField(id = "fileId", description = FieldConstants.ALIGNMENT_INDEX_FILE_ID_DESCRIPTION, required = true)
     private String fileId;

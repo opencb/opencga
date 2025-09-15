@@ -29,7 +29,7 @@
 
     <artifactId>opencga-storage-hadoop-compat</artifactId>
     <packaging>pom</packaging>
-
+    <name>OpenCGA Storage Hadoop Compatibility</name>
     <modules>
         <module>opencga-storage-hadoop-compat-api</module>
         <module>opencga-storage-hadoop-compat-hbase2.0</module>

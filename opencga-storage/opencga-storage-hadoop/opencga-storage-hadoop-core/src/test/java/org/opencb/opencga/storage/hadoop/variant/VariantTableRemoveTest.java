@@ -39,6 +39,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 
 import java.util.*;
 
@@ -202,7 +203,7 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
 
         loadFile("s2.genome.vcf", studyMetadata, options);
 
-        ((VariantStorageEngine) getVariantStorageEngine()).aggregateFamily(studyName, new VariantAggregateFamilyParams(Arrays.asList("s1", "s2"), false), options);
+        getVariantStorageEngine().aggregateFamily(studyName, new VariantAggregateFamilyParams(Arrays.asList("s1", "s2"), false), options, newOutputUri());
 
         VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri());
         variants = buildVariantsIdx();
@@ -285,8 +286,9 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
         LinkedHashSet<Integer> sampleIds = fileMetadata.getSamples();
         SampleIndexDBAdaptor sampleIndexDBAdaptor = new SampleIndexDBAdaptor(dbAdaptor.getHBaseManager(),
                 dbAdaptor.getTableNameGenerator(), dbAdaptor.getMetadataManager());
+        SampleIndexSchema schemaLatest = sampleIndexDBAdaptor.getSchemaLatest(studyMetadata);
         for (Integer sampleId : sampleIds) {
-            assertFalse(sampleIndexDBAdaptor.iteratorByGt(studyMetadata.getId(), sampleId).hasNext());
+            assertFalse(sampleIndexDBAdaptor.iteratorByGt(studyMetadata.getId(), sampleId, schemaLatest).hasNext());
         }
     }
 

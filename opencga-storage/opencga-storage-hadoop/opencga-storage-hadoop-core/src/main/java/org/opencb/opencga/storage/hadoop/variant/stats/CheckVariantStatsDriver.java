@@ -94,7 +94,7 @@ public class CheckVariantStatsDriver extends AbstractVariantsTableDriver {
 //                        RegexStringComparator.EngineType.JONI)));
 
         scan.setMaxVersions(1);
-        VariantMapReduceUtil.configureMapReduceScan(scan, job.getConfiguration());
+        VariantMapReduceUtil.configureMapReduceScan(scan, job);
         job.getConfiguration().setInt(NUM_FILES, getMetadataManager().getIndexedFiles(getStudyId())
                 .stream()
                 .mapToInt(Integer::intValue)

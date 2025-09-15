@@ -822,6 +822,13 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 SampleDBAdaptor.QueryParams.INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX.key(), token);
     }
 
+    public OpenCGAResult<?> updateSampleInternalVariantAggregateFamily(
+            String studyFqn, Sample sample, List<SampleInternalVariantAggregateFamily> aggregateFamily, String token)
+            throws CatalogException {
+        return updateSampleInternalVariant(studyFqn, sample, aggregateFamily,
+                SampleDBAdaptor.QueryParams.INTERNAL_VARIANT_AGGREGATE_FAMILY.key(), token);
+    }
+
     private OpenCGAResult<?> updateSampleInternalVariant(String studyFqn, Sample sample, Object value, String fieldKey, String token)
             throws CatalogException {
         return updateSampleInternalVariant(studyFqn, sample, value, Collections.singletonList(fieldKey), token);
@@ -846,15 +853,19 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         long studyId = study.getUid();
         authorizationManager.checkIsAtLeastStudyAdministrator(organizationId, studyId, userId);
 
-        ObjectMap params;
-        try {
-            params = new ObjectMap();
-            ObjectMap valueAsObjectMap = new ObjectMap(getUpdateObjectMapper().writeValueAsString(value));
+        ObjectMap params = new ObjectMap();
+        ObjectMap valueAsObjectMap;
+        if (value instanceof Collection) {
+            List<ObjectMap> objectMaps = getUpdateObjectMapper()
+                    .convertValue(value, getUpdateObjectMapper().getTypeFactory().constructParametricType(List.class, ObjectMap.class));
+            for (String fieldKey : fieldKeys) {
+                params.append(fieldKey, objectMaps);
+            }
+        } else {
+            valueAsObjectMap = getUpdateObjectMapper().convertValue(value, ObjectMap.class);
             for (String fieldKey : fieldKeys) {
                 params.append(fieldKey, valueAsObjectMap);
             }
-        } catch (JsonProcessingException e) {
-            throw new CatalogException("Cannot parse SampleInternalVariant object: " + e.getMessage(), e);
         }
         OpenCGAResult<?> update = getSampleDBAdaptor(organizationId).update(sample.getUid(), params, QueryOptions.empty());
         auditManager.audit(organizationId, userId, Enums.Action.UPDATE_INTERNAL, Enums.Resource.SAMPLE, sample.getId(), sample.getUuid(),

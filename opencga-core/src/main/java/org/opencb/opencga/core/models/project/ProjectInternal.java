@@ -24,9 +24,12 @@ import org.opencb.opencga.core.models.common.InternalStatus;
 
 public class ProjectInternal extends Internal {
 
-    @DataField(id = "datastores", indexed = true, uncommentedClasses = {"Datastores"},
+    @DataField(id = "datastores", uncommentedClasses = {"Datastores"},
             description = FieldConstants.PROJECT_INTERNAL_DATA_STORES)
     private Datastores datastores;
+
+    @DataField(id = "variant", description = FieldConstants.PROJECT_INTERNAL_VARIANT)
+    private ProjectInternalVariant variant;
 
     @DataField(id = "federated", indexed = true, description = FieldConstants.PROJECT_INTERNAL_FEDERATED)
     private boolean federated;
@@ -35,14 +38,16 @@ public class ProjectInternal extends Internal {
     }
 
     public ProjectInternal(InternalStatus status, String registrationDate, String modificationDate, Datastores datastores,
-                           boolean federated) {
+                           ProjectInternalVariant variant, boolean federated) {
         super(status, registrationDate, modificationDate);
         this.datastores = datastores;
+        this.variant = variant;
         this.federated = federated;
     }
 
     public static ProjectInternal init() {
-        return new ProjectInternal(new InternalStatus(), TimeUtils.getTime(), TimeUtils.getTime(), new Datastores(), false);
+        return new ProjectInternal(new InternalStatus(), TimeUtils.getTime(), TimeUtils.getTime(), new Datastores(),
+                new ProjectInternalVariant(), false);
     }
 
     @Override
@@ -52,6 +57,7 @@ public class ProjectInternal extends Internal {
         sb.append(", registrationDate='").append(registrationDate).append('\'');
         sb.append(", modificationDate='").append(lastModified).append('\'');
         sb.append(", datastores=").append(datastores);
+        sb.append(", variant=").append(variant);
         sb.append(", federated=").append(federated);
         sb.append('}');
         return sb.toString();
@@ -66,6 +72,14 @@ public class ProjectInternal extends Internal {
         return this;
     }
 
+    public ProjectInternalVariant getVariant() {
+        return variant;
+    }
+
+    public ProjectInternal setVariant(ProjectInternalVariant variant) {
+        this.variant = variant;
+        return this;
+    }
 
     public InternalStatus getStatus() {
         return status;

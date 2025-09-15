@@ -6,7 +6,6 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 
 public class ExomiserInterpretationAnalysisParams extends ToolParams {
-    public static final String DESCRIPTION = "Exomiser interpretation analysis params";
 
     @DataField(id = "clinicalAnalysis", description = FieldConstants.EXOMISER_CLINICAL_ANALYSIS_DESCRIPTION, required = true)
     private String clinicalAnalysis;

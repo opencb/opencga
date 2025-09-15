@@ -125,7 +125,7 @@ public class VariantPruneDriver extends AbstractVariantsTableDriver {
             columnsPerStudy.put(studyId, columnsToDelete);
         }
 
-        VariantMapReduceUtil.configureMapReduceScan(scan, getConf());
+        VariantMapReduceUtil.configureMapReduceScan(scan, job);
         logger.info("Scan = " + scan);
 
         FileOutputFormat.setCompressOutput(job, false);

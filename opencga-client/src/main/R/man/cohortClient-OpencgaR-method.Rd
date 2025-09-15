@@ -109,6 +109,7 @@ This function implements the OpenCGA calls for managing Cohorts.
 The following table summarises the available \emph{actions} for this client:\tabular{llr}{
    endpointName \tab Endpoint WS \tab parameters accepted \cr
    updateAcl \tab /{apiVersion}/cohorts/acl/{members}/update \tab study, members\link{*}, action\link{*}, body\link{*} \cr
+   aggregationStats \tab /{apiVersion}/cohorts/aggregationStats \tab study, id, name, uuid, type, creationDate, modificationDate, deleted, status, internalStatus, annotation, acl, samples, numSamples, release, field \cr
    loadAnnotationSets \tab /{apiVersion}/cohorts/annotationSets/load \tab study, variableSetId\link{*}, path\link{*}, parents, annotationSetId, body \cr
    create \tab /{apiVersion}/cohorts/create \tab include, exclude, study, variableSet, variable, includeResult, body\link{*} \cr
    distinct \tab /{apiVersion}/cohorts/distinct \tab study, id, name, uuid, type, creationDate, modificationDate, deleted, status, internalStatus, annotation, acl, samples, numSamples, release, field\link{*} \cr
@@ -124,6 +125,11 @@ The following table summarises the available \emph{actions} for this client:\tab
 \section{Endpoint /{apiVersion}/cohorts/acl/{members}/update}{
 
 Update the set of permissions granted for the member.
+}
+
+\section{Endpoint /{apiVersion}/cohorts/aggregationStats}{
+
+Fetch catalog cohort stats.
 }
 
 \section{Endpoint /{apiVersion}/cohorts/annotationSets/load}{

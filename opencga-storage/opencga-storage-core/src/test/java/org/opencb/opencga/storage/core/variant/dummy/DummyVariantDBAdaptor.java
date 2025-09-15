@@ -28,6 +28,8 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
@@ -88,7 +90,15 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public DataResult<VariantAnnotation> getAnnotation(String name, Query query, QueryOptions options) {
-        throw new UnsupportedOperationException("Unimplemented");
+        VariantAnnotation annotation = new VariantAnnotation();
+        if (VariantAnnotationManager.CURRENT.equals(name) || name == null) {
+            annotation.setId(VariantAnnotationManager.CURRENT);
+        } else {
+            // Ensure saved annotation exists
+            ProjectMetadata.VariantAnnotationMetadata saved = getMetadataManager().getProjectMetadata().getAnnotation().getSaved(name);
+            annotation.setId(saved.getName());
+        }
+        return new DataResult<VariantAnnotation>().setResults(Arrays.asList(annotation));
     }
 
     @Override

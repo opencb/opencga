@@ -1,13 +1,27 @@
 package org.opencb.opencga.server.generator.openapi.models;
 
+import java.util.List;
+
+/**
+ * Parameter class representing an OpenAPI parameter object.
+ *
+ * @see <a href=https://swagger.io/specification/v2/#parameter-object>Parameter Object</a>
+ * @see <a href="https://github.com/OAI/OpenAPI-Specification/blob/main/versions/2.0.md#parameter-object">Parameter Object</a>
+ */
 public class Parameter {
     private String name;
-    private String in; // Ejemplo: "query", "path", "header"
+    private String in; // Accepted values: "query", "path", "header" "formData", "body"
     private String description;
     private boolean required;
-    private String type="";
-    private String format="";
-    private String defaultValue="";
+
+    // Other parameter
+    private String type;
+    private String format;
+    private String defaultValue; // Default value
+
+    private List<String> enumValues; // Enum values
+
+    // Body Parameter
     private Schema schema = null;
 
     public Parameter() {
@@ -69,12 +83,21 @@ public class Parameter {
         return this;
     }
 
-    public String getDefaultValue() {
+    public String getDefault() {
         return defaultValue;
     }
 
-    public Parameter setDefaultValue(String defaultValue) {
+    public Parameter setDefault(String defaultValue) {
         this.defaultValue = defaultValue;
+        return this;
+    }
+
+    public List<String> getEnum() {
+        return enumValues;
+    }
+
+    public Parameter setEnum(List<String> enumValues) {
+        this.enumValues = enumValues;
         return this;
     }
 

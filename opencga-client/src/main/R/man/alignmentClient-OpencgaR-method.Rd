@@ -101,7 +101,7 @@ BWA is a software package for mapping low-divergent sequences against a large re
 
 \section{Endpoint /{apiVersion}/analysis/alignment/coverage/index/run}{
 
-Compute coverage for a list of alignment files.
+Compute the coverage from a given BAM alignment file, e.g., create a .bw file from a .bam file.
 }
 
 \section{Endpoint /{apiVersion}/analysis/alignment/coverage/qc/geneCoverageStats/run}{
@@ -136,7 +136,7 @@ A high throughput sequence QC analysis tool.
 
 \section{Endpoint /{apiVersion}/analysis/alignment/index/run}{
 
-Index alignment file.
+Index a given alignment file BAM/CRAM, e.g., create a .bai file from a .bam file.
 }
 
 \section{Endpoint /{apiVersion}/analysis/alignment/picard/run}{

@@ -45,6 +45,10 @@ public class IOConnectorProvider implements IOConnector {
 
     }
 
+    public static IOConnectorProvider localDefault() {
+        return new IOConnectorProvider(LocalIOConnector.class);
+    }
+
     public IOConnectorProvider(Class<? extends IOConnector>... classes) {
         this(new ObjectMap(), classes);
     }

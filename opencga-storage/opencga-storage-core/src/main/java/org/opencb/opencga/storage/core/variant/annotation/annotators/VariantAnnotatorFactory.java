@@ -22,12 +22,15 @@ import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
+import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.VariantAnnotatorExtensionTask;
+import org.opencb.opencga.storage.core.variant.annotation.annotators.extensions.VariantAnnotatorExtensionsFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.List;
 
-import static org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.*;
+import static org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.ANNOTATION_SOURCE;
 
 /**
  * Created on 23/11/16.
@@ -59,9 +62,9 @@ public final class VariantAnnotatorFactory {
                 ? AnnotationEngine.OTHER
                 : AnnotationEngine.CELLBASE;
         AnnotationEngine annotationEngine;
-        String annotator = options.getString(VariantStorageOptions.ANNOTATOR.key());
-        if (StringUtils.isNotBlank(annotator)) {
-            annotationEngine = AnnotationEngine.valueOf(annotator.toUpperCase());
+        String annotatorKey = options.getString(VariantStorageOptions.ANNOTATOR.key());
+        if (StringUtils.isNotBlank(annotatorKey)) {
+            annotationEngine = AnnotationEngine.valueOf(annotatorKey.toUpperCase());
         } else if (StringUtils.isNotBlank(options.getString(ANNOTATION_SOURCE))) {
             annotationEngine = AnnotationEngine.valueOf(options.getString(ANNOTATION_SOURCE).toUpperCase());
             logger.warn("Using deprecated parameter '" + ANNOTATION_SOURCE + "'. Use '" + VariantStorageOptions.ANNOTATOR + "' instead");
@@ -69,10 +72,12 @@ public final class VariantAnnotatorFactory {
             annotationEngine = defaultValue;
         }
 
+        final VariantAnnotator annotator;
         switch (annotationEngine) {
             case CELLBASE_REST:
             case CELLBASE:
-                return new CellBaseRestVariantAnnotator(configuration, projectMetadata, options);
+                annotator = new CellBaseRestVariantAnnotator(configuration, projectMetadata, options);
+                break;
 //            case VEP:
 //                return VepVariantAnnotator.buildVepAnnotator();
             case OTHER:
@@ -81,20 +86,35 @@ public final class VariantAnnotatorFactory {
                 try {
                     Class<?> clazz = Class.forName(className);
                     if (VariantAnnotator.class.isAssignableFrom(clazz)) {
-                        return (VariantAnnotator) clazz.getConstructor(StorageConfiguration.class, ProjectMetadata.class, ObjectMap.class)
+                        annotator = (VariantAnnotator) clazz
+                                .getConstructor(StorageConfiguration.class, ProjectMetadata.class, ObjectMap.class)
                                 .newInstance(configuration, projectMetadata, options);
                     } else {
                         throw new VariantAnnotatorException("Invalid VariantAnnotator class: " + className);
                     }
                 } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException
                         | IllegalAccessException | InvocationTargetException e) {
-                    e.printStackTrace();
                     throw new VariantAnnotatorException("Unable to create annotation source from \"" + className + "\"", e);
                 }
+                break;
             default:
                 throw new IllegalArgumentException("Unknown annotation engine " + annotationEngine);
         }
 
+        logger.info("Getting annotator extension tasks");
+        List<VariantAnnotatorExtensionTask> annotatorExtensions = new VariantAnnotatorExtensionsFactory()
+                .getVariantAnnotatorExtensions(options, true);
+
+        for (VariantAnnotatorExtensionTask extension : annotatorExtensions) {
+            logger.info("Checking annotator extension '{}' availability", extension.getId());
+            extension.checkAvailable();
+        }
+
+        if (annotatorExtensions.isEmpty()) {
+            return annotator;
+        } else {
+            return new VariantAnnotatorWithExtensions(configuration, projectMetadata, options, annotator, annotatorExtensions);
+        }
     }
 
 }

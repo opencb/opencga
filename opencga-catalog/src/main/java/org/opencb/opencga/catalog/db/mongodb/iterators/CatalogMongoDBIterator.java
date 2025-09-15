@@ -138,7 +138,7 @@ public class CatalogMongoDBIterator<E> implements DBIterator<E> {
     protected QueryOptions createInnerQueryOptionsForVersionedEntity(QueryOptions options, String fieldProjectionKey, boolean nativeQuery) {
         QueryOptions queryOptions = new QueryOptions(NATIVE_QUERY, nativeQuery);
 
-        if (options.containsKey(QueryOptions.INCLUDE)) {
+        if (options != null && options.containsKey(QueryOptions.INCLUDE)) {
             List<String> currentIncludeList = options.getAsStringList(QueryOptions.INCLUDE);
             List<String> includeList = new ArrayList<>();
             for (String include : currentIncludeList) {
@@ -161,7 +161,7 @@ public class CatalogMongoDBIterator<E> implements DBIterator<E> {
                 }
             }
         }
-        if (options.containsKey(QueryOptions.EXCLUDE)) {
+        if (options != null && options.containsKey(QueryOptions.EXCLUDE)) {
             List<String> currentExcludeList = options.getAsStringList(QueryOptions.EXCLUDE);
             List<String> excludeList = new ArrayList<>();
             for (String exclude : currentExcludeList) {

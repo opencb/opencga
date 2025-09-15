@@ -26,10 +26,7 @@ import org.opencb.opencga.catalog.utils.FqnUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.project.Project;
-import org.opencb.opencga.core.models.study.Group;
-import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.study.Variable;
-import org.opencb.opencga.core.models.study.VariableSet;
+import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
@@ -59,6 +56,7 @@ public class StudyMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
     private Study getMinimalStudyInstance(String projectId, String id) {
         return new Study()
                 .setId(id)
+                .setInternal(new StudyInternal())
                 .setFqn(FqnUtils.buildFqn(organizationId, projectId, id));
     }
     

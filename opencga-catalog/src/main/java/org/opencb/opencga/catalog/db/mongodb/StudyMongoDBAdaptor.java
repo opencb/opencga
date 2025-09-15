@@ -121,7 +121,8 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
 
         final String[] acceptedObjectParams = {QueryParams.TYPE.key(), QueryParams.SOURCES.key(), QueryParams.STATUS.key(),
                 QueryParams.INTERNAL_CONFIGURATION_CLINICAL.key(), QueryParams.INTERNAL_CONFIGURATION_VARIANT_ENGINE.key(),
-                QueryParams.INTERNAL_INDEX_RECESSIVE_GENE.key(), QueryParams.ADDITIONAL_INFO.key(), QueryParams.INTERNAL_STATUS.key()};
+                QueryParams.INTERNAL_INDEX_RECESSIVE_GENE.key(), QueryParams.ADDITIONAL_INFO.key(), QueryParams.INTERNAL_STATUS.key(),
+                QueryParams.INTERNAL_VARIANT_SECONDARY_SAMPLE_INDEX.key()};
         filterObjectParams(parameters, studyParameters, acceptedObjectParams);
 
         if (studyParameters.containsKey(QueryParams.STATUS.key())) {

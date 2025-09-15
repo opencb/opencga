@@ -30,6 +30,7 @@ public class Session {
     private String refreshToken;
     private String version;
     private String login;
+    private String expirationTime;
     private List<String> studies;
     private long timestamp;
     private String currentStudy;
@@ -39,29 +40,19 @@ public class Session {
     public Session() {
     }
 
-    public Session(String host, String user, String token, String refreshToken, List<String> studies, Map<String, Object> attributes) {
+    public Session(String host, String user, String token, String refreshToken, String login, String expirationTime, List<String> studies,
+                   Map<String, Object> attributes) {
         this.host = host;
         this.user = user;
         this.token = token;
         this.refreshToken = refreshToken;
+        this.login = login;
+        this.expirationTime = expirationTime;
         this.studies = studies;
         this.attributes = attributes;
     }
 
-    public Session(String host, String user, String token, String refreshToken, String version,
-                   String login, List<String> studies, long timestamp, String currentStudy) {
-        this.host = host;
-        this.user = user;
-        this.token = token;
-        this.refreshToken = refreshToken;
-        this.version = version;
-        this.login = login;
-        this.studies = studies;
-        this.timestamp = timestamp;
-        this.currentStudy = currentStudy;
-    }
-
-    public Session(String host, String user, String token, String refreshToken, String version, String login,
+    public Session(String host, String user, String token, String refreshToken, String version, String login, String expirationTime,
                    List<String> studies, long timestamp, String currentStudy, Map<String, Object> attributes) {
         this.host = host;
         this.user = user;
@@ -69,6 +60,7 @@ public class Session {
         this.refreshToken = refreshToken;
         this.version = version;
         this.login = login;
+        this.expirationTime = expirationTime;
         this.studies = studies;
         this.timestamp = timestamp;
         this.currentStudy = currentStudy;
@@ -84,6 +76,7 @@ public class Session {
         sb.append(", refreshToken='").append(refreshToken).append('\'');
         sb.append(", version='").append(version).append('\'');
         sb.append(", login='").append(login).append('\'');
+        sb.append(", expirationTime='").append(expirationTime).append('\'');
         sb.append(", studies=").append(studies);
         sb.append(", timestamp=").append(timestamp);
         sb.append(", currentStudy='").append(currentStudy).append('\'');
@@ -143,6 +136,15 @@ public class Session {
 
     public Session setLogin(String login) {
         this.login = login;
+        return this;
+    }
+
+    public String getExpirationTime() {
+        return expirationTime;
+    }
+
+    public Session setExpirationTime(String expirationTime) {
+        this.expirationTime = expirationTime;
         return this;
     }
 

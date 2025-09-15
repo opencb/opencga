@@ -45,6 +45,7 @@ public class CohortVariantStatsHBaseMapReduceAnalysisExecutor
             throw new ToolExecutorException(e);
         }
 
+        ToolExecutorException e = null;
         try {
 //            Query variantsQuery = getVariantsQuery();
             Query variantsQuery = new Query();
@@ -61,10 +62,22 @@ public class CohortVariantStatsHBaseMapReduceAnalysisExecutor
                     params
             ), "Calculate cohort variant stats");
 
-        } catch (VariantQueryException | StorageEngineException e) {
-            throw new ToolExecutorException(e);
+        } catch (VariantQueryException | StorageEngineException ex) {
+            e = new ToolExecutorException(ex);
+            throw e;
         } finally {
-            dbAdaptor.getMetadataManager().removeCohort(studyId, cohortId);
+            try {
+                dbAdaptor.getMetadataManager().removeCohort(studyId, cohortId);
+            } catch (StorageEngineException ex) {
+                if (e == null) {
+                    e = new ToolExecutorException(ex);
+                } else {
+                    e.addSuppressed(ex);
+                }
+            }
+        }
+        if (e != null) {
+            throw e;
         }
     }
 

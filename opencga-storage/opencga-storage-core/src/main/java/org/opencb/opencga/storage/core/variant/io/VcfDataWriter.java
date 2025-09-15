@@ -8,11 +8,9 @@ import org.opencb.biodata.formats.variant.vcf4.VcfUtils;
 import org.opencb.biodata.models.metadata.Sample;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
-import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.tools.variant.converters.VariantContextConverter;
 import org.opencb.biodata.tools.variant.converters.avro.VariantAvroToVariantContextConverter;
 import org.opencb.biodata.tools.variant.converters.avro.VariantStudyMetadataToVCFHeaderConverter;
-import org.opencb.biodata.tools.variant.converters.proto.VariantProtoToVariantContextConverter;
 import org.opencb.commons.io.DataWriter;
 
 import java.io.OutputStream;
@@ -45,11 +43,6 @@ public abstract class VcfDataWriter<T> implements DataWriter<T> {
         return new VariantVcfDataWriter(metadata, annotations, outputStream);
     }
 
-    public static VcfDataWriter<VariantProto.Variant> newWriterForProto(VariantMetadata metadata, List<String> annotations,
-                                                                        OutputStream outputStream) {
-        return new VariantProtoVcfDataWriter(metadata, annotations, outputStream);
-    }
-
     private static class VariantVcfDataWriter extends VcfDataWriter<Variant> {
 
         VariantVcfDataWriter(VariantMetadata metadata, List<String> annotations, OutputStream outputStream) {
@@ -59,18 +52,6 @@ public abstract class VcfDataWriter<T> implements DataWriter<T> {
         @Override
         public VariantContextConverter<Variant> newConverter(String study, List<String> samples, List<String> annotations) {
             return new VariantAvroToVariantContextConverter(study, samples, annotations);
-        }
-    }
-
-    private static class VariantProtoVcfDataWriter extends VcfDataWriter<VariantProto.Variant> {
-
-        VariantProtoVcfDataWriter(VariantMetadata metadata, List<String> annotations, OutputStream outputStream) {
-            super(metadata, annotations, outputStream);
-        }
-
-        @Override
-        public VariantContextConverter<VariantProto.Variant> newConverter(String study, List<String> samples, List<String> annotations) {
-            return new VariantProtoToVariantContextConverter(study, samples, annotations);
         }
     }
 

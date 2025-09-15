@@ -25,6 +25,8 @@
 
 \item{modificationDate}{Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.}
 
+\item{type}{Note type.}
+
 \item{scope}{Scope of the Note.}
 
 \item{visibility}{Visibility of the Note.}
@@ -57,7 +59,7 @@ The following table summarises the available \emph{actions} for this client:\tab
    endpointName \tab Endpoint WS \tab parameters accepted \cr
    create \tab /{apiVersion}/organizations/create \tab include, exclude, includeResult, body\link{*} \cr
    createNotes \tab /{apiVersion}/organizations/notes/create \tab include, exclude, includeResult, body\link{*} \cr
-   searchNotes \tab /{apiVersion}/organizations/notes/search \tab include, exclude, creationDate, modificationDate, id, scope, visibility, uuid, userId, tags, version \cr
+   searchNotes \tab /{apiVersion}/organizations/notes/search \tab include, exclude, creationDate, modificationDate, id, type, scope, visibility, uuid, userId, tags, version \cr
    deleteNotes \tab /{apiVersion}/organizations/notes/{id}/delete \tab id\link{*}, includeResult \cr
    updateNotes \tab /{apiVersion}/organizations/notes/{id}/update \tab include, exclude, id\link{*}, tagsAction, includeResult, body\link{*} \cr
    userUpdateStatus \tab /{apiVersion}/organizations/user/{user}/status/update \tab include, exclude, user\link{*}, organization, includeResult, body\link{*} \cr

@@ -22,7 +22,7 @@ import org.opencb.opencga.core.client.ParentClient;
 import org.opencb.opencga.core.config.client.ClientConfiguration;
 import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.Acl;
-import org.opencb.opencga.core.models.admin.GroupSyncParams;
+import org.opencb.opencga.core.models.admin.DeprecatedGroupSyncParams;
 import org.opencb.opencga.core.models.admin.InstallationParams;
 import org.opencb.opencga.core.models.admin.JWTParams;
 import org.opencb.opencga.core.models.admin.UserImportParams;
@@ -185,14 +185,14 @@ public class AdminClient extends ParentClient {
     }
 
     /**
-     * Synchronise a group of users from an authentication origin with a group in a study from catalog.
+     * [DEPRECATED] Moved to /users/sync.
      * @param data JSON containing the parameters.
      * @param params Map containing any of the following optional parameters.
      *       organization: Organization id.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Group> syncUsers(GroupSyncParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Group> syncUsers(DeprecatedGroupSyncParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("admin", null, "users", null, "sync", params, POST, Group.class);

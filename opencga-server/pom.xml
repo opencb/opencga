@@ -28,6 +28,7 @@
 
     <artifactId>opencga-server</artifactId>
     <packaging>war</packaging>
+    <name>OpenCGA Server</name>
 
     <dependencies>
         <dependency>

@@ -20,9 +20,6 @@ This function inicializes the OpencgaR object with the
 necessary details to generate a connection.
 }
 \details{
-OpencgaR init function
-
-
 This class initializes the OpencgaR object. It holds the default configuration
 required by OpencgaR methods to connect to OpenCGA web services.
 }

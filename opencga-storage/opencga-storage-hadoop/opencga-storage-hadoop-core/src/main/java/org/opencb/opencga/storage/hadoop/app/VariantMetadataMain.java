@@ -285,7 +285,7 @@ public class VariantMetadataMain extends AbstractMain {
         @Override
         protected VariantFileMetadata read(int studyId, int id) {
             try {
-                return mm.getVariantFileMetadata(studyId, id, new QueryOptions()).first();
+                return mm.getVariantFileMetadata(studyId, id);
             } catch (StorageEngineException e) {
                 throw new RuntimeException(e);
             }

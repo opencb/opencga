@@ -1,7 +1,7 @@
 Package: opencgaR
 Type: Package
 Title: Querying Opencga Data
-Version: ${opencgar.version}
+Version: OPENCGA_R_VERSION
 Author: Zetta Genomics
 Maintainer: Zetta Genomics <support@zettagenomics.com>
 Description: R client that contains classes and methods for working with
@@ -49,5 +49,6 @@ Collate:
     'Study-methods.R'
     'User-methods.R'
     'Variant-methods.R'
+    'Workflow-methods.R'
 RoxygenNote: 7.3.2
 VignetteBuilder: knitr

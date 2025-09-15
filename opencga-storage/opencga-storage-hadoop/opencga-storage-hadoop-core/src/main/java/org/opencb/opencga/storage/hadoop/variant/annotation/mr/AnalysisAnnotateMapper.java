@@ -30,7 +30,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -93,7 +92,7 @@ public class AnalysisAnnotateMapper extends AbstractHBaseVariantMapper<NullWrita
     }
     private final CopyOnWriteArrayList<Variant> variantsToAnnotate = new CopyOnWriteArrayList<>();
 
-    private void annotateVariants(Context context, boolean force) throws IOException, InterruptedException, VariantAnnotatorException {
+    private void annotateVariants(Context context, boolean force) throws Exception {
         if (this.variantsToAnnotate.isEmpty()) {
             return;
         }
@@ -126,7 +125,7 @@ public class AnalysisAnnotateMapper extends AbstractHBaseVariantMapper<NullWrita
                 annotateVariants(context, false);
             }
             annotateVariants(context, true);
-        } catch (VariantAnnotatorException e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         } finally {
             this.cleanup(context);

@@ -4,5 +4,8 @@ import java.util.List;
 
 public interface ApiCommons {
 
-    public List<Class<?>> getApiClasses();
+    List<Class<?>> getApiClasses();
+
+    String getVersion();
+    // List<String> getOrderCategories();
 }

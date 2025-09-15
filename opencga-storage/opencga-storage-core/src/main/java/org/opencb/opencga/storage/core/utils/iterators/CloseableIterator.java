@@ -15,6 +15,15 @@ public abstract class CloseableIterator<T> implements Iterator<T>, AutoCloseable
         return EMPTY_CLOSEABLE_ITERATOR;
     }
 
+    public CloseableIterator() {
+    }
+
+    public CloseableIterator(AutoCloseable closeable) {
+        addCloseable(closeable);
+    }
+
+
+
     public CloseableIterator<T> addCloseable(AutoCloseable closeable) {
         this.closeables.add(closeable);
         return this;

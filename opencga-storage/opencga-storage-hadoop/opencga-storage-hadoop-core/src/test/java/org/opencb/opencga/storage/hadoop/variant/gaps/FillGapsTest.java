@@ -16,11 +16,12 @@ import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -28,6 +29,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
@@ -40,6 +42,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -71,8 +74,24 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
 //        fillGapsLocal(variantStorageEngine, studyMetadata, sampleIds);
 //        fillLocalMRDriver(variantStorageEngine, studyMetadata, sampleIds);
 //        fillGapsLocalFromArchive(variantStorageEngine, studyMetadata, sampleIds, false);
-        variantStorageEngine.aggregateFamily(studyMetadata.getName(), new VariantAggregateFamilyParams(new ArrayList<>(sampleIds), false), new ObjectMap("local", false));
+//        fillGapsLocalFromFile(variantStorageEngine, studyMetadata, sampleIds);
+        variantStorageEngine.aggregateFamily(studyMetadata.getName(), new VariantAggregateFamilyParams(new ArrayList<>(sampleIds), false), new ObjectMap("local", false), newOutputUri());
         //        variantStorageEngine.fillGaps(studyMetadata.getStudyName(), sampleIds.stream().map(Object::toString).collect(Collectors.toList()), new ObjectMap("local", true));
+    }
+
+    public static void fillGapsLocalFromFile(HadoopVariantStorageEngine variantStorageEngine, StudyMetadata studyMetadata,
+                                             Collection<String> samples) throws Exception {
+        VariantStorageMetadataManager metadataManager = variantStorageEngine.getMetadataManager();
+        List<Integer> sampleIds = metadataManager.getSampleIds(studyMetadata.getId(), samples);
+        Set<Integer> fileIds = metadataManager.getFileIdsFromSampleIds(studyMetadata.getId(), sampleIds);
+        List<URI> uris = new ArrayList<>();
+        for (Integer fileId : fileIds) {
+            uris.add(Paths.get(metadataManager.getFileMetadata(studyMetadata.getId(), fileId).getPath()).toUri());
+        }
+        FillGapsFromFile fillGapsFromFile = new FillGapsFromFile(variantStorageEngine.getDBAdaptor().getHBaseManager(),
+                metadataManager, variantStorageEngine.getOptions());
+
+        fillGapsFromFile.fillGaps(studyMetadata.getName(), uris, newOutputUri(), variantStorageEngine.getVariantTableName(), "0/0");
     }
 
     @Test
@@ -152,8 +171,18 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
     }
 
     @Test
+    public void testFillGapsMultiChromosome() throws Exception {
+        StudyMetadata studyMetadata = load(new QueryOptions(), Arrays.asList(
+                getResourceUri("gaps3/file1.genome.vcf"),
+                getResourceUri("gaps3/file2.genome.vcf")));
+
+        checkConflictingFiles(studyMetadata);
+    }
+
+    @Test
     public void testFillMissingFilterNonRef() throws Exception {
         StudyMetadata studyMetadata = load(new QueryOptions(VariantStorageOptions.GVCF.key(), true)
+                .append(VariantStorageOptions.LOAD_ARCHIVE.key(), YesNoAuto.YES)
                 .append(ARCHIVE_NON_REF_FILTER.key(), "FORMAT:DP<6"), Arrays.asList(
                 getResourceUri("gaps/file1.genome.vcf"),
                 getResourceUri("gaps/file2.genome.vcf")));
@@ -252,7 +281,7 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
     @Test
     public void testFillMissingPlatinumFiles() throws Exception {
         ObjectMap options = new ObjectMap()
-                .append(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
+                .append(VariantStorageOptions.LOAD_ARCHIVE.key(), YesNoAuto.YES)
                 .append(HadoopVariantStorageOptions.ARCHIVE_FILE_BATCH_SIZE.key(), 2);
 
         // Load files 12877 , 12878
@@ -317,15 +346,16 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
 
     @Test
     public void testFillGapsCorpasome() throws Exception {
-        StudyMetadata study = load(new ObjectMap(), Collections.singletonList(getResourceUri("quartet.variants.annotated.partial.vcf.gz")));
-        printVariants((VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor(), newOutputUri());
+        URI fileUri = getResourceUri("quartet.variants.annotated.partial.vcf.gz");
+        StudyMetadata study = load(new ObjectMap(), Collections.singletonList(fileUri));
+//        printVariants((VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor(), newOutputUri());
 
         variantStorageEngine.aggregateFamily(study.getName(), new VariantAggregateFamilyParams()
-                .setSamples(Arrays.asList("ISDBM322015", "ISDBM322016", "ISDBM322017", "ISDBM322018")), new ObjectMap());
-        printVariants((VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor(), newOutputUri());
+                .setSamples(Arrays.asList("ISDBM322015", "ISDBM322016", "ISDBM322017", "ISDBM322018")), new ObjectMap(), newOutputUri());
+//        printVariants((VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor(), newOutputUri());
 
         load(new ObjectMap(VariantStorageOptions.STUDY.key(), STUDY_NAME_2),
-                Collections.singletonList(getResourceUri("quartet.variants.annotated.partial.vcf.gz")));
+                Collections.singletonList(fileUri));
 
         checkInputValuesAreUnmodified(STUDY_NAME, STUDY_NAME_2);
     }
@@ -339,7 +369,7 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
         printVariants((VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor(), newOutputUri());
 
         variantStorageEngine.aggregateFamily(STUDY_NAME, new VariantAggregateFamilyParams()
-                .setSamples(Arrays.asList("HG005", "HG006", "HG007")), new ObjectMap());
+                .setSamples(Arrays.asList("HG005", "HG006", "HG007")), new ObjectMap(), newOutputUri());
         printVariants((VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor(), newOutputUri());
 
         options.put(VariantStorageOptions.STUDY.key(), STUDY_NAME_2);
@@ -393,7 +423,7 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
         printVariants((VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor(), newOutputUri());
 
         variantStorageEngine.aggregateFamily(STUDY_NAME, new VariantAggregateFamilyParams()
-                .setSamples(Arrays.asList("HG005", "HG006", "HG007")), new ObjectMap());
+                .setSamples(Arrays.asList("HG005", "HG006", "HG007")), new ObjectMap(), newOutputUri());
         printVariants((VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor(), newOutputUri());
 
     }
@@ -480,6 +510,7 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
         for (Variant variant : dbAdaptor.iterable(new VariantQuery().includeSample(samples), new QueryOptions())) {
             boolean anyUnknown = false;
             boolean allUnknown = true;
+            List<Integer> sampleIds = metadataManager.getSampleIds(studyMetadata.getId(), samples);
             for (String sampleName : samples) {
                 boolean unknown = variant.getStudies().get(0).getSampleData(sampleName, "GT").equals("?/?");
                 anyUnknown |= unknown;
@@ -490,7 +521,7 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
                 if (variantsWithGaps.contains(variant.toString())) {
                     System.out.println("Gaps in variant " + variant);
                 } else {
-                    Assert.fail("Gaps in variant " + variant);
+                    Assert.fail("Checking samples " + samples + " " + sampleIds + ". Gaps in variant " + variant);
                 }
             }
         }
@@ -546,7 +577,7 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
             for (Integer fileId : metadataManager.getIndexedFiles(sc.getId())) {
                 for (int sampleId : metadataManager.getFileMetadata(sc.getId(), fileId).getSamples()) {
                     String sample = metadataManager.getSampleName(sc.getId(), sampleId);
-                    String message = "Sample '" + sample + "' : " + sampleId;
+                    String message = "Sample '" + sample + "' (id=" + sampleId + ")";
                     int countFromIndex = 0;
                     Iterator<Map<String, List<Variant>>> iterator = sampleIndexDBAdaptor.iteratorByGt(sc.getId(), sampleId);
                     while (iterator.hasNext()) {
@@ -571,7 +602,7 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
                             }
                             assertEquals(message, variants.size(), result.getNumResults());
                             for (Variant variant : result.getResults()) {
-                                assertEquals(message, gt, variant.getStudies().get(0).getSampleData(sample, "GT"));
+                                assertEquals(message + " variant " + variant, gt, variant.getStudies().get(0).getSampleData(sample, "GT"));
                             }
                         }
                     }

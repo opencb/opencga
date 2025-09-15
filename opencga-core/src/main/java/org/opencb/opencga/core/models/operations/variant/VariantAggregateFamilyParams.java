@@ -25,7 +25,11 @@ import java.util.List;
 public class VariantAggregateFamilyParams extends ToolParams {
     public static final String DESCRIPTION = "Variant aggregate family params.";
 
-    @DataField(description = "Samples within the same study to aggregate")
+    @DataField(description = "Family ID to select the samples to aggregate."
+            + " Exclusively used when 'samples' is not set.")
+    private String family;
+    @DataField(description = "Samples within the same family to aggregate. Other family members not provided won't be added automatically."
+            + " Exclusively used when 'family' is not set.")
     private List<String> samples;
     @DataField(description = "Genotype to be used in gaps. Either 0/0, ./. or ?/?")
     private String gapsGenotype;
@@ -40,7 +44,8 @@ public class VariantAggregateFamilyParams extends ToolParams {
         this.resume = resume;
     }
 
-    public VariantAggregateFamilyParams(List<String> samples, String gapsGenotype, boolean resume) {
+    public VariantAggregateFamilyParams(String family, List<String> samples, String gapsGenotype, boolean resume) {
+        this.family = family;
         this.samples = samples;
         this.gapsGenotype = gapsGenotype;
         this.resume = resume;
@@ -52,6 +57,15 @@ public class VariantAggregateFamilyParams extends ToolParams {
 
     public VariantAggregateFamilyParams setResume(boolean resume) {
         this.resume = resume;
+        return this;
+    }
+
+    public String getFamily() {
+        return family;
+    }
+
+    public VariantAggregateFamilyParams setFamily(String family) {
+        this.family = family;
         return this;
     }
 

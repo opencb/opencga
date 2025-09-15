@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.core.variant.io;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -25,7 +24,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
-import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
 
@@ -56,10 +54,6 @@ public abstract class VariantExporterTest extends VariantStorageBaseTest {
                         .append(VariantStorageOptions.ANNOTATE.key(), false));
     }
 
-    @After
-    public void tearDown() throws Exception {
-        DummyVariantStorageMetadataDBAdaptorFactory.writeAndClear(getTmpRootDir());
-    }
 
     @Test
     public void exportStudyTest() throws Exception {

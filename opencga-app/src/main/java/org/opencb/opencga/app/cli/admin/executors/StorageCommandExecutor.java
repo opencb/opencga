@@ -30,11 +30,13 @@ import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -44,7 +46,6 @@ import java.util.stream.Collectors;
 public class StorageCommandExecutor extends AdminCommandExecutor {
 
     private final StorageCommandOptions storageCommandOptions;
-
 
     public StorageCommandExecutor(StorageCommandOptions storageCommandOptions) {
         super(storageCommandOptions.getCommonOptions());
@@ -98,6 +99,16 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
             } catch (Exception e) {
                 logger.warn("Solr not alive", e);
                 solrAlive = false;
+            } finally {
+                logger.debug("Closing Solr client {}", solrClient);
+                if (solrClient != null) {
+                    try {
+                        solrClient.close();
+                        logger.debug("Solr client closed successfully");
+                    } catch (IOException e) {
+                        logger.warn("Ignore exception closing Solr", e);
+                    }
+                }
             }
             ObjectMap solrStatus = new ObjectMap();
             solrStatus.put("alive", solrAlive);
@@ -112,14 +123,34 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
             logger.info("Variant storage projects: {}", variantStorageProjects);
             for (String project : variantStorageProjects) {
                 DataStore dataStore = variantStorageManager.getDataStoreByProjectId(project, token);
-                ObjectMap map = new ObjectMap("project", project);
-                map.put("dataStore", dataStore);
+                ObjectMap map = new ObjectMap("project", project)
+                        .append("bioformat", File.Bioformat.VARIANT.name())
+                        .append("dataStore", dataStore);
+                dataStores.add(map);
+            }
+            List<String> cvdbProjects = getCvdbProjects(organizationIds, catalogManager);
+            logger.info("CVDB projects: {}", cvdbProjects);
+            for (String project : cvdbProjects) {
+                DataStore dataStore = getCvdbDatastore(project, catalogManager);
+                ObjectMap map = new ObjectMap("project", project)
+                        .append("bioformat", File.Bioformat.CVDB.name())
+                        .append("dataStore", dataStore);
                 dataStores.add(map);
             }
             status.put("dataStores", dataStores);
 
             System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(status));
         }
+    }
+
+    // This method is implemented by the OpenCGA Enterprise
+    protected List<String> getCvdbProjects(List<String> organizationIds, CatalogManager catalogManager) throws Exception {
+        return Collections.emptyList();
+    }
+
+    // This method is implemented by the OpenCGA Enterprise
+    protected DataStore getCvdbDatastore(String projectFqn, CatalogManager catalogManager) throws Exception {
+        return new DataStore();
     }
 
     private void updateDatabasePrefix() throws Exception {
@@ -148,6 +179,9 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
             List<String> organizationIds = parseOrganizationIds(catalogManager, commandOptions.organizationId);
 
             if (commandOptions.projectsWithoutStorage || commandOptions.projectsWithStorage) {
+                if (commandOptions.bioformat.equals("CVDB")) {
+                    throw new IllegalArgumentException("Cannot use --projects-without-storage or --projects-with-storage with CVDB bioformat.");
+                }
                 variantStorageProjects = new HashSet<>(getVariantStorageProjects(organizationIds, catalogManager, variantStorageManager));
             }
 
@@ -156,60 +190,107 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
                     logger.info("Skip project '{}'", project.getFqn());
                     continue;
                 }
-                if (commandOptions.projectsWithoutStorage) {
-                    // Only accept projects WITHOUT storage. so discard projects with storage
-                    if (variantStorageProjects.contains(project.getFqn())) {
-                        logger.info("Skip project '{}' as it has a variant storage.", project.getFqn());
-                        continue;
-                    }
-                }
-                if (commandOptions.projectsWithStorage) {
-                    // Only accept projects WITH storage. so discard projects without storage
-                    if (!variantStorageProjects.contains(project.getFqn())) {
-                        logger.info("Skip project '{}' as it doesn't have a variant storage.", project.getFqn());
-                        continue;
-                    }
-                }
-                final DataStore currentDataStore;
-                if (project.getInternal() != null && project.getInternal().getDatastores() != null) {
-                    currentDataStore = project.getInternal().getDatastores().getVariant();
-                } else {
-                    currentDataStore = null;
-                }
-                if (commandOptions.projectsWithUndefinedDBName) {
-                    // Only accept projects with UNDEFINED dbname. so discard projects with DEFINED (without undefined) dbname
-                    boolean undefinedDBName = currentDataStore == null || StringUtils.isEmpty(currentDataStore.getDbName());
-                    if (!undefinedDBName) {
-                        logger.info("Skip project '{}' as its dbName is already defined. dbName : '{}'",
-                                project.getFqn(),
-                                currentDataStore.getDbName());
-                        continue;
-                    }
-                }
 
-                final DataStore defaultDataStore;
-                if (StringUtils.isEmpty(commandOptions.dbPrefix)) {
-                    defaultDataStore = VariantStorageManager.defaultDataStore(catalogManager, project);
-                } else {
-                    defaultDataStore = VariantStorageManager.defaultDataStore(commandOptions.dbPrefix, project.getFqn());
-                }
+                switch (commandOptions.bioformat) {
+                    case "VARIANT":
+                        if (commandOptions.projectsWithoutStorage && variantStorageProjects.contains(project.getFqn())) {
+                            // Only accept projects WITHOUT storage. so discard projects with storage
+                            logger.info("Skip project '{}' as it has a variant storage.", project.getFqn());
+                            continue;
+                        }
+                        if (commandOptions.projectsWithStorage && !variantStorageProjects.contains(project.getFqn())) {
+                            // Only accept projects WITH storage. so discard projects without storage
+                            logger.info("Skip project '{}' as it doesn't have a variant storage.", project.getFqn());
+                            continue;
+                        }
 
-                final DataStore newDataStore;
-                logger.info("------");
-                logger.info("Project '" + project.getFqn() + "'");
-                if (currentDataStore == null) {
-                    newDataStore = defaultDataStore;
-                    logger.info("Old DBName: null");
-                } else {
-                    logger.info("Old DBName: " + currentDataStore.getDbName());
-                    currentDataStore.setDbName(defaultDataStore.getDbName());
-                    newDataStore = currentDataStore;
+                        // Update variant datastore
+                        updateVariantDataStore(commandOptions.dbPrefix, commandOptions.projectsWithUndefinedDBName, project, catalogManager);
+                        break;
+                    case "CVDB":
+                        // Update CVDB datastore
+                        updateCvdbDataStore(commandOptions.dbPrefix, commandOptions.projectsWithUndefinedDBName, project, catalogManager);
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Unknown bioformat '" + commandOptions.bioformat + "'");
                 }
-                logger.info("New DBName: " + newDataStore.getDbName());
-
-                catalogManager.getProjectManager().setDatastoreVariant(project.getFqn(), newDataStore, token);
             }
         }
+    }
+
+    private void updateVariantDataStore(String dbPrefix, boolean projectsWithUndefinedDBName, Project project,
+                                        CatalogManager catalogManager) throws CatalogException {
+        DataStore currentDataStore;
+        if (project.getInternal() != null && project.getInternal().getDatastores() != null) {
+            currentDataStore = project.getInternal().getDatastores().getVariant();
+        } else {
+            currentDataStore = null;
+        }
+        if (projectsWithUndefinedDBName) {
+            // Only accept projects with UNDEFINED dbname. so discard projects with DEFINED (without undefined) dbname
+            boolean undefinedDBName = currentDataStore == null || StringUtils.isEmpty(currentDataStore.getDbName());
+            if (!undefinedDBName) {
+                logger.info("Skip project '{}' as its variant dbName is already defined. Variant dbName : '{}'", project.getFqn(),
+                        currentDataStore.getDbName());
+                return;
+            }
+        }
+
+        // Variant datastore
+        DataStore defaultDataStore;
+        if (StringUtils.isEmpty(dbPrefix)) {
+            defaultDataStore = VariantStorageManager.defaultDataStore(catalogManager, project);
+        } else {
+            defaultDataStore = VariantStorageManager.defaultDataStore(dbPrefix, project.getFqn());
+        }
+        DataStore newDataStore = createNewDataStore(currentDataStore, defaultDataStore, project);
+        catalogManager.getProjectManager().setDatastoreVariant(project.getFqn(), newDataStore, token);
+    }
+
+    private void updateCvdbDataStore(String dbPrefix, boolean projectsWithUndefinedDBName, Project project,
+                                     CatalogManager catalogManager) throws CatalogException {
+        DataStore currentDataStore;
+        if (project.getInternal() != null && project.getInternal().getDatastores() != null) {
+            currentDataStore = project.getInternal().getDatastores().getCvdb();
+        } else {
+            currentDataStore = null;
+        }
+        if (projectsWithUndefinedDBName) {
+            // Only accept projects with UNDEFINED dbname. so discard projects with DEFINED (without undefined) dbname
+            boolean undefinedDBName = currentDataStore == null || StringUtils.isEmpty(currentDataStore.getDbName());
+            if (!undefinedDBName) {
+                logger.info("Skip project '{}' as its CVDB dbName is already defined. CVDB dbName : '{}'", project.getFqn(),
+                        currentDataStore.getDbName());
+                return;
+            }
+        }
+
+        // CVDB datastore
+        DataStore defaultDataStore;
+        if (StringUtils.isEmpty(dbPrefix)) {
+            defaultDataStore = VariantStorageManager.defaultCvdbDataStore(catalogManager, project);
+        } else {
+            defaultDataStore = VariantStorageManager.defaultCvdbDataStore(dbPrefix, project.getFqn());
+        }
+        DataStore newDataStore = createNewDataStore(currentDataStore, defaultDataStore, project);
+        catalogManager.getProjectManager().setDatastoreCvdb(project.getFqn(), newDataStore, token);
+    }
+
+    private DataStore createNewDataStore(DataStore currentDataStore, DataStore defaultDataStore, Project project) {
+        final DataStore newDataStore;
+        logger.info("------");
+        logger.info("Project '{}'", project.getFqn());
+        if (currentDataStore == null) {
+            newDataStore = defaultDataStore;
+            logger.info("Old DBName: null");
+        } else {
+            logger.info("Old DBName: {}", currentDataStore.getDbName());
+            currentDataStore.setDbName(defaultDataStore.getDbName());
+            newDataStore = currentDataStore;
+        }
+        logger.info("New DBName: {}", newDataStore.getDbName());
+
+        return newDataStore;
     }
 
     private List<String> parseOrganizationIds(CatalogManager catalogManager, String organizationId) throws CatalogException {
@@ -231,7 +312,8 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
      * @return List of projects
      * @throws Exception on error
      */
-    protected final List<String> getVariantStorageProjects(List<String> organizationIds, CatalogManager catalogManager, VariantStorageManager variantStorageManager) throws Exception {
+    protected final List<String> getVariantStorageProjects(List<String> organizationIds, CatalogManager catalogManager,
+                                                           VariantStorageManager variantStorageManager) throws Exception {
         Set<String> projects = new LinkedHashSet<>();
 
         for (String studyFqn : getVariantStorageStudies(organizationIds, catalogManager, variantStorageManager)) {
@@ -246,7 +328,8 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
      * @return List of projects
      * @throws Exception on error
      */
-    protected final List<String> getVariantStorageStudies(List<String> organizationIds, CatalogManager catalogManager, VariantStorageManager variantStorageManager) throws Exception {
+    protected final List<String> getVariantStorageStudies(List<String> organizationIds, CatalogManager catalogManager,
+                                                          VariantStorageManager variantStorageManager) throws Exception {
         Set<String> studies = new LinkedHashSet<>();
         for (String organizationId : organizationIds) {
             int studiesCount = 0;
@@ -266,6 +349,4 @@ public class StorageCommandExecutor extends AdminCommandExecutor {
         }
         return new ArrayList<>(studies);
     }
-
-
 }

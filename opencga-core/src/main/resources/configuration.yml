@@ -204,6 +204,19 @@ analysis:
         - "REFERENCE_GENOME_HG38_CHAIN"
         - "REFERENCE_GENOME_HG19_FA"
 
+  operations:
+    variantAnnotationIndex:
+      policy: "NIGHTLY"
+      maxAttempts: 3
+      jobParams:
+    variantSecondaryAnnotationIndex:
+      policy: "NIGHTLY"
+      maxAttempts: 3
+      jobParams:
+    variantSecondarySampleIndex:
+      policy: "NIGHTLY"
+      maxAttempts: 3
+      jobParams:
   execution:
     # Accepted values are "local", "SGE", "k8s"
     # see org.opencb.opencga.master.monitor.executors.ExecutorFactory

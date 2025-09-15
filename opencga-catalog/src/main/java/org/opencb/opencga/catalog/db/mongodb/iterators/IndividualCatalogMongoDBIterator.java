@@ -51,6 +51,8 @@ public class IndividualCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDB
     private QueryOptions sampleQueryOptions;
 
     private IndividualMongoDBAdaptor individualDBAdaptor;
+    private QueryOptions fatherQueryOptions;
+    private QueryOptions motherQueryOptions;
     private Queue<Document> individualListBuffer;
 
     private Logger logger;
@@ -76,6 +78,8 @@ public class IndividualCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDB
         this.sampleQueryOptions = createSampleQueryOptions();
 
         this.individualDBAdaptor = dbAdaptorFactory.getCatalogIndividualDBAdaptor();
+        this.fatherQueryOptions = createInnerQueryOptionsForVersionedEntity(options, IndividualDBAdaptor.QueryParams.FATHER.key(), true);
+        this.motherQueryOptions = createInnerQueryOptionsForVersionedEntity(options, IndividualDBAdaptor.QueryParams.MOTHER.key(), true);
 
         this.individualListBuffer = new LinkedList<>();
         this.logger = LoggerFactory.getLogger(IndividualCatalogMongoDBIterator.class);
@@ -108,7 +112,8 @@ public class IndividualCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDB
 
     private void fetchNextBatch() {
         Set<String> sampleVersions = new HashSet<>();
-        Map<Long, List<Document>> individualMap = new HashMap<>();
+        Map<Long, List<Document>> fatherMap = new HashMap<>();
+        Map<Long, List<Document>> motherMap = new HashMap<>();
 
         // Get next BUFFER_SIZE documents
         int counter = 0;
@@ -140,47 +145,14 @@ public class IndividualCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDB
             if (!options.getBoolean(NATIVE_QUERY)) {
                 // Extract father and mother uids
                 Document father = (Document) individualDocument.get(IndividualDBAdaptor.QueryParams.FATHER.key());
-                addParentToMap(individualMap, father);
+                addParentToMap(fatherMap, father);
                 Document mother = (Document) individualDocument.get(IndividualDBAdaptor.QueryParams.MOTHER.key());
-                addParentToMap(individualMap, mother);
+                addParentToMap(motherMap, mother);
             }
         }
 
-        if (!individualMap.isEmpty()) {
-            // Obtain the parents
-
-            Query query = new Query(SampleDBAdaptor.QueryParams.UID.key(), individualMap.keySet());
-            QueryOptions queryOptions = new QueryOptions()
-                    .append(NATIVE_QUERY, true)
-                    .append(QueryOptions.INCLUDE, Arrays.asList(
-                            IndividualDBAdaptor.QueryParams.ID.key(), IndividualDBAdaptor.QueryParams.VERSION.key(),
-                            IndividualDBAdaptor.QueryParams.UID.key()));
-
-            try {
-                DataResult<Document> individualDataResult;
-                if (user != null) {
-                    query.put(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-                    individualDataResult = individualDBAdaptor.nativeGet(clientSession, studyUid, query, queryOptions, user);
-                } else {
-                    individualDataResult = individualDBAdaptor.nativeGet(clientSession, query, queryOptions);
-                }
-
-                for (Document individual : individualDataResult.getResults()) {
-                    List<Document> parentList =
-                            individualMap.get(((Number) individual.get(IndividualDBAdaptor.QueryParams.UID.key())).longValue());
-                    for (Document parentDocument : parentList) {
-                        parentDocument.put(IndividualDBAdaptor.QueryParams.ID.key(),
-                                individual.getString(IndividualDBAdaptor.QueryParams.ID.key()));
-                        parentDocument.put(IndividualDBAdaptor.QueryParams.VERSION.key(),
-                                individual.getInteger(IndividualDBAdaptor.QueryParams.VERSION.key()));
-                    }
-                }
-
-            } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
-                logger.warn("Could not obtain the parents associated to the individuals: {}", e.getMessage(), e);
-            }
-
-        }
+        obtainParentInformation(fatherMap, fatherQueryOptions);
+        obtainParentInformation(motherMap, motherQueryOptions);
 
         if (!sampleVersions.isEmpty()) {
             // Obtain all those samples
@@ -234,6 +206,33 @@ public class IndividualCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDB
 
                 individual.put(IndividualMongoDBAdaptor.QueryParams.SAMPLES.key(), tmpSampleList);
             });
+        }
+    }
+
+    private void obtainParentInformation(Map<Long, List<Document>> parentMap, QueryOptions queryOptions) {
+        if (!parentMap.isEmpty()) {
+            // Obtain the parents
+            Query query = new Query(IndividualDBAdaptor.QueryParams.UID.key(), parentMap.keySet());
+
+            try {
+                DataResult<Document> individualDataResult;
+                if (user != null) {
+                    query.put(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+                    individualDataResult = individualDBAdaptor.nativeGet(clientSession, studyUid, query, queryOptions, user);
+                } else {
+                    individualDataResult = individualDBAdaptor.nativeGet(clientSession, query, queryOptions);
+                }
+
+                for (Document individual : individualDataResult.getResults()) {
+                    List<Document> parentList =
+                            parentMap.get(((Number) individual.get(IndividualDBAdaptor.QueryParams.UID.key())).longValue());
+                    for (Document parentDocument : parentList) {
+                        parentDocument.putAll(individual);
+                    }
+                }
+            } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
+                logger.warn("Could not obtain the parents associated to the individuals: {}", e.getMessage(), e);
+            }
         }
     }
 

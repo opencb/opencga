@@ -2,7 +2,6 @@
 % Please edit documentation in R/OpencgaR-methods.R
 \name{opencgaLogin}
 \alias{opencgaLogin}
-\alias{OpencgaLogin}
 \title{Login to OpenCGA Web Services}
 \usage{
 opencgaLogin(

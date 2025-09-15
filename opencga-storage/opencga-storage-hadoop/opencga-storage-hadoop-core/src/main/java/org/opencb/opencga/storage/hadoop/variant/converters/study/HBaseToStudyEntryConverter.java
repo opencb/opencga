@@ -542,22 +542,28 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         }
         int sampleIdx = 0;
         List<SampleEntry> samplesData = studyEntry.getSamples();
+        int numSamples = 0;
         for (Iterator<String> iterator = studyEntry.getSamplesPosition().keySet().iterator(); iterator.hasNext(); sampleIdx++) {
             String sampleName = iterator.next();
             SampleEntry sampleEntry = samplesData.get(sampleIdx);
             if (sampleEntry == null) {
-                List<String> data;
-                if (missingUpdatedList.get(sampleIdx) || sampleWithVariant.get(sampleIdx)) {
-                    data = unmodifiableEmptyDataReferenceGenotype;
-                } else {
-                    data = unmodifiableEmptyData;
+                if (!configuration.getSparse()) {
+                    List<String> data;
+                    if (missingUpdatedList.get(sampleIdx) || sampleWithVariant.get(sampleIdx)) {
+                        data = unmodifiableEmptyDataReferenceGenotype;
+                    } else {
+                        data = unmodifiableEmptyData;
+                    }
+                    sampleEntry = new SampleEntry(null, null, data);
+                    if (configuration.getIncludeSampleId()) {
+                        sampleEntry.setSampleId(sampleName);
+                    }
+                    samplesData.set(sampleIdx, sampleEntry);
                 }
-                sampleEntry = new SampleEntry(null, null, data);
-                if (configuration.getIncludeSampleId()) {
-                    sampleEntry.setSampleId(sampleName);
-                }
-                samplesData.set(sampleIdx, sampleEntry);
+                // else
+                // Sparse sample. Do not add empty sample entries
             } else {
+                numSamples++;
                 List<String> data = sampleEntry.getData();
                 data.replaceAll(s -> s == null ? UNKNOWN_SAMPLE_DATA : s);
                 if (data.size() < unmodifiableEmptyData.size()) {
@@ -610,6 +616,14 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             }
         }
 
+        if (configuration.getSparse()) {
+            List<SampleEntry> sparseSamples = new ArrayList<>(numSamples);
+            studyEntry.getSamples().stream()
+                    .filter(Objects::nonNull)
+                    .forEach(sparseSamples::add);
+            studyEntry.setSamplesPosition(null);
+            studyEntry.setSamples(sparseSamples);
+        }
 
     }
 
@@ -735,14 +749,6 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             return genotype.substring(0, idx);
         } else {
             return genotype;
-        }
-    }
-
-    private void wrongVariant(String message) {
-        if (configuration.getFailOnWrongVariants()) {
-            throw new IllegalStateException(message);
-        } else {
-            logger.warn(message);
         }
     }
 

@@ -218,16 +218,19 @@ public class OpenCGATestExternalResource extends ExternalResource {
         Path opencgaHome = catalogManagerExternalResource.getOpencgaHome();
         Path userHome = opencgaHome.resolve("user_home");
         Path conf = opencgaHome.resolve("conf");
+        Path scratch = opencgaHome.resolve("scratch");
 
         System.setProperty("app.home", opencgaHome.toString());
         System.setProperty("user.home", userHome.toString());
 
         Files.createDirectories(conf);
         Files.createDirectories(userHome);
+        Files.createDirectories(scratch);
         Files.createDirectories(opencgaHome.resolve("analysis/resources"));
 
-        catalogManagerExternalResource.getConfiguration().serialize(
-                new FileOutputStream(conf.resolve("configuration.yml").toFile()));
+        Configuration configuration = catalogManagerExternalResource.getConfiguration();
+        configuration.getAnalysis().setScratchDir(scratch.toAbsolutePath().toString());
+        configuration.serialize(new FileOutputStream(conf.resolve("configuration.yml").toFile()));
         try (InputStream inputStream = StorageManager.class.getClassLoader().getResourceAsStream("storage-configuration.yml")) {
             storageConfiguration = StorageConfiguration.load(inputStream, "yml");
         }

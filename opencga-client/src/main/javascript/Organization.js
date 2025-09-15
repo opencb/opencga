@@ -108,6 +108,15 @@ export default class Organization extends OpenCGAParentClass {
         return this._post("organizations", null, "notes", id, "update", data, params);
     }
 
+    /** Reset user's password
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.userId] - User whose password needs to be reset.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    resetUserPassword(params) {
+        return this._post("organizations", null, "user/password", null, "reset", null, params);
+    }
+
     /** Update the user status
     * @param {String} user - User ID.
     * @param {Object} data - JSON containing the User fields to be updated.

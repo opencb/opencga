@@ -43,6 +43,7 @@ import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.Optimizations;
+import org.opencb.opencga.core.config.UserOrganizationConfiguration;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.organizations.*;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
@@ -153,7 +154,7 @@ public class CatalogManager implements AutoCloseable {
         projectManager = new ProjectManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager,
                 configuration);
         studyManager = new StudyManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, ioManagerFactory,
-                catalogIOManager, configuration);
+                catalogIOManager, authenticationFactory, configuration);
         fileManager = new FileManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, ioManagerFactory, configuration);
         jobManager = new JobManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, ioManagerFactory, configuration);
         sampleManager = new SampleManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
@@ -275,7 +276,8 @@ public class CatalogManager implements AutoCloseable {
 
         OrganizationConfiguration organizationConfiguration = new OrganizationConfiguration(
                 Collections.singletonList(CatalogAuthenticationManager.createOpencgaAuthenticationOrigin()),
-                Constants.DEFAULT_USER_EXPIRATION_DATE, new Optimizations(), new TokenConfiguration(algorithm, secretKey, 3600L));
+                new UserOrganizationConfiguration(Constants.DEFAULT_USER_EXPIRATION_DATE, false), new Optimizations(),
+                new TokenConfiguration(algorithm, secretKey, 3600L));
         organizationManager.create(new OrganizationCreateParams(ADMIN_ORGANIZATION, ADMIN_ORGANIZATION, null, null,
                         organizationConfiguration, null),
                 QueryOptions.empty(), null);

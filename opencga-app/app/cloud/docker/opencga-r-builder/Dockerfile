@@ -1,4 +1,4 @@
-FROM debian:bullseye
+FROM ubuntu:24.04
 
 LABEL org.label-schema.vendor="OpenCB" \
       org.label-schema.name="opencga-r-builder" \

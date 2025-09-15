@@ -13,7 +13,6 @@ fetchOpenCGA(
   action = NULL,
   params = NULL,
   httpMethod = "GET",
-  skip = 0,
   num_threads = NULL,
   as.queryParam = NULL,
   batch_size = 1000

@@ -14,8 +14,8 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class DummyProjectMetadataAdaptor implements ProjectMetadataAdaptor {
     private static ProjectMetadata projectMetadata;
-    private static Map<String, Integer> counters = new HashMap<>();
+    private static Map<String, Integer> counters = new ConcurrentHashMap<>();
 
     @Override
     public Lock lockProject(long lockDuration, long timeout, String lockName) {
@@ -59,8 +59,34 @@ public class DummyProjectMetadataAdaptor implements ProjectMetadataAdaptor {
 
     @Override
     public synchronized int generateId(Integer studyId, String idType) throws StorageEngineException {
+        final int startingId;
+        // Use different starting ids for different types of ids to avoid collisions in DummyLock
+        switch (idType) {
+            case "study":
+                startingId = 1;
+                break;
+            case "file":
+                startingId = 100000;
+                break;
+            case "sample":
+                startingId = 200000;
+                break;
+            case "cohort":
+                startingId = 300000;
+                break;
+            case "task":
+                startingId = 400000;
+                break;
+            case "score":
+                startingId = 500000;
+                break;
+            default:
+                startingId = 80000;
+                break;
+
+        }
         return counters.compute(idType + (studyId == null ? "" : ("_" + studyId)),
-                (key, value) -> value == null ? 1 : value + 1);
+                (key, value) -> value == null ? startingId : value + 1);
     }
 
     @Override

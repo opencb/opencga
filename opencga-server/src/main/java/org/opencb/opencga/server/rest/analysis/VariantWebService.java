@@ -109,7 +109,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
  */
 @Path("/{apiVersion}/analysis/variant")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "Analysis - Variant", description = "Methods for working with 'files' endpoint")
+@Api(value = "Analysis - Variant", description = "Methods for working with Variants")
 public class VariantWebService extends AnalysisWebService {
 
     private static final String DEPRECATED = " [DEPRECATED] ";
@@ -194,7 +194,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
-            @ApiParam(value = VariantIndexParams.DESCRIPTION, required = true) VariantIndexParams params) {
+            @ApiParam(value = ParamConstants.VARIANT_INDEX_PARAMS_DESCRIPTION, required = true) VariantIndexParams params) {
         return submitJob(study, JobType.NATIVE, VariantIndexOperationTool.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 

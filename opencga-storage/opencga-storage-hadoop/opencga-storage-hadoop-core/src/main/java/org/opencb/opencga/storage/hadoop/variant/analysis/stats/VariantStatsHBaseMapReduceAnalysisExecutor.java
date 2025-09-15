@@ -51,6 +51,7 @@ public class VariantStatsHBaseMapReduceAnalysisExecutor extends VariantStatsAnal
             throw new ToolExecutorException(e);
         }
 
+        ToolExecutorException e = null;
         try {
             Query variantsQuery = new Query(getVariantsQuery());
             variantsQuery = engine.preProcessQuery(variantsQuery, new QueryOptions());
@@ -70,12 +71,24 @@ public class VariantStatsHBaseMapReduceAnalysisExecutor extends VariantStatsAnal
                     params
             ), "Calculate variant stats");
 
-        } catch (VariantQueryException | StorageEngineException e) {
-            throw new ToolExecutorException(e);
+        } catch (VariantQueryException | StorageEngineException ex) {
+            e = new ToolExecutorException(e);
+            throw e;
         } finally {
             for (Integer cohortId : temporaryCohortIds) {
-                dbAdaptor.getMetadataManager().removeCohort(studyId, cohortId);
+                try {
+                    dbAdaptor.getMetadataManager().removeCohort(studyId, cohortId);
+                } catch (StorageEngineException ex) {
+                    if (e == null) {
+                        e = new ToolExecutorException(e);
+                    } else {
+                        e.addSuppressed(ex);
+                    }
+                }
             }
+        }
+        if (e != null) {
+            throw new ToolExecutorException(e);
         }
     }
 

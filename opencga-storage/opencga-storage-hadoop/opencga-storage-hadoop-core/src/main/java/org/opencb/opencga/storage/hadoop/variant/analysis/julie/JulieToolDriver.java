@@ -101,7 +101,7 @@ public class JulieToolDriver extends AbstractVariantsTableDriver {
         }
         job.getConfiguration().setBoolean(OVERWRITE, overwrite);
 
-        VariantMapReduceUtil.configureMapReduceScan(scan, getConf());
+        VariantMapReduceUtil.configureMapReduceScan(scan, job);
         logger.info("Scan: " + scan);
 
         VariantMapReduceUtil.initVariantRowMapperJobFromHBase(job, variantTable, scan, JulieToolMapper.class);

@@ -37,12 +37,16 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.JobType;
 import org.opencb.opencga.core.models.resource.ResourceFetcherToolParams;
 import org.opencb.opencga.master.monitor.daemons.ExecutionDaemon;
+import org.opencb.opencga.master.monitor.daemons.MonitorParentDaemon;
+import org.opencb.opencga.master.monitor.daemons.VariantOperationJanitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 import static org.opencb.opencga.catalog.managers.AbstractManager.OPENCGA;
 
@@ -59,14 +63,8 @@ public class MonitorService {
     private static Server server;
     private int port;
 
-    private ExecutionDaemon executionDaemon;
-//    private FileDaemon fileDaemon;
-//    private AuthorizationDaemon authorizationDaemon;
-
-    private Thread executionThread;
-//    private Thread indexThread;
-//    private Thread fileThread;
-//    private Thread authorizationThread;
+    private List<MonitorParentDaemon> daemons = new ArrayList<>();
+    private List<Thread> threads = new ArrayList<>();
 
     private volatile boolean exit;
 
@@ -106,7 +104,7 @@ public class MonitorService {
         String nonExpiringToken = this.catalogManager.getUserManager().getNonExpiringToken(ParamConstants.ADMIN_ORGANIZATION, OPENCGA,
                 Collections.emptyMap(), token);
 
-        executionDaemon = new ExecutionDaemon(
+        ExecutionDaemon executionDaemon = new ExecutionDaemon(
                 configuration.getMonitor().getExecutionDaemonInterval(),
                 nonExpiringToken,
                 catalogManager,
@@ -116,7 +114,15 @@ public class MonitorService {
 //            fileDaemon = new FileDaemon(configuration.getMonitor().getFileDaemonInterval(),
 //                    configuration.getMonitor().getDaysToRemove(), nonExpiringToken, catalogManager);
 
-        executionThread = new Thread(executionDaemon, "execution-thread");
+        VariantOperationJanitor variantJanitor = new VariantOperationJanitor(
+                catalogManager,
+                nonExpiringToken);
+
+        daemons.add(executionDaemon);
+        daemons.add(variantJanitor);
+
+        threads.add(new Thread(executionDaemon, "execution-thread"));
+        threads.add(new Thread(variantJanitor, "janitor-thread"));
 //            fileThread = new Thread(fileDaemon, "file-thread");
 //            authorizationThread = new Thread(authorizationDaemon, "authorization-thread");
 
@@ -128,10 +134,9 @@ public class MonitorService {
     public void start() throws Exception {
 
         // Launching the two daemons in two different threads
-        executionThread.start();
-//        indexThread.start();
-//        authorizationThread.start();
-//        fileThread.start();
+        for (Thread thread : threads) {
+            thread.start();
+        }
 
         // Preparing the REST server configuration
         ResourceConfig resourceConfig = new ResourceConfig();
@@ -184,10 +189,9 @@ public class MonitorService {
     }
 
     public void stop() throws Exception {
-        executionDaemon.setExit(true);
-//        fileDaemon.setExit(true);
-//        executionDaemon.setExit(true);
-//        authorizationDaemon.setExit(true);
+        for (MonitorParentDaemon daemon : daemons) {
+            daemon.setExit(true);
+        }
 
         // By setting exit to true the monitor thread will close the Jetty server
         exit = true;

@@ -87,7 +87,7 @@ public class VariantHistogramDriver extends AbstractVariantsTableDriver {
         if (StringUtils.isNotEmpty(region)) {
             VariantHBaseQueryParser.addRegionFilter(scan, new Region(region));
         }
-        VariantMapReduceUtil.configureMapReduceScan(scan, getConf());
+        VariantMapReduceUtil.configureMapReduceScan(scan, job);
         VariantMapReduceUtil.initTableMapperJob(job, variantTable, scan, getMapperClass(), VariantAlignedInputFormat.class);
         VariantMapReduceUtil.setNoneReduce(job);
 

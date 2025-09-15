@@ -17,6 +17,7 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseVariantConverterConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 
@@ -33,17 +34,37 @@ public class HBaseToStudyEntryConverterTest {
     private HBaseToStudyEntryConverter converter;
     private StudyMetadata sm;
     private VariantStorageMetadataManager mm;
+    private int fileId1;
+    private int fileId2;
+    private int fileId3;
+    private int sampleId1;
+    private int sampleId2;
+    private int sampleId3;
+    private int sampleId4;
+    private int sampleId5;
+    private int sampleId6;
+    private int studyId;
 
     @Before
     public void setUp() throws Exception {
         DummyVariantStorageMetadataDBAdaptorFactory.clear();
         mm = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
         sm = mm.createStudy("S1");
+        studyId = sm.getId();
 
-        mm.registerFile(sm.getId(), "f1", Arrays.asList("S1", "S2", "S3"));
-        mm.registerFile(sm.getId(), "f2", Arrays.asList("S4", "S5", "S6"));
-        mm.registerFile(sm.getId(), "f3", Arrays.asList("S7", "S8", "S9"));
-        mm.addIndexedFiles(sm.getId(), Arrays.asList(1, 2));
+        fileId1 = mm.registerFile(sm.getId(), "f1", Arrays.asList("S1", "S2", "S3"));
+        fileId2 = mm.registerFile(sm.getId(), "f2", Arrays.asList("S4", "S5", "S6"));
+        fileId3 = mm.registerFile(sm.getId(), "f3", Arrays.asList("S7", "S8", "S9"));
+        mm.addIndexedFiles(sm.getId(), Arrays.asList(fileId1, fileId2));
+
+        sampleId1 = mm.getSampleId(sm.getId(), "S1");
+        sampleId2 = mm.getSampleId(sm.getId(), "S2");
+        sampleId3 = mm.getSampleId(sm.getId(), "S3");
+        sampleId3 = mm.getSampleId(sm.getId(), "S3");
+        sampleId4 = mm.getSampleId(sm.getId(), "S4");
+        sampleId5 = mm.getSampleId(sm.getId(), "S5");
+        sampleId6 = mm.getSampleId(sm.getId(), "S6");
+
 
         mm.updateStudyMetadata(sm.getId(), s -> {
             s.getAttributes().put(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
@@ -52,14 +73,16 @@ public class HBaseToStudyEntryConverterTest {
 
         converter = new HBaseToStudyEntryConverter(mm, null)
                 .configure(HBaseVariantConverterConfiguration.builder()
+                        .setIncludeSampleId(false)
+                        .setProjection(new VariantQueryProjection(sm, Arrays.asList(sampleId1, sampleId2, sampleId3, sampleId4, sampleId5, sampleId6), Collections.emptyList()))
                         .build());
     }
 
     @Test
     public void testConvertBasic() throws Exception {
         List<VariantRow.SampleColumn> fixedValues = new ArrayList<>();
-        fixedValues.add(getSampleColumn(1, listOf("0/0", "PASS")));
-        fixedValues.add(getSampleColumn(3, listOf("0/1", "PASS")));
+        fixedValues.add(getSampleColumn(sampleId1, listOf("0/0", "PASS")));
+        fixedValues.add(getSampleColumn(sampleId3, listOf("0/1", "PASS")));
 
         StudyEntry s = converter.convert(fixedValues, Collections.emptyList(), new Variant("1:1000:A:C"), 1);
         StudyEntry expected = new StudyEntry("1", Collections.emptyList(), listOf("GT", "FT"))
@@ -80,11 +103,10 @@ public class HBaseToStudyEntryConverterTest {
         });
 
         List<VariantRow.SampleColumn> fixedValues = new ArrayList<>();
-        fixedValues.add(getSampleColumn(1, listOf("0/0", "1,2", "10")));
-        fixedValues.add(getSampleColumn(3, listOf("0/1", "3,4", "20")));
+        fixedValues.add(getSampleColumn(sampleId1, listOf("0/0", "1,2", "10")));
+        fixedValues.add(getSampleColumn(sampleId3, listOf("0/1", "3,4", "20")));
 
-        StudyEntry s = converter.convert(fixedValues, Collections.emptyList(), new Variant("1:1000:A:C"), 1);
-
+        StudyEntry s = converter.convert(fixedValues, Collections.emptyList(), new Variant("1:1000:A:C"), studyId);
         StudyEntry expected = new StudyEntry("1", Collections.emptyList(), listOf("GT", "AD", "DP"))
                 .addSampleData("S1", listOf("0/0", "1,2", "10"))
                 .addSampleData("S2", listOf("?/?", ".", "."))
@@ -136,15 +158,15 @@ public class HBaseToStudyEntryConverterTest {
         List<VariantRow.SampleColumn> fixedValues = new ArrayList<>();
         List<Pair<String, PhoenixArray>> otherValues = new ArrayList<>();
         List<String> right = listOf("0/0", "1,2", "10");
-        fixedValues.add(getSampleColumn(1, right));
+        fixedValues.add(getSampleColumn(sampleId1, right));
 //        otherValues.add(Pair.of(1, OtherSampleData.newBuilder()
 //                .putSampleData("KEY_1", "VALUE_1")
 //                .putSampleData("KEY_2", "VALUE_2")
 //                .build().toByteArray()));
-        fixedValues.add(getSampleColumn(2, listOf("1/1", "8,9", "70")));
-        fixedValues.add(getSampleColumn(3, listOf("0/1", "3,4", "20")));
-        fixedValues.add(getSampleColumn(5, listOf("0/1", ".", ".")));
-        fixedValues.add(getSampleColumn(6, listOf(".", ".", ".")));
+        fixedValues.add(getSampleColumn(sampleId2, listOf("1/1", "8,9", "70")));
+        fixedValues.add(getSampleColumn(sampleId3, listOf("0/1", "3,4", "20")));
+        fixedValues.add(getSampleColumn(sampleId5, listOf("0/1", ".", ".")));
+        fixedValues.add(getSampleColumn(sampleId6, listOf(".", ".", ".")));
 //        otherValues.add(Pair.of(3, OtherSampleData.newBuilder()
 //                .putSampleData("KEY_1", "VALUE_1")
 //                .putSampleData("KEY_3", "VALUE_3")

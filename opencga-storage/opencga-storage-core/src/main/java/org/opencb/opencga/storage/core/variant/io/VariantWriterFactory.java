@@ -76,6 +76,8 @@ public class VariantWriterFactory {
         VCF_GZ("vcf.gz", false),
         JSON("json"),
         JSON_GZ("json.gz"),
+        JSON_SPARSE("sparse.json"),
+        JSON_SPARSE_GZ("sparse.json.gz"),
         AVRO("avro", true, true),
         AVRO_GZ("avro.gz", true, true),
         AVRO_SNAPPY("avro.snappy", true, true),
@@ -291,6 +293,8 @@ public class VariantWriterFactory {
 
             case JSON_GZ:
             case JSON:
+            case JSON_SPARSE_GZ:
+            case JSON_SPARSE:
                 exporter = new VariantJsonWriter(outputStream);
                 break;
 

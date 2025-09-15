@@ -207,6 +207,28 @@ public class StudyWSServer extends OpenCGAWSServer {
     }
 
     @POST
+    @Path("/{study}/groups/sync")
+    @ApiOperation(value = "Associate a remote group from an authentication origin with a local group in a study", response = Group.class,
+            notes = "Requires admin study permissions.")
+    public Response groupSync(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION, required = true) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "JSON containing the parameters", required = true) GroupSyncParams syncParams
+    ) {
+        return run(() -> catalogManager.getStudyManager().syncGroup(studyStr, syncParams, token));
+    }
+
+    @POST
+    @Path("/{study}/users/sync")
+    @ApiOperation(value = "Synchronize all users from the remote groups of a given authentication origin", response = Object.class,
+            notes = "Requires admin organization permissions.")
+    public Response usersSync(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION, required = true) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.USER_AUTHENTICATION_ORIGIN_DESCRIPTION, required = true) @QueryParam(ParamConstants.AUTHENTICATION_ORIGIN_PARAM) String authOriginId
+    ) {
+        return run(() -> catalogManager.getStudyManager().syncUsers(studyStr, authOriginId, token));
+    }
+
+    @POST
     @Path("/{study}/groups/update")
     @ApiOperation(value = "Add or remove a group", response = Group.class)
     public Response updateGroupPOST(

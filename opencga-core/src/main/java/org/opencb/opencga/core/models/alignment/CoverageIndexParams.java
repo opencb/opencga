@@ -7,7 +7,6 @@ import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
 public class CoverageIndexParams extends ToolParams {
-    public static final String DESCRIPTION = "Coverage computation parameters";
 
     @DataField(id = "fileId", description = FieldConstants.ALIGNMENT_BAM_FILE_ID_DESCRIPTION)
     private String fileId;

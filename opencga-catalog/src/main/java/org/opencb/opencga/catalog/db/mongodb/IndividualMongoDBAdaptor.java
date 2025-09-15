@@ -1322,6 +1322,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         }
 
         qOptions = removeInnerProjections(qOptions, QueryParams.SAMPLES.key());
+        qOptions = removeInnerProjections(qOptions, QueryParams.FATHER.key());
+        qOptions = removeInnerProjections(qOptions, QueryParams.MOTHER.key());
         qOptions = removeAnnotationProjectionOptions(qOptions);
 
         // FIXME we should be able to remove this now safely
