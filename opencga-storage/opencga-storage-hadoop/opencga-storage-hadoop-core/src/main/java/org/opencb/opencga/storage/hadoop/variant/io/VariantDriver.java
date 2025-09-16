@@ -129,7 +129,7 @@ public abstract class VariantDriver extends AbstractVariantsTableDriver {
             VariantMapReduceUtil.setNoneReduce(job);
         }
 
-        VariantMapReduceUtil.initVariantMapperJob(job, mapperClass, variantTable, getMetadataManager(), query, options, false);
+        VariantMapReduceUtil.initVariantMapperJob(job, mapperClass, variantTable, getMetadataManager(), query, options, false, true);
 
         setNoneTimestamp(job);
 
