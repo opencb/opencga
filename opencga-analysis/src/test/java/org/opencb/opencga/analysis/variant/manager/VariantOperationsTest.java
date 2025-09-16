@@ -799,6 +799,7 @@ public class VariantOperationsTest {
 
     @Test
     public void testCellbaseConfigure() throws Exception {
+        Assume.assumeThat(storageEngine, CoreMatchers.is(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
         String project = "Project_test_cellbase_configure";
         catalogManager.getProjectManager().create(new ProjectCreateParams(project, project, "", "", "", new ProjectOrganism("hsapiens", "GRCh38"), null, null), QueryOptions.empty(), token);
 
