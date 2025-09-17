@@ -55,7 +55,6 @@ class RestClientGenerator(ABC):
             'Analysis - Clinical': 'ClinicalAnalysis',
             'Operations - Variant Storage': 'VariantOperation',
             'Meta': 'Meta',
-            'FHIR': 'FHIR',
             'CVDB': 'CVDB',
             'GA4GH': 'GA4GH',
             'Admin': 'Admin'
@@ -270,6 +269,9 @@ class RestClientGenerator(ABC):
 
     def create_rest_clients(self):
         for category in self.rest_api['categories']:
+            if not self.is_included(category):
+                print('Skipping category: {}'.format(self.get_category_name(category)))
+                continue
             text = []
             text.append(self.get_class_definition(category))
 
@@ -293,6 +295,9 @@ class RestClientGenerator(ABC):
             sys.stderr.write('Creating ' + os.path.join(self.output_dir, file_name) + '...\n')
             with open(os.path.join(self.output_dir, file_name), 'w') as fhand:
                 fhand.write('\n'.join(text))
+
+    def is_included(self, category):
+        return self.get_category_name(category) in self.categories
 
     def parse_resources(self, category, endpoint):
         if endpoint['path'] == '/{apiVersion}/ga4gh/reads/{study}/{file}':

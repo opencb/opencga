@@ -29,7 +29,6 @@ class RClientGenerator(RestClientGenerator):
             'Analysis - Clinical': 'Clinical',
             'Operations - Variant Storage': 'Operation',
             'Meta': 'Meta',
-            'FHIR': 'FHIR',
             'CVDB': 'CVDB',
             'GA4GH': 'GA4GH',
             'Admin': 'Admin'
