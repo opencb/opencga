@@ -56,8 +56,8 @@ public class MigrationsTest {
     }
 
     @Test
-    public void testVamoriantSetupMigration() throws Exception {
-        setup("v3.1.0", false);
+    public void testVariantSetupMigration() throws Exception {
+        setup("v3.1.0", true);
         String studyName = "test@1000G:phase1";
 
         VariantStorageMetadataManager metadataManager = opencga.getVariantStorageEngineByProject("test@1000G").getMetadataManager();
@@ -83,7 +83,7 @@ public class MigrationsTest {
 
     @Test
     public void testEnsureSampleIndexConfigurationIsAlwaysDefined() throws Exception {
-        setup("v3.2.1", false);
+        setup("v3.2.1", true);
         String studyName = "test@1000G:phase1";
 
         VariantStorageMetadataManager metadataManager = opencga.getVariantStorageEngineByProject("test@1000G").getMetadataManager();
