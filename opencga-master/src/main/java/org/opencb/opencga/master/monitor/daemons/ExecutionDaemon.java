@@ -170,6 +170,7 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
     private final JobScheduler jobScheduler;
 
     static {
+        // Tool map
         TOOL_CLI_MAP = new HashMap<String, String>() {{
             put(FileUnlinkTask.ID, "files unlink");
             put(FileDeleteTask.ID, "files delete");
