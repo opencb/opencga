@@ -4,7 +4,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Assume;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.EvidenceEntry;
@@ -268,8 +267,6 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
         assertEquals(new HashSet<>(Arrays.asList("date", "sources", "collections", "release")), fields.keySet());
     }
 
-    // TODO: Remove @Ignore when the test is fixed
-    @Ignore("Test is ignored since it is currently failing - needs investigation")
     @Test
     public void testMultiAnnotations() throws Exception {
 
@@ -314,6 +311,44 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
         variantStorageEngine.deleteAnnotation("v1", new ObjectMap());
 
         testQueries(variantStorageEngine);
+
+    }
+
+    @Test
+    public void testCheckpointAnnotation() throws Exception {
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
+        variantStorageEngine.getOptions()
+                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyVariantAnnotator.class.getName())
+                .append(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.OTHER)
+                .append(DummyVariantAnnotator.ANNOT_KEY, "k1")
+                .append(DummyVariantAnnotator.ANNOT_VERSION, "v1")
+                .append(DummyVariantAnnotator.ANNOT_DATARELEASE, 2)
+                .append(VariantStorageOptions.ANNOTATION_BATCH_SIZE.key(), 5)
+                .append(VariantStorageOptions.ANNOTATION_CHECKPOINT_SIZE.key(), 10);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.ASSEMBLY.key(), ASSEMBLY_38);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.SPECIES.key(), "hsapiens");
+
+        runETL(variantStorageEngine, smallInputUri, STUDY_NAME,
+                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));
+
+
+        long numVariants = variantStorageEngine.count(new Query()).first();
+        long annotatedVariants = variantStorageEngine.annotate(outputUri, new ObjectMap(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
+        assertEquals(2, variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getDataRelease().getRelease());
+        assertEquals(numVariants, annotatedVariants);
+        assertEquals("k1", variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getName());
+        assertEquals("v1", variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getVersion());
+
+
+        variantStorageEngine.getOptions()
+                .append(DummyVariantAnnotator.SKIP, "6:79656570:G:A,5:154271948:G:A");
+        annotatedVariants = variantStorageEngine.annotate(outputUri, new ObjectMap(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
+        assertEquals(numVariants - 2, annotatedVariants);
+
+        variantStorageEngine.getOptions()
+                .append(DummyVariantAnnotator.SKIP, "6:79656570:G:A,5:154271948:G:A,4:69095197:T:C,X:48460314:A:G");
+        annotatedVariants = variantStorageEngine.annotate(outputUri, new ObjectMap(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
+        assertEquals(numVariants - 4, annotatedVariants);
 
     }
 
@@ -563,7 +598,7 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
 
     public void checkAnnotationSnapshot(VariantStorageEngine variantStorageEngine, String annotationName, String expectedAnnotationName, String expectedId, Query query) throws Exception {
         int count = 0;
-        for (VariantAnnotation annotation: variantStorageEngine.getAnnotation(annotationName, query, null).getResults()) {
+        for (VariantAnnotation annotation: variantStorageEngine.getAnnotation(annotationName, query, new QueryOptions(QueryOptions.LIMIT, 5000)).getResults()) {
             assertEquals("an id -- " + expectedId, annotation.getId());
 //            assertEquals("1", annotation.getAdditionalAttributes().get("opencga").getAttribute().get("release"));
             assertEquals(expectedAnnotationName, annotation.getAdditionalAttributes().get(GROUP_NAME.key())

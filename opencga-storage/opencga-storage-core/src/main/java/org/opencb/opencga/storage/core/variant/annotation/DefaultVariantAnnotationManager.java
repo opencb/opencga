@@ -93,6 +93,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
 
     protected VariantDBAdaptor dbAdaptor;
     protected VariantAnnotator variantAnnotator;
+    private final AtomicLong numProcessedVariants = new AtomicLong(0);
     private final AtomicLong numAnnotationsToLoad = new AtomicLong(0);
     protected static Logger logger = LoggerFactory.getLogger(DefaultVariantAnnotationManager.class);
     protected Map<Integer, List<Integer>> filesToBeAnnotated = new HashMap<>();
@@ -146,16 +147,21 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
         long variants = 0;
         if (checkpointSize > 0 && doLoad && doCreate && doBatchAnnotation(params)) {
             int batch = 0;
-            long newVariants;
+            long processedVariants;
             do {
                 batch++;
-                newVariants = annotateBatch(query, params, doCreate, doLoad, annotationFileStr, checkpointSize, batch, "." + batch);
-            } while (newVariants == checkpointSize);
-            variants += newVariants;
+                annotateBatch(query, params, doCreate, doLoad, annotationFileStr, checkpointSize, batch, "." + batch);
+                processedVariants = numProcessedVariants.get();
+                variants += numAnnotationsToLoad.get();
+            } while (processedVariants == checkpointSize);
         } else {
             variants = annotateBatch(query, params, doCreate, doLoad, annotationFileStr, null, null, null);
         }
         logger.info("Finish annotation. New annotated variants: " + variants);
+        long nonAnnotatedVariants = numProcessedVariants.get() - numAnnotationsToLoad.get();
+        if (nonAnnotatedVariants != 0) {
+            logger.warn("There were " + nonAnnotatedVariants + " variants that could not be annotated!");
+        }
 
         postAnnotate(query, doCreate, doLoad, params);
 
@@ -172,6 +178,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                                  String annotationFileStr, Integer batchSize, Integer batchId, String fileSufix)
             throws VariantAnnotatorException, IOException, StorageEngineException {
         numAnnotationsToLoad.set(0);
+        numProcessedVariants.set(0);
         URI annotationFile;
         if (doCreate) {
             long start = System.currentTimeMillis();
@@ -198,6 +205,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
             logger.info("Starting annotation load {}", annotationFile);
             loadAnnotation(annotationFile, params);
             logger.info("Finished annotation load {}ms", System.currentTimeMillis() - start);
+
         }
 
         return numAnnotationsToLoad.get();
@@ -253,17 +261,18 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                     }
                 }, 200);
             }
-            Task<Variant, VariantAnnotation> annotationTask = variantAnnotator.then((List<VariantAnnotation> variantAnnotations) -> {
-                progressLogger.increment(variantAnnotations.size(),
-                        () -> {
-                            VariantAnnotation variantAnnotation = variantAnnotations.get(variantAnnotations.size() - 1);
-                            return ", up to position " + variantAnnotation.getChromosome() + ":"
-                                    + variantAnnotation.getStart() + ":"
-                                    + variantAnnotation.getReference() + ":"
-                                    + variantAnnotation.getAlternate();
-                        });
-                numAnnotationsToLoad.addAndGet(variantAnnotations.size());
-                return variantAnnotations;
+            Task<Variant, VariantAnnotation> annotationTask = Task.join(variantAnnotator,
+                    variants -> {
+                        progressLogger.increment(variants.size(),
+                                () -> {
+                                    Variant variant = variants.get(variants.size() - 1);
+                                    return ", up to position " + variant.toString();
+                                });
+                        numProcessedVariants.addAndGet(variants.size());
+                        return null;
+                    }).then((List<VariantAnnotation> variants) -> {
+                numAnnotationsToLoad.addAndGet(variants.size());
+                return variants;
             });
 
             final DataWriter<VariantAnnotation> variantAnnotationDataWriter;

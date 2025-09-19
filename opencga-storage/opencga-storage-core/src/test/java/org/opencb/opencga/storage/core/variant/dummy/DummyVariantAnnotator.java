@@ -11,10 +11,10 @@ import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
@@ -22,12 +22,17 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.Addi
 
 public class DummyVariantAnnotator extends VariantAnnotator {
 
+    private Logger logger = LoggerFactory.getLogger(DummyVariantAnnotator.class);
     public static final String ANNOT_KEY = "ANNOT_KEY";
     public static final String ANNOT_VERSION = "ANNOT_VERSION";
     public static final String ANNOT_DATARELEASE = "ANNOT_DATARELEASE";
     public static final String ANNOT_METADATA = "ANNOT_METADATA";
     public static final String FAIL = "ANNOT_FAIL";
+    public static final String FAIL_AT = "ANNOT_FAIL_AT";
+    public static final String SKIP = "ANNOT_SKIP";
     private final boolean fail;
+    private final Set<String> failAt;
+    private final Set<String> skip;
     private String key;
     private final ProjectMetadata.VariantAnnotationMetadata metadata;
 
@@ -37,6 +42,8 @@ public class DummyVariantAnnotator extends VariantAnnotator {
         String version = options.getString(ANNOT_VERSION, "v1");
         int dataReleaseId = options.getInt(ANNOT_DATARELEASE, 1);
         fail = options.getBoolean(FAIL, false);
+        failAt = new HashSet<>(options.getAsStringList(FAIL_AT));
+        skip = new HashSet<>(options.getAsStringList(SKIP));
         if (options.containsKey(ANNOT_METADATA)) {
             metadata = options.get(ANNOT_METADATA, ProjectMetadata.VariantAnnotationMetadata.class);
         } else {
@@ -57,7 +64,18 @@ public class DummyVariantAnnotator extends VariantAnnotator {
         if (fail) {
             throw new VariantAnnotatorException("Fail because reasons");
         }
+        if (!failAt.isEmpty()) {
+            for (Variant variant : variants) {
+                if (failAt.contains(variant.toString())) {
+                    throw new VariantAnnotatorException("Fail at variant " + variant + " because reasons");
+                }
+            }
+        }
         return variants.stream().map(v -> {
+            if (skip.contains(v.toString())) {
+                logger.info("Skipping variant {}", v);
+                return null;
+            }
             VariantAnnotation a = new VariantAnnotation();
             a.setChromosome(v.getChromosome());
             a.setStart(v.getStart());
@@ -76,7 +94,7 @@ public class DummyVariantAnnotator extends VariantAnnotator {
                     Collections.singletonMap(GROUP_NAME.key(),
                             new AdditionalAttribute(Collections.singletonMap(VARIANT_ID.key(), v.toString()))));
             return a;
-        }).collect(Collectors.toList());
+        }).filter(Objects::nonNull).collect(Collectors.toList());
     }
 
     @Override

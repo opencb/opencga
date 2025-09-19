@@ -16,6 +16,12 @@ public class DummyVariantAnnotationManagerTest extends VariantAnnotationManagerT
     }
 
     @Override
+    public void testCheckpointAnnotation() throws Exception {
+        Assume.assumeTrue("Can not check actual results", false);
+        super.testCheckpointAnnotation();
+    }
+
+    @Override
     public void testCosmicAnnotatorExtensionWithCosmicAnnotation() throws Exception {
         Assume.assumeTrue("Can not check actual results", false);
         super.testCosmicAnnotatorExtensionWithCosmicAnnotation();
