@@ -598,7 +598,7 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
 
     public void checkAnnotationSnapshot(VariantStorageEngine variantStorageEngine, String annotationName, String expectedAnnotationName, String expectedId, Query query) throws Exception {
         int count = 0;
-        for (VariantAnnotation annotation: variantStorageEngine.getAnnotation(annotationName, query, null).getResults()) {
+        for (VariantAnnotation annotation: variantStorageEngine.getAnnotation(annotationName, query, new QueryOptions(QueryOptions.LIMIT, 5000)).getResults()) {
             assertEquals("an id -- " + expectedId, annotation.getId());
 //            assertEquals("1", annotation.getAdditionalAttributes().get("opencga").getAttribute().get("release"));
             assertEquals(expectedAnnotationName, annotation.getAdditionalAttributes().get(GROUP_NAME.key())
