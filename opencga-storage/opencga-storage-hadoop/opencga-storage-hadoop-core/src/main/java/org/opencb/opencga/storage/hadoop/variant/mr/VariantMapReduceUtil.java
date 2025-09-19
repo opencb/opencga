@@ -164,7 +164,7 @@ public class VariantMapReduceUtil {
         query = variantQuery.getQuery();
         queryOptions = variantQuery.getInputOptions();
         if (recordMetadataMode) {
-            // Need to make sure tha all files from samples are correctly recorded.
+            // Need to make sure that all files from samples are correctly recorded.
             // These might be needed even if they don't belong to the query
             for (VariantQueryProjection.StudyVariantQueryProjection study : variantQuery.getProjection().getStudies().values()) {
                 int studyId = study.getId();

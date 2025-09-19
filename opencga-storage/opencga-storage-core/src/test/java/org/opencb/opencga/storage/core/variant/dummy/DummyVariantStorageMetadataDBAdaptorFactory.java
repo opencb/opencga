@@ -19,7 +19,7 @@ public class DummyVariantStorageMetadataDBAdaptorFactory implements VariantStora
                 DummyVariantStorageMetadataDBAdaptorFactory.dbName = dbName;
             } else if (!DummyVariantStorageMetadataDBAdaptorFactory.dbName.equals(dbName)) {
                 throw new IllegalStateException("DummyVariantStorageMetadataDBAdaptor can't work with multiple dbNames at the same time. "
-                        + "Already configured for '" + DummyVariantStorageMetadataDBAdaptorFactory.dbName + "'. amd requested for '" + dbName + "'");
+                        + "Already configured for '" + DummyVariantStorageMetadataDBAdaptorFactory.dbName + "'. and requested for '" + dbName + "'");
             }
         }
     }
