@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SequenceWriter;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.adaptors.CohortMetadataDBAdaptor;
@@ -107,12 +108,21 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor, Samp
 
     @Override
     public StudyMetadata getStudyMetadata(int id, Long timeStamp) {
-        return STUDY_METADATA_MAP.get(id);
+        return copy(STUDY_METADATA_MAP.get(id));
     }
 
     @Override
     public void updateStudyMetadata(StudyMetadata sm) {
-        STUDY_METADATA_MAP.put(sm.getId(), sm);
+        STUDY_METADATA_MAP.put(sm.getId(), copy(sm));
+    }
+
+    private static <T> T copy(T t) {
+        try {
+            t = JacksonUtils.copy(t);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        return t;
     }
 
     @Override

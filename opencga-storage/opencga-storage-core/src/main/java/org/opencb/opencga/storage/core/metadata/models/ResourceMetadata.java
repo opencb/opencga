@@ -27,6 +27,17 @@ public abstract class ResourceMetadata<T extends ResourceMetadata<?>> {
         this.name = name;
     }
 
+    ResourceMetadata(ResourceMetadata<T> other) {
+        this.id = other.id;
+        this.name = other.name;
+        if (other.status != null) {
+            this.status.putAll(other.status);
+        }
+        if (other.attributes != null) {
+            this.attributes = new ObjectMap(other.attributes);
+        }
+    }
+
     public int getId() {
         return id;
     }

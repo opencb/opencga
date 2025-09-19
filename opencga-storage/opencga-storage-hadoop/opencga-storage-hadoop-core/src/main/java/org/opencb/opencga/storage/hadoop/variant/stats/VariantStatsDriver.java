@@ -158,7 +158,7 @@ public class VariantStatsDriver extends AbstractVariantsTableDriver {
             logger.info("Query : " + query.toJson());
             // input
             VariantMapReduceUtil.initVariantMapperJob(
-                    job, VariantStatsMapper.class, variantTableName, getMetadataManager(), query, queryOptions, true);
+                    job, VariantStatsMapper.class, variantTableName, getMetadataManager(), query, queryOptions, true, false);
             VariantMapReduceUtil.setNoneTimestamp(job);
 
             // output

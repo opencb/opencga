@@ -124,6 +124,10 @@ public class MigrationCommandOptions extends GeneralCliOptions {
         @Parameter(names = {"--version"}, description = "Migration version")
         public String version = MigrationCommandExecutor.getDefaultVersion();
 
+        @Parameter(names = {"--organization"}, description = "Organization to run the migration on. " +
+                "If not provided, the migration will be run on all organizations", arity = 1)
+        public String organization;
+
         @Parameter(names = {"--offline"}, description = "Safely run migrations that requires OpenCGA to be offline", arity = 0)
         public boolean offline;
 

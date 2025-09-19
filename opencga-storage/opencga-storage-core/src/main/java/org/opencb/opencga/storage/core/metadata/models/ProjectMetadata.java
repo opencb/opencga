@@ -342,6 +342,7 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
     }
 
     public ProjectMetadata(ProjectMetadata other) {
+        super(other);
         this.species = other.species;
         this.assembly = other.assembly;
         this.dataRelease = other.dataRelease;

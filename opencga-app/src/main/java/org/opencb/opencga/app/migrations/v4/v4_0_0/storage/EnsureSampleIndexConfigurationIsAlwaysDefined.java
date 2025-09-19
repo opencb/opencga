@@ -33,10 +33,10 @@ public class EnsureSampleIndexConfigurationIsAlwaysDefined extends StorageMigrat
                 for (Integer studyId : engine.getMetadataManager().getStudyIds()) {
                     StudyMetadata studyMetadata = engine.getMetadataManager().getStudyMetadata(studyId);
                     if (CollectionUtils.isEmpty(studyMetadata.getSampleIndexConfigurations())) {
-                        engine.getMetadataManager().updateStudyMetadata(studyId, sm -> {
+                        studyMetadata = engine.getMetadataManager().updateStudyMetadata(studyId, sm -> {
                             if (CollectionUtils.isEmpty(sm.getSampleIndexConfigurations())) {
                                 List<StudyMetadata.SampleIndexConfigurationVersioned> configurations = new ArrayList<>(1);
-                                logger.info("Creating default SampleIndexConfiguration for study '" + studyMetadata.getName() + "'"
+                                logger.info("Creating default SampleIndexConfiguration for study '" + sm.getName() + "'"
                                         + " (" + studyId + ")");
                                 configurations.add(new StudyMetadata.SampleIndexConfigurationVersioned(
                                         preFileDataConfiguration(),

@@ -31,7 +31,6 @@ import java.util.*;
 @Category(ShortTests.class)
 public class HBaseToStudyEntryConverterTest {
 
-    private HBaseToStudyEntryConverter converter;
     private StudyMetadata sm;
     private VariantStorageMetadataManager mm;
     private int fileId1;
@@ -70,11 +69,14 @@ public class HBaseToStudyEntryConverterTest {
             s.getAttributes().put(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
             return s;
         });
+    }
 
-        converter = new HBaseToStudyEntryConverter(mm, null)
+    private HBaseToStudyEntryConverter converter() {
+        return new HBaseToStudyEntryConverter(mm, null)
                 .configure(HBaseVariantConverterConfiguration.builder()
                         .setIncludeSampleId(false)
-                        .setProjection(new VariantQueryProjection(sm, Arrays.asList(sampleId1, sampleId2, sampleId3, sampleId4, sampleId5, sampleId6), Collections.emptyList()))
+                        .setProjection(new VariantQueryProjection(mm.getStudyMetadata(sm.getId()),
+                                Arrays.asList(sampleId1, sampleId2, sampleId3, sampleId4, sampleId5, sampleId6), Collections.emptyList()))
                         .build());
     }
 
@@ -84,7 +86,7 @@ public class HBaseToStudyEntryConverterTest {
         fixedValues.add(getSampleColumn(sampleId1, listOf("0/0", "PASS")));
         fixedValues.add(getSampleColumn(sampleId3, listOf("0/1", "PASS")));
 
-        StudyEntry s = converter.convert(fixedValues, Collections.emptyList(), new Variant("1:1000:A:C"), 1);
+        StudyEntry s = converter().convert(fixedValues, Collections.emptyList(), new Variant("1:1000:A:C"), 1);
         StudyEntry expected = new StudyEntry("1", Collections.emptyList(), listOf("GT", "FT"))
                 .addSampleData("S1", listOf("0/0", "PASS"))
                 .addSampleData("S2", listOf("?/?", "."))
@@ -97,16 +99,15 @@ public class HBaseToStudyEntryConverterTest {
 
     @Test
     public void testConvertExtendedFormat() throws Exception {
-        mm.updateStudyMetadata(sm.getId(), s -> {
+        sm = mm.updateStudyMetadata(sm.getId(), s -> {
             s.getAttributes().put(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), "AD,DP");
-            return s;
         });
 
         List<VariantRow.SampleColumn> fixedValues = new ArrayList<>();
         fixedValues.add(getSampleColumn(sampleId1, listOf("0/0", "1,2", "10")));
         fixedValues.add(getSampleColumn(sampleId3, listOf("0/1", "3,4", "20")));
 
-        StudyEntry s = converter.convert(fixedValues, Collections.emptyList(), new Variant("1:1000:A:C"), studyId);
+        StudyEntry s = converter().convert(fixedValues, Collections.emptyList(), new Variant("1:1000:A:C"), studyId);
         StudyEntry expected = new StudyEntry("1", Collections.emptyList(), listOf("GT", "AD", "DP"))
                 .addSampleData("S1", listOf("0/0", "1,2", "10"))
                 .addSampleData("S2", listOf("?/?", ".", "."))
@@ -172,7 +173,7 @@ public class HBaseToStudyEntryConverterTest {
 //                .putSampleData("KEY_3", "VALUE_3")
 //                .build().toByteArray()));
 
-        StudyEntry s = converter.convert(fixedValues, otherValues, new Variant("1:1000:A:C"), 1);
+        StudyEntry s = converter().convert(fixedValues, otherValues, new Variant("1:1000:A:C"), 1);
         StudyEntry expected = new StudyEntry("1", Collections.emptyList(), listOf("GT", "AD", "DP"))
                 .addSampleData("S1", listOf("0/0", "1,2", "10"))
                 .addSampleData("S2", listOf("1/1", "8,9", "70"))

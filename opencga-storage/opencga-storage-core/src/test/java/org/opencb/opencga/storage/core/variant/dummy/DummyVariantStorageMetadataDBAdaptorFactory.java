@@ -10,6 +10,20 @@ import java.nio.file.Path;
  */
 public class DummyVariantStorageMetadataDBAdaptorFactory implements VariantStorageMetadataDBAdaptorFactory {
 
+    private static String dbName;
+
+    public DummyVariantStorageMetadataDBAdaptorFactory(String dbName) {
+        this(false);
+        if (dbName != null) {
+            if (DummyVariantStorageMetadataDBAdaptorFactory.dbName == null) {
+                DummyVariantStorageMetadataDBAdaptorFactory.dbName = dbName;
+            } else if (!DummyVariantStorageMetadataDBAdaptorFactory.dbName.equals(dbName)) {
+                throw new IllegalStateException("DummyVariantStorageMetadataDBAdaptor can't work with multiple dbNames at the same time. "
+                        + "Already configured for '" + DummyVariantStorageMetadataDBAdaptorFactory.dbName + "'. and requested for '" + dbName + "'");
+            }
+        }
+    }
+
     public DummyVariantStorageMetadataDBAdaptorFactory() {
         this(false);
     }
@@ -56,6 +70,7 @@ public class DummyVariantStorageMetadataDBAdaptorFactory implements VariantStora
     }
 
     public static void clear() {
+        dbName = null;
         DummyProjectMetadataAdaptor.clear();
         DummyStudyMetadataDBAdaptor.clear();
         DummyFileMetadataDBAdaptor.clear();

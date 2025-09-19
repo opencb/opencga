@@ -624,10 +624,14 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 // The annotation would be marked as "READY" if all the variants from the database are annotated.
                 // This requires that no other variants where loaded while annotating,
                 // and for this process to be annotating all variants.
+                TaskMetadata.Status pre = projectMetadata.getAnnotationIndexStatus();
                 if (projectMetadata.getAnnotationIndexLastTimestamp() > projectMetadata.getVariantIndexLastTimestamp()) {
                     projectMetadata.setAnnotationIndexStatus(TaskMetadata.Status.READY);
                 } else {
                     projectMetadata.setAnnotationIndexStatus(TaskMetadata.Status.NONE);
+                }
+                if (pre != projectMetadata.getAnnotationIndexStatus()) {
+                    logger.info("Annotation index status changed from {} to {}", pre, projectMetadata.getAnnotationIndexStatus());
                 }
             } // else : partial annotations doesn't change the annotation status
         });
