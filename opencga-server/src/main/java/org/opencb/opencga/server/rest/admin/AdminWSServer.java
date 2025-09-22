@@ -64,6 +64,18 @@ public class AdminWSServer extends AnalysisWebService { //OpenCGAWSServer {
     //******************************** USERS **********************************//
 
     @GET
+    @Path("/organizations/list")
+    @ApiOperation(value = "List current Organizations", response = String.class)
+    public Response organizationList() {
+        try {
+            return createOkResponse(catalogManager.getAdminManager().getOrganizationIds(token));
+        } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
+
+    }
+
+    @GET
     @Path("/users/search")
     @ApiOperation(value = "User search method", response = Sample.class)
     @ApiImplicitParams({

@@ -65,6 +65,14 @@ class Admin(_ParentRestClient):
 
         return self._post(category='admin', resource='jwt', subcategory='catalog', data=data, **options)
 
+    def list_organizations(self, **options):
+        """
+        List current Organizations.
+        PATH: /{apiVersion}/admin/organizations/list
+        """
+
+        return self._get(category='admin', resource='list', subcategory='organizations', **options)
+
     def fetch_resource(self, data=None, **options):
         """
         Fetch resources from the public server and save them into the OpenCGA

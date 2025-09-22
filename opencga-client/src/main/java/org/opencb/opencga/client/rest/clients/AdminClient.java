@@ -104,6 +104,16 @@ public class AdminClient extends ParentClient {
     }
 
     /**
+     * List current Organizations.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<String> listOrganizations() throws ClientException {
+        ObjectMap params = new ObjectMap();
+        return execute("admin", null, "organizations", null, "list", params, GET, String.class);
+    }
+
+    /**
      * Fetch resources from the public server and save them into the OpenCGA local installation.
      * @param data Download-resources tool parameters.
      * @param params Map containing any of the following optional parameters.
