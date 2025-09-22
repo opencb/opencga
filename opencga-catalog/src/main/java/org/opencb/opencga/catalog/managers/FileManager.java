@@ -555,11 +555,30 @@ public class FileManager extends AnnotationSetManager<File> {
                 throw new CatalogException("Cannot write content to an external file.");
             }
             URI uri = file.getUri();
+
+            IOManager myIoManager;
+            try {
+                myIoManager = ioManagerFactory.get(uri);
+            } catch (IOException e) {
+                throw new CatalogException("Error accessing file: " + uri, e);
+            }
+
             // Overwrite content of file
             try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)))) {
-                Files.copy(in, Paths.get(uri), StandardCopyOption.REPLACE_EXISTING);
+                myIoManager.copy(in, uri, StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException e) {
                 throw new CatalogException("Error writing content to file: " + uri, e);
+            }
+
+            // Recalculate size of file and update the database
+            try {
+                IOManager ioManager = ioManagerFactory.get(uri);
+                long fileSize = ioManager.getFileSize(uri);
+                ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.SIZE.key(), fileSize);
+                getFileDBAdaptor(organizationId).update(file.getUid(), params, null);
+                file.setSize(fileSize);
+            } catch (IOException e) {
+                throw new CatalogException("Could not update the new size of the file: " + uri, e);
             }
 
             auditManager.audit(organizationId, userId, Enums.Action.UPDATE_CONTENT, Enums.Resource.FILE, fileId, "", study.getId(),

@@ -2789,13 +2789,14 @@ public class FileManagerTest extends AbstractManagerTest {
                 .setContent("initial content"), false, ownerToken).first();
 
         // Update the content
-        String newContent = "updated content";
+        String newContent = "new updated content";
         OpenCGAResult<File> result = fileManager.updateContent(studyFqn, file.getPath(), newContent, ownerToken);
 
         assertEquals(1, result.getNumResults());
         File updatedFile = result.first();
         assertEquals(file.getUid(), updatedFile.getUid());
         assertEquals(file.getPath(), updatedFile.getPath());
+        assertNotEquals(file.getSize(), updatedFile.getSize());
 
         FileContent fileContent = fileManager.tail(studyFqn, file.getPath(), 10, ownerToken).first();
         assertEquals(newContent, fileContent.getContent());
@@ -2815,6 +2816,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         assertEquals(1, result.getNumResults());
         assertEquals(file.getUid(), result.first().getUid());
+        assertNotEquals(file.getSize(), result.first().getSize());
 
         FileContent fileContent = fileManager.tail(studyFqn, file.getPath(), 1, ownerToken).first();
         assertEquals(specialContent, fileContent.getContent());
@@ -2885,6 +2887,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         assertEquals(1, result.getNumResults());
         assertEquals(file.getUid(), result.first().getUid());
+        assertNotEquals(file.getSize(), result.first().getSize());
 
         FileContent fileContent = fileManager.tail(studyFqn, file.getPath(), 100, ownerToken).first();
         assertEquals(largeContent, fileContent.getContent());
