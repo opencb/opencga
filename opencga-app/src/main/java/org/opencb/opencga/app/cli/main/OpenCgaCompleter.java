@@ -104,7 +104,7 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> filesList = asList( "acl-update","aggregationstats","annotation-sets-load","bioformats","create","distinct","fetch","formats","link","link-run","postlink-run","search","upload","acl","delete","info","unlink","update","annotation-sets-annotations-update","download","grep","head","image","move","refresh","tail","list","tree")
+    private List<Candidate> filesList = asList( "acl-update","aggregationstats","annotation-sets-load","bioformats","create","distinct","fetch","formats","link","link-run","postlink-run","search","upload","acl","delete","info","unlink","update","annotation-sets-annotations-update","content-update","download","grep","head","image","move","refresh","tail","list","tree")
             .stream()
             .map(Candidate::new)
             .collect(toList());

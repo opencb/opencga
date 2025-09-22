@@ -301,6 +301,16 @@ public class FileWSServer extends OpenCGAWSServer {
         }
     }
 
+    @POST
+    @Path("/{file}/content/update")
+    @ApiOperation(value = "Overwrite the content of a file.", response = File.class)
+    public Response overwriteContent(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "File id or name.", required = true) @PathParam(value = "file") String fileIdStr,
+            @ApiParam(name = "body", value = "File parameters", required = true) FileContentUpdateParams params) {
+        return run(() -> catalogManager.getFileManager().updateContent(studyStr, fileIdStr, params.getContent(), token));
+    }
+
     @GET
     @Path("/search")
     @ApiOperation(value = "File search method.", response = File.class)

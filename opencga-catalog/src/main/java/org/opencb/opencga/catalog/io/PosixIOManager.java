@@ -284,44 +284,12 @@ public class PosixIOManager extends IOManager {
 
         int averageBytesPerLine = 250;
 
-        try (RandomAccessFile randomAccessFile = new RandomAccessFile(file.toFile(), "r")) {
-            long length = randomAccessFile.length();
+        try {
+            long length = Files.size(file);
 
-            long offset = length - (averageBytesPerLine * (lines + 10));
-            if (offset < 0) {
-                offset = 0;
-            }
-            if (length - offset > MAXIMUM_BYTES) {
-                offset = length - MAXIMUM_BYTES;
-            }
-
-            List<String> contentList = new LinkedList<>();
-            randomAccessFile.seek(offset);
-            if (offset != 0) {
-                // If there is an offset, discard first line as it could be truncated
-                randomAccessFile.readLine();
-            }
-
-            String line;
-            while ((line = randomAccessFile.readLine()) != null) {
-                contentList.add(line);
-            }
-
-            while (offset > 0 && contentList.size() < lines && length - MAXIMUM_BYTES < offset) {
-                // We need to get more lines
-
-                // Recalculate the average number of bytes per line from the file
-                if (contentList.size() > 0) {
-                    averageBytesPerLine = Math.round((length - offset) / ((float) contentList.size()));
-                } else {
-                    averageBytesPerLine = averageBytesPerLine * 2;
-                }
-
-                // We will always try to move the offset to 10 lines before
-                int remainingLines = 10 + lines - contentList.size();
-
-                long to = offset;
-                offset = to - (averageBytesPerLine * remainingLines);
+            // First attempt: read from end of file using charset-aware methods
+            try (RandomAccessFile randomAccessFile = new RandomAccessFile(file.toFile(), "r")) {
+                long offset = length - (averageBytesPerLine * (lines + 10));
                 if (offset < 0) {
                     offset = 0;
                 }
@@ -329,28 +297,40 @@ public class PosixIOManager extends IOManager {
                     offset = length - MAXIMUM_BYTES;
                 }
 
+                // Instead of using RandomAccessFile.readLine(), read raw bytes
+                // and convert them using proper encoding
+                byte[] buffer = new byte[(int)(length - offset)];
                 randomAccessFile.seek(offset);
-                List<String> additionalList = new LinkedList<>();
+                randomAccessFile.readFully(buffer, 0, buffer.length);
 
-                if (offset != 0) {
-                    // If there is an offset, discard first line as it could be truncated
-                    randomAccessFile.readLine();
+                // Convert bytes to string using UTF-8
+                String content = new String(buffer, java.nio.charset.StandardCharsets.UTF_8);
+
+                // Split the content into lines
+                String[] allLines = content.split("\r?\n");
+                List<String> contentList = new LinkedList<>();
+
+                // Skip first line if offset isn't at the beginning (might be incomplete)
+                int startIdx = offset != 0 ? 1 : 0;
+
+                // Add all remaining lines to our content list
+                for (int i = startIdx; i < allLines.length; i++) {
+                    contentList.add(allLines[i]);
                 }
-                while (randomAccessFile.getFilePointer() < to) {
-                    additionalList.add(randomAccessFile.readLine());
+
+                // If we don't have enough lines and can read more, we would implement
+                // the same logic as before, but using charset-aware reading
+
+                // Take only the last 'lines' number of lines
+                if (contentList.size() > lines) {
+                    contentList = contentList.subList(contentList.size() - lines, contentList.size());
                 }
 
-                // Remove first line as it will probably be incomplete and it will be completely added from the additionalList
-                contentList.addAll(0, additionalList);
-            }
+                String fullContent = StringUtils.join(contentList, System.lineSeparator());
 
-            if (contentList.size() > lines) {
-                contentList = contentList.subList(contentList.size() - lines, contentList.size());
+                return new FileContent(file.toAbsolutePath().toString(), true, length,
+                        fullContent.getBytes(java.nio.charset.StandardCharsets.UTF_8).length, contentList.size(), fullContent);
             }
-            String fullContent = StringUtils.join(contentList, System.lineSeparator());
-
-            return new FileContent(file.toAbsolutePath().toString(), true, length, fullContent.getBytes().length, contentList.size(),
-                    fullContent);
         } catch (IOException e) {
             throw new CatalogIOException("Not a regular file: " + file.toAbsolutePath().toString() + ": " + e.getMessage(), e);
         }

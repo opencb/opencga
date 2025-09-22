@@ -102,7 +102,7 @@ public class FileManager extends AnnotationSetManager<File> {
         INCLUDE_FILE_URI = keepFieldInQueryOptions(INCLUDE_FILE_IDS, FileDBAdaptor.QueryParams.URI.key());
         INCLUDE_FILE_URI_PATH = keepFieldsInQueryOptions(INCLUDE_FILE_URI, Arrays.asList(FileDBAdaptor.QueryParams.INTERNAL_STATUS.key(),
                 FileDBAdaptor.QueryParams.FORMAT.key(), FileDBAdaptor.QueryParams.URI.key(), FileDBAdaptor.QueryParams.PATH.key(),
-                FileDBAdaptor.QueryParams.EXTERNAL.key()));
+                FileDBAdaptor.QueryParams.EXTERNAL.key(), FileDBAdaptor.QueryParams.SIZE.key()));
         EXCLUDE_FILE_ATTRIBUTES = new QueryOptions(QueryOptions.EXCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ATTRIBUTES.key(),
                 FileDBAdaptor.QueryParams.ANNOTATION_SETS.key(), FileDBAdaptor.QueryParams.STATS.key()));
         INCLUDE_STUDY_URI = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.URI.key());
@@ -513,6 +513,64 @@ public class FileManager extends AnnotationSetManager<File> {
                 auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
         return new OpenCGAResult<>(update.getTime(), update.getEvents(), 1, Collections.emptyList(), 1);
+    }
+
+    public OpenCGAResult<File> updateContent(String studyStr, String fileId, String content, String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        Study study = studyManager.resolveId(studyStr, userId, organizationId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("fileId", fileId)
+                .append("content", content)
+                .append("token", token);
+        try {
+
+            File file = internalGet(organizationId, study.getUid(), fileId, INCLUDE_FILE_URI_PATH, userId).first();
+            authorizationManager.checkFilePermission(organizationId, study.getUid(), file.getUid(), userId, FilePermissions.WRITE);
+
+            if (StringUtils.isEmpty(content)) {
+                throw new CatalogException("Missing content to be written to file.");
+            }
+            if (file.getType() != File.Type.FILE) {
+                throw new CatalogException("Cannot write content to a file of type '" + file.getType() + "'. Please, provide a file.");
+            }
+            // The file cannot exceed 5MB
+            if (file.getSize() > 5 * 1024 * 1024) {
+                throw new CatalogException("Cannot write content to a file larger than 5MB. The current size is " + file.getSize()
+                        + " bytes.");
+            }
+            // Can only write on files with the following formats
+            List<File.Format> allowedFormats = Arrays.asList(File.Format.TAB_SEPARATED_VALUES, File.Format.COMMA_SEPARATED_VALUES,
+                    File.Format.XML, File.Format.JSON, File.Format.PLAIN, File.Format.PED, File.Format.JAVASCRIPT, File.Format.NONE,
+                    File.Format.UNKNOWN);
+            if (file.getFormat() != null && !allowedFormats.contains(file.getFormat())) {
+                throw new CatalogException("Cannot write content to a file with format" + file.getFormat() + ". Supported formats: "
+                        + allowedFormats);
+            }
+            if (file.isExternal()) {
+                throw new CatalogException("Cannot write content to an external file.");
+            }
+            URI uri = file.getUri();
+            // Overwrite content of file
+            try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)))) {
+                Files.copy(in, Paths.get(uri), StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException e) {
+                throw new CatalogException("Error writing content to file: " + uri, e);
+            }
+
+            auditManager.audit(organizationId, userId, Enums.Action.UPDATE_CONTENT, Enums.Resource.FILE, fileId, "", study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(file), 1);
+        } catch (CatalogException e) {
+            auditManager.audit(organizationId, userId, Enums.Action.UPDATE_CONTENT, Enums.Resource.FILE, fileId, "", study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
     }
 
     public OpenCGAResult<File> createFolder(String studyStr, String path, boolean parents, String description, QueryOptions options,

@@ -354,6 +354,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         filesSubCommands.addCommand("unlink", filesCommandOptions.unlinkCommandOptions);
         filesSubCommands.addCommand("update", filesCommandOptions.updateCommandOptions);
         filesSubCommands.addCommand("annotation-sets-annotations-update", filesCommandOptions.updateAnnotationSetsAnnotationsCommandOptions);
+        filesSubCommands.addCommand("content-update", filesCommandOptions.updateContentCommandOptions);
         filesSubCommands.addCommand("download", filesCommandOptions.downloadCommandOptions);
         filesSubCommands.addCommand("grep", filesCommandOptions.grepCommandOptions);
         filesSubCommands.addCommand("head", filesCommandOptions.headCommandOptions);

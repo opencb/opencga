@@ -38,6 +38,7 @@
 #' | unlink | /{apiVersion}/files/{files}/unlink | study, files[*] |
 #' | update | /{apiVersion}/files/{files}/update | include, exclude, files[*], study, sampleIdsAction, annotationSetsAction, relatedFilesAction, tagsAction, body[*] |
 #' | updateAnnotationSetsAnnotations | /{apiVersion}/files/{file}/annotationSets/{annotationSet}/annotations/update | file[*], study, annotationSet[*], action, body |
+#' | updateContent | /{apiVersion}/files/{file}/content/update | study, file[*], body[*] |
 #' | download | /{apiVersion}/files/{file}/download | file[*], study |
 #' | grep | /{apiVersion}/files/{file}/grep | file[*], study, pattern, ignoreCase, maxCount |
 #' | head | /{apiVersion}/files/{file}/head | file[*], study, offset, lines |
@@ -329,6 +330,14 @@ setMethod("fileClient", "OpencgaR", function(OpencgaR, annotationSet, file, file
         updateAnnotationSetsAnnotations=fetchOpenCGA(object=OpencgaR, category="files", categoryId=file,
                 subcategory="annotationSets", subcategoryId=annotationSet, action="annotations/update", params=params,
                 httpMethod="POST", as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/files/{file}/content/update:
+        #' Overwrite the content of a file.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param file File id or name.
+        #' @param data File parameters.
+        updateContent=fetchOpenCGA(object=OpencgaR, category="files", categoryId=file, subcategory="content",
+                subcategoryId=NULL, action="update", params=params, httpMethod="POST", as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/files/{file}/download:
         #' Download file.

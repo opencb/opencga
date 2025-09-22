@@ -408,6 +408,17 @@ export default class File extends OpenCGAParentClass {
         return this._post("files", file, "annotationSets", annotationSet, "annotations/update", data, params);
     }
 
+    /** Overwrite the content of a file.
+    * @param {String} file - File id or name.
+    * @param {Object} data - File parameters.
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    updateContent(file, data, params) {
+        return this._post("files", file, "content", null, "update", data, params);
+    }
+
     /** Download file
     * @param {String} file - File id, name or path. Paths must be separated by : instead of /.
     * @param {Object} [params] - The Object containing the following optional parameters:

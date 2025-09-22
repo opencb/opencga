@@ -2780,6 +2780,150 @@ public class FileManagerTest extends AbstractManagerTest {
         }
     }
 
+    @Test
+    public void testUpdateContent() throws CatalogException {
+        // Create a file with initial content
+        File file = fileManager.create(studyFqn, new FileCreateParams()
+                .setPath("test_content.txt")
+                .setType(File.Type.FILE)
+                .setContent("initial content"), false, ownerToken).first();
+
+        // Update the content
+        String newContent = "updated content";
+        OpenCGAResult<File> result = fileManager.updateContent(studyFqn, file.getPath(), newContent, ownerToken);
+
+        assertEquals(1, result.getNumResults());
+        File updatedFile = result.first();
+        assertEquals(file.getUid(), updatedFile.getUid());
+        assertEquals(file.getPath(), updatedFile.getPath());
+
+        FileContent fileContent = fileManager.tail(studyFqn, file.getPath(), 10, ownerToken).first();
+        assertEquals(newContent, fileContent.getContent());
+    }
+
+    @Test
+    public void testUpdateContentWithSpecialCharacters() throws CatalogException {
+        // Create a file
+        File file = fileManager.create(studyFqn, new FileCreateParams()
+                .setPath("special_chars.txt")
+                .setType(File.Type.FILE)
+                .setContent("simple content"), false, ownerToken).first();
+
+        // Update with special characters
+        String specialContent = "Content with special chars: àáâãäåæçèéêë ñ ¿¡ @#$%^&*()";
+        OpenCGAResult<File> result = fileManager.updateContent(studyFqn, file.getPath(), specialContent, ownerToken);
+
+        assertEquals(1, result.getNumResults());
+        assertEquals(file.getUid(), result.first().getUid());
+
+        FileContent fileContent = fileManager.tail(studyFqn, file.getPath(), 1, ownerToken).first();
+        assertEquals(specialContent, fileContent.getContent());
+    }
+
+    @Test
+    public void testUpdateContentEmptyString() throws CatalogException {
+        File file = fileManager.create(studyFqn, new FileCreateParams()
+                .setPath("empty_content.txt")
+                .setType(File.Type.FILE)
+                .setContent("some content"), false, ownerToken).first();
+
+        // Update with empty content
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("Missing content");
+        fileManager.updateContent(studyFqn, file.getPath(), "", ownerToken);
+    }
+
+    @Test
+    public void testUpdateContentNullContent() throws CatalogException {
+        File file = fileManager.create(studyFqn, new FileCreateParams()
+                .setPath("null_content.txt")
+                .setType(File.Type.FILE)
+                .setContent("some content"), false, ownerToken).first();
+
+        // Update with null content
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("Missing content");
+        fileManager.updateContent(studyFqn, file.getPath(), null, ownerToken);
+    }
+
+    @Test
+    public void testUpdateContentFileNotFound() throws CatalogException {
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("not found");
+        fileManager.updateContent(studyFqn, "non_existent_file.txt", "content", ownerToken);
+    }
+
+    @Test
+    public void testUpdateContentDirectoryInsteadOfFile() throws CatalogException {
+        File directory = fileManager.createFolder(studyFqn, "test_directory", false, null, QueryOptions.empty(), ownerToken).first();
+
+        thrown.expect(CatalogException.class);
+        fileManager.updateContent(studyFqn, directory.getPath(), "content", ownerToken);
+    }
+
+    @Test
+    public void testUpdateContentWithoutPermissions() throws CatalogException {
+        File file = fileManager.create(studyFqn, new FileCreateParams()
+                .setPath("no_permission.txt")
+                .setType(File.Type.FILE)
+                .setContent("initial content"), false, ownerToken).first();
+
+        thrown.expect(CatalogAuthorizationException.class);
+        fileManager.updateContent(studyFqn, file.getPath(), "new content", normalToken2);
+    }
+
+    @Test
+    public void testUpdateContentLargeContent() throws CatalogException {
+        File file = fileManager.create(studyFqn, new FileCreateParams()
+                .setPath("large_content.txt")
+                .setType(File.Type.FILE)
+                .setContent("small"), false, ownerToken).first();
+
+        // Create large content (10KB)
+        String largeContent = RandomStringUtils.randomAlphanumeric(10240);
+        OpenCGAResult<File> result = fileManager.updateContent(studyFqn, file.getPath(), largeContent, ownerToken);
+
+        assertEquals(1, result.getNumResults());
+        assertEquals(file.getUid(), result.first().getUid());
+
+        FileContent fileContent = fileManager.tail(studyFqn, file.getPath(), 100, ownerToken).first();
+        assertEquals(largeContent, fileContent.getContent());
+    }
+
+    @Test
+    public void testUpdateContentMultilineContent() throws CatalogException {
+        File file = fileManager.create(studyFqn, new FileCreateParams()
+                .setPath("multiline.txt")
+                .setType(File.Type.FILE)
+                .setContent("single line"), false, ownerToken).first();
+
+        String multilineContent = "Line 1\nLine 2\nLine 3\n\nLine 5 with tab\t";
+        OpenCGAResult<File> result = fileManager.updateContent(studyFqn, file.getPath(), multilineContent, ownerToken);
+
+        assertEquals(1, result.getNumResults());
+        assertEquals(file.getUid(), result.first().getUid());
+
+        FileContent fileContent = fileManager.tail(studyFqn, file.getPath(), 10, ownerToken).first();
+        assertEquals(multilineContent, fileContent.getContent());
+    }
+
+    @Test
+    public void testUpdateContentUsingFileId() throws CatalogException {
+        File file = fileManager.create(studyFqn, new FileCreateParams()
+                .setPath("test_by_id.txt")
+                .setType(File.Type.FILE)
+                .setContent("initial"), false, ownerToken).first();
+
+        // Update using file ID instead of path
+        OpenCGAResult<File> result = fileManager.updateContent(studyFqn, file.getId(), "updated by id", ownerToken);
+
+        assertEquals(1, result.getNumResults());
+        assertEquals(file.getUid(), result.first().getUid());
+
+        FileContent fileContent = fileManager.tail(studyFqn, file.getPath(), 10, ownerToken).first();
+        assertEquals("updated by id", fileContent.getContent());
+    }
+
     //    @Test
 //    public void testIndex() throws Exception {
 //        URI uri = getClass().getResource("/biofiles/variant-test-file.vcf.gz").toURI();
