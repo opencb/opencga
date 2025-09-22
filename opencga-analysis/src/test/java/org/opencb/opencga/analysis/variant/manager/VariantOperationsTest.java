@@ -102,8 +102,11 @@ public class VariantOperationsTest {
     public static final String USER = "user";
     public static final String PASSWORD = TestParamConstants.PASSWORD;
     public static final String PROJECT = "project";
+    public static final String PROJECT2 = "project2";
     public static final String PROJECT_FQN = ORGANIZATION + '@' + PROJECT;
+    public static final String PROJECT_FQN2 = ORGANIZATION + '@' + PROJECT2;
     public static final String STUDY = "study";
+    public static final String STUDY2 = "study2";
     public static final String STUDY_FQN = PROJECT_FQN + ':' + STUDY;
     public static final String PHENOTYPE_NAME = "myPhenotype";
     public static final Phenotype PHENOTYPE = new Phenotype(PHENOTYPE_NAME, PHENOTYPE_NAME, "mySource")
@@ -244,14 +247,24 @@ public class VariantOperationsTest {
         if (HadoopVariantStorageTest.HadoopSolrSupport.isSolrTestingAvailable()) {
             solrExternalResource.configure(variantStorageManager.getVariantStorageEngine(STUDY, token));
             solrExternalResource.configure(variantStorageManager.getVariantStorageEngineForStudyOperation(STUDY, new ObjectMap(), token));
+
+            solrExternalResource.configure(variantStorageManager.getVariantStorageEngine(STUDY2, token));
+            solrExternalResource.configure(variantStorageManager.getVariantStorageEngineForStudyOperation(STUDY2, new ObjectMap(), token));
         }
 
         dummyVariantSetup(variantStorageManager, STUDY, token);
+        dummyVariantSetup(variantStorageManager, STUDY2, token);
 
         assertEquals(OperationIndexStatus.NONE,
                 catalogManager.getProjectManager().get(PROJECT_FQN, new QueryOptions(), token).first().getInternal().getVariant().getAnnotationIndex().getStatus().getId());
         assertEquals(OperationIndexStatus.NONE,
                 catalogManager.getProjectManager().get(PROJECT_FQN, new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId());
+
+
+        assertEquals(OperationIndexStatus.NONE,
+                catalogManager.getProjectManager().get(PROJECT_FQN2, new QueryOptions(), token).first().getInternal().getVariant().getAnnotationIndex().getStatus().getId());
+        assertEquals(OperationIndexStatus.NONE,
+                catalogManager.getProjectManager().get(PROJECT_FQN2, new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId());
 
         file = opencga.createFile(STUDY, "variant-test-file.vcf.gz", token);
 //            variantStorageManager.index(STUDY, file.getId(), opencga.createTmpOutdir("_index"), new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true), token);
@@ -273,6 +286,26 @@ public class VariantOperationsTest {
                 catalogManager.getProjectManager().get(PROJECT_FQN, new QueryOptions(), token).first().getInternal().getVariant().getAnnotationIndex().getStatus().getId());
         assertEquals(OperationIndexStatus.PENDING,
                 catalogManager.getProjectManager().get(PROJECT_FQN, new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId());
+
+        file = opencga.createFile(STUDY2, "variant-test-file-cosmic.vcf.gz", token);
+        toolRunner.execute(VariantIndexOperationTool.class, STUDY2,
+                new VariantIndexParams()
+                        .setFile(file.getId())
+                        .setAnnotate(false)
+                        .setLoadHomRef(YesNoAuto.YES.name()),
+                Paths.get(opencga.createTmpOutdir("_index")), "index", false, token);
+        assertEquals(OperationIndexStatus.PENDING,
+                catalogManager.getProjectManager().get(PROJECT_FQN2, new QueryOptions(), token).first().getInternal().getVariant().getAnnotationIndex().getStatus().getId());
+        assertEquals(OperationIndexStatus.PENDING,
+                catalogManager.getProjectManager().get(PROJECT_FQN2, new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId());
+
+        toolRunner.execute(VariantAnnotationIndexOperationTool.class, STUDY2,
+                new VariantAnnotationIndexParams(),
+                Paths.get(opencga.createTmpOutdir("_annotation-index")), "index", false, token);
+        assertEquals(OperationIndexStatus.READY,
+                catalogManager.getProjectManager().get(PROJECT_FQN2, new QueryOptions(), token).first().getInternal().getVariant().getAnnotationIndex().getStatus().getId());
+        assertEquals(OperationIndexStatus.PENDING,
+                catalogManager.getProjectManager().get(PROJECT_FQN2, new QueryOptions(), token).first().getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId());
 
         for (int i = 0; i < file.getSampleIds().size(); i++) {
             if (i % 2 == 0) {
@@ -348,6 +381,12 @@ public class VariantOperationsTest {
         variantStorageManager.configureProject(projectId, options, token);
 
         catalogManager.getStudyManager().create(projectId, STUDY, null, "Phase 1", "Done", null, null, null, null, null, token);
+
+        String projectId2 = catalogManager.getProjectManager().create(PROJECT2, "Project 2 about some genomes", "", "Homo sapiens",
+                null, "GRCh38", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first().getId();
+        variantStorageManager.configureProject(projectId2, options, token);
+
+        catalogManager.getStudyManager().create(projectId2, STUDY2, null, "Phase 1", "Done", null, null, null, null, null, token);
 
         // Create 10 samples not indexed
         for (int i = 0; i < 10; i++) {
@@ -855,9 +894,9 @@ public class VariantOperationsTest {
         // Cosmic extensions are only supported in Hadoop
         Assume.assumeThat(storageEngine, CoreMatchers.is(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
 
-        VariantOperationsTest.removeCosmicAnnotationExtensionOptions(PROJECT, variantStorageManager, token);
+        VariantOperationsTest.removeCosmicAnnotationExtensionOptions(PROJECT2, variantStorageManager, token);
 
-        File cosmicFile = getCosmicResourceFile(catalogManager, token);
+        File cosmicFile = getCosmicResourceFile(STUDY2, catalogManager, token);
 
         VariantAnnotationExtensionConfigureParams params = new VariantAnnotationExtensionConfigureParams();
         params.setExtension(CosmicVariantAnnotatorExtensionTask.ID);
@@ -868,11 +907,11 @@ public class VariantOperationsTest {
         params.setParams(cosmicParams);
 
         String jobId = "annotation-extension-configure";
-        toolRunner.execute(VariantAnnotationExtensionConfigureOperationTool.class, STUDY, params,
+        toolRunner.execute(VariantAnnotationExtensionConfigureOperationTool.class, STUDY2, params,
                 Paths.get(opencga.createTmpOutdir("_" + jobId)), jobId, false, token);
 
 
-        Project project = catalogManager.getProjectManager().get(PROJECT, QueryOptions.empty(), token).first();
+        Project project = catalogManager.getProjectManager().get(PROJECT2, QueryOptions.empty(), token).first();
         ObjectMap options = project.getInternal().getDatastores().getVariant().getOptions();
         Assert.assertTrue(options.containsKey(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key()));
         Assert.assertTrue(options.getAsStringList(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key()).contains(CosmicVariantAnnotatorExtensionTask.ID));
@@ -880,7 +919,7 @@ public class VariantOperationsTest {
         Assert.assertTrue(options.getString(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key()).endsWith(CosmicVariantAnnotatorExtensionTask.COSMIC_ANNOTATOR_INDEX_SUFFIX));
 
         try {
-            toolRunner.execute(VariantAnnotationIndexOperationTool.class, STUDY,
+            toolRunner.execute(VariantAnnotationIndexOperationTool.class, STUDY2,
                     new VariantAnnotationIndexParams(),
                     Paths.get(opencga.createTmpOutdir("_annotation-index-no-overwrite")), "annotation-index-no-overwrite", false, token);
             fail("Should have thrown an exception");
@@ -892,12 +931,12 @@ public class VariantOperationsTest {
             MatcherAssert.assertThat(e.getCause().getCause().getMessage(), CoreMatchers.containsString("Annotator extensions has changed"));
         }
 
-        toolRunner.execute(VariantAnnotationIndexOperationTool.class, STUDY,
+        toolRunner.execute(VariantAnnotationIndexOperationTool.class, STUDY2,
                 new VariantAnnotationIndexParams()
                         .setOverwriteAnnotations(true),
                 Paths.get(opencga.createTmpOutdir("_annotation-index")), "annotation-index", false, token);
 
-        Query query = new Query(VariantQueryParam.STUDY.key(), ORGANIZATION + "@" + PROJECT + ":" + STUDY);
+        Query query = new Query(VariantQueryParam.STUDY.key(), ORGANIZATION + "@" + PROJECT2 + ":" + STUDY2);
         query.put(VariantQueryParam.ID.key(), "8:67154047:C:T,20:17605163:A:G");
         DataResult<Variant> result = variantStorageManager.get(query, new QueryOptions(), token);
         Assert.assertEquals(2, result.getNumResults());
@@ -913,7 +952,7 @@ public class VariantOperationsTest {
             }
         }
 
-        Map<String, ObjectMap> extensions = variantStorageManager.getAnnotationMetadata("", PROJECT, token).first().getExtensions();
+        Map<String, ObjectMap> extensions = variantStorageManager.getAnnotationMetadata("", PROJECT2, token).first().getExtensions();
         assertTrue(extensions.containsKey(CosmicVariantAnnotatorExtensionTask.ID));
         assertTrue(extensions.get(CosmicVariantAnnotatorExtensionTask.ID).containsKey("name"));
         assertTrue(extensions.get(CosmicVariantAnnotatorExtensionTask.ID).containsKey("version"));
@@ -923,12 +962,12 @@ public class VariantOperationsTest {
 
     @Test
     public void testVariantAnnotationExtensionConfigure() throws IOException, ToolException, CatalogException, StorageEngineException {
-        removeCosmicAnnotationExtensionOptions(PROJECT, variantStorageManager, token);
+        removeCosmicAnnotationExtensionOptions(PROJECT2, variantStorageManager, token);
 
         Path outdir = Paths.get(opencga.createTmpOutdir());
         System.out.println("outdir.toAbsolutePath() = " + outdir.toAbsolutePath());
 
-        File cosmicFile = getCosmicResourceFile(catalogManager, token);
+        File cosmicFile = getCosmicResourceFile(STUDY2, catalogManager, token);
 
         VariantAnnotationExtensionConfigureParams params = new VariantAnnotationExtensionConfigureParams();
         params.setExtension(CosmicVariantAnnotatorExtensionTask.ID);
@@ -939,9 +978,9 @@ public class VariantOperationsTest {
         params.setParams(cosmicParams);
 
         String jobId = "annotation-extension-configure";
-        toolRunner.execute(VariantAnnotationExtensionConfigureOperationTool.class, STUDY, params, outdir, jobId, false, token);
+        toolRunner.execute(VariantAnnotationExtensionConfigureOperationTool.class, STUDY2, params, outdir, jobId, false, token);
 
-        Project project = catalogManager.getProjectManager().get(PROJECT, QueryOptions.empty(), token).first();
+        Project project = catalogManager.getProjectManager().get(PROJECT2, QueryOptions.empty(), token).first();
         ObjectMap options = project.getInternal().getDatastores().getVariant().getOptions();
         System.out.println("project.getInternal().getDatastores().getVariant().getOptions() = " + options.toJson());
         Assert.assertTrue(options.containsKey(VariantStorageOptions.ANNOTATOR_EXTENSION_LIST.key()));

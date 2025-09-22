@@ -155,7 +155,7 @@ public class VariantAnnotationExtensionConfigureOperationToolTest {
 
         Path outDir = Paths.get(opencga.createTmpOutdir("_annotationExtensionConfigureTest"));
 
-        File cosmicResourceFile = getCosmicResourceFile(catalogManager, token);
+        File cosmicResourceFile = getCosmicResourceFile(STUDY, catalogManager, token);
         VariantAnnotationExtensionConfigureParams params = new VariantAnnotationExtensionConfigureParams()
                 .setExtension(CosmicVariantAnnotatorExtensionTask.ID)
                 .setResources(Collections.singletonList(cosmicResourceFile.getId()))
@@ -182,7 +182,7 @@ public class VariantAnnotationExtensionConfigureOperationToolTest {
 
         Path outDir = Paths.get(opencga.createTmpOutdir("_annotationExtensionConfigureTestNoOverwrite"));
 
-        File cosmicResourceFile = getCosmicResourceFile(catalogManager, token);
+        File cosmicResourceFile = getCosmicResourceFile(STUDY, catalogManager, token);
         VariantAnnotationExtensionConfigureParams params = new VariantAnnotationExtensionConfigureParams()
                 .setExtension(CosmicVariantAnnotatorExtensionTask.ID)
                 .setResources(Collections.singletonList(cosmicResourceFile.getId()))
@@ -219,7 +219,7 @@ public class VariantAnnotationExtensionConfigureOperationToolTest {
 
         Path outDir = Paths.get(opencga.createTmpOutdir("_annotationExtensionConfigureTestOverwrite"));
 
-        File cosmicResourceFile = getCosmicResourceFile(catalogManager, token);
+        File cosmicResourceFile = getCosmicResourceFile(STUDY, catalogManager, token);
         VariantAnnotationExtensionConfigureParams params = new VariantAnnotationExtensionConfigureParams()
                 .setExtension(CosmicVariantAnnotatorExtensionTask.ID)
                 .setResources(Collections.singletonList(cosmicResourceFile.getId()))
@@ -235,7 +235,7 @@ public class VariantAnnotationExtensionConfigureOperationToolTest {
 
         Path outDir2 = Paths.get(opencga.createTmpOutdir("_annotationExtensionConfigureTestNoOverwrite2"));
 
-        File cosmicResourceFile2 = getCosmicResourceFile(catalogManager, token);
+        File cosmicResourceFile2 = getCosmicResourceFile(STUDY, catalogManager, token);
         VariantAnnotationExtensionConfigureParams params2 = new VariantAnnotationExtensionConfigureParams()
                 .setExtension(CosmicVariantAnnotatorExtensionTask.ID)
                 .setResources(Collections.singletonList(cosmicResourceFile2.getId()))
@@ -256,7 +256,7 @@ public class VariantAnnotationExtensionConfigureOperationToolTest {
         Assert.assertEquals(Paths.get(cosmicResourceFile2.getUri().getPath() + CosmicVariantAnnotatorExtensionTask.COSMIC_ANNOTATOR_INDEX_SUFFIX).toString(), options.get(VariantStorageOptions.ANNOTATOR_EXTENSION_COSMIC_FILE.key()));
     }
 
-    public static File getCosmicResourceFile(CatalogManager catalogManager, String token) throws IOException, CatalogException {
+    public static File getCosmicResourceFile(String study, CatalogManager catalogManager, String token) throws IOException, CatalogException {
         String folder = "I_tmp_" + new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss.SSS").format(new Date());
         Path tmpOutdir = Files.createDirectories(Paths.get(catalogManager.getConfiguration().getJobDir()).resolve(folder));
 
@@ -271,14 +271,14 @@ public class VariantAnnotationExtensionConfigureOperationToolTest {
         }
 
         try {
-            return catalogManager.getFileManager().get(STUDY, cosmicFilePath.getFileName().toString(), QueryOptions.empty(), token).first();
+            return catalogManager.getFileManager().get(study, cosmicFilePath.getFileName().toString(), QueryOptions.empty(), token).first();
         } catch (CatalogException e) {
             File file = new File()
                     .setName(cosmicFilePath.getFileName().toString())
                     .setPath(ParamConstants.RESOURCES_FOLDER + "/cosmic/" + cosmicFilePath.getFileName().toString())
                     .setResource(true);
             InputStream inputStream = Files.newInputStream(cosmicFilePath);
-            return catalogManager.getFileManager().upload(STUDY, inputStream, file, false, true, false, null, null, token).first();
+            return catalogManager.getFileManager().upload(study, inputStream, file, false, true, false, null, null, token).first();
         }
     }
 
