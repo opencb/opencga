@@ -557,6 +557,19 @@ class File(_ParentRestClient):
 
         return self._post(category='files', resource='annotations/update', query_id=file, subcategory='annotationSets', second_query_id=annotation_set, data=data, **options)
 
+    def update_content(self, file, data=None, **options):
+        """
+        Overwrite the content of a file.
+        PATH: /{apiVersion}/files/{file}/content/update
+
+        :param dict data: File parameters. (REQUIRED)
+        :param str file: File id or name. (REQUIRED)
+        :param str study: Study [[organization@]project:]study where study and
+            project can be either the ID or UUID.
+        """
+
+        return self._post(category='files', resource='update', query_id=file, subcategory='content', data=data, **options)
+
     def download(self, file, **options):
         """
         Download file.
