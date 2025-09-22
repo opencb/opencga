@@ -36,6 +36,7 @@ public class AdminCommandOptions {
         public GroupByAuditCommandOptions groupByAuditCommandOptions;
         public InstallCatalogCommandOptions installCatalogCommandOptions;
         public JwtCatalogCommandOptions jwtCatalogCommandOptions;
+        public ListOrganizationsCommandOptions listOrganizationsCommandOptions;
         public FetchResourceCommandOptions fetchResourceCommandOptions;
         public CreateUsersCommandOptions createUsersCommandOptions;
         public ImportUsersCommandOptions importUsersCommandOptions;
@@ -52,6 +53,7 @@ public class AdminCommandOptions {
         this.groupByAuditCommandOptions = new GroupByAuditCommandOptions();
         this.installCatalogCommandOptions = new InstallCatalogCommandOptions();
         this.jwtCatalogCommandOptions = new JwtCatalogCommandOptions();
+        this.listOrganizationsCommandOptions = new ListOrganizationsCommandOptions();
         this.fetchResourceCommandOptions = new FetchResourceCommandOptions();
         this.createUsersCommandOptions = new CreateUsersCommandOptions();
         this.importUsersCommandOptions = new ImportUsersCommandOptions();
@@ -134,6 +136,14 @@ public class AdminCommandOptions {
     
         @Parameter(names = {"--secret-key"}, description = "The body web service secretKey parameter", required = false, arity = 1)
         public String secretKey;
+    
+    }
+
+    @Parameters(commandNames = {"organizations-list"}, commandDescription ="List current Organizations")
+    public class ListOrganizationsCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
     
     }
 

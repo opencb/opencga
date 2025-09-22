@@ -69,6 +69,14 @@ export default class Admin extends OpenCGAParentClass {
         return this._post("admin", null, "catalog", null, "jwt", data, params);
     }
 
+    /** List current Organizations
+    * 
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    listOrganizations() {
+        return this._get("admin", null, "organizations", null, "list");
+    }
+
     /** Fetch resources from the public server and save them into the OpenCGA local installation
     * @param {Object} data - Download-resources tool parameters.
     * @param {Object} [params] - The Object containing the following optional parameters:

@@ -73,6 +73,9 @@ public class AdminCommandExecutor extends com.zettagenomics.opencga.enterprise.a
             case "catalog-jwt":
                 queryResponse = jwtCatalog();
                 break;
+            case "organizations-list":
+                queryResponse = listOrganizations();
+                break;
             case "resource-fetch":
                 queryResponse = fetchResource();
                 break;
@@ -173,6 +176,13 @@ public class AdminCommandExecutor extends com.zettagenomics.opencga.enterprise.a
                     .readValue(beanParams.toJson(), JWTParams.class);
         }
         return enterpriseOpenCGAClient.getEnterpriseAdminClient().jwtCatalog(jWTParams, queryParams);
+    }
+
+    private RestResponse<String> listOrganizations() throws Exception {
+        logger.debug("Executing listOrganizations in Admin command line");
+
+        AdminCommandOptions.ListOrganizationsCommandOptions commandOptions = adminCommandOptions.listOrganizationsCommandOptions;
+        return enterpriseOpenCGAClient.getEnterpriseAdminClient().listOrganizations();
     }
 
     private RestResponse<Job> fetchResource() throws Exception {

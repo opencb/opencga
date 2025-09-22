@@ -180,6 +180,7 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         adminSubCommands.addCommand("audit-group-by", adminCommandOptions.groupByAuditCommandOptions);
         adminSubCommands.addCommand("catalog-install", adminCommandOptions.installCatalogCommandOptions);
         adminSubCommands.addCommand("catalog-jwt", adminCommandOptions.jwtCatalogCommandOptions);
+        adminSubCommands.addCommand("organizations-list", adminCommandOptions.listOrganizationsCommandOptions);
         adminSubCommands.addCommand("resource-fetch", adminCommandOptions.fetchResourceCommandOptions);
         adminSubCommands.addCommand("users-create", adminCommandOptions.createUsersCommandOptions);
         adminSubCommands.addCommand("users-import", adminCommandOptions.importUsersCommandOptions);
@@ -292,9 +293,6 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         organizationsSubCommands.addCommand("update-status-user", organizationsCommandOptions.userUpdateStatusCommandOptions);
         organizationsSubCommands.addCommand("user-update", organizationsCommandOptions.updateUserCommandOptions);
         organizationsSubCommands.addCommand("configuration-update", organizationsCommandOptions.updateConfigurationCommandOptions);
-        organizationsSubCommands.addCommand("events-query", organizationsCommandOptions.queryEventsCommandOptions);
-        organizationsSubCommands.addCommand("events-archive", organizationsCommandOptions.archiveEventsCommandOptions);
-        organizationsSubCommands.addCommand("events-retry", organizationsCommandOptions.retryEventsCommandOptions);
         organizationsSubCommands.addCommand("info", organizationsCommandOptions.infoCommandOptions);
         organizationsSubCommands.addCommand("update", organizationsCommandOptions.updateCommandOptions);
 
