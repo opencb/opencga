@@ -539,11 +539,13 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
             try {
                 if (buildCommand(executable, args).length() > MAX_COMMAND_LINE_ARGS_LENGTH) {
                     logger.info("Command line is too long. Passing args from stdin'");
-                    StringBuilder sb = new StringBuilder();
-                    for (String arg : args) {
-                        sb.append(arg).append('\n');
+                    ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                    try {
+                        AbstractHBaseDriver.writeArgsToStream(args, new DataOutputStream(stream));
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
                     }
-                    System.setIn(new ByteArrayInputStream(sb.toString().getBytes()));
+                    System.setIn(new ByteArrayInputStream(stream.toByteArray()));
                     result = new TestMRExecutor(conf).run(executable, new String[]{AbstractHBaseDriver.ARGS_FROM_STDIN});
                 } else {
                     result = new TestMRExecutor(conf).run(executable, args);
