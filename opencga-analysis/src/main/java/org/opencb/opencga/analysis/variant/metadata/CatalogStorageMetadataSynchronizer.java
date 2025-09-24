@@ -255,11 +255,17 @@ public class CatalogStorageMetadataSynchronizer {
         OperationIndexStatus operationIndexStatus;
         switch (storageAnnotationIndexStatus) {
             case NONE:
-                operationIndexStatus = new OperationIndexStatus(OperationIndexStatus.PENDING,
-                        "Variant annotation index operation pending. "
-                                + " variantIndexTs = " + projectMetadata.getVariantIndexLastTimestamp()
-                                + ", variantAnnotationIndexTs = " + projectMetadata.getAnnotationIndexLastTimestamp()
-                );
+                if (projectMetadata.getVariantIndexLastTimestamp() <= 0) {
+                    // Variant index has never been run. Annotation index can not be run.
+                    operationIndexStatus = new OperationIndexStatus(OperationIndexStatus.NONE,
+                            "Variant annotation index can not be run. Variant index has never been run.");
+                } else {
+                    operationIndexStatus = new OperationIndexStatus(OperationIndexStatus.PENDING,
+                            "Variant annotation index operation pending. "
+                                    + " variantIndexTs = " + projectMetadata.getVariantIndexLastTimestamp()
+                                    + ", variantAnnotationIndexTs = " + projectMetadata.getAnnotationIndexLastTimestamp()
+                    );
+                }
                 break;
             case READY:
                 operationIndexStatus = new OperationIndexStatus(storageAnnotationIndexStatus.name(), "");
