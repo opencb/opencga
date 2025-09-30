@@ -117,6 +117,7 @@ if ! $SKIP_PYTHON; then
   sed -i "s/PYXETABASE_VERSION/${PYTHON_VERSION}/" "$CLIENTS_DIR/python/setup.py"
   echo "Renaming folder pyopencga to pyxetabase"
   mv "$CLIENTS_DIR/python/pyopencga" "$CLIENTS_DIR/python/pyxetabase"
+  find . -iname '*pyopencga*' -exec rm -rf -- {} +
   python3 -m pip install --upgrade pip
   pip install --upgrade setuptools packaging
   ./build/clients/python/python-build.sh build
