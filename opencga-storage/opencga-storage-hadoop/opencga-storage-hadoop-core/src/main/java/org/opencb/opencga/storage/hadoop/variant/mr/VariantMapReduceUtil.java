@@ -39,6 +39,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDriver;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -157,11 +158,21 @@ public class VariantMapReduceUtil {
 
     public static void initVariantMapperJob(Job job, Class<? extends VariantMapper> mapperClass, String variantTable,
                                                VariantStorageMetadataManager metadataManager, Query query, QueryOptions queryOptions,
-                                               boolean skipSampleIndex) throws IOException {
+                                               boolean skipSampleIndex, boolean recordMetadataMode) throws IOException {
         VariantQueryParser variantQueryParser = new HadoopVariantQueryParser(null, metadataManager);
         ParsedVariantQuery variantQuery = variantQueryParser.parseQuery(query, queryOptions);
         query = variantQuery.getQuery();
         queryOptions = variantQuery.getInputOptions();
+        if (recordMetadataMode) {
+            // Need to make sure that all files from samples are correctly recorded.
+            // These might be needed even if they don't belong to the query
+            for (VariantQueryProjection.StudyVariantQueryProjection study : variantQuery.getProjection().getStudies().values()) {
+                int studyId = study.getId();
+                for (Integer fileId : metadataManager.getFileIdsFromSampleIds(studyId, study.getSamples())) {
+                    metadataManager.getFileMetadata(studyId, fileId);
+                }
+            }
+        }
 
         setQuery(job, query);
         setQueryOptions(job, queryOptions);

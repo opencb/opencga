@@ -185,7 +185,7 @@ public class CosmicVariantAnnotatorExtensionTask implements VariantAnnotatorExte
             ProgressLogger progressLogger = new ProgressLogger("Preparing RocksDB for Cosmic");
             progressLogger.setBatchSize(10000);
             CosmicExtensionTaskCallback callback = new CosmicExtensionTaskCallback(rdb, progressLogger);
-            CosmicParser101.parse(genomeScreensMutantFile, classificationFile, cosmicVersion, ID, cosmicAssembly, callback);
+            CosmicParser101.parse(genomeScreensMutantFile, classificationFile, tmpCosmicVersion, ID, tmpCosmicAssembly, callback);
         } catch (IOException e) {
             throw new ToolException(e);
         }
