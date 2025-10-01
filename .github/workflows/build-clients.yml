@@ -30,7 +30,6 @@ jobs:
           ref: ${{ steps.get_opencga_branch.outputs.opencga_branch }}
           path: opencga-home
           fetch-depth: '10'
-
       - name: Build clients
         run: |
           chmod +x client-builder.sh 
