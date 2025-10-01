@@ -6,6 +6,7 @@ on:
       branch:
         type: string
         required: true
+
 jobs:
   build-python-client:
     runs-on: ${{ vars.UBUNTU_VERSION }}
