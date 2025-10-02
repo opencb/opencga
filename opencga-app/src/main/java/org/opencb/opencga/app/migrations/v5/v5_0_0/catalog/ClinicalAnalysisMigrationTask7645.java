@@ -181,6 +181,8 @@ public class ClinicalAnalysisMigrationTask7645 extends MigrationTool {
 
         // Migrate Interpretation configuration
         Bson interpretationProjection = Projections.include("_id", "primaryFindings", "secondaryFindings");
+        // Avoid batches because interpretations may be very big
+        setBatchSize(1);
         migrateCollection(Arrays.asList(OrganizationMongoDBAdaptorFactory.INTERPRETATION_COLLECTION,
                         OrganizationMongoDBAdaptorFactory.INTERPRETATION_ARCHIVE_COLLECTION,
                         OrganizationMongoDBAdaptorFactory.DELETED_INTERPRETATION_COLLECTION),
