@@ -3,21 +3,16 @@ package org.opencb.opencga.analysis.wrappers.variantcallerpipeline;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-
-import static org.apache.commons.io.FileUtils.readLines;
 
 @ToolExecutor(id = VariantCallerPipelineWrapperAnalysisExecutor.ID,
         tool = VariantCallerPipelineWrapperAnalysis.ID,
@@ -31,14 +26,17 @@ public class VariantCallerPipelineWrapperAnalysisExecutor extends DockerWrapperA
     public static final String PIPELINE_CMD = "pipeline";
 
     private static final String VARIANT_CALLER_PIPELINE_SCRIPT = "main.py";
-
+    private static final String INDEX_VIRTUAL_PATH = "/index";
+    public static final String PIPELINE_PARAMS_FILENAME = "pipeline.json";
 
     private String study;
     private Path scriptPath;
     private String command;
 
     private List<String> input;
-    private Path resourcePath;
+    private String indexPath;
+
+    private ObjectMap pipelineParams;
 
 
     @Override
@@ -67,7 +65,6 @@ public class VariantCallerPipelineWrapperAnalysisExecutor extends DockerWrapperA
 
     private void runPrepare() throws ToolExecutorException {
         try {
-
             // Input bindings
             List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
             Path virtualScriptPath = Paths.get(SCRIPT_VIRTUAL_PATH).resolve(VARIANT_CALLER_PIPELINE_SCRIPT);
@@ -92,14 +89,14 @@ public class VariantCallerPipelineWrapperAnalysisExecutor extends DockerWrapperA
             }
 
             // Output binding
-            AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(resourcePath.toAbsolutePath().toString(),
+            AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir().toAbsolutePath().toString(),
                     OUTPUT_VIRTUAL_PATH);
 
             // Main command line and params, e.g.:
             // ./analysis/variant-caller-pipeline/main.py prepare
             // -r https://ftp.ensembl.org/pub/release-115/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.chromosome.22.fa.gz
             // -o /tmp/bbb
-            String params = "python3 " + virtualScriptPath
+            String params = "python3 " + virtualScriptPath + " prepare"
                     + " -r " + (virtualRefPath != null ? virtualRefPath : reference)
                     + " -o " + OUTPUT_VIRTUAL_PATH;
 
@@ -115,37 +112,68 @@ public class VariantCallerPipelineWrapperAnalysisExecutor extends DockerWrapperA
         } catch (IOException | ToolException e) {
             throw new ToolExecutorException(e);
         }
-
     }
 
     private void runVariantCallerPipeline() throws ToolExecutorException {
-        try {
-            File file = null;
-            Path outPath = getOutDir();
+        // First, run QC (e.g. FastQC) and mapping (e.g. BWA)
+        runQcAndMapper();
 
+        // Then, run the variant calling (e.g. GATK HaplotypeCaller)
+        runVariantCalling();
+    }
+
+    private void runQcAndMapper() throws ToolExecutorException {
+        try {
             // Input bindings
             List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
-            Path virtualScriptPath = Paths.get(SCRIPT_VIRTUAL_PATH).resolve(VARIANT_CALLER_PIPELINE_SCRIPT);
-            inputBindings.add(new AbstractMap.SimpleEntry<>(scriptPath.resolve(VARIANT_CALLER_PIPELINE_SCRIPT).toAbsolutePath().toString(),
-                    virtualScriptPath.toString()));
-            Path virtualVcfPath = Paths.get(INPUT_VIRTUAL_PATH).resolve(file.getName());
-            inputBindings.add(new AbstractMap.SimpleEntry<>(file.getAbsolutePath(), virtualVcfPath.toString()));
-            inputBindings.add(new AbstractMap.SimpleEntry<>(resourcePath.toAbsolutePath().toString(), RESOURCES_VIRTUAL_PATH));
 
             // Read only input bindings
             Set<String> readOnlyInputBindings = new HashSet<>();
+
+            // Script binding
+            Path virtualScriptPath = Paths.get(SCRIPT_VIRTUAL_PATH).resolve(VARIANT_CALLER_PIPELINE_SCRIPT);
+            inputBindings.add(new AbstractMap.SimpleEntry<>(scriptPath.resolve(VARIANT_CALLER_PIPELINE_SCRIPT).toAbsolutePath().toString(),
+                    virtualScriptPath.toString()));
             readOnlyInputBindings.add(virtualScriptPath.toString());
-            readOnlyInputBindings.add(virtualVcfPath.toString());
+
+            // Index binding
+            Path virtualIndexPath = Paths.get(INDEX_VIRTUAL_PATH);
+            inputBindings.add(new AbstractMap.SimpleEntry<>(indexPath, virtualIndexPath.toString()));
+            readOnlyInputBindings.add(virtualIndexPath.toString());
+
+            // Input binding
+            List<Path> virtualInputPaths = new ArrayList<>();
+            for (int i = 0; i < input.size(); i++) {
+                Path virtualInputPath = Paths.get(INPUT_VIRTUAL_PATH + "_" + i).resolve(Paths.get(input.get(i)).getFileName());
+                inputBindings.add(new AbstractMap.SimpleEntry<>(Paths.get(input.get(i)).toAbsolutePath().toString(),
+                        virtualInputPath.toString()));
+                readOnlyInputBindings.add(virtualInputPath.toString());
+                virtualInputPaths.add(virtualInputPath);
+            }
+
+            // Pipeline params binding
+            Path pipelineParamsPath = getOutDir().resolve(PIPELINE_PARAMS_FILENAME);
+            Path virtualPipelineParamsPath = Paths.get(INPUT_VIRTUAL_PATH).resolve(pipelineParamsPath.getFileName());
+            JacksonUtils.getDefaultObjectMapper().writerFor(ObjectMap.class).writeValue(pipelineParamsPath.toFile(), pipelineParams);
+            inputBindings.add(new AbstractMap.SimpleEntry<>(pipelineParamsPath.toAbsolutePath().toString(),
+                    virtualPipelineParamsPath.toString()));
 
             // Output binding
-            AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(outPath.toAbsolutePath().toString(),
+            AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir().toAbsolutePath().toString(),
                     OUTPUT_VIRTUAL_PATH);
 
-            // Main command line and params
-            String params = "bash " + virtualScriptPath
-                    + " " + virtualVcfPath
-                    + " " + OUTPUT_VIRTUAL_PATH
-                    + " " + RESOURCES_VIRTUAL_PATH;
+            // Main command line and params, e.g.:
+            // ./analysis/variant-caller-pipeline/main.py run
+            // -o /tmp/ngs/
+            // -p pipeline.json
+            // -i /data/HI.4019.002.index_7.ANN0831_R1.fastq.gz,/data/HI.4019.002.index_7.ANN0831_R2.fastq.gz
+
+            String params = "python3 " + virtualScriptPath + " run"
+                    + " -o " + OUTPUT_VIRTUAL_PATH
+                    + " -p " + virtualPipelineParamsPath
+                    + " -i " + StringUtils.join(virtualInputPaths, ",")
+                    + " --index " + virtualIndexPath
+                    + " --steps quality_control,alignment";
 
             // Execute Python script in docker
             String dockerImage = getDockerImageName() + ":" + getDockerImageVersion();
@@ -153,34 +181,68 @@ public class VariantCallerPipelineWrapperAnalysisExecutor extends DockerWrapperA
             String dockerCli = buildCommandLine(dockerImage, inputBindings, readOnlyInputBindings, outputBinding, params, null);
             addEvent(Event.Type.INFO, "Docker command line: " + dockerCli);
             logger.info("Docker command line: {}", dockerCli);
+
+            // Execute docker command line
             runCommandLine(dockerCli);
-
-            // Check result file
-            String outFilename = "";
-            Path outFile = outPath.resolve(outFilename);
-            if (!Files.exists(outFile) || outFile.toFile().length() == 0) {
-                File stdoutFile = getOutDir().resolve(DockerWrapperAnalysisExecutor.STDOUT_FILENAME).toFile();
-                List<String> stdoutLines = readLines(stdoutFile, Charset.defaultCharset());
-
-                File stderrFile = getOutDir().resolve(DockerWrapperAnalysisExecutor.STDERR_FILENAME).toFile();
-                List<String> stderrLines = readLines(stderrFile, Charset.defaultCharset());
-
-                throw new ToolExecutorException("Error executing Liftover: the result file was not created.\nStdout messages: "
-                        + StringUtils.join("\n", stdoutLines) + "\nStderr messages: " + StringUtils.join("\n", stderrLines));
-            }
         } catch (IOException | ToolException e) {
             throw new ToolExecutorException(e);
         }
     }
 
+    private void runVariantCalling() throws ToolExecutorException {
+        try {
+            // Input bindings
+            List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
 
-    private void runQcAndMapper() {
+            // Read only input bindings
+            Set<String> readOnlyInputBindings = new HashSet<>();
 
-    }
+            // Script binding
+            Path virtualScriptPath = Paths.get(SCRIPT_VIRTUAL_PATH).resolve(VARIANT_CALLER_PIPELINE_SCRIPT);
+            inputBindings.add(new AbstractMap.SimpleEntry<>(scriptPath.resolve(VARIANT_CALLER_PIPELINE_SCRIPT).toAbsolutePath().toString(),
+                    virtualScriptPath.toString()));
+            readOnlyInputBindings.add(virtualScriptPath.toString());
 
-    private void runVariantCalling() {
-        // Execute Python script in docker
-        String dockerImage =  "broadinstitute/gatk:4.6.2.0";
+            // Index binding
+            Path virtualIndexPath = Paths.get(INDEX_VIRTUAL_PATH);
+            inputBindings.add(new AbstractMap.SimpleEntry<>(indexPath, virtualIndexPath.toString()));
+            readOnlyInputBindings.add(virtualIndexPath.toString());
+
+            // Pipeline params binding
+            Path pipelineParamsPath = getOutDir().resolve(PIPELINE_PARAMS_FILENAME);
+            Path virtualPipelineParamsPath = Paths.get(INPUT_VIRTUAL_PATH).resolve(pipelineParamsPath.getFileName());
+            JacksonUtils.getDefaultObjectMapper().writerFor(ObjectMap.class).writeValue(pipelineParamsPath.toFile(), pipelineParams);
+            inputBindings.add(new AbstractMap.SimpleEntry<>(pipelineParamsPath.toAbsolutePath().toString(),
+                    virtualPipelineParamsPath.toString()));
+
+            // Output binding
+            AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir().toAbsolutePath().toString(),
+                    OUTPUT_VIRTUAL_PATH);
+
+            // Main command line and params, e.g.:
+            // ./analysis/variant-caller-pipeline/main.py run
+            // -o /tmp/ngs/
+            // -p pipeline.json
+            // -i /data/HI.4019.002.index_7.ANN0831_R1.fastq.gz,/data/HI.4019.002.index_7.ANN0831_R2.fastq.gz
+
+            String params = "python3 " + virtualScriptPath + " run"
+                    + " -o " + OUTPUT_VIRTUAL_PATH
+                    + " -p " + virtualPipelineParamsPath
+                    + " --index " + virtualIndexPath
+                    + " --steps variant_calling";
+
+            // Execute Python script in docker
+            String dockerImage =  "broadinstitute/gatk:4.6.2.0";
+
+            String dockerCli = buildCommandLine(dockerImage, inputBindings, readOnlyInputBindings, outputBinding, params, null);
+            addEvent(Event.Type.INFO, "Docker command line: " + dockerCli);
+            logger.info("Docker command line: {}", dockerCli);
+
+            // Execute docker command line
+            runCommandLine(dockerCli);
+        } catch (IOException | ToolException e) {
+            throw new ToolExecutorException(e);
+        }
     }
 
 
@@ -189,7 +251,7 @@ public class VariantCallerPipelineWrapperAnalysisExecutor extends DockerWrapperA
         params.put("scriptPath", scriptPath);
         params.put("cmd", command);
         params.put("input", input);
-        params.put("resourcePath", resourcePath);
+        params.put("indexPath", indexPath);
         return params;
     }
 
@@ -229,12 +291,21 @@ public class VariantCallerPipelineWrapperAnalysisExecutor extends DockerWrapperA
         return this;
     }
 
-    public Path getResourcePath() {
-        return resourcePath;
+    public String getIndexPath() {
+        return indexPath;
     }
 
-    public VariantCallerPipelineWrapperAnalysisExecutor setResourcePath(Path resourcePath) {
-        this.resourcePath = resourcePath;
+    public VariantCallerPipelineWrapperAnalysisExecutor setIndexPath(String indexPath) {
+        this.indexPath = indexPath;
+        return this;
+    }
+
+    public ObjectMap getPipelineParams() {
+        return pipelineParams;
+    }
+
+    public VariantCallerPipelineWrapperAnalysisExecutor setPipelineParams(ObjectMap pipelineParams) {
+        this.pipelineParams = pipelineParams;
         return this;
     }
 }

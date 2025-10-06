@@ -21,6 +21,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class VariantCallerPipelineWrapperParams extends ToolParams {
@@ -32,6 +33,9 @@ public class VariantCallerPipelineWrapperParams extends ToolParams {
 
     @DataField(id = "input", description = FieldConstants.VARIANT_CALLER_PIPELINE_INPUT_DESCRIPTION)
     private List<String> input;
+
+    @DataField(id = "indexDir", description = FieldConstants.VARIANT_CALLER_PIPELINE_INDEX_DIR_DESCRIPTION)
+    private String indexDir;
 
     @DataField(id = "pipelineParams", description = FieldConstants.VARIANT_CALLER_PIPELINE_PARAMS_DESCRIPTION)
     private ObjectMap pipelineParams;
@@ -48,17 +52,20 @@ public class VariantCallerPipelineWrapperParams extends ToolParams {
 //        outdir:
 //
 //
-    @DataField(id = "outdir", description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
-    private String outdir;
+    @DataField(id = "outDir", description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
+    private String outDir;
 
     public VariantCallerPipelineWrapperParams() {
+        this.input = new ArrayList<>();
     }
 
-    public VariantCallerPipelineWrapperParams(String command, List<String> input, ObjectMap pipelineParams, String outdir) {
+    public VariantCallerPipelineWrapperParams(String command, List<String> input, String indexDir, ObjectMap pipelineParams,
+                                              String outDir) {
         this.command = command;
         this.input = input;
+        this.indexDir = indexDir;
         this.pipelineParams = pipelineParams;
-        this.outdir = outdir;
+        this.outDir = outDir;
     }
 
     @Override
@@ -66,8 +73,9 @@ public class VariantCallerPipelineWrapperParams extends ToolParams {
         final StringBuilder sb = new StringBuilder("VariantCallerPipelineWrapperParams{");
         sb.append("command='").append(command).append('\'');
         sb.append(", input=").append(input);
+        sb.append(", indexDir='").append(indexDir).append('\'');
         sb.append(", pipelineParams=").append(pipelineParams);
-        sb.append(", outdir='").append(outdir).append('\'');
+        sb.append(", outDir='").append(outDir).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -90,6 +98,15 @@ public class VariantCallerPipelineWrapperParams extends ToolParams {
         return this;
     }
 
+    public String getIndexDir() {
+        return indexDir;
+    }
+
+    public VariantCallerPipelineWrapperParams setIndexDir(String indexDir) {
+        this.indexDir = indexDir;
+        return this;
+    }
+
     public ObjectMap getPipelineParams() {
         return pipelineParams;
     }
@@ -99,12 +116,12 @@ public class VariantCallerPipelineWrapperParams extends ToolParams {
         return this;
     }
 
-    public String getOutdir() {
-        return outdir;
+    public String getOutDir() {
+        return outDir;
     }
 
-    public VariantCallerPipelineWrapperParams setOutdir(String outdir) {
-        this.outdir = outdir;
+    public VariantCallerPipelineWrapperParams setOutDir(String outDir) {
+        this.outDir = outDir;
         return this;
     }
 }

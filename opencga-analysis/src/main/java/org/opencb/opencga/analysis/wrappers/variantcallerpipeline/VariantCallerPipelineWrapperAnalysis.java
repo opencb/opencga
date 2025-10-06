@@ -18,28 +18,23 @@ package org.opencb.opencga.analysis.wrappers.variantcallerpipeline;
 
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.ResourceException;
-import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.variant.VariantCallerPipelineWrapperParams;
-import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -62,12 +57,11 @@ public class VariantCallerPipelineWrapperAnalysis extends OpenCgaToolScopeStudy 
 
     private static final String PREPARE_RESOURCES_STEP = "prepare-resources";
     private static final String INDEX_VARIARIANTS_STEP = "index-variants";
-//    private static final String ANNOTATE_VARIANTS_STEP = "annotate-variants";
-//    private static final String INDEX_SECONDARY_ANNOTATION = "index-secondary-annotation";
     private static final String CLEAN_RESOURCES_STEP = "clean-resources";
 
     private String referenceUrl = null;
     private List<File> opencgaFiles = new ArrayList<>();
+    private File indexPath = null;
     private File vcfFile = null;
     private Path resourcePath;
 
@@ -115,41 +109,53 @@ public class VariantCallerPipelineWrapperAnalysis extends OpenCgaToolScopeStudy 
             // In pipeline command, input files must be OpencGA file IDs
             for (String file : analysisParams.getInput()) {
                 logger.info("Checking file {}", file);
-                opencgaFiles.add(getCatalogManager().getFileManager().get(study, file, QueryOptions.empty(), token).first());
+                File opencgaFile = getCatalogManager().getFileManager().get(study, file, QueryOptions.empty(), token).first();
+                if (opencgaFile.getType() != File.Type.FILE) {
+                    throw new ToolException("Variant caller pipeline input path '" + file + "' is not a file.");
+                }
+                opencgaFiles.add(opencgaFile);
             }
+
+            // Check the index path
+            if (StringUtils.isEmpty(analysisParams.getIndexDir())) {
+                throw new ToolException("Variant caller pipeline index path is mandatory for running the pipeline.");
+            }
+            logger.info("Checking index path {}", analysisParams.getIndexDir());
+            indexPath = getCatalogManager().getFileManager().get(study, analysisParams.getIndexDir(), QueryOptions.empty(), token).first();
+            if (indexPath.getType() != File.Type.DIRECTORY) {
+                throw new ToolException("Variant caller pipeline index path '" + analysisParams.getIndexDir() + "' is not a folder.");
+            }
+        }
+
+        // Check pipeline parameters
+        if (MapUtils.isEmpty(analysisParams.getPipelineParams())) {
+            throw new ToolException("Variant caller pipeline parameters are mandatory.");
         }
     }
 
     @Override
     protected List<String> getSteps() {
-        return Arrays.asList(PREPARE_RESOURCES_STEP, ID, INDEX_VARIARIANTS_STEP, /*ANNOTATE_VARIANTS_STEP, INDEX_SECONDARY_ANNOTATION,*/
-                CLEAN_RESOURCES_STEP);
+        if (PREPARE_CMD.equalsIgnoreCase(analysisParams.getCommand())) {
+            return Arrays.asList(PREPARE_RESOURCES_STEP);
+        } else {
+            return Arrays.asList(ID, INDEX_VARIARIANTS_STEP);
+        }
     }
 
     protected void run() throws ToolException, IOException {
-        // Download and copy liftover resource files in the job dir
-        step(PREPARE_RESOURCES_STEP, this::prepareResources);
+        if (PREPARE_CMD.equalsIgnoreCase(analysisParams.getCommand())) {
+            // Pipeline preparation
+            step(PREPARE_RESOURCES_STEP, this::prepareResources);
+        } else {
+            // Run variant caller pipeline script
+            step(ID, this::runVariantCallerPipeline);
 
-        // Run variant caller pipeline script
-        step(ID, this::runVariantCallerPipeline);
-
-        // Index variants in OpenCGA
-        step(INDEX_VARIARIANTS_STEP, this::indexVariants);
-
-//        // Annotate variants
-//        step(ANNOTATE_VARIANTS_STEP, this::annotateVariants);
-//
-//        // Index secondary annotation
-//        step(INDEX_SECONDARY_ANNOTATION, this::indexSecondaryAnnotation);
-
-        // Do we have to clean the liftover resource folder
-        step(CLEAN_RESOURCES_STEP, this::cleanResources);
+            // Index variants in OpenCGA
+            step(INDEX_VARIARIANTS_STEP, this::indexVariants);
+        }
     }
 
     protected void prepareResources() throws IOException, ResourceException, ToolException {
-        // Create folder where the liftover resources will be saved (within the job dir, aka outdir)
-        resourcePath = Files.createDirectories(getOutDir().resolve(RESOURCES_DIRNAME));
-
         // Get executor
         VariantCallerPipelineWrapperAnalysisExecutor executor = getToolExecutor(VariantCallerPipelineWrapperAnalysisExecutor.class);
 
@@ -165,8 +171,9 @@ public class VariantCallerPipelineWrapperAnalysis extends OpenCgaToolScopeStudy 
                 .setScriptPath(getOpencgaHome().resolve(ANALYSIS_DIRNAME).resolve(ID))
                 .setCommand(PREPARE_CMD)
                 .setInput(input)
-                .setResourcePath(resourcePath)
                 .execute();
+
+        // TODO: check output?
     }
 
     protected void runVariantCallerPipeline() throws ToolException, CatalogException {
@@ -174,30 +181,24 @@ public class VariantCallerPipelineWrapperAnalysis extends OpenCgaToolScopeStudy 
         VariantCallerPipelineWrapperAnalysisExecutor executor = getToolExecutor(VariantCallerPipelineWrapperAnalysisExecutor.class);
 
         // Get physical files from OpenCGA files
-        List<java.io.File> files = opencgaFiles.stream().map(f -> Paths.get(f.getUri().getPath()).toFile()).collect(Collectors.toList());
+        List<String> input = opencgaFiles.stream().map(f -> Paths.get(f.getUri().getPath()).toAbsolutePath().toString())
+                .collect(Collectors.toList());
 
         // Set parameters and execute
         executor.setStudy(study)
                 .setScriptPath(getOpencgaHome().resolve(ANALYSIS_DIRNAME).resolve(ID))
                 .setCommand(PIPELINE_CMD)
-//                .setFiles(files)
-//                .setTargetAssembly(targetAssembly)
-//                .setVcfDest(vcfDest)
-                .setResourcePath(resourcePath)
+                .setInput(input)
+                .setIndexPath(indexPath.getUri().getPath())
+                .setPipelineParams(analysisParams.getPipelineParams())
                 .execute();
 
-        // If vcfDest is null, Liftover (and rejected) VCF files are NOT stored in the job dir (therefore they are not linked automatically
-        // by the daemon), so they have to be linked to OpenCGA catalog
-//        if (!StringUtils.isEmpty(vcfDest)) {
-//            for (File opencgaFile : opencgaFiles) {
-//                // Link Liftover and rejected VCF files
-//                linkOutFile(getLiftoverFilename(opencgaFile.getName(), targetAssembly), opencgaFile);
-//                linkOutFile(getLiftoverRejectedFilename(opencgaFile.getName(), targetAssembly), opencgaFile);
-//            }
-//        }
+        // TODO: check the VCF output file is generated
     }
 
     protected void indexVariants() throws CatalogException, StorageEngineException {
+        // TODO: check the VCF file
+
         ObjectMap storageOptions = new ObjectMap()
                 .append(VariantStorageOptions.ANNOTATE.key(), true)
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
@@ -205,89 +206,72 @@ public class VariantCallerPipelineWrapperAnalysis extends OpenCgaToolScopeStudy 
         getVariantStorageManager().index(study, vcfFile.getId(), getOutDir().toAbsolutePath().toString(), storageOptions, token);
     }
 
-//    protected void annotateVariants() throws ToolException, CatalogException {
-//    }
+
+//    private void linkOutFile(String outFilename, File inputFile) throws CatalogException, ToolException {
+//        Path parentPath = null;
+//        String opencgaPath = null;
 //
-//    protected void indexSecondaryAnnotation() throws ToolException, CatalogException {
-//    }
-
-    private void cleanResources() throws IOException {
-//        deleteDirectory(resourcePath.toFile());
-    }
-
-    private void linkOutFile(String outFilename, File inputFile) throws CatalogException, ToolException {
-        Path parentPath = null;
-        String opencgaPath = null;
-
-//        if (SAME_AS_INPUT_VCF.equals(vcfDest)) {
-//            parentPath = Paths.get(inputFile.getUri().getPath()).getParent();
-//            if (StringUtils.isNotEmpty(inputFile.getPath())) {
-//                opencgaPath = Paths.get(inputFile.getPath()).getParent().resolve(outFilename).toString();
+//
+//        // OpenCGA catalog link, if the output file exists
+//        Path outFile = parentPath.resolve(outFilename);
+//        if (Files.exists(outFile)) {
+//            URI uri = outFile.toUri();
+//            StopWatch stopWatch = StopWatch.createStarted();
+//            FileLinkParams linkParams = new FileLinkParams().setUri(uri.toString());
+//            if (opencgaPath != null) {
+//                linkParams.setPath(opencgaPath);
+//            }
+//            logger.info("Linking file, uri =  {}; OpenCGA path = {}", uri, opencgaPath);
+//            // Link 'parents' to true to ensure the directory is created
+//            OpenCGAResult<File> result = catalogManager.getFileManager().link(getStudy(), linkParams, true, getToken());
+//            if (result.getEvents().stream().anyMatch(e -> e.getMessage().equals(ParamConstants.FILE_ALREADY_LINKED))) {
+//                logger.info("File already linked - SKIP");
+//            } else {
+//                String duration = TimeUtils.durationToString(stopWatch);
+//                logger.info("File link took {}", duration);
+//                File file = result.first();
+//                addGeneratedFile(file);
 //            }
 //        } else {
-//            parentPath = Paths.get(vcfDest);
+//            logger.warn("Something wrong happened, exptected output file {} does not exit", outFile.toAbsolutePath());
 //        }
-
-        // OpenCGA catalog link, if the output file exists
-        Path outFile = parentPath.resolve(outFilename);
-        if (Files.exists(outFile)) {
-            URI uri = outFile.toUri();
-            StopWatch stopWatch = StopWatch.createStarted();
-            FileLinkParams linkParams = new FileLinkParams().setUri(uri.toString());
-            if (opencgaPath != null) {
-                linkParams.setPath(opencgaPath);
-            }
-            logger.info("Linking file, uri =  {}; OpenCGA path = {}", uri, opencgaPath);
-            // Link 'parents' to true to ensure the directory is created
-            OpenCGAResult<File> result = catalogManager.getFileManager().link(getStudy(), linkParams, true, getToken());
-            if (result.getEvents().stream().anyMatch(e -> e.getMessage().equals(ParamConstants.FILE_ALREADY_LINKED))) {
-                logger.info("File already linked - SKIP");
-            } else {
-                String duration = TimeUtils.durationToString(stopWatch);
-                logger.info("File link took {}", duration);
-                File file = result.first();
-                addGeneratedFile(file);
-            }
-        } else {
-            logger.warn("Something wrong happened, exptected output file {} does not exit", outFile.toAbsolutePath());
-        }
-    }
-
-    public static String getLiftoverFilename(String inputVcfFilename, String assembly) {
-        return basename(inputVcfFilename) + "." + assembly + ".liftover.vcf.gz";
-    }
-
-    public static String getLiftoverRejectedFilename(String inputVcfFilename, String assembly) {
-        return basename(inputVcfFilename) + "." + assembly + ".liftover.rejected.vcf";
-    }
-
-    private static String basename(String inputVcfFilename) {
-        if (inputVcfFilename.endsWith(".vcf.gz")) {
-            return inputVcfFilename.replace(".vcf.gz", "");
-        } else if (inputVcfFilename.endsWith(".vcf")) {
-            return inputVcfFilename.replace(".vcf", "");
-        } else {
-            throw new IllegalArgumentException("File " + inputVcfFilename + " must end with .vcf or .vcf.gz");
-        }
-    }
-
-    public static void deleteDirectory(java.io.File directory) throws IOException {
-        if (!directory.exists()) {
-            return;
-        }
-
-        // If it's a directory, delete contents recursively
-        if (directory.isDirectory()) {
-            java.io.File[] files = directory.listFiles();
-            if (files != null) { // Not null if directory is not empty
-                for (java.io.File file : files) {
-                    // Recursively delete subdirectories and files
-                    deleteDirectory(file);
-                }
-            }
-        }
-
-        // Finally, delete the directory or file itself
-        Files.delete(directory.toPath());
-    }
+//    }
+//
+//    public static String getLiftoverFilename(String inputVcfFilename, String assembly) {
+//        return basename(inputVcfFilename) + "." + assembly + ".liftover.vcf.gz";
+//    }
+//
+//    public static String getLiftoverRejectedFilename(String inputVcfFilename, String assembly) {
+//        return basename(inputVcfFilename) + "." + assembly + ".liftover.rejected.vcf";
+//    }
+//
+//    private static String basename(String inputVcfFilename) {
+//        if (inputVcfFilename.endsWith(".vcf.gz")) {
+//            return inputVcfFilename.replace(".vcf.gz", "");
+//        } else if (inputVcfFilename.endsWith(".vcf")) {
+//            return inputVcfFilename.replace(".vcf", "");
+//        } else {
+//            throw new IllegalArgumentException("File " + inputVcfFilename + " must end with .vcf or .vcf.gz");
+//        }
+//    }
+//
+//    public static void deleteDirectory(java.io.File directory) throws IOException {
+//        if (!directory.exists()) {
+//            return;
+//        }
+//
+//        // If it's a directory, delete contents recursively
+//        if (directory.isDirectory()) {
+//            java.io.File[] files = directory.listFiles();
+//            if (files != null) { // Not null if directory is not empty
+//                for (java.io.File file : files) {
+//                    // Recursively delete subdirectories and files
+//                    deleteDirectory(file);
+//                }
+//            }
+//        }
+//
+//        // Finally, delete the directory or file itself
+//        Files.delete(directory.toPath());
+//    }
 }

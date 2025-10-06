@@ -1962,8 +1962,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "command", commandOptions.command, true);
             putNestedIfNotNull(beanParams, "input", commandOptions.input, true);
+            putNestedIfNotEmpty(beanParams, "indexDir", commandOptions.indexDir, true);
             putNestedMapIfNotEmpty(beanParams, "pipelineParams", commandOptions.pipelineParams, true);
-            putNestedIfNotEmpty(beanParams, "outdir", commandOptions.outdir, true);
+            putNestedIfNotEmpty(beanParams, "outDir", commandOptions.outDir, true);
 
             variantCallerPipelineWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

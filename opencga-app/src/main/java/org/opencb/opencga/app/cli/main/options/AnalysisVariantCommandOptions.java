@@ -2933,11 +2933,14 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--input"}, description = "List of input files", required = false, arity = 1)
         public String input;
     
+        @Parameter(names = {"--index-dir"}, description = "Path to the FASTA index files, BWA index files,...", required = false, arity = 1)
+        public String indexDir;
+    
         @DynamicParameter(names = {"--pipeline-params"}, description = "Map of parameters to run the pipeline. Use: --pipeline-params key=value", required = false)
         public Map<String, ?> pipelineParams = new HashMap<>(); //Dynamic parameters must be initialized;
     
-        @Parameter(names = {"--outdir"}, description = "Output dir for the job.", required = false, arity = 1)
-        public String outdir;
+        @Parameter(names = {"--out-dir"}, description = "Output dir for the job.", required = false, arity = 1)
+        public String outDir;
     
     }
 

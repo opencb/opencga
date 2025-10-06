@@ -625,6 +625,7 @@ public class FieldConstants {
     // Variant caller pipeline
     public static final String VARIANT_CALLER_PIPELINE_COMMAND_DESCRIPTION = "Command to be executed: {prepare | run}";
     public static final String VARIANT_CALLER_PIPELINE_INPUT_DESCRIPTION = "List of input files";
+    public static final String VARIANT_CALLER_PIPELINE_INDEX_DIR_DESCRIPTION = "Path to the FASTA index files, BWA index files,...";
     public static final String VARIANT_CALLER_PIPELINE_PARAMS_DESCRIPTION = "Map of parameters to run the pipeline";
 
     // Fetch resources
