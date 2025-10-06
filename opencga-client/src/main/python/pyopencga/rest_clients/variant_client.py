@@ -1345,7 +1345,7 @@ class Variant(_ParentRestClient):
 
         return self._post(category='analysis', resource='run', subcategory='variant/stats', data=data, **options)
 
-    def run_variant_caller_pipeline(self, **options):
+    def run_variant_caller_pipeline(self, data=None, **options):
         """
         Variant caller pipeline that performs QC (e.g.: FastQC), mapping
             (e.g.: BWA), variant calling (e.g., GATK) and variant indexing in
@@ -1369,7 +1369,7 @@ class Variant(_ParentRestClient):
             execution, but the job will not actually run.
         """
 
-        return self._get(category='analysis', resource='run', subcategory='variant/variantCallerPipeline', **options)
+        return self._post(category='analysis', resource='run', subcategory='variant/variantCallerPipeline', data=data, **options)
 
     def run_walker(self, data=None, **options):
         """

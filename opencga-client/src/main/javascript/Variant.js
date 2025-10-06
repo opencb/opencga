@@ -1000,7 +1000,7 @@ export default class Variant extends OpenCGAParentClass {
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     runVariantCallerPipeline(data, params) {
-        return this._get("analysis", null, "variant/variantCallerPipeline", null, "run", data, params);
+        return this._post("analysis", null, "variant/variantCallerPipeline", null, "run", data, params);
     }
 
     /** Filter and walk variants from the variant storage to produce a file

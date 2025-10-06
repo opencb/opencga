@@ -1153,7 +1153,7 @@ public class VariantClient extends ParentClient {
     public RestResponse<Job> runVariantCallerPipeline(VariantCallerPipelineWrapperParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
-        return execute("analysis", null, "variant/variantCallerPipeline", null, "run", params, GET, Job.class);
+        return execute("analysis", null, "variant/variantCallerPipeline", null, "run", params, POST, Job.class);
     }
 
     /**

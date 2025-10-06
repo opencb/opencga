@@ -750,7 +750,7 @@ setMethod("variantClient", "OpencgaR", function(OpencgaR, endpointName, params=N
         #' @param data Variant caller pipeline parameters.
         runVariantCallerPipeline=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="variant/variantCallerPipeline", subcategoryId=NULL, action="run", params=params,
-                httpMethod="GET", as.queryParam=NULL, ...),
+                httpMethod="POST", as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/analysis/variant/walker/run:
         #' Filter and walk variants from the variant storage to produce a file.

@@ -1249,6 +1249,7 @@ public class VariantWebService extends AnalysisWebService {
         return submitJob(study, JobType.NATIVE, LiftoverWrapperAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
+    @POST
     @Path("/variantCallerPipeline/run")
     @ApiOperation(value = VariantCallerPipelineWrapperAnalysis.DESCRIPTION, response = Job.class)
     public Response variantCallerPipelineRun(
