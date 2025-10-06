@@ -2927,6 +2927,15 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean jobDryRun; 
     
+        @Parameter(names = {"--command"}, description = "Command to be executed: {prepare | run}", required = false, arity = 1)
+        public String command;
+    
+        @Parameter(names = {"--input"}, description = "List of input files", required = false, arity = 1)
+        public String input;
+    
+        @DynamicParameter(names = {"--pipeline-params"}, description = "Map of parameters to run the pipeline. Use: --pipeline-params key=value", required = false)
+        public Map<String, ?> pipelineParams = new HashMap<>(); //Dynamic parameters must be initialized;
+    
         @Parameter(names = {"--outdir"}, description = "Output dir for the job.", required = false, arity = 1)
         public String outdir;
     

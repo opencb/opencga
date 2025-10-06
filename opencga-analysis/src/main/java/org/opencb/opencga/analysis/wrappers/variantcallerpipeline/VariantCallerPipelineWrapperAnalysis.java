@@ -17,8 +17,11 @@
 package org.opencb.opencga.analysis.wrappers.variantcallerpipeline;
 
 
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.opencb.commons.utils.FileUtils;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.ResourceException;
@@ -32,6 +35,8 @@ import org.opencb.opencga.core.models.variant.VariantCallerPipelineWrapperParams
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 
 import java.io.IOException;
 import java.net.URI;
@@ -43,6 +48,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.analysis.wrappers.variantcallerpipeline.VariantCallerPipelineWrapperAnalysisExecutor.PIPELINE_CMD;
+import static org.opencb.opencga.analysis.wrappers.variantcallerpipeline.VariantCallerPipelineWrapperAnalysisExecutor.PREPARE_CMD;
+import static org.opencb.opencga.catalog.utils.ResourceManager.ANALYSIS_DIRNAME;
 import static org.opencb.opencga.core.tools.ResourceManager.RESOURCES_DIRNAME;
 
 @Tool(id = VariantCallerPipelineWrapperAnalysis.ID, resource = Enums.Resource.VARIANT, description = VariantCallerPipelineWrapperAnalysis.DESCRIPTION)
@@ -54,15 +62,14 @@ public class VariantCallerPipelineWrapperAnalysis extends OpenCgaToolScopeStudy 
 
     private static final String PREPARE_RESOURCES_STEP = "prepare-resources";
     private static final String INDEX_VARIARIANTS_STEP = "index-variants";
-    private static final String ANNOTATE_VARIANTS_STEP = "annotate-variants";
-    private static final String INDEX_SECONDARY_ANNOTATION = "index-secondary-annotation";
+//    private static final String ANNOTATE_VARIANTS_STEP = "annotate-variants";
+//    private static final String INDEX_SECONDARY_ANNOTATION = "index-secondary-annotation";
     private static final String CLEAN_RESOURCES_STEP = "clean-resources";
 
+    private String referenceUrl = null;
     private List<File> opencgaFiles = new ArrayList<>();
+    private File vcfFile = null;
     private Path resourcePath;
-
-    private org.opencb.opencga.catalog.utils.ResourceManager resourceManager = null;
-    private List<String> variantCallerPipelineResourceIds = null;
 
     @ToolParams
     protected final VariantCallerPipelineWrapperParams analysisParams = new VariantCallerPipelineWrapperParams();
@@ -74,26 +81,48 @@ public class VariantCallerPipelineWrapperAnalysis extends OpenCgaToolScopeStudy 
 
         setUpStorageEngineExecutor(study);
 
-//        if (CollectionUtils.isEmpty(analysisParams.getFiles())) {
-//            throw new ToolException("Variant caller pipeline 'files' parameter is mandatory.");
-//        }
+        // Check command
+        if (StringUtils.isEmpty(analysisParams.getCommand())) {
+            throw new ToolException("Variant caller pipeline command parameter is mandatory.");
+        }
+        if (!analysisParams.getCommand().equalsIgnoreCase(PREPARE_CMD) && !analysisParams.getCommand().equalsIgnoreCase(PIPELINE_CMD)) {
+            throw new ToolException("Variant caller pipeline command '" + analysisParams.getCommand() + "' is not valid. Supported commands"
+                    + " are: '" + PREPARE_CMD + "' and '"
+                    + PIPELINE_CMD + "'.");
+        }
 
-        // Check files
-//        for (String file : analysisParams.getFiles()) {
-//            logger.info("Checking file {}", file);
-//            opencgaFiles.add(getCatalogManager().getFileManager().get(study, file, QueryOptions.empty(), token).first());
-//        }
-
-        // Check resources
-        resourceManager = new org.opencb.opencga.catalog.utils.ResourceManager(getOpencgaHome());
-        for (String variantCallerPipelineResourceId : variantCallerPipelineResourceIds) {
-            resourceManager.checkResourcePath(variantCallerPipelineResourceId);
+        // Check input files
+        if (CollectionUtils.isEmpty(analysisParams.getInput())) {
+            throw new ToolException("Variant caller pipeline input parameter is mandatory.");
+        }
+        if (analysisParams.getCommand().equalsIgnoreCase(PREPARE_CMD)) {
+            // In prepare command, only one input file is required and it can be a URL to the reference FASTA file to download
+            // or a OpencGA file ID
+            if (analysisParams.getInput().size() != 1) {
+                throw new ToolException("Variant caller pipeline prepare command requires one and only one input file; got "
+                        + analysisParams.getInput().size());
+            }
+            if (analysisParams.getInput().get(0).startsWith("http://")
+                    || analysisParams.getInput().get(0).startsWith("https://")
+                    || analysisParams.getInput().get(0).startsWith("ftp://")) {
+                referenceUrl = analysisParams.getInput().get(0);
+            } else {
+                logger.info("Checking reference file {}", analysisParams.getInput().get(0));
+                opencgaFiles.add(getCatalogManager().getFileManager().get(study, analysisParams.getInput().get(0), QueryOptions.empty(),
+                        token).first());
+            }
+        } else {
+            // In pipeline command, input files must be OpencGA file IDs
+            for (String file : analysisParams.getInput()) {
+                logger.info("Checking file {}", file);
+                opencgaFiles.add(getCatalogManager().getFileManager().get(study, file, QueryOptions.empty(), token).first());
+            }
         }
     }
 
     @Override
     protected List<String> getSteps() {
-        return Arrays.asList(PREPARE_RESOURCES_STEP, ID, INDEX_VARIARIANTS_STEP, ANNOTATE_VARIANTS_STEP, INDEX_SECONDARY_ANNOTATION,
+        return Arrays.asList(PREPARE_RESOURCES_STEP, ID, INDEX_VARIARIANTS_STEP, /*ANNOTATE_VARIANTS_STEP, INDEX_SECONDARY_ANNOTATION,*/
                 CLEAN_RESOURCES_STEP);
     }
 
@@ -107,29 +136,37 @@ public class VariantCallerPipelineWrapperAnalysis extends OpenCgaToolScopeStudy 
         // Index variants in OpenCGA
         step(INDEX_VARIARIANTS_STEP, this::indexVariants);
 
-        // Annotate variants
-        step(ANNOTATE_VARIANTS_STEP, this::annotateVariants);
-
-        // Index secondary annotation
-        step(INDEX_SECONDARY_ANNOTATION, this::indexSecondaryAnnotation);
+//        // Annotate variants
+//        step(ANNOTATE_VARIANTS_STEP, this::annotateVariants);
+//
+//        // Index secondary annotation
+//        step(INDEX_SECONDARY_ANNOTATION, this::indexSecondaryAnnotation);
 
         // Do we have to clean the liftover resource folder
         step(CLEAN_RESOURCES_STEP, this::cleanResources);
     }
 
-    protected void prepareResources() throws IOException, ResourceException {
+    protected void prepareResources() throws IOException, ResourceException, ToolException {
         // Create folder where the liftover resources will be saved (within the job dir, aka outdir)
         resourcePath = Files.createDirectories(getOutDir().resolve(RESOURCES_DIRNAME));
 
-        // Create resources from the installation folder
-        for (String variantCallerPipelineResourceId : variantCallerPipelineResourceIds) {
-            Path installPath = resourceManager.checkResourcePath(variantCallerPipelineResourceId);
-            FileUtils.copyFile(installPath.toFile(), resourcePath.resolve(installPath.getFileName()).toFile());
-        }
-    }
+        // Get executor
+        VariantCallerPipelineWrapperAnalysisExecutor executor = getToolExecutor(VariantCallerPipelineWrapperAnalysisExecutor.class);
 
-    private void cleanResources() throws IOException {
-        deleteDirectory(resourcePath.toFile());
+        List<String> input = new ArrayList<>();
+        if (referenceUrl != null) {
+            input.add(referenceUrl);
+        } else {
+            input.add(opencgaFiles.get(0).getUri().getPath());
+        }
+
+        // Set parameters and execute
+        executor.setStudy(study)
+                .setScriptPath(getOpencgaHome().resolve(ANALYSIS_DIRNAME).resolve(ID))
+                .setCommand(PREPARE_CMD)
+                .setInput(input)
+                .setResourcePath(resourcePath)
+                .execute();
     }
 
     protected void runVariantCallerPipeline() throws ToolException, CatalogException {
@@ -141,11 +178,12 @@ public class VariantCallerPipelineWrapperAnalysis extends OpenCgaToolScopeStudy 
 
         // Set parameters and execute
         executor.setStudy(study)
-//                .setLiftoverPath(getOpencgaHome().resolve(ANALYSIS_DIRNAME).resolve(ID))
+                .setScriptPath(getOpencgaHome().resolve(ANALYSIS_DIRNAME).resolve(ID))
+                .setCommand(PIPELINE_CMD)
 //                .setFiles(files)
 //                .setTargetAssembly(targetAssembly)
 //                .setVcfDest(vcfDest)
-//                .setResourcePath(resourcePath)
+                .setResourcePath(resourcePath)
                 .execute();
 
         // If vcfDest is null, Liftover (and rejected) VCF files are NOT stored in the job dir (therefore they are not linked automatically
@@ -159,13 +197,22 @@ public class VariantCallerPipelineWrapperAnalysis extends OpenCgaToolScopeStudy 
 //        }
     }
 
-    protected void indexVariants() throws ToolException, CatalogException {
+    protected void indexVariants() throws CatalogException, StorageEngineException {
+        ObjectMap storageOptions = new ObjectMap()
+                .append(VariantStorageOptions.ANNOTATE.key(), true)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
+
+        getVariantStorageManager().index(study, vcfFile.getId(), getOutDir().toAbsolutePath().toString(), storageOptions, token);
     }
 
-    protected void annotateVariants() throws ToolException, CatalogException {
-    }
+//    protected void annotateVariants() throws ToolException, CatalogException {
+//    }
+//
+//    protected void indexSecondaryAnnotation() throws ToolException, CatalogException {
+//    }
 
-    protected void indexSecondaryAnnotation() throws ToolException, CatalogException {
+    private void cleanResources() throws IOException {
+//        deleteDirectory(resourcePath.toFile());
     }
 
     private void linkOutFile(String outFilename, File inputFile) throws CatalogException, ToolException {

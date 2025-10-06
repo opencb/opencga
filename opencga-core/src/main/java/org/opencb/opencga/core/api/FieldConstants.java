@@ -622,6 +622,11 @@ public class FieldConstants {
             + " is used, then VCF files be stored in the same folder as the input VCF files. Otherwise, they will be stored in the specified"
             + " destination path";
 
+    // Variant caller pipeline
+    public static final String VARIANT_CALLER_PIPELINE_COMMAND_DESCRIPTION = "Command to be executed: {prepare | run}";
+    public static final String VARIANT_CALLER_PIPELINE_INPUT_DESCRIPTION = "List of input files";
+    public static final String VARIANT_CALLER_PIPELINE_PARAMS_DESCRIPTION = "Map of parameters to run the pipeline";
+
     // Fetch resources
     public static final String FETCH_RESOURCES_DESCRIPTION = "List of resource IDs, separated by commas, to fetch (available resources are"
             + " specified in the configuration file). The wildcard '*' can be used: for example, use '*' to fetch all resources, or"
