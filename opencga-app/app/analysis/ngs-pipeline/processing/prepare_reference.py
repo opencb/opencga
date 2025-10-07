@@ -62,7 +62,9 @@ class PrepareReference(BaseProcessor):
                 case "bwa":
                     self.bwa_index(reference_path)
                 case "bwa-mem2":
-                    self.bwamem2_index(reference_path)
+                    bwa_mem2_installed = self.run_command(["which", "bwa-mem2"], check=False)
+                    if bwa_mem2_installed.returncode == 0:
+                        self.bwamem2_index(reference_path)
 
         return 0
 
