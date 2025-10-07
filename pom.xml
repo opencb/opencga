@@ -43,7 +43,7 @@
     </modules>
 
     <properties>
-        <cellbase.version>8.0.0-SNAPSHOT</cellbase.version>
+        <cellbase.version>6.6.0</cellbase.version>
         <biodata.version>5.0.0-SNAPSHOT</biodata.version>
         <java-common-libs.version>7.0.0-SNAPSHOT</java-common-libs.version>
         <iva.version>5.0.0-SNAPSHOT</iva.version>
