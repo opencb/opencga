@@ -1,4 +1,4 @@
-package org.opencb.opencga.analysis.wrappers.variantcallerpipeline;
+package org.opencb.opencga.analysis.wrappers.ngspipeline;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
@@ -14,13 +14,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-@ToolExecutor(id = VariantCallerPipelineWrapperAnalysisExecutor.ID,
-        tool = VariantCallerPipelineWrapperAnalysis.ID,
+@ToolExecutor(id = NgsPipelineWrapperAnalysisExecutor.ID,
+        tool = NgsPipelineWrapperAnalysis.ID,
         source = ToolExecutor.Source.STORAGE,
         framework = ToolExecutor.Framework.LOCAL)
-public class VariantCallerPipelineWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor {
+public class NgsPipelineWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor {
 
-    public static final String ID = VariantCallerPipelineWrapperAnalysis.ID + "-local";
+    public static final String ID = NgsPipelineWrapperAnalysis.ID + "-local";
 
     public static final String PREPARE_CMD = "prepare";
     public static final String PIPELINE_CMD = "pipeline";
@@ -259,7 +259,7 @@ public class VariantCallerPipelineWrapperAnalysisExecutor extends DockerWrapperA
         return study;
     }
 
-    public VariantCallerPipelineWrapperAnalysisExecutor setStudy(String study) {
+    public NgsPipelineWrapperAnalysisExecutor setStudy(String study) {
         this.study = study;
         return this;
     }
@@ -268,7 +268,7 @@ public class VariantCallerPipelineWrapperAnalysisExecutor extends DockerWrapperA
         return scriptPath;
     }
 
-    public VariantCallerPipelineWrapperAnalysisExecutor setScriptPath(Path scriptPath) {
+    public NgsPipelineWrapperAnalysisExecutor setScriptPath(Path scriptPath) {
         this.scriptPath = scriptPath;
         return this;
     }
@@ -277,7 +277,7 @@ public class VariantCallerPipelineWrapperAnalysisExecutor extends DockerWrapperA
         return command;
     }
 
-    public VariantCallerPipelineWrapperAnalysisExecutor setCommand(String command) {
+    public NgsPipelineWrapperAnalysisExecutor setCommand(String command) {
         this.command = command;
         return this;
     }
@@ -286,7 +286,7 @@ public class VariantCallerPipelineWrapperAnalysisExecutor extends DockerWrapperA
         return input;
     }
 
-    public VariantCallerPipelineWrapperAnalysisExecutor setInput(List<String> input) {
+    public NgsPipelineWrapperAnalysisExecutor setInput(List<String> input) {
         this.input = input;
         return this;
     }
@@ -295,7 +295,7 @@ public class VariantCallerPipelineWrapperAnalysisExecutor extends DockerWrapperA
         return indexPath;
     }
 
-    public VariantCallerPipelineWrapperAnalysisExecutor setIndexPath(String indexPath) {
+    public NgsPipelineWrapperAnalysisExecutor setIndexPath(String indexPath) {
         this.indexPath = indexPath;
         return this;
     }
@@ -304,7 +304,7 @@ public class VariantCallerPipelineWrapperAnalysisExecutor extends DockerWrapperA
         return pipelineParams;
     }
 
-    public VariantCallerPipelineWrapperAnalysisExecutor setPipelineParams(ObjectMap pipelineParams) {
+    public NgsPipelineWrapperAnalysisExecutor setPipelineParams(ObjectMap pipelineParams) {
         this.pipelineParams = pipelineParams;
         return this;
     }

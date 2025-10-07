@@ -51,7 +51,6 @@ import org.opencb.opencga.core.models.variant.SampleEligibilityAnalysisParams;
 import org.opencb.opencga.core.models.variant.SampleQcAnalysisParams;
 import org.opencb.opencga.core.models.variant.SampleVariantFilterParams;
 import org.opencb.opencga.core.models.variant.SampleVariantStatsAnalysisParams;
-import org.opencb.opencga.core.models.variant.VariantCallerPipelineWrapperParams;
 import org.opencb.opencga.core.models.variant.VariantExportParams;
 import org.opencb.opencga.core.models.variant.VariantStatsAnalysisParams;
 import org.opencb.opencga.core.models.variant.VariantWalkerParams;
@@ -212,9 +211,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "stats-run":
                 queryResponse = runStats();
-                break;
-            case "variant-caller-pipeline-run":
-                queryResponse = runVariantCallerPipeline();
                 break;
             case "walker-run":
                 queryResponse = runWalker();
@@ -1928,49 +1924,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), VariantStatsAnalysisParams.class);
         }
         return openCGAClient.getVariantClient().runStats(variantStatsAnalysisParams, queryParams);
-    }
-
-    private RestResponse<Job> runVariantCallerPipeline() throws Exception {
-        logger.debug("Executing runVariantCallerPipeline in Analysis - Variant command line");
-
-        AnalysisVariantCommandOptions.RunVariantCallerPipelineCommandOptions commandOptions = analysisVariantCommandOptions.runVariantCallerPipelineCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
-        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
-        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
-        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
-        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
-        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
-
-
-        VariantCallerPipelineWrapperParams variantCallerPipelineWrapperParams = null;
-        if (commandOptions.jsonDataModel) {
-            RestResponse<Job> res = new RestResponse<>();
-            res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/variantCallerPipeline/run"));
-            return res;
-        } else if (commandOptions.jsonFile != null) {
-            variantCallerPipelineWrapperParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), VariantCallerPipelineWrapperParams.class);
-        } else {
-            ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "command", commandOptions.command, true);
-            putNestedIfNotNull(beanParams, "input", commandOptions.input, true);
-            putNestedIfNotEmpty(beanParams, "indexDir", commandOptions.indexDir, true);
-            putNestedMapIfNotEmpty(beanParams, "pipelineParams", commandOptions.pipelineParams, true);
-            putNestedIfNotEmpty(beanParams, "outDir", commandOptions.outDir, true);
-
-            variantCallerPipelineWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
-                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), VariantCallerPipelineWrapperParams.class);
-        }
-        return openCGAClient.getVariantClient().runVariantCallerPipeline(variantCallerPipelineWrapperParams, queryParams);
     }
 
     private RestResponse<Job> runWalker() throws Exception {

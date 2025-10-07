@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.wrappers.variantcallerpipeline;
+package org.opencb.opencga.analysis.wrappers.ngspipeline;
 
 
 import org.apache.commons.collections4.CollectionUtils;
@@ -28,45 +28,40 @@ import org.opencb.opencga.catalog.exceptions.ResourceException;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.variant.VariantCallerPipelineWrapperParams;
+import org.opencb.opencga.core.models.clinical.NgsPipelineWrapperParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.analysis.wrappers.variantcallerpipeline.VariantCallerPipelineWrapperAnalysisExecutor.PIPELINE_CMD;
-import static org.opencb.opencga.analysis.wrappers.variantcallerpipeline.VariantCallerPipelineWrapperAnalysisExecutor.PREPARE_CMD;
+import static org.opencb.opencga.analysis.wrappers.ngspipeline.NgsPipelineWrapperAnalysisExecutor.PIPELINE_CMD;
+import static org.opencb.opencga.analysis.wrappers.ngspipeline.NgsPipelineWrapperAnalysisExecutor.PREPARE_CMD;
 import static org.opencb.opencga.catalog.utils.ResourceManager.ANALYSIS_DIRNAME;
-import static org.opencb.opencga.core.tools.ResourceManager.RESOURCES_DIRNAME;
 
-@Tool(id = VariantCallerPipelineWrapperAnalysis.ID, resource = Enums.Resource.VARIANT, description = VariantCallerPipelineWrapperAnalysis.DESCRIPTION)
-public class VariantCallerPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
+@Tool(id = NgsPipelineWrapperAnalysis.ID, resource = Enums.Resource.VARIANT, description = NgsPipelineWrapperAnalysis.DESCRIPTION)
+public class NgsPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
 
-    public static final String ID = "variant-caller-pipeline";
-    public static final String DESCRIPTION = "Variant caller pipeline that performs QC (e.g.: FastQC), mapping (e.g.: BWA),"
+    public static final String ID = "ngs-pipeline";
+    public static final String DESCRIPTION = "NGS pipeline that performs QC (e.g.: FastQC), mapping (e.g.: BWA),"
             + " variant calling (e.g., GATK) and variant indexing in OpenCGA storage.";
 
     private static final String PREPARE_RESOURCES_STEP = "prepare-resources";
     private static final String INDEX_VARIARIANTS_STEP = "index-variants";
-    private static final String CLEAN_RESOURCES_STEP = "clean-resources";
 
     private String referenceUrl = null;
     private List<File> opencgaFiles = new ArrayList<>();
     private File indexPath = null;
     private File vcfFile = null;
-    private Path resourcePath;
 
     @ToolParams
-    protected final VariantCallerPipelineWrapperParams analysisParams = new VariantCallerPipelineWrapperParams();
+    protected final NgsPipelineWrapperParams analysisParams = new NgsPipelineWrapperParams();
 
     @Override
     protected void check() throws Exception {
@@ -148,7 +143,7 @@ public class VariantCallerPipelineWrapperAnalysis extends OpenCgaToolScopeStudy 
             step(PREPARE_RESOURCES_STEP, this::prepareResources);
         } else {
             // Run variant caller pipeline script
-            step(ID, this::runVariantCallerPipeline);
+            step(ID, this::runNgsPipeline);
 
             // Index variants in OpenCGA
             step(INDEX_VARIARIANTS_STEP, this::indexVariants);
@@ -157,7 +152,7 @@ public class VariantCallerPipelineWrapperAnalysis extends OpenCgaToolScopeStudy 
 
     protected void prepareResources() throws IOException, ResourceException, ToolException {
         // Get executor
-        VariantCallerPipelineWrapperAnalysisExecutor executor = getToolExecutor(VariantCallerPipelineWrapperAnalysisExecutor.class);
+        NgsPipelineWrapperAnalysisExecutor executor = getToolExecutor(NgsPipelineWrapperAnalysisExecutor.class);
 
         List<String> input = new ArrayList<>();
         if (referenceUrl != null) {
@@ -176,9 +171,9 @@ public class VariantCallerPipelineWrapperAnalysis extends OpenCgaToolScopeStudy 
         // TODO: check output?
     }
 
-    protected void runVariantCallerPipeline() throws ToolException, CatalogException {
+    protected void runNgsPipeline() throws ToolException, CatalogException {
         // Get executor
-        VariantCallerPipelineWrapperAnalysisExecutor executor = getToolExecutor(VariantCallerPipelineWrapperAnalysisExecutor.class);
+        NgsPipelineWrapperAnalysisExecutor executor = getToolExecutor(NgsPipelineWrapperAnalysisExecutor.class);
 
         // Get physical files from OpenCGA files
         List<String> input = opencgaFiles.stream().map(f -> Paths.get(f.getUri().getPath()).toAbsolutePath().toString())

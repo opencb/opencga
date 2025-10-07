@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.models.variant;
+package org.opencb.opencga.core.models.clinical;
 
 import org.opencb.commons.annotations.DataField;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -24,7 +24,7 @@ import org.opencb.opencga.core.tools.ToolParams;
 import java.util.ArrayList;
 import java.util.List;
 
-public class VariantCallerPipelineWrapperParams extends ToolParams {
+public class NgsPipelineWrapperParams extends ToolParams {
 
     public static final String DESCRIPTION = "Variant caller pipeline parameters";
 
@@ -55,12 +55,12 @@ public class VariantCallerPipelineWrapperParams extends ToolParams {
     @DataField(id = "outDir", description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
     private String outDir;
 
-    public VariantCallerPipelineWrapperParams() {
+    public NgsPipelineWrapperParams() {
         this.input = new ArrayList<>();
     }
 
-    public VariantCallerPipelineWrapperParams(String command, List<String> input, String indexDir, ObjectMap pipelineParams,
-                                              String outDir) {
+    public NgsPipelineWrapperParams(String command, List<String> input, String indexDir, ObjectMap pipelineParams,
+                                    String outDir) {
         this.command = command;
         this.input = input;
         this.indexDir = indexDir;
@@ -84,7 +84,7 @@ public class VariantCallerPipelineWrapperParams extends ToolParams {
         return command;
     }
 
-    public VariantCallerPipelineWrapperParams setCommand(String command) {
+    public NgsPipelineWrapperParams setCommand(String command) {
         this.command = command;
         return this;
     }
@@ -93,7 +93,7 @@ public class VariantCallerPipelineWrapperParams extends ToolParams {
         return input;
     }
 
-    public VariantCallerPipelineWrapperParams setInput(List<String> input) {
+    public NgsPipelineWrapperParams setInput(List<String> input) {
         this.input = input;
         return this;
     }
@@ -102,7 +102,7 @@ public class VariantCallerPipelineWrapperParams extends ToolParams {
         return indexDir;
     }
 
-    public VariantCallerPipelineWrapperParams setIndexDir(String indexDir) {
+    public NgsPipelineWrapperParams setIndexDir(String indexDir) {
         this.indexDir = indexDir;
         return this;
     }
@@ -111,7 +111,7 @@ public class VariantCallerPipelineWrapperParams extends ToolParams {
         return pipelineParams;
     }
 
-    public VariantCallerPipelineWrapperParams setPipelineParams(ObjectMap pipelineParams) {
+    public NgsPipelineWrapperParams setPipelineParams(ObjectMap pipelineParams) {
         this.pipelineParams = pipelineParams;
         return this;
     }
@@ -120,7 +120,7 @@ public class VariantCallerPipelineWrapperParams extends ToolParams {
         return outDir;
     }
 
-    public VariantCallerPipelineWrapperParams setOutDir(String outDir) {
+    public NgsPipelineWrapperParams setOutDir(String outDir) {
         this.outDir = outDir;
         return this;
     }
