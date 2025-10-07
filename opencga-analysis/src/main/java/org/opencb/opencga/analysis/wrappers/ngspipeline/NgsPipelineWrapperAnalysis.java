@@ -26,15 +26,18 @@ import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.ResourceException;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.clinical.NgsPipelineWrapperParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.clinical.NgsPipelineWrapperParams;
+import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -192,14 +195,25 @@ public class NgsPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
         // TODO: check the VCF output file is generated
     }
 
-    protected void indexVariants() throws CatalogException, StorageEngineException {
-        // TODO: check the VCF file
+    protected void indexVariants() throws CatalogException, StorageEngineException, ToolException {
+        // Remove the extension .gz if exists in the first OpenCGA filename
+        String filename = opencgaFiles.get(0).getName();
+        if (filename.toLowerCase().endsWith(".gz")) {
+            filename = filename.substring(0, filename.length() - 3);
+        }
+
+        Path vcfPath = getOutDir().resolve("variant-calling").resolve(filename + ".sorted.gatk.vcf").toAbsolutePath();
+        if (!Files.exists(vcfPath)) {
+            throw new ToolException("Could not find the VCF: " + vcfPath);
+        }
+        vcfFile = catalogManager.getFileManager().link(study, new FileLinkParams(vcfPath.toAbsolutePath().toString(),
+                "", "", "", null, null, null, null, null), false, token).first();
 
         ObjectMap storageOptions = new ObjectMap()
-                .append(VariantStorageOptions.ANNOTATE.key(), true)
+                .append(VariantStorageOptions.ANNOTATE.key(), false)
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
 
-        getVariantStorageManager().index(study, vcfFile.getId(), getOutDir().toAbsolutePath().toString(), storageOptions, token);
+        getVariantStorageManager().index(study, vcfFile.getId(), getScratchDir().toAbsolutePath().toString(), storageOptions, token);
     }
 
 

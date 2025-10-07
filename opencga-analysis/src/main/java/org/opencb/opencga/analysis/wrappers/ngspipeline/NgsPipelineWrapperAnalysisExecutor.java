@@ -4,13 +4,13 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -163,6 +163,27 @@ public class NgsPipelineWrapperAnalysisExecutor extends DockerWrapperAnalysisExe
             // Pipeline params binding
             Path pipelineParamsPath = getOutDir().resolve(PIPELINE_PARAMS_FILENAME);
             Path virtualPipelineParamsPath = Paths.get(INPUT_VIRTUAL_PATH).resolve(pipelineParamsPath.getFileName());
+
+            // Modify BWA index according to the indexPath
+            Path bwaIndexPath = null;
+            Path bwaIndexDirPath = Paths.get(indexPath).resolve("bwa-index");
+            for (File file : bwaIndexDirPath.toFile().listFiles()) {
+                if (file.getName().endsWith(".fa")) {
+                    bwaIndexPath = virtualIndexPath.resolve("bwa-index").resolve(file.getName());
+                    break;
+                }
+            }
+            if (bwaIndexPath == null) {
+                throw new ToolExecutorException("Could not find the BWA index at " + bwaIndexDirPath);
+            }
+            List<Map<String, Object>> steps = (List<Map<String, Object>>) pipelineParams.get("steps");
+            for (Map<String, Object> step : steps) {
+                if ("alignment".equals(step.get("name"))) {
+                    Map<String, Object> tool = (Map<String, Object>) step.get("tool");
+                    tool.put("index", bwaIndexPath.toAbsolutePath().toString());
+                }
+            }
+            // Write the JSON file containning the pipeline parameters
             JacksonUtils.getDefaultObjectMapper().writerFor(ObjectMap.class).writeValue(pipelineParamsPath.toFile(), pipelineParams);
             inputBindings.add(new AbstractMap.SimpleEntry<>(pipelineParamsPath.toAbsolutePath().toString(),
                     virtualPipelineParamsPath.toString()));
@@ -219,6 +240,32 @@ public class NgsPipelineWrapperAnalysisExecutor extends DockerWrapperAnalysisExe
             // Pipeline params binding
             Path pipelineParamsPath = getOutDir().resolve(PIPELINE_PARAMS_FILENAME);
             Path virtualPipelineParamsPath = Paths.get(INPUT_VIRTUAL_PATH).resolve(pipelineParamsPath.getFileName());
+
+            // Modify BWA index according to the indexPath
+            Path refIndexPath = null;
+            Path refIndexDirPath = Paths.get(indexPath).resolve("reference-genome-index");
+            for (File file : refIndexDirPath.toFile().listFiles()) {
+                if (file.getName().endsWith(".fa")) {
+                    refIndexPath = virtualIndexPath.resolve("reference-genome-index").resolve(file.getName());
+                    break;
+                }
+            }
+            if (refIndexPath == null) {
+                throw new ToolExecutorException("Could not find the reference index at " + refIndexDirPath);
+            }
+            List<Map<String, Object>> steps = (List<Map<String, Object>>) pipelineParams.get("steps");
+            for (Map<String, Object> step : steps) {
+                if ("variant-calling".equals(step.get("name"))) {
+                    List<Map<String, Object>> tools = (List<Map<String, Object>>) step.get("tools");
+                    for (Map<String, Object> tool : tools) {
+                        if ("gatk".equals(tool.get("name"))) {
+                            tool.put("reference", refIndexPath.toAbsolutePath().toString());
+                            break;
+                        }
+                    }
+                }
+            }
+            // Write the JSON file containing the pipeline parameters
             JacksonUtils.getDefaultObjectMapper().writerFor(ObjectMap.class).writeValue(pipelineParamsPath.toFile(), pipelineParams);
             inputBindings.add(new AbstractMap.SimpleEntry<>(pipelineParamsPath.toAbsolutePath().toString(),
                     virtualPipelineParamsPath.toString()));
@@ -233,11 +280,11 @@ public class NgsPipelineWrapperAnalysisExecutor extends DockerWrapperAnalysisExe
             // -p pipeline.json
             // -i /data/HI.4019.002.index_7.ANN0831_R1.fastq.gz,/data/HI.4019.002.index_7.ANN0831_R2.fastq.gz
 
-            String params = "python3 " + virtualScriptPath + "/" +  NGS_PIPELINE_SCRIPT + " prepare"
+            String params = "python3 " + virtualScriptPath + "/" +  NGS_PIPELINE_SCRIPT + " run"
                     + " -o " + OUTPUT_VIRTUAL_PATH
                     + " -p " + virtualPipelineParamsPath
                     + " --index " + virtualIndexPath
-                    + " --steps variant_calling";
+                    + " --steps variant-calling";
 
             // Execute Python script in docker
             String dockerImage =  "broadinstitute/gatk:4.6.2.0";

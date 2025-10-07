@@ -55,9 +55,9 @@ class VariantCalling(BaseProcessor):
             cmd = ["gatk", "HaplotypeCaller", "-R", gatk_tool_config.get("reference")] + ["-I", str(bam_file)] + ["-O", str(self.output / vcf_file)]
             self.run_command(cmd)
 
-            ## Check if MultiQC is installed and run it
-            cmd = ["bcftools", "stats"] + ["-s", "-"] + [str(self.output / vcf_file)] + [">", str(self.output / (Path(vcf_file).stem + ".bcftools.stats"))]
-            self.run_command(cmd)
+            ## Run bcftools stats
+            #cmd = ["bcftools", "stats"] + ["-s", "-"] + [str(self.output / vcf_file)] + [">", str(self.output / (Path(vcf_file).stem + ".bcftools.stats"))]
+            #self.run_command(cmd)
 
             ## Check if MultiQC is installed and run it
             multiqc_installed = self.run_command(["which", "multiqc"], check=False)
