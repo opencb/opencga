@@ -295,6 +295,23 @@ public class OpenCGATestExternalResource extends ExternalResource {
             Files.copy(inputStream, analysisPath.resolve("liftover.sh"), StandardCopyOption.REPLACE_EXISTING);
         }
 
+        // NGS pipeline analysis
+        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/ngs-pipeline")).toAbsolutePath();
+        List<String> ngsFiles = Arrays.asList("__init__.py", "main.py");
+        for (String ngsFile : ngsFiles) {
+            try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/ngs-pipeline/" + ngsFile)) {
+                Files.copy(inputStream, analysisPath.resolve(ngsFile), StandardCopyOption.REPLACE_EXISTING);
+            }
+        }
+        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/ngs-pipeline/processing")).toAbsolutePath();
+        ngsFiles = Arrays.asList("__init__.py", "alignment.py", "base_processor.py", "prepare_reference.py", "quality_control.py",
+                "variant_calling.py");
+        for (String ngsFile : ngsFiles) {
+            try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/ngs-pipeline/processing/" + ngsFile)) {
+                Files.copy(inputStream, analysisPath.resolve(ngsFile), StandardCopyOption.REPLACE_EXISTING);
+            }
+        }
+
         return opencgaHome;
     }
 

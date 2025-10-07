@@ -22,6 +22,7 @@ import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class NgsPipelineWrapperParams extends ToolParams {
@@ -36,6 +37,9 @@ public class NgsPipelineWrapperParams extends ToolParams {
 
     @DataField(id = "indexDir", description = FieldConstants.VARIANT_CALLER_PIPELINE_INDEX_DIR_DESCRIPTION)
     private String indexDir;
+
+    @DataField(id = "prepareIndices", description = FieldConstants.VARIANT_CALLER_PIPELINE_PREPARE_INDICES_DESCRIPTION)
+    private List<String> prepareIndices;
 
     @DataField(id = "pipelineParams", description = FieldConstants.VARIANT_CALLER_PIPELINE_PARAMS_DESCRIPTION)
     private ObjectMap pipelineParams;
@@ -57,23 +61,26 @@ public class NgsPipelineWrapperParams extends ToolParams {
 
     public NgsPipelineWrapperParams() {
         this.input = new ArrayList<>();
+        this.prepareIndices = new ArrayList<>();
     }
 
-    public NgsPipelineWrapperParams(String command, List<String> input, String indexDir, ObjectMap pipelineParams,
-                                    String outDir) {
+    public NgsPipelineWrapperParams(String command, List<String> input, String indexDir, List<String> prepareIndices,
+                                    ObjectMap pipelineParams, String outDir) {
         this.command = command;
         this.input = input;
         this.indexDir = indexDir;
+        this.prepareIndices = prepareIndices;
         this.pipelineParams = pipelineParams;
         this.outDir = outDir;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("VariantCallerPipelineWrapperParams{");
+        final StringBuilder sb = new StringBuilder("NgsPipelineWrapperParams{");
         sb.append("command='").append(command).append('\'');
         sb.append(", input=").append(input);
         sb.append(", indexDir='").append(indexDir).append('\'');
+        sb.append(", prepareIndices=").append(prepareIndices);
         sb.append(", pipelineParams=").append(pipelineParams);
         sb.append(", outDir='").append(outDir).append('\'');
         sb.append('}');
@@ -104,6 +111,15 @@ public class NgsPipelineWrapperParams extends ToolParams {
 
     public NgsPipelineWrapperParams setIndexDir(String indexDir) {
         this.indexDir = indexDir;
+        return this;
+    }
+
+    public List<String> getPrepareIndices() {
+        return prepareIndices;
+    }
+
+    public NgsPipelineWrapperParams setPrepareIndices(List<String> prepareIndices) {
+        this.prepareIndices = prepareIndices;
         return this;
     }
 

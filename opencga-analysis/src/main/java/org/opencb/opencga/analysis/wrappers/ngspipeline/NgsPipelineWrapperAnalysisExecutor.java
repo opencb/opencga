@@ -1,8 +1,10 @@
 package org.opencb.opencga.analysis.wrappers.ngspipeline;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -25,7 +27,11 @@ public class NgsPipelineWrapperAnalysisExecutor extends DockerWrapperAnalysisExe
     public static final String PREPARE_CMD = "prepare";
     public static final String PIPELINE_CMD = "pipeline";
 
-    private static final String VARIANT_CALLER_PIPELINE_SCRIPT = "main.py";
+    public static final String PREPARE_INDEX_REFERENCE_GENOME = "reference-genome";
+    public static final String PREPARE_INDEX_BWA = "bwa";
+    public static final String PREPARE_INDEX_BWA_MEM2 = "bwa-mem2";
+
+    private static final String NGS_PIPELINE_SCRIPT = "main.py";
     private static final String INDEX_VIRTUAL_PATH = "/index";
     public static final String PIPELINE_PARAMS_FILENAME = "pipeline.json";
 
@@ -34,6 +40,7 @@ public class NgsPipelineWrapperAnalysisExecutor extends DockerWrapperAnalysisExe
     private String command;
 
     private List<String> input;
+    private List<String> prepareIndices;
     private String indexPath;
 
     private ObjectMap pipelineParams;
@@ -54,7 +61,7 @@ public class NgsPipelineWrapperAnalysisExecutor extends DockerWrapperAnalysisExe
                 break;
             }
             default: {
-                throw new ToolExecutorException("Unknown variant caller pipeline command '" + command + "'. Valid commands are: '"
+                throw new ToolExecutorException("Unknown NGS pipeline command '" + command + "'. Valid commands are: '"
                         + PREPARE_CMD + "' and '" + PIPELINE_CMD + "'");
             }
         }
@@ -67,9 +74,8 @@ public class NgsPipelineWrapperAnalysisExecutor extends DockerWrapperAnalysisExe
         try {
             // Input bindings
             List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
-            Path virtualScriptPath = Paths.get(SCRIPT_VIRTUAL_PATH).resolve(VARIANT_CALLER_PIPELINE_SCRIPT);
-            inputBindings.add(new AbstractMap.SimpleEntry<>(scriptPath.resolve(VARIANT_CALLER_PIPELINE_SCRIPT).toAbsolutePath().toString(),
-                    virtualScriptPath.toString()));
+            Path virtualScriptPath = Paths.get(SCRIPT_VIRTUAL_PATH);
+            inputBindings.add(new AbstractMap.SimpleEntry<>(scriptPath.toAbsolutePath().toString(), virtualScriptPath.toString()));
 
             String reference = input.get(0);
             Path virtualRefPath = null;
@@ -96,12 +102,16 @@ public class NgsPipelineWrapperAnalysisExecutor extends DockerWrapperAnalysisExe
             // ./analysis/variant-caller-pipeline/main.py prepare
             // -r https://ftp.ensembl.org/pub/release-115/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.chromosome.22.fa.gz
             // -o /tmp/bbb
-            String params = "python3 " + virtualScriptPath + " prepare"
+            String params = "python3 " + virtualScriptPath + "/" +  NGS_PIPELINE_SCRIPT + " prepare"
                     + " -r " + (virtualRefPath != null ? virtualRefPath : reference)
                     + " -o " + OUTPUT_VIRTUAL_PATH;
+            if (CollectionUtils.isNotEmpty(prepareIndices)) {
+                params += (" -i " + StringUtils.join(prepareIndices, ","));
+            }
 
+            // TODO: check why bwa is not installed in ext-tools:5.0.0
             // Execute Python script in docker
-            String dockerImage = getDockerImageName() + ":" + getDockerImageVersion();
+            String dockerImage = getDockerImageName() + ":4.1.0";// + getDockerImageVersion();
 
             String dockerCli = buildCommandLine(dockerImage, inputBindings, readOnlyInputBindings, outputBinding, params, null);
             addEvent(Event.Type.INFO, "Docker command line: " + dockerCli);
@@ -131,9 +141,8 @@ public class NgsPipelineWrapperAnalysisExecutor extends DockerWrapperAnalysisExe
             Set<String> readOnlyInputBindings = new HashSet<>();
 
             // Script binding
-            Path virtualScriptPath = Paths.get(SCRIPT_VIRTUAL_PATH).resolve(VARIANT_CALLER_PIPELINE_SCRIPT);
-            inputBindings.add(new AbstractMap.SimpleEntry<>(scriptPath.resolve(VARIANT_CALLER_PIPELINE_SCRIPT).toAbsolutePath().toString(),
-                    virtualScriptPath.toString()));
+            Path virtualScriptPath = Paths.get(SCRIPT_VIRTUAL_PATH);
+            inputBindings.add(new AbstractMap.SimpleEntry<>(scriptPath.toAbsolutePath().toString(), virtualScriptPath.toString()));
             readOnlyInputBindings.add(virtualScriptPath.toString());
 
             // Index binding
@@ -168,7 +177,7 @@ public class NgsPipelineWrapperAnalysisExecutor extends DockerWrapperAnalysisExe
             // -p pipeline.json
             // -i /data/HI.4019.002.index_7.ANN0831_R1.fastq.gz,/data/HI.4019.002.index_7.ANN0831_R2.fastq.gz
 
-            String params = "python3 " + virtualScriptPath + " run"
+            String params = "python3 " + virtualScriptPath + "/" +  NGS_PIPELINE_SCRIPT + " run"
                     + " -o " + OUTPUT_VIRTUAL_PATH
                     + " -p " + virtualPipelineParamsPath
                     + " -i " + StringUtils.join(virtualInputPaths, ",")
@@ -176,7 +185,7 @@ public class NgsPipelineWrapperAnalysisExecutor extends DockerWrapperAnalysisExe
                     + " --steps quality_control,alignment";
 
             // Execute Python script in docker
-            String dockerImage = getDockerImageName() + ":" + getDockerImageVersion();
+            String dockerImage = getDockerImageName() + ":4.1.0";// + getDockerImageVersion();
 
             String dockerCli = buildCommandLine(dockerImage, inputBindings, readOnlyInputBindings, outputBinding, params, null);
             addEvent(Event.Type.INFO, "Docker command line: " + dockerCli);
@@ -198,9 +207,8 @@ public class NgsPipelineWrapperAnalysisExecutor extends DockerWrapperAnalysisExe
             Set<String> readOnlyInputBindings = new HashSet<>();
 
             // Script binding
-            Path virtualScriptPath = Paths.get(SCRIPT_VIRTUAL_PATH).resolve(VARIANT_CALLER_PIPELINE_SCRIPT);
-            inputBindings.add(new AbstractMap.SimpleEntry<>(scriptPath.resolve(VARIANT_CALLER_PIPELINE_SCRIPT).toAbsolutePath().toString(),
-                    virtualScriptPath.toString()));
+            Path virtualScriptPath = Paths.get(SCRIPT_VIRTUAL_PATH);
+            inputBindings.add(new AbstractMap.SimpleEntry<>(scriptPath.toAbsolutePath().toString(), virtualScriptPath.toString()));
             readOnlyInputBindings.add(virtualScriptPath.toString());
 
             // Index binding
@@ -225,7 +233,7 @@ public class NgsPipelineWrapperAnalysisExecutor extends DockerWrapperAnalysisExe
             // -p pipeline.json
             // -i /data/HI.4019.002.index_7.ANN0831_R1.fastq.gz,/data/HI.4019.002.index_7.ANN0831_R2.fastq.gz
 
-            String params = "python3 " + virtualScriptPath + " run"
+            String params = "python3 " + virtualScriptPath + "/" +  NGS_PIPELINE_SCRIPT + " prepare"
                     + " -o " + OUTPUT_VIRTUAL_PATH
                     + " -p " + virtualPipelineParamsPath
                     + " --index " + virtualIndexPath
@@ -288,6 +296,15 @@ public class NgsPipelineWrapperAnalysisExecutor extends DockerWrapperAnalysisExe
 
     public NgsPipelineWrapperAnalysisExecutor setInput(List<String> input) {
         this.input = input;
+        return this;
+    }
+
+    public List<String> getPrepareIndices() {
+        return prepareIndices;
+    }
+
+    public NgsPipelineWrapperAnalysisExecutor setPrepareIndices(List<String> prepareIndices) {
+        this.prepareIndices = prepareIndices;
         return this;
     }
 

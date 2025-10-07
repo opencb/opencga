@@ -626,6 +626,8 @@ public class FieldConstants {
     public static final String VARIANT_CALLER_PIPELINE_COMMAND_DESCRIPTION = "Command to be executed: {prepare | run}";
     public static final String VARIANT_CALLER_PIPELINE_INPUT_DESCRIPTION = "List of input files";
     public static final String VARIANT_CALLER_PIPELINE_INDEX_DIR_DESCRIPTION = "Path to the FASTA index files, BWA index files,...";
+    public static final String VARIANT_CALLER_PIPELINE_PREPARE_INDICES_DESCRIPTION = "List of indices (separated by commas) to create when"
+            + " executing the command 'prepare'; supported values are: reference-genome, bwa and bwa-mem2";
     public static final String VARIANT_CALLER_PIPELINE_PARAMS_DESCRIPTION = "Map of parameters to run the pipeline";
 
     // Fetch resources

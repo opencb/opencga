@@ -923,6 +923,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "command", commandOptions.command, true);
             putNestedIfNotNull(beanParams, "input", commandOptions.input, true);
             putNestedIfNotEmpty(beanParams, "indexDir", commandOptions.indexDir, true);
+            putNestedIfNotNull(beanParams, "prepareIndices", commandOptions.prepareIndices, true);
             putNestedMapIfNotEmpty(beanParams, "pipelineParams", commandOptions.pipelineParams, true);
             putNestedIfNotEmpty(beanParams, "outDir", commandOptions.outDir, true);
 

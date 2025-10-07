@@ -1233,6 +1233,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--index-dir"}, description = "Path to the FASTA index files, BWA index files,...", required = false, arity = 1)
         public String indexDir;
     
+        @Parameter(names = {"--prepare-indices"}, description = "List of indices (separated by commas) to create when executing the command 'prepare'; supported values are: reference-genome, bwa and bwa-mem2", required = false, arity = 1)
+        public String prepareIndices;
+    
         @DynamicParameter(names = {"--pipeline-params"}, description = "Map of parameters to run the pipeline. Use: --pipeline-params key=value", required = false)
         public Map<String, ?> pipelineParams = new HashMap<>(); //Dynamic parameters must be initialized;
     

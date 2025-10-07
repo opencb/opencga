@@ -72,23 +72,23 @@ public class NgsPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
 
         // Check command
         if (StringUtils.isEmpty(analysisParams.getCommand())) {
-            throw new ToolException("Variant caller pipeline command parameter is mandatory.");
+            throw new ToolException("NGS pipeline command parameter is mandatory.");
         }
         if (!analysisParams.getCommand().equalsIgnoreCase(PREPARE_CMD) && !analysisParams.getCommand().equalsIgnoreCase(PIPELINE_CMD)) {
-            throw new ToolException("Variant caller pipeline command '" + analysisParams.getCommand() + "' is not valid. Supported commands"
+            throw new ToolException("NGS pipeline command '" + analysisParams.getCommand() + "' is not valid. Supported commands"
                     + " are: '" + PREPARE_CMD + "' and '"
                     + PIPELINE_CMD + "'.");
         }
 
         // Check input files
         if (CollectionUtils.isEmpty(analysisParams.getInput())) {
-            throw new ToolException("Variant caller pipeline input parameter is mandatory.");
+            throw new ToolException("NGS pipeline input parameter is mandatory.");
         }
         if (analysisParams.getCommand().equalsIgnoreCase(PREPARE_CMD)) {
             // In prepare command, only one input file is required and it can be a URL to the reference FASTA file to download
             // or a OpencGA file ID
             if (analysisParams.getInput().size() != 1) {
-                throw new ToolException("Variant caller pipeline prepare command requires one and only one input file; got "
+                throw new ToolException("NGS pipeline prepare command requires one and only one input file; got "
                         + analysisParams.getInput().size());
             }
             if (analysisParams.getInput().get(0).startsWith("http://")
@@ -106,25 +106,25 @@ public class NgsPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
                 logger.info("Checking file {}", file);
                 File opencgaFile = getCatalogManager().getFileManager().get(study, file, QueryOptions.empty(), token).first();
                 if (opencgaFile.getType() != File.Type.FILE) {
-                    throw new ToolException("Variant caller pipeline input path '" + file + "' is not a file.");
+                    throw new ToolException("NGS pipeline input path '" + file + "' is not a file.");
                 }
                 opencgaFiles.add(opencgaFile);
             }
 
             // Check the index path
             if (StringUtils.isEmpty(analysisParams.getIndexDir())) {
-                throw new ToolException("Variant caller pipeline index path is mandatory for running the pipeline.");
+                throw new ToolException("NGS pipeline index path is mandatory for running the pipeline.");
             }
             logger.info("Checking index path {}", analysisParams.getIndexDir());
             indexPath = getCatalogManager().getFileManager().get(study, analysisParams.getIndexDir(), QueryOptions.empty(), token).first();
             if (indexPath.getType() != File.Type.DIRECTORY) {
-                throw new ToolException("Variant caller pipeline index path '" + analysisParams.getIndexDir() + "' is not a folder.");
+                throw new ToolException("NGS pipeline index path '" + analysisParams.getIndexDir() + "' is not a folder.");
             }
         }
 
         // Check pipeline parameters
         if (MapUtils.isEmpty(analysisParams.getPipelineParams())) {
-            throw new ToolException("Variant caller pipeline parameters are mandatory.");
+            throw new ToolException("NGS pipeline parameters are mandatory.");
         }
     }
 
@@ -142,7 +142,7 @@ public class NgsPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
             // Pipeline preparation
             step(PREPARE_RESOURCES_STEP, this::prepareResources);
         } else {
-            // Run variant caller pipeline script
+            // Run NGS pipeline script
             step(ID, this::runNgsPipeline);
 
             // Index variants in OpenCGA
@@ -166,6 +166,7 @@ public class NgsPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
                 .setScriptPath(getOpencgaHome().resolve(ANALYSIS_DIRNAME).resolve(ID))
                 .setCommand(PREPARE_CMD)
                 .setInput(input)
+                .setPrepareIndices(analysisParams.getPrepareIndices())
                 .execute();
 
         // TODO: check output?
