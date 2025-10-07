@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.tools.annotations;
 
+import org.opencb.opencga.core.config.ExecutionQueue;
 import org.opencb.opencga.core.models.common.Enums;
 
 import java.lang.annotation.ElementType;
@@ -41,6 +42,21 @@ public @interface Tool {
      * @return Tool type.
      */
     Type type() default Type.ANALYSIS;
+
+    /**
+     * @return Processor type requirements.
+     */
+    ExecutionQueue.ProcessorType processor() default ExecutionQueue.ProcessorType.CPU;
+
+    /**
+     * @return CPU requirements.
+     */
+    String cpu() default "2";
+
+    /**
+     * @return Memory requirements.
+     */
+    String memory() default "8G";
 
     /**
      * @return Tool scope.

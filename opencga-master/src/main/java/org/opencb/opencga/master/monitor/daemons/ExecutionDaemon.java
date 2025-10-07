@@ -80,15 +80,13 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.managers.JobManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
-import org.opencb.opencga.catalog.utils.CatalogFqn;
-import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.catalog.utils.FqnUtils;
-import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.catalog.utils.*;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.ExecutionQueue;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.common.Enums;
@@ -167,6 +165,7 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final JobScheduler jobScheduler;
+    private final ToolFactory toolFactory;
 
     static {
         TOOL_CLI_MAP = new HashMap<String, String>() {{
@@ -276,6 +275,9 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
         } else {
             this.packages = packages;
         }
+
+        this.toolFactory = new ToolFactory();
+
         logger.info("Packages where to find tools/analyses: " + StringUtils.join(this.packages, ", "));
     }
 
@@ -549,7 +551,32 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
 
         try (DBIterator<Job> iterator = jobManager.iteratorInOrganization(organizationId, pendingJobsQuery, queryOptions, token)) {
             while (iterator.hasNext()) {
-                pendingJobs.add(iterator.next());
+                Job job = iterator.next();
+
+                if (isMinimumRequirementsNotSet(job)) {
+                    // Minimum requirements not defined. Try to fill it
+                    Tool tool;
+                    try {
+                        tool = toolFactory.getTool(job.getType(), job.getTool(), packages);
+                    } catch (ToolException e) {
+                        abortJob(job, "Tool " + ToolFactory.getToolId(job.getType(), job.getTool()) + " not found", e);
+                        continue;
+                    }
+                    MinimumRequirements minimumRequirements = new MinimumRequirements(tool.cpu(), tool.memory(), "", tool.processor(), "");
+                    List<ExecutionQueue> optimalQueues = JobExecutionUtils.findOptimalQueues(this.executionQueues, minimumRequirements);
+                    if (CollectionUtils.isEmpty(optimalQueues)) {
+                        abortJob(job, "No execution queues found to satisfy the minimum requirements of the tool "
+                                + ToolFactory.getToolId(job.getType(), job.getTool()));
+                        continue;
+                    }
+                    minimumRequirements.setQueue(optimalQueues.get(0).getId());
+
+                    // And update both in the object and database
+                    job.getTool().setMinimumRequirements(minimumRequirements);
+                    updateJobMinimumRequirements(job);
+                }
+
+                pendingJobs.add(job);
             }
         } catch (Exception e) {
             logger.error("Error listing pending jobs from organization {}", organizationId, e);
@@ -568,6 +595,24 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
                     logger.error("Error checking pending job {}: {}", job.getId(), e.getMessage(), e);
                 }
             }
+        }
+    }
+
+    private boolean isMinimumRequirementsNotSet(Job job) {
+        return job.getTool().getMinimumRequirements() == null
+                || StringUtils.isEmpty(job.getTool().getMinimumRequirements().getCpu())
+                || StringUtils.isEmpty(job.getTool().getMinimumRequirements().getMemory())
+                || job.getTool().getMinimumRequirements().getProcessorType() == null
+                || StringUtils.isEmpty(job.getTool().getMinimumRequirements().getQueue());
+    }
+
+    private void updateJobMinimumRequirements(Job job) throws CatalogException {
+        PrivateJobUpdateParams privateJobUpdateParams = new PrivateJobUpdateParams()
+                .setTool(job.getTool());
+        try {
+            jobManager.update(job.getStudy().getId(), job.getId(), privateJobUpdateParams, QueryOptions.empty(), token);
+        } catch (CatalogException e) {
+            throw new CatalogException("Could not update MinimumRequirements object in Job" + job.getId(), e);
         }
     }
 
@@ -609,7 +654,7 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
 
         Tool tool;
         try {
-            tool = new ToolFactory().getTool(job.getType(), job.getTool(), packages);
+            tool = toolFactory.getTool(job.getType(), job.getTool(), packages);
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             return abortJob(job, "Tool " + toolId + " not found", e);
@@ -796,7 +841,7 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
     }
 
     protected void checkToolExecutionPermission(String organizationId, Job job) throws Exception {
-        Tool tool = new ToolFactory().getTool(job.getType(), job.getTool(), packages);
+        Tool tool = toolFactory.getTool(job.getType(), job.getTool(), packages);
 
         AuthorizationManager authorizationManager = catalogManager.getAuthorizationManager();
         String user = job.getUserId();

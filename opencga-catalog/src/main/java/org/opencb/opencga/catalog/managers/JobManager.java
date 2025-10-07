@@ -39,8 +39,6 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.Execution;
-import org.opencb.opencga.core.config.ExecutionQueue;
-import org.opencb.opencga.core.config.ExecutionRequest;
 import org.opencb.opencga.core.models.AclEntryList;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.JwtPayload;
@@ -332,20 +330,6 @@ public class JobManager extends ResourceManager<Job> {
         // Set default internal
         job.setInternal(JobInternal.init());
         job.getInternal().setWebhook(new JobInternalWebhook(study.getNotification().getWebhook(), new HashMap<>()));
-
-        if (job.getTool().getMinimumRequirements() == null) {
-            job.getTool().setMinimumRequirements(new MinimumRequirements());
-        }
-        ExecutionRequest request = configuration.getAnalysis().getExecution().getDefaultRequest();
-        MinimumRequirements requirements = job.getTool().getMinimumRequirements();
-        requirements.setCpu(ParamUtils.defaultString(requirements.getCpu(), String.valueOf(request.getCpu())));
-        requirements.setMemory(ParamUtils.defaultString(requirements.getMemory(), request.getMemory()));
-        requirements.setProcessorType(ParamUtils.defaultObject(requirements.getProcessorType(), ExecutionQueue.ProcessorType.CPU));
-        if (StringUtils.isEmpty(requirements.getQueue())) {
-            ExecutionQueue executionQueue = JobExecutionUtils.findOptimalQueues(configuration.getAnalysis().getExecution().getQueues(),
-                    requirements).get(0);
-            requirements.setQueue(executionQueue.getId());
-        }
 
         if (StringUtils.isNotEmpty(job.getParentId())) {
             // Check parent job exists

@@ -18,6 +18,7 @@ package org.opencb.opencga.analysis.tools;
 
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.StudyManager;
+import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.core.api.ParamConstants;
 
 public abstract class OpenCgaToolScopeStudy extends OpenCgaTool {
@@ -48,6 +49,16 @@ public abstract class OpenCgaToolScopeStudy extends OpenCgaTool {
     protected final String getStudyFqn() throws CatalogException {
         return getCatalogManager().getStudyManager().get(getParams().getString(ParamConstants.STUDY_PARAM), StudyManager.INCLUDE_STUDY_IDS,
                 getToken()).first().getFqn();
+    }
+
+    protected final String getOrganizationId() throws CatalogException {
+        String studyFqn = getStudy();
+        return CatalogFqn.extractFqnFromStudyFqn(studyFqn).getOrganizationId();
+    }
+
+    protected final String getStudyId() throws CatalogException {
+        String studyFqn = getStudy();
+        return CatalogFqn.extractFqnFromStudyFqn(studyFqn).getStudyId();
     }
 
 }
