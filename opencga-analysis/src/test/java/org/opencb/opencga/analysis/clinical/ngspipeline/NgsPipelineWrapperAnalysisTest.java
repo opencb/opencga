@@ -2,7 +2,9 @@ package org.opencb.opencga.analysis.clinical.ngspipeline;
 
 import org.junit.*;
 import org.junit.experimental.categories.Category;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
@@ -22,8 +24,11 @@ import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
 import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.variant.VariantSetupParams;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -34,6 +39,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @Category(MediumTests.class)
@@ -51,8 +57,7 @@ public class NgsPipelineWrapperAnalysisTest {
     private String token;
 
     @Rule
-//    public static OpenCGATestExternalResource opencga = new OpenCGATestExternalResource(true);
-    public OpenCGATestExternalResource opencga = new OpenCGATestExternalResource();
+    public OpenCGATestExternalResource opencga = new OpenCGATestExternalResource(true);
 
     @Before
     public void setUp() throws Exception {
@@ -81,6 +86,13 @@ public class NgsPipelineWrapperAnalysisTest {
 
         Study study = catalogManager.getStudyManager().create(projectId, new Study().setId(studyId), queryOptions, token).first();
         System.out.println("study.getFqn() = " + study.getFqn());
+
+        // Variant setup
+        VariantSetupParams variantSetupParams = new VariantSetupParams();
+        variantSetupParams.setExpectedFiles(10);
+        variantSetupParams.setExpectedSamples(4);
+        variantSetupParams.setAverageFileSize("10MB");
+        opencga.getVariantStorageManager().variantSetup(study.getFqn(), variantSetupParams, token);
     }
 
 
@@ -96,10 +108,6 @@ public class NgsPipelineWrapperAnalysisTest {
         Path outDir = Paths.get(opencga.createTmpOutdir("_ngs_pipeline_prepare"));
         System.out.println("outDir = " + outDir.toAbsolutePath());
 
-        // Get the pipeline parameters from the json file in resources and load them into an ObjectMap
-        InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream("ngspipeline/pipeline.json");
-        ObjectMap ngsPipelineParams = JacksonUtils.getDefaultObjectMapper().readerFor(ObjectMap.class).readValue(inputStream);
-
         String refBasename = "Homo_sapiens.GRCh38.dna.chromosome.MT";
 
         //---------------------------------
@@ -110,7 +118,6 @@ public class NgsPipelineWrapperAnalysisTest {
         params.setCommand(NgsPipelineWrapperAnalysisExecutor.PREPARE_CMD);
         params.setInput(Collections.singletonList("https://ftp.ensembl.org/pub/release-115/fasta/homo_sapiens/dna/" + refBasename + ".fa.gz"));
         params.setPrepareIndices(Arrays.asList(NgsPipelineWrapperAnalysisExecutor.PREPARE_INDEX_REFERENCE_GENOME, NgsPipelineWrapperAnalysisExecutor.PREPARE_INDEX_BWA));
-        params.setPipelineParams(ngsPipelineParams);
 
         ToolRunner toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), opencga.getCatalogManager(),
                 StorageEngineFactory.get(opencga.getVariantStorageManager().getStorageConfiguration()));
@@ -135,7 +142,7 @@ public class NgsPipelineWrapperAnalysisTest {
     }
 
     @Test
-    public void testNgsPipelineRefFile() throws IOException, ToolException, CatalogException {
+    public void testNgsPipelineRefFile() throws IOException, ToolException, CatalogException, StorageEngineException {
         Path ngsPipelinePath = Paths.get("/opt/ngs-pipeline");
         Assume.assumeTrue(Files.exists(ngsPipelinePath));
         System.out.println("opencga.getOpencgaHome() = " + opencga.getOpencgaHome().toAbsolutePath());
@@ -223,5 +230,14 @@ public class NgsPipelineWrapperAnalysisTest {
 
         toolRunner.execute(NgsPipelineWrapperAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, studyId), outDir2, null,
                 false, token);
+
+
+        VariantQueryResult<Variant> variantQueryResult = opencga.getVariantStorageManager()
+                .get(new Query(ParamConstants.STUDY_PARAM, studyId), QueryOptions.empty(), token);
+        for (Variant variant : variantQueryResult.getResults()) {
+            System.out.println(variant.toStringSimple());
+        }
+        System.out.println("variantQueryResult.getNumResults() = " + variantQueryResult.getNumResults());
+        assertEquals(10, variantQueryResult.getNumResults());
     }
 }

@@ -109,9 +109,8 @@ public class NgsPipelineWrapperAnalysisExecutor extends DockerWrapperAnalysisExe
                 params += (" -i " + StringUtils.join(prepareIndices, ","));
             }
 
-            // TODO: check why bwa is not installed in ext-tools:5.0.0
             // Execute Python script in docker
-            String dockerImage = getDockerImageName() + ":4.1.0";// + getDockerImageVersion();
+            String dockerImage = getDockerImageName() + ":" + getDockerImageVersion();
 
             String dockerCli = buildCommandLine(dockerImage, inputBindings, readOnlyInputBindings, outputBinding, params, null);
             addEvent(Event.Type.INFO, "Docker command line: " + dockerCli);
@@ -206,7 +205,7 @@ public class NgsPipelineWrapperAnalysisExecutor extends DockerWrapperAnalysisExe
                     + " --steps quality-control,alignment";
 
             // Execute Python script in docker
-            String dockerImage = getDockerImageName() + ":4.1.0";// + getDockerImageVersion();
+            String dockerImage = getDockerImageName() + ":" + getDockerImageVersion();
 
             String dockerCli = buildCommandLine(dockerImage, inputBindings, readOnlyInputBindings, outputBinding, params, null);
             addEvent(Event.Type.INFO, "Docker command line: " + dockerCli);

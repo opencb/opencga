@@ -123,11 +123,11 @@ public class NgsPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
             if (indexPath.getType() != File.Type.DIRECTORY) {
                 throw new ToolException("NGS pipeline index path '" + analysisParams.getIndexDir() + "' is not a folder.");
             }
-        }
 
-        // Check pipeline parameters
-        if (MapUtils.isEmpty(analysisParams.getPipelineParams())) {
-            throw new ToolException("NGS pipeline parameters are mandatory.");
+            // Check pipeline parameters
+            if (MapUtils.isEmpty(analysisParams.getPipelineParams())) {
+                throw new ToolException("NGS pipeline parameters are mandatory.");
+            }
         }
     }
 
