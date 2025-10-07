@@ -182,7 +182,7 @@ public class NgsPipelineWrapperAnalysisExecutor extends DockerWrapperAnalysisExe
                     + " -p " + virtualPipelineParamsPath
                     + " -i " + StringUtils.join(virtualInputPaths, ",")
                     + " --index " + virtualIndexPath
-                    + " --steps quality_control,alignment";
+                    + " --steps quality-control,alignment";
 
             // Execute Python script in docker
             String dockerImage = getDockerImageName() + ":4.1.0";// + getDockerImageVersion();

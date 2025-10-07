@@ -11,12 +11,14 @@ import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
 import org.opencb.opencga.analysis.wrappers.ngspipeline.NgsPipelineWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.ngspipeline.NgsPipelineWrapperAnalysisExecutor;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.NgsPipelineWrapperParams;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.project.Project;
@@ -89,16 +91,21 @@ public class NgsPipelineWrapperAnalysisTest {
     }
 
     @Test
-    public void testNgsPipelinePrepareUrl() throws IOException, ToolException {
+    public void testNgsPipelineRefUrl() throws IOException, ToolException, CatalogException {
+        System.out.println("opencga.getOpencgaHome() = " + opencga.getOpencgaHome().toAbsolutePath());
+
         Path outDir = Paths.get(opencga.createTmpOutdir("_ngs_pipeline_prepare"));
         System.out.println("outDir = " + outDir.toAbsolutePath());
-        System.out.println("opencga.getOpencgaHome() = " + opencga.getOpencgaHome().toAbsolutePath());
 
         // Get the pipeline parameters from the json file in resources and load them into an ObjectMap
         InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream("ngspipeline/pipeline.json");
         ObjectMap ngsPipelineParams = JacksonUtils.getDefaultObjectMapper().readerFor(ObjectMap.class).readValue(inputStream);
 
         String refBasename = "Homo_sapiens.GRCh38.dna.chromosome.MT";
+
+        //---------------------------------
+        // Prepare NGS pipeline
+        //---------------------------------
 
         NgsPipelineWrapperParams params = new NgsPipelineWrapperParams();
         params.setCommand(NgsPipelineWrapperAnalysisExecutor.PREPARE_CMD);
@@ -126,5 +133,35 @@ public class NgsPipelineWrapperAnalysisTest {
         assertTrue(Files.exists(outDir.resolve("bwa-index").resolve(refBasename + ".fa.ann")));
         assertTrue(Files.exists(outDir.resolve("bwa-index").resolve(refBasename + ".fa.amb")));
         assertTrue(Files.exists(outDir.resolve("bwa-index").resolve(refBasename + ".fa.sa")));
+
+        //---------------------------------
+        // Run NGS pipeline
+        //---------------------------------
+
+        Path outDir2 = Paths.get(opencga.createTmpOutdir("_ngs_pipeline_run"));
+        System.out.println("outDir2 = " + outDir2.toAbsolutePath());
+
+        // Link in OpenCGA catalog the outdir created in the previous step as indexDir for the run step
+        File indexDirFile = opencga.getCatalogManager().getFileManager().link(studyId, new FileLinkParams(outDir.toAbsolutePath().toString(),
+                "", "", "", null, null, null, null, null), false, token).first();
+
+        // Get the test FASTQ file from resources and copy
+        String fastqFilename = "ERR251000.1K.fastq.gz";
+        inputStream = this.getClass().getClassLoader().getResourceAsStream(fastqFilename);
+        File fastqFile = opencga.getCatalogManager().getFileManager().upload(studyId, inputStream,
+                new File().setPath("data/" + fastqFilename), false, true, false, token).first();
+        System.out.println("fastqFile.getUri() = " + fastqFile.getUri());
+
+        params = new NgsPipelineWrapperParams();
+        params.setCommand(NgsPipelineWrapperAnalysisExecutor.PIPELINE_CMD);
+        params.setInput(Collections.singletonList(fastqFile.getId()));
+        params.setIndexDir(indexDirFile.getId());
+        params.setPipelineParams(ngsPipelineParams);
+
+        toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), opencga.getCatalogManager(),
+                StorageEngineFactory.get(opencga.getVariantStorageManager().getStorageConfiguration()));
+
+        toolRunner.execute(NgsPipelineWrapperAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, studyId), outDir2, null,
+                false, token);
     }
 }
