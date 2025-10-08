@@ -56,6 +56,10 @@ import org.opencb.opencga.core.models.clinical.RgaAnalysisParams;
 import org.opencb.opencga.core.models.clinical.TeamInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.clinical.TieringInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.clinical.ZettaInterpretationAnalysisParams;
+import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelineExecuteParams;
+import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelineExecuteWrapperParams;
+import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelinePrepareParams;
+import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelinePrepareWrapperParams;
 import org.opencb.opencga.core.models.common.StatusParam;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.job.Job;
@@ -152,6 +156,12 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "ngs-pipeline-run":
                 queryResponse = runNgsPipeline();
+                break;
+            case "pipeline-execute-run":
+                queryResponse = runPipelineExecute();
+                break;
+            case "pipeline-prepare-run":
+                queryResponse = runPipelinePrepare();
                 break;
             case "rga-aggregation-stats":
                 queryResponse = aggregationStatsRga();
@@ -932,6 +942,91 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), NgsPipelineWrapperParams.class);
         }
         return openCGAClient.getClinicalAnalysisClient().runNgsPipeline(ngsPipelineWrapperParams, queryParams);
+    }
+
+    private RestResponse<Job> runPipelineExecute() throws Exception {
+        logger.debug("Executing runPipelineExecute in Analysis - Clinical command line");
+
+        AnalysisClinicalCommandOptions.RunPipelineExecuteCommandOptions commandOptions = analysisClinicalCommandOptions.runPipelineExecuteCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
+        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
+        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
+        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        ClinicalPipelineExecuteWrapperParams clinicalPipelineExecuteWrapperParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/pipeline/execute/run"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            clinicalPipelineExecuteWrapperParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), ClinicalPipelineExecuteWrapperParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotNull(beanParams, "pipelineParams.input", commandOptions.pipelineParamsInput, true);
+            putNestedIfNotEmpty(beanParams, "pipelineParams.indexDir", commandOptions.pipelineParamsIndexDir, true);
+            putNestedIfNotNull(beanParams, "pipelineParams.steps", commandOptions.pipelineParamsSteps, true);
+            putNestedIfNotEmpty(beanParams, "pipelineParams.pipelineFile", commandOptions.pipelineParamsPipelineFile, true);
+            putNestedMapIfNotEmpty(beanParams, "pipelineParams.pipeline", commandOptions.pipelineParamsPipeline, true);
+            putNestedIfNotEmpty(beanParams, "outdir", commandOptions.outdir, true);
+
+            clinicalPipelineExecuteWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), ClinicalPipelineExecuteWrapperParams.class);
+        }
+        return openCGAClient.getClinicalAnalysisClient().runPipelineExecute(clinicalPipelineExecuteWrapperParams, queryParams);
+    }
+
+    private RestResponse<Job> runPipelinePrepare() throws Exception {
+        logger.debug("Executing runPipelinePrepare in Analysis - Clinical command line");
+
+        AnalysisClinicalCommandOptions.RunPipelinePrepareCommandOptions commandOptions = analysisClinicalCommandOptions.runPipelinePrepareCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
+        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
+        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
+        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        ClinicalPipelinePrepareWrapperParams clinicalPipelinePrepareWrapperParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/pipeline/prepare/run"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            clinicalPipelinePrepareWrapperParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), ClinicalPipelinePrepareWrapperParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "pipelineParams.referenceGenome", commandOptions.pipelineParamsReferenceGenome, true);
+            putNestedIfNotNull(beanParams, "pipelineParams.alignerIndexes", commandOptions.pipelineParamsAlignerIndexes, true);
+            putNestedIfNotEmpty(beanParams, "outdir", commandOptions.outdir, true);
+
+            clinicalPipelinePrepareWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), ClinicalPipelinePrepareWrapperParams.class);
+        }
+        return openCGAClient.getClinicalAnalysisClient().runPipelinePrepare(clinicalPipelinePrepareWrapperParams, queryParams);
     }
 
     private RestResponse<FacetField> aggregationStatsRga() throws Exception {
