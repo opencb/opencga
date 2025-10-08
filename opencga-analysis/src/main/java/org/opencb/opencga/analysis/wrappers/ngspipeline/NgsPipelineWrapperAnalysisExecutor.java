@@ -110,7 +110,9 @@ public class NgsPipelineWrapperAnalysisExecutor extends DockerWrapperAnalysisExe
             }
 
             // Execute Python script in docker
-            String dockerImage = getDockerImageName() + ":" + getDockerImageVersion();
+            // TODO: fix and use 5.0.0-SNAPSHOT to include bwa
+//            String dockerImage = getDockerImageName() + ":" + getDockerImageVersion();
+            String dockerImage = getDockerImageName() + ":4.1.0";
 
             String dockerCli = buildCommandLine(dockerImage, inputBindings, readOnlyInputBindings, outputBinding, params, null);
             addEvent(Event.Type.INFO, "Docker command line: " + dockerCli);
@@ -205,7 +207,9 @@ public class NgsPipelineWrapperAnalysisExecutor extends DockerWrapperAnalysisExe
                     + " --steps quality-control,alignment";
 
             // Execute Python script in docker
-            String dockerImage = getDockerImageName() + ":" + getDockerImageVersion();
+            // TODO: fix and use 5.0.0-SNAPSHOT to include bwa
+//            String dockerImage = getDockerImageName() + ":" + getDockerImageVersion();
+            String dockerImage = getDockerImageName() + ":4.1.0";
 
             String dockerCli = buildCommandLine(dockerImage, inputBindings, readOnlyInputBindings, outputBinding, params, null);
             addEvent(Event.Type.INFO, "Docker command line: " + dockerCli);
