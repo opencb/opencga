@@ -30,7 +30,6 @@ import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -220,7 +219,7 @@ public class NgsPipelineWrapperAnalysisTest {
                 "", "", "", null, null, null, null, null), false, token).first();
 
         params = new NgsPipelineWrapperParams();
-        params.setCommand(NgsPipelineWrapperAnalysisExecutor.PIPELINE_CMD);
+        params.setCommand(NgsPipelineWrapperAnalysisExecutor.RUN_CMD);
         params.setInput(Arrays.asList(fastq1File.getId(), fastq2File.getId()));
         params.setIndexDir(indexDirFile.getId());
         params.setPipelineParams(ngsPipelineParams);

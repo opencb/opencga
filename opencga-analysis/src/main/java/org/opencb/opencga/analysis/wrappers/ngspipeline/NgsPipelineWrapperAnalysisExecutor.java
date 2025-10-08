@@ -25,7 +25,7 @@ public class NgsPipelineWrapperAnalysisExecutor extends DockerWrapperAnalysisExe
     public static final String ID = NgsPipelineWrapperAnalysis.ID + "-local";
 
     public static final String PREPARE_CMD = "prepare";
-    public static final String PIPELINE_CMD = "pipeline";
+    public static final String RUN_CMD = "run";
 
     public static final String PREPARE_INDEX_REFERENCE_GENOME = "reference-genome";
     public static final String PREPARE_INDEX_BWA = "bwa";
@@ -56,13 +56,13 @@ public class NgsPipelineWrapperAnalysisExecutor extends DockerWrapperAnalysisExe
             case PREPARE_CMD:
                 runPrepare();
                 break;
-            case PIPELINE_CMD: {
+            case RUN_CMD: {
                 runVariantCallerPipeline();
                 break;
             }
             default: {
                 throw new ToolExecutorException("Unknown NGS pipeline command '" + command + "'. Valid commands are: '"
-                        + PREPARE_CMD + "' and '" + PIPELINE_CMD + "'");
+                        + PREPARE_CMD + "' and '" + RUN_CMD + "'");
             }
         }
 

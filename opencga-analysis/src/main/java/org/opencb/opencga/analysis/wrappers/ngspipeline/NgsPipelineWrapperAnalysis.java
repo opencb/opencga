@@ -44,7 +44,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.analysis.wrappers.ngspipeline.NgsPipelineWrapperAnalysisExecutor.PIPELINE_CMD;
+import static org.opencb.opencga.analysis.wrappers.ngspipeline.NgsPipelineWrapperAnalysisExecutor.RUN_CMD;
 import static org.opencb.opencga.analysis.wrappers.ngspipeline.NgsPipelineWrapperAnalysisExecutor.PREPARE_CMD;
 import static org.opencb.opencga.catalog.utils.ResourceManager.ANALYSIS_DIRNAME;
 
@@ -77,10 +77,10 @@ public class NgsPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
         if (StringUtils.isEmpty(analysisParams.getCommand())) {
             throw new ToolException("NGS pipeline command parameter is mandatory.");
         }
-        if (!analysisParams.getCommand().equalsIgnoreCase(PREPARE_CMD) && !analysisParams.getCommand().equalsIgnoreCase(PIPELINE_CMD)) {
+        if (!analysisParams.getCommand().equalsIgnoreCase(PREPARE_CMD) && !analysisParams.getCommand().equalsIgnoreCase(RUN_CMD)) {
             throw new ToolException("NGS pipeline command '" + analysisParams.getCommand() + "' is not valid. Supported commands"
                     + " are: '" + PREPARE_CMD + "' and '"
-                    + PIPELINE_CMD + "'.");
+                    + RUN_CMD + "'.");
         }
 
         // Check input files
@@ -186,7 +186,7 @@ public class NgsPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
         // Set parameters and execute
         executor.setStudy(study)
                 .setScriptPath(getOpencgaHome().resolve(ANALYSIS_DIRNAME).resolve(ID))
-                .setCommand(PIPELINE_CMD)
+                .setCommand(RUN_CMD)
                 .setInput(input)
                 .setIndexPath(indexPath.getUri().getPath())
                 .setPipelineParams(analysisParams.getPipelineParams())
