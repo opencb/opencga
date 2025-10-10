@@ -1028,6 +1028,8 @@ public class VariantSearchManager {
                     .append(SEARCH_STATS_FUNCTIONAL_QUERIES_ENABLED.key(), false)
                     .append(SEARCH_STATS_VARIANT_ID_VERSION.key(), "v1")
             );
+            // Assume this legacy search index is the active one.
+            setActiveIndex(indexMetadata, 1);
             if (metadataManager.getProjectMetadata().getAttributes().containsKey("search.index.last.timestamp")) {
                 // If the project metadata has a "search.index.last.timestamp" attribute (old SEARCH_INDEX_LAST_TIMESTAMP),
                 // it means that the index was created before the introduction of the SearchIndexMetadata,

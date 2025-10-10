@@ -102,7 +102,7 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
                 if (iterator) {
                     return searchManager.iterator(indexMetadata, query, options);
                 } else {
-                    return searchManager.query(indexMetadata, variantQuery);
+                    return addResultMetadata(indexMetadata, variantQuery, false, searchManager.query(indexMetadata, variantQuery));
                 }
             } catch (IOException | VariantSearchException e) {
                 throw new VariantQueryException("Error querying Solr", e);
@@ -170,11 +170,25 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
                     queryResult.setApproximateCountSamplingSize(approxCountSamplingSize);
                     queryResult.setNumMatches(numTotalResults.longValue());
                 }
-                queryResult.setSource(SEARCH_ENGINE_ID + '+' + getStorageEngineId());
-                queryResult.addEvents(variantQuery);
+                addResultMetadata(indexMetadata, variantQuery, true, queryResult);
                 return queryResult;
             }
         }
+    }
+
+    private VariantQueryResult<Variant> addResultMetadata(
+            SearchIndexMetadata indexMetadata, ParsedVariantQuery variantQuery, boolean joinQuery, VariantQueryResult<Variant> result) {
+        result.addEvents(variantQuery);
+        if (joinQuery) {
+            result.setSource(SEARCH_ENGINE_ID + '+' + getStorageEngineId());
+        } else {
+            result.setSource(SEARCH_ENGINE_ID);
+        }
+        result.getAttributes().put("searchIndexMetadataVersion", indexMetadata.getVersion());
+        result.getAttributes().put("searchIndexCollection", searchManager.buildCollectionName(indexMetadata));
+        result.getAttributes().put("searchIndexStatus", indexMetadata.getStatus());
+
+        return result;
     }
 
     public VariantQueryResult<Long> approximateCount(SearchIndexMetadata indexMetadata, ParsedVariantQuery variantQuery) {
