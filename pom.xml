@@ -44,8 +44,8 @@
 
     <properties>
         <cellbase.version>6.6.0</cellbase.version>
-        <biodata.version>4.1.1-SNAPSHOT</biodata.version>
-        <java-common-libs.version>6.1.1-SNAPSHOT</java-common-libs.version>
+        <biodata.version>4.1.0</biodata.version>
+        <java-common-libs.version>6.1.0</java-common-libs.version>
         <iva.version>4.1.2-SNAPSHOT</iva.version>
 
         <oskar.version>0.2.0</oskar.version>
