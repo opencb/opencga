@@ -1,0 +1,55 @@
+name: PR – Vulnerability guard
+run-name: 'Compare vulnerabilities between (Base) ${{ github.event.pull_request.base.ref }} and (Head) ${{ github.event.pull_request.head.ref }} (${{ github.event.pull_request.head.sha }}) by @${{ github.actor }}'
+on:
+  pull_request:
+    types: [ opened, synchronize, reopened ]
+
+permissions:
+  contents: read
+  pull-requests: write   # needed to create/update PR comments
+
+jobs:
+  compare-branches:
+    runs-on: ${{ vars.UBUNTU_VERSION }}
+
+    steps:
+      # 1) Checkout head branch only
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Set up JDK 8
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '8'
+          cache: 'maven'
+
+      #
+      #      - name: Ensure base is available
+      #        run: |
+      #          git fetch origin ${{ github.event.pull_request.base.ref }}:refs/remotes/origin/${{ github.event.pull_request.base.ref }} --tags --prune
+
+      # 3) Run the action
+      - name: Vulnerability Diff (Syft+Grype)
+        uses: sec-open/vuln-diff-action@v2.0.0-alpha.1
+        with:
+          base_ref: ${{ github.event.pull_request.base.ref }}
+          head_ref: ${{ github.event.pull_request.head.sha }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          slack_webhook_url: ${{ secrets.SLACK_SECURITY_WEBHOOK_URL }}
+          html_logo_url: "https://zettagenomics.com/wp-content/uploads/2022/10/Zetta-reversed-out-full-logo-dark-background.png"
+
+#          write_summary: "true"
+#          upload_artifact: "true"
+#          min_severity: "LOW"
+#          report_html: "true"
+#          report_pdf: "true"
+#          pr_comment: "true"
+#          artifact_name: "vulnerability-diff-${{ github.event.inputs.branch_a }}-vs-${{ github.event.inputs.branch_b }}"
+#          pr_comment_marker: "<!-- vuln-diff-action:comment -->"
+
+#          title_logo_url: "https://zettagenomics.com/wp-content/uploads/2022/10/Zetta-reversed-out-full-logo-dark-background.png"
