@@ -18,7 +18,6 @@ package org.opencb.opencga.analysis.wrappers.clinicalpipeline;
 
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -26,9 +25,7 @@ import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelineExecuteParams;
-import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelinePrepareParams;
-import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelineWrapperParams;
+import org.opencb.opencga.core.models.clinical.pipeline.*;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;
@@ -41,6 +38,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -83,97 +81,168 @@ public class ClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
 
         if (analysisParams.getPrepareParams() != null) {
             // Check prepare pipeline parameters
+            ClinicalPipelinePrepareParams prepareParams = analysisParams.getPrepareParams();
             ClinicalPipelinePrepareParams updatedPrepareParams = new ClinicalPipelinePrepareParams();
-            if (StringUtils.isEmpty(analysisParams.getPrepareParams().getReferenceGenome())) {
+
+            // Check reference genome
+            String referenceGenome = prepareParams.getReferenceGenome();
+            if (StringUtils.isEmpty(referenceGenome)) {
                 throw new ToolException("Missing reference genome to prepare the clinical pipeline.");
             }
-
-            String referenceGenome = analysisParams.getPrepareParams().getReferenceGenome();
-            if (referenceGenome.startsWith("http://") || referenceGenome.startsWith("https://") || referenceGenome.startsWith("ftp://")) {
-                updatedPrepareParams.setReferenceGenome(referenceGenome);
-            } else {
+            if (!ClinicalPipelineWrapperAnalysisExecutor.isURL(referenceGenome)) {
                 logger.info("Checking reference genome file {}", referenceGenome);
                 File opencgaFile = getCatalogManager().getFileManager().get(study, referenceGenome, QueryOptions.empty(), token).first();
-                updatedPrepareParams.setReferenceGenome(Paths.get(opencgaFile.getUri()).toAbsolutePath().toString());
+                referenceGenome = Paths.get(opencgaFile.getUri()).toAbsolutePath().toString();
             }
+            updatedPrepareParams.setReferenceGenome(referenceGenome);
 
             // Add the aligner indexes if provided
-            if (CollectionUtils.isNotEmpty(analysisParams.getPrepareParams().getAlignerIndexes())) {
-                updatedPrepareParams.setAlignerIndexes(analysisParams.getPrepareParams().getAlignerIndexes());
+            if (CollectionUtils.isNotEmpty(prepareParams.getAlignerIndexes())) {
+                updatedPrepareParams.setAlignerIndexes(prepareParams.getAlignerIndexes());
             }
 
             // Update the prepare params
             updatedParams.setPrepareParams(updatedPrepareParams);
         } else {
             // Check execute pipeline parameters
+            ClinicalPipelineExecuteParams executeParams = analysisParams.getExecuteParams();
             ClinicalPipelineExecuteParams updatedExecuteParams = new ClinicalPipelineExecuteParams();
-            if (CollectionUtils.isEmpty(analysisParams.getExecuteParams().getInput())) {
-                throw new ToolException("Clinical pipeline input files are mandatory for running the pipeline.");
-            }
-            for (String file : analysisParams.getExecuteParams().getInput()) {
-                logger.info("Checking input file {}", file);
-                File opencgaFile = getCatalogManager().getFileManager().get(study, file, QueryOptions.empty(), token).first();
-                if (opencgaFile.getType() != File.Type.FILE) {
-                    throw new ToolException("Clinical pipeline input path '" + file + "' is not a file.");
-                }
-                updatedExecuteParams.getInput().add(Paths.get(opencgaFile.getUri()).toAbsolutePath().toString());
-            }
 
-            // Check the index path
-            if (StringUtils.isEmpty(analysisParams.getExecuteParams().getIndexDir())) {
-                throw new ToolException("Clinical pipeline index path is mandatory for running the pipeline.");
-            }
-            logger.info("Checking index path {}", analysisParams.getExecuteParams().getIndexDir());
-            File opencgaFile = getCatalogManager().getFileManager().get(study, analysisParams.getExecuteParams().getIndexDir(),
-                    QueryOptions.empty(), token).first();
-            if (opencgaFile.getType() != File.Type.DIRECTORY) {
-                throw new ToolException("Clinical pipeline index path '" + analysisParams.getExecuteParams().getIndexDir()
-                        + "' is not a folder.");
-            }
-            updatedExecuteParams.setIndexDir(Paths.get(opencgaFile.getUri()).toAbsolutePath().toString());
-
-            // Check pipeline parameters
-            if (StringUtils.isEmpty(analysisParams.getExecuteParams().getPipelineFile())
-                    && MapUtils.isEmpty(analysisParams.getExecuteParams().getPipeline())) {
-                throw new ToolException("Missing clinical pipeline definition. You can either provide a pipeline JSON file or a JSON"
-                        + " object.");
-            }
-            if (StringUtils.isNotEmpty(analysisParams.getExecuteParams().getPipelineFile())
-                    && MapUtils.isNotEmpty(analysisParams.getExecuteParams().getPipeline())) {
-                throw new ToolException("Ambiguous clinical pipeline definition. You can either provide a pipeline JSON file or a JSON"
-                        + " object but not both.");
-            }
-            // If a pipeline file is provided, check the file exists and then read the file content to add it to the params
-            if (StringUtils.isNotEmpty(analysisParams.getExecuteParams().getPipelineFile())) {
-                String pipelineFile = analysisParams.getExecuteParams().getPipelineFile();
-                logger.info("Checking clinical pipeline definition file {}", pipelineFile);
-                opencgaFile = getCatalogManager().getFileManager().get(study, pipelineFile, QueryOptions.empty(), token).first();
+            // Check pipeline configuration, if a pipeline file is provided, check the file exists and then read the file content
+            // to add it to the params
+            PipelineConfig pipelineConfig;
+            if (StringUtils.isNotEmpty(executeParams.getPipelineFile())) {
+                String pipelineFile = executeParams.getPipelineFile();
+                logger.info("Checking clinical pipeline configuration file {}", pipelineFile);
+                File opencgaFile = getCatalogManager().getFileManager().get(study, pipelineFile, QueryOptions.empty(), token).first();
                 if (opencgaFile.getType() != File.Type.FILE) {
                     throw new ToolException("Clinical pipeline definition path '" + pipelineFile + "' is not a file.");
                 }
                 Path pipelinePath = Paths.get(opencgaFile.getUri()).toAbsolutePath();
-                updatedExecuteParams.setPipeline(JacksonUtils.getDefaultObjectMapper().readerFor(ObjectMap.class)
-                        .readValue(pipelinePath.toFile()));
+                pipelineConfig = JacksonUtils.getDefaultObjectMapper().readerFor(PipelineConfig.class).readValue(pipelinePath.toFile());
+            } else if (executeParams.getPipeline() != null) {
+                logger.info("Checking clinical pipeline configuration provided directly in the parameters");
+                pipelineConfig = executeParams.getPipeline();
             } else {
-                updatedExecuteParams.setPipeline(analysisParams.getExecuteParams().getPipeline());
+                throw new ToolException("Missing clinical pipeline configuration. You can either provide a pipeline configuration JSON"
+                        + " file or directly the pipeline configuration.");
+            }
+            if (pipelineConfig == null) {
+                throw new ToolException("After checking, pipeline configuration is null.");
+            }
+
+            // Check samples
+            List<String> samples = executeParams.getSamples();
+            if (CollectionUtils.isEmpty(samples)) {
+                if (pipelineConfig.getInput() != null && CollectionUtils.isNotEmpty(pipelineConfig.getInput().getSamples())) {
+                    for (PipelineSample pipelineSample : pipelineConfig.getInput().getSamples()) {
+                        if (CollectionUtils.isNotEmpty(pipelineSample.getFiles())) {
+                            samples = new ArrayList<>();
+                            for (String file : pipelineSample.getFiles()) {
+                                File opencgaFile = getCatalogManager().getFileManager().get(study, file, QueryOptions.empty(), token)
+                                        .first();
+                                if (opencgaFile.getType() != File.Type.FILE) {
+                                    throw new ToolException("Input path '" + file + "' for sample ID '" + pipelineSample.getId()
+                                            + "' is not a file.");
+                                } else {
+                                    samples.add(Paths.get(opencgaFile.getUri()).toAbsolutePath().toString());
+                                }
+                            }
+                            pipelineSample.setFiles(samples);
+                        } else {
+                            throw new ToolException("Missing input files for sample ID '" + pipelineSample.getId() + "'");
+                        }
+                    }
+                } else {
+                    throw new ToolException("Clinical pipeline input files are mandatory for running the pipeline.");
+                }
+            } else {
+                List<String> updatedExecuteInput = new ArrayList<>();
+                for (String executeInput : executeParams.getSamples()) {
+                    logger.info("Checking execute input {}", executeInput);
+                    // Parse the input format: sample_id:file_id[:role:somatic]
+                    String[] fields = executeInput.split(":");
+                    if (fields.length < 2) {
+                        throw new ToolException("Invalid input format. Expected format: sample_id:file_id[:role[:somatic]], but got: "
+                                + executeInput);
+                    }
+                    String inputFiles = fields[1];
+                    if (StringUtils.isEmpty(inputFiles)) {
+                        throw new ToolException("Missing input paths in : " + executeInput);
+                    }
+                    String[] inputFile = inputFiles.split(";");
+                    String updatedInput = fields[0] + ":";
+                    for (int i = 0; i < inputFile.length; i++) {
+                        File opencgaFile = getCatalogManager().getFileManager().get(study, inputFile[i], QueryOptions.empty(), token)
+                                .first();
+                        if (opencgaFile.getType() != File.Type.FILE) {
+                            throw new ToolException("Clinical pipeline input path '" + inputFile[i] + "' is not a file.");
+                        }
+                        if (i > 0) {
+                            updatedInput += ";";
+                        }
+                        updatedInput += Paths.get(opencgaFile.getUri()).toAbsolutePath().toString();
+                    }
+                    for (int i = 2; i < fields.length; i++) {
+                        updatedInput += ":" + fields[i];
+                    }
+
+                    logger.info("Updated execute input {}", updatedInput);
+                    updatedExecuteInput.add(updatedInput);
+                }
+                updatedExecuteParams.setSamples(updatedExecuteInput);
+            }
+
+            // Check the index path
+            String indexDir = executeParams.getIndexDir();
+            if (StringUtils.isEmpty(indexDir)) {
+                if (CollectionUtils.isNotEmpty(pipelineConfig.getSteps())) {
+                    for (PipelineStep pipelineStep : executeParams.getPipeline().getSteps()) {
+                        if (pipelineStep.getTool() != null) {
+                            checkToolIndexDir(pipelineStep.getTool());
+                        }
+                        if (CollectionUtils.isNotEmpty(pipelineStep.getTools())) {
+                            for (PipelineTool tool : pipelineStep.getTools()) {
+                                checkToolIndexDir(tool);
+                            }
+                        }
+                    }
+                }
+            } else {
+                logger.info("Checking index path {}", executeParams.getIndexDir());
+                File opencgaFile = getCatalogManager().getFileManager().get(study, executeParams.getIndexDir(), QueryOptions.empty(),
+                        token).first();
+                if (opencgaFile.getType() != File.Type.DIRECTORY) {
+                    throw new ToolException("Clinical pipeline index path '" + executeParams.getIndexDir() + "' is not a folder.");
+                }
+                updatedExecuteParams.setIndexDir(Paths.get(opencgaFile.getUri()).toAbsolutePath().toString());
             }
 
             // Check steps
-            if (CollectionUtils.isNotEmpty(analysisParams.getExecuteParams().getSteps())) {
-                for (String step : analysisParams.getExecuteParams().getSteps()) {
+            if (CollectionUtils.isNotEmpty(executeParams.getSteps())) {
+                for (String step : executeParams.getSteps()) {
                     if (!VALID_PIPELINE_STEPS.contains(step)) {
                         throw new ToolException("Clinical pipeline step '" + step + "' is not valid. Supported steps are: "
                                 + String.join(", ", VALID_PIPELINE_STEPS));
                     }
                 }
-                updatedExecuteParams.setSteps(analysisParams.getExecuteParams().getSteps());
+                updatedExecuteParams.setSteps(executeParams.getSteps());
             } else {
                 updatedExecuteParams.setSteps(Arrays.asList(QUALITY_CONTROL_STEP, ALIGNMENT_STEP, VARIANT_CALLING_STEP));
             }
 
+            // Set pipeline configuration
+            updatedExecuteParams.setPipeline(pipelineConfig);
+
             // Update the execute params
             updatedParams.setExecuteParams(updatedExecuteParams);
         }
+    }
+
+    private void checkToolIndexDir(PipelineTool pipelineTool) throws CatalogException {
+        logger.info("Checking index path {} for tool {}", pipelineTool.getIndex(), pipelineTool.getId());
+        File opencgaFile = getCatalogManager().getFileManager().get(study, pipelineTool.getIndex(), QueryOptions.empty(), token).first();
+        pipelineTool.setIndex(Paths.get(opencgaFile.getUri()).toAbsolutePath().toString());
     }
 
     @Override

@@ -1284,8 +1284,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean jobDryRun; 
     
-        @Parameter(names = {"--pipeline-params-input"}, description = "List of input files", required = false, arity = 1)
-        public String pipelineParamsInput;
+        @Parameter(names = {"--pipeline-params-samples"}, description = "List of samples following the format: sample_id:file_id1;file_id2[:rol[:somatic]]; 'rol' can be 'mother', 'father' or 'child'. If the sample is somatic, then add ':somatic' at", required = false, arity = 1)
+        public String pipelineParamsSamples;
     
         @Parameter(names = {"--pipeline-params-index-dir"}, description = "Directory where the reference genome and aligner indexes are located", required = false, arity = 1)
         public String pipelineParamsIndexDir;
@@ -1295,9 +1295,6 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--pipeline-params-pipeline-file"}, description = "JSON file containing the configuration of the clinical pipeline", required = false, arity = 1)
         public String pipelineParamsPipelineFile;
-    
-        @DynamicParameter(names = {"--pipeline-params-pipeline"}, description = "JSON containing the clinical pipeline configuration. Use: --pipeline-params-pipeline key=value", required = false)
-        public Map<String, ?> pipelineParamsPipeline = new HashMap<>(); //Dynamic parameters must be initialized;
     
         @Parameter(names = {"--outdir"}, description = "Output dir for the job.", required = false, arity = 1)
         public String outdir;

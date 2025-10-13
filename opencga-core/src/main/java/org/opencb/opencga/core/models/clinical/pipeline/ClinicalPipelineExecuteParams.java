@@ -17,17 +17,15 @@
 package org.opencb.opencga.core.models.clinical.pipeline;
 
 import org.opencb.commons.annotations.DataField;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.api.FieldConstants;
-import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class ClinicalPipelineExecuteParams {
 
-    @DataField(id = "input", description = FieldConstants.CLINICAL_PIPELINE_INPUT_DESCRIPTION)
-    private List<String> input;
+    @DataField(id = "samples", description = FieldConstants.CLINICAL_PIPELINE_SAMPLES_DESCRIPTION)
+    private List<String> samples;
 
     @DataField(id = "indexDir", description = FieldConstants.CLINICAL_PIPELINE_INDEX_DIR_DESCRIPTION)
     private String indexDir;
@@ -39,16 +37,17 @@ public class ClinicalPipelineExecuteParams {
     private String pipelineFile;
 
     @DataField(id = "pipeline", description = FieldConstants.CLINICAL_PIPELINE_PIPELINE_DESCRIPTION)
-    private ObjectMap pipeline;
+    private PipelineConfig pipeline;
 
     public ClinicalPipelineExecuteParams() {
-        this.input = new ArrayList<>();
+        this.samples = new ArrayList<>();
         this.steps = new ArrayList<>();
-        pipeline = new ObjectMap();
+        pipeline = new PipelineConfig();
     }
 
-    public ClinicalPipelineExecuteParams(List<String> input, String indexDir, List<String> steps, String pipelineFile, ObjectMap pipeline) {
-        this.input = input;
+    public ClinicalPipelineExecuteParams(List<String> samples, String indexDir, List<String> steps, String pipelineFile,
+                                         PipelineConfig pipeline) {
+        this.samples = samples;
         this.indexDir = indexDir;
         this.steps = steps;
         this.pipelineFile = pipelineFile;
@@ -58,7 +57,7 @@ public class ClinicalPipelineExecuteParams {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClinicalPipelineExecuteParams{");
-        sb.append("input=").append(input);
+        sb.append("sample=").append(samples);
         sb.append(", indexDir='").append(indexDir).append('\'');
         sb.append(", steps=").append(steps);
         sb.append(", pipelineFile='").append(pipelineFile).append('\'');
@@ -67,12 +66,12 @@ public class ClinicalPipelineExecuteParams {
         return sb.toString();
     }
 
-    public List<String> getInput() {
-        return input;
+    public List<String> getSamples() {
+        return samples;
     }
 
-    public ClinicalPipelineExecuteParams setInput(List<String> input) {
-        this.input = input;
+    public ClinicalPipelineExecuteParams setSamples(List<String> samples) {
+        this.samples = samples;
         return this;
     }
 
@@ -103,11 +102,11 @@ public class ClinicalPipelineExecuteParams {
         return this;
     }
 
-    public ObjectMap getPipeline() {
+    public PipelineConfig getPipeline() {
         return pipeline;
     }
 
-    public ClinicalPipelineExecuteParams setPipeline(ObjectMap pipeline) {
+    public ClinicalPipelineExecuteParams setPipeline(PipelineConfig pipeline) {
         this.pipeline = pipeline;
         return this;
     }

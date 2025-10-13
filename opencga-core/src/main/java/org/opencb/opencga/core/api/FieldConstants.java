@@ -635,8 +635,10 @@ public class FieldConstants {
     public static final String CLINICAL_PIPELINE_REF_GENOME_DESCRIPTION = "Reference genome (file, or URL to download it)";
     public static final String CLINICAL_PIPELINE_ALIGNER_INDEXES_DESCRIPTION = "Aligner indexes to generate, e.g.: bwa, bwa-mem2";
     public static final String CLINICAL_PIPELINE_EXECUTE_PARAMS_DESCRIPTION = "Map of parameters to execute the clinical pipeline";
-    public static final String CLINICAL_PIPELINE_INPUT_DESCRIPTION = "List of input files";
-    public static final String CLINICAL_PIPELINE_INDEX_DIR_DESCRIPTION = "Directory where the reference genome and aligner indexes are located";
+    public static final String CLINICAL_PIPELINE_SAMPLES_DESCRIPTION = "List of samples following the format: sample_id:file_id1;file_id2[:"
+            + "rol[:somatic]]; 'rol' can be 'mother', 'father' or 'child'. If the sample is somatic, then add ':somatic' at";
+    public static final String CLINICAL_PIPELINE_INDEX_DIR_DESCRIPTION = "Directory where the reference genome and aligner indexes are"
+            + " located";
     public static final String CLINICAL_PIPELINE_STEPS_DESCRIPTION = "Pipeline steps: quality-control, alignment, variant-calling";
     public static final String CLINICAL_PIPELINE_FILE_DESCRIPTION = "JSON file containing the configuration of the clinical pipeline";
     public static final String CLINICAL_PIPELINE_PIPELINE_DESCRIPTION = "JSON containing the clinical pipeline configuration";

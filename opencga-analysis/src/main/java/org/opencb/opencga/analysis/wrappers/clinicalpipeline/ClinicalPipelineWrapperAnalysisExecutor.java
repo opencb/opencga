@@ -11,10 +11,13 @@ import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelineExecuteParams;
 import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelineWrapperParams;
+import org.opencb.opencga.core.models.clinical.pipeline.PipelineStep;
+import org.opencb.opencga.core.models.clinical.pipeline.PipelineTool;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -64,6 +67,10 @@ public class ClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAnalys
         }
     }
 
+    public static boolean isURL(String input) {
+        return input.startsWith("http://") || input.startsWith("https://") || input.startsWith("ftp://");
+    }
+
     private void preparePipeline() throws ToolExecutorException {
         try {
             // Input bindings
@@ -73,9 +80,7 @@ public class ClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAnalys
 
             String reference = pipelineParams.getPrepareParams().getReferenceGenome();
             Path virtualRefPath = null;
-            if (!reference.startsWith("http://")
-                    && !reference.startsWith("https://")
-                    && !reference.startsWith("ftp://")) {
+            if (!isURL(reference)) {
                 // We need to bind to a virtual path
                 virtualRefPath = Paths.get(INPUT_VIRTUAL_PATH).resolve(Paths.get(reference).getFileName());
                 inputBindings.add(new AbstractMap.SimpleEntry<>(reference, virtualRefPath.toString()));
@@ -154,16 +159,19 @@ public class ClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAnalys
             readOnlyInputBindings.add(virtualScriptPath.toString());
 
             // Index binding
-            Path virtualIndexPath = Paths.get(INDEX_VIRTUAL_PATH);
-            inputBindings.add(new AbstractMap.SimpleEntry<>(executeParams.getIndexDir(), virtualIndexPath.toString()));
-            readOnlyInputBindings.add(virtualIndexPath.toString());
+            Path virtualIndexPath = null;
+            if (!StringUtils.isEmpty(executeParams.getIndexDir())) {
+                virtualIndexPath = Paths.get(INDEX_VIRTUAL_PATH);
+                inputBindings.add(new AbstractMap.SimpleEntry<>(executeParams.getIndexDir(), virtualIndexPath.toString()));
+                readOnlyInputBindings.add(virtualIndexPath.toString());
+            }
 
             // Input binding
             List<Path> virtualInputPaths = new ArrayList<>();
-            for (int i = 0; i < executeParams.getInput().size(); i++) {
-                Path virtualInputPath = Paths.get(INPUT_VIRTUAL_PATH + "_" + i).resolve(Paths.get(executeParams.getInput().get(i))
+            for (int i = 0; i < executeParams.getSamples().size(); i++) {
+                Path virtualInputPath = Paths.get(INPUT_VIRTUAL_PATH + "_" + i).resolve(Paths.get(executeParams.getSamples().get(i))
                         .getFileName());
-                inputBindings.add(new AbstractMap.SimpleEntry<>(Paths.get(executeParams.getInput().get(i)).toAbsolutePath().toString(),
+                inputBindings.add(new AbstractMap.SimpleEntry<>(Paths.get(executeParams.getSamples().get(i)).toAbsolutePath().toString(),
                         virtualInputPath.toString()));
                 readOnlyInputBindings.add(virtualInputPath.toString());
                 virtualInputPaths.add(virtualInputPath);
@@ -174,24 +182,8 @@ public class ClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAnalys
             Path virtualPipelineParamsPath = Paths.get(INPUT_VIRTUAL_PATH).resolve(pipelineParamsPath.getFileName());
 
             // Modify BWA index according to the indexPath
-            Path bwaIndexPath = null;
-            Path bwaIndexDirPath = Paths.get(executeParams.getIndexDir()).resolve("bwa-index");
-            for (File file : bwaIndexDirPath.toFile().listFiles()) {
-                if (file.getName().endsWith(".fa")) {
-                    bwaIndexPath = virtualIndexPath.resolve("bwa-index").resolve(file.getName());
-                    break;
-                }
-            }
-            if (bwaIndexPath == null) {
-                throw new ToolExecutorException("Could not find the BWA index at " + bwaIndexDirPath);
-            }
-            List<Map<String, Object>> steps = (List<Map<String, Object>>) executeParams.getPipeline().get("steps");
-            for (Map<String, Object> step : steps) {
-                if (ALIGNMENT_STEP.equals(step.get("name"))) {
-                    Map<String, Object> tool = (Map<String, Object>) step.get("tool");
-                    tool.put("index", bwaIndexPath.toAbsolutePath().toString());
-                }
-            }
+            updateAlignerIndex(inputBindings, readOnlyInputBindings);
+
             // Write the JSON file containing the pipeline parameters
             JacksonUtils.getDefaultObjectMapper().writerFor(ObjectMap.class).writeValue(pipelineParamsPath.toFile(),
                     executeParams.getPipeline());
@@ -223,8 +215,10 @@ public class ClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAnalys
                     + " -o " + OUTPUT_VIRTUAL_PATH
                     + " -p " + virtualPipelineParamsPath
                     + " -i " + StringUtils.join(virtualInputPaths, ",")
-                    + " --index " + virtualIndexPath
                     + " --steps " + pipelineSteps;
+            if (virtualIndexPath != null) {
+                params += (" --index " + virtualIndexPath);
+            }
 
             // Execute Python script in docker
             // TODO: fix and use 5.0.0-SNAPSHOT to include bwa
@@ -240,6 +234,117 @@ public class ClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAnalys
         } catch (IOException | ToolException e) {
             throw new ToolExecutorException(e);
         }
+    }
+
+    private void updateAlignerIndex(List<AbstractMap.SimpleEntry<String, String>> inputBindings,
+                                    Set<String> readOnlyInputBindings) throws ToolExecutorException {
+        Path virtualAlignmentIndexPath;
+        String indexDir = pipelineParams.getExecuteParams().getIndexDir();
+        for (PipelineStep step : pipelineParams.getExecuteParams().getPipeline().getSteps()) {
+            if ("alignment".equalsIgnoreCase(step.getId())) {
+                if (StringUtils.isEmpty(step.getTool().getIndex())) {
+                    // Use the index directory for the alignment step
+                    if (StringUtils.isEmpty(indexDir)) {
+                        throw new ToolExecutorException("Missing index directory for step alignment");
+                    }
+                    String subfolder = step.getTool().getId() + "-index";
+                    Path alignmentIndexPath = Paths.get(indexDir).resolve(subfolder);
+                    if (Files.exists(alignmentIndexPath)) {
+                        for (File file : alignmentIndexPath.toFile().listFiles()) {
+                            if (file.getName().endsWith(".fa")) {
+                                virtualAlignmentIndexPath = Paths.get(INDEX_VIRTUAL_PATH).resolve(subfolder).resolve(file.getName());
+                                step.getTool().setIndex(virtualAlignmentIndexPath.toAbsolutePath().toString());
+                                logger.info("Using index {} for step alignment", step.getTool().getIndex());
+                                return;
+                            }
+                        }
+                        throw new ToolExecutorException("Missing FASTA file for the index directory for step alignment");
+                    } else {
+                        throw new ToolExecutorException("Index directory for step alignment not found: " + alignmentIndexPath);
+                    }
+                } else {
+                    // Use the index defined in the tool
+                    Path parent;
+                    Path alignmentIndexPath = Paths.get(step.getTool().getIndex());
+                    if (Files.exists(alignmentIndexPath)) {
+                        if (Files.isRegularFile(alignmentIndexPath)) {
+                            parent = alignmentIndexPath.getParent();
+                        } else if (Files.isDirectory(alignmentIndexPath)) {
+                            parent = alignmentIndexPath;
+                        } else {
+                            throw new ToolExecutorException("Index path for step alignment is neither a file nor a directory: "
+                                    + alignmentIndexPath);
+                        }
+                        virtualAlignmentIndexPath = Paths.get(INDEX_VIRTUAL_PATH + "_alignment");
+                        inputBindings.add(new AbstractMap.SimpleEntry<>(parent.toAbsolutePath().toString(),
+                                virtualAlignmentIndexPath.toAbsolutePath().toString()));
+                        readOnlyInputBindings.add(virtualAlignmentIndexPath.toAbsolutePath().toString());
+                        step.getTool().setIndex(virtualAlignmentIndexPath.toAbsolutePath().toString());
+                        logger.info("Using index {} for step alignment", step.getTool().getIndex());
+                        return;
+                    } else {
+                        throw new ToolExecutorException("Index directory for step alignment not found: " + alignmentIndexPath);
+                    }
+                }
+            }
+        }
+        throw new ToolExecutorException("Could not set index directory for step alignment");
+    }
+
+    private void updateVariantCallerIndex(List<AbstractMap.SimpleEntry<String, String>> inputBindings,
+                                    Set<String> readOnlyInputBindings) throws ToolExecutorException {
+        Path virtualVariantCallingIndexPath;
+        String indexDir = pipelineParams.getExecuteParams().getIndexDir();
+        for (PipelineStep step : pipelineParams.getExecuteParams().getPipeline().getSteps()) {
+            if ("variant-calling".equalsIgnoreCase(step.getId())) {
+                if (StringUtils.isEmpty(step.getTool().getIndex())) {
+                    // Use the index directory for the variant-calling step
+                    if (StringUtils.isEmpty(indexDir)) {
+                        throw new ToolExecutorException("Missing index directory for step variant-calling");
+                    }
+                    String subfolder = "reference-genome-index";
+                    Path variantCallingIndexPath = Paths.get(indexDir).resolve(subfolder);
+                    if (Files.exists(variantCallingIndexPath)) {
+                        for (File file : variantCallingIndexPath.toFile().listFiles()) {
+                            if (file.getName().endsWith(".fa")) {
+                                virtualVariantCallingIndexPath = Paths.get(INDEX_VIRTUAL_PATH).resolve(subfolder).resolve(file.getName());
+                                step.getTool().setIndex(virtualVariantCallingIndexPath.toAbsolutePath().toString());
+                                logger.info("Using index {} for step variant-calling", step.getTool().getIndex());
+                                return;
+                            }
+                        }
+                        throw new ToolExecutorException("Missing FASTA file for the index directory for step variant-calling");
+                    } else {
+                        throw new ToolExecutorException("Index directory for step variant-calling not found: " + variantCallingIndexPath);
+                    }
+                } else {
+                    // Use the index defined in the tool
+                    Path parent;
+                    Path variantCallingIndexPath = Paths.get(step.getTool().getIndex());
+                    if (Files.exists(variantCallingIndexPath)) {
+                        if (Files.isRegularFile(variantCallingIndexPath)) {
+                            parent = variantCallingIndexPath.getParent();
+                        } else if (Files.isDirectory(variantCallingIndexPath)) {
+                            parent = variantCallingIndexPath;
+                        } else {
+                            throw new ToolExecutorException("Index path for step variant-calling is neither a file nor a directory: "
+                                    + variantCallingIndexPath);
+                        }
+                        virtualVariantCallingIndexPath = Paths.get(INDEX_VIRTUAL_PATH + "_variant_calling");
+                        inputBindings.add(new AbstractMap.SimpleEntry<>(parent.toAbsolutePath().toString(),
+                                virtualVariantCallingIndexPath.toAbsolutePath().toString()));
+                        readOnlyInputBindings.add(virtualVariantCallingIndexPath.toAbsolutePath().toString());
+                        step.getTool().setIndex(virtualVariantCallingIndexPath.toAbsolutePath().toString());
+                        logger.info("Using alignment index: {}", step.getTool().getIndex());
+                        return;
+                    } else {
+                        throw new ToolExecutorException("Index directory for step variant-calling not found: " + variantCallingIndexPath);
+                    }
+                }
+            }
+        }
+        throw new ToolExecutorException("Could not set index directory for step alignment");
+
     }
 
     private void runVariantCalling() throws ToolExecutorException {
@@ -278,7 +383,7 @@ public class ClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAnalys
             if (refIndexPath == null) {
                 throw new ToolExecutorException("Could not find the reference index at " + refIndexDirPath);
             }
-            List<Map<String, Object>> steps = (List<Map<String, Object>>) executeParams.getPipeline().get("steps");
+            List<Map<String, Object>> steps = null; //(List<Map<String, Object>>) executeParams.getPipeline().get("steps");
             for (Map<String, Object> step : steps) {
                 if (VARIANT_CALLING_STEP.equals(step.get("name"))) {
                     List<Map<String, Object>> tools = (List<Map<String, Object>>) step.get("tools");

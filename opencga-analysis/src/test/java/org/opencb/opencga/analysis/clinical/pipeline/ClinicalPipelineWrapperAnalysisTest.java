@@ -10,14 +10,11 @@ import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
 import org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelineWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelineWrapperAnalysisExecutor;
-import org.opencb.opencga.analysis.wrappers.ngspipeline.NgsPipelineWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.ngspipeline.NgsPipelineWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.clinical.NgsPipelineWrapperParams;
 import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelineExecuteParams;
 import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelinePrepareParams;
 import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelineWrapperParams;
@@ -226,9 +223,9 @@ public class ClinicalPipelineWrapperAnalysisTest {
 
         params = new ClinicalPipelineWrapperParams();
         ClinicalPipelineExecuteParams executeParams = new ClinicalPipelineExecuteParams();
-        executeParams.setInput(Arrays.asList(fastq1File.getId(), fastq2File.getId()));
+        executeParams.setSamples(Arrays.asList(fastq1File.getId(), fastq2File.getId()));
         executeParams.setIndexDir(indexDirFile.getId());
-        executeParams.setPipeline(ngsPipeline);
+        executeParams.setPipeline(null);//ngsPipeline);
         params.setExecuteParams(executeParams);
 
         toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), opencga.getCatalogManager(),

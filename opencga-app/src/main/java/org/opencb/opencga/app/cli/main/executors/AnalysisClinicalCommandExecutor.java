@@ -60,6 +60,7 @@ import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelineExecuteP
 import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelineExecuteWrapperParams;
 import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelinePrepareParams;
 import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelinePrepareWrapperParams;
+import org.opencb.opencga.core.models.clinical.pipeline.PipelineConfig;
 import org.opencb.opencga.core.models.common.StatusParam;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.job.Job;
@@ -974,11 +975,10 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), ClinicalPipelineExecuteWrapperParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotNull(beanParams, "pipelineParams.input", commandOptions.pipelineParamsInput, true);
+            putNestedIfNotNull(beanParams, "pipelineParams.samples", commandOptions.pipelineParamsSamples, true);
             putNestedIfNotEmpty(beanParams, "pipelineParams.indexDir", commandOptions.pipelineParamsIndexDir, true);
             putNestedIfNotNull(beanParams, "pipelineParams.steps", commandOptions.pipelineParamsSteps, true);
             putNestedIfNotEmpty(beanParams, "pipelineParams.pipelineFile", commandOptions.pipelineParamsPipelineFile, true);
-            putNestedMapIfNotEmpty(beanParams, "pipelineParams.pipeline", commandOptions.pipelineParamsPipeline, true);
             putNestedIfNotEmpty(beanParams, "outdir", commandOptions.outdir, true);
 
             clinicalPipelineExecuteWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
