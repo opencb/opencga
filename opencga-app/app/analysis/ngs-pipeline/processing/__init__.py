@@ -1,6 +1,7 @@
-from .quality_control import QualityControl
-from .alignment import Alignment
-from .variant_calling import VariantCalling
-from .prepare_reference import PrepareReference
 
-__all__ = ["QualityControl", "Alignment", "VariantCalling", "PrepareReference"]
+from .alignment import Alignment
+from .prepare_reference_indexes import PrepareReferenceIndexes
+from .quality_control import QualityControl
+from .variant_calling import VariantCalling
+
+__all__ = ["QualityControl", "Alignment", "VariantCalling", "PrepareReferenceIndexes"]

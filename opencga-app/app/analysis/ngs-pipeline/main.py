@@ -7,13 +7,16 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from processing import QualityControl, Alignment, VariantCalling, PrepareReference
+from processing import QualityControl, Alignment, VariantCalling, PrepareReferenceIndexes
 
+# Define global constants
 VALID_STEPS = ["quality-control", "alignment", "variant-calling"]
 SENTINEL = "DONE"
 
-# Get a logger for the current module
-logger = logging.getLogger(__name__)
+# Define global logger
+outdir = None
+logger = None
+
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Pipeline runner", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -21,22 +24,23 @@ def parse_args(argv=None):
 
     # --- index command ---
     prepare_parser = subparsers.add_parser("prepare", help="Index the reference genome")
-    prepare_parser.add_argument("-r", "--reference", required=True, help="Pipeline step to execute")
-    prepare_parser.add_argument("-i", "--index", default="reference-genome,bwa,bwa-mem2", help="Pipeline step to execute")
-    prepare_parser.add_argument("-l", "--log-level", default="info", choices=["debug", "info", "warning", "error"], help="Set logging level")
-    prepare_parser.add_argument("-o", "--outdir", required=True, help="Base output directory (step subfolder will be created)")
+    prepare_parser.add_argument("-r", "--reference-genome", required=True, help="Path or URL to the reference genome in FASTA format")
+    prepare_parser.add_argument("-i", "--aligner-indexes", default="bwa,bwa-mem2", help="Comma-separated list of aligner indexes to prepare (reference-genome,bwa,bwa-mem2,minimap2). Reference-genome is always executed.")
+    prepare_parser.add_argument("-c", "--clean", action="store_true", help="Clean existing directory before running")
+    prepare_parser.add_argument("-l", "--log-level", default="info", choices=["debug", "info", "warning", "error"], help="Set console logging level")
+    prepare_parser.add_argument("-o", "--outdir", required=True, help="Base output directory, index subfolders will be created")
 
     # --- align command ---
     run_parser = subparsers.add_parser("run", help="Align reads to reference genome")
     run_parser.add_argument("-p", "--pipeline", help="Pipeline step to execute")
-    run_parser.add_argument("-i", "--input", help="Input data file or directory")
-    run_parser.add_argument("--index", help="Input data file or directory")
+    run_parser.add_argument("-s", "--samples", help="Input data file or directory")
+    run_parser.add_argument("--index-dir", help="Input data file or directory")
     run_parser.add_argument("--steps", default="quality-control,alignment,variant-calling", help="Pipeline step to execute")
-    run_parser.add_argument("--resume", action="store_true", help="Resume previous failed run in the step directory")
+    # run_parser.add_argument("--resume", action="store_true", help="Resume previous failed run in the step directory")
     run_parser.add_argument("--overwrite", action="store_true", help="Force re-run even if step previously completed")
-    run_parser.add_argument("--clean", action="store_true", help="Clean existing step directory before running")
-    run_parser.add_argument("-l", "--log-level", default="info", choices=["debug", "info", "warning", "error"], help="Set logging level")
-    run_parser.add_argument("-o", "--outdir", required=True, help="Base output directory (step subfolder will be created)")
+    run_parser.add_argument("-c", "--clean", action="store_true", help="Clean existing directory before running")
+    run_parser.add_argument("-l", "--log-level", default="INFO", choices=["debug", "info", "warning", "error"], help="Set console logging level")
+    run_parser.add_argument("-o", "--outdir", required=True, help="Base output directory, step subfolders will be created")
     return parser.parse_args(argv)
 
 def prepare_step_dir(base_outdir: Path, step: str):
@@ -50,33 +54,44 @@ def mark_completed(step_dir: Path):
 def is_completed(step_dir: Path):
     return (step_dir / SENTINEL).is_file()
 
+def create_output_dir(args):
+    global outdir
 
-def prepare(args):
-    ## 1. Get absolute path of outdir
+    ## Get absolute path of outdir and create if not exists
     outdir = Path(args.outdir).resolve()
     outdir.mkdir(parents=True, exist_ok=True)
-    logger.debug(f"Output directory resolved to: {outdir}")
+    return outdir
 
-    ## 2. Validate the index types
-    indexes = args.index.split(",")
-    for idx in indexes:
-        if idx not in ["reference-genome", "bwa", "bwa-mem2"]:
-            logger.error(f"ERROR: Unsupported index type specified: {idx}")
-            return 1
+def configure_logger(args):
+    global outdir, logger
 
-    ## 3. Calculate indexes and prepare reference
-    prepare_reference = PrepareReference(reference=args.reference, indexes=indexes, output=outdir, logger=logger)
-    prepare_reference.execute()
-    return 0
-
-def run(args):
-    ## 1. Get absolute path of outdir
+    ## Determine log level from args
     outdir = Path(args.outdir).resolve()
-    outdir.mkdir(parents=True, exist_ok=True)
-    logger.debug(f"Output directory resolved to: {outdir}")
+    log_level = getattr(logging, args.log_level.upper(), logging.INFO)
 
-    ## 2. Handle --clean option
-    if args.clean:
+    ## Create logger
+    logger = logging.getLogger("ngs_pipeline")
+    logger.setLevel(logging.DEBUG)  # master level, controls what gets through to handlers
+
+    ## File handler
+    file_handler = logging.FileHandler(str(outdir / "app.log"))
+    file_handler.setLevel(logging.DEBUG)  # log everything (DEBUG+) to file
+    file_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(file_formatter)
+
+    ## Console handler
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(log_level)  # log_level and above to console
+    console_formatter = logging.Formatter('%(levelname)s - %(message)s')
+    console_handler.setFormatter(console_formatter)
+
+    ## Add handlers to logger
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+
+def clean(args):
+    ## 2. Chek clean parameter and directory is not empty
+    if args.clean and any(outdir.iterdir()):
         logger.info(f"Cleaning existing output directory: {outdir}")
         ## removing all contents of outdir
         for item in outdir.iterdir():
@@ -84,10 +99,46 @@ def run(args):
                 shutil.rmtree(item)
             elif item.is_file():
                 item.unlink()
-            logger.info("Output directory cleaned.")
+        logger.info("Output directory cleaned.")
         return 0
+    return None
 
-    ## 3. Load pipeline configuration
+
+def prepare(args):
+    ## 1. Validate the index types
+    indexes = args.aligner_indexes.split(",")
+    for idx in indexes:
+        if idx not in ["reference-genome", "bwa", "bwa-mem2", "minimap2"]:
+            logger.error(f"ERROR: Unsupported index type specified: {idx}")
+            return 1
+
+    ## 2. Ensure reference genome is created. We MUST add it if not present
+    if "reference-genome" not in indexes:
+        indexes.insert(0, "reference-genome")
+
+    ## 3. Calculate indexes and prepare reference
+    prepare_reference = PrepareReferenceIndexes(reference_genome=args.reference_genome, indexes=indexes, output=outdir, logger=logger)
+    return prepare_reference.execute()
+
+def run(args):
+    ## 1. Get absolute path of outdir
+    # outdir = Path(args.outdir).resolve()
+    # outdir.mkdir(parents=True, exist_ok=True)
+    # logger.debug(f"Output directory resolved to: {outdir}")
+
+    ## 2. Handle --clean option
+    # if args.clean:
+    #     logger.info(f"Cleaning existing output directory: {outdir}")
+    #     ## removing all contents of outdir
+    #     for item in outdir.iterdir():
+    #         if item.is_dir():
+    #             shutil.rmtree(item)
+    #         elif item.is_file():
+    #             item.unlink()
+    #         logger.info("Output directory cleaned.")
+    #     return 0
+
+    ## 1. Load pipeline configuration
     pipeline_path = Path(args.pipeline).resolve()
     if not pipeline_path.is_file():
         logger.error(f"ERROR: 'pipeline' configuration file not found: {pipeline_path}")
@@ -98,25 +149,39 @@ def run(args):
         logger.error(f"ERROR: 'pipeline' configuration is not a JSON object: {pipeline_path}")
         return 1
 
-    ## 4. Set input in pipeline configuration if provided
-    if args.input:
-        files = args.input.split(",")
-        # if not input_path.exists():
-        #     logger.error(f"ERROR: 'input' path not found: {input_path}")
-        #     return 1
-        type = "fastq" if files[0].endswith((".fastq", ".fastq.gz", ".fq", ".fq.gz")) else "bam" if files[0].endswith(
-            ".bam") else "unknown"
-        pipeline.get("input", {}).update({"files": files, "type": type})
-        # logger.info(f"Input set in pipeline configuration: {pipeline['input']}")
-        # logger.info(f"Input set in pipeline configuration: {pipeline}")
-    ## 4.1 Check input files are valid
-    ## TODO: implement more thorough checks based on type
+    ## 2. Set reference in pipeline configuration if provided
+    if args.index_dir:
+        pipeline.get("input", {}).update({"indexDir": args.index_dir})
 
-    ## 5. Set reference in pipeline configuration if provided
-    if args.index:
-        pipeline.get("input", {}).update({"index": args.index})
+    ## 3. Set input in pipeline configuration if provided
+    if args.samples:
+        pipeline.get("input", {}).update({"samples": []})
+        samples = args.samples.split(";")
+        for sample in samples:
+            ## Parse sample string
+            parts = sample.split(":")
+            parts += [""] * (4 - len(parts))  # complete 'parts' to length 4
+            sample_id, files, somatic, role = parts[0], parts[1].split(","), parts[2] or 0, parts[3] or "U"
+            logger.debug(f"Sample '{sample_id}' files='{files}' somatic='{somatic}' role='{role}'")
+            ## Append to existing samples list
+            sample_list = pipeline.get("input", {}).get("samples", []) + [{"id": sample_id, "files": files, "somatic": somatic, "role": role}]
+            pipeline.get("input", {}).update({"samples": sample_list})
+        logger.debug(f"Input set in pipeline configuration: {pipeline.get('input')}")
 
-    ## 6. Prepare first step execution
+    ## 4. Check input files exist
+    input_files = pipeline.get("input", {}).get("samples", [])
+    if not input_files:
+        logger.error("ERROR: No input files specified in pipeline configuration or via --samples")
+        return 1
+    for sample in input_files:
+        for f in sample.get("files", []):
+            fpath = Path(f).resolve()
+            if not fpath.is_file():
+                logger.error(f"ERROR: Input file for sample '{sample.get('id')}' not found: {fpath}")
+                return 1
+    logger.debug(f"All input files verified for {len(input_files)} samples.")
+
+    ## 5. Prepare first step execution
     steps = args.steps.split(",")
     ## Check that all steps are in VALID_STEPS
     for step in steps:
@@ -124,12 +189,12 @@ def run(args):
             logger.error(f"ERROR: Invalid step specified: {step}. Valid steps are: {', '.join(VALID_STEPS)}")
             return 1
 
-    ## 7. Execute steps in order
+    ## 6. Execute steps in order
     for step in steps:
-        ## 1. Prepare step directory and implementation
+        ## 6.1. Prepare step directory and implementation
         step_dir = prepare_step_dir(outdir, step)
         impl = None
-        logger.debug(f"Starting step='{step}' resume={args.resume} overwrite={args.overwrite}")
+        logger.debug(f"Starting step='{step}' overwrite={args.overwrite}")
         match step:
             case "quality-control":
                 impl = QualityControl(pipeline=pipeline, output=step_dir, logger=logger)
@@ -141,7 +206,7 @@ def run(args):
                 logger.debug("Done with all steps.")
                 return 1
 
-        ## 2. Execute step if implementation exists
+        ## 6.2. Execute step if implementation exists
         if impl:
             if not is_completed(step_dir):
                 logger.debug(f"Executing step: '{step}'; No existing completion detected")
@@ -160,19 +225,29 @@ def run(args):
 def main(argv=None):
     args = parse_args(argv)
 
-    ## Configure basic logging (optional, if not already configured)
-    log_level = getattr(logging, args.log_level.upper(), logging.INFO)
-    logging.basicConfig(level=log_level, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    ## 1. Get absolute path of outdir and create if not exists
+    # global outdir
+    # outdir = Path(args.outdir).resolve()
+    # outdir.mkdir(parents=True, exist_ok=True)
+    create_output_dir(args)
 
-    if args.command == "prepare":
-        prepare(args)
-        return 0
+    ## 2. Configure global logger
+    configure_logger(args)
 
-    if args.command == "run":
-        run(args)
-        return 0
+    ## 3. Handle --clean option
+    clean(args)
 
-    return None
+    # 4. Run the appropriate command
+    logger.debug(f"Executing command '{args.command}' in output directory '{outdir}'")
+    match args.command:
+        case "prepare":
+            return prepare(args)
+        case "run":
+            return run(args)
+        case _:
+            logger.error(f"Unknown command: {args.command}")
+            return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

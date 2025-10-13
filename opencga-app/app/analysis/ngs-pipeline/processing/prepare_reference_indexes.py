@@ -1,11 +1,13 @@
 from pathlib import Path
 
+from typing_extensions import override
+
 from processing.base_processor import BaseProcessor
 
 
-class PrepareReference(BaseProcessor):
+class PrepareReferenceIndexes(BaseProcessor):
 
-    def __init__(self, reference: str, indexes: list, output: Path, logger=None):
+    def __init__(self, reference_genome: str, indexes: list, output: Path, logger=None):
         """
         Initialize PrepareReference with config and output parameters.
         Parameters
@@ -18,29 +20,30 @@ class PrepareReference(BaseProcessor):
             Logger instance for logging messages
         """
         super().__init__(output, logger)
-        self.reference = reference
+        self.reference_genome = reference_genome
         self.indexes = indexes
 
 
     """
     A single prepare-reference step.
     """
+    @override
     def execute(self) -> dict[str, str] | int:
-        if self.reference is None:
+        if self.reference_genome is None:
             self.logger.error("No reference genome file provided for indexing")
             return {"error": "No reference genome file provided for indexing"}
 
         ## 1. Download or copy the reference genome to self.output
         reference_path = ""
-        if self.reference.startswith(("http://", "https://", "ftp://")):
-            self.logger.info("Downloading reference genome from URL: %s", self.reference)
-            ref_filename = Path(self.reference).name
-            cmd = ["wget", "-O", str(self.output / ref_filename), self.reference]
+        if self.reference_genome.startswith(("http://", "https://", "ftp://")):
+            self.logger.info("Downloading reference genome from URL: %s", self.reference_genome)
+            ref_filename = Path(self.reference_genome).name
+            cmd = ["wget", "-O", str(self.output / ref_filename), self.reference_genome]
             self.run_command(cmd)
             reference_path = str(self.output / ref_filename)
         else:
             ## Check if the reference file exists
-            ref_path = Path(self.reference).resolve()
+            ref_path = Path(self.reference_genome).resolve()
             if not ref_path.is_file():
                 self.logger.error("ERROR: Reference genome file not found: %s", ref_path)
                 return {"error": f"Reference genome file not found: {ref_path}"}
@@ -62,10 +65,8 @@ class PrepareReference(BaseProcessor):
                 case "bwa":
                     self.bwa_index(reference_path)
                 case "bwa-mem2":
-                    bwa_mem2_installed = self.run_command(["which", "bwa-mem2"], check=False)
-                    if bwa_mem2_installed.returncode == 0:
-                        self.bwamem2_index(reference_path)
-
+                    if self.check_tool_availability("bwa-mem2"):
+                        self.bwa_mem2_index(reference_path)
         return 0
 
 
@@ -151,9 +152,8 @@ class PrepareReference(BaseProcessor):
         return reference_path
 
 
-    def bwamem2_index(self, reference_path: str) -> str:
-        """
-            Create BWA-MEM2 index for the reference genome.
+    def bwa_mem2_index(self, reference_path: str) -> str:
+        """Create BWA-MEM2 index for the reference genome.
             This method copies the reference genome to a BWA-MEM2 index directory,
             decompresses it if it's gzipped, and creates the BWA-MEM2 index files
             required for sequence alignment.
