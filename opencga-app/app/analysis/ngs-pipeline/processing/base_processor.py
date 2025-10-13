@@ -1,4 +1,5 @@
 import subprocess
+from abc import abstractmethod
 from pathlib import Path
 
 class BaseProcessor:
@@ -17,6 +18,52 @@ class BaseProcessor:
         """
         self.output = output
         self.logger = logger
+
+    @abstractmethod
+    def execute(self) -> any:
+        pass
+
+    def check_tool_availability(self, tool_name: str) -> bool:
+        """
+        Check if a command-line tool is available in the system PATH.
+
+        Parameters
+        ----------
+        tool_name : str
+            Name of the tool to check for availability
+
+        Returns
+        -------
+        bool
+            True if the tool is available, False otherwise
+        """
+        result = self.run_command(["which", tool_name], check=False)
+        return result.returncode == 0
+
+    def get_file_format(self, filename: str) -> str | None:
+        """
+        Determine the file format based on the file extension.
+
+        Parameters
+        ----------
+        filename : str
+            Name of the file
+
+        Returns
+        -------
+        str
+            File format (e.g., 'fastq', 'fasta', 'bam', 'vcf', or 'unknown')
+        """
+        if filename.endswith(".fq") or filename.endswith(".fastq") or filename.endswith(".fastq.gz") or filename.endswith(".fq.gz"):
+            return "fastq"
+        elif filename.endswith(".fa") or filename.endswith(".fasta") or filename.endswith(".fasta.gz") or filename.endswith(".fa.gz") or filename.endswith(".fna") or filename.endswith(".fna.gz"):
+            return "fasta"
+        elif filename.endswith(".bam"):
+            return "bam"
+        elif filename.endswith(".vcf") or filename.endswith(".vcf.gz"):
+            return "vcf"
+        else:
+            return None
 
 
     def build_cli_params(self, parameters: dict, ignore: list) -> list[str]:
@@ -50,7 +97,7 @@ class BaseProcessor:
         return params_list
 
 
-    def run_command(self, cmd: list[str], check: bool = True) -> subprocess.CompletedProcess:
+    def run_command(self, cmd: str | list[str], check: bool = True, shell: bool = False) -> subprocess.CompletedProcess:
         """
         Execute a command with logging.
 
@@ -60,11 +107,20 @@ class BaseProcessor:
             Command to execute as a list of strings
         check : bool, optional
             Whether to check return code (default: True)
+        shell : bool, optional
 
         Returns
         -------
         subprocess.CompletedProcess
             Result of the command execution
         """
-        self.logger.debug("Executing command: %s", " ".join(cmd))
-        return subprocess.run(cmd, check=check)
+        # Log the command being executed
+        self.logger.debug("Executing command: %s", cmd if isinstance(cmd, str) else " ".join(cmd))
+
+        # Execute the command and log output
+        result = subprocess.run(cmd, check=check, capture_output=True, text=True, shell=shell)
+        if result.stdout:
+            self.logger.info("Command output: %s", result.stdout.strip())
+        if result.stderr:
+            self.logger.warning("Command stderr: %s", result.stderr.strip())
+        return result

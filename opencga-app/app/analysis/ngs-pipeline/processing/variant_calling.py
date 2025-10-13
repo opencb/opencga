@@ -1,6 +1,8 @@
 import subprocess
 from pathlib import Path
 
+from typing_extensions import override
+
 from processing.base_processor import BaseProcessor
 
 
@@ -27,9 +29,10 @@ class VariantCalling(BaseProcessor):
     Implement `run` with concrete checks. `execute` wraps `run` adding logging
     and common error handling.
     """
+    @override
     def execute(self) -> dict:
         self.logger.info("Starting VariantCalling step: %s", self.__class__.__name__)
-        variant_calling_config = next((s for s in self.pipeline.get("steps", []) if s.get("name") == "variant-calling"), {})
+        variant_calling_config = next((s for s in self.pipeline.get("steps", []) if s.get("id") == "variant-calling"), {})
         self.logger.debug("Configuration for QualityControl: %s", variant_calling_config)
 
         ## Get the tool in the quality-control step of the pipeline dict
