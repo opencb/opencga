@@ -22,25 +22,40 @@ def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Pipeline runner", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    # --- index command ---
+    ## --- index command ---
     prepare_parser = subparsers.add_parser("prepare", help="Index the reference genome")
     prepare_parser.add_argument("-r", "--reference-genome", required=True, help="Path or URL to the reference genome in FASTA format")
-    prepare_parser.add_argument("-i", "--aligner-indexes", default="bwa,bwa-mem2", help="Comma-separated list of aligner indexes to prepare (reference-genome,bwa,bwa-mem2,minimap2). Reference-genome is always executed.")
+    prepare_parser.add_argument("-i", "--aligner-indexes", default="bwa,bwa-mem2,minimap2,bowtie2,hisat2", help="Comma-separated list of aligner indexes to prepare (reference-genome,bwa,bwa-mem2,minimap2). Reference-genome is always executed.")
     prepare_parser.add_argument("-c", "--clean", action="store_true", help="Clean existing directory before running")
-    prepare_parser.add_argument("-l", "--log-level", default="info", choices=["debug", "info", "warning", "error"], help="Set console logging level")
+    prepare_parser.add_argument("-l", "--log-level", default="info", choices=["debug", "info", "warning", "error"],
+                                help="Set console logging level")
     prepare_parser.add_argument("-o", "--outdir", required=True, help="Base output directory, index subfolders will be created")
 
-    # --- align command ---
-    run_parser = subparsers.add_parser("run", help="Align reads to reference genome")
+    ## --- genomics command ---
+    run_parser = subparsers.add_parser("genomics", help="Align reads to reference genome")
     run_parser.add_argument("-p", "--pipeline", help="Pipeline step to execute")
     run_parser.add_argument("-s", "--samples", help="Input data file or directory")
     run_parser.add_argument("--index-dir", help="Input data file or directory")
     run_parser.add_argument("--steps", default="quality-control,alignment,variant-calling", help="Pipeline step to execute")
-    # run_parser.add_argument("--resume", action="store_true", help="Resume previous failed run in the step directory")
     run_parser.add_argument("--overwrite", action="store_true", help="Force re-run even if step previously completed")
     run_parser.add_argument("-c", "--clean", action="store_true", help="Clean existing directory before running")
-    run_parser.add_argument("-l", "--log-level", default="INFO", choices=["debug", "info", "warning", "error"], help="Set console logging level")
+    run_parser.add_argument("-l", "--log-level", default="INFO", choices=["debug", "info", "warning", "error"],
+                            help="Set console logging level")
     run_parser.add_argument("-o", "--outdir", required=True, help="Base output directory, step subfolders will be created")
+
+    ## --- rna-seq command ---
+    run_parser = subparsers.add_parser("rna-seq", help="Align reads to reference genome")
+    run_parser.add_argument("-p", "--pipeline", help="Pipeline step to execute")
+    run_parser.add_argument("-s", "--samples", help="Input data file or directory")
+    run_parser.add_argument("--index-dir", help="Input data file or directory")
+    run_parser.add_argument("--steps", default="quality-control,alignment,variant-calling",
+                            help="Pipeline step to execute")
+    run_parser.add_argument("--overwrite", action="store_true", help="Force re-run even if step previously completed")
+    run_parser.add_argument("-c", "--clean", action="store_true", help="Clean existing directory before running")
+    run_parser.add_argument("-l", "--log-level", default="INFO", choices=["debug", "info", "warning", "error"],
+                            help="Set console logging level")
+    run_parser.add_argument("-o", "--outdir", required=True, help="Base output directory, step subfolders will be created")
+
     return parser.parse_args(argv)
 
 def prepare_step_dir(base_outdir: Path, step: str):
@@ -92,14 +107,14 @@ def configure_logger(args):
 def clean(args):
     ## 2. Chek clean parameter and directory is not empty
     if args.clean and any(outdir.iterdir()):
-        logger.info(f"Cleaning existing output directory: {outdir}")
+        # logger.info(f"Cleaning existing output directory: {outdir}")
         ## removing all contents of outdir
         for item in outdir.iterdir():
             if item.is_dir():
                 shutil.rmtree(item)
             elif item.is_file():
                 item.unlink()
-        logger.info("Output directory cleaned.")
+        # logger.info("Output directory cleaned.")
         return 0
     return None
 
@@ -108,7 +123,7 @@ def prepare(args):
     ## 1. Validate the index types
     indexes = args.aligner_indexes.split(",")
     for idx in indexes:
-        if idx not in ["reference-genome", "bwa", "bwa-mem2", "minimap2"]:
+        if idx not in ["reference-genome", "bwa", "bwa-mem2", "minimap2", "bowtie2", "hisat2"]:
             logger.error(f"ERROR: Unsupported index type specified: {idx}")
             return 1
 
@@ -120,24 +135,7 @@ def prepare(args):
     prepare_reference = PrepareReferenceIndexes(reference_genome=args.reference_genome, indexes=indexes, output=outdir, logger=logger)
     return prepare_reference.execute()
 
-def run(args):
-    ## 1. Get absolute path of outdir
-    # outdir = Path(args.outdir).resolve()
-    # outdir.mkdir(parents=True, exist_ok=True)
-    # logger.debug(f"Output directory resolved to: {outdir}")
-
-    ## 2. Handle --clean option
-    # if args.clean:
-    #     logger.info(f"Cleaning existing output directory: {outdir}")
-    #     ## removing all contents of outdir
-    #     for item in outdir.iterdir():
-    #         if item.is_dir():
-    #             shutil.rmtree(item)
-    #         elif item.is_file():
-    #             item.unlink()
-    #         logger.info("Output directory cleaned.")
-    #     return 0
-
+def genomics(args):
     ## 1. Load pipeline configuration
     pipeline_path = Path(args.pipeline).resolve()
     if not pipeline_path.is_file():
@@ -169,17 +167,17 @@ def run(args):
         logger.debug(f"Input set in pipeline configuration: {pipeline.get('input')}")
 
     ## 4. Check input files exist
-    input_files = pipeline.get("input", {}).get("samples", [])
-    if not input_files:
+    samples = pipeline.get("input", {}).get("samples", [])
+    if not samples:
         logger.error("ERROR: No input files specified in pipeline configuration or via --samples")
         return 1
-    for sample in input_files:
+    for sample in samples:
         for f in sample.get("files", []):
             fpath = Path(f).resolve()
             if not fpath.is_file():
                 logger.error(f"ERROR: Input file for sample '{sample.get('id')}' not found: {fpath}")
                 return 1
-    logger.debug(f"All input files verified for {len(input_files)} samples.")
+    logger.debug(f"All input files verified for {len(samples)} samples.")
 
     ## 5. Prepare first step execution
     steps = args.steps.split(",")
@@ -221,6 +219,8 @@ def run(args):
                 else:
                     logger.warning(f"Step '{step}' already completed. Use --overwrite to force.")
 
+def rna_seq(args):
+    pass
 
 def main(argv=None):
     args = parse_args(argv)
@@ -231,19 +231,21 @@ def main(argv=None):
     # outdir.mkdir(parents=True, exist_ok=True)
     create_output_dir(args)
 
-    ## 2. Configure global logger
-    configure_logger(args)
-
-    ## 3. Handle --clean option
+    ## 2. Handle --clean option
     clean(args)
+
+    ## 3. Configure global logger
+    configure_logger(args)
 
     # 4. Run the appropriate command
     logger.debug(f"Executing command '{args.command}' in output directory '{outdir}'")
     match args.command:
         case "prepare":
             return prepare(args)
-        case "run":
-            return run(args)
+        case "genomics":
+            return genomics(args)
+        case "rna-seq":
+            return rna_seq(args)
         case _:
             logger.error(f"Unknown command: {args.command}")
             return 1

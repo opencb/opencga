@@ -67,7 +67,46 @@ class PrepareReferenceIndexes(BaseProcessor):
                 case "bwa-mem2":
                     if self.check_tool_availability("bwa-mem2"):
                         self.bwa_mem2_index(reference_path)
+                case "bowtie2":
+                    if self.check_tool_availability("bowtie2-build"):
+                        self.bowtie2_index(reference_path)
+                case "hisat2":
+                    if self.check_tool_availability("hisat2-build"):
+                        self.hisat2_index(reference_path)
+                case "minimap2":
+                    if self.check_tool_availability("minimap2"):
+                        self.minimap2_index(reference_path)
         return 0
+
+    def _copy_and_decompress_reference(self, reference_path: str, dest_dir: Path) -> str:
+        """Copy and decompress the reference genome file to the destination directory.
+
+        Parameters
+        ----------
+        reference_path : str
+            Path to the reference genome file
+        dest_dir : Path
+            Destination directory to copy and decompress the file
+
+        Returns
+        -------
+        str
+            Path to the decompressed reference FASTA file
+        """
+        ## Copy reference genome to destination directory
+        cmd = ["cp", str(reference_path), str(dest_dir)]
+        self.run_command(cmd)
+
+        ## Decompress the reference genome file (assumes .gz format)
+        reference_gz_path = str(dest_dir / Path(reference_path).name)
+        cmd = ["gunzip", reference_gz_path]
+        self.run_command(cmd)
+
+        ## Get path to decompressed reference FASTA file
+        reference_fa_path = str(dest_dir / Path(reference_gz_path).stem)
+
+        # Return path to decompressed reference FASTA file
+        return reference_fa_path
 
 
     def reference_genome_index(self, reference_path: str) -> str:
@@ -93,17 +132,10 @@ class PrepareReferenceIndexes(BaseProcessor):
         reference_index_dir = self.output / "reference-genome-index"
         reference_index_dir.mkdir(parents=True, exist_ok=True)
 
-        # Copy reference genome to index directory
-        cmd = ["cp", str(reference_path), str(reference_index_dir)]
-        self.run_command(cmd)
-
-        # Decompress the reference genome file (assumes .gz format)
-        reference_gz_path = str(reference_index_dir / Path(reference_path).name)
-        cmd = ["gunzip", reference_gz_path]
-        self.run_command(cmd)
+        # Copy and gunzip reference genome to index directory
+        reference_fa_path = self._copy_and_decompress_reference(reference_path, reference_index_dir)
 
         # Create FASTA index for the decompressed reference
-        reference_fa_path = str(reference_index_dir / Path(reference_gz_path).stem)
         cmd = ["samtools"] + ["faidx"] + [reference_fa_path]
         self.run_command(cmd)
 
@@ -136,18 +168,11 @@ class PrepareReferenceIndexes(BaseProcessor):
         bwa_index_dir = self.output / "bwa-index"
         bwa_index_dir.mkdir(parents=True, exist_ok=True)
 
-        # Copy reference genome to BWA index directory
-        cmd = ["cp", str(reference_path), str(bwa_index_dir)]
-        self.run_command(cmd)
-
-        # Decompress the reference genome file (assumes .gz format)
-        bwa_reference_gz_path = str(bwa_index_dir / Path(reference_path).name)
-        cmd = ["gunzip", bwa_reference_gz_path]
-        self.run_command(cmd)
+        # Copy and gunzip reference genome to index directory
+        reference_fa_path = self._copy_and_decompress_reference(reference_path, bwa_index_dir)
 
         # Create BWA index files for the decompressed reference
-        bwa_reference_fa_path = str(bwa_index_dir / Path(bwa_reference_gz_path).stem)
-        cmd = ["bwa"] + ["index"] + [bwa_reference_fa_path]
+        cmd = ["bwa"] + ["index"] + [reference_fa_path]
         self.run_command(cmd)
         return reference_path
 
@@ -171,18 +196,94 @@ class PrepareReferenceIndexes(BaseProcessor):
         bwa_index_dir = self.output / "bwa-mem2-index"
         bwa_index_dir.mkdir(parents=True, exist_ok=True)
 
-        # Copy reference genome to BWA index directory
-        cmd = ["cp", str(reference_path), str(bwa_index_dir)]
-        self.run_command(cmd)
-
-        # Decompress the reference genome file (assumes .gz format)
-        bwa_reference_gz_path = str(bwa_index_dir / Path(reference_path).name)
-        cmd = ["gunzip", bwa_reference_gz_path]
-        self.run_command(cmd)
+        # Copy and gunzip reference genome to index directory
+        reference_fa_path = self._copy_and_decompress_reference(reference_path, bwa_index_dir)
 
         # Create BWA index files for the decompressed reference
-        bwa_reference_fa_path = str(bwa_index_dir / Path(bwa_reference_gz_path).stem)
-        cmd = ["bwa-mem2"] + ["index"] + [bwa_reference_fa_path]
+        cmd = ["bwa-mem2"] + ["index"] + [reference_fa_path]
+        self.run_command(cmd)
+        return reference_path
+
+
+    def minimap2_index(self, reference_path: str) -> str:
+        """ Create Minimap2 index for the reference genome.
+
+        This method copies the reference genome to a Minimap2 index directory,
+        decompresses it if it's gzipped, and creates the Minimap2 index files
+        required for sequence alignment.
+        Parameters
+        ----------
+        reference_path : str
+            Path to the reference genome file
+        Returns
+        -------
+        str
+            The original reference path
+        """
+        # Create Minimap2 index directory
+        minimap2_index_dir = self.output / "minimap2-index"
+        minimap2_index_dir.mkdir(parents=True, exist_ok=True)
+
+        # Copy and gunzip reference genome to index directory
+        reference_fa_path = self._copy_and_decompress_reference(reference_path, minimap2_index_dir)
+
+        # Create Minimap2 index files for the decompressed reference
+        cmd = ["minimap2"] + ["-d", str(minimap2_index_dir / (Path(reference_fa_path).stem + ".mmi"))] + [reference_fa_path]
+        self.run_command(cmd)
+        return reference_path
+
+
+    def bowtie2_index(self, reference_path: str) -> str:
+        """ Create Bowtie2 index for the reference genome.
+        This method copies the reference genome to a Bowtie2 index directory,
+        decompresses it if it's gzipped, and creates the Bowtie2 index files
+        required for sequence alignment.
+        Parameters
+        ----------
+        reference_path : str
+            Path to the reference genome file
+        Returns
+        -------
+        str
+            The original reference path
+        """
+        # Create Bowtie2 index directory
+        bowtie2_index_dir = self.output / "bowtie2-index"
+        bowtie2_index_dir.mkdir(parents=True, exist_ok=True)
+
+        # Copy and gunzip reference genome to index directory
+        reference_fa_path = self._copy_and_decompress_reference(reference_path, bowtie2_index_dir)
+
+        # Create Bowtie2 index files for the decompressed reference
+        cmd = ["bowtie2-build"] + ["--threads", "2"] + [reference_fa_path] + [str(bowtie2_index_dir / Path(reference_fa_path).stem)]
+        self.run_command(cmd)
+        return reference_path
+
+
+    def hisat2_index(self, reference_path: str) -> str:
+        """ Create HISAT2 index for the reference genome.
+
+        This method copies the reference genome to a HISAT2 index directory,
+        decompresses it if it's gzipped, and creates the HISAT2 index files
+        required for sequence alignment.
+        Parameters
+        ----------
+        reference_path : str
+            Path to the reference genome file
+        Returns
+        -------
+        str
+            The original reference path
+        """
+        # Create HISAT2 index directory
+        hisat2_index_dir = self.output / "hisat2-index"
+        hisat2_index_dir.mkdir(parents=True, exist_ok=True)
+
+        # Copy and gunzip reference genome to index directory
+        reference_fa_path = self._copy_and_decompress_reference(reference_path, hisat2_index_dir)
+
+        # Create HISAT2 index files for the decompressed reference
+        cmd = ["hisat2-build"] + ["-p", "2"] + [reference_fa_path] + [str(hisat2_index_dir / Path(reference_fa_path).stem)]
         self.run_command(cmd)
         return reference_path
 
