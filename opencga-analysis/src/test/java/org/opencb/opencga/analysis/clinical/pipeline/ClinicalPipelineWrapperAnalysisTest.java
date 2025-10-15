@@ -21,6 +21,7 @@ import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelineWrapperP
 import org.opencb.opencga.core.models.clinical.pipeline.PipelineConfig;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;
+import org.opencb.opencga.core.models.operations.variant.VariantIndexParams;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
 import org.opencb.opencga.core.models.project.Project;
@@ -224,10 +225,19 @@ public class ClinicalPipelineWrapperAnalysisTest {
 
         params = new ClinicalPipelineWrapperParams();
         ClinicalPipelineExecuteParams executeParams = new ClinicalPipelineExecuteParams();
+        // Set sample with the two fastq files
         executeParams.setSamples(Collections.singletonList("ANN0831" + ClinicalPipelineWrapperAnalysis.SAMPLE_FIELD_SEP
                 + fastq1File.getId() + ClinicalPipelineWrapperAnalysis.SAMPLE_FILE_SEP + fastq2File.getId()));
+        // Set index dir
         executeParams.setIndexDir(indexDirFile.getId());
+        // Set pipeline config
         executeParams.setPipeline(ngsPipeline);
+        // Variant index parameters
+        VariantIndexParams variantIndexParams = new VariantIndexParams();
+        variantIndexParams.setAnnotate(true);
+        variantIndexParams.setCalculateStats(true);
+        executeParams.setVariantIndexParams(variantIndexParams);
+
         params.setExecuteParams(executeParams);
 
         toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), opencga.getCatalogManager(),

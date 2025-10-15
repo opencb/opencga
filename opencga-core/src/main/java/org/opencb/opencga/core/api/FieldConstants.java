@@ -640,11 +640,9 @@ public class FieldConstants {
     public static final String CLINICAL_PIPELINE_INDEX_DIR_DESCRIPTION = "Directory where the reference genome and aligner indexes are"
             + " located";
     public static final String CLINICAL_PIPELINE_STEPS_DESCRIPTION = "Pipeline steps: quality-control, alignment, variant-calling";
+    public static final String CLINICAL_PIPELINE_VARIANT_INDEX_DESCRIPTION = "Parameters to index the resulting variants";
     public static final String CLINICAL_PIPELINE_FILE_DESCRIPTION = "JSON file containing the configuration of the clinical pipeline";
     public static final String CLINICAL_PIPELINE_PIPELINE_DESCRIPTION = "JSON containing the clinical pipeline configuration";
-
-
-
 
     // Fetch resources
     public static final String FETCH_RESOURCES_DESCRIPTION = "List of resource IDs, separated by commas, to fetch (available resources are"

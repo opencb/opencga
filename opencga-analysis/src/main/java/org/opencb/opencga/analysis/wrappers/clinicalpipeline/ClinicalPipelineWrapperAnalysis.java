@@ -32,7 +32,6 @@ import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -282,8 +281,14 @@ public class ClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
     protected List<String> getSteps() {
         if (analysisParams.getPrepareParams() != null) {
             return Collections.singletonList(PREPARE_PIPELINE_STEP);
+        } else if (analysisParams.getExecuteParams() != null) {
+            if (analysisParams.getExecuteParams().getVariantIndexParams() != null) {
+                return Arrays.asList(EXECUTE_PIPELINE_STEP, INDEX_VARIANTS_STEP);
+            } else {
+                return Collections.singletonList(EXECUTE_PIPELINE_STEP);
+            }
         } else {
-            return Arrays.asList(EXECUTE_PIPELINE_STEP, INDEX_VARIANTS_STEP);
+            throw new IllegalStateException("Missing clinical pipeline parameters to prepare or execute the pipeline.");
         }
     }
 
@@ -291,12 +296,16 @@ public class ClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
         if (analysisParams.getPrepareParams() != null) {
             // Prepare the pipeline
             step(PREPARE_PIPELINE_STEP, this::runPipelineExecutor);
-        } else {
+        } else if (analysisParams.getExecuteParams() != null) {
             // Execute the pipeline
             step(EXECUTE_PIPELINE_STEP, this::runPipelineExecutor);
 
-            // Index variants in OpenCGA
-            step(INDEX_VARIANTS_STEP, this::indexVariants);
+            if (analysisParams.getExecuteParams().getVariantIndexParams() != null) {
+                // Index variants in OpenCGA storage
+                step(INDEX_VARIANTS_STEP, this::indexVariants);
+            }
+        } else {
+            throw new ToolException("Missing clinical pipeline parameters to prepare or execute the pipeline.");
         }
     }
 
@@ -330,9 +339,9 @@ public class ClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
         File vcfFile = catalogManager.getFileManager().link(study, new FileLinkParams(vcfPath.toAbsolutePath().toString(),
                 "", "", "", null, null, null, null, null), false, token).first();
 
-        ObjectMap storageOptions = new ObjectMap()
-                .append(VariantStorageOptions.ANNOTATE.key(), false)
-                .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
+        ObjectMap storageOptions = analysisParams.getExecuteParams().getVariantIndexParams() != null
+                ? analysisParams.getExecuteParams().getVariantIndexParams().toObjectMap()
+                : new ObjectMap();
 
         getVariantStorageManager().index(study, vcfFile.getId(), getScratchDir().toAbsolutePath().toString(), storageOptions, token);
     }

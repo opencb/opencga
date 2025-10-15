@@ -18,6 +18,7 @@ package org.opencb.opencga.core.models.clinical.pipeline;
 
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
+import org.opencb.opencga.core.models.operations.variant.VariantIndexParams;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +34,9 @@ public class ClinicalPipelineExecuteParams {
     @DataField(id = "steps", description = FieldConstants.CLINICAL_PIPELINE_STEPS_DESCRIPTION)
     private List<String> steps;
 
+    @DataField(id = "variantIndexParams", description = FieldConstants.CLINICAL_PIPELINE_VARIANT_INDEX_DESCRIPTION)
+    private VariantIndexParams variantIndexParams;
+
     @DataField(id = "pipelineFile", description = FieldConstants.CLINICAL_PIPELINE_FILE_DESCRIPTION)
     private String pipelineFile;
 
@@ -45,11 +49,12 @@ public class ClinicalPipelineExecuteParams {
         pipeline = new PipelineConfig();
     }
 
-    public ClinicalPipelineExecuteParams(List<String> samples, String indexDir, List<String> steps, String pipelineFile,
-                                         PipelineConfig pipeline) {
+    public ClinicalPipelineExecuteParams(List<String> samples, String indexDir, List<String> steps, VariantIndexParams variantIndexParams,
+                                         String pipelineFile, PipelineConfig pipeline) {
         this.samples = samples;
         this.indexDir = indexDir;
         this.steps = steps;
+        this.variantIndexParams = variantIndexParams;
         this.pipelineFile = pipelineFile;
         this.pipeline = pipeline;
     }
@@ -57,9 +62,10 @@ public class ClinicalPipelineExecuteParams {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClinicalPipelineExecuteParams{");
-        sb.append("sample=").append(samples);
+        sb.append("samples=").append(samples);
         sb.append(", indexDir='").append(indexDir).append('\'');
         sb.append(", steps=").append(steps);
+        sb.append(", variantIndexParams=").append(variantIndexParams);
         sb.append(", pipelineFile='").append(pipelineFile).append('\'');
         sb.append(", pipeline=").append(pipeline);
         sb.append('}');
@@ -90,6 +96,15 @@ public class ClinicalPipelineExecuteParams {
 
     public ClinicalPipelineExecuteParams setSteps(List<String> steps) {
         this.steps = steps;
+        return this;
+    }
+
+    public VariantIndexParams getVariantIndexParams() {
+        return variantIndexParams;
+    }
+
+    public ClinicalPipelineExecuteParams setVariantIndexParams(VariantIndexParams variantIndexParams) {
+        this.variantIndexParams = variantIndexParams;
         return this;
     }
 
