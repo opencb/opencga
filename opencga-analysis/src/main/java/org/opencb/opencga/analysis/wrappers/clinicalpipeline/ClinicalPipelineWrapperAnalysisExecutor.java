@@ -123,24 +123,31 @@ public class ClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAnalys
     }
 
     private void executePipeline() throws ToolExecutorException {
-        // Check steps
+        // Check samples (mandatory)
+        List<String> samples = pipelineParams.getExecuteParams().getSamples();
+        if (CollectionUtils.isEmpty(samples)) {
+            throw new ToolExecutorException("Missing 'samples' parameter");
+        }
+
+        // Check steps (mandatory)
         List<String> steps = pipelineParams.getExecuteParams().getSteps();
         if (CollectionUtils.isEmpty(steps)) {
             throw new ToolExecutorException("Missing 'steps' parameter");
         }
 
         // First, run QC (e.g. FastQC) and alignment (e.g. BWA)
+        List<String> variantCallingSamples = samples;
         if (steps.contains(QUALITY_CONTROL_STEP) || steps.contains(ALIGNMENT_STEP)) {
-            runQcAndAlignment();
+            variantCallingSamples = runQcAndAlignment();
         }
 
         // Then, run the variant calling (e.g. GATK HaplotypeCaller)
         if (steps.contains(VARIANT_CALLING_STEP)) {
-            runVariantCalling();
+            runVariantCalling(variantCallingSamples);
         }
     }
 
-    private void runQcAndAlignment() throws ToolExecutorException {
+    private List<String> runQcAndAlignment() throws ToolExecutorException {
         try {
             ClinicalPipelineExecuteParams executeParams = pipelineParams.getExecuteParams();
 
@@ -164,7 +171,7 @@ public class ClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAnalys
             }
 
             // Input binding, and update samples with virtual paths
-            List<String> updatedSamples = new ArrayList<>();
+            List<String> updatedSamples = new ArrayList<>(executeParams.getSamples().size());
             int inputCounter = 0;
             for (String sample : executeParams.getSamples()) {
                 String[] fields = sample.split(SAMPLE_FIELD_SEP);
@@ -244,6 +251,40 @@ public class ClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAnalys
 
             // Execute docker command line
             runCommandLine(dockerCli);
+
+            // Check output files from the alignment step from the output directory (alignment directory) and create the sample list
+            // for the variant-calling step
+            List<String> variantCallingSamples = new ArrayList<>(updatedSamples.size());
+            Path alignmentPath = getOutDir().resolve(ALIGNMENT_STEP);
+            if (Files.exists(alignmentPath) && Files.exists(alignmentPath.resolve("DONE"))) {
+                for (String sample : updatedSamples) {
+                    String[] fields = sample.split(SAMPLE_FIELD_SEP);
+                    String sampleId = fields[0];
+                    Path bamFile = alignmentPath.resolve(sampleId + ".sorted.bam");
+                    if (!Files.exists(bamFile) || !Files.isRegularFile(bamFile) || Files.size(bamFile) == 0) {
+                        throw new ToolExecutorException("Missing or empty BAM file for sample " + sampleId + ": " + bamFile);
+                    }
+                    Path baiFile = alignmentPath.resolve(sampleId + ".sorted.bam.bai");
+                    if (!Files.exists(baiFile) || !Files.isRegularFile(baiFile) || Files.size(baiFile) == 0) {
+                        throw new ToolExecutorException("Missing or empty BAI file for sample " + sampleId + ": " + baiFile);
+                    }
+
+                    // Create the variant calling sample
+                    StringBuilder variantCallingSample = new StringBuilder();
+                    // Add sample ID and the BAM file
+                    variantCallingSample.append(sampleId).append(SAMPLE_FIELD_SEP).append(bamFile.toAbsolutePath());
+                    // Add somatic and role fields if provided
+                    for (int i = 2; i < fields.length; i++) {
+                        variantCallingSample.append(SAMPLE_FIELD_SEP).append(fields[i]);
+                    }
+
+                    // Add to the list
+                    variantCallingSamples.add(variantCallingSample.toString());
+                }
+                return variantCallingSamples;
+            } else {
+                throw new ToolExecutorException("Missing DONE file from alignment step: " + alignmentPath.resolve("DONE"));
+            }
         } catch (IOException | ToolException e) {
             throw new ToolExecutorException(e);
         }
@@ -351,7 +392,7 @@ public class ClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAnalys
         }
     }
 
-    private void runVariantCalling() throws ToolExecutorException {
+    private void runVariantCalling(List<String> samples) throws ToolExecutorException {
         try {
             ClinicalPipelineExecuteParams executeParams = pipelineParams.getExecuteParams();
 
@@ -370,6 +411,36 @@ public class ClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAnalys
             Path virtualIndexPath = Paths.get(INDEX_VIRTUAL_PATH);
             inputBindings.add(new AbstractMap.SimpleEntry<>(executeParams.getIndexDir(), virtualIndexPath.toString()));
             readOnlyInputBindings.add(virtualIndexPath.toString());
+
+            // Input binding, and update samples with virtual paths
+            List<String> updatedSamples = new ArrayList<>();
+            int inputCounter = 0;
+            for (String sample : samples) {
+                String[] fields = sample.split(SAMPLE_FIELD_SEP);
+                String[] files = fields[1].split(SAMPLE_FILE_SEP);
+                StringBuilder updatedSample = new StringBuilder();
+                updatedSample.append(fields[0]);
+                List<String> updatedFiles = new ArrayList<>(files.length);
+                for (String file : files) {
+                    Path virtualInputPath = Paths.get(INPUT_VIRTUAL_PATH + "_" + inputCounter).resolve(Paths.get(file).getFileName());
+                    inputBindings.add(new AbstractMap.SimpleEntry<>(Paths.get(file).toAbsolutePath().toString(),
+                            virtualInputPath.toString()));
+                    readOnlyInputBindings.add(virtualInputPath.toString());
+                    inputCounter++;
+
+                    // Updated files
+                    updatedFiles.add(virtualInputPath.toString());
+                }
+                // Add updated files
+                updatedSample.append(SAMPLE_FIELD_SEP).append(StringUtils.join(updatedFiles, SAMPLE_FILE_SEP));
+
+                // Add the remain fields
+                for (int i = 2; i < fields.length; i++) {
+                    updatedSample.append(SAMPLE_FIELD_SEP).append(fields[i]);
+                }
+
+                updatedSamples.add(updatedSample.toString());
+            }
 
             // Pipeline params binding
             Path pipelineParamsPath = getOutDir().resolve(PIPELINE_PARAMS_FILENAME);
@@ -397,6 +468,7 @@ public class ClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAnalys
             String params = "python3 " + virtualScriptPath + "/" +  NGS_PIPELINE_SCRIPT + " " + GENOMICS_CMD
                     + " -o " + OUTPUT_VIRTUAL_PATH
                     + " -p " + virtualPipelineParamsPath
+                    + " -s " + StringUtils.join(updatedSamples, ClinicalPipelineWrapperAnalysis.SAMPLE_SEP)
                     + " --index " + virtualIndexPath
                     + " --steps " + VARIANT_CALLING_STEP;
 

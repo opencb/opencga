@@ -43,7 +43,8 @@ class BwaMem2Aligner(Aligner):
                 params_list = self.build_cli_params(parameters, ["o", "outdir", "R"])
 
                 ## Run BWA-MEM2
-                sam_file = self._build_sam_file_name(files)
+                sam_file = sample.get("id") + ".sam"
+                # sam_file = self._build_sam_file_name(files)
                 self.logger.debug("sam_file name: %s", sam_file)
 
                 ## Construct command to run

@@ -59,7 +59,7 @@ public class ClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
             + " variant calling (e.g., GATK) and variant indexing in OpenCGA storage.";
 
     public static final String SAMPLE_SEP = ";";
-    public static final String SAMPLE_FIELD_SEP = "@";
+    public static final String SAMPLE_FIELD_SEP = "::";
     public static final String SAMPLE_FILE_SEP = ",";
 
     private static final String PREPARE_PIPELINE_STEP = "prepare-pipeline";
@@ -135,13 +135,22 @@ public class ClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
                 throw new ToolException("After checking, pipeline configuration is null.");
             }
 
-            // Check samples
+            // Check samples, and update the input files to point to the real paths in both cases, from the input samples or from
+            // the execute params
+            List<String> updatedSamples = new ArrayList<>();
             List<String> samples = executeParams.getSamples();
             if (CollectionUtils.isEmpty(samples)) {
                 if (pipelineConfig.getInput() != null && CollectionUtils.isNotEmpty(pipelineConfig.getInput().getSamples())) {
                     for (PipelineSample pipelineSample : pipelineConfig.getInput().getSamples()) {
+                        if (StringUtils.isEmpty(pipelineSample.getId())) {
+                            throw new ToolException("Missing sample ID for one of the input samples");
+                        }
+
+                        // Create updated sample
+                        StringBuilder updatedSample = new StringBuilder();
+                        updatedSample.append(pipelineSample.getId()).append(SAMPLE_FIELD_SEP);
+
                         if (CollectionUtils.isNotEmpty(pipelineSample.getFiles())) {
-                            samples = new ArrayList<>();
                             for (String file : pipelineSample.getFiles()) {
                                 File opencgaFile = getCatalogManager().getFileManager().get(study, file, QueryOptions.empty(), token)
                                         .first();
@@ -149,10 +158,28 @@ public class ClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
                                     throw new ToolException("Input path '" + file + "' for sample ID '" + pipelineSample.getId()
                                             + "' is not a file.");
                                 } else {
-                                    samples.add(Paths.get(opencgaFile.getUri()).toAbsolutePath().toString());
+                                    // Check if it is not the first file to add the separator
+                                    if (!updatedSample.toString().endsWith(SAMPLE_FIELD_SEP)) {
+                                        updatedSample.append(SAMPLE_FILE_SEP);
+                                    }
+                                    updatedSample.append(Paths.get(opencgaFile.getUri()).toAbsolutePath());
                                 }
                             }
-                            pipelineSample.setFiles(samples);
+                            // Add somatic field
+                            if (pipelineSample.isSomatic()) {
+                                updatedSample.append(SAMPLE_FIELD_SEP).append("somatic");
+                            } else {
+                                updatedSample.append(SAMPLE_FIELD_SEP).append("germline");
+                            }
+                            // Add role field
+                            if (StringUtils.isNotEmpty(pipelineSample.getRole())) {
+                                updatedSample.append(SAMPLE_FIELD_SEP).append(pipelineSample.getRole());
+                            } else {
+                                updatedSample.append(SAMPLE_FIELD_SEP).append("unknown");
+                            }
+
+                            // Add the updated sample to the list of samples
+                            updatedSamples.add(updatedSample.toString());
                         } else {
                             throw new ToolException("Missing input files for sample ID '" + pipelineSample.getId() + "'");
                         }
@@ -161,13 +188,13 @@ public class ClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
                     throw new ToolException("Clinical pipeline input files are mandatory for running the pipeline.");
                 }
             } else {
-                List<String> updatedSamples = new ArrayList<>();
                 for (String sample : samples) {
                     logger.info("Checking samples {}", sample);
-                    // Parse the input format: sample_id|file_id1[,file_id2][|somatic|role]
+                    // Parse the input format: sample_id::file_id1[,file_id2][::somatic::role]
                     String[] fields = sample.split(SAMPLE_FIELD_SEP);
                     if (fields.length < 2) {
-                        throw new ToolException("Invalid input format. Expected format: sample_id|file_id1[;file_id2][|somatic[|role]],"
+                        throw new ToolException("Invalid input format. Expected format: sample_id" + SAMPLE_FIELD_SEP + "file_id1["
+                                + SAMPLE_FILE_SEP + "file_id2][" + SAMPLE_FIELD_SEP + "somatic" + SAMPLE_FIELD_SEP + "role],"
                                 + " but got: " + sample);
                     }
                     String inputFiles = fields[1];
@@ -175,7 +202,8 @@ public class ClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
                         throw new ToolException("Missing input files for sample '" + fields[0] + "': " + sample);
                     }
                     String[] inputFile = inputFiles.split(SAMPLE_FILE_SEP);
-                    String updatedSample = fields[0] + SAMPLE_FIELD_SEP;
+                    StringBuilder updatedSample = new StringBuilder();
+                    updatedSample.append(fields[0]).append(SAMPLE_FIELD_SEP);
                     for (int i = 0; i < inputFile.length; i++) {
                         File opencgaFile = getCatalogManager().getFileManager().get(study, inputFile[i], QueryOptions.empty(), token)
                                 .first();
@@ -183,19 +211,20 @@ public class ClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
                             throw new ToolException("Clinical pipeline input path '" + inputFile[i] + "' is not a file.");
                         }
                         if (i > 0) {
-                            updatedSample += SAMPLE_FILE_SEP;
+                            updatedSample.append(SAMPLE_FILE_SEP);
                         }
-                        updatedSample += Paths.get(opencgaFile.getUri()).toAbsolutePath().toString();
+                        updatedSample.append(Paths.get(opencgaFile.getUri()).toAbsolutePath());
                     }
                     for (int i = 2; i < fields.length; i++) {
-                        updatedSample += ":" + fields[i];
+                        updatedSample.append(SAMPLE_FIELD_SEP).append(fields[i]);
                     }
 
                     logger.info("Updated sample {}", updatedSample);
-                    updatedSamples.add(updatedSample);
+                    updatedSamples.add(updatedSample.toString());
                 }
-                updatedExecuteParams.setSamples(updatedSamples);
             }
+            // Set updated samples
+            updatedExecuteParams.setSamples(updatedSamples);
 
             // Check the index path
             String indexDir = executeParams.getIndexDir();

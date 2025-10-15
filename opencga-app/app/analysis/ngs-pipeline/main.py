@@ -157,7 +157,7 @@ def genomics(args):
         samples = args.samples.split(";")
         for sample in samples:
             ## Parse sample string
-            parts = sample.split("@")
+            parts = sample.split("::")
             parts += [""] * (4 - len(parts))  # complete 'parts' to length 4
             sample_id, files, somatic, role = parts[0], parts[1].split(","), parts[2] or 0, parts[3] or "U"
             logger.debug(f"Sample '{sample_id}' files='{files}' somatic='{somatic}' role='{role}'")
