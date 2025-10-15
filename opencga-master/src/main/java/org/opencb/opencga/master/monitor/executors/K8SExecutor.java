@@ -58,6 +58,10 @@ public class K8SExecutor implements BatchExecutor {
     public static final String K8S_LOG_TO_STDOUT = "k8s.logToStdout";
     public static final String K8S_DIND_ROOTLESS = "k8s.dind.rootless";
     public static final String K8S_DIND_IMAGE_NAME = "k8s.dind.imageName";
+    // GPU-specific configuration constants
+    public static final String K8S_GPU_DIND_IMAGE_NAME = "k8s.gpu.dind.imageName";
+    public static final String K8S_GPU_RUNTIME_CLASS = "k8s.gpu.runtimeClass";
+    public static final String K8S_GPU_NODE_SELECTOR = "k8s.gpu.nodeSelector";
     public static final String K8S_REQUESTS = "k8s.requests";
     public static final String K8S_LIMITS = "k8s.limits";
     public static final String K8S_JAVA_HEAP = "k8s.javaHeap";
@@ -106,6 +110,9 @@ public class K8SExecutor implements BatchExecutor {
     private final List<EnvVar> envVars;
     private final Config k8sConfig;
     private final Container dockerDaemonSidecar;
+    private final Container gpuDockerDaemonSidecar;
+    private final String gpuRuntimeClass;
+    private final Map<String, String> gpuNodeSelector;
     private final KubernetesClient kubernetesClient;
     private static Logger logger = LoggerFactory.getLogger(K8SExecutor.class);
 
@@ -246,6 +253,46 @@ public class K8SExecutor implements BatchExecutor {
                 .addAllToVolumeMounts(volumeMounts)
                 .build();
 
+        // Initialize GPU configurations
+        this.gpuRuntimeClass = execution.getOptions().getString(K8S_GPU_RUNTIME_CLASS, null);
+        this.gpuNodeSelector = new HashMap<>(this.nodeSelector);
+        Map<String, String> additionalGpuNodeSelector = getMap(execution.getOptions(), K8S_GPU_NODE_SELECTOR);
+        this.gpuNodeSelector.putAll(additionalGpuNodeSelector);
+
+        // Create GPU-enabled Docker daemon sidecar
+        String gpuDindImageName = execution.getOptions().getString(K8S_GPU_DIND_IMAGE_NAME, "ghcr.io/ehfd/nvidia-dind:latest");
+
+        // GPU DinD requires privileged access and specific configuration for NVIDIA runtime
+        SecurityContext gpuDindSecurityContext = new SecurityContextBuilder()
+                .withPrivileged(true)
+                .withRunAsNonRoot(false)  // Allow root for Docker daemon
+                .withRunAsUser(0L)        // Explicitly set to root
+                .build();
+
+        gpuDockerDaemonSidecar = new ContainerBuilder()
+                .withName("gpu-dind-daemon")
+                .withImage(gpuDindImageName)
+                .withSecurityContext(gpuDindSecurityContext)
+                .withEnv(
+                        new EnvVar("DOCKER_TLS_CERTDIR", "", null),
+                        new EnvVar("NVIDIA_VISIBLE_DEVICES", "all", null),
+                        new EnvVar("NVIDIA_DRIVER_CAPABILITIES", "all", null)
+                )
+                .withCommand("/bin/sh", "-c")
+                .addToArgs("# Install NVIDIA Container Runtime if available\n"
+                        + "if command -v nvidia-container-runtime >/dev/null 2>&1; then\n"
+                        + "  dockerd --host=tcp://0.0.0.0:2375 --host=unix:///var/run/docker.sock"
+                        + " --add-runtime=nvidia=/usr/bin/nvidia-container-runtime --default-runtime=nvidia &\n"
+                        + "else\n"
+                        + "  dockerd --host=tcp://0.0.0.0:2375 --host=unix:///var/run/docker.sock &\n"
+                        + "fi\n"
+                        + "trap 'echo \"GPU Docker daemon terminated!\"; touch " + DIND_DONE_FILE + "' TERM;\n"
+                        + "while ! test -f " + DIND_DONE_FILE + "; do sleep 5; done; exit 0")
+                .addToVolumeMounts(DOCKER_GRAPH_VOLUMEMOUNT)
+                .addToVolumeMounts(TMP_POD_VOLUMEMOUNT)
+                .addAllToVolumeMounts(volumeMounts)
+                .build();
+
         jobsWatcher = getKubernetesClient().batch().jobs().watch(new Watcher<Job>() {
             @Override
             public void eventReceived(Action action, Job k8Job) {
@@ -303,7 +350,55 @@ public class K8SExecutor implements BatchExecutor {
     public void execute(org.opencb.opencga.core.models.job.Job job, String queue, String commandLine, Path stdout, Path stderr)
             throws Exception {
         String jobName = buildJobName(job.getId());
+        boolean isGpuJob = isGpuJob(job);
         ResourceRequirements resources = getResources(job);
+
+        PodSpecBuilder podSpecBuilder = new PodSpecBuilder()
+                .withTerminationGracePeriodSeconds(terminationGracePeriodSeconds)
+                .withImagePullSecrets(imagePullSecrets)
+                .addToContainers(new ContainerBuilder()
+                        .withName("opencga")
+                        .withImage(imageName)
+                        .withImagePullPolicy(imagePullPolicy)
+                        .withResources(resources)
+                        .addAllToEnv(envVars)
+                        .withCommand("/bin/bash", "-c")
+                        .withArgs(getCommandLine(commandLine, stdout, stderr))
+                        .withVolumeMounts(volumeMounts)
+                        .addToVolumeMounts(TMP_POD_VOLUMEMOUNT)
+                        .withSecurityContext(securityContext)
+                        .build())
+                .withTolerations(tolerations)
+                .withRestartPolicy("Never")
+                .addAllToVolumes(volumes)
+                .addToVolumes(DOCKER_GRAPH_STORAGE_VOLUME)
+                .addToVolumes(TMP_POD_VOLUME)
+                .withSecurityContext(podSecurityContext);
+
+        // Configure for GPU or regular execution
+        if (isGpuJob) {
+            logger.info("Configuring GPU job: {}", jobName);
+            podSpecBuilder.withNodeSelector(gpuNodeSelector);
+
+            // Only set runtime class if it's configured
+            if (StringUtils.isNotEmpty(gpuRuntimeClass)) {
+                logger.info("Setting GPU runtime class: {}", gpuRuntimeClass);
+                podSpecBuilder.withRuntimeClassName(gpuRuntimeClass);
+            } else {
+                logger.warn("GPU job requested but no runtime class configured. GPU support may be limited.");
+            }
+
+            if (shouldAddDockerDaemon(queue)) {
+                podSpecBuilder.addToContainers(gpuDockerDaemonSidecar);
+            }
+        } else {
+            podSpecBuilder.withNodeSelector(nodeSelector);
+
+            if (shouldAddDockerDaemon(queue)) {
+                podSpecBuilder.addToContainers(dockerDaemonSidecar);
+            }
+        }
+
         final io.fabric8.kubernetes.api.model.batch.v1.Job k8sJob = new JobBuilder()
                 .withApiVersion("batch/v1")
                 .withKind("Job")
@@ -320,36 +415,11 @@ public class K8SExecutor implements BatchExecutor {
                                         //   cluster-autoscaler/FAQ.md#what-types-of-pods-can-prevent-ca-from-removing-a-node
                                         .addToAnnotations("cluster-autoscaler.kubernetes.io/safe-to-evict", "false")
                                         .build())
-                                .withSpec(new PodSpecBuilder()
-                                        .withTerminationGracePeriodSeconds(terminationGracePeriodSeconds)
-                                        .withImagePullSecrets(imagePullSecrets)
-                                        .addToContainers(new ContainerBuilder()
-                                                .withName("opencga")
-                                                .withImage(imageName)
-                                                .withImagePullPolicy(imagePullPolicy)
-                                                .withResources(resources)
-                                                .addAllToEnv(envVars)
-                                                .withCommand("/bin/bash", "-c")
-                                                .withArgs(getCommandLine(commandLine, stdout, stderr))
-                                                .withVolumeMounts(volumeMounts)
-                                                .addToVolumeMounts(TMP_POD_VOLUMEMOUNT)
-                                                .withSecurityContext(securityContext)
-                                                .build())
-                                        .withNodeSelector(nodeSelector)
-                                        .withTolerations(tolerations)
-                                        .withRestartPolicy("Never")
-                                        .addAllToVolumes(volumes)
-                                        .addToVolumes(DOCKER_GRAPH_STORAGE_VOLUME)
-                                        .addToVolumes(TMP_POD_VOLUME)
-                                        .withSecurityContext(podSecurityContext)
-                                        .build())
+                                .withSpec(podSpecBuilder.build())
                                 .build())
                         .build()
                 ).build();
 
-        if (shouldAddDockerDaemon(queue)) {
-            k8sJob.getSpec().getTemplate().getSpec().getContainers().add(dockerDaemonSidecar);
-        }
         jobStatusCache.put(jobName, Pair.of(Instant.now(), Enums.ExecutionStatus.QUEUED));
         getKubernetesClient().batch().v1().jobs().inNamespace(namespace).resource(k8sJob).create();
     }
@@ -373,6 +443,18 @@ public class K8SExecutor implements BatchExecutor {
         } else {
             return this.resources;
         }
+    }
+
+    /**
+     * Determines if a job requires GPU resources based on the processor type.
+     *
+     * @param job The job to check
+     * @return true if the job requires GPU resources, false otherwise
+     */
+    private boolean isGpuJob(org.opencb.opencga.core.models.job.Job job) {
+        return job.getTool() != null
+                && job.getTool().getMinimumRequirements() != null
+                && job.getTool().getMinimumRequirements().getProcessorType() == ExecutionQueue.ProcessorType.GPU;
     }
 
     private boolean shouldAddDockerDaemon(String queue) {
