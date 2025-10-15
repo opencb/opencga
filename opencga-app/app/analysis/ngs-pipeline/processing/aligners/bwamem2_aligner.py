@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, override
 
 from .aligner import Aligner
 
@@ -13,8 +12,8 @@ class BwaMem2Aligner(Aligner):
 
 
     """ Run BWA alignment """
-    @override
-    def align(self, input_config: dict, bwa_tool_config: dict) -> list[Any]:
+    # @override
+    def align(self, input_config: dict, bwa_tool_config: dict) -> list[str]:
         if len(input_config.get("samples", [])) == 0:
             self.logger.error("No input samples provided for bwa")
             raise ValueError("No input files provided for bwa")

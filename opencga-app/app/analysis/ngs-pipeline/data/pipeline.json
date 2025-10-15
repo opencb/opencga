@@ -7,21 +7,21 @@
     "samples": [
       {
         "id": "s1",
-        "role": "father",
+        "files": ["fastq", "fastq"],
         "somatic": false,
-        "files": ["fastq", "fastq"]
+        "role": "father"
       },
       {
         "id": "s2",
-        "role": "mother",
+        "files": ["fastq", "fastq"],
         "somatic": true,
-        "files": ["fastq", "fastq"]
+        "role": "mother"
       },
       {
         "id": "son",
-        "role": "child",
+        "files": ["fastq", "fastq"],
         "somatic": false,
-        "files": ["fastq", "fastq"]
+        "role": "child"
       }
     ]
   },
@@ -41,8 +41,8 @@
       "id": "alignment",
       "options": {
         "clean": true,
-        "qc": true,
-        "cram": true
+        "cram": false,
+        "qc": true
       },
       "tool": {
         "id": "bwa",
@@ -54,23 +54,22 @@
     {
       "id": "variant-calling",
       "options": {
-        "qc": true,
-        "clean": true
+        "clean": true,
+        "qc": true
       },
       "tools": [
         {
           "id": "gatk",
-          "reference": "/home/imedina/soft/reference-index/Homo_sapiens.GRCh38.dna.primary_assembly.fa",
           "options": {
             "joint": true,
             "mendelianError": false
           },
           "parameters": {
+
           }
         },
         {
           "id": "freebayes",
-          "reference": "/home/imedina/soft/reference-index/Homo_sapiens.GRCh38.dna.primary_assembly.fa",
           "parameters": {
             "ploidy": 2,
             "min-alternate-fraction": 0.2

@@ -1,7 +1,5 @@
 from pathlib import Path
 
-from typing_extensions import override
-
 from processing.base_processor import BaseProcessor
 
 
@@ -27,7 +25,7 @@ class PrepareReferenceIndexes(BaseProcessor):
     """
     A single prepare-reference step.
     """
-    @override
+    # @override
     def execute(self) -> dict[str, str] | int:
         if self.reference_genome is None:
             self.logger.error("No reference genome file provided for indexing")
@@ -76,6 +74,9 @@ class PrepareReferenceIndexes(BaseProcessor):
                 case "minimap2":
                     if self.check_tool_availability("minimap2"):
                         self.minimap2_index(reference_path)
+                case "star2":
+                    if self.check_tool_availability("star2"):
+                        self.star2_index(reference_path)
         return 0
 
     def _copy_and_decompress_reference(self, reference_path: str, dest_dir: Path) -> str:
@@ -287,3 +288,29 @@ class PrepareReferenceIndexes(BaseProcessor):
         self.run_command(cmd)
         return reference_path
 
+
+    def star2_index(self, reference_path: str) -> str:
+        """ Create STAR2 index for the reference genome.
+        This method copies the reference genome to a STAR2 index directory,
+        decompresses it if it's gzipped, and creates the STAR2 index files
+        required for sequence alignment.
+        Parameters
+        ----------
+        reference_path : str
+            Path to the reference genome file
+        Returns
+        -------
+        str
+            The original reference path
+        """
+        # Create STAR2 index directory
+        star2_index_dir = self.output / "star2-index"
+        star2_index_dir.mkdir(parents=True, exist_ok=True)
+
+        # Copy and gunzip reference genome to index directory
+        reference_fa_path = self._copy_and_decompress_reference(reference_path, star2_index_dir)
+
+        # Create STAR2 index files for the decompressed reference
+        cmd = ["STAR"] + ["--runThreadN", "2"] + ["--runMode", "genomeGenerate"] + ["--genomeDir", str(star2_index_dir)] + ["--genomeFastaFiles", reference_fa_path]
+        self.run_command(cmd)
+        return reference_path

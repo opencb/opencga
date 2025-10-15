@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import override, Any
 
 from .aligners.bwa_aligner import BwaAligner
 from .aligners.bwamem2_aligner import BwaMem2Aligner
@@ -29,8 +28,8 @@ class Alignment(BaseProcessor):
     Implement `run` with concrete checks. `execute` wraps `run` adding logging
     and common error handling.
     """
-    @override
-    def execute(self) -> list[Any]:
+    # @override
+    def execute(self) -> list[str]:
         self.logger.info("Starting Alignment step: %s", self.__class__.__name__)
         alignment_config = next((s for s in self.pipeline.get("steps", []) if s.get("id") == "alignment"), {})
         self.logger.debug("Configuration for Alignment: %s", alignment_config)
@@ -68,7 +67,7 @@ class Alignment(BaseProcessor):
                 aligner.create_cram(sorted_bams, index_dir)
 
             ## 3. Check is 'qc' options is set to True in config
-            if alignment_config.get("options", {}).get("qc", False):
+            if alignment_config.get("options", {}).get("qc", True):
                 aligner.qc(sorted_bams)
         else:
             self.logger.error("Aligner instance could not be created.")

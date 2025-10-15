@@ -34,8 +34,8 @@ def parse_args(argv=None):
     ## --- genomics command ---
     run_parser = subparsers.add_parser("genomics", help="Align reads to reference genome")
     run_parser.add_argument("-p", "--pipeline", help="Pipeline step to execute")
+    run_parser.add_argument("-i", "--index-dir", help="Input data file or directory")
     run_parser.add_argument("-s", "--samples", help="Input data file or directory")
-    run_parser.add_argument("--index-dir", help="Input data file or directory")
     run_parser.add_argument("--steps", default="quality-control,alignment,variant-calling", help="Pipeline step to execute")
     run_parser.add_argument("--overwrite", action="store_true", help="Force re-run even if step previously completed")
     run_parser.add_argument("-c", "--clean", action="store_true", help="Clean existing directory before running")
