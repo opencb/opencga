@@ -105,7 +105,7 @@ def configure_logger(args):
     logger.addHandler(console_handler)
 
 def clean(args):
-    ## 2. Chek clean parameter and directory is not empty
+    ## 1. Check clean parameter and directory is not empty
     if args.clean and any(outdir.iterdir()):
         # logger.info(f"Cleaning existing output directory: {outdir}")
         ## removing all contents of outdir
@@ -156,7 +156,7 @@ def genomics(args):
         pipeline.get("input", {}).update({"samples": []})
         samples = args.samples.split(";")
         for sample in samples:
-            ## Parse sample string
+            ## Parse sample string, format: sample_id::file1,file2::somatic(0/1)::role(T/N/U)
             parts = sample.split("::")
             parts += [""] * (4 - len(parts))  # complete 'parts' to length 4
             sample_id, files, somatic, role = parts[0], parts[1].split(","), parts[2] or 0, parts[3] or "U"

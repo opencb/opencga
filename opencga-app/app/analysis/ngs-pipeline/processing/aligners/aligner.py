@@ -30,7 +30,13 @@ class Aligner(BaseProcessor):
     def _get_aligner_index_dir(self, tool_config: dict, input_config: dict, tool_name: str) -> Path:
         index_dir = tool_config.get("index") or str(input_config.get("indexDir") + "/" + tool_name + "-index")
         if not index_dir:
+            self.logger.error("Reference index not provided in tool or input configuration")
             raise ValueError("Reference index not provided in tool or input configuration")
+
+        if not Path(index_dir).exists() or not Path(index_dir).is_dir():
+            self.logger.error("Reference index directory %s does not exist or is not a directory", str(index_dir))
+            raise ValueError(f"Reference index directory {index_dir} does not exist or is not a directory")
+
         return Path(index_dir)
 
     """ Build SAM file name based on input FASTQ files """
@@ -73,7 +79,6 @@ class Aligner(BaseProcessor):
         return sorted_bam_file
 
 
-
     """ Clean up intermediate files such as SAM and unsorted BAM files """
     def clean(self):
         ## Check self.output exists and is a directory
@@ -96,34 +101,6 @@ class Aligner(BaseProcessor):
                     self.logger.error("Error removing SAM file %s: %s", sam_file, str(e))
         else:
             self.logger.warning("Output directory %s does not exist or is not a directory", self.output)
-
-
-    """ Run samtools stats on sorted BAM files """
-    def qc(self, sorted_bams: list[str]) -> None:
-        if sorted_bams:
-            for sorted_bam in sorted_bams:
-                sorted_bam_path = Path(sorted_bam)
-
-                ## Check if sorted BAM file exists
-                if not sorted_bam_path.is_file():
-                    self.logger.error("Sorted BAM file %s does not exist for samtools stats", sorted_bam)
-                    continue
-
-                ## Run samtools stats
-                stats_file = sorted_bam_path.stem + ".stats"
-                cmd = f"samtools stats -@ 2 {shlex.quote(str(self.output / sorted_bam))} > {shlex.quote(str(self.output / stats_file))}"
-                self.run_command(cmd, shell=True)
-
-                ## Run samtools flagstat
-                flagstat_file = sorted_bam_path.stem + ".flagstat"
-                cmd = f"samtools flagstat -@ 2 {shlex.quote(str(self.output / sorted_bam))} > {shlex.quote(str(self.output / flagstat_file))}"
-                self.run_command(cmd, shell=True)
-
-                ## Check if MultiQC is installed and run it
-                multiqc_installed = self.run_command(["which", "multiqc"], check=False)
-                if multiqc_installed.returncode == 0:
-                    cmd = ["multiqc"] + ["-o", str(self.output)] + [str(self.output / ".")]
-                    self.run_command(cmd)
 
 
     def create_cram(self, sorted_bams: list[str], index_dir: str) -> list[str]:
@@ -162,3 +139,32 @@ class Aligner(BaseProcessor):
                 cram_files.append(str(self.output / cram_file))
 
         return cram_files
+
+
+    """ Run samtools stats on sorted BAM files """
+    def qc(self, sorted_bams: list[str]) -> None:
+        if sorted_bams:
+            for sorted_bam in sorted_bams:
+                sorted_bam_path = Path(sorted_bam)
+
+                ## Check if sorted BAM file exists
+                if not sorted_bam_path.is_file():
+                    self.logger.error("Sorted BAM file %s does not exist for samtools stats", sorted_bam)
+                    continue
+
+                ## Run samtools stats
+                stats_file = sorted_bam_path.stem + ".stats"
+                cmd = f"samtools stats -@ 2 {shlex.quote(str(self.output / sorted_bam))} > {shlex.quote(str(self.output / stats_file))}"
+                self.run_command(cmd, shell=True)
+
+                ## Run samtools flagstat
+                flagstat_file = sorted_bam_path.stem + ".flagstat"
+                cmd = f"samtools flagstat -@ 2 {shlex.quote(str(self.output / sorted_bam))} > {shlex.quote(str(self.output / flagstat_file))}"
+                self.run_command(cmd, shell=True)
+
+                ## Check if MultiQC is installed and run it
+                multiqc_installed = self.run_command(["which", "multiqc"], check=False)
+                if multiqc_installed.returncode == 0:
+                    cmd = ["multiqc"] + ["-o", str(self.output)] + [str(self.output / ".")]
+                    self.run_command(cmd)
+

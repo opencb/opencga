@@ -3,7 +3,7 @@
   "version": "1",
   "description": "A sample bioinformatics pipeline configuration.",
   "input": {
-    "indexDir": "/home/imedina/soft/index-dir",
+    "indexDir": "/tmp/ngs-prepare",
     "samples": [
       {
         "id": "s1",
@@ -45,9 +45,8 @@
         "qc": true
       },
       "tool": {
-        "id": "bwa",
+        "id": "bowtie2",
         "parameters": {
-          "t": 4
         }
       }
     },

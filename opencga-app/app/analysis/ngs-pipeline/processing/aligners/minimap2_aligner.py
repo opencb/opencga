@@ -5,21 +5,21 @@ from pathlib import Path
 from .aligner import Aligner
 
 
-class BwaAligner(Aligner):
+class Minimap2Aligner(Aligner):
 
     def __init__(self, output: Path, logger=None):
         super().__init__(output, logger)
-        self.tool_name = "bwa"
+        self.tool_name = "minimap2"
 
 
-    """ Run BWA alignment """
+    """ Run MINIMAP2 alignment """
     # @override
     def align(self, input_config: dict, tool_config: dict) -> list[str]:
         ## 1. Get reference index from tool or input config
         index_dir = self._get_aligner_index_dir(tool_config, input_config, self.tool_name)
 
-        ## 2. Find index prefix, assuming BWA index files have .amb extension
-        index_prefix = list(index_dir.glob("*.amb"))
+        ## 2. Find index prefix, assuming MINIMAP2 index files have .mmi extension
+        index_prefix = list(index_dir.glob("*.mmi"))
         if not index_prefix:
             self.logger.error("No reference index files found in directory %s", str(index_dir))
             raise ValueError(f"No reference index files found in directory {str(index_dir)}")
@@ -28,9 +28,9 @@ class BwaAligner(Aligner):
         ## 3. Parse parameters and add them to cmd if any
         # parameters = bwa_tool_config.get("parameters") or {}
         params_list = self.build_cli_params(tool_config.get("parameters") or {}, ["o", "outdir", "R"])
-        self.logger.debug("BWA parameters: %s", params_list)
+        self.logger.debug("MINIMAP2 parameters: %s", params_list)
 
-        ## 4. Run BWA for each sample, only for FASTQ files
+        ## 4. Run MINIMAP2 for each sample, only for FASTQ files
         sorted_bams = []
         for sample in input_config.get("samples", []):
             files = sample.get("files", [])
@@ -42,10 +42,12 @@ class BwaAligner(Aligner):
                 self.logger.debug("sam_file name: %s", sam_file)
 
                 ## Construct command to run
-                cmd = (["bwa"] + ["mem"] + params_list
+                cmd = (["minimap2"] + params_list
+                       + ["-a", "-x", "sr"]
+                       + ["-t", "2"]  # Number of threads, can be parameterized
                        + ["-R", "@RG\\tID:your_RG_ID\\tSM:" + sample.get("id")]
                        + ["-o", str(self.output) + "/" + sam_file]
-                       + [str(index_prefix[0]).replace(".amb", "")] + files)
+                       + [str(index_prefix[0])] + files)
                 self.run_command(cmd)
 
                 ## Post-process SAM to sorted BAM and index
@@ -53,6 +55,6 @@ class BwaAligner(Aligner):
                 if sorted_bam:
                     sorted_bams.append(str(self.output / sorted_bam))
             else:
-                self.logger.error("Unsupported input type %s for bwa", file_type)
+                self.logger.error("Unsupported input type %s for minimap2", file_type)
 
         return sorted_bams
