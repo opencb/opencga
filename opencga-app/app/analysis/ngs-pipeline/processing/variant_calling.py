@@ -1,8 +1,6 @@
 import subprocess
 from pathlib import Path
 
-from typing_extensions import override
-
 from processing.base_processor import BaseProcessor
 
 
@@ -29,7 +27,7 @@ class VariantCalling(BaseProcessor):
     Implement `run` with concrete checks. `execute` wraps `run` adding logging
     and common error handling.
     """
-    @override
+    # @override
     def execute(self) -> dict:
         self.logger.info("Starting VariantCalling step: %s", self.__class__.__name__)
         variant_calling_config = next((s for s in self.pipeline.get("steps", []) if s.get("id") == "variant-calling"), {})
@@ -46,16 +44,32 @@ class VariantCalling(BaseProcessor):
         return result
 
 
+    def _get_reference_index_dir(self, tool_config: dict, input_config: dict) -> Path:
+        reference_index_dir = tool_config.get("reference") or str(input_config.get("indexDir") + "/" + "reference-genome-index")
+
+        ## If reference index is not provided, raise error
+        if not reference_index_dir:
+            raise ValueError("Reference index not provided in tool or input configuration")
+
+        ## Get the fasta file
+        fasta_list = list(Path(reference_index_dir).glob("*.fasta")) + list(Path(reference_index_dir).glob("*.fa")) + list(Path(reference_index_dir).glob("*.fna"))
+        reference_path = list(fasta_list)[0] if fasta_list else None
+        if not reference_path:
+            raise ValueError("No FASTA file found in the reference index directory")
+        return reference_path
+
     """ Run GATK HaplotypeCaller """
     def gatk(self, input: dict, gatk_tool_config: dict) -> str:
         # if len(input.get("files", [])) == 0:
         #     self.logger.error("No input files provided for bwa")
         #     return {"error": "No input files provided for bwa"}
 
+        reference_path = self._get_reference_index_dir(gatk_tool_config, input)
+
         bam_file = list(self.output.parent.glob("alignment/*.sorted.bam"))[0]
         if Path(bam_file).is_file():
             vcf_file = Path(bam_file).stem + ".gatk.vcf"
-            cmd = ["gatk", "HaplotypeCaller", "-R", gatk_tool_config.get("reference")] + ["-I", str(bam_file)] + ["-O", str(self.output / vcf_file)]
+            cmd = ["gatk", "HaplotypeCaller", "-R", str(reference_path)] + ["-I", str(bam_file)] + ["-O", str(self.output / vcf_file)]
             self.run_command(cmd)
 
             ## Run bcftools stats

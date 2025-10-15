@@ -2,7 +2,6 @@ import os
 import shlex
 from abc import abstractmethod
 from pathlib import Path
-from typing import Any
 
 from processing.base_processor import BaseProcessor
 
@@ -23,7 +22,7 @@ class Aligner(BaseProcessor):
 
 
     @abstractmethod
-    def align(self, input_config: dict, bwa_tool_config: dict) -> list[Any]:
+    def align(self, input_config: dict, bwa_tool_config: dict) -> list[str]:
         pass
 
 
@@ -127,7 +126,7 @@ class Aligner(BaseProcessor):
                     self.run_command(cmd)
 
 
-    def create_cram(self, sorted_bams: list[str], index_dir: str) -> list[Any]:
+    def create_cram(self, sorted_bams: list[str], index_dir: str) -> list[str]:
         cram_files = []
 
         ## Find fasta file in the reference genome directory

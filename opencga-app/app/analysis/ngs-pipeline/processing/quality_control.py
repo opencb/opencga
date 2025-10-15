@@ -1,7 +1,5 @@
 from pathlib import Path
 
-from typing_extensions import override
-
 from processing.base_processor import BaseProcessor
 
 
@@ -28,8 +26,8 @@ class QualityControl(BaseProcessor):
     Implement `run` with concrete checks. `execute` wraps `run` adding logging
     and common error handling.
     """
-    @override
-    def execute(self) -> dict:
+    # @override
+    def execute(self) -> None:
         self.logger.info("Starting QualityControl step: %s", self.__class__.__name__)
         quality_control_config = next((s for s in self.pipeline.get("steps", []) if s.get("id") == "quality-control"), {})
         self.logger.debug("Configuration for QualityControl: %s", quality_control_config)
@@ -38,18 +36,17 @@ class QualityControl(BaseProcessor):
         input = self.pipeline.get("input")
         fastqc_tool_config = quality_control_config.get("tool")
 
-        result = None
         if isinstance(fastqc_tool_config, dict):
-            result = self.fastqc(input, fastqc_tool_config)
+            self.fastqc(input, fastqc_tool_config)
         elif not isinstance(fastqc_tool_config, dict):
             raise ValueError("Invalid tool configuration format in quality-control step")
-        return result
+        return None
 
     """ Run FastQC and MultiQC """
-    def fastqc(self, input: dict, fastqc_tool_config: dict) -> dict[str, str] | None:
+    def fastqc(self, input: dict, fastqc_tool_config: dict) -> None:
         if len(input.get("samples", [])) == 0:
             self.logger.error("No input samples provided for FastQC")
-            return {"error": "No input files provided for FastQC"}
+            raise ValueError("No input samples provided for FastQC")
 
         ## Run FastQC for each sample, only for FASTQ or BAM files
         for sample in input.get("samples", []):
