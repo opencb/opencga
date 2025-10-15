@@ -58,6 +58,10 @@ public class ClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
     public static final String EXECUTE_DESCR = "Execute the clinical pipeline that performs QC (e.g.: FastQC), mapping (e.g.: BWA),"
             + " variant calling (e.g., GATK) and variant indexing in OpenCGA storage.";
 
+    public static final String SAMPLE_SEP = ";";
+    public static final String SAMPLE_FIELD_SEP = "@";
+    public static final String SAMPLE_FILE_SEP = ",";
+
     private static final String PREPARE_PIPELINE_STEP = "prepare-pipeline";
     private static final String EXECUTE_PIPELINE_STEP = "execute-pipeline";
     private static final String INDEX_VARIANTS_STEP = "index-variants";
@@ -157,21 +161,21 @@ public class ClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
                     throw new ToolException("Clinical pipeline input files are mandatory for running the pipeline.");
                 }
             } else {
-                List<String> updatedExecuteInput = new ArrayList<>();
-                for (String executeInput : executeParams.getSamples()) {
-                    logger.info("Checking execute input {}", executeInput);
-                    // Parse the input format: sample_id:file_id[:role:somatic]
-                    String[] fields = executeInput.split(":");
+                List<String> updatedSamples = new ArrayList<>();
+                for (String sample : samples) {
+                    logger.info("Checking samples {}", sample);
+                    // Parse the input format: sample_id|file_id1[,file_id2][|somatic|role]
+                    String[] fields = sample.split(SAMPLE_FIELD_SEP);
                     if (fields.length < 2) {
-                        throw new ToolException("Invalid input format. Expected format: sample_id:file_id[:role[:somatic]], but got: "
-                                + executeInput);
+                        throw new ToolException("Invalid input format. Expected format: sample_id|file_id1[;file_id2][|somatic[|role]],"
+                                + " but got: " + sample);
                     }
                     String inputFiles = fields[1];
                     if (StringUtils.isEmpty(inputFiles)) {
-                        throw new ToolException("Missing input paths in : " + executeInput);
+                        throw new ToolException("Missing input files for sample '" + fields[0] + "': " + sample);
                     }
-                    String[] inputFile = inputFiles.split(";");
-                    String updatedInput = fields[0] + ":";
+                    String[] inputFile = inputFiles.split(SAMPLE_FILE_SEP);
+                    String updatedSample = fields[0] + SAMPLE_FIELD_SEP;
                     for (int i = 0; i < inputFile.length; i++) {
                         File opencgaFile = getCatalogManager().getFileManager().get(study, inputFile[i], QueryOptions.empty(), token)
                                 .first();
@@ -179,18 +183,18 @@ public class ClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
                             throw new ToolException("Clinical pipeline input path '" + inputFile[i] + "' is not a file.");
                         }
                         if (i > 0) {
-                            updatedInput += ";";
+                            updatedSample += SAMPLE_FILE_SEP;
                         }
-                        updatedInput += Paths.get(opencgaFile.getUri()).toAbsolutePath().toString();
+                        updatedSample += Paths.get(opencgaFile.getUri()).toAbsolutePath().toString();
                     }
                     for (int i = 2; i < fields.length; i++) {
-                        updatedInput += ":" + fields[i];
+                        updatedSample += ":" + fields[i];
                     }
 
-                    logger.info("Updated execute input {}", updatedInput);
-                    updatedExecuteInput.add(updatedInput);
+                    logger.info("Updated sample {}", updatedSample);
+                    updatedSamples.add(updatedSample);
                 }
-                updatedExecuteParams.setSamples(updatedExecuteInput);
+                updatedExecuteParams.setSamples(updatedSamples);
             }
 
             // Check the index path

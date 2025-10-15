@@ -9,18 +9,17 @@ import org.opencb.opencga.analysis.wrappers.ngspipeline.NgsPipelineWrapperAnalys
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
-import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelineExecuteParams;
-import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelineWrapperParams;
-import org.opencb.opencga.core.models.clinical.pipeline.PipelineStep;
-import org.opencb.opencga.core.models.clinical.pipeline.PipelineTool;
+import org.opencb.opencga.core.models.clinical.pipeline.*;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+
+import static org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelineWrapperAnalysis.SAMPLE_FIELD_SEP;
+import static org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelineWrapperAnalysis.SAMPLE_FILE_SEP;
 
 @ToolExecutor(id = ClinicalPipelineWrapperAnalysisExecutor.ID,
         tool = NgsPipelineWrapperAnalysis.ID,
@@ -31,7 +30,7 @@ public class ClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAnalys
     public static final String ID = NgsPipelineWrapperAnalysis.ID + "-local";
 
     public static final String PREPARE_CMD = "prepare";
-    public static final String RUN_CMD = "run";
+    public static final String GENOMICS_CMD = "genomics";
 
     public static final String QUALITY_CONTROL_STEP = "quality-control";
     public static final String ALIGNMENT_STEP = "alignment";
@@ -101,7 +100,7 @@ public class ClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAnalys
             // ./analysis/variant-caller-pipeline/main.py prepare
             // -r https://ftp.ensembl.org/pub/release-115/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.chromosome.22.fa.gz
             // -o /tmp/bbb
-            String params = "python3 " + virtualScriptPath + "/" +  NGS_PIPELINE_SCRIPT + " prepare"
+            String params = "python3 " + virtualScriptPath + "/" + NGS_PIPELINE_SCRIPT + " " + PREPARE_CMD
                     + " -r " + (virtualRefPath != null ? virtualRefPath : reference)
                     + " -o " + OUTPUT_VIRTUAL_PATH;
             params += (" -i " + REFERENCE_GENOME_INDEX);
@@ -110,9 +109,7 @@ public class ClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAnalys
             }
 
             // Execute Python script in docker
-            // TODO: fix and use 5.0.0-SNAPSHOT to include bwa
-//            String dockerImage = getDockerImageName() + ":" + getDockerImageVersion();
-            String dockerImage = getDockerImageName() + ":4.1.0";
+            String dockerImage = getDockerImageName() + ":" + getDockerImageVersion();
 
             String dockerCli = buildCommandLine(dockerImage, inputBindings, readOnlyInputBindings, outputBinding, params, null);
             addEvent(Event.Type.INFO, "Docker command line: " + dockerCli);
@@ -166,15 +163,33 @@ public class ClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAnalys
                 readOnlyInputBindings.add(virtualIndexPath.toString());
             }
 
-            // Input binding
-            List<Path> virtualInputPaths = new ArrayList<>();
-            for (int i = 0; i < executeParams.getSamples().size(); i++) {
-                Path virtualInputPath = Paths.get(INPUT_VIRTUAL_PATH + "_" + i).resolve(Paths.get(executeParams.getSamples().get(i))
-                        .getFileName());
-                inputBindings.add(new AbstractMap.SimpleEntry<>(Paths.get(executeParams.getSamples().get(i)).toAbsolutePath().toString(),
-                        virtualInputPath.toString()));
-                readOnlyInputBindings.add(virtualInputPath.toString());
-                virtualInputPaths.add(virtualInputPath);
+            // Input binding, and update samples with virtual paths
+            List<String> updatedSamples = new ArrayList<>();
+            int inputCounter = 0;
+            for (String sample : executeParams.getSamples()) {
+                String[] fields = sample.split(SAMPLE_FIELD_SEP);
+                String[] files = fields[1].split(SAMPLE_FILE_SEP);
+                String updatedSample = fields[0];
+                List<String> updatedFiles = new ArrayList<>(files.length);
+                for (String file : files) {
+                    Path virtualInputPath = Paths.get(INPUT_VIRTUAL_PATH + "_" + inputCounter).resolve(Paths.get(file).getFileName());
+                    inputBindings.add(new AbstractMap.SimpleEntry<>(Paths.get(file).toAbsolutePath().toString(),
+                            virtualInputPath.toString()));
+                    readOnlyInputBindings.add(virtualInputPath.toString());
+                    inputCounter++;
+
+                    // Updated files
+                    updatedFiles.add(virtualInputPath.toString());
+                }
+                // Add updated files
+                updatedSample += SAMPLE_FIELD_SEP + StringUtils.join(updatedFiles, SAMPLE_FILE_SEP);
+
+                // Add the remain fields
+                for (int i = 2; i < fields.length; i++) {
+                    updatedSample += SAMPLE_FIELD_SEP + fields[i];
+                }
+
+                updatedSamples.add(updatedSample);
             }
 
             // Pipeline params binding
@@ -182,10 +197,10 @@ public class ClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAnalys
             Path virtualPipelineParamsPath = Paths.get(INPUT_VIRTUAL_PATH).resolve(pipelineParamsPath.getFileName());
 
             // Modify BWA index according to the indexPath
-            updateAlignerIndex(inputBindings, readOnlyInputBindings);
+            updateAlignmentIndex(inputBindings, readOnlyInputBindings);
 
             // Write the JSON file containing the pipeline parameters
-            JacksonUtils.getDefaultObjectMapper().writerFor(ObjectMap.class).writeValue(pipelineParamsPath.toFile(),
+            JacksonUtils.getDefaultObjectMapper().writerFor(PipelineConfig.class).writeValue(pipelineParamsPath.toFile(),
                     executeParams.getPipeline());
             inputBindings.add(new AbstractMap.SimpleEntry<>(pipelineParamsPath.toAbsolutePath().toString(),
                     virtualPipelineParamsPath.toString()));
@@ -211,19 +226,17 @@ public class ClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAnalys
                 pipelineSteps += ALIGNMENT_STEP;
             }
 
-            String params = "python3 " + virtualScriptPath + "/" +  NGS_PIPELINE_SCRIPT + " run"
+            String params = "python3 " + virtualScriptPath + "/" + NGS_PIPELINE_SCRIPT + " " + GENOMICS_CMD
                     + " -o " + OUTPUT_VIRTUAL_PATH
                     + " -p " + virtualPipelineParamsPath
-                    + " -i " + StringUtils.join(virtualInputPaths, ",")
+                    + " -s " + StringUtils.join(updatedSamples, ClinicalPipelineWrapperAnalysis.SAMPLE_SEP)
                     + " --steps " + pipelineSteps;
             if (virtualIndexPath != null) {
-                params += (" --index " + virtualIndexPath);
+                params += (" --index-dir " + virtualIndexPath);
             }
 
             // Execute Python script in docker
-            // TODO: fix and use 5.0.0-SNAPSHOT to include bwa
-//            String dockerImage = getDockerImageName() + ":" + getDockerImageVersion();
-            String dockerImage = getDockerImageName() + ":4.1.0";
+            String dockerImage = getDockerImageName() + ":" + getDockerImageVersion();
 
             String dockerCli = buildCommandLine(dockerImage, inputBindings, readOnlyInputBindings, outputBinding, params, null);
             addEvent(Event.Type.INFO, "Docker command line: " + dockerCli);
@@ -236,8 +249,8 @@ public class ClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAnalys
         }
     }
 
-    private void updateAlignerIndex(List<AbstractMap.SimpleEntry<String, String>> inputBindings,
-                                    Set<String> readOnlyInputBindings) throws ToolExecutorException {
+    private void updateAlignmentIndex(List<AbstractMap.SimpleEntry<String, String>> inputBindings,
+                                      Set<String> readOnlyInputBindings) throws ToolExecutorException {
         Path virtualAlignmentIndexPath;
         String indexDir = pipelineParams.getExecuteParams().getIndexDir();
         for (PipelineStep step : pipelineParams.getExecuteParams().getPipeline().getSteps()) {
@@ -250,15 +263,10 @@ public class ClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAnalys
                     String subfolder = step.getTool().getId() + "-index";
                     Path alignmentIndexPath = Paths.get(indexDir).resolve(subfolder);
                     if (Files.exists(alignmentIndexPath)) {
-                        for (File file : alignmentIndexPath.toFile().listFiles()) {
-                            if (file.getName().endsWith(".fa")) {
-                                virtualAlignmentIndexPath = Paths.get(INDEX_VIRTUAL_PATH).resolve(subfolder).resolve(file.getName());
-                                step.getTool().setIndex(virtualAlignmentIndexPath.toAbsolutePath().toString());
-                                logger.info("Using index {} for step alignment", step.getTool().getIndex());
-                                return;
-                            }
-                        }
-                        throw new ToolExecutorException("Missing FASTA file for the index directory for step alignment");
+                        virtualAlignmentIndexPath = Paths.get(INDEX_VIRTUAL_PATH).resolve(subfolder);
+                        step.getTool().setIndex(virtualAlignmentIndexPath.toAbsolutePath().toString());
+                        logger.info("Using index {} for step alignment", step.getTool().getIndex());
+                        return;
                     } else {
                         throw new ToolExecutorException("Index directory for step alignment not found: " + alignmentIndexPath);
                     }
@@ -291,60 +299,56 @@ public class ClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAnalys
         throw new ToolExecutorException("Could not set index directory for step alignment");
     }
 
-    private void updateVariantCallerIndex(List<AbstractMap.SimpleEntry<String, String>> inputBindings,
-                                    Set<String> readOnlyInputBindings) throws ToolExecutorException {
-        Path virtualVariantCallingIndexPath;
+    private void updateVariantCallingIndex(List<AbstractMap.SimpleEntry<String, String>> inputBindings,
+                                           Set<String> readOnlyInputBindings) throws ToolExecutorException {
+        Path virtualRefGenomeIndexPath;
         String indexDir = pipelineParams.getExecuteParams().getIndexDir();
         for (PipelineStep step : pipelineParams.getExecuteParams().getPipeline().getSteps()) {
             if ("variant-calling".equalsIgnoreCase(step.getId())) {
-                if (StringUtils.isEmpty(step.getTool().getIndex())) {
-                    // Use the index directory for the variant-calling step
-                    if (StringUtils.isEmpty(indexDir)) {
-                        throw new ToolExecutorException("Missing index directory for step variant-calling");
-                    }
-                    String subfolder = "reference-genome-index";
-                    Path variantCallingIndexPath = Paths.get(indexDir).resolve(subfolder);
-                    if (Files.exists(variantCallingIndexPath)) {
-                        for (File file : variantCallingIndexPath.toFile().listFiles()) {
-                            if (file.getName().endsWith(".fa")) {
-                                virtualVariantCallingIndexPath = Paths.get(INDEX_VIRTUAL_PATH).resolve(subfolder).resolve(file.getName());
-                                step.getTool().setIndex(virtualVariantCallingIndexPath.toAbsolutePath().toString());
-                                logger.info("Using index {} for step variant-calling", step.getTool().getIndex());
-                                return;
-                            }
+                // Variant calling may have a different tools to run
+                if (CollectionUtils.isEmpty(step.getTools())) {
+                    throw new ToolExecutorException("Missing tools for step variant-calling");
+                }
+
+                // Update all the tools in the step variant-calling
+                for (PipelineTool tool : step.getTools()) {
+                    if (StringUtils.isEmpty(tool.getReference())) {
+                        // Use the index directory for the step variant-calling
+                        // Sanity check
+                        if (StringUtils.isEmpty(indexDir)) {
+                            throw new ToolExecutorException("Missing index directory for step variant-calling");
                         }
-                        throw new ToolExecutorException("Missing FASTA file for the index directory for step variant-calling");
-                    } else {
-                        throw new ToolExecutorException("Index directory for step variant-calling not found: " + variantCallingIndexPath);
-                    }
-                } else {
-                    // Use the index defined in the tool
-                    Path parent;
-                    Path variantCallingIndexPath = Paths.get(step.getTool().getIndex());
-                    if (Files.exists(variantCallingIndexPath)) {
-                        if (Files.isRegularFile(variantCallingIndexPath)) {
-                            parent = variantCallingIndexPath.getParent();
-                        } else if (Files.isDirectory(variantCallingIndexPath)) {
-                            parent = variantCallingIndexPath;
-                        } else {
-                            throw new ToolExecutorException("Index path for step variant-calling is neither a file nor a directory: "
-                                    + variantCallingIndexPath);
+                        String subfolder = "reference-genome-index";
+                        Path refGenomeIndexPath = Paths.get(indexDir).resolve(subfolder);
+                        if (!Files.exists(refGenomeIndexPath)) {
+                            throw new ToolExecutorException("Reference genome index directory for step variant-calling not found: "
+                                    + refGenomeIndexPath);
                         }
-                        virtualVariantCallingIndexPath = Paths.get(INDEX_VIRTUAL_PATH + "_variant_calling");
-                        inputBindings.add(new AbstractMap.SimpleEntry<>(parent.toAbsolutePath().toString(),
-                                virtualVariantCallingIndexPath.toAbsolutePath().toString()));
-                        readOnlyInputBindings.add(virtualVariantCallingIndexPath.toAbsolutePath().toString());
-                        step.getTool().setIndex(virtualVariantCallingIndexPath.toAbsolutePath().toString());
-                        logger.info("Using alignment index: {}", step.getTool().getIndex());
-                        return;
+                        virtualRefGenomeIndexPath = Paths.get(INDEX_VIRTUAL_PATH).resolve(subfolder);
+                        tool.setReference(virtualRefGenomeIndexPath.toAbsolutePath().toString());
+                        logger.info("Using reference genome index {} for step variant-calling with {}", tool.getIndex(), tool.getId());
                     } else {
-                        throw new ToolExecutorException("Index directory for step variant-calling not found: " + variantCallingIndexPath);
+                        // Use the reference dir defined in the tool
+                        Path refGenomeIndexPath = Paths.get(tool.getReference());
+                        // Sanity check
+                        if (!Files.exists(refGenomeIndexPath)) {
+                            throw new ToolExecutorException("Reference genome index directory for step variant-calling with "
+                                    + tool.getId() + ": " + refGenomeIndexPath);
+                        }
+                        if (!Files.isDirectory(refGenomeIndexPath)) {
+                            throw new ToolExecutorException("Reference genome index path for step variant-calling with "
+                                    + tool.getId() + " is not a directory: " + refGenomeIndexPath);
+                        }
+                        virtualRefGenomeIndexPath = Paths.get(INDEX_VIRTUAL_PATH + "_ref_genome_index_" + tool.getId());
+                        inputBindings.add(new AbstractMap.SimpleEntry<>(refGenomeIndexPath.toAbsolutePath().toString(),
+                                virtualRefGenomeIndexPath.toAbsolutePath().toString()));
+                        readOnlyInputBindings.add(virtualRefGenomeIndexPath.toAbsolutePath().toString());
+                        tool.setReference(virtualRefGenomeIndexPath.toAbsolutePath().toString());
+                        logger.info("Using reference genome index {} for step variant-calling with {}", tool.getReference(), tool.getId());
                     }
                 }
             }
         }
-        throw new ToolExecutorException("Could not set index directory for step alignment");
-
     }
 
     private void runVariantCalling() throws ToolExecutorException {
@@ -371,32 +375,11 @@ public class ClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAnalys
             Path pipelineParamsPath = getOutDir().resolve(PIPELINE_PARAMS_FILENAME);
             Path virtualPipelineParamsPath = Paths.get(INPUT_VIRTUAL_PATH).resolve(pipelineParamsPath.getFileName());
 
-            // Modify BWA index according to the indexPath
-            Path refIndexPath = null;
-            Path refIndexDirPath = Paths.get(executeParams.getIndexDir()).resolve("reference-genome-index");
-            for (File file : refIndexDirPath.toFile().listFiles()) {
-                if (file.getName().endsWith(".fa")) {
-                    refIndexPath = virtualIndexPath.resolve("reference-genome-index").resolve(file.getName());
-                    break;
-                }
-            }
-            if (refIndexPath == null) {
-                throw new ToolExecutorException("Could not find the reference index at " + refIndexDirPath);
-            }
-            List<Map<String, Object>> steps = null; //(List<Map<String, Object>>) executeParams.getPipeline().get("steps");
-            for (Map<String, Object> step : steps) {
-                if (VARIANT_CALLING_STEP.equals(step.get("name"))) {
-                    List<Map<String, Object>> tools = (List<Map<String, Object>>) step.get("tools");
-                    for (Map<String, Object> tool : tools) {
-                        if ("gatk".equals(tool.get("name"))) {
-                            tool.put("reference", refIndexPath.toAbsolutePath().toString());
-                            break;
-                        }
-                    }
-                }
-            }
+            // Modify variant calling index
+            updateVariantCallingIndex(inputBindings, readOnlyInputBindings);
+
             // Write the JSON file containing the pipeline parameters
-            JacksonUtils.getDefaultObjectMapper().writerFor(ObjectMap.class).writeValue(pipelineParamsPath.toFile(),
+            JacksonUtils.getDefaultObjectMapper().writerFor(PipelineConfig.class).writeValue(pipelineParamsPath.toFile(),
                     executeParams.getPipeline());
             inputBindings.add(new AbstractMap.SimpleEntry<>(pipelineParamsPath.toAbsolutePath().toString(),
                     virtualPipelineParamsPath.toString()));
@@ -411,7 +394,7 @@ public class ClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAnalys
             // -p pipeline.json
             // -i /data/HI.4019.002.index_7.ANN0831_R1.fastq.gz,/data/HI.4019.002.index_7.ANN0831_R2.fastq.gz
 
-            String params = "python3 " + virtualScriptPath + "/" +  NGS_PIPELINE_SCRIPT + " run"
+            String params = "python3 " + virtualScriptPath + "/" +  NGS_PIPELINE_SCRIPT + " " + GENOMICS_CMD
                     + " -o " + OUTPUT_VIRTUAL_PATH
                     + " -p " + virtualPipelineParamsPath
                     + " --index " + virtualIndexPath

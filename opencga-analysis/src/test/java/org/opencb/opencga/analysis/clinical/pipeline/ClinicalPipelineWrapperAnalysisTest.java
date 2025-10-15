@@ -18,6 +18,7 @@ import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelineExecuteParams;
 import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelinePrepareParams;
 import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelineWrapperParams;
+import org.opencb.opencga.core.models.clinical.pipeline.PipelineConfig;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
@@ -154,7 +155,7 @@ public class ClinicalPipelineWrapperAnalysisTest {
 
         // Get the pipeline parameters from the json file in resources and load them into an ObjectMap
         InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream("ngspipeline/pipeline.json");
-        ObjectMap ngsPipeline = JacksonUtils.getDefaultObjectMapper().readerFor(ObjectMap.class).readValue(inputStream);
+        PipelineConfig ngsPipeline = JacksonUtils.getDefaultObjectMapper().readerFor(PipelineConfig.class).readValue(inputStream);
 
         String refBasename = "Homo_sapiens.GRCh38.dna.primary_assembly";
 
@@ -223,9 +224,10 @@ public class ClinicalPipelineWrapperAnalysisTest {
 
         params = new ClinicalPipelineWrapperParams();
         ClinicalPipelineExecuteParams executeParams = new ClinicalPipelineExecuteParams();
-        executeParams.setSamples(Arrays.asList(fastq1File.getId(), fastq2File.getId()));
+        executeParams.setSamples(Collections.singletonList("ANN0831" + ClinicalPipelineWrapperAnalysis.SAMPLE_FIELD_SEP
+                + fastq1File.getId() + ClinicalPipelineWrapperAnalysis.SAMPLE_FILE_SEP + fastq2File.getId()));
         executeParams.setIndexDir(indexDirFile.getId());
-        executeParams.setPipeline(null);//ngsPipeline);
+        executeParams.setPipeline(ngsPipeline);
         params.setExecuteParams(executeParams);
 
         toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), opencga.getCatalogManager(),
