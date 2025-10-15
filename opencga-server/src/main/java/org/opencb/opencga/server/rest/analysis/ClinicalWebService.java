@@ -33,7 +33,8 @@ import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysis;
 import org.opencb.opencga.analysis.rga.RgaManager;
 import org.opencb.opencga.analysis.rga.RgaQueryParams;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
-import org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelineWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelineGenomicsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelinePrepareWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserAnalysisUtils;
 import org.opencb.opencga.analysis.wrappers.ngspipeline.NgsPipelineWrapperAnalysis;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
@@ -47,22 +48,20 @@ import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.analysis.knockout.*;
 import org.opencb.opencga.core.models.clinical.*;
-import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelineExecuteWrapperParams;
+import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelineGenomicsWrapperParams;
 import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelinePrepareWrapperParams;
-import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelineWrapperParams;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobType;
 import org.opencb.opencga.core.models.job.ToolInfo;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
-import org.opencb.opencga.core.models.clinical.NgsPipelineWrapperParams;
 import org.opencb.opencga.core.models.variant.VariantQueryParams;
 import org.opencb.opencga.core.tools.annotations.*;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.*;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.HashMap;
@@ -1490,7 +1489,7 @@ public class ClinicalWebService extends AnalysisWebService {
 
     @POST
     @Path("/pipeline/prepare/run")
-    @ApiOperation(value = ClinicalPipelineWrapperAnalysis.PREPARE_DESCR, response = Job.class)
+    @ApiOperation(value = ClinicalPipelinePrepareWrapperAnalysis.DESCRIPTION, response = Job.class)
     public Response pipelinePrepareRun(
             @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
@@ -1501,16 +1500,14 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = ClinicalPipelinePrepareWrapperParams.DESCRIPTION, required = true) ClinicalPipelinePrepareWrapperParams params) {
-
-        ClinicalPipelineWrapperParams paramsWrapper = new ClinicalPipelineWrapperParams(params.getPipelineParams(), null, params.getOutdir());
-        return submitJob(study, JobType.NATIVE, ClinicalPipelineWrapperAnalysis.ID, paramsWrapper, jobName, jobDescription, dependsOn,
+        return submitJob(study, JobType.NATIVE, ClinicalPipelinePrepareWrapperAnalysis.ID, params, jobName, jobDescription, dependsOn,
                 jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @POST
-    @Path("/pipeline/execute/run")
-    @ApiOperation(value = ClinicalPipelineWrapperAnalysis.EXECUTE_DESCR, response = Job.class)
-    public Response pipelineExecuteRun(
+    @Path("/pipeline/genomics/run")
+    @ApiOperation(value = ClinicalPipelineGenomicsWrapperAnalysis.DESCRIPTION, response = Job.class)
+    public Response pipelineGenomicsRun(
             @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
@@ -1519,9 +1516,8 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
-            @ApiParam(value = ClinicalPipelineExecuteWrapperParams.DESCRIPTION, required = true) ClinicalPipelineExecuteWrapperParams params) {
+            @ApiParam(value = ClinicalPipelineGenomicsWrapperParams.DESCRIPTION, required = true) ClinicalPipelineGenomicsWrapperParams params) {
 
-        ClinicalPipelineWrapperParams paramsWrapper = new ClinicalPipelineWrapperParams(null, params.getPipelineParams(), params.getOutdir());
-        return submitJob(study, JobType.NATIVE, ClinicalPipelineWrapperAnalysis.ID, paramsWrapper, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE, ClinicalPipelineGenomicsWrapperAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 }

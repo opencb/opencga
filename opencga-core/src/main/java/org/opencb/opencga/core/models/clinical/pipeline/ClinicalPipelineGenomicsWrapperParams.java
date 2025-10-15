@@ -20,21 +20,21 @@ import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
-public class ClinicalPipelineExecuteWrapperParams extends ToolParams {
+public class ClinicalPipelineGenomicsWrapperParams extends ToolParams {
 
-    public static final String DESCRIPTION = "Parameters to execute the clinical pipeline";
+    public static final String DESCRIPTION = "Parameters to execute the clinical genomics pipeline";
 
-    @DataField(id = "pipelineParams", description = FieldConstants.CLINICAL_PIPELINE_EXECUTE_PARAMS_DESCRIPTION)
-    private ClinicalPipelineExecuteParams pipelineParams;
+    @DataField(id = "pipelineParams", description = FieldConstants.CLINICAL_PIPELINE_GENOMICS_PARAMS_DESCRIPTION)
+    private ClinicalPipelineGenomicsParams pipelineParams;
 
     @DataField(id = "outdir", description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
     private String outdir;
 
-    public ClinicalPipelineExecuteWrapperParams() {
-        this.pipelineParams = new ClinicalPipelineExecuteParams();
+    public ClinicalPipelineGenomicsWrapperParams() {
+        this.pipelineParams = new ClinicalPipelineGenomicsParams();
     }
 
-    public ClinicalPipelineExecuteWrapperParams(ClinicalPipelineExecuteParams pipelineParams, String outdir) {
+    public ClinicalPipelineGenomicsWrapperParams(ClinicalPipelineGenomicsParams pipelineParams, String outdir) {
         this.pipelineParams = pipelineParams;
         this.outdir = outdir;
     }
@@ -48,11 +48,11 @@ public class ClinicalPipelineExecuteWrapperParams extends ToolParams {
         return sb.toString();
     }
 
-    public ClinicalPipelineExecuteParams getPipelineParams() {
+    public ClinicalPipelineGenomicsParams getPipelineParams() {
         return pipelineParams;
     }
 
-    public ClinicalPipelineExecuteWrapperParams setPipelineParams(ClinicalPipelineExecuteParams pipelineParams) {
+    public ClinicalPipelineGenomicsWrapperParams setPipelineParams(ClinicalPipelineGenomicsParams pipelineParams) {
         this.pipelineParams = pipelineParams;
         return this;
     }
@@ -61,7 +61,7 @@ public class ClinicalPipelineExecuteWrapperParams extends ToolParams {
         return outdir;
     }
 
-    public ClinicalPipelineExecuteWrapperParams setOutdir(String outdir) {
+    public ClinicalPipelineGenomicsWrapperParams setOutdir(String outdir) {
         this.outdir = outdir;
         return this;
     }

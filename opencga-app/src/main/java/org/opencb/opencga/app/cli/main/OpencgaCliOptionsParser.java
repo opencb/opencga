@@ -132,7 +132,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         analysisClinicalSubCommands.addCommand("interpreter-zetta-run", analysisClinicalCommandOptions.runInterpreterZettaCommandOptions);
         analysisClinicalSubCommands.addCommand("load", analysisClinicalCommandOptions.loadCommandOptions);
         analysisClinicalSubCommands.addCommand("ngs-pipeline-run", analysisClinicalCommandOptions.runNgsPipelineCommandOptions);
-        analysisClinicalSubCommands.addCommand("pipeline-execute-run", analysisClinicalCommandOptions.runPipelineExecuteCommandOptions);
+        analysisClinicalSubCommands.addCommand("pipeline-genomics-run", analysisClinicalCommandOptions.runPipelineGenomicsCommandOptions);
         analysisClinicalSubCommands.addCommand("pipeline-prepare-run", analysisClinicalCommandOptions.runPipelinePrepareCommandOptions);
         analysisClinicalSubCommands.addCommand("rga-aggregation-stats", analysisClinicalCommandOptions.aggregationStatsRgaCommandOptions);
         analysisClinicalSubCommands.addCommand("rga-gene-query", analysisClinicalCommandOptions.queryRgaGeneCommandOptions);

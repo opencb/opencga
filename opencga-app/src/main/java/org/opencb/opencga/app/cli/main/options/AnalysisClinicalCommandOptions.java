@@ -50,7 +50,7 @@ public class AnalysisClinicalCommandOptions {
         public RunInterpreterZettaCommandOptions runInterpreterZettaCommandOptions;
         public LoadCommandOptions loadCommandOptions;
         public RunNgsPipelineCommandOptions runNgsPipelineCommandOptions;
-        public RunPipelineExecuteCommandOptions runPipelineExecuteCommandOptions;
+        public RunPipelineGenomicsCommandOptions runPipelineGenomicsCommandOptions;
         public RunPipelinePrepareCommandOptions runPipelinePrepareCommandOptions;
         public AggregationStatsRgaCommandOptions aggregationStatsRgaCommandOptions;
         public QueryRgaGeneCommandOptions queryRgaGeneCommandOptions;
@@ -96,7 +96,7 @@ public class AnalysisClinicalCommandOptions {
         this.runInterpreterZettaCommandOptions = new RunInterpreterZettaCommandOptions();
         this.loadCommandOptions = new LoadCommandOptions();
         this.runNgsPipelineCommandOptions = new RunNgsPipelineCommandOptions();
-        this.runPipelineExecuteCommandOptions = new RunPipelineExecuteCommandOptions();
+        this.runPipelineGenomicsCommandOptions = new RunPipelineGenomicsCommandOptions();
         this.runPipelinePrepareCommandOptions = new RunPipelinePrepareCommandOptions();
         this.aggregationStatsRgaCommandOptions = new AggregationStatsRgaCommandOptions();
         this.queryRgaGeneCommandOptions = new QueryRgaGeneCommandOptions();
@@ -1248,8 +1248,8 @@ public class AnalysisClinicalCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"pipeline-execute-run"}, commandDescription ="Execute the clinical pipeline that performs QC (e.g.: FastQC), mapping (e.g.: BWA), variant calling (e.g., GATK) and variant indexing in OpenCGA storage.")
-    public class RunPipelineExecuteCommandOptions {
+    @Parameters(commandNames = {"pipeline-genomics-run"}, commandDescription ="Execute the clinical genomics pipeline that performs QC (e.g.: FastQC), mapping (e.g.: BWA), variant calling (e.g., GATK) and variant indexing in OpenCGA storage.")
+    public class RunPipelineGenomicsCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
@@ -1301,7 +1301,7 @@ public class AnalysisClinicalCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"pipeline-prepare-run"}, commandDescription ="Prepare the clinical pipeline that performs QC (e.g.: FastQC), mapping (e.g.: BWA), variant calling (e.g., GATK) and variant indexing in OpenCGA storage.")
+    @Parameters(commandNames = {"pipeline-prepare-run"}, commandDescription ="Prepare the clinical pipeline.")
     public class RunPipelinePrepareCommandOptions {
     
         @ParametersDelegate

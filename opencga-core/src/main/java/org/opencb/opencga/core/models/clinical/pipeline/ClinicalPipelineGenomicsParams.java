@@ -23,7 +23,7 @@ import org.opencb.opencga.core.models.operations.variant.VariantIndexParams;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ClinicalPipelineExecuteParams {
+public class ClinicalPipelineGenomicsParams {
 
     @DataField(id = "samples", description = FieldConstants.CLINICAL_PIPELINE_SAMPLES_DESCRIPTION)
     private List<String> samples;
@@ -43,14 +43,14 @@ public class ClinicalPipelineExecuteParams {
     @DataField(id = "pipeline", description = FieldConstants.CLINICAL_PIPELINE_PIPELINE_DESCRIPTION)
     private PipelineConfig pipeline;
 
-    public ClinicalPipelineExecuteParams() {
+    public ClinicalPipelineGenomicsParams() {
         this.samples = new ArrayList<>();
         this.steps = new ArrayList<>();
         pipeline = new PipelineConfig();
     }
 
-    public ClinicalPipelineExecuteParams(List<String> samples, String indexDir, List<String> steps, VariantIndexParams variantIndexParams,
-                                         String pipelineFile, PipelineConfig pipeline) {
+    public ClinicalPipelineGenomicsParams(List<String> samples, String indexDir, List<String> steps, VariantIndexParams variantIndexParams,
+                                          String pipelineFile, PipelineConfig pipeline) {
         this.samples = samples;
         this.indexDir = indexDir;
         this.steps = steps;
@@ -76,7 +76,7 @@ public class ClinicalPipelineExecuteParams {
         return samples;
     }
 
-    public ClinicalPipelineExecuteParams setSamples(List<String> samples) {
+    public ClinicalPipelineGenomicsParams setSamples(List<String> samples) {
         this.samples = samples;
         return this;
     }
@@ -85,7 +85,7 @@ public class ClinicalPipelineExecuteParams {
         return indexDir;
     }
 
-    public ClinicalPipelineExecuteParams setIndexDir(String indexDir) {
+    public ClinicalPipelineGenomicsParams setIndexDir(String indexDir) {
         this.indexDir = indexDir;
         return this;
     }
@@ -94,7 +94,7 @@ public class ClinicalPipelineExecuteParams {
         return steps;
     }
 
-    public ClinicalPipelineExecuteParams setSteps(List<String> steps) {
+    public ClinicalPipelineGenomicsParams setSteps(List<String> steps) {
         this.steps = steps;
         return this;
     }
@@ -103,7 +103,7 @@ public class ClinicalPipelineExecuteParams {
         return variantIndexParams;
     }
 
-    public ClinicalPipelineExecuteParams setVariantIndexParams(VariantIndexParams variantIndexParams) {
+    public ClinicalPipelineGenomicsParams setVariantIndexParams(VariantIndexParams variantIndexParams) {
         this.variantIndexParams = variantIndexParams;
         return this;
     }
@@ -112,7 +112,7 @@ public class ClinicalPipelineExecuteParams {
         return pipelineFile;
     }
 
-    public ClinicalPipelineExecuteParams setPipelineFile(String pipelineFile) {
+    public ClinicalPipelineGenomicsParams setPipelineFile(String pipelineFile) {
         this.pipelineFile = pipelineFile;
         return this;
     }
@@ -121,7 +121,7 @@ public class ClinicalPipelineExecuteParams {
         return pipeline;
     }
 
-    public ClinicalPipelineExecuteParams setPipeline(PipelineConfig pipeline) {
+    public ClinicalPipelineGenomicsParams setPipeline(PipelineConfig pipeline) {
         this.pipeline = pipeline;
         return this;
     }

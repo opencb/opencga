@@ -19,6 +19,7 @@ package org.opencb.opencga.core.models.clinical.pipeline;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class PipelineConfig {
@@ -47,6 +48,24 @@ public class PipelineConfig {
         this.description = description;
         this.input = input;
         this.steps = steps;
+    }
+
+    public PipelineConfig(PipelineConfig pipeline) {
+        if (pipeline != null) {
+            this.name = pipeline.getName();
+            this.version = pipeline.getVersion();
+            this.description = pipeline.getDescription();
+            // Input
+            if (pipeline.input != null) {
+                this.input = new PipelineInput();
+                this.input.setIndexDir(pipeline.getInput().getIndexDir());
+                this.input.setSamples(new ArrayList<>(pipeline.getInput().getSamples()));
+            }
+            // Steps
+            if (pipeline.steps != null) {
+                this.steps = new ArrayList<>(pipeline.steps);
+            }
+        }
     }
 
     // Getters and setters
