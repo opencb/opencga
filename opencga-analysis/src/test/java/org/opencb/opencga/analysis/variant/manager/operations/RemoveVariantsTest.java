@@ -138,8 +138,8 @@ public class RemoveVariantsTest extends AbstractVariantOperationManagerTest {
     @Test
     public void testLoadAndRemoveDifferentChromosomes() throws Exception {
         List<File> files = new ArrayList<>();
-        files.add(create("1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"));
-        files.add(create("10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"));
+        files.add(create("by_chr/chr20.variant-test-file.vcf.gz"));
+        files.add(create("by_chr/chr21.variant-test-file.vcf.gz"));
         indexFiles(files, new QueryOptions(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.SplitData.CHROMOSOME), outputId);
 
         removeFile(files.get(0), new QueryOptions());

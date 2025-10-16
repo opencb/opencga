@@ -930,8 +930,8 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         }
         sampleMetadata.setAnnotationStatus(TaskMetadata.Status.NONE);
         sampleMetadata.setMendelianErrorStatus(TaskMetadata.Status.NONE);
-        sampleMetadata.setFiles(Collections.emptyList());
-        sampleMetadata.setCohorts(Collections.emptySet());
+        sampleMetadata.setFiles(new ArrayList<>());
+        sampleMetadata.setCohorts(new HashSet<>());
         sampleMetadata.setAttributes(new ObjectMap());
     }
 
