@@ -1,7 +1,8 @@
 import subprocess
 from pathlib import Path
 
-from processing.base_processor import BaseProcessor
+from .base_processor import BaseProcessor
+from .variant_callers import GatkVariantCaller
 
 
 class VariantCalling(BaseProcessor):
@@ -28,20 +29,53 @@ class VariantCalling(BaseProcessor):
     and common error handling.
     """
     # @override
-    def execute(self) -> dict:
+    def execute(self) -> list[str]:
+        ## 1. Check if input samples are provided
+        input_config = self.pipeline.get("input")
+        if len(input_config.get("samples", [])) == 0:
+            self.logger.error("No input samples provided for bwa")
+            raise ValueError("No input files provided for bwa")
+
+        ## 2. Get variant-calling step configuration
         self.logger.info("Starting VariantCalling step: %s", self.__class__.__name__)
         variant_calling_config = next((s for s in self.pipeline.get("steps", []) if s.get("id") == "variant-calling"), {})
+        tool_config = variant_calling_config.get("tools")[0]  # Assume first tool for simplicity
         self.logger.debug("Configuration for QualityControl: %s", variant_calling_config)
 
-        ## Get the tool in the quality-control step of the pipeline dict
-        input = self.pipeline.get("input")
-        gatk_tool_config = variant_calling_config.get("tools")[0] # Assume first tool for simplicity
-        result = None
-        if isinstance(gatk_tool_config, dict):
-            result = self.gatk(input, gatk_tool_config)
-        elif not isinstance(gatk_tool_config, dict):
-            raise ValueError("Invalid tool configuration format in quality-control step")
-        return result
+        ## 3. Select variant caller based on tool ID
+        variant_caller = None
+        match (tool_config.get("id").upper()):
+            case "GATK":
+                self.logger.debug("Using GATK variant caller")
+                variant_caller = GatkVariantCaller(self.output, self.logger)
+            # case "frebayes":
+            #     self.logger.debug("Using FreeBayes variant caller")
+            #     variant_caller = BwaMem2Aligner(self.output, self.logger)
+            # case "mutect2":
+            #     self.logger.debug("Using Mutect2 variant caller")
+            #     variant_caller = Minimap2Aligner(self.output, self.logger)
+            case _:
+                self.logger.error("Unsupported aligner tool: %s", tool_config.get("id"))
+                raise ValueError(f"Unsupported aligner tool: {tool_config.get('id')}")
+
+
+        if variant_caller is not None:
+            ## Perform variant calling
+            vcfs = variant_caller.call(input_config, tool_config)
+
+            ## Options:
+            ## 1. Clean up intermediate files if specified in config
+            if variant_calling_config.get("options", {}).get("clean", True):
+                variant_caller.clean()
+
+            ## 2. Check is 'qc' options is set to True in config
+            if variant_calling_config.get("options", {}).get("qc", True):
+                variant_caller.qc(vcfs)
+        else:
+            self.logger.error("VariantCaller instance could not be created.")
+            raise ValueError("VariantCaller instance could not be created.")
+
+        return vcfs
 
 
     def _get_reference_index_dir(self, tool_config: dict, input_config: dict) -> Path:

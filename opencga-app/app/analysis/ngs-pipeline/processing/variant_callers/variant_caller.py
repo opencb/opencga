@@ -6,7 +6,7 @@ from pathlib import Path
 from processing.base_processor import BaseProcessor
 
 
-class Aligner(BaseProcessor):
+class VariantCaller(BaseProcessor):
 
     def __init__(self, output: Path, logger=None):
         """
@@ -22,7 +22,7 @@ class Aligner(BaseProcessor):
 
 
     @abstractmethod
-    def align(self, input_config: dict, tool_config: dict) -> list[str]:
+    def call(self, input_config: dict, tool_config: dict) -> list[str]:
         pass
 
 
@@ -39,8 +39,24 @@ class Aligner(BaseProcessor):
 
         return Path(index_dir)
 
+    def _get_reference_index_dir(self, tool_config: dict, input_config: dict) -> Path:
+        reference_index_dir = tool_config.get("reference") or str(
+            input_config.get("indexDir") + "/" + "reference-genome-index")
+
+        ## If reference index is not provided, raise error
+        if not reference_index_dir:
+            raise ValueError("Reference index not provided in tool or input configuration")
+
+        ## Get the fasta file
+        fasta_list = list(Path(reference_index_dir).glob("*.fasta")) + list(
+            Path(reference_index_dir).glob("*.fa")) + list(Path(reference_index_dir).glob("*.fna"))
+        reference_path = list(fasta_list)[0] if fasta_list else None
+        if not reference_path:
+            raise ValueError("No FASTA file found in the reference index directory")
+        return reference_path
+
     """ Build SAM file name based on input FASTQ files """
-    def _build_sam_file_name(self, files) -> str:
+    def _build_vcf_file_name(self, files) -> str:
         # Normalize filenames by removing all common FASTQ extensions
         def _base(name: str) -> str:
             lower = name.lower()
@@ -61,22 +77,18 @@ class Aligner(BaseProcessor):
         return sam_file
 
     """ Post-process SAM file to sorted BAM and index using samtools """
-    def _samtools_post_processing(self, sam_file: str) -> str:
-        sorted_bam_file = None
-        if sam_file.endswith("sam"):
-            bam_file = Path(sam_file).stem + ".bam"
-            cmd = ["samtools"] + ["view", "-bS"] + ["-o", str(self.output) + "/" + bam_file] + [str(self.output) + "/" + sam_file]
+    def _vcf_post_processing(self, vcf_file: str) -> str:
+        if vcf_file.endswith("vcf"):
+            ## 1. Convert VCF to bgzip compressed VCF
+            bgzip_vcf = vcf_file + ".gz"
+            cmd = ["bgzip"] + ["--force"] + ["-o", str(self.output) + "/" + bgzip_vcf] + [str(self.output) + "/" + vcf_file]
             self.run_command(cmd)
 
-            sorted_bam_file = Path(bam_file).stem + ".sorted.bam"
-            cmd = ["samtools"] + ["sort"] + ["--threads", "1"] + ["-o", str(self.output) + "/" + sorted_bam_file] + [str(self.output) + "/" + bam_file]
+            ## Index bgzip compressed VCF using bcftools
+            cmd = ["bcftools"] + ["index", "--tbi"] + ["--threads", "2"] + ["-o", str(self.output) + "/" + bgzip_vcf + ".tbi"] + [str(self.output) + "/" + bgzip_vcf]
             self.run_command(cmd)
 
-            bai_file = Path(bam_file).stem + ".sorted.bam.bai"
-            cmd = ["samtools"] + ["index", "-b"] + ["--threads", "2"] + ["-o", str(self.output) + "/" + bai_file] + [str(self.output) + "/" + sorted_bam_file]
-            self.run_command(cmd)
-
-        return sorted_bam_file
+        return vcf_file
 
 
     """ Clean up intermediate files such as SAM and unsorted BAM files """
@@ -101,44 +113,6 @@ class Aligner(BaseProcessor):
                     self.logger.error("Error removing SAM file %s: %s", sam_file, str(e))
         else:
             self.logger.warning("Output directory %s does not exist or is not a directory", self.output)
-
-
-    def create_cram(self, sorted_bams: list[str], index_dir: str) -> list[str]:
-        cram_files = []
-
-        ## Find fasta file in the reference genome directory
-        reference_path = None
-        index_dir_path = Path(index_dir + "/" + "reference-genome-index")
-        if index_dir_path.exists() and index_dir_path.is_dir():
-            fasta_files = list(index_dir_path.glob("*.fa")) + list(index_dir_path.glob("*.fasta"))
-            if fasta_files:
-                reference_path = Path(str(fasta_files[0]))
-            else:
-                self.logger.error("No FASTA file found in reference directory %s", index_dir)
-
-        ## Convert each sorted BAM to CRAM
-        if sorted_bams and reference_path:
-            for sorted_bam in sorted_bams:
-                sorted_bam_path = Path(sorted_bam)
-
-                ## Check if sorted BAM file exists
-                if not sorted_bam_path.is_file():
-                    self.logger.error("Sorted BAM file %s does not exist for CRAM conversion", sorted_bam)
-                    continue
-
-                ## Convert sorted BAM to CRAM
-                cram_file = sorted_bam_path.stem + ".cram"
-                cmd = ["samtools", "view", "-C", "-T", str(reference_path), "-o", str(self.output / cram_file), str(self.output / sorted_bam)]
-                self.run_command(cmd)
-
-                ## Index the CRAM file
-                cmd = ["samtools", "index", str(self.output / cram_file)]
-                self.run_command(cmd)
-
-                ## Add to list of created CRAM files
-                cram_files.append(str(self.output / cram_file))
-
-        return cram_files
 
 
     """ Run samtools stats on sorted BAM files """

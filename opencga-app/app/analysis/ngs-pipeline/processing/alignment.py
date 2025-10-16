@@ -87,18 +87,3 @@ class Alignment(BaseProcessor):
             raise ValueError("Aligner instance could not be created.")
  
         return sorted_bams
-
-
-    # """ Run minimap2 alignment """
-    # def minimap2(self, input: dict, minimap2_tool_config: dict) -> dict[str, str] | int:
-    #     if len(input.get("files", [])) == 0:
-    #         self.logger.error("No input files provided for minimap2")
-    #         return {"error": "No input files provided for minimap2"}
-    #
-    #     if input.get("type") == "fastq" or input.get("type") == "bam":
-    #         files = input.get("files", [])
-    #         output_prefix = Path(files[0]).stem
-    #         cmd = ["minimap2"] + ["-a"] + [minimap2_tool_config.get("index", [])] + files + [">", str(self.output) + "/" + output_prefix + ".sam"]
-    #         self.run_command(cmd)
-    #
-    #     return 0
