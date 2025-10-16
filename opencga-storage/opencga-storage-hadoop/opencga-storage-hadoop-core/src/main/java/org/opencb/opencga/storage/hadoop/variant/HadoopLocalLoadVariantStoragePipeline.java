@@ -454,7 +454,12 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         for (Integer sampleId : metadataManager.getSampleIdsFromFileId(getStudyId(), getFileId())) {
             // Worth to check first to avoid too many updates in scenarios like 1000G
             SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(getStudyId(), sampleId);
-            boolean updateSampleIndexStatus = loadSampleIndex && sampleMetadata.getSampleIndexStatus(sampleIndexVersion) != Status.READY;
+            boolean updateSampleIndexStatus;
+            if (loadSampleIndex) {
+                updateSampleIndexStatus = sampleMetadata.getSampleIndexStatus(sampleIndexVersion) != Status.READY;
+            } else {
+                updateSampleIndexStatus = sampleMetadata.getSampleIndexStatus(sampleIndexVersion) != Status.NONE;
+            }
             int actualLargestVariantLength = sampleMetadata.getAttributes().getInt(SampleIndexSchema.LARGEST_VARIANT_LENGTH);
             boolean isLargestVariantLengthDefined = sampleMetadata.getAttributes()
                     .containsKey(SampleIndexSchema.LARGEST_VARIANT_LENGTH);
@@ -477,7 +482,11 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                 updatedSamples++;
                 metadataManager.updateSampleMetadata(getStudyId(), sampleId, s -> {
                     if (updateSampleIndexStatus) {
-                        s.setSampleIndexStatus(Status.READY, sampleIndexVersion);
+                        if (loadSampleIndex) {
+                            s.setSampleIndexStatus(Status.READY, sampleIndexVersion);
+                        } else {
+                            s.setSampleIndexStatus(Status.NONE, sampleIndexVersion);
+                        }
                     }
                     if (updateLargestVariantLength) {
                         int current = s.getAttributes().getInt(SampleIndexSchema.LARGEST_VARIANT_LENGTH, largestVariantLength);

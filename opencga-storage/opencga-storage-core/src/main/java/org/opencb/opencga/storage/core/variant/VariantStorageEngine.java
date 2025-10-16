@@ -1115,30 +1115,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 metadataManager.setStatus(studyMetadata.getId(), taskId, TaskMetadata.Status.READY);
                 metadataManager.removeIndexedFiles(studyMetadata.getId(), fileIds);
 
-                for (Integer fileId : metadataManager.getFileIdsFromSampleIds(studyMetadata.getId(), sampleIds)) {
-                    metadataManager.updateFileMetadata(studyMetadata.getId(), fileId, f -> {
-                        f.getSamples().removeAll(sampleIds);
-                    });
+                for (Integer fileId : fileIds) {
+                    metadataManager.removeVariantFileMetadata(studyMetadata.getId(), fileId);
                 }
-                for (Integer sampleId : sampleIds) {
-                    metadataManager.updateSampleMetadata(studyMetadata.getId(), sampleId, s -> {
-                        s.setIndexStatus(TaskMetadata.Status.NONE);
-                        for (Integer v : s.getSampleIndexVersions()) {
-                            s.setSampleIndexStatus(TaskMetadata.Status.NONE, v);
-                        }
-                        for (Integer v : s.getSampleIndexAnnotationVersions()) {
-                            s.setSampleIndexAnnotationStatus(TaskMetadata.Status.NONE, v);
-                        }
-                        for (Integer v : s.getFamilyIndexVersions()) {
-                            s.setFamilyIndexStatus(TaskMetadata.Status.NONE, v);
-                        }
-                        s.setAnnotationStatus(TaskMetadata.Status.NONE);
-                        s.setMendelianErrorStatus(TaskMetadata.Status.NONE);
-                        s.setFiles(Collections.emptyList());
-                        s.setCohorts(Collections.emptySet());
-                        s.setAttributes(new ObjectMap());
-                    });
-                }
+
+                metadataManager.removeIndexedSamples(studyMetadata.getId(), sampleIds);
 
                 Set<Integer> removedSamples = new HashSet<>(sampleIds);
                 Set<Integer> removedSamplesFromFiles = new HashSet<>();
@@ -1172,9 +1153,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                         metadataManager.getIndexedSamples(studyMetadata.getId()));
 
 
-                for (Integer fileId : fileIds) {
-                    metadataManager.removeVariantFileMetadata(studyMetadata.getId(), fileId);
-                }
             }
             return studyMetadata;
         });

@@ -806,11 +806,11 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             FileMetadata fileMetadata = getFileMetadata(studyId, fileId);
             samples.addAll(fileMetadata.getSamples());
         }
+        int updatedSamples = 0;
         for (Integer sample : samples) {
-            if (!isSampleIndexed(studyId, sample)) {
-                updateSampleMetadata(studyId, sample, sampleMetadata -> {
-                    sampleMetadata.setIndexStatus(TaskMetadata.Status.READY);
-                });
+            if (setNewIndexedSample(getSampleMetadata(studyId, sample))) {
+                updateSampleMetadata(studyId, sample, VariantStorageMetadataManager::setNewIndexedSample);
+                updatedSamples++;
             }
         }
 
@@ -822,6 +822,44 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         }
         fileIdsFromSampleIdCache.clear();
         fileIdIndexedCache.clear();
+    }
+
+    public static boolean setNewIndexedSample(SampleMetadata sampleMetadata) {
+        boolean updated = false;
+        if (sampleMetadata.getIndexStatus() != TaskMetadata.Status.READY) {
+            sampleMetadata.setIndexStatus(TaskMetadata.Status.READY);
+            updated = true;
+        }
+        if (sampleMetadata.getAnnotationStatus() != TaskMetadata.Status.NONE) {
+            sampleMetadata.setAnnotationStatus(TaskMetadata.Status.NONE);
+            updated = true;
+        }
+        if (sampleMetadata.getSecondaryAnnotationIndexStatus() != TaskMetadata.Status.NONE) {
+            sampleMetadata.setSecondaryAnnotationIndexStatus(TaskMetadata.Status.NONE);
+            updated = true;
+        }
+        if (sampleMetadata.getMendelianErrorStatus() != TaskMetadata.Status.NONE) {
+            sampleMetadata.setMendelianErrorStatus(TaskMetadata.Status.NONE);
+            updated = true;
+        }
+        if (sampleMetadata.getSampleIndexVersion() != null) {
+            for (Integer v : sampleMetadata.getSampleIndexVersions()) {
+                // Do not reset sampleIndexStatus. It's handled independently
+//                if (sampleMetadata.getSampleIndexStatus(v) != TaskMetadata.Status.NONE) {
+//                    sampleMetadata.setSampleIndexStatus(TaskMetadata.Status.NONE, v);
+//                    updated = true;
+//                }
+                if (sampleMetadata.getSampleIndexAnnotationStatus(v) != TaskMetadata.Status.NONE) {
+                    sampleMetadata.setSampleIndexAnnotationStatus(TaskMetadata.Status.NONE, v);
+                    updated = true;
+                }
+                if (sampleMetadata.getFamilyIndexStatus(v) != TaskMetadata.Status.NONE) {
+                    sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.NONE, v);
+                    updated = true;
+                }
+            }
+        }
+        return updated;
     }
 
     public void removeIndexedFiles(int studyId, Collection<Integer> fileIds) throws StorageEngineException {
@@ -861,10 +899,40 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                     }
                 }
                 if (!indexed) {
-                    sampleMetadata.setIndexStatus(TaskMetadata.Status.NONE);
+                    setRemovedSample(sampleMetadata);
                 }
             });
         }
+    }
+
+    public void removeIndexedSamples(int studyId, Collection<Integer> sampleIds) throws StorageEngineException {
+        for (Integer fileId : getFileIdsFromSampleIds(studyId, sampleIds)) {
+            updateFileMetadata(studyId, fileId, f -> {
+                f.getSamples().removeAll(sampleIds);
+            });
+        }
+
+        for (Integer sampleId : sampleIds) {
+            updateSampleMetadata(studyId, sampleId, VariantStorageMetadataManager::setRemovedSample);
+        }
+    }
+
+    private static void setRemovedSample(SampleMetadata sampleMetadata) {
+        sampleMetadata.setIndexStatus(TaskMetadata.Status.NONE);
+        for (Integer v : sampleMetadata.getSampleIndexVersions()) {
+            sampleMetadata.setSampleIndexStatus(TaskMetadata.Status.NONE, v);
+        }
+        for (Integer v : sampleMetadata.getSampleIndexAnnotationVersions()) {
+            sampleMetadata.setSampleIndexAnnotationStatus(TaskMetadata.Status.NONE, v);
+        }
+        for (Integer v : sampleMetadata.getFamilyIndexVersions()) {
+            sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.NONE, v);
+        }
+        sampleMetadata.setAnnotationStatus(TaskMetadata.Status.NONE);
+        sampleMetadata.setMendelianErrorStatus(TaskMetadata.Status.NONE);
+        sampleMetadata.setFiles(Collections.emptyList());
+        sampleMetadata.setCohorts(Collections.emptySet());
+        sampleMetadata.setAttributes(new ObjectMap());
     }
 
     public Iterable<FileMetadata> fileMetadataIterable(int studyId) {
