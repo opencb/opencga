@@ -20,32 +20,40 @@ import org.opencb.commons.annotations.DataField;
 
 import java.util.Map;
 
-public class PipelineStep {
+public class PipelineAlignmentTool extends PipelineTool {
 
-    @DataField(id = "options", description = "Step-specific options")
-    protected Map<String, Object> options;
+    @DataField(id = "index", description = "Tool index path")
+    private String index;
 
-    public PipelineStep() {
+    public PipelineAlignmentTool() {
     }
 
-    public PipelineStep(Map<String, Object> options) {
-        this.options = options;
+    public PipelineAlignmentTool(String index) {
+        this.index = index;
+    }
+
+    public PipelineAlignmentTool(String id, Map<String, Object> parameters, Map<String, Object> options, String index) {
+        super(id, parameters, options);
+        this.index = index;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("PipelineStep{");
+        final StringBuilder sb = new StringBuilder("PipelineAlignmentTool{");
+        sb.append("index='").append(index).append('\'');
+        sb.append(", id='").append(id).append('\'');
+        sb.append(", parameters=").append(parameters);
         sb.append(", options=").append(options);
         sb.append('}');
         return sb.toString();
     }
 
-    public Map<String, Object> getOptions() {
-        return options;
+    public String getIndex() {
+        return index;
     }
 
-    public PipelineStep setOptions(Map<String, Object> options) {
-        this.options = options;
+    public PipelineAlignmentTool setIndex(String index) {
+        this.index = index;
         return this;
     }
 }

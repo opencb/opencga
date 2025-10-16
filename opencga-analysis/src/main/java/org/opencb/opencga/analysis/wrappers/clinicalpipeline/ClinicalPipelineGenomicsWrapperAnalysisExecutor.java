@@ -17,15 +17,25 @@
 package org.opencb.opencga.analysis.wrappers.clinicalpipeline;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.Event;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
-import org.opencb.opencga.core.models.clinical.pipeline.PipelineConfig;
+import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.exceptions.ToolExecutorException;
+import org.opencb.opencga.core.models.clinical.pipeline.*;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.nio.file.Paths;
+import java.util.*;
+
+import static org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelineUtils.*;
 
 @ToolExecutor(id = ClinicalPipelineGenomicsWrapperAnalysisExecutor.ID,
         tool = ClinicalPipelineGenomicsWrapperAnalysis.ID,
@@ -34,12 +44,6 @@ import java.util.Set;
 public class ClinicalPipelineGenomicsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor {
 
     public static final String ID = ClinicalPipelineGenomicsWrapperAnalysis.ID + "-local";
-
-    public static final String QUALITY_CONTROL_STEP = "quality-control";
-    public static final String ALIGNMENT_STEP = "alignment";
-    public static final String VARIANT_CALLING_STEP = "variant-calling";
-    public static final Set<String> VALID_PIPELINE_STEPS = new HashSet<>(
-            Arrays.asList(QUALITY_CONTROL_STEP, ALIGNMENT_STEP, VARIANT_CALLING_STEP));
 
     private String study;
 
@@ -50,355 +54,230 @@ public class ClinicalPipelineGenomicsWrapperAnalysisExecutor extends DockerWrapp
     @Override
     protected void run() throws Exception {
         // First, run QC (e.g. FastQC) and alignment (e.g. BWA)
-        List<String> variantCallingSamples = null;
-        if (pipelineSteps.contains(QUALITY_CONTROL_STEP) || pipelineSteps.contains(ALIGNMENT_STEP)) {
-            variantCallingSamples = runQcAndAlignment();
+        if (pipelineSteps.contains(QUALITY_CONTROL_PIPELINE_STEP) || pipelineSteps.contains(ALIGNMENT_PIPELINE_STEP)) {
+            runQcAndAlignment();
         }
 
         // Then, run the variant calling (e.g. GATK HaplotypeCaller)
-        if (pipelineSteps.contains(VARIANT_CALLING_STEP)) {
-            runVariantCalling(variantCallingSamples);
+        if (pipelineSteps.contains(VARIANT_CALLING_PIPELINE_STEP)) {
+            runVariantCalling();
         }
     }
 
-    private List<String> runQcAndAlignment() {
-        return null;
-//        try {
-//            ClinicalPipelineExecuteParams executeParams = pipelineParams.getExecuteParams();
-//
-//            // Input bindings
-//            List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
-//
-//            // Read only input bindings
-//            Set<String> readOnlyInputBindings = new HashSet<>();
-//
-//            // Script binding
-//            Path virtualScriptPath = Paths.get(SCRIPT_VIRTUAL_PATH);
-//            inputBindings.add(new AbstractMap.SimpleEntry<>(scriptPath.toAbsolutePath().toString(), virtualScriptPath.toString()));
-//            readOnlyInputBindings.add(virtualScriptPath.toString());
-//
-//            // Index binding
-//            Path virtualIndexPath = null;
-//            if (!StringUtils.isEmpty(executeParams.getIndexDir())) {
-//                virtualIndexPath = Paths.get(INDEX_VIRTUAL_PATH);
-//                inputBindings.add(new AbstractMap.SimpleEntry<>(executeParams.getIndexDir(), virtualIndexPath.toString()));
-//                readOnlyInputBindings.add(virtualIndexPath.toString());
-//            }
-//
-//            // Input binding, and update samples with virtual paths
-//            List<String> updatedSamples = new ArrayList<>(executeParams.getSamples().size());
-//            int inputCounter = 0;
-//            for (String sample : executeParams.getSamples()) {
-//                String[] fields = sample.split(SAMPLE_FIELD_SEP);
-//                String[] files = fields[1].split(SAMPLE_FILE_SEP);
-//                String updatedSample = fields[0];
-//                List<String> updatedFiles = new ArrayList<>(files.length);
-//                for (String file : files) {
-//                    Path virtualInputPath = Paths.get(INPUT_VIRTUAL_PATH + "_" + inputCounter).resolve(Paths.get(file).getFileName());
-//                    inputBindings.add(new AbstractMap.SimpleEntry<>(Paths.get(file).toAbsolutePath().toString(),
-//                            virtualInputPath.toString()));
-//                    readOnlyInputBindings.add(virtualInputPath.toString());
-//                    inputCounter++;
-//
-//                    // Updated files
-//                    updatedFiles.add(virtualInputPath.toString());
-//                }
-//                // Add updated files
-//                updatedSample += SAMPLE_FIELD_SEP + StringUtils.join(updatedFiles, SAMPLE_FILE_SEP);
-//
-//                // Add the remain fields
-//                for (int i = 2; i < fields.length; i++) {
-//                    updatedSample += SAMPLE_FIELD_SEP + fields[i];
-//                }
-//
-//                updatedSamples.add(updatedSample);
-//            }
-//
-//            // Pipeline params binding
-//            Path pipelineParamsPath = getOutDir().resolve(PIPELINE_PARAMS_FILENAME);
-//            Path virtualPipelineParamsPath = Paths.get(INPUT_VIRTUAL_PATH).resolve(pipelineParamsPath.getFileName());
-//
-//            // Modify BWA index according to the indexPath
-//            updateAlignmentIndex(inputBindings, readOnlyInputBindings);
-//
-//            // Write the JSON file containing the pipeline parameters
-//            JacksonUtils.getDefaultObjectMapper().writerFor(PipelineConfig.class).writeValue(pipelineParamsPath.toFile(),
-//                    executeParams.getPipeline());
-//            inputBindings.add(new AbstractMap.SimpleEntry<>(pipelineParamsPath.toAbsolutePath().toString(),
-//                    virtualPipelineParamsPath.toString()));
-//
-//            // Output binding
-//            AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir().toAbsolutePath().toString(),
-//                    OUTPUT_VIRTUAL_PATH);
-//
-//            // Main command line and params, e.g.:
-//            // ./analysis/variant-caller-pipeline/main.py run
-//            // -o /tmp/ngs/
-//            // -p pipeline.json
-//            // -i /data/HI.4019.002.index_7.ANN0831_R1.fastq.gz,/data/HI.4019.002.index_7.ANN0831_R2.fastq.gz
-//
-//            String pipelineSteps = "";
-//            if (executeParams.getSteps().contains(QUALITY_CONTROL_STEP)) {
-//                pipelineSteps += QUALITY_CONTROL_STEP;
-//            }
-//            if (executeParams.getSteps().contains(ALIGNMENT_STEP)) {
-//                if (!pipelineSteps.isEmpty()) {
-//                    pipelineSteps += ",";
-//                }
-//                pipelineSteps += ALIGNMENT_STEP;
-//            }
-//
-//            String params = "python3 " + virtualScriptPath + "/" + NGS_PIPELINE_SCRIPT + " " + GENOMICS_CMD
-//                    + " -o " + OUTPUT_VIRTUAL_PATH
-//                    + " -p " + virtualPipelineParamsPath
-//                    + " -s " + StringUtils.join(updatedSamples, ClinicalPipelineWrapperAnalysis.SAMPLE_SEP)
-//                    + " --steps " + pipelineSteps;
-//            if (virtualIndexPath != null) {
-//                params += (" --index-dir " + virtualIndexPath);
-//            }
-//
-//            // Execute Python script in docker
-//            String dockerImage = getDockerImageName() + ":" + getDockerImageVersion();
-//
-//            String dockerCli = buildCommandLine(dockerImage, inputBindings, readOnlyInputBindings, outputBinding, params, null);
-//            addEvent(Event.Type.INFO, "Docker command line: " + dockerCli);
-//            logger.info("Docker command line: {}", dockerCli);
-//
-//            // Execute docker command line
-//            runCommandLine(dockerCli);
-//
-//            // Check output files from the alignment step from the output directory (alignment directory) and create the sample list
-//            // for the variant-calling step
-//            List<String> variantCallingSamples = new ArrayList<>(updatedSamples.size());
-//            Path alignmentPath = getOutDir().resolve(ALIGNMENT_STEP);
-//            if (Files.exists(alignmentPath) && Files.exists(alignmentPath.resolve("DONE"))) {
-//                for (String sample : updatedSamples) {
-//                    String[] fields = sample.split(SAMPLE_FIELD_SEP);
-//                    String sampleId = fields[0];
-//                    Path bamFile = alignmentPath.resolve(sampleId + ".sorted.bam");
-//                    if (!Files.exists(bamFile) || !Files.isRegularFile(bamFile) || Files.size(bamFile) == 0) {
-//                        throw new ToolExecutorException("Missing or empty BAM file for sample " + sampleId + ": " + bamFile);
-//                    }
-//                    Path baiFile = alignmentPath.resolve(sampleId + ".sorted.bam.bai");
-//                    if (!Files.exists(baiFile) || !Files.isRegularFile(baiFile) || Files.size(baiFile) == 0) {
-//                        throw new ToolExecutorException("Missing or empty BAI file for sample " + sampleId + ": " + baiFile);
-//                    }
-//
-//                    // Create the variant calling sample
-//                    StringBuilder variantCallingSample = new StringBuilder();
-//                    // Add sample ID and the BAM file
-//                    variantCallingSample.append(sampleId).append(SAMPLE_FIELD_SEP).append(bamFile.toAbsolutePath());
-//                    // Add somatic and role fields if provided
-//                    for (int i = 2; i < fields.length; i++) {
-//                        variantCallingSample.append(SAMPLE_FIELD_SEP).append(fields[i]);
-//                    }
-//
-//                    // Add to the list
-//                    variantCallingSamples.add(variantCallingSample.toString());
-//                }
-//                return variantCallingSamples;
-//            } else {
-//                throw new ToolExecutorException("Missing DONE file from alignment step: " + alignmentPath.resolve("DONE"));
-//            }
-//        } catch (IOException | ToolException e) {
-//            throw new ToolExecutorException(e);
-//        }
+    private void runQcAndAlignment() throws ToolExecutorException {
+        try {
+            // Input bindings (and read only input bindings)
+            List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
+            Set<String> readOnlyInputBindings = new HashSet<>();
+            List<AbstractMap.SimpleEntry<String, String>> outputBindings = new ArrayList<>();
+
+            // Get pipeline filename
+            StringBuilder pipelineFilename = new StringBuilder(PIPELINE_PARAMS_FILENAME_PREFIX);
+            if (pipelineSteps.contains(QUALITY_CONTROL_PIPELINE_STEP)) {
+                pipelineFilename.append("_").append(QUALITY_CONTROL_PIPELINE_STEP.replace("-", "_"));
+            }
+            if (pipelineSteps.contains(ALIGNMENT_PIPELINE_STEP)) {
+                pipelineFilename.append("_").append(ALIGNMENT_PIPELINE_STEP);
+            }
+            pipelineFilename.append(".json");
+
+            // Steps parameter
+            StringBuilder steps = new StringBuilder();
+            if (pipelineSteps.contains(QUALITY_CONTROL_PIPELINE_STEP)) {
+                steps.append(QUALITY_CONTROL_PIPELINE_STEP);
+            }
+            if (pipelineSteps.contains(ALIGNMENT_PIPELINE_STEP)) {
+                if (steps.length() > 0) {
+                    steps.append(",");
+                }
+                steps.append(ALIGNMENT_PIPELINE_STEP);
+
+                // Update alignment index if necessary
+                if (pipelineConfig.getAlignmentStep() != null && pipelineConfig.getAlignmentStep().getTool() != null
+                        && StringUtils.isNotEmpty(pipelineConfig.getAlignmentStep().getTool().getIndex())) {
+                    PipelineAlignmentTool tool = pipelineConfig.getAlignmentStep().getTool();
+                    Path virtualPath = Paths.get(INDEX_VIRTUAL_PATH + "_" + tool.getId().replace("-", "_"));
+                    inputBindings.add(new AbstractMap.SimpleEntry<>(Paths.get(tool.getIndex()).toAbsolutePath().toString(),
+                            virtualPath.toString()));
+                    readOnlyInputBindings.add(virtualPath.toString());
+
+                    // Update the tool index
+                    tool.setIndex(virtualPath.toString());
+                }
+            }
+
+            // Build the script CLI to be executed in docker, but before that save the index dir to restore it later
+            String savedIndexDir = pipelineConfig.getInput().getIndexDir();
+            String scriptCli = buildScriptCli(pipelineFilename.toString(), steps.toString(), inputBindings, readOnlyInputBindings,
+                    outputBindings);
+
+            // Execute Python script in docker
+            String dockerImage = getDockerImageName() + ":" + getDockerImageVersion();
+
+            String dockerCli = buildCommandLine(dockerImage, inputBindings, readOnlyInputBindings, outputBindings.get(0), scriptCli, null);
+            addEvent(Event.Type.INFO, "Docker command line: " + dockerCli);
+            logger.info("Docker command line: {}", dockerCli);
+
+            // Execute docker command line
+            runCommandLine(dockerCli);
+
+            if (pipelineSteps.contains(ALIGNMENT_PIPELINE_STEP) && pipelineSteps.contains(VARIANT_CALLING_PIPELINE_STEP)) {
+                // Restore the original index dir, before preparing the input for the variant-calling step
+                pipelineConfig.getInput().setIndexDir(savedIndexDir);
+                prepareCallerInputFromAlignmentOutput();
+            }
+        } catch (IOException | ToolException e) {
+            throw new ToolExecutorException(e);
+        }
     }
 
-//    private void updateAlignmentIndex(List<AbstractMap.SimpleEntry<String, String>> inputBindings,
-//                                      Set<String> readOnlyInputBindings) throws ToolExecutorException {
-//        Path virtualAlignmentIndexPath;
-//        String indexDir = pipelineParams.getExecuteParams().getIndexDir();
-//        for (PipelineStep step : pipelineParams.getExecuteParams().getPipeline().getSteps()) {
-//            if ("alignment".equalsIgnoreCase(step.getId())) {
-//                if (StringUtils.isEmpty(step.getTool().getIndex())) {
-//                    // Use the index directory for the alignment step
-//                    if (StringUtils.isEmpty(indexDir)) {
-//                        throw new ToolExecutorException("Missing index directory for step alignment");
-//                    }
-//                    String subfolder = step.getTool().getId() + "-index";
-//                    Path alignmentIndexPath = Paths.get(indexDir).resolve(subfolder);
-//                    if (Files.exists(alignmentIndexPath)) {
-//                        virtualAlignmentIndexPath = Paths.get(INDEX_VIRTUAL_PATH).resolve(subfolder);
-//                        step.getTool().setIndex(virtualAlignmentIndexPath.toAbsolutePath().toString());
-//                        logger.info("Using index {} for step alignment", step.getTool().getIndex());
-//                        return;
-//                    } else {
-//                        throw new ToolExecutorException("Index directory for step alignment not found: " + alignmentIndexPath);
-//                    }
-//                } else {
-//                    // Use the index defined in the tool
-//                    Path parent;
-//                    Path alignmentIndexPath = Paths.get(step.getTool().getIndex());
-//                    if (Files.exists(alignmentIndexPath)) {
-//                        if (Files.isRegularFile(alignmentIndexPath)) {
-//                            parent = alignmentIndexPath.getParent();
-//                        } else if (Files.isDirectory(alignmentIndexPath)) {
-//                            parent = alignmentIndexPath;
-//                        } else {
-//                            throw new ToolExecutorException("Index path for step alignment is neither a file nor a directory: "
-//                                    + alignmentIndexPath);
-//                        }
-//                        virtualAlignmentIndexPath = Paths.get(INDEX_VIRTUAL_PATH + "_alignment");
-//                        inputBindings.add(new AbstractMap.SimpleEntry<>(parent.toAbsolutePath().toString(),
-//                                virtualAlignmentIndexPath.toAbsolutePath().toString()));
-//                        readOnlyInputBindings.add(virtualAlignmentIndexPath.toAbsolutePath().toString());
-//                        step.getTool().setIndex(virtualAlignmentIndexPath.toAbsolutePath().toString());
-//                        logger.info("Using index {} for step alignment", step.getTool().getIndex());
-//                        return;
-//                    } else {
-//                        throw new ToolExecutorException("Index directory for step alignment not found: " + alignmentIndexPath);
-//                    }
-//                }
-//            }
-//        }
-//        throw new ToolExecutorException("Could not set index directory for step alignment");
-//    }
-//
-//    private void updateVariantCallingIndex(List<AbstractMap.SimpleEntry<String, String>> inputBindings,
-//                                           Set<String> readOnlyInputBindings) throws ToolExecutorException {
-//        Path virtualRefGenomeIndexPath;
-//        String indexDir = pipelineParams.getExecuteParams().getIndexDir();
-//        for (PipelineStep step : pipelineParams.getExecuteParams().getPipeline().getSteps()) {
-//            if ("variant-calling".equalsIgnoreCase(step.getId())) {
-//                // Variant calling may have a different tools to run
-//                if (CollectionUtils.isEmpty(step.getTools())) {
-//                    throw new ToolExecutorException("Missing tools for step variant-calling");
-//                }
-//
-//                // Update all the tools in the step variant-calling
-//                for (PipelineTool tool : step.getTools()) {
-//                    if (StringUtils.isEmpty(tool.getReference())) {
-//                        // Use the index directory for the step variant-calling
-//                        // Sanity check
-//                        if (StringUtils.isEmpty(indexDir)) {
-//                            throw new ToolExecutorException("Missing index directory for step variant-calling");
-//                        }
-//                        String subfolder = "reference-genome-index";
-//                        Path refGenomeIndexPath = Paths.get(indexDir).resolve(subfolder);
-//                        if (!Files.exists(refGenomeIndexPath)) {
-//                            throw new ToolExecutorException("Reference genome index directory for step variant-calling not found: "
-//                                    + refGenomeIndexPath);
-//                        }
-//                        virtualRefGenomeIndexPath = Paths.get(INDEX_VIRTUAL_PATH).resolve(subfolder);
-//                        tool.setReference(virtualRefGenomeIndexPath.toAbsolutePath().toString());
-//                        logger.info("Using reference genome index {} for step variant-calling with {}", tool.getIndex(), tool.getId());
-//                    } else {
-//                        // Use the reference dir defined in the tool
-//                        Path refGenomeIndexPath = Paths.get(tool.getReference());
-//                        // Sanity check
-//                        if (!Files.exists(refGenomeIndexPath)) {
-//                            throw new ToolExecutorException("Reference genome index directory for step variant-calling with "
-//                                    + tool.getId() + ": " + refGenomeIndexPath);
-//                        }
-//                        if (!Files.isDirectory(refGenomeIndexPath)) {
-//                            throw new ToolExecutorException("Reference genome index path for step variant-calling with "
-//                                    + tool.getId() + " is not a directory: " + refGenomeIndexPath);
-//                        }
-//                        virtualRefGenomeIndexPath = Paths.get(INDEX_VIRTUAL_PATH + "_ref_genome_index_" + tool.getId());
-//                        inputBindings.add(new AbstractMap.SimpleEntry<>(refGenomeIndexPath.toAbsolutePath().toString(),
-//                                virtualRefGenomeIndexPath.toAbsolutePath().toString()));
-//                        readOnlyInputBindings.add(virtualRefGenomeIndexPath.toAbsolutePath().toString());
-//                        tool.setReference(virtualRefGenomeIndexPath.toAbsolutePath().toString());
-//                        logger.info("Using reference genome index {} for step variant-calling with {}", tool.getReference(), tool.getId());
-//                    }
-//                }
-//            }
-//        }
-//    }
-//
-    private void runVariantCalling(List<String> samples) {
-//        try {
-//            ClinicalPipelineExecuteParams executeParams = pipelineParams.getExecuteParams();
-//
-//            // Input bindings
-//            List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
-//
-//            // Read only input bindings
-//            Set<String> readOnlyInputBindings = new HashSet<>();
-//
-//            // Script binding
-//            Path virtualScriptPath = Paths.get(SCRIPT_VIRTUAL_PATH);
-//            inputBindings.add(new AbstractMap.SimpleEntry<>(scriptPath.toAbsolutePath().toString(), virtualScriptPath.toString()));
-//            readOnlyInputBindings.add(virtualScriptPath.toString());
-//
-//            // Index binding
-//            Path virtualIndexPath = Paths.get(INDEX_VIRTUAL_PATH);
-//            inputBindings.add(new AbstractMap.SimpleEntry<>(executeParams.getIndexDir(), virtualIndexPath.toString()));
-//            readOnlyInputBindings.add(virtualIndexPath.toString());
-//
-//            // Input binding, and update samples with virtual paths
-//            List<String> updatedSamples = new ArrayList<>();
-//            int inputCounter = 0;
-//            for (String sample : samples) {
-//                String[] fields = sample.split(SAMPLE_FIELD_SEP);
-//                String[] files = fields[1].split(SAMPLE_FILE_SEP);
-//                StringBuilder updatedSample = new StringBuilder();
-//                updatedSample.append(fields[0]);
-//                List<String> updatedFiles = new ArrayList<>(files.length);
-//                for (String file : files) {
-//                    Path virtualInputPath = Paths.get(INPUT_VIRTUAL_PATH + "_" + inputCounter).resolve(Paths.get(file).getFileName());
-//                    inputBindings.add(new AbstractMap.SimpleEntry<>(Paths.get(file).toAbsolutePath().toString(),
-//                            virtualInputPath.toString()));
-//                    readOnlyInputBindings.add(virtualInputPath.toString());
-//                    inputCounter++;
-//
-//                    // Updated files
-//                    updatedFiles.add(virtualInputPath.toString());
-//                }
-//                // Add updated files
-//                updatedSample.append(SAMPLE_FIELD_SEP).append(StringUtils.join(updatedFiles, SAMPLE_FILE_SEP));
-//
-//                // Add the remain fields
-//                for (int i = 2; i < fields.length; i++) {
-//                    updatedSample.append(SAMPLE_FIELD_SEP).append(fields[i]);
-//                }
-//
-//                updatedSamples.add(updatedSample.toString());
-//            }
-//
-//            // Pipeline params binding
-//            Path pipelineParamsPath = getOutDir().resolve(PIPELINE_PARAMS_FILENAME);
-//            Path virtualPipelineParamsPath = Paths.get(INPUT_VIRTUAL_PATH).resolve(pipelineParamsPath.getFileName());
-//
-//            // Modify variant calling index
-//            updateVariantCallingIndex(inputBindings, readOnlyInputBindings);
-//
-//            // Write the JSON file containing the pipeline parameters
-//            JacksonUtils.getDefaultObjectMapper().writerFor(PipelineConfig.class).writeValue(pipelineParamsPath.toFile(),
-//                    executeParams.getPipeline());
-//            inputBindings.add(new AbstractMap.SimpleEntry<>(pipelineParamsPath.toAbsolutePath().toString(),
-//                    virtualPipelineParamsPath.toString()));
-//
-//            // Output binding
-//            AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir().toAbsolutePath().toString(),
-//                    OUTPUT_VIRTUAL_PATH);
-//
-//            // Main command line and params, e.g.:
-//            // ./analysis/variant-caller-pipeline/main.py run
-//            // -o /tmp/ngs/
-//            // -p pipeline.json
-//            // -i /data/HI.4019.002.index_7.ANN0831_R1.fastq.gz,/data/HI.4019.002.index_7.ANN0831_R2.fastq.gz
-//
-//            String params = "python3 " + virtualScriptPath + "/" +  NGS_PIPELINE_SCRIPT + " " + GENOMICS_CMD
-//                    + " -o " + OUTPUT_VIRTUAL_PATH
-//                    + " -p " + virtualPipelineParamsPath
-//                    + " -s " + StringUtils.join(updatedSamples, ClinicalPipelineWrapperAnalysis.SAMPLE_SEP)
-//                    + " --index " + virtualIndexPath
-//                    + " --steps " + VARIANT_CALLING_STEP;
-//
-//            // Execute Python script in docker
-//            String dockerImage =  "broadinstitute/gatk:4.6.2.0";
-//
-//            String dockerCli = buildCommandLine(dockerImage, inputBindings, readOnlyInputBindings, outputBinding, params, null);
-//            addEvent(Event.Type.INFO, "Docker command line: " + dockerCli);
-//            logger.info("Docker command line: {}", dockerCli);
-//
-//            // Execute docker command line
-//            runCommandLine(dockerCli);
-//        } catch (IOException | ToolException e) {
-//            throw new ToolExecutorException(e);
-//        }
+    private void runVariantCalling() throws ToolExecutorException {
+        try {
+            // Input bindings (and read only input bindings)
+            List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
+            Set<String> readOnlyInputBindings = new HashSet<>();
+            List<AbstractMap.SimpleEntry<String, String>> outputBindings = new ArrayList<>();
+
+            // Get pipeline filename
+            String pipelineFilename = PIPELINE_PARAMS_FILENAME_PREFIX + "_" + VARIANT_CALLING_PIPELINE_STEP.replace("-", "_") + ".json";
+
+            // Update variant calling reference if necessary
+            if (pipelineConfig.getVariantCallingStep() != null
+                    && CollectionUtils.isNotEmpty(pipelineConfig.getVariantCallingStep().getTools())) {
+                for (PipelineVariantCallingTool tool : pipelineConfig.getVariantCallingStep().getTools()) {
+                    if (StringUtils.isNotEmpty(tool.getReference())) {
+                        Path virtualPath = Paths.get(REFERENCE_VIRTUAL_PATH + "_" + tool.getId().replace("-", "_"));
+                        inputBindings.add(new AbstractMap.SimpleEntry<>(Paths.get(tool.getReference()).toAbsolutePath().toString(),
+                                virtualPath.toString()));
+                        readOnlyInputBindings.add(virtualPath.toString());
+
+                        // Update the tool reference
+                        tool.setReference(virtualPath.toString());
+                    }
+                }
+            }
+
+            // Build the script CLI to be executed in docker
+            String scriptCli = buildScriptCli(pipelineFilename, VARIANT_CALLING_PIPELINE_STEP, inputBindings, readOnlyInputBindings,
+                    outputBindings);
+
+            // Execute Python script in GATK docker
+            String dockerImage =  "broadinstitute/gatk:4.6.2.0";
+
+            String dockerCli = buildCommandLine(dockerImage, inputBindings, readOnlyInputBindings, outputBindings.get(0), scriptCli, null);
+            addEvent(Event.Type.INFO, "Docker command line: " + dockerCli);
+            logger.info("Docker command line: {}", dockerCli);
+
+            // Execute docker command line
+            runCommandLine(dockerCli);
+        } catch (IOException | ToolException e) {
+            throw new ToolExecutorException(e);
+        }
+    }
+
+    private String buildScriptCli(String pipelineFilename, String steps, List<AbstractMap.SimpleEntry<String, String>> inputBindings,
+                                  Set<String> readOnlyInputBindings, List<AbstractMap.SimpleEntry<String, String>> outputBindings)
+            throws IOException {
+        PipelineInput pipelineInput = pipelineConfig.getInput();
+
+        // Script binding
+        Path virtualScriptPath = Paths.get(SCRIPT_VIRTUAL_PATH);
+        inputBindings.add(new AbstractMap.SimpleEntry<>(scriptPath.toAbsolutePath().toString(), virtualScriptPath.toString()));
+        readOnlyInputBindings.add(virtualScriptPath.toString());
+
+        // Index binding
+        Path virtualIndexPath = Paths.get(INDEX_VIRTUAL_PATH);
+        inputBindings.add(new AbstractMap.SimpleEntry<>(pipelineInput.getIndexDir(), virtualIndexPath.toString()));
+        readOnlyInputBindings.add(virtualIndexPath.toString());
+        pipelineInput.setIndexDir(virtualIndexPath.toAbsolutePath().toString());
+
+        // Input binding, and update samples with virtual paths
+        int inputCounter = 0;
+        for (PipelineSample pipelineSample : pipelineInput.getSamples()) {
+            List<String> virtualPaths = new ArrayList<>(pipelineSample.getFiles().size());
+            for (String file : pipelineSample.getFiles()) {
+                Path virtualInputPath = Paths.get(INPUT_VIRTUAL_PATH + "_" + inputCounter).resolve(Paths.get(file).getFileName());
+                inputBindings.add(new AbstractMap.SimpleEntry<>(Paths.get(file).toAbsolutePath().toString(),
+                        virtualInputPath.toString()));
+                readOnlyInputBindings.add(virtualInputPath.toString());
+                inputCounter++;
+
+                // Add to the list of virtual files
+                virtualPaths.add(virtualInputPath.toString());
+            }
+            pipelineSample.setFiles(virtualPaths);
+        }
+
+        // Pipeline params binding
+        Path pipelineParamsPath = getOutDir().resolve(pipelineFilename);
+        Path virtualPipelineParamsPath = Paths.get(INPUT_VIRTUAL_PATH).resolve(pipelineParamsPath.getFileName());
+        // Write JSON file
+        writePipeline(pipelineParamsPath);
+        inputBindings.add(new AbstractMap.SimpleEntry<>(pipelineParamsPath.toAbsolutePath().toString(),
+                virtualPipelineParamsPath.toString()));
+        readOnlyInputBindings.add(virtualPipelineParamsPath.toString());
+
+        // Output binding
+        outputBindings.add(new AbstractMap.SimpleEntry<>(getOutDir().toAbsolutePath().toString(), OUTPUT_VIRTUAL_PATH));
+
+        // Main command line and params, e.g.:
+        // ./analysis/ngs-pipeline/main.py genomics
+        // -o /tmp/ngs/
+        // -p /input/pipeline.json
+        // --steps quality-control,alignment
+        return "python3 " + virtualScriptPath + "/" + NGS_PIPELINE_SCRIPT + " " + GENOMICS_NGS_PIPELINE_SCRIPT_COMMAND
+                + " -o " + OUTPUT_VIRTUAL_PATH
+                + " -p " + virtualPipelineParamsPath
+                + " --steps " + steps;
+    }
+
+    private void writePipeline(Path pipelineParamsPath) throws IOException {
+        // Convert the pipeline configuration to an ObjectMap to be understand by the Python script; and then write it as a JSON file
+        ObjectMap objectMap = new ObjectMap();
+        objectMap.put("name", pipelineConfig.getName());
+        objectMap.put("version", pipelineConfig.getVersion());
+        objectMap.put("description", pipelineConfig.getDescription());
+        objectMap.put("input", pipelineConfig.getInput());
+
+        // Steps in an array
+        ObjectMapper mapper = JacksonUtils.getDefaultObjectMapper();
+        List<ObjectMap> steps = new ArrayList<>();
+        if (pipelineConfig.getQualityControlStep() != null) {
+            ObjectMap step = mapper.convertValue(pipelineConfig.getQualityControlStep(), ObjectMap.class);
+            step.put("id", QUALITY_CONTROL_PIPELINE_STEP);
+            steps.add(step);
+        }
+        if (pipelineConfig.getAlignmentStep() != null) {
+            ObjectMap step = mapper.convertValue(pipelineConfig.getAlignmentStep(), ObjectMap.class);
+            step.put("id", ALIGNMENT_PIPELINE_STEP);
+            steps.add(step);
+        }
+        if (pipelineConfig.getVariantCallingStep() != null) {
+            ObjectMap step = mapper.convertValue(pipelineConfig.getVariantCallingStep(), ObjectMap.class);
+            step.put("id", VARIANT_CALLING_PIPELINE_STEP);
+            steps.add(step);
+        }
+        objectMap.put("steps", steps);
+
+        mapper.writerFor(ObjectMap.class).writeValue(pipelineParamsPath.toFile(), objectMap);
+    }
+
+    private void prepareCallerInputFromAlignmentOutput() throws ToolExecutorException {
+        // Check output files from the alignment step from the output directory (alignment directory) and update the input of the
+        // pipeline configuration to be executed by the variant-calling step (overwritten the pipeline configuration input)
+        Path alignmentPath = getOutDir().resolve(ALIGNMENT_PIPELINE_STEP);
+        if (Files.exists(alignmentPath) && Files.exists(alignmentPath.resolve("DONE"))) {
+            for (PipelineSample sample : pipelineConfig.getInput().getSamples()) {
+                String basename = getBaseFilename(sample.getFiles());
+                Path bamPath = alignmentPath.resolve(basename + ".sorted.bam");
+                if (!Files.exists(bamPath)) {
+                    throw new ToolExecutorException("Missing BAM file from alignment step: " + bamPath);
+                }
+                sample.setFiles(Collections.singletonList(bamPath.toAbsolutePath().toString()));
+            }
+        } else {
+            throw new ToolExecutorException("Missing DONE file from alignment step: " + alignmentPath.resolve("DONE"));
+        }
     }
 
     public String getStudy() {

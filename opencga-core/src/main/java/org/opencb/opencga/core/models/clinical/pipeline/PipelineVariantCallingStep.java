@@ -18,34 +18,41 @@ package org.opencb.opencga.core.models.clinical.pipeline;
 
 import org.opencb.commons.annotations.DataField;
 
+import java.util.List;
 import java.util.Map;
 
-public class PipelineStep {
+public class PipelineVariantCallingStep extends PipelineStep {
 
-    @DataField(id = "options", description = "Step-specific options")
-    protected Map<String, Object> options;
+    @DataField(id = "tools", description = "Variant calling tools")
+    private List<PipelineVariantCallingTool> tools;
 
-    public PipelineStep() {
+    public PipelineVariantCallingStep() {
     }
 
-    public PipelineStep(Map<String, Object> options) {
-        this.options = options;
+    public PipelineVariantCallingStep(List<PipelineVariantCallingTool> tools) {
+        this.tools = tools;
+    }
+
+    public PipelineVariantCallingStep(Map<String, Object> options, List<PipelineVariantCallingTool> tools) {
+        super(options);
+        this.tools = tools;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("PipelineStep{");
+        final StringBuilder sb = new StringBuilder("PipelineVariantCallingStep{");
+        sb.append("tools=").append(tools);
         sb.append(", options=").append(options);
         sb.append('}');
         return sb.toString();
     }
 
-    public Map<String, Object> getOptions() {
-        return options;
+    public List<PipelineVariantCallingTool> getTools() {
+        return tools;
     }
 
-    public PipelineStep setOptions(Map<String, Object> options) {
-        this.options = options;
+    public PipelineVariantCallingStep setTools(List<PipelineVariantCallingTool> tools) {
+        this.tools = tools;
         return this;
     }
 }

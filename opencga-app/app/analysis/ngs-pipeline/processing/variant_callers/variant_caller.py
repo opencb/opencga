@@ -81,7 +81,7 @@ class VariantCaller(BaseProcessor):
         if vcf_file.endswith("vcf"):
             ## 1. Convert VCF to bgzip compressed VCF
             bgzip_vcf = vcf_file + ".gz"
-            cmd = ["bgzip"] + ["--force"] + ["-o", str(self.output) + "/" + bgzip_vcf] + [str(self.output) + "/" + vcf_file]
+            cmd = ["bgzip"] + ["--force"] + [str(self.output) + "/" + vcf_file]
             self.run_command(cmd)
 
             ## Index bgzip compressed VCF using bcftools

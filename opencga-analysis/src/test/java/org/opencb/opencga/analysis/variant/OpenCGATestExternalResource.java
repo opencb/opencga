@@ -312,7 +312,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
             }
         }
         analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/ngs-pipeline/processing/aligners")).toAbsolutePath();
-        ngsFiles = Arrays.asList("__init__.py", "aligner.py", "bwa_aligner.py", "bwamem2_aligner.py");
+        ngsFiles = Arrays.asList("__init__.py", "aligner.py", "bwa_aligner.py", "bwamem2_aligner.py", "minimap2_aligner.py", "bowtie2_aligner.py");
         for (String ngsFile : ngsFiles) {
             try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/ngs-pipeline/processing/aligners/"
                     + ngsFile)) {
@@ -320,7 +320,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
             }
         }
         analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/ngs-pipeline/processing/variant_callers")).toAbsolutePath();
-        ngsFiles = Arrays.asList("__init__.py");
+        ngsFiles = Arrays.asList("__init__.py", "gatk_variant_caller.py", "variant_caller.py");
         for (String ngsFile : ngsFiles) {
             try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/ngs-pipeline/processing/variant_callers/"
                     + ngsFile)) {

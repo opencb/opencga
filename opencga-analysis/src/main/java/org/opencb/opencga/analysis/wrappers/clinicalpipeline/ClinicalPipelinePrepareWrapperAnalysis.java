@@ -19,32 +19,22 @@ package org.opencb.opencga.analysis.wrappers.clinicalpipeline;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.clinical.pipeline.*;
+import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelinePrepareParams;
+import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelinePrepareWrapperParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Stream;
 
-import static org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelinePrepareWrapperAnalysisExecutor.*;
-import static org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelineUtils.PIPELINE_ANALYSIS_DIR;
+import static org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelineUtils.PIPELINE_ANALYSIS_DIRNAME;
 import static org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelineUtils.isURL;
 import static org.opencb.opencga.catalog.utils.ResourceManager.ANALYSIS_DIRNAME;
 
@@ -101,10 +91,8 @@ public class ClinicalPipelinePrepareWrapperAnalysis extends OpenCgaToolScopeStud
 
         // Set parameters and execute (depending on the updated params, it will prepare or execute the pipeline)
         executor.setStudy(study)
-                .setScriptPath(getOpencgaHome().resolve(ANALYSIS_DIRNAME).resolve(PIPELINE_ANALYSIS_DIR))
+                .setScriptPath(getOpencgaHome().resolve(ANALYSIS_DIRNAME).resolve(PIPELINE_ANALYSIS_DIRNAME))
                 .setPrepareParams(updatedParams)
                 .execute();
-
-        // TODO: check output ???
     }
 }

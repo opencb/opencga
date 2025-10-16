@@ -8,8 +8,8 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
+import org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelineGenomicsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelinePrepareWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelinePrepareWrapperAnalysisExecutor;
 import org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelineUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -37,8 +37,8 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Collections;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -143,117 +143,120 @@ public class ClinicalPipelineWrapperAnalysisTest {
         assertTrue(Files.exists(outDir.resolve("bwa-index").resolve(refBasename + ".fa.sa")));
     }
 
-//    @Test
-//    public void testClinicalPipelineRefFile() throws IOException, ToolException, CatalogException, StorageEngineException {
-//        Path ngsPipelinePath = Paths.get("/opt/ngs-pipeline");
-//        Assume.assumeTrue(Files.exists(ngsPipelinePath));
-//        System.out.println("opencga.getOpencgaHome() = " + opencga.getOpencgaHome().toAbsolutePath());
-//
-//        Path outDir = Paths.get(opencga.createTmpOutdir("_clinical_pipeline_ref_file_prepare"));
-//        System.out.println("outDir = " + outDir.toAbsolutePath());
-//
-//        // Get the pipeline parameters from the json file in resources and load them into an ObjectMap
-//        InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream("ngspipeline/pipeline.json");
-//        PipelineConfig ngsPipeline = JacksonUtils.getDefaultObjectMapper().readerFor(PipelineConfig.class).readValue(inputStream);
-//
-//        String refBasename = "Homo_sapiens.GRCh38.dna.primary_assembly";
-//
-//        // Reference genome file
-//        Path refLocalPath = ngsPipelinePath.resolve(refBasename + ".fa.gz");
-//        inputStream = Files.newInputStream(refLocalPath);
-//        File refFile = opencga.getCatalogManager().getFileManager().upload(studyId, inputStream,
-//                new File().setPath("data/" + refLocalPath.getFileName()), false, true, false, token).first();
-//        System.out.println("refFile.getUri() = " + refFile.getUri());
-//
-//        // FastQ #1
-//        Path fastq1LocalPath = ngsPipelinePath.resolve("HI.4019.002.index_7.ANN0831_R1.fastq.gz");
-//        inputStream = Files.newInputStream(fastq1LocalPath);
-//        File fastq1File = opencga.getCatalogManager().getFileManager().upload(studyId, inputStream,
-//                new File().setPath("data/" + fastq1LocalPath.getFileName()), false, true, false, token).first();
-//        System.out.println("fastq1File.getUri() = " + fastq1File.getUri());
-//
-//        // FastQ #2
-//        Path fastq2LocalPath = ngsPipelinePath.resolve("HI.4019.002.index_7.ANN0831_R2.fastq.gz");
-//        inputStream = Files.newInputStream(fastq1LocalPath);
-//        File fastq2File = opencga.getCatalogManager().getFileManager().upload(studyId, inputStream,
-//                new File().setPath("data/" + fastq2LocalPath.getFileName()), false, true, false, token).first();
-//        System.out.println("fastq2File.getUri() = " + fastq2File.getUri());
-//
-//        //---------------------------------
-//        // Prepare clinical pipeline
-//        //---------------------------------
-//
-//        ClinicalPipelineWrapperParams params = new ClinicalPipelineWrapperParams();
-//        ClinicalPipelinePrepareParams prepareParams = new ClinicalPipelinePrepareParams();
-//        prepareParams.setReferenceGenome(refFile.getId());
-//        prepareParams.setAlignerIndexes(Collections.singletonList(ClinicalPipelinePrepareWrapperAnalysisExecutor.BWA_INDEX));
-//        params.setPrepareParams(prepareParams);
-//
-//        ToolRunner toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), opencga.getCatalogManager(),
-//                StorageEngineFactory.get(opencga.getVariantStorageManager().getStorageConfiguration()));
-//
-//        toolRunner.execute(ClinicalPipelinePrepareWrapperAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, studyId), outDir, null,
-//                false, token);
-//
-//        // Check reference genome index files
-//        assertTrue(Files.exists(outDir.resolve("reference-genome-index")));
-//        assertTrue(Files.exists(outDir.resolve("reference-genome-index").resolve(refBasename + ".fa")));
-//        assertTrue(Files.exists(outDir.resolve("reference-genome-index").resolve(refBasename + ".fa.fai")));
-//        assertTrue(Files.exists(outDir.resolve("reference-genome-index").resolve(refBasename + ".dict")));
-//
-//        // Check BWA index files
-//        assertTrue(Files.exists(outDir.resolve("bwa-index")));
-//        assertTrue(Files.exists(outDir.resolve("bwa-index").resolve(refBasename + ".fa")));
-//        assertTrue(Files.exists(outDir.resolve("bwa-index").resolve(refBasename + ".fa.pac")));
-//        assertTrue(Files.exists(outDir.resolve("bwa-index").resolve(refBasename + ".fa.bwt")));
-//        assertTrue(Files.exists(outDir.resolve("bwa-index").resolve(refBasename + ".fa.ann")));
-//        assertTrue(Files.exists(outDir.resolve("bwa-index").resolve(refBasename + ".fa.amb")));
-//        assertTrue(Files.exists(outDir.resolve("bwa-index").resolve(refBasename + ".fa.sa")));
-//
-//        //---------------------------------
-//        // Run clinical pipeline
-//        //---------------------------------
-//
-//        Path outDir2 = Paths.get(opencga.createTmpOutdir("_ngs_pipeline_run_ref_file"));
-//        System.out.println("outDir2 = " + outDir2.toAbsolutePath());
-//
-//        // Link in OpenCGA catalog the outdir created in the previous step as indexDir for the run step
-//        File indexDirFile = opencga.getCatalogManager().getFileManager().link(studyId, new FileLinkParams(outDir.toAbsolutePath().toString(),
-//                "", "", "", null, null, null, null, null), false, token).first();
-//
-//        params = new ClinicalPipelineWrapperParams();
-//        ClinicalPipelineGenomicsParams executeParams = new ClinicalPipelineGenomicsParams();
-//        // Set sample with the two fastq files
-//        executeParams.setSamples(Collections.singletonList("ANN0831" + ClinicalPipelinePrepareWrapperAnalysis.SAMPLE_FIELD_SEP
-//                + fastq1File.getId() + ClinicalPipelinePrepareWrapperAnalysis.SAMPLE_FILE_SEP + fastq2File.getId()));
-//        // Set index dir
-//        executeParams.setIndexDir(indexDirFile.getId());
-//        // Set pipeline config
-//        executeParams.setPipeline(ngsPipeline);
-//        // Variant index parameters
-//        VariantIndexParams variantIndexParams = new VariantIndexParams();
-//        variantIndexParams.setAnnotate(true);
-//        variantIndexParams.setCalculateStats(true);
-//        executeParams.setVariantIndexParams(variantIndexParams);
-//
-//        params.setExecuteParams(executeParams);
-//
-//        toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), opencga.getCatalogManager(),
-//                StorageEngineFactory.get(opencga.getVariantStorageManager().getStorageConfiguration()));
-//
-//        toolRunner.execute(ClinicalPipelinePrepareWrapperAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, studyId), outDir2, null,
-//                false, token);
-//
-//
-//        VariantQueryResult<Variant> variantQueryResult = opencga.getVariantStorageManager()
-//                .get(new Query(ParamConstants.STUDY_PARAM, studyId), QueryOptions.empty(), token);
-//        for (Variant variant : variantQueryResult.getResults()) {
-//            System.out.println(variant.toStringSimple());
-//        }
-//        System.out.println("variantQueryResult.getNumResults() = " + variantQueryResult.getNumResults());
-//        assertEquals(10, variantQueryResult.getNumResults());
-//    }
-//
+    @Test
+    public void testClinicalPipelineGenomicsRefFile() throws IOException, ToolException, CatalogException, StorageEngineException {
+        Path ngsPipelinePath = Paths.get("/opt/ngs-pipeline");
+        Assume.assumeTrue(Files.exists(ngsPipelinePath));
+        System.out.println("opencga.getOpencgaHome() = " + opencga.getOpencgaHome().toAbsolutePath());
+
+        Path outDir = Paths.get(opencga.createTmpOutdir("_clinical_pipeline_ref_file_prepare"));
+        System.out.println("outDir = " + outDir.toAbsolutePath());
+
+        // Get the pipeline parameters from the json file in resources and load them into an ObjectMap
+        InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream("ngspipeline/pipeline.json");
+        PipelineConfig ngsPipeline = JacksonUtils.getDefaultObjectMapper().readerFor(PipelineConfig.class).readValue(inputStream);
+        // Remove the tool freebayes of the step variant-calling for the test
+        ngsPipeline.setVariantCallingStep(ngsPipeline.getVariantCallingStep().setTools(
+                ngsPipeline.getVariantCallingStep().getTools().stream().filter(t -> !t.getId().equals("freebayes")).collect(Collectors.toList())
+        ));
+
+        String refBasename = "Homo_sapiens.GRCh38.dna.primary_assembly";
+
+        // Reference genome file
+        Path refLocalPath = ngsPipelinePath.resolve(refBasename + ".fa.gz");
+        inputStream = Files.newInputStream(refLocalPath);
+        File refFile = opencga.getCatalogManager().getFileManager().upload(studyId, inputStream,
+                new File().setPath("data/" + refLocalPath.getFileName()), false, true, false, token).first();
+        System.out.println("refFile.getUri() = " + refFile.getUri());
+
+        // FastQ #1
+        Path fastq1LocalPath = ngsPipelinePath.resolve("HI.4019.002.index_7.ANN0831_R1.fastq.gz");
+        inputStream = Files.newInputStream(fastq1LocalPath);
+        File fastq1File = opencga.getCatalogManager().getFileManager().upload(studyId, inputStream,
+                new File().setPath("data/" + fastq1LocalPath.getFileName()), false, true, false, token).first();
+        System.out.println("fastq1File.getUri() = " + fastq1File.getUri());
+
+        // FastQ #2
+        Path fastq2LocalPath = ngsPipelinePath.resolve("HI.4019.002.index_7.ANN0831_R2.fastq.gz");
+        inputStream = Files.newInputStream(fastq1LocalPath);
+        File fastq2File = opencga.getCatalogManager().getFileManager().upload(studyId, inputStream,
+                new File().setPath("data/" + fastq2LocalPath.getFileName()), false, true, false, token).first();
+        System.out.println("fastq2File.getUri() = " + fastq2File.getUri());
+
+        //---------------------------------
+        // Prepare clinical pipeline
+        //---------------------------------
+
+        ClinicalPipelinePrepareWrapperParams prepareWrapperParams = new ClinicalPipelinePrepareWrapperParams();
+        ClinicalPipelinePrepareParams prepareParams = new ClinicalPipelinePrepareParams();
+        prepareParams.setReferenceGenome(refFile.getId());
+        prepareParams.setAlignerIndexes(Collections.singletonList(ClinicalPipelineUtils.BWA_INDEX));
+        prepareWrapperParams.setPipelineParams(prepareParams);
+
+        ToolRunner toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), opencga.getCatalogManager(),
+                StorageEngineFactory.get(opencga.getVariantStorageManager().getStorageConfiguration()));
+
+        toolRunner.execute(ClinicalPipelinePrepareWrapperAnalysis.class, prepareWrapperParams,
+                new ObjectMap(ParamConstants.STUDY_PARAM, studyId), outDir, null, false, token);
+
+        // Check reference genome index files
+        assertTrue(Files.exists(outDir.resolve("reference-genome-index")));
+        assertTrue(Files.exists(outDir.resolve("reference-genome-index").resolve(refBasename + ".fa")));
+        assertTrue(Files.exists(outDir.resolve("reference-genome-index").resolve(refBasename + ".fa.fai")));
+        assertTrue(Files.exists(outDir.resolve("reference-genome-index").resolve(refBasename + ".dict")));
+
+        // Check BWA index files
+        assertTrue(Files.exists(outDir.resolve("bwa-index")));
+        assertTrue(Files.exists(outDir.resolve("bwa-index").resolve(refBasename + ".fa")));
+        assertTrue(Files.exists(outDir.resolve("bwa-index").resolve(refBasename + ".fa.pac")));
+        assertTrue(Files.exists(outDir.resolve("bwa-index").resolve(refBasename + ".fa.bwt")));
+        assertTrue(Files.exists(outDir.resolve("bwa-index").resolve(refBasename + ".fa.ann")));
+        assertTrue(Files.exists(outDir.resolve("bwa-index").resolve(refBasename + ".fa.amb")));
+        assertTrue(Files.exists(outDir.resolve("bwa-index").resolve(refBasename + ".fa.sa")));
+
+        //---------------------------------
+        // Run clinical genomics pipeline
+        //---------------------------------
+
+        Path outDir2 = Paths.get(opencga.createTmpOutdir("_ngs_pipeline_ref_file_genomics"));
+        System.out.println("outDir2 = " + outDir2.toAbsolutePath());
+
+        // Link in OpenCGA catalog the outdir created in the previous step as indexDir for the run step
+        File indexDirFile = opencga.getCatalogManager().getFileManager().link(studyId, new FileLinkParams(outDir.toAbsolutePath().toString(),
+                "", "", "", null, null, null, null, null), false, token).first();
+
+        ClinicalPipelineGenomicsWrapperParams genomicsWrapperParams = new ClinicalPipelineGenomicsWrapperParams();
+        ClinicalPipelineGenomicsParams genomicsParams = new ClinicalPipelineGenomicsParams();
+        // Set sample with the two fastq files
+        genomicsParams.setSamples(Collections.singletonList("ANN0831" + ClinicalPipelineUtils.SAMPLE_FIELD_SEP
+                + fastq1File.getId() + ClinicalPipelineUtils.SAMPLE_FILE_SEP + fastq2File.getId()));
+        // Set index dir
+        genomicsParams.setIndexDir(indexDirFile.getId());
+        // Set pipeline config
+        genomicsParams.setPipeline(ngsPipeline);
+        // Variant index parameters
+        VariantIndexParams variantIndexParams = new VariantIndexParams();
+        variantIndexParams.setAnnotate(true);
+        variantIndexParams.setCalculateStats(true);
+        genomicsParams.setVariantIndexParams(variantIndexParams);
+
+        genomicsWrapperParams.setPipelineParams(genomicsParams);
+
+        toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), opencga.getCatalogManager(),
+                StorageEngineFactory.get(opencga.getVariantStorageManager().getStorageConfiguration()));
+
+        toolRunner.execute(ClinicalPipelineGenomicsWrapperAnalysis.class, genomicsWrapperParams,
+                new ObjectMap(ParamConstants.STUDY_PARAM, studyId), outDir2, null, false, token);
+
+        VariantQueryResult<Variant> variantQueryResult = opencga.getVariantStorageManager()
+                .get(new Query(ParamConstants.STUDY_PARAM, studyId), QueryOptions.empty(), token);
+        for (Variant variant : variantQueryResult.getResults()) {
+            System.out.println(variant.toStringSimple());
+        }
+        System.out.println("variantQueryResult.getNumResults() = " + variantQueryResult.getNumResults());
+        assertEquals(10, variantQueryResult.getNumResults());
+    }
+
 //    @Test
 //    public void testClinicalPipelineJsonFile() throws IOException, ToolException, CatalogException, StorageEngineException {
 //        Path ngsPipelinePath = Paths.get("/opt/ngs-pipeline");

@@ -20,32 +20,38 @@ import org.opencb.commons.annotations.DataField;
 
 import java.util.Map;
 
-public class PipelineStep {
+public class PipelineQualityControlStep extends PipelineStep {
 
-    @DataField(id = "options", description = "Step-specific options")
-    protected Map<String, Object> options;
+    @DataField(id = "tool", description = "Quality control tool")
+    private PipelineTool tool;
 
-    public PipelineStep() {
+    public PipelineQualityControlStep() {
     }
 
-    public PipelineStep(Map<String, Object> options) {
-        this.options = options;
+    public PipelineQualityControlStep(PipelineAlignmentTool tool) {
+        this.tool = tool;
+    }
+
+    public PipelineQualityControlStep(Map<String, Object> options, PipelineAlignmentTool tool) {
+        super(options);
+        this.tool = tool;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("PipelineStep{");
+        final StringBuilder sb = new StringBuilder("PipelineQualityControlStep{");
+        sb.append("tool=").append(tool);
         sb.append(", options=").append(options);
         sb.append('}');
         return sb.toString();
     }
 
-    public Map<String, Object> getOptions() {
-        return options;
+    public PipelineTool getTool() {
+        return tool;
     }
 
-    public PipelineStep setOptions(Map<String, Object> options) {
-        this.options = options;
+    public PipelineQualityControlStep setTool(PipelineTool tool) {
+        this.tool = tool;
         return this;
     }
 }

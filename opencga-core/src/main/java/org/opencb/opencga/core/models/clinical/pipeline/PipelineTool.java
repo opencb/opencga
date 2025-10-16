@@ -23,54 +23,57 @@ import java.util.Map;
 public class PipelineTool {
 
     @DataField(id = "id", description = "Tool identifier")
-    private String id;
-
-    @DataField(id = "index", description = "Tool index path")
-    private String index;
-
-    @DataField(id = "reference", description = "Reference genome path")
-    private String reference;
+    protected String id;
 
     @DataField(id = "parameters", description = "Tool command line parameters")
-    private Map<String, Object> parameters;
+    protected Map<String, Object> parameters;
 
     @DataField(id = "options", description = "Tool-specific options")
-    private Map<String, Object> options;
+    protected Map<String, Object> options;
 
     public PipelineTool() {
     }
 
-    public PipelineTool(String id, String index, String reference, Map<String, Object> parameters, Map<String, Object> options) {
+    public PipelineTool(String id, Map<String, Object> parameters, Map<String, Object> options) {
         this.id = id;
-        this.index = index;
-        this.reference = reference;
         this.parameters = parameters;
         this.options = options;
     }
 
-    public String getId() { return id; }
-    public PipelineTool setId(String id) { this.id = id; return this; }
-
-    public String getIndex() { return index; }
-    public PipelineTool setIndex(String index) { this.index = index; return this; }
-
-    public String getReference() { return reference; }
-    public PipelineTool setReference(String reference) { this.reference = reference; return this; }
-
-    public Map<String, Object> getParameters() { return parameters; }
-    public PipelineTool setParameters(Map<String, Object> parameters) { this.parameters = parameters; return this; }
-
-    public Map<String, Object> getOptions() { return options; }
-    public PipelineTool setOptions(Map<String, Object> options) { this.options = options; return this; }
-
     @Override
     public String toString() {
-        return "PipelineTool{" +
-                "id='" + id + '\'' +
-                ", index='" + index + '\'' +
-                ", reference='" + reference + '\'' +
-                ", parameters=" + parameters +
-                ", options=" + options +
-                '}';
+        final StringBuilder sb = new StringBuilder("PipelineTool{");
+        sb.append("id='").append(id).append('\'');
+        sb.append(", parameters=").append(parameters);
+        sb.append(", options=").append(options);
+        sb.append('}');
+        return sb.toString();
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public PipelineTool setId(String id) {
+        this.id = id;
+        return this;
+    }
+
+    public Map<String, Object> getParameters() {
+        return parameters;
+    }
+
+    public PipelineTool setParameters(Map<String, Object> parameters) {
+        this.parameters = parameters;
+        return this;
+    }
+
+    public Map<String, Object> getOptions() {
+        return options;
+    }
+
+    public PipelineTool setOptions(Map<String, Object> options) {
+        this.options = options;
+        return this;
     }
 }

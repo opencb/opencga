@@ -17,10 +17,6 @@
 package org.opencb.opencga.core.models.clinical.pipeline;
 
 import org.opencb.commons.annotations.DataField;
-import org.opencb.opencga.core.api.FieldConstants;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class PipelineConfig {
 
@@ -36,62 +32,104 @@ public class PipelineConfig {
     @DataField(id = "input", description = "Pipeline input configuration")
     private PipelineInput input;
 
-    @DataField(id = "steps", description = "Pipeline execution steps")
-    private List<PipelineStep> steps;
+    @DataField(id = "qualityControlStep", description = "Quality control step")
+    private PipelineQualityControlStep qualityControlStep;
+
+    @DataField(id = "alignmentStep", description = "Alignment step")
+    private PipelineAlignmentStep alignmentStep;
+
+    @DataField(id = "variantCallingStep", description = "Variant calling step")
+    private PipelineVariantCallingStep variantCallingStep;
 
     public PipelineConfig() {
     }
 
-    public PipelineConfig(String name, String version, String description, PipelineInput input, List<PipelineStep> steps) {
+    public PipelineConfig(String name, String version, String description, PipelineInput input,
+                          PipelineQualityControlStep qualityControlStep, PipelineAlignmentStep alignmentStep,
+                          PipelineVariantCallingStep variantCallingStep) {
         this.name = name;
         this.version = version;
         this.description = description;
         this.input = input;
-        this.steps = steps;
+        this.qualityControlStep = qualityControlStep;
+        this.alignmentStep = alignmentStep;
+        this.variantCallingStep = variantCallingStep;
     }
-
-    public PipelineConfig(PipelineConfig pipeline) {
-        if (pipeline != null) {
-            this.name = pipeline.getName();
-            this.version = pipeline.getVersion();
-            this.description = pipeline.getDescription();
-            // Input
-            if (pipeline.input != null) {
-                this.input = new PipelineInput();
-                this.input.setIndexDir(pipeline.getInput().getIndexDir());
-                this.input.setSamples(new ArrayList<>(pipeline.getInput().getSamples()));
-            }
-            // Steps
-            if (pipeline.steps != null) {
-                this.steps = new ArrayList<>(pipeline.steps);
-            }
-        }
-    }
-
-    // Getters and setters
-    public String getName() { return name; }
-    public PipelineConfig setName(String name) { this.name = name; return this; }
-
-    public String getVersion() { return version; }
-    public PipelineConfig setVersion(String version) { this.version = version; return this; }
-
-    public String getDescription() { return description; }
-    public PipelineConfig setDescription(String description) { this.description = description; return this; }
-
-    public PipelineInput getInput() { return input; }
-    public PipelineConfig setInput(PipelineInput input) { this.input = input; return this; }
-
-    public List<PipelineStep> getSteps() { return steps; }
-    public PipelineConfig setSteps(List<PipelineStep> steps) { this.steps = steps; return this; }
 
     @Override
     public String toString() {
-        return "PipelineConfig{" +
-                "name='" + name + '\'' +
-                ", version='" + version + '\'' +
-                ", description='" + description + '\'' +
-                ", input=" + input +
-                ", steps=" + steps +
-                '}';
+        final StringBuilder sb = new StringBuilder("PipelineConfig{");
+        sb.append("name='").append(name).append('\'');
+        sb.append(", version='").append(version).append('\'');
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", input=").append(input);
+        sb.append(", qualityControlStep=").append(qualityControlStep);
+        sb.append(", alignmentStep=").append(alignmentStep);
+        sb.append(", variantCallingStep=").append(variantCallingStep);
+        sb.append('}');
+        return sb.toString();
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public PipelineConfig setName(String name) {
+        this.name = name;
+        return this;
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public PipelineConfig setVersion(String version) {
+        this.version = version;
+        return this;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public PipelineConfig setDescription(String description) {
+        this.description = description;
+        return this;
+    }
+
+    public PipelineInput getInput() {
+        return input;
+    }
+
+    public PipelineConfig setInput(PipelineInput input) {
+        this.input = input;
+        return this;
+    }
+
+    public PipelineQualityControlStep getQualityControlStep() {
+        return qualityControlStep;
+    }
+
+    public PipelineConfig setQualityControlStep(PipelineQualityControlStep qualityControlStep) {
+        this.qualityControlStep = qualityControlStep;
+        return this;
+    }
+
+    public PipelineAlignmentStep getAlignmentStep() {
+        return alignmentStep;
+    }
+
+    public PipelineConfig setAlignmentStep(PipelineAlignmentStep alignmentStep) {
+        this.alignmentStep = alignmentStep;
+        return this;
+    }
+
+    public PipelineVariantCallingStep getVariantCallingStep() {
+        return variantCallingStep;
+    }
+
+    public PipelineConfig setVariantCallingStep(PipelineVariantCallingStep variantCallingStep) {
+        this.variantCallingStep = variantCallingStep;
+        return this;
     }
 }

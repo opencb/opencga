@@ -3,7 +3,6 @@ package org.opencb.opencga.analysis.wrappers.clinicalpipeline;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
 import org.opencb.opencga.analysis.wrappers.ngspipeline.NgsPipelineWrapperAnalysis;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -25,8 +24,6 @@ import static org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipe
 public class ClinicalPipelinePrepareWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor {
 
     public static final String ID = ClinicalPipelinePrepareWrapperAnalysis.ID + "-local";
-
-    public static final String PREPARE_CMD = "prepare";
 
     private String study;
 
@@ -64,7 +61,7 @@ public class ClinicalPipelinePrepareWrapperAnalysisExecutor extends DockerWrappe
             // ./analysis/variant-caller-pipeline/main.py prepare
             // -r https://ftp.ensembl.org/pub/release-115/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.chromosome.22.fa.gz
             // -o /tmp/bbb
-            String params = "python3 " + virtualScriptPath + "/" + NGS_PIPELINE_SCRIPT + " " + PREPARE_CMD
+            String params = "python3 " + virtualScriptPath + "/" + NGS_PIPELINE_SCRIPT + " " + PREPARERE_NGS_PIPELINE_SCRIPT_COMMAND
                     + " -r " + (virtualRefPath != null ? virtualRefPath : reference)
                     + " -o " + OUTPUT_VIRTUAL_PATH;
             params += (" -i " + REFERENCE_GENOME_INDEX);
