@@ -780,8 +780,11 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         @Parameter(names = {"--start"}, description = "Start OpenCGA gRPC server", arity = 0)
         public boolean start;
 
-        @Parameter(names = {"--stop"}, description = "Stop OpenCGA gRPC server", arity = 0)
-        public boolean stop;
+//        @Parameter(names = {"--stop"}, description = "Stop OpenCGA gRPC server", arity = 0)
+//        public boolean stop;
+
+        @Parameter(names = {"--port"}, description = "REST port to be used", arity = 1)
+        public int port;
 
         @Parameter(names = {"--bg", "--background"}, description = "Run the server in background as a daemon", arity = 0)
         public boolean background;

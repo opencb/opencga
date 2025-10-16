@@ -11,12 +11,12 @@ import "protobuf/opencb/service_types.proto";
 
 service VariantService {
 
-    rpc count(Request) returns (LongResponse) {}
+//    rpc count(Request) returns (LongResponse) {}
 
-    rpc distinct(Request) returns (StringArrayResponse) {}
+//    rpc distinct(Request) returns (StringArrayResponse) {}
 
-    rpc get(Request) returns (stream Variant) {}
+    rpc query(Request) returns (stream Variant) {}
 
-    rpc groupBy(Request) returns (GroupResponse) {}
+//    rpc groupBy(Request) returns (GroupResponse) {}
 
 }

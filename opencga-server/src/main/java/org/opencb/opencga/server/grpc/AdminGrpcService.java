@@ -16,38 +16,66 @@
 
 package org.opencb.opencga.server.grpc;
 
+import com.fasterxml.jackson.databind.JsonMappingException;
 import io.grpc.stub.StreamObserver;
 import org.opencb.biodata.models.common.protobuf.service.ServiceTypesModel;
-import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.server.OpenCGAHealthCheckMonitor;
+import org.slf4j.Logger;
 
 /**
  * Created by imedina on 02/01/16.
  */
 public class AdminGrpcService extends AdminServiceGrpc.AdminServiceImplBase {
 
-    private GrpcServer grpcServer;
+    private final GenericGrpcService grpcService;
+    private final GrpcServer grpcServer;
+    private final Logger logger = org.slf4j.LoggerFactory.getLogger(this.getClass());
 
-
-    public AdminGrpcService(Configuration configuration, StorageConfiguration storageConfiguration, GrpcServer grpcServer) {
-//        super(catalogConfiguration, storageConfiguration);
-
+    public AdminGrpcService(GenericGrpcService grpcService, GrpcServer grpcServer) {
+        this.grpcService = grpcService;
         this.grpcServer = grpcServer;
     }
 
     @Override
     public void status(GenericServiceModel.Request request, StreamObserver<ServiceTypesModel.MapResponse> responseObserver) {
-        responseObserver.onNext(ServiceTypesModel.MapResponse.newBuilder().putValues("status", "alive").build());
-        responseObserver.onCompleted();
+        OpenCGAResult<OpenCGAHealthCheckMonitor.HealthCheckStatus> result = grpcService.getHealthCheckMonitor().getStatus();
+        OpenCGAHealthCheckMonitor.HealthCheckStatus status = result.first();
+        if (status.isHealthy()) {
+            logger.debug("HealthCheck : " + status);
+            ServiceTypesModel.MapResponse.Builder builder = ServiceTypesModel.MapResponse.newBuilder();
+            ObjectMap statusMap = new ObjectMap();
+            try {
+                JacksonUtils.getDefaultObjectMapper().updateValue(statusMap, status);
+                for (String key : statusMap.keySet()) {
+                    Object value = statusMap.get(key);
+                    if (value != null) {
+                        builder.putValues(key, value.toString());
+                    } else {
+                        builder.putValues(key, "null");
+                    }
+                }
+            } catch (JsonMappingException e) {
+                throw new RuntimeException(e);
+            }
+            responseObserver.onNext(builder.build());
+            responseObserver.onCompleted();
+        } else {
+            logger.error("HealthCheck : " + status);
+            responseObserver.onError(new Exception("Some services are not healthy: " + status));
+        }
+
     }
 
-    @Override
-    public void stop(GenericServiceModel.Request request, StreamObserver<ServiceTypesModel.MapResponse> responseObserver) {
-
-        responseObserver.onNext(ServiceTypesModel.MapResponse.getDefaultInstance());
-        responseObserver.onCompleted();
-
-        grpcServer.stop();
-    }
+//    @Override
+//    public void stop(GenericServiceModel.Request request, StreamObserver<ServiceTypesModel.MapResponse> responseObserver) {
+//
+//        responseObserver.onNext(ServiceTypesModel.MapResponse.getDefaultInstance());
+//        responseObserver.onCompleted();
+//
+//        grpcServer.stop();
+//    }
 
 }

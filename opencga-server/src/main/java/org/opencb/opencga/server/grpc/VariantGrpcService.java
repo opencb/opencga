@@ -17,74 +17,47 @@
 package org.opencb.opencga.server.grpc;
 
 import io.grpc.stub.StreamObserver;
-import org.opencb.biodata.models.common.protobuf.service.ServiceTypesModel;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.tools.variant.converters.proto.VariantAvroToVariantProtoConverter;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.opencb.opencga.server.grpc.VariantServiceGrpc.getQueryMethod;
 
 /**
  * Created by imedina on 29/12/15.
  */
 public class VariantGrpcService extends VariantServiceGrpc.VariantServiceImplBase {
 
-    private GenericGrpcService genericGrpcService;
+    private final GenericGrpcService genericGrpcService;
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final VariantStorageManager variantStorageManager;
 
-    public VariantGrpcService(Configuration configuration, StorageConfiguration storageConfiguration) {
-        genericGrpcService = new GenericGrpcService(configuration, storageConfiguration);
+    public VariantGrpcService(GenericGrpcService genericGrpcService) {
+        this.genericGrpcService = genericGrpcService;
+        variantStorageManager = genericGrpcService.getVariantStorageManager();
     }
 
     @Override
-    public void count(GenericServiceModel.Request request, StreamObserver<ServiceTypesModel.LongResponse> responseObserver) {
-        try {
-            Query query = genericGrpcService.createQuery(request);
-            logger.info("Count variants query : {} " + query.toJson());
-            DataResult<Long> count = genericGrpcService.variantStorageManager.count(query, request.getSessionId());
-            responseObserver.onNext(ServiceTypesModel.LongResponse.newBuilder().setValue(count.getResults().get(0)).build());
-            responseObserver.onCompleted();
-        } catch (Exception e) {
-            logger.error("Error on count", e);
-            responseObserver.onError(e);
-        }
-    }
-
-    @Override
-    public void distinct(GenericServiceModel.Request request, StreamObserver<ServiceTypesModel.StringArrayResponse> responseObserver) {
-        super.distinct(request, responseObserver);
-    }
-
-    @Override
-    public void get(GenericServiceModel.Request request, StreamObserver<VariantProto.Variant> responseObserver) {
-        try {
+    public void query(GenericServiceModel.Request request, StreamObserver<VariantProto.Variant> responseObserver) {
+        genericGrpcService.run(getQueryMethod(), request, (query, queryOptions) -> {
             VariantAvroToVariantProtoConverter converter = new VariantAvroToVariantProtoConverter();
-            Query query = genericGrpcService.createQuery(request);
-            QueryOptions queryOptions = genericGrpcService.createQueryOptions(request);
-            logger.info("Get variants query : {} , queryOptions : {}" , query.toJson(), queryOptions.toJson());
-            try (VariantDBIterator iterator = genericGrpcService.variantStorageManager.iterator(query, queryOptions, request.getSessionId())) {
+
+            try (VariantDBIterator iterator = variantStorageManager.iterator(query, queryOptions, request.getToken())) {
                 while (iterator.hasNext()) {
                     Variant variant = iterator.next();
                     responseObserver.onNext(converter.convert(variant));
                 }
+            } catch (Exception e) {
+                responseObserver.onError(e);
+                throw e;
             }
             responseObserver.onCompleted();
-        } catch (Exception e) {
-            logger.error("Error on get variants", e);
-            responseObserver.onError(e);
-        }
-    }
-
-    @Override
-    public void groupBy(GenericServiceModel.Request request, StreamObserver<ServiceTypesModel.GroupResponse> responseObserver) {
-        super.groupBy(request, responseObserver);
+        });
     }
 
 }

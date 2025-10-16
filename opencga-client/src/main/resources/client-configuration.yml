@@ -20,3 +20,4 @@ rest:
 ## gRPC configuration options
 grpc:
   host: "${OPENCGA.CLIENT.GRPC.HOST}"
+  enable: false

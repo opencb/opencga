@@ -12,6 +12,6 @@ service AdminService {
 
     rpc status(Request) returns (MapResponse) {}
 
-    rpc stop(Request) returns (MapResponse) {}
+//    rpc stop(Request) returns (MapResponse) {}
 
 }

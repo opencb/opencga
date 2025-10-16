@@ -16,82 +16,90 @@
 
 package org.opencb.opencga.server.grpc;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import io.grpc.MethodDescriptor;
+import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.opencga.server.OpenCGAHealthCheckMonitor;
+import org.opencb.opencga.server.OpenCGAServerUtils;
 import org.opencb.opencga.server.grpc.GenericServiceModel.Request;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
-import org.opencb.opencga.core.config.storage.StorageConfiguration;
-import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
+
+import static org.opencb.opencga.core.common.JacksonUtils.getExternalOpencgaObjectMapper;
 
 /**
  * Created by imedina on 16/12/15.
  */
 public class GenericGrpcService {
 
-    protected Configuration configuration;
-    protected StorageConfiguration storageConfiguration;
-    protected String defaultStorageEngine;
+    private final ObjectWriter jsonObjectWriter;
+    private Configuration configuration;
+    private StorageConfiguration storageConfiguration;
+    private String defaultStorageEngine;
 
-    protected CatalogManager catalogManager;
-    protected VariantStorageManager variantStorageManager;
-    protected static StorageEngineFactory storageEngineFactory;
+    private CatalogManager catalogManager;
+    private VariantStorageManager variantStorageManager;
+    private OpenCGAHealthCheckMonitor healthCheckMonitor;
+    private StorageEngineFactory storageEngineFactory;
 
 //    protected AuthManager authManager;
 //    protected Set<String> authorizedHosts;
 
-    private Logger privLogger;
-    protected Logger logger;
+    protected final Logger logger;
 
-    public GenericGrpcService(Configuration configuration, StorageConfiguration storageConfiguration) {
-        this(configuration, storageConfiguration, storageConfiguration.getVariant().getDefaultEngine());
-    }
+    public GenericGrpcService(Path opencgaHome, Configuration configuration, StorageConfiguration storageConfiguration)
+            throws CatalogException {
 
-    public GenericGrpcService(Configuration configuration, StorageConfiguration storageConfiguration, String defaultStorageEngine) {
+        logger = LoggerFactory.getLogger(GenericGrpcService.class);
 
-        privLogger = LoggerFactory.getLogger(this.getClass().toString());
-        logger = LoggerFactory.getLogger(this.getClass().toString());
+        ObjectMapper jsonObjectMapper = getExternalOpencgaObjectMapper();
+        jsonObjectWriter = jsonObjectMapper.writer();
 
         this.configuration = configuration;
         this.storageConfiguration = storageConfiguration;
-        this.defaultStorageEngine = defaultStorageEngine;
+        this.defaultStorageEngine = storageConfiguration.getVariant().getDefaultEngine();
+
+        logger.info("========================================================================");
+        logger.info("| Starting OpenCGA REST server, initializing OpenCGAWSServer");
+        logger.info("| This message must appear only once.");
 
 
-        try {
-            catalogManager = new CatalogManager(configuration);
-        } catch (CatalogException e) {
-            throw new IllegalStateException("Error initializating Catalog: ", e);
-        }
+        // Check and execute the init methods
+        java.nio.file.Path configDirPath = opencgaHome.resolve("conf");
+        logger.info("|  * Configuration folder: '{}'", configDirPath.toString());
+//        loadOpenCGAConfiguration(configDirPath);
+        OpenCGAServerUtils.initLogger(logger, configuration, configDirPath);
+        initOpenCGAObjects();
 
-        // Only one StorageManagerFactory is needed, this acts as a simple Singleton pattern which improves the performance significantly
-        if (storageEngineFactory == null) {
-            privLogger.debug("Creating the StorageManagerFactory object");
-            storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
-        }
 
+        logger.info("| OpenCGA REST successfully started!");
+        logger.info("| - Version {}", GitRepositoryState.getInstance().getBuildVersion());
+        logger.info("| - Git version: {} {}", GitRepositoryState.getInstance().getBranch(), GitRepositoryState.getInstance().getCommitId());
+        logger.info("========================================================================\n");
+    }
+
+    private void initOpenCGAObjects() throws CatalogException {
+
+        catalogManager = new CatalogManager(configuration);
+        storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
         variantStorageManager = new VariantStorageManager(catalogManager, storageEngineFactory);
+        healthCheckMonitor = new OpenCGAHealthCheckMonitor(configuration, catalogManager, storageEngineFactory, variantStorageManager);
+        healthCheckMonitor.asyncUpdate();
 
-
-//        if (authorizedHosts == null) {
-//            privLogger.debug("Creating the authorizedHost HashSet");
-//            authorizedHosts = new HashSet<>(storageConfiguration.getServer().getAuthorizedHosts());
-//        }
-
-//        try {
-//            if (StringUtils.isNotEmpty(storageConfiguration.getServer().getAuthManager())) {
-//                privLogger.debug("Loading AuthManager in {} from {}", this.getClass(), storageConfiguration.getServer().getAuthManager());
-//                authManager = (AuthManager) Class.forName(storageConfiguration.getServer().getAuthManager()).newInstance();
-//            } else {
-//                privLogger.debug("Loading DefaultAuthManager in {} from {}", this.getClass(), DefaultAuthManager.class);
-//                authManager = new DefaultAuthManager();
-//            }
-//        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
-//            e.printStackTrace();
-//        }
     }
 
 //    protected void checkAuthorizedHosts(Query query, String ip) throws NotAuthorizedHostException, NotAuthorizedUserException {
@@ -135,16 +143,74 @@ public class GenericGrpcService {
         return storageConfiguration;
     }
 
-    public void setStorageConfiguration(StorageConfiguration storageConfiguration) {
-        this.storageConfiguration = storageConfiguration;
-    }
-
     public String getDefaultStorageEngine() {
         return defaultStorageEngine;
     }
 
-    public void setDefaultStorageEngine(String defaultStorageEngine) {
-        this.defaultStorageEngine = defaultStorageEngine;
+    public CatalogManager getCatalogManager() {
+        return catalogManager;
     }
 
+    public VariantStorageManager getVariantStorageManager() {
+        return variantStorageManager;
+    }
+
+    public StorageEngineFactory getStorageEngineFactory() {
+        return storageEngineFactory;
+    }
+
+    public Configuration getConfiguration() {
+        return configuration;
+    }
+
+    public OpenCGAHealthCheckMonitor getHealthCheckMonitor() {
+        return healthCheckMonitor;
+    }
+
+    @FunctionalInterface
+    public interface RequestRunner {
+
+        void run(Query query, QueryOptions options) throws Exception;
+
+    }
+
+    public void run(MethodDescriptor<Request, ?> method, Request request, RequestRunner requestRunner) {
+        StopWatch stopWatch = StopWatch.createStarted();
+        Query query = createQuery(request);
+        QueryOptions queryOptions = createQueryOptions(request);
+        String requestDescription;
+        try {
+            requestDescription = method.getFullMethodName() + " : q: " + jsonObjectWriter.writeValueAsString(query)
+                    + " qo: " + jsonObjectWriter.writeValueAsString(queryOptions);
+            logger.info(requestDescription);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+
+        Exception e = null;
+        try {
+            requestRunner.run(query, queryOptions);
+        } catch (Exception ex) {
+            e = ex;
+            logger.error("Catch error: " + e.getMessage(), e);
+        } finally {
+            stopWatch.stop();
+        }
+
+        StringBuilder sb = new StringBuilder();
+        boolean ok;
+        if (e == null) {
+            sb.append("OK");
+            ok = true;
+        } else {
+            sb.append("ERROR");
+            ok = false;
+        }
+        sb.append(", ").append(stopWatch.getTime(TimeUnit.MILLISECONDS)).append("ms").append(", ").append(requestDescription);
+        if (ok) {
+            logger.info(sb.toString());
+        } else {
+            logger.error(sb.toString());
+        }
+    }
 }
