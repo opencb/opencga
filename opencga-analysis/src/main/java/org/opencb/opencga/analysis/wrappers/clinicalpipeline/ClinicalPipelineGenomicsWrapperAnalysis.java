@@ -1,5 +1,6 @@
 package org.opencb.opencga.analysis.wrappers.clinicalpipeline;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -187,9 +188,7 @@ public class ClinicalPipelineGenomicsWrapperAnalysis extends OpenCgaToolScopeStu
             updatedPipelineConfig = JacksonUtils.getDefaultObjectMapper().readerFor(PipelineConfig.class).readValue(pipelinePath.toFile());
         } else {
             logger.info("Getting clinical pipeline configuration provided directly in the parameters");
-            ObjectMapper mapper = new ObjectMapper();
-            String pipeline = mapper.writeValueAsString(analysisParams.getPipelineParams().getPipeline());
-            updatedPipelineConfig = mapper.readValue(pipeline, PipelineConfig.class);
+            updatedPipelineConfig = copyPipelineConfig(analysisParams.getPipelineParams().getPipeline());
         }
 
         // Check mandatory parameters in pipeline config: input and steps
@@ -308,16 +307,25 @@ public class ClinicalPipelineGenomicsWrapperAnalysis extends OpenCgaToolScopeStu
         }
     }
 
-    private void validateAlignmentTool(PipelineAlignmentTool alignmentTool) throws ToolException, CatalogException {
-        validateTool(ALIGNMENT_PIPELINE_STEP, alignmentTool);
+    private void validateAlignmentTool(PipelineAlignmentTool tool) throws ToolException, CatalogException {
+        validateTool(ALIGNMENT_PIPELINE_STEP, tool);
 
         // Check the index is provided, and update with the real path (from OpenCGA catalog)
-        String index = alignmentTool.getIndex();
+        String index = tool.getIndex();
         if (StringUtils.isNotEmpty(index)) {
-            logger.info("Checking alignment tool '{}' index path: {}", alignmentTool.getId(), index);
+            logger.info("Checking alignment tool '{}' index path: {}", tool.getId(), index);
             File opencgaFile = getCatalogManager().getFileManager().get(study, index, QueryOptions.empty(), token).first();
+            if (opencgaFile.getType() != File.Type.DIRECTORY) {
+                throw new ToolException("Alignment tool '" + tool.getId() + "', index dir '" + index + "' is not a folder.");
+            }
+
             // Update the index in the alignment tool
-            alignmentTool.setIndex(Paths.get(opencgaFile.getUri()).toAbsolutePath().toString());
+            Path path = Paths.get(opencgaFile.getUri()).toAbsolutePath();
+            if (!Files.exists(path) || !Files.isDirectory(path)) {
+                throw new ToolException("Alignemnt tool '" + tool.getId() + "', index path '" + path + "' does not exist or is not"
+                        + " a folder.");
+            }
+            tool.setIndex(path.toString());
         }
     }
 
@@ -325,20 +333,30 @@ public class ClinicalPipelineGenomicsWrapperAnalysis extends OpenCgaToolScopeStu
         if (CollectionUtils.isEmpty(pipelineTools)) {
             throw new ToolException("Missing tools for clinical pipeline step: " + VARIANT_CALLING_PIPELINE_STEP);
         }
-        for ( PipelineVariantCallingTool variantCallingTool : pipelineTools) {
-            validateTool(VARIANT_CALLING_PIPELINE_STEP, variantCallingTool);
+        for ( PipelineVariantCallingTool tool : pipelineTools) {
+            validateTool(VARIANT_CALLING_PIPELINE_STEP, tool);
 
             // Check the reference is provided, and update with the real path (from OpenCGA catalog)
-            String reference = variantCallingTool.getReference();
+            String reference = tool.getReference();
             if (StringUtils.isNotEmpty(reference)) {
-                logger.info("Checking variant calling tool '{}' reference path: {}", variantCallingTool.getId(), reference);
+                logger.info("Checking variant calling tool '{}' reference path: {}", tool.getId(), reference);
                 File opencgaFile = getCatalogManager().getFileManager().get(study, reference, QueryOptions.empty(), token).first();
+                if (opencgaFile.getType() != File.Type.DIRECTORY) {
+                    throw new ToolException("Variant calling tool '" + tool.getId() + "', reference dir '" + reference
+                            + "' is not a folder.");
+                }
+
                 // Update the reference in the variant calling tool
-                variantCallingTool.setReference(Paths.get(opencgaFile.getUri()).toAbsolutePath().toString());
+                Path path = Paths.get(opencgaFile.getUri()).toAbsolutePath();
+                if (!Files.exists(path) || !Files.isDirectory(path)) {
+                    throw new ToolException("Variant calling tool '" + tool.getId() + "', reference path '" + reference
+                            + "' does not exist or is not a folder.");
+                }
+                tool.setReference(path.toString());
             }
 
             // Add tool ID to the list of variant calling tool IDs to be used later
-            variantCallingToolIds.add(variantCallingTool.getId());
+            variantCallingToolIds.add(tool.getId());
         }
     }
 }

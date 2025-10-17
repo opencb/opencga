@@ -55,16 +55,18 @@ public class ClinicalPipelineGenomicsWrapperAnalysisExecutor extends DockerWrapp
     protected void run() throws Exception {
         // First, run QC (e.g. FastQC) and alignment (e.g. BWA)
         if (pipelineSteps.contains(QUALITY_CONTROL_PIPELINE_STEP) || pipelineSteps.contains(ALIGNMENT_PIPELINE_STEP)) {
-            runQcAndAlignment();
+            PipelineConfig pipeline = ClinicalPipelineUtils.copyPipelineConfig(pipelineConfig);
+            runQcAndAlignment(pipeline);
         }
 
         // Then, run the variant calling (e.g. GATK HaplotypeCaller)
         if (pipelineSteps.contains(VARIANT_CALLING_PIPELINE_STEP)) {
-            runVariantCalling();
+            PipelineConfig pipeline = ClinicalPipelineUtils.copyPipelineConfig(pipelineConfig);
+            runVariantCalling(pipeline);
         }
     }
 
-    private void runQcAndAlignment() throws ToolExecutorException {
+    private void runQcAndAlignment(PipelineConfig pipeline) throws ToolExecutorException {
         try {
             // Input bindings (and read only input bindings)
             List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
@@ -91,24 +93,25 @@ public class ClinicalPipelineGenomicsWrapperAnalysisExecutor extends DockerWrapp
                     steps.append(",");
                 }
                 steps.append(ALIGNMENT_PIPELINE_STEP);
-
-                // Update alignment index if necessary
-                if (pipelineConfig.getAlignmentStep() != null && pipelineConfig.getAlignmentStep().getTool() != null
-                        && StringUtils.isNotEmpty(pipelineConfig.getAlignmentStep().getTool().getIndex())) {
-                    PipelineAlignmentTool tool = pipelineConfig.getAlignmentStep().getTool();
-                    Path virtualPath = Paths.get(INDEX_VIRTUAL_PATH + "_" + tool.getId().replace("-", "_"));
-                    inputBindings.add(new AbstractMap.SimpleEntry<>(Paths.get(tool.getIndex()).toAbsolutePath().toString(),
-                            virtualPath.toString()));
-                    readOnlyInputBindings.add(virtualPath.toString());
-
-                    // Update the tool index
-                    tool.setIndex(virtualPath.toString());
-                }
             }
 
-            // Build the script CLI to be executed in docker, but before that save the index dir to restore it later
-            String savedIndexDir = pipelineConfig.getInput().getIndexDir();
-            String scriptCli = buildScriptCli(pipelineFilename.toString(), steps.toString(), inputBindings, readOnlyInputBindings,
+            // Update alignment index if necessary
+            if (pipelineSteps.contains(QUALITY_CONTROL_PIPELINE_STEP)
+                    && pipeline.getAlignmentStep() != null
+                    && pipeline.getAlignmentStep().getTool() != null
+                    && StringUtils.isNotEmpty(pipeline.getAlignmentStep().getTool().getIndex())) {
+                PipelineAlignmentTool tool = pipeline.getAlignmentStep().getTool();
+                Path virtualPath = Paths.get(INDEX_VIRTUAL_PATH + "_" + tool.getId().replace("-", "_"));
+                inputBindings.add(new AbstractMap.SimpleEntry<>(Paths.get(tool.getIndex()).toAbsolutePath().toString(),
+                        virtualPath.toString()));
+                readOnlyInputBindings.add(virtualPath.toString());
+
+                // Update the tool index
+                tool.setIndex(virtualPath.toString());
+            }
+
+            // Build the script CLI to be executed in docker
+            String scriptCli = buildScriptCli(pipeline, pipelineFilename.toString(), steps.toString(), inputBindings, readOnlyInputBindings,
                     outputBindings);
 
             // Execute Python script in docker
@@ -122,16 +125,14 @@ public class ClinicalPipelineGenomicsWrapperAnalysisExecutor extends DockerWrapp
             runCommandLine(dockerCli);
 
             if (pipelineSteps.contains(ALIGNMENT_PIPELINE_STEP) && pipelineSteps.contains(VARIANT_CALLING_PIPELINE_STEP)) {
-                // Restore the original index dir, before preparing the input for the variant-calling step
-                pipelineConfig.getInput().setIndexDir(savedIndexDir);
-                prepareCallerInputFromAlignmentOutput();
+                prepareCallerInputFromAlignmentOutput(pipeline);
             }
         } catch (IOException | ToolException e) {
             throw new ToolExecutorException(e);
         }
     }
 
-    private void runVariantCalling() throws ToolExecutorException {
+    private void runVariantCalling(PipelineConfig pipeline) throws ToolExecutorException {
         try {
             // Input bindings (and read only input bindings)
             List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
@@ -142,9 +143,8 @@ public class ClinicalPipelineGenomicsWrapperAnalysisExecutor extends DockerWrapp
             String pipelineFilename = PIPELINE_PARAMS_FILENAME_PREFIX + "_" + VARIANT_CALLING_PIPELINE_STEP.replace("-", "_") + ".json";
 
             // Update variant calling reference if necessary
-            if (pipelineConfig.getVariantCallingStep() != null
-                    && CollectionUtils.isNotEmpty(pipelineConfig.getVariantCallingStep().getTools())) {
-                for (PipelineVariantCallingTool tool : pipelineConfig.getVariantCallingStep().getTools()) {
+            if (pipeline.getVariantCallingStep() != null && CollectionUtils.isNotEmpty(pipeline.getVariantCallingStep().getTools())) {
+                for (PipelineVariantCallingTool tool : pipeline.getVariantCallingStep().getTools()) {
                     if (StringUtils.isNotEmpty(tool.getReference())) {
                         Path virtualPath = Paths.get(REFERENCE_VIRTUAL_PATH + "_" + tool.getId().replace("-", "_"));
                         inputBindings.add(new AbstractMap.SimpleEntry<>(Paths.get(tool.getReference()).toAbsolutePath().toString(),
@@ -158,8 +158,8 @@ public class ClinicalPipelineGenomicsWrapperAnalysisExecutor extends DockerWrapp
             }
 
             // Build the script CLI to be executed in docker
-            String scriptCli = buildScriptCli(pipelineFilename, VARIANT_CALLING_PIPELINE_STEP, inputBindings, readOnlyInputBindings,
-                    outputBindings);
+            String scriptCli = buildScriptCli(pipeline, pipelineFilename, VARIANT_CALLING_PIPELINE_STEP, inputBindings,
+                    readOnlyInputBindings, outputBindings);
 
             // Execute Python script in GATK docker
             String dockerImage =  "broadinstitute/gatk:4.6.2.0";
@@ -175,10 +175,11 @@ public class ClinicalPipelineGenomicsWrapperAnalysisExecutor extends DockerWrapp
         }
     }
 
-    private String buildScriptCli(String pipelineFilename, String steps, List<AbstractMap.SimpleEntry<String, String>> inputBindings,
+    private String buildScriptCli(PipelineConfig pipeline, String pipelineFilename, String steps,
+                                  List<AbstractMap.SimpleEntry<String, String>> inputBindings,
                                   Set<String> readOnlyInputBindings, List<AbstractMap.SimpleEntry<String, String>> outputBindings)
             throws IOException {
-        PipelineInput pipelineInput = pipelineConfig.getInput();
+        PipelineInput pipelineInput = pipeline.getInput();
 
         // Script binding
         Path virtualScriptPath = Paths.get(SCRIPT_VIRTUAL_PATH);
@@ -211,8 +212,8 @@ public class ClinicalPipelineGenomicsWrapperAnalysisExecutor extends DockerWrapp
         // Pipeline params binding
         Path pipelineParamsPath = getOutDir().resolve(pipelineFilename);
         Path virtualPipelineParamsPath = Paths.get(INPUT_VIRTUAL_PATH).resolve(pipelineParamsPath.getFileName());
-        // Write JSON file
-        writePipeline(pipelineParamsPath);
+        // Write the JSON file expected by the Python script
+        writePipeline(pipeline, pipelineParamsPath);
         inputBindings.add(new AbstractMap.SimpleEntry<>(pipelineParamsPath.toAbsolutePath().toString(),
                 virtualPipelineParamsPath.toString()));
         readOnlyInputBindings.add(virtualPipelineParamsPath.toString());
@@ -231,29 +232,29 @@ public class ClinicalPipelineGenomicsWrapperAnalysisExecutor extends DockerWrapp
                 + " --steps " + steps;
     }
 
-    private void writePipeline(Path pipelineParamsPath) throws IOException {
+    private void writePipeline(PipelineConfig pipeline, Path pipelineParamsPath) throws IOException {
         // Convert the pipeline configuration to an ObjectMap to be understand by the Python script; and then write it as a JSON file
         ObjectMap objectMap = new ObjectMap();
-        objectMap.put("name", pipelineConfig.getName());
-        objectMap.put("version", pipelineConfig.getVersion());
-        objectMap.put("description", pipelineConfig.getDescription());
-        objectMap.put("input", pipelineConfig.getInput());
+        objectMap.put("name", pipeline.getName());
+        objectMap.put("version", pipeline.getVersion());
+        objectMap.put("description", pipeline.getDescription());
+        objectMap.put("input", pipeline.getInput());
 
         // Steps in an array
         ObjectMapper mapper = JacksonUtils.getDefaultObjectMapper();
         List<ObjectMap> steps = new ArrayList<>();
-        if (pipelineConfig.getQualityControlStep() != null) {
-            ObjectMap step = mapper.convertValue(pipelineConfig.getQualityControlStep(), ObjectMap.class);
+        if (pipeline.getQualityControlStep() != null) {
+            ObjectMap step = mapper.convertValue(pipeline.getQualityControlStep(), ObjectMap.class);
             step.put("id", QUALITY_CONTROL_PIPELINE_STEP);
             steps.add(step);
         }
-        if (pipelineConfig.getAlignmentStep() != null) {
-            ObjectMap step = mapper.convertValue(pipelineConfig.getAlignmentStep(), ObjectMap.class);
+        if (pipeline.getAlignmentStep() != null) {
+            ObjectMap step = mapper.convertValue(pipeline.getAlignmentStep(), ObjectMap.class);
             step.put("id", ALIGNMENT_PIPELINE_STEP);
             steps.add(step);
         }
-        if (pipelineConfig.getVariantCallingStep() != null) {
-            ObjectMap step = mapper.convertValue(pipelineConfig.getVariantCallingStep(), ObjectMap.class);
+        if (pipeline.getVariantCallingStep() != null) {
+            ObjectMap step = mapper.convertValue(pipeline.getVariantCallingStep(), ObjectMap.class);
             step.put("id", VARIANT_CALLING_PIPELINE_STEP);
             steps.add(step);
         }
@@ -262,12 +263,12 @@ public class ClinicalPipelineGenomicsWrapperAnalysisExecutor extends DockerWrapp
         mapper.writerFor(ObjectMap.class).writeValue(pipelineParamsPath.toFile(), objectMap);
     }
 
-    private void prepareCallerInputFromAlignmentOutput() throws ToolExecutorException {
+    private void prepareCallerInputFromAlignmentOutput(PipelineConfig pipeline) throws ToolExecutorException {
         // Check output files from the alignment step from the output directory (alignment directory) and update the input of the
         // pipeline configuration to be executed by the variant-calling step (overwritten the pipeline configuration input)
         Path alignmentPath = getOutDir().resolve(ALIGNMENT_PIPELINE_STEP);
         if (Files.exists(alignmentPath) && Files.exists(alignmentPath.resolve("DONE"))) {
-            for (PipelineSample sample : pipelineConfig.getInput().getSamples()) {
+            for (PipelineSample sample : pipeline.getInput().getSamples()) {
                 String basename = getBaseFilename(sample.getFiles());
                 Path bamPath = alignmentPath.resolve(basename + ".sorted.bam");
                 if (!Files.exists(bamPath)) {

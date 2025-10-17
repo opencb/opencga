@@ -1,5 +1,9 @@
 package org.opencb.opencga.analysis.wrappers.clinicalpipeline;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.opencb.opencga.core.models.clinical.pipeline.PipelineConfig;
+
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -32,6 +36,12 @@ public class ClinicalPipelineUtils {
 
     private ClinicalPipelineUtils() {
         throw new IllegalStateException("Utility class");
+    }
+
+    public static PipelineConfig copyPipelineConfig(PipelineConfig input) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        String pipeline = mapper.writeValueAsString(input);
+        return mapper.readValue(pipeline, PipelineConfig.class);
     }
 
     public static boolean isURL(String input) {
