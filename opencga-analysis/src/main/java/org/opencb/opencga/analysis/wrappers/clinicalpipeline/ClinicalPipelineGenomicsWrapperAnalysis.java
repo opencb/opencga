@@ -1,7 +1,5 @@
 package org.opencb.opencga.analysis.wrappers.clinicalpipeline;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -242,8 +240,9 @@ public class ClinicalPipelineGenomicsWrapperAnalysis extends OpenCgaToolScopeStu
     }
 
     private void validatePipelineConfigSteps() throws ToolException {
-        if (updatedPipelineConfig.getQualityControlStep() == null && updatedPipelineConfig.getAlignmentStep() == null
-                && updatedPipelineConfig.getVariantCallingStep() == null) {
+        if (updatedPipelineConfig.getSteps() == null || (updatedPipelineConfig.getSteps().getQualityControl() == null
+                && updatedPipelineConfig.getSteps().getAlignment() == null
+                && updatedPipelineConfig.getSteps().getVariantCalling() == null)) {
             throw new ToolException("All clinical pipeline configuration steps are missing.");
         }
     }
@@ -264,29 +263,29 @@ public class ClinicalPipelineGenomicsWrapperAnalysis extends OpenCgaToolScopeStu
 
             switch (step) {
                 case QUALITY_CONTROL_PIPELINE_STEP: {
-                    if (updatedPipelineConfig.getQualityControlStep() == null) {
+                    if (updatedPipelineConfig.getSteps().getQualityControl() == null) {
                         throw new ToolException("Clinical pipeline step '" + QUALITY_CONTROL_PIPELINE_STEP + "' is not present in the"
                                 + " pipeline configuration.");
                     }
-                    validateTool(QUALITY_CONTROL_PIPELINE_STEP, updatedPipelineConfig.getQualityControlStep().getTool());
+                    validateTool(QUALITY_CONTROL_PIPELINE_STEP, updatedPipelineConfig.getSteps().getQualityControl().getTool());
                     break;
                 }
 
                 case ALIGNMENT_PIPELINE_STEP: {
-                    if (updatedPipelineConfig.getAlignmentStep() == null) {
+                    if (updatedPipelineConfig.getSteps().getAlignment() == null) {
                         throw new ToolException("Clinical pipeline step '" + ALIGNMENT_PIPELINE_STEP + "' is not present in the"
                                 + " pipeline configuration.");
                     }
-                    validateAlignmentTool(updatedPipelineConfig.getAlignmentStep().getTool());
+                    validateAlignmentTool(updatedPipelineConfig.getSteps().getAlignment().getTool());
                     break;
                 }
 
                 case VARIANT_CALLING_PIPELINE_STEP: {
-                    if (updatedPipelineConfig.getVariantCallingStep() == null) {
+                    if (updatedPipelineConfig.getSteps().getVariantCalling() == null) {
                         throw new ToolException("Clinical pipeline step '" + VARIANT_CALLING_PIPELINE_STEP + "' is not present in the"
                                 + " pipeline configuration.");
                     }
-                    validateVariantCallingTools(updatedPipelineConfig.getVariantCallingStep().getTools());
+                    validateVariantCallingTools(updatedPipelineConfig.getSteps().getVariantCalling().getTools());
                     break;
                 }
 

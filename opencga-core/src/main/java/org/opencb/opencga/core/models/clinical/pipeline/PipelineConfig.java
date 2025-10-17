@@ -32,28 +32,18 @@ public class PipelineConfig {
     @DataField(id = "input", description = "Pipeline input configuration")
     private PipelineInput input;
 
-    @DataField(id = "qualityControlStep", description = "Quality control step")
-    private PipelineQualityControlStep qualityControlStep;
-
-    @DataField(id = "alignmentStep", description = "Alignment step")
-    private PipelineAlignmentStep alignmentStep;
-
-    @DataField(id = "variantCallingStep", description = "Variant calling step")
-    private PipelineVariantCallingStep variantCallingStep;
+    @DataField(id = "steps", description = "Pipeline steps (quality control, alignment, variant calling)")
+    private PipelineSteps steps;
 
     public PipelineConfig() {
     }
 
-    public PipelineConfig(String name, String version, String description, PipelineInput input,
-                          PipelineQualityControlStep qualityControlStep, PipelineAlignmentStep alignmentStep,
-                          PipelineVariantCallingStep variantCallingStep) {
+    public PipelineConfig(String name, String version, String description, PipelineInput input, PipelineSteps steps) {
         this.name = name;
         this.version = version;
         this.description = description;
         this.input = input;
-        this.qualityControlStep = qualityControlStep;
-        this.alignmentStep = alignmentStep;
-        this.variantCallingStep = variantCallingStep;
+        this.steps = steps;
     }
 
     @Override
@@ -63,9 +53,7 @@ public class PipelineConfig {
         sb.append(", version='").append(version).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", input=").append(input);
-        sb.append(", qualityControlStep=").append(qualityControlStep);
-        sb.append(", alignmentStep=").append(alignmentStep);
-        sb.append(", variantCallingStep=").append(variantCallingStep);
+        sb.append(", steps=").append(steps);
         sb.append('}');
         return sb.toString();
     }
@@ -106,30 +94,12 @@ public class PipelineConfig {
         return this;
     }
 
-    public PipelineQualityControlStep getQualityControlStep() {
-        return qualityControlStep;
+    public PipelineSteps getSteps() {
+        return steps;
     }
 
-    public PipelineConfig setQualityControlStep(PipelineQualityControlStep qualityControlStep) {
-        this.qualityControlStep = qualityControlStep;
-        return this;
-    }
-
-    public PipelineAlignmentStep getAlignmentStep() {
-        return alignmentStep;
-    }
-
-    public PipelineConfig setAlignmentStep(PipelineAlignmentStep alignmentStep) {
-        this.alignmentStep = alignmentStep;
-        return this;
-    }
-
-    public PipelineVariantCallingStep getVariantCallingStep() {
-        return variantCallingStep;
-    }
-
-    public PipelineConfig setVariantCallingStep(PipelineVariantCallingStep variantCallingStep) {
-        this.variantCallingStep = variantCallingStep;
+    public PipelineConfig setSteps(PipelineSteps steps) {
+        this.steps = steps;
         return this;
     }
 }

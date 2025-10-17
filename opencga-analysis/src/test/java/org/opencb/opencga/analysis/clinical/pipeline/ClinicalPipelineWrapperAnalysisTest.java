@@ -161,8 +161,8 @@ public class ClinicalPipelineWrapperAnalysisTest {
         InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream("ngspipeline/pipeline.json");
         PipelineConfig ngsPipeline = JacksonUtils.getDefaultObjectMapper().readerFor(PipelineConfig.class).readValue(inputStream);
         // Remove the tool freebayes of the step variant-calling for the test
-        ngsPipeline.setVariantCallingStep(ngsPipeline.getVariantCallingStep().setTools(
-                ngsPipeline.getVariantCallingStep().getTools().stream().filter(t -> !t.getId().equals("freebayes")).collect(Collectors.toList())
+        ngsPipeline.getSteps().setVariantCalling(ngsPipeline.getSteps().getVariantCalling().setTools(
+                ngsPipeline.getSteps().getVariantCalling().getTools().stream().filter(t -> !t.getId().equals("freebayes")).collect(Collectors.toList())
         ));
 
         String refBasename = "Homo_sapiens.GRCh38.dna.primary_assembly";
@@ -269,8 +269,8 @@ public class ClinicalPipelineWrapperAnalysisTest {
         InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream("ngspipeline/pipeline.json");
         PipelineConfig ngsPipeline = JacksonUtils.getDefaultObjectMapper().readerFor(PipelineConfig.class).readValue(inputStream);
         // Remove the tool freebayes of the step variant-calling for the test
-        ngsPipeline.setVariantCallingStep(ngsPipeline.getVariantCallingStep().setTools(
-                ngsPipeline.getVariantCallingStep().getTools().stream().filter(t -> !t.getId().equals("freebayes")).collect(Collectors.toList())
+        ngsPipeline.getSteps().setVariantCalling(ngsPipeline.getSteps().getVariantCalling().setTools(
+                ngsPipeline.getSteps().getVariantCalling().getTools().stream().filter(t -> !t.getId().equals("freebayes")).collect(Collectors.toList())
         ));
 
         String refBasename = "Homo_sapiens.GRCh38.dna.primary_assembly";
@@ -343,7 +343,7 @@ public class ClinicalPipelineWrapperAnalysisTest {
         // Set index dir
         genomicsParams.setIndexDir(indexDirFile.getId());
         // Set pipeline config
-        ngsPipeline.getVariantCallingStep().getTools().get(0).setReference(refFile.getId());
+        ngsPipeline.getSteps().getVariantCalling().getTools().get(0).setReference(refFile.getId());
         genomicsParams.setPipeline(ngsPipeline);
         // Variant index parameters
         VariantIndexParams variantIndexParams = new VariantIndexParams();
