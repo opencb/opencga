@@ -222,11 +222,11 @@ public abstract class DockerWrapperAnalysisExecutor extends OpenCgaToolExecutor 
             }
         }
 
-//        if (setUser) {
-//            // User: array of two strings, the first string, the user; the second, the group
-//            String[] user = FileUtils.getUserAndGroup(Paths.get(outputBinding.getKey()), true);
-//            commandLine.append("--user ").append(user[0]).append(":").append(user[1]).append(" ");
-//        }
+        if (setUser) {
+            // User: array of two strings, the first string, the user; the second, the group
+            String[] user = FileUtils.getUserAndGroup(Paths.get(outputBinding.getKey()), true);
+            commandLine.append("--user ").append(user[0]).append(":").append(user[1]).append(" ");
+        }
 
         if (inputBindings != null) {
             // Mount management (bindings)
