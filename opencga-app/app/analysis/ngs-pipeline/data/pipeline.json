@@ -79,8 +79,11 @@
         {
           "id": "freebayes",
           "parameters": {
-            "ploidy": 2,
-            "min-alternate-fraction": 0.2
+          }
+        },
+        {
+          "id": "mutect2",
+          "parameters": {
           }
         }
       ]

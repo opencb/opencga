@@ -5,14 +5,14 @@ from pathlib import Path
 from processing.variant_callers.variant_caller import VariantCaller
 
 
-class GatkVariantCaller(VariantCaller):
+class Mutect2VariantCaller(VariantCaller):
 
     def __init__(self, output: Path, logger=None):
         super().__init__(output, logger)
-        self.tool_name = "gatk"
+        self.tool_name = "mutect2"
 
 
-    """ Run GATK variant calling """
+    """ Run Mutect2 variant calling """
     # @override
     def call(self, input_config: dict, tool_config: dict) -> list[str]:
         reference_path = self._get_reference_index_dir(tool_config, input_config)
@@ -23,10 +23,10 @@ class GatkVariantCaller(VariantCaller):
             bam_file_path = Path(str(bam_file))
 
             if bam_file_path.is_file():
-                vcf_file = self._build_vcf_file_name(bam_file_path, ".gatk.vcf")
-                cmd = (["gatk", "HaplotypeCaller", "-R", str(reference_path)]
-                       + ["-I", str(bam_file)]
-                       + ["-O", str(self.output / vcf_file)])
+                vcf_file = self._build_vcf_file_name(bam_file_path, ".mutect2.vcf")
+                cmd = (["gatk", "Mutect2", "-R", str(reference_path)]
+                          + ["-I", str(bam_file)]
+                          + ["-O", str(self.output / vcf_file)])
                 self.run_command(cmd)
 
                 ## Post-process SAM to sorted BAM and index
@@ -34,7 +34,7 @@ class GatkVariantCaller(VariantCaller):
                 if vcf_processed:
                     vcf_files.append(str(self.output / vcf_processed))
             else:
-                self.logger.error("BAM file %s does not exist for GATK variant calling", str(bam_file))
+                self.logger.error("BAM file %s does not exist for Mutect2 variant calling", str(bam_file))
 
         return vcf_files
 
