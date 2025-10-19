@@ -31,7 +31,7 @@ class Alignment(BaseProcessor):
     and common error handling.
     """
     # @override
-    def execute(self) -> list[str]:
+    def execute(self) -> list[str] | None:
         ## 1. Check if input samples are provided
         input_config = self.pipeline.get("input")
         if len(input_config.get("samples", [])) == 0:
@@ -40,12 +40,17 @@ class Alignment(BaseProcessor):
 
         ## 2. Get alignment step configuration
         self.logger.info("Starting Alignment step: %s", self.__class__.__name__)
-        alignment_config = next((s for s in self.pipeline.get("steps", []) if s.get("id") == "alignment"), {})
-        tool_config = alignment_config.get("tool")
+        alignment_config = self.pipeline.get("steps", {}).get("alignment", {})
         self.logger.debug("Configuration for Alignment: %s", alignment_config)
+
+        ## Check if step is defined and active
+        if not alignment_config or not alignment_config.get("active", True):
+            self.logger.warning("QualityControl step is not defined or not enabled. Skipping.")
+            return None
 
         ## 3. Select aligner based on tool ID
         aligner = None
+        tool_config = alignment_config.get("tool")
         match(tool_config.get("id")):
             case "bwa":
                 self.logger.debug("Using BWA aligner")

@@ -38,12 +38,17 @@ class VariantCalling(BaseProcessor):
 
         ## 2. Get variant-calling step configuration
         self.logger.info("Starting VariantCalling step: %s", self.__class__.__name__)
-        variant_calling_config = next((s for s in self.pipeline.get("steps", []) if s.get("id") == "variant-calling"), {})
-        tool_config = variant_calling_config.get("tools")[0]  # Assume first tool for simplicity
+        variant_calling_config = self.pipeline.get("steps", {}).get("variantCalling", {})
         self.logger.debug("Configuration for QualityControl: %s", variant_calling_config)
+
+        ## Check if step is defined and active
+        if not variant_calling_config or not variant_calling_config.get("active", True):
+            self.logger.warning("QualityControl step is not defined or not enabled. Skipping.")
+            return None
 
         ## 3. Select variant caller based on tool ID
         variant_caller = None
+        tool_config = variant_calling_config.get("tools")[0]  # Assume first tool for simplicity
         match (tool_config.get("id").upper()):
             case "GATK":
                 self.logger.debug("Using GATK variant caller")
@@ -69,8 +74,8 @@ class VariantCalling(BaseProcessor):
                 variant_caller.clean()
 
             ## 2. Check is 'qc' options is set to True in config
-            if variant_calling_config.get("options", {}).get("qc", True):
-                variant_caller.qc(vcfs)
+            # if variant_calling_config.get("options", {}).get("qc", True):
+            #     variant_caller.qc(vcfs)
         else:
             self.logger.error("VariantCaller instance could not be created.")
             raise ValueError("VariantCaller instance could not be created.")
