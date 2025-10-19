@@ -23,9 +23,12 @@ class GatkVariantCaller(VariantCaller):
             bam_file_path = Path(str(bam_file))
 
             if bam_file_path.is_file():
-                vcf_file = self._build_vcf_file_name(bam_file_path, ".gatk.vcf")
+
+                dedup_bam_file = self._apply_best_practices(bam_file_path, input_config, tool_config)
+                dedup_bam_file_path = Path(dedup_bam_file)
+                vcf_file = self._build_vcf_file_name(dedup_bam_file_path, ".gatk.vcf")
                 cmd = (["gatk", "HaplotypeCaller", "-R", str(reference_path)]
-                       + ["-I", str(bam_file)]
+                       + ["-I", str(dedup_bam_file_path)]
                        + ["-O", str(self.output / vcf_file)])
                 self.run_command(cmd)
 
@@ -38,41 +41,47 @@ class GatkVariantCaller(VariantCaller):
 
         return vcf_files
 
-    def best_practices(self, input_config: dict, tool_config: dict) -> str:
-        reference_path = self._get_reference_index_dir(tool_config, input_config)
+    def _apply_best_practices(self, bam_file_path: Path, input_config: dict, tool_config: dict) -> str:
+        ## GATK best practices can be implemented here
+        self.logger.info("GATK best practices workflow is not implemented yet.")
 
-        bam_file = list(self.output.parent.glob("alignment/*.sorted.bam"))
-        if len(bam_file) != 2:
-            self.logger.error("Best practices workflow requires exactly two BAM files (tumor and normal). Found %d", len(bam_file))
+        # bam_files = list(self.output.parent.parent.glob("alignment/*.sorted.bam"))
+        # for bam_file in bam_files:
+        # bam_file_path = Path(str(bam_file))
+
+        if not bam_file_path.is_file():
+            self.logger.error("BAM file %s does not exist for GATK best practices workflow", str(bam_file_path))
             return None
 
-        tumor_bam = None
-        normal_bam = None
-        for bf in bam_file:
-            if "tumor" in bf.name.lower():
-                tumor_bam = bf
-            elif "normal" in bf.name.lower():
-                normal_bam = bf
+        ## 1. MarkDuplicates: Create a deduplicated BAM file
+        dedup_bam_file = str(self.output / (bam_file_path.stem + ".dedup.bam"))
+        dedup_bam_file_metrics = str(self.output / (bam_file_path.stem + ".dedup.metrics"))
+        cmd_dedup = (["gatk", "MarkDuplicates", "-I", str(bam_file_path)]
+                     + ["-O", str(dedup_bam_file)]
+                     + ["-M", str(dedup_bam_file_metrics)])
+        self.run_command(cmd_dedup)
 
-        if not tumor_bam or not normal_bam:
-            self.logger.error("Could not identify tumor and normal BAM files based on naming convention.")
-            return None
+        dedup_bai_file = dedup_bam_file + ".bai"
+        cmd = ["samtools"] + ["index", "-b"] + ["--threads", "2"] + ["-o", dedup_bai_file] + [dedup_bam_file]
+        self.run_command(cmd)
 
-        if tumor_bam.is_file() and normal_bam.is_file():
-            vcf_file = "sample.best_practices.vcf"
-            cmd = (["gatk", "Mutect2", "-R", str(reference_path)]
-                   + ["-I", str(tumor_bam)]
-                   + ["-I", str(normal_bam)]
-                   + ["-O", str(self.output / vcf_file)])
-            self.run_command(cmd)
+        ## 2. BaseRecalibrator: Create a recalibration table
 
-            ## Post-process SAM to sorted BAM and index
-            vcf_processed = self._vcf_post_processing(str(self.output / vcf_file))
-            if vcf_processed:
-                return str(self.output / vcf_processed)
+        ## 2.1 Download known sites from 'https://console.cloud.google.com/storage/browser/_details/genomics-public-data/resources/broad/hg38/v0/1000G_omni2.5.hg38.vcf.gz' if not provided:
+        # wget_cmd = (["wget", "-O", str(self.output / "known_sites.vcf.gz")]
+        #             + [tool_config.get("knownSites", "https://console.cloud.google.com/storage/browser/_details/genomics-public-data/resources/broad/hg38/v0/hapmap_3.3.hg38.vcf.gz")])
+        # self.run_command(wget_cmd)
+        #
+        # ## 2.2 Gunzip the known sites VCF
+        # gunzip_cmd = (["gunzip", "-f", str(self.output / "known_sites.vcf.gz")])
+        # self.run_command(gunzip_cmd)
+        #
+        # ## 2.2 Run BaseRecalibrator
+        # recal_table = bam_file_path.stem + ".recal.table"
+        # cmd_recal = (["gatk", "BaseRecalibrator", "-I", str(self.output / dedup_bam_file)]
+        #              + ["-R", str(self._get_reference_index_dir(tool_config, input_config))]
+        #              + ["--known-sites", str(self.output / "known_sites.vcf")]
+        #              + ["-O", str(self.output / recal_table)])
+        # self.run_command(cmd_recal)
 
-            return vcf_file
-        else:
-            self.logger.error("BAM files do not exist for GATK best practices variant calling: %s, %s", str(tumor_bam), str(normal_bam))
-
-        return None
+        return dedup_bam_file

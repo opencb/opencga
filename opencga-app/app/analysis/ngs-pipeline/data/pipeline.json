@@ -78,11 +78,13 @@
         },
         {
           "id": "freebayes",
+          "active": false,
           "parameters": {
           }
         },
         {
           "id": "mutect2",
+          "active": false,
           "parameters": {
           }
         }
