@@ -143,10 +143,10 @@ public class ClinicalPipelineGenomicsWrapperAnalysis extends OpenCgaToolScopeStu
         // Find the .sorted.<variant calling tool ID>.vcf.gz file within the variant-calling folder
         Path vcfPath;
         for (String variantCallingToolId : variantCallingToolIds) {
-            try (Stream<Path> stream = Files.list(getOutDir().resolve(VARIANT_CALLING_PIPELINE_STEP))) {
+            try (Stream<Path> stream = Files.list(getOutDir().resolve(VARIANT_CALLING_PIPELINE_STEP).resolve(variantCallingToolId))) {
                 vcfPath = stream
                         .filter(Files::isRegularFile)
-                        .filter(path -> path.getFileName().toString().endsWith(".sorted." + variantCallingToolId + ".vcf.gz"))
+                        .filter(path -> path.getFileName().toString().endsWith(variantCallingToolId + ".vcf.gz"))
                         .findFirst()
                         .orElse(null);
             }

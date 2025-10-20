@@ -320,7 +320,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
             }
         }
         analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/ngs-pipeline/processing/variant_callers")).toAbsolutePath();
-        ngsFiles = Arrays.asList("__init__.py", "gatk_variant_caller.py", "variant_caller.py");
+        ngsFiles = Arrays.asList("__init__.py", "gatk_variant_caller.py", "freebayes_variant_caller.py", "mutect2_variant_caller.py", "variant_caller.py");
         for (String ngsFile : ngsFiles) {
             try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/ngs-pipeline/processing/variant_callers/"
                     + ngsFile)) {

@@ -62,7 +62,7 @@ class GatkVariantCaller(VariantCaller):
         self.run_command(cmd_dedup)
 
         dedup_bai_file = dedup_bam_file + ".bai"
-        cmd = ["samtools"] + ["index", "-b"] + ["--threads", "2"] + ["-o", dedup_bai_file] + [dedup_bam_file]
+        cmd = ["samtools"] + ["index", "-b"] + ["-@", "2"] + [dedup_bam_file]
         self.run_command(cmd)
 
         ## 2. BaseRecalibrator: Create a recalibration table
