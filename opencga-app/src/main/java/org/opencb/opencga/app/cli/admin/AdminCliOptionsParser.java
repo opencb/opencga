@@ -777,13 +777,13 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         @ParametersDelegate
         public IgnorePasswordCommonCommandOptions commonOptions = AdminCliOptionsParser.this.noPasswordCommonCommandOptions;
 
-        @Parameter(names = {"--start"}, description = "Start OpenCGA gRPC server", arity = 0)
+        @Parameter(names = {"--start"}, description = "Ignored", arity = 0, hidden = true)
         public boolean start;
 
 //        @Parameter(names = {"--stop"}, description = "Stop OpenCGA gRPC server", arity = 0)
 //        public boolean stop;
 
-        @Parameter(names = {"--port"}, description = "REST port to be used", arity = 1)
+        @Parameter(names = {"--port"}, description = "GRPC port to be used", arity = 1)
         public int port;
 
         @Parameter(names = {"--bg", "--background"}, description = "Run the server in background as a daemon", arity = 0)

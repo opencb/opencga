@@ -22,7 +22,6 @@ package org.opencb.opencga.core.config.client;
 public class GrpcConfig {
 
     private String host;
-    private boolean enabled;
 
     public GrpcConfig() {
     }
@@ -40,11 +39,4 @@ public class GrpcConfig {
         return this;
     }
 
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
 }

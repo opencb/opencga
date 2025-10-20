@@ -18,8 +18,8 @@ import java.util.Map;
 public class GrpcServerTest {
 
     private Server server;
-    private ManagedChannel channel;
     private VariantServiceGrpc.VariantServiceBlockingStub variantServiceBlockingStub;
+    private AdminServiceGrpc.AdminServiceBlockingStub adminServiceBlockingStub;
     private int port;
 
     @Before
@@ -33,12 +33,13 @@ public class GrpcServerTest {
 
 
         // We create the gRPC channel to the specified server host and port
-        channel = ManagedChannelBuilder.forTarget("localhost:" + port)
+        ManagedChannel channel = ManagedChannelBuilder.forTarget("localhost:" + port)
                 .usePlaintext()
                 .build();
 
         // We use a blocking stub to execute the query to gRPC
         variantServiceBlockingStub = VariantServiceGrpc.newBlockingStub(channel);
+        adminServiceBlockingStub = AdminServiceGrpc.newBlockingStub(channel);
 
     }
 
@@ -48,6 +49,21 @@ public class GrpcServerTest {
             server.shutdown();
             server.awaitTermination();
         }
+    }
+
+    @Test
+    public void testIsAlive() throws Exception {
+        adminServiceBlockingStub.ping(GenericServiceModel.Request.newBuilder().setUser("me").build());
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void testIsAliveFail() {
+        // We create the gRPC channel to the specified server host and port
+        ManagedChannel channel = ManagedChannelBuilder.forTarget("localhost:" + (port + 1))
+                .usePlaintext()
+                .build();
+
+        AdminServiceGrpc.newBlockingStub(channel).ping(GenericServiceModel.Request.newBuilder().setUser("me").build());
     }
 
     @Test
@@ -112,6 +128,13 @@ public class GrpcServerTest {
     }
 
     public static class TestAdminGrpcService extends AdminServiceGrpc.AdminServiceImplBase {
+
+        @Override
+        public void ping(GenericServiceModel.Request request, StreamObserver<ServiceTypesModel.MapResponse> responseObserver) {
+            responseObserver.onNext(ServiceTypesModel.MapResponse.newBuilder().putValues("ping", "pong").build());
+            responseObserver.onCompleted();
+        }
+
         @Override
         public void status(GenericServiceModel.Request request, StreamObserver<ServiceTypesModel.MapResponse> responseObserver) {
             ServiceTypesModel.MapResponse response = ServiceTypesModel.MapResponse.newBuilder()

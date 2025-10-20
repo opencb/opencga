@@ -40,6 +40,12 @@ public class AdminGrpcService extends AdminServiceGrpc.AdminServiceImplBase {
     }
 
     @Override
+    public void ping(GenericServiceModel.Request request, StreamObserver<ServiceTypesModel.MapResponse> responseObserver) {
+        responseObserver.onNext(ServiceTypesModel.MapResponse.newBuilder().putValues("ping", "pong").build());
+        responseObserver.onCompleted();
+    }
+
+    @Override
     public void status(GenericServiceModel.Request request, StreamObserver<ServiceTypesModel.MapResponse> responseObserver) {
         OpenCGAResult<OpenCGAHealthCheckMonitor.HealthCheckStatus> result = grpcService.getHealthCheckMonitor().getStatus();
         OpenCGAHealthCheckMonitor.HealthCheckStatus status = result.first();

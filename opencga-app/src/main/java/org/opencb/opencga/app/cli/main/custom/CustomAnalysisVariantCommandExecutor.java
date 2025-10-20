@@ -17,6 +17,7 @@ import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.config.client.ClientConfiguration;
 import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.response.RestResponse;
+import org.opencb.opencga.server.grpc.AdminServiceGrpc;
 import org.opencb.opencga.server.grpc.GenericServiceModel;
 import org.opencb.opencga.server.grpc.VariantServiceGrpc;
 import org.slf4j.Logger;
@@ -29,22 +30,35 @@ import java.util.concurrent.TimeUnit;
 
 public class CustomAnalysisVariantCommandExecutor extends CustomCommandExecutor {
 
-    private boolean grpc;
-
-    public CustomAnalysisVariantCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration, SessionManager session, String appHome, Logger logger) {
+    public CustomAnalysisVariantCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
+                                                SessionManager session, String appHome, Logger logger) {
         super(options, token, clientConfiguration, session, appHome, logger);
-        grpc = clientConfiguration.getGrpc().isEnabled();
     }
 
-    public CustomAnalysisVariantCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration, SessionManager session, String appHome, Logger logger, OpenCGAClient openCGAClient) {
+    public CustomAnalysisVariantCommandExecutor(ObjectMap options, String token, ClientConfiguration clientConfiguration,
+                                                SessionManager session, String appHome, Logger logger, OpenCGAClient openCGAClient) {
         super(options, token, clientConfiguration, session, appHome, logger, openCGAClient);
-        grpc = clientConfiguration.getGrpc().isEnabled();
+    }
+
+    public boolean isGrpcAlive() {
+        String grpcServerHost = clientConfiguration.getGrpc().getHost();
+        ManagedChannel channel = ManagedChannelBuilder.forTarget(grpcServerHost)
+                .usePlaintext()
+                .build();
+
+        try {
+            AdminServiceGrpc.newBlockingStub(channel).ping(GenericServiceModel.Request.newBuilder().build());
+            return true;
+        } catch (RuntimeException e) {
+            logger.debug("GRPC server is not alive");
+            return false;
+        }
     }
 
     public RestResponse<Variant> query(AnalysisVariantCommandOptions.QueryCommandOptions commandOptions)
             throws ClientException, InterruptedException, InvalidProtocolBufferException {
 
-        if (grpc) {
+        if (isGrpcAlive()) {
             // Connecting to the server host and port
             String grpcServerHost = clientConfiguration.getGrpc().getHost();
             logger.debug("Connecting to gRPC server at '{}'", grpcServerHost);
