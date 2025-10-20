@@ -26,7 +26,6 @@ class BwaAligner(Aligner):
         self.logger.debug("Index prefix files found: %s", str(index_prefix[0]))
 
         ## 3. Parse parameters and add them to cmd if any
-        # parameters = bwa_tool_config.get("parameters") or {}
         params_list = self.build_cli_params(tool_config.get("parameters") or {}, ["o", "outdir", "R"])
         self.logger.debug("BWA parameters: %s", params_list)
 

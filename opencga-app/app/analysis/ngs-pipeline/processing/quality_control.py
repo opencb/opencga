@@ -29,8 +29,13 @@ class QualityControl(BaseProcessor):
     # @override
     def execute(self) -> None:
         self.logger.info("Starting QualityControl step: %s", self.__class__.__name__)
-        quality_control_config = next((s for s in self.pipeline.get("steps", []) if s.get("id") == "quality-control"), {})
+        quality_control_config = self.pipeline.get("steps", {}).get("qualityControl", {})
         self.logger.debug("Configuration for QualityControl: %s", quality_control_config)
+
+        ## Check if step is defined and active
+        if not quality_control_config or not quality_control_config.get("active", True):
+            self.logger.warning("QualityControl step is not defined or not enabled. Skipping.")
+            return None
 
         ## Get the tool in the quality-control step of the pipeline dict
         input = self.pipeline.get("input")

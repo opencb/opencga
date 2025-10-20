@@ -25,49 +25,49 @@ class Alignment(BaseProcessor):
 
 
     """
-    A single quality-control step.
-
+    A single alignment step.
     Implement `run` with concrete checks. `execute` wraps `run` adding logging
     and common error handling.
     """
     # @override
-    def execute(self) -> list[str]:
-        ## 1. Check if input samples are provided
-        input_config = self.pipeline.get("input")
-        if len(input_config.get("samples", [])) == 0:
-            self.logger.error("No input samples provided for bwa")
-            raise ValueError("No input files provided for bwa")
-
-        ## 2. Get alignment step configuration
+    def execute(self) -> list[str] | None:
+        ## 1. Get alignment step configuration
         self.logger.info("Starting Alignment step: %s", self.__class__.__name__)
-        alignment_config = next((s for s in self.pipeline.get("steps", []) if s.get("id") == "alignment"), {})
-        tool_config = alignment_config.get("tool")
+        alignment_config = self.pipeline.get("steps", {}).get("alignment", {})
         self.logger.debug("Configuration for Alignment: %s", alignment_config)
 
+        ## 2. Check if step is defined and active
+        if not alignment_config or not alignment_config.get("active", True):
+            self.logger.warning("Alignment step is not defined or not active. Skipping.")
+            return None
+
         ## 3. Select aligner based on tool ID
+        tool_config = alignment_config.get("tool")
+        self.logger.debug("Alignment tool configuration: %s", tool_config)
+        tool_id = tool_config.get("id")
         aligner = None
-        match(tool_config.get("id")):
-            case "bwa":
+        match(tool_id.upper()):
+            case "BWA":
                 self.logger.debug("Using BWA aligner")
                 aligner = BwaAligner(self.output, self.logger)
-            case "bwa-mem2":
+            case "BWA-MEM2":
                 self.logger.debug("Using BWA-MEM2 aligner")
                 aligner = BwaMem2Aligner(self.output, self.logger)
-            case "minimap2":
+            case "MINIMAP2":
                 self.logger.debug("Using MINIMAP2 aligner")
                 aligner = Minimap2Aligner(self.output, self.logger)
-            case "bowtie2":
+            case "BOWTIE2":
                 self.logger.debug("Using BOWTIE2 aligner")
                 aligner = Bowtie2Aligner(self.output, self.logger)
             case _:
-                self.logger.error("Unsupported aligner tool: %s", tool_config.get("id"))
-                raise ValueError(f"Unsupported aligner tool: {tool_config.get('id')}")
+                self.logger.error("Unsupported aligner tool: %s", tool_id)
+                raise ValueError(f"Unsupported aligner tool: {tool_id}")
 
         ## 4. Run alignment and options
         sorted_bams = None
         if aligner is not None:
             ## Perform alignment
-            sorted_bams = aligner.align(input_config, tool_config)
+            sorted_bams = aligner.align(self.pipeline.get("input"), tool_config)
 
             ## Options:
             ## 1. Clean up intermediate files if specified in config

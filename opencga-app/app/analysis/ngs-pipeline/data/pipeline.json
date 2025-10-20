@@ -7,27 +7,36 @@
     "samples": [
       {
         "id": "s1",
-        "files": ["fastq", "fastq"],
+        "files": [
+          "fastq1",
+          "fastq2"
+        ],
         "somatic": false,
         "role": "father"
       },
       {
         "id": "s2",
-        "files": ["fastq", "fastq"],
+        "files": [
+          "fastq1",
+          "fastq2"
+        ],
         "somatic": true,
         "role": "mother"
       },
       {
         "id": "son",
-        "files": ["fastq", "fastq"],
+        "files": [
+          "fastq1",
+          "fastq2"
+        ],
         "somatic": false,
         "role": "child"
       }
     ]
   },
-  "steps": [
-    {
-      "id": "quality-control",
+  "steps": {
+    "qualityControl": {
+      "active": true,
       "options": {
       },
       "tool": {
@@ -37,8 +46,8 @@
         }
       }
     },
-    {
-      "id": "alignment",
+    "alignment": {
+      "active": true,
       "options": {
         "clean": true,
         "cram": false,
@@ -51,8 +60,8 @@
         }
       }
     },
-    {
-      "id": "variant-calling",
+    "variantCalling": {
+      "active": true,
       "options": {
         "clean": true,
         "qc": true
@@ -65,17 +74,21 @@
             "mendelianError": false
           },
           "parameters": {
-
           }
         },
         {
           "id": "freebayes",
+          "active": false,
           "parameters": {
-            "ploidy": 2,
-            "min-alternate-fraction": 0.2
+          }
+        },
+        {
+          "id": "mutect2",
+          "active": false,
+          "parameters": {
           }
         }
       ]
     }
-  ]
+  }
 }
