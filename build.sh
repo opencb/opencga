@@ -151,9 +151,10 @@ function print_usage() {
   echo "     -H     --storage-hadoop      STRING         Hadoop flavour. hdp3.1, hdi5.1, emr6.1, emr6.13 ... [hdp3.1]"
   echo "     -T     --task                STRING         Task ID used for building and testing dependencies, this will serve as a reference for checkouts"
   echo "     -l     --test-level          STRING         Level of test we must to execute(runShortTests,runMediumTests,runLongTests)"
-  echo "     -t     --test                FLAG           Execute the XetaBase tests by default only build"
+  echo "     -t     --test                FLAG           Execute the XetaBase tests (by default only build)"
   echo "     -f     --test-fail-never     FLAG           The process executes all tests even if some fail."
   echo "     -b     --prepare-branches    FLAG           Previous to run, it will download and compile all branches of the dependencies."
+  echo "            --skip-opencga-build  FLAG           Skip OpenCGA build."
   echo "     -s     --test-save-reports   FLAG           Save OpenCGA JUnit test reports to XetaBase Report server (Quality Team)."
   echo "     -d     --docker              FLAG           Publish docker of OpenCGA-enterprise."
   echo "     -p     --docker-tag          FLAG           Tag for docker of OpenCGA-enterprise."
@@ -259,6 +260,10 @@ function prepare_branches() {
 function build_opencga() {
   cd "$OPENCGA_HOME_DIR" || exit 2
   if [ "$COMMAND" == "build" ];then
+      if [[ "$SKIP_OPENCGA_BUILD" == "true" ]]; then
+        log "Skip opencga build!"
+        return
+      fi
       log "Compiling opencga... $(pwd)"
       mvn clean install -DskipTests -P"$STORAGE_HADOOP_DEPS" -T 2 --no-transfer-progress
       if [[ "$?" -ne 0 ]] ; then
@@ -649,6 +654,7 @@ function print_log() {
 LOG_SUMMARY=""
 DB_CELLBASE="localhost:27017"
 OPENCGA_HOME_DIR="$PWD/opencga-home/"
+SKIP_OPENCGA_BUILD="false"
 STORAGE_HADOOP_DEPS="hdp3.1"
 TEST_TAG="runShortTests"
 FAIL_NEVER=""
@@ -682,6 +688,10 @@ while [[ $# -gt 0 ]]; do
   -o | --opencga-home)
     OPENCGA_HOME_DIR=$(realpath "$value")
     shift # past argument
+    shift # past value
+    ;;
+  --skip-opencga-build)
+    SKIP_OPENCGA_BUILD=true
     shift # past value
     ;;
   -c | --cellbase-db)

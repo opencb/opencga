@@ -22,6 +22,8 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.jasig.cas.client.configuration.ConfigurationKeys;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.server.RestServer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.DispatcherType;
 import java.nio.file.Path;
@@ -36,6 +38,8 @@ import java.util.Map;
 public class EnterpriseRestServer extends RestServer {
 
     private final EnterpriseConfiguration enterpriseConfiguration;
+    private final Logger logger = LoggerFactory.getLogger(EnterpriseRestServer.class);
+
 
     public EnterpriseRestServer(Path opencgaHome, int port) {
         super(opencgaHome, port);
