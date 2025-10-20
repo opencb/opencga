@@ -5,10 +5,29 @@ package protobuf.opencb.service;
 option java_package = "org.opencb.opencga.server.grpc";
 option java_outer_classname = "GenericServiceModel";
 
+import "protobuf/opencb/variant.proto";
+
 message Request {
     string user = 3;
     string token = 4;
     string ip = 5;
     map<string, string> query = 6;
     map<string, string> options = 7;
+}
+
+message Event {
+    string type = 1;
+    int32 code = 2;
+    string id = 3;
+    string name = 4;
+    string message = 5;
+}
+
+message VariantResponse {
+    Variant variant = 1;
+    repeated Event event = 2;
+    int32 count = 4;
+    string error = 5;
+    string errorFull = 6;
+    string stackTrace = 7;
 }

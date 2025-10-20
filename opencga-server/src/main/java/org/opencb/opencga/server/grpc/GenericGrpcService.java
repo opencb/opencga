@@ -74,19 +74,20 @@ public class GenericGrpcService {
         this.defaultStorageEngine = storageConfiguration.getVariant().getDefaultEngine();
 
         logger.info("========================================================================");
-        logger.info("| Starting OpenCGA REST server, initializing OpenCGAWSServer");
+        logger.info("| Starting OpenCGA GRPC server, initializing GenericGrpcService");
         logger.info("| This message must appear only once.");
 
 
         // Check and execute the init methods
         java.nio.file.Path configDirPath = opencgaHome.resolve("conf");
-        logger.info("|  * Configuration folder: '{}'", configDirPath.toString());
+        logger.info("|  * OpenCGA home: '{}'", opencgaHome);
+        logger.info("|  * Configuration folder: '{}'", configDirPath);
 //        loadOpenCGAConfiguration(configDirPath);
         OpenCGAServerUtils.initLogger(logger, configuration, configDirPath);
         initOpenCGAObjects();
 
 
-        logger.info("| OpenCGA REST successfully started!");
+        logger.info("| OpenCGA GRPC successfully started!");
         logger.info("| - Version {}", GitRepositoryState.getInstance().getBuildVersion());
         logger.info("| - Git version: {} {}", GitRepositoryState.getInstance().getBranch(), GitRepositoryState.getInstance().getCommitId());
         logger.info("========================================================================\n");
@@ -170,7 +171,7 @@ public class GenericGrpcService {
     @FunctionalInterface
     public interface RequestRunner {
 
-        void run(Query query, QueryOptions options) throws Exception;
+        int run(Query query, QueryOptions options) throws Exception;
 
     }
 
@@ -188,8 +189,9 @@ public class GenericGrpcService {
         }
 
         Exception e = null;
+        int numResults = -1;
         try {
-            requestRunner.run(query, queryOptions);
+            numResults = requestRunner.run(query, queryOptions);
         } catch (Exception ex) {
             e = ex;
             logger.error("Catch error: " + e.getMessage(), e);
@@ -206,7 +208,11 @@ public class GenericGrpcService {
             sb.append("ERROR");
             ok = false;
         }
-        sb.append(", ").append(stopWatch.getTime(TimeUnit.MILLISECONDS)).append("ms").append(", ").append(requestDescription);
+        sb.append(", ").append(stopWatch.getTime(TimeUnit.MILLISECONDS)).append("ms");
+        if (numResults >= 0) {
+            sb.append(", ").append(numResults).append(" results");
+        }
+        sb.append(", ").append(requestDescription);
         if (ok) {
             logger.info(sb.toString());
         } else {

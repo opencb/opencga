@@ -20,10 +20,15 @@ import io.grpc.stub.StreamObserver;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.tools.variant.converters.proto.VariantAvroToVariantProtoConverter;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.opencb.opencga.server.grpc.VariantServiceGrpc.getQueryMethod;
 
@@ -43,20 +48,62 @@ public class VariantGrpcService extends VariantServiceGrpc.VariantServiceImplBas
     }
 
     @Override
-    public void query(GenericServiceModel.Request request, StreamObserver<VariantProto.Variant> responseObserver) {
+    public void query(GenericServiceModel.Request request, StreamObserver<GenericServiceModel.VariantResponse> responseObserver) {
         genericGrpcService.run(getQueryMethod(), request, (query, queryOptions) -> {
             VariantAvroToVariantProtoConverter converter = new VariantAvroToVariantProtoConverter();
-
+            int i = 0;
+            List<GenericServiceModel.Event> events = null;
             try (VariantDBIterator iterator = variantStorageManager.iterator(query, queryOptions, request.getToken())) {
+                if (iterator.getEvents() != null) {
+                    events = new ArrayList<>(iterator.getEvents().size());
+                    for (Event event : iterator.getEvents()) {
+                        GenericServiceModel.Event.Builder eventB = GenericServiceModel.Event.newBuilder();
+                        if (event.getMessage() != null) {
+                            eventB.setMessage(event.getMessage());
+                        }
+                        if (event.getType() != null) {
+                            eventB.setType(event.getType().name());
+                        }
+                        if (event.getName() != null) {
+                            eventB.setName(event.getName());
+                        }
+                        if (event.getId() != null) {
+                            eventB.setId(event.getId());
+                        }
+                        eventB.setCode(event.getCode());
+                        events.add(eventB.build());
+                    }
+                }
                 while (iterator.hasNext()) {
                     Variant variant = iterator.next();
-                    responseObserver.onNext(converter.convert(variant));
+                    VariantProto.Variant variantProto = converter.convert(variant);
+                    GenericServiceModel.VariantResponse.Builder responseBuilder = GenericServiceModel.VariantResponse.newBuilder();
+                    if (events != null) {
+                        responseBuilder.addAllEvent(events);
+                        events = null;
+                    }
+                    GenericServiceModel.VariantResponse response = responseBuilder
+                            .setVariant(variantProto)
+                            .setCount(i++)
+                            .build();
+                    responseObserver.onNext(response);
                 }
             } catch (Exception e) {
+                GenericServiceModel.VariantResponse.Builder responseBuilder = GenericServiceModel.VariantResponse.newBuilder();
+                if (events != null) {
+                    responseBuilder.addAllEvent(events);
+                }
+                GenericServiceModel.VariantResponse response = responseBuilder
+                        .setError(e.getMessage())
+                        .setErrorFull(ExceptionUtils.prettyExceptionMessage(e))
+                        .setStackTrace(ExceptionUtils.prettyExceptionStackTrace(e))
+                        .build();
+                responseObserver.onNext(response);
                 responseObserver.onError(e);
                 throw e;
             }
             responseObserver.onCompleted();
+            return i;
         });
     }
 

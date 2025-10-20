@@ -15,7 +15,7 @@ service VariantService {
 
 //    rpc distinct(Request) returns (StringArrayResponse) {}
 
-    rpc query(Request) returns (stream Variant) {}
+    rpc query(Request) returns (stream VariantResponse);
 
 //    rpc groupBy(Request) returns (GroupResponse) {}
 

@@ -5,6 +5,7 @@ import com.google.protobuf.util.JsonFormat;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -75,15 +76,20 @@ public class CustomAnalysisVariantCommandExecutor extends CustomCommandExecutor 
                     .build();
 
             try {
-                Iterator<VariantProto.Variant> variantIterator = variantServiceBlockingStub
+                Iterator<GenericServiceModel.VariantResponse> variantIterator = variantServiceBlockingStub
 //                        .withInterceptors(new ExceptionLoggingInterceptor())
                         .withCompression("gzip")
                         .query(request);
                 JsonFormat.Printer printer = JsonFormat.printer();
                 try (PrintStream printStream = new PrintStream(System.out)) {
                     while (variantIterator.hasNext()) {
-                        VariantProto.Variant next = variantIterator.next();
-                        printStream.println(printer.print(next));
+                        GenericServiceModel.VariantResponse next = variantIterator.next();
+                        if (StringUtils.isNotEmpty(next.getError())) {
+                            logger.error("gRPC request failed: {}\n{}", next.getErrorFull(), next.getStackTrace());
+                            continue;
+                        }
+                        VariantProto.Variant variant = next.getVariant();
+                        printStream.println(printer.print(variant));
                     }
                 }
             } catch (StatusRuntimeException e) {
