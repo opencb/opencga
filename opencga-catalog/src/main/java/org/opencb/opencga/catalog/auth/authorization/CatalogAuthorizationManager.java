@@ -1035,7 +1035,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void applyPermissionRule(String organizationId, long studyId, PermissionRule permissionRule, Enums.Entity entry)
+    public void applyPermissionRule(String organizationId, long studyId, PermissionRule permissionRule, Enums.EntityType entry)
             throws CatalogException {
         // 1. We obtain which of those members are actually users to add them to the @members group automatically
         List<String> userList = permissionRule.getMembers().stream()
@@ -1052,8 +1052,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void removePermissionRuleAndRemovePermissions(String organizationId, Study study, String permissionRuleId, Enums.Entity entry)
-            throws CatalogException {
+    public void removePermissionRuleAndRemovePermissions(String organizationId, Study study, String permissionRuleId,
+                                                         Enums.EntityType entry) throws CatalogException {
         ParamUtils.checkObj(permissionRuleId, "PermissionRule id");
         ParamUtils.checkObj(entry, "Entity");
 
@@ -1062,8 +1062,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void removePermissionRuleAndRestorePermissions(String organizationId, Study study, String permissionRuleId, Enums.Entity entry)
-            throws CatalogException {
+    public void removePermissionRuleAndRestorePermissions(String organizationId, Study study, String permissionRuleId,
+                                                          Enums.EntityType entry) throws CatalogException {
         ParamUtils.checkObj(permissionRuleId, "PermissionRule id");
         ParamUtils.checkObj(entry, "Entity");
 
@@ -1072,7 +1072,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void removePermissionRule(String organizationId, long studyId, String permissionRuleId, Enums.Entity entry)
+    public void removePermissionRule(String organizationId, long studyId, String permissionRuleId, Enums.EntityType entry)
             throws CatalogException {
         ParamUtils.checkObj(permissionRuleId, "PermissionRule id");
         ParamUtils.checkObj(entry, "Entity");

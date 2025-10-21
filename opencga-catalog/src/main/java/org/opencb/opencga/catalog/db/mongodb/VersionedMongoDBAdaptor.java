@@ -114,7 +114,7 @@ public class VersionedMongoDBAdaptor {
                 throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
     }
 
-    protected void insert(ClientSession session, Document document) {
+    public void insert(ClientSession session, Document document) {
         String uuid = getClientSessionUuid(session);
         document.put(PRIVATE_TRANSACTION_ID, uuid);
         document.put(VERSION, 1);

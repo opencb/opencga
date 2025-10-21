@@ -11,12 +11,14 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
+import org.opencb.opencga.catalog.db.api.DBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.PrivateFields;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -155,11 +157,15 @@ public class OrganizationMongoDBAdaptorFactory {
     private final MongoDBCollection organizationCollection;
     private final Map<String, MongoDBCollection> mongoDBCollectionMap;
 
+    private final DBAdaptorExtension extension;
+    private final Map<Class<? extends PrivateFields>, DBAdaptor<?>> extensionAdaptors;
+
     private final Logger logger;
 
     public OrganizationMongoDBAdaptorFactory(String organizationId, MongoDataStoreManager mongoDataStoreManager,
                                              MongoDBConfiguration mongoDBConfiguration, Configuration configuration,
-                                             CatalogIOManager catalogIOManager, IOManagerFactory ioManagerFactory)
+                                             CatalogIOManager catalogIOManager, IOManagerFactory ioManagerFactory,
+                                             DBAdaptorExtension extension)
             throws CatalogDBException {
         logger = LoggerFactory.getLogger(OrganizationMongoDBAdaptorFactory.class);
         this.mongoManager = mongoDataStoreManager;
@@ -170,6 +176,8 @@ public class OrganizationMongoDBAdaptorFactory {
         if (mongoDataStore == null) {
             throw new CatalogDBException("Unable to connect to MongoDB '" + database + "'");
         }
+
+        this.extension = extension;
 
         MongoDBCollection migrationCollection = mongoDataStore.getCollection(MIGRATION_COLLECTION);
 
@@ -215,8 +223,7 @@ public class OrganizationMongoDBAdaptorFactory {
 
         MongoDBCollection auditCollection = mongoDataStore.getCollection(AUDIT_COLLECTION);
 
-        notesDBAdaptor = new NoteMongoDBAdaptor(notesCollection, notesArchivedCollection, deletedNotesCollection,
-                configuration, this);
+        notesDBAdaptor = new NoteMongoDBAdaptor(notesCollection, notesArchivedCollection, deletedNotesCollection, configuration, this);
         organizationDBAdaptor = new OrganizationMongoDBAdaptor(organizationCollection, configuration, this);
         fileDBAdaptor = new FileMongoDBAdaptor(fileCollection, deletedFileCollection, configuration, this, ioManagerFactory);
         familyDBAdaptor = new FamilyMongoDBAdaptor(familyCollection, familyArchivedCollection, deletedFamilyCollection, configuration,
@@ -273,6 +280,7 @@ public class OrganizationMongoDBAdaptorFactory {
 
         mongoDBCollectionMap.put(DELETED_NOTE_COLLECTION, deletedNotesCollection);
         mongoDBCollectionMap.put(DELETED_USER_COLLECTION, deletedUserCollection);
+        mongoDBCollectionMap.put(DELETED_PROJECT_COLLECTION, deletedProjectCollection);
         mongoDBCollectionMap.put(DELETED_STUDY_COLLECTION, deletedStudyCollection);
         mongoDBCollectionMap.put(DELETED_FILE_COLLECTION, deletedFileCollection);
         mongoDBCollectionMap.put(DELETED_SAMPLE_COLLECTION, deletedSampleCollection);
@@ -286,6 +294,11 @@ public class OrganizationMongoDBAdaptorFactory {
         mongoDBCollectionMap.put(DELETED_EXTERNAL_TOOL_COLLECTION, deletedWorkflowCollection);
 
         mongoDBCollectionMap.put(AUDIT_COLLECTION, auditCollection);
+
+        extensionAdaptors = new HashMap<>();
+        if (extension != null) {
+            extensionAdaptors.putAll(extension.getAdaptors(mongoDataStore, configuration));
+        }
     }
 
     public boolean isCatalogDBReady() {
@@ -315,7 +328,13 @@ public class OrganizationMongoDBAdaptorFactory {
                     + "collections: " + StringUtils.join(mongoDataStore.getCollectionNames()) + ".\nPlease, remove the database or"
                     + " choose a different one.");
         }
-        OrganizationMongoDBAdaptorFactory.COLLECTIONS_LIST.forEach(mongoDataStore::createCollection);
+        // Core collections
+        COLLECTIONS_LIST.forEach(mongoDataStore::createCollection);
+
+        // Extension collections
+        if (extension != null) {
+            extension.createCollections(mongoDataStore);
+        }
     }
 
     public void createIndexes() throws CatalogDBException {
@@ -373,6 +392,11 @@ public class OrganizationMongoDBAdaptorFactory {
         createIndexes(OrganizationMongoDBAdaptorFactory.PANEL_ARCHIVE_COLLECTION, indexes);
         createIndexes(OrganizationMongoDBAdaptorFactory.INTERPRETATION_COLLECTION, indexes);
         createIndexes(OrganizationMongoDBAdaptorFactory.INTERPRETATION_ARCHIVE_COLLECTION, indexes);
+
+        // Extension indexes
+        if (extension != null) {
+            extension.createIndexes(mongoDataStore);
+        }
 
         logger.info("Creating all indexes took {} milliseconds", stopWatch.getTime(TimeUnit.MILLISECONDS));
     }
@@ -511,6 +535,13 @@ public class OrganizationMongoDBAdaptorFactory {
 
     public AuthorizationMongoDBAdaptor getAuthorizationDBAdaptor() {
         return authorizationMongoDBAdaptor;
+    }
+
+    public DBAdaptor<?> getDBAdaptor(Class<? extends PrivateFields> clazz) {
+        if (extensionAdaptors.containsKey(clazz)) {
+            return extensionAdaptors.get(clazz);
+        }
+        return null;
     }
 
     public MongoDataStore getMongoDataStore() {

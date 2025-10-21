@@ -36,6 +36,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.PrivateFields;
 import org.opencb.opencga.core.models.notes.Note;
 import org.opencb.opencga.core.models.notes.NoteCreateParams;
 import org.opencb.opencga.core.models.notes.NoteType;
@@ -58,6 +59,8 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     private final CatalogIOManager catalogIOManager;
     private final Configuration configuration;
 
+    private final DBAdaptorExtension dbExtension;
+
     private static final String ORGANIZATION_PREFIX = "ORG_";
     private enum OrganizationTag {
         ACTIVE,
@@ -72,6 +75,11 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
     public MongoDBAdaptorFactory(Configuration catalogConfiguration, IOManagerFactory ioManagerFactory, CatalogIOManager catalogIOManager)
             throws CatalogDBException {
+        this(catalogConfiguration, ioManagerFactory, catalogIOManager, null);
+    }
+
+    public MongoDBAdaptorFactory(Configuration catalogConfiguration, IOManagerFactory ioManagerFactory, CatalogIOManager catalogIOManager,
+                                 DBAdaptorExtension dbExtension) throws CatalogDBException {
         List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
         for (String host : catalogConfiguration.getCatalog().getDatabase().getHosts()) {
             if (host.contains(":")) {
@@ -96,6 +104,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         this.configuration = catalogConfiguration;
         this.ioManagerFactory = ioManagerFactory;
         this.catalogIOManager = catalogIOManager;
+        this.dbExtension = dbExtension;
 
         logger = LoggerFactory.getLogger(this.getClass());
         connect(catalogConfiguration);
@@ -213,7 +222,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     private OrganizationMongoDBAdaptorFactory configureOrganizationMongoDBAdaptorFactory(String organizationId, Configuration configuration)
             throws CatalogDBException {
         return new OrganizationMongoDBAdaptorFactory(organizationId, mongoManager, mongoDbConfiguration, configuration, catalogIOManager,
-                ioManagerFactory);
+                ioManagerFactory, dbExtension);
     }
 
     public OrganizationMongoDBAdaptorFactory getOrganizationMongoDBAdaptorFactory(String organization) throws CatalogDBException {
@@ -237,7 +246,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
                         // Organization is present, so create new OrganizationMongoDBAdaptorFactory for the organization
                         OrganizationMongoDBAdaptorFactory organizationMongoDBAdaptorFactory =
                                 new OrganizationMongoDBAdaptorFactory(organizationId, mongoManager, mongoDbConfiguration, configuration,
-                                        catalogIOManager, ioManagerFactory);
+                                        catalogIOManager, ioManagerFactory, dbExtension);
                         organizationDBAdaptorMap.put(organizationId, organizationMongoDBAdaptorFactory);
                         return organizationMongoDBAdaptorFactory;
                     }
@@ -274,7 +283,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         try {
             // Create organization
             OrganizationMongoDBAdaptorFactory organizationDBAdaptorFactory = new OrganizationMongoDBAdaptorFactory(organization.getId(),
-                    mongoManager, mongoDbConfiguration, configuration, catalogIOManager, ioManagerFactory);
+                    mongoManager, mongoDbConfiguration, configuration, catalogIOManager, ioManagerFactory, dbExtension);
             organizationDBAdaptorMap.put(organization.getId(), organizationDBAdaptorFactory);
 
             OrganizationSummary organizationSummary = new OrganizationSummary(organization.getId(),
@@ -407,6 +416,11 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     @Override
     public ExternalToolDBAdaptor getWorkflowDBAdaptor(String organization) throws CatalogDBException {
         return getOrganizationMongoDBAdaptorFactory(organization).getWorkflowDBAdaptor();
+    }
+
+    @Override
+    public DBAdaptor<?> getDBAdaptor(String organization, Class<? extends PrivateFields> clazz) throws CatalogDBException {
+        return getOrganizationMongoDBAdaptorFactory(organization).getDBAdaptor(clazz);
     }
 
     public MongoDataStoreManager getMongoManager() {

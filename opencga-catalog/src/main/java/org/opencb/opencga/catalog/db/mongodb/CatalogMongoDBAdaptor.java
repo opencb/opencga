@@ -20,7 +20,7 @@ public abstract class CatalogMongoDBAdaptor extends MongoDBAdaptor {
         super(configuration, logger);
     }
 
-    abstract OpenCGAResult<Document> nativeGet(Query query, QueryOptions options)
+    public abstract OpenCGAResult<Document> nativeGet(Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     List<OpenCGAResult<Document>> nativeGet(List<Query> queries, QueryOptions options)

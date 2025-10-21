@@ -772,7 +772,7 @@ public class StudyManager extends AbstractManager {
         }
     }
 
-    public OpenCGAResult<PermissionRule> createPermissionRule(String studyId, Enums.Entity entry, PermissionRule permissionRule,
+    public OpenCGAResult<PermissionRule> createPermissionRule(String studyId, Enums.EntityType entry, PermissionRule permissionRule,
                                                               String token) throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, tokenPayload);
@@ -809,7 +809,7 @@ public class StudyManager extends AbstractManager {
         }
     }
 
-    public void markDeletedPermissionRule(String studyId, Enums.Entity entry, String permissionRuleId,
+    public void markDeletedPermissionRule(String studyId, Enums.EntityType entry, String permissionRuleId,
                                           PermissionRule.DeleteAction deleteAction, String token) throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, tokenPayload);
@@ -842,7 +842,7 @@ public class StudyManager extends AbstractManager {
         }
     }
 
-    public OpenCGAResult<PermissionRule> getPermissionRules(String studyId, Enums.Entity entry, String token) throws CatalogException {
+    public OpenCGAResult<PermissionRule> getPermissionRules(String studyId, Enums.EntityType entry, String token) throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, tokenPayload);
         String organizationId = studyFqn.getOrganizationId();
@@ -1944,7 +1944,7 @@ public class StudyManager extends AbstractManager {
         return getStudyDBAdaptor(organizationId).count(query).getNumMatches() > 0;
     }
 
-    private void validatePermissionRules(String organizationId, long studyId, Enums.Entity entry, PermissionRule permissionRule)
+    private void validatePermissionRules(String organizationId, long studyId, Enums.EntityType entityType, PermissionRule permissionRule)
             throws CatalogException {
         ParamUtils.checkIdentifier(permissionRule.getId(), "PermissionRules");
 
@@ -1952,7 +1952,8 @@ public class StudyManager extends AbstractManager {
             throw new CatalogException("Missing permissions for the Permissions Rule object");
         }
 
-        switch (entry) {
+        Enums.Entity entity = Enums.Entity.valueOf(entityType.name());
+        switch (entity) {
             case SAMPLES:
                 validatePermissions(permissionRule.getPermissions(), SamplePermissions::valueOf);
                 break;

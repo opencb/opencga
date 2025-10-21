@@ -839,7 +839,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public OpenCGAResult<?> applyPermissionRules(long studyId, PermissionRule permissionRule, Enums.Entity entry) throws CatalogException {
+    public OpenCGAResult<?> applyPermissionRules(long studyId, PermissionRule permissionRule, Enums.EntityType entry)
+            throws CatalogException {
         // We will apply the permission rules to all the entries matching the query defined in the permission rules that does not have
         // the permission rules applied yet
         Document rawQuery = new Document()
@@ -863,10 +864,10 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
     //TODO: Make transactional !
     @Override
-    public OpenCGAResult removePermissionRuleAndRemovePermissions(Study study, String permissionRuleToDeleteId, Enums.Entity entry)
+    public OpenCGAResult removePermissionRuleAndRemovePermissions(Study study, String permissionRuleToDeleteId, Enums.EntityType entry)
             throws CatalogException {
         // Prepare the permission rule list into a map of permissionRuleId - PermissionRule to make much easier the process
-        Map<String, PermissionRule> permissionRuleMap = study.getPermissionRules().get(entry).stream()
+        Map<String, PermissionRule> permissionRuleMap = study.getPermissionRules().get(entry.name()).stream()
                 .collect(Collectors.toMap(PermissionRule::getId, p -> p));
         PermissionRule permissionRuleToDelete = permissionRuleMap.get(permissionRuleToDeleteId);
 
@@ -933,8 +934,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                         .append(QueryParams.USER_DEFINED_ACLS.key(), manualPermissions)
                         .append(PERMISSION_RULES_APPLIED, permissionRulesApplied));
 
-                logger.debug("Remove permission rule id and permissions from {}: Query {}, Update {}", entry, tmpQuery.toBsonDocument(),
-                        update.toBsonDocument());
+                logger.debug("Remove permission rule id and permissions from {}: Query {}, Update {}", entry.name(),
+                        tmpQuery.toBsonDocument(), update.toBsonDocument());
                 DataResult<?> result = update(null, tmpQuery, update, entry.getResource());
                 if (result.getNumUpdated() == 0) {
                     throw new CatalogException("Could not update and remove permission rule from entry " + myDocument.get(PRIVATE_UID));
@@ -949,10 +950,10 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public OpenCGAResult removePermissionRuleAndRestorePermissions(Study study, String permissionRuleToDeleteId, Enums.Entity entry)
+    public OpenCGAResult removePermissionRuleAndRestorePermissions(Study study, String permissionRuleToDeleteId, Enums.EntityType entry)
             throws CatalogException {
         // Prepare the permission rule list into a map of permissionRuleId - PermissionRule to make much easier the process
-        Map<String, PermissionRule> permissionRuleMap = study.getPermissionRules().get(entry).stream()
+        Map<String, PermissionRule> permissionRuleMap = study.getPermissionRules().get(entry.name()).stream()
                 .collect(Collectors.toMap(PermissionRule::getId, p -> p));
         PermissionRule permissionRuleToDelete = permissionRuleMap.get(permissionRuleToDeleteId);
 
@@ -1015,7 +1016,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                         .append(QueryParams.ACL.key(), effectivePermissions)
                         .append(PERMISSION_RULES_APPLIED, permissionRulesApplied));
 
-                logger.debug("Remove permission rule id and restoring permissions from {}: Query {}, Update {}", entry,
+                logger.debug("Remove permission rule id and restoring permissions from {}: Query {}, Update {}", entry.name(),
                         tmpQuery.toBsonDocument(), update.toBsonDocument());
                 DataResult<?> result = update(null, tmpQuery, update, entry.getResource());
                 if (result.getNumUpdated() == 0) {
@@ -1032,7 +1033,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
     //TODO: Make transactional !
     @Override
-    public OpenCGAResult removePermissionRule(long studyId, String permissionRuleToDelete, Enums.Entity entry) throws CatalogException {
+    public OpenCGAResult removePermissionRule(long studyId, String permissionRuleToDelete, Enums.EntityType entry) throws CatalogException {
         // Remove the __TODELETE tag...
         String permissionRuleId = permissionRuleToDelete.split(INTERNAL_DELIMITER)[0];
 
@@ -1041,12 +1042,12 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 .append(PERMISSION_RULES_APPLIED, permissionRuleId);
         Document update = new Document()
                 .append("$pull", new Document(PERMISSION_RULES_APPLIED, permissionRuleId));
-        logger.debug("Remove permission rule id from all {} in study {}: Query {}, Update {}", entry, studyId, query.toBsonDocument(),
-                update.toBsonDocument());
+        logger.debug("Remove permission rule id from all {} in study {}: Query {}, Update {}", entry.name(), studyId,
+                query.toBsonDocument(), update.toBsonDocument());
 
         DataResult<?> result = update(null, query, update, entry.getResource());
         if (result.getNumUpdated() == 0) {
-            throw new CatalogException("Could not remove permission rule id " + permissionRuleId + " from all " + entry);
+            throw new CatalogException("Could not remove permission rule id " + permissionRuleId + " from all " + entry.name());
         }
 
         // Remove the permission rule from the map in the study
@@ -1065,13 +1066,13 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         return false;
     }
 
-    private void removeReferenceToPermissionRuleInStudy(long studyId, String permissionRuleToDelete, Enums.Entity entry)
+    private void removeReferenceToPermissionRuleInStudy(long studyId, String permissionRuleToDelete, Enums.EntityType entry)
             throws CatalogException {
         Document query = new Document()
                 .append(PRIVATE_UID, studyId)
-                .append(StudyDBAdaptor.QueryParams.PERMISSION_RULES.key() + "." + entry + ".id", permissionRuleToDelete);
+                .append(StudyDBAdaptor.QueryParams.PERMISSION_RULES.key() + "." + entry.name() + ".id", permissionRuleToDelete);
         Document update = new Document("$pull",
-                new Document(StudyDBAdaptor.QueryParams.PERMISSION_RULES.key() + "." + entry,
+                new Document(StudyDBAdaptor.QueryParams.PERMISSION_RULES.key() + "." + entry.name(),
                         new Document("id", permissionRuleToDelete)));
         logger.debug("Remove permission rule from the study {}: Query {}, Update {}", studyId, query.toBsonDocument(),
                 update.toBsonDocument());
@@ -1081,8 +1082,9 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         }
     }
 
-    private Bson parseQuery(Query query, Document rawQuery, Enums.Resource entry) throws CatalogException {
-        switch (entry) {
+    private Bson parseQuery(Query query, Document rawQuery, Enums.ResourceType resourceType) throws CatalogException {
+        Enums.Resource resource = Enums.Resource.valueOf(resourceType.name());
+        switch (resource) {
             case COHORT:
                 return dbAdaptorFactory.getCatalogCohortDBAdaptor().parseQuery(query, rawQuery);
             case INDIVIDUAL:
@@ -1101,7 +1103,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             case EXTERNAL_TOOL:
                 return dbAdaptorFactory.getWorkflowDBAdaptor().parseQuery(query, rawQuery);
             default:
-                throw new CatalogException("Unexpected parameter received. " + entry + " has been received.");
+                throw new CatalogException("Unexpected parameter received. " + resourceType.name() + " has been received.");
         }
     }
 
@@ -1153,7 +1155,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         return myPermissions;
     }
 
-    private DataResult<?> update(ClientSession clientSession, Bson query, Bson update, Enums.Resource resource) throws CatalogDBException {
+    private DataResult<?> update(ClientSession clientSession, Bson query, Bson update, Enums.ResourceType resource)
+            throws CatalogDBException {
         QueryOptions options = new QueryOptions(MongoDBCollection.MULTI, true);
 
         DataResult<?> result = getMainCollection(resource).update(clientSession, query, update, options);
@@ -1163,7 +1166,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         return result;
     }
 
-    private MongoDBCollection getMainCollection(Enums.Resource resource) throws CatalogDBException {
+    private MongoDBCollection getMainCollection(Enums.ResourceType resourceType) throws CatalogDBException {
+        Enums.Resource resource = Enums.Resource.valueOf(resourceType.name());
         switch (resource) {
             case STUDY:
                 return dbAdaptorFactory.getCatalogStudyDBAdaptor().getStudyCollection();
@@ -1191,7 +1195,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         }
     }
 
-    private MongoDBCollection getArchiveCollection(Enums.Resource resource) throws CatalogDBException {
+    private MongoDBCollection getArchiveCollection(Enums.ResourceType resourceType) throws CatalogDBException {
+        Enums.Resource resource = Enums.Resource.valueOf(resourceType.name());
         switch (resource) {
             case INDIVIDUAL:
                 return dbAdaptorFactory.getCatalogIndividualDBAdaptor().getIndividualArchiveCollection();
@@ -1211,7 +1216,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         }
     }
 
-    private boolean hasArchiveCollection(Enums.Resource resource) {
+    private boolean hasArchiveCollection(Enums.ResourceType resource) {
         return resource == Enums.Resource.INDIVIDUAL || resource == Enums.Resource.SAMPLE || resource == Enums.Resource.DISEASE_PANEL
                 || resource == Enums.Resource.FAMILY || resource == Enums.Resource.CLINICAL || resource == Enums.Resource.CLINICAL_ANALYSIS
                 || resource == Enums.Resource.EXTERNAL_TOOL;

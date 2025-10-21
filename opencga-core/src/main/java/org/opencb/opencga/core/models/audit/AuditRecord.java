@@ -52,7 +52,7 @@ public class AuditRecord {
     /**
      * Involved resource (User, Study, Sample, File...).
      */
-    private Enums.Resource resource;
+    private String resource;
     /**
      * Id of the involved resource.
      */
@@ -93,7 +93,7 @@ public class AuditRecord {
     public AuditRecord() {
     }
 
-    public AuditRecord(String id, String operationId, String userId, String apiVersion, String action, Enums.Resource resource,
+    public AuditRecord(String id, String operationId, String userId, String apiVersion, String action, Enums.ResourceType resource,
                        String resourceId, String resourceUuid, String studyId, String studyUuid, ObjectMap params, Status status, Date date,
                        ObjectMap attributes) {
         this.id = id;
@@ -101,7 +101,7 @@ public class AuditRecord {
         this.userId = userId;
         this.apiVersion = apiVersion;
         this.action = action;
-        this.resource = resource;
+        this.resource = resource != null ? resource.name() : null;
         this.resourceId = resourceId;
         this.resourceUuid = resourceUuid;
         this.studyId = studyId;
@@ -178,12 +178,23 @@ public class AuditRecord {
         return this;
     }
 
-    public Enums.Resource getResource() {
+    public String getResource() {
         return resource;
     }
 
-    public AuditRecord setResource(Enums.Resource resource) {
+    public AuditRecord setResource(String resource) {
         this.resource = resource;
+        return this;
+    }
+
+    /**
+     * Sets the resource from a ResourceType interface implementation.
+     *
+     * @param resource the resource type
+     * @return this AuditRecord instance
+     */
+    public AuditRecord setResource(Enums.ResourceType resource) {
+        this.resource = resource != null ? resource.name() : null;
         return this;
     }
 

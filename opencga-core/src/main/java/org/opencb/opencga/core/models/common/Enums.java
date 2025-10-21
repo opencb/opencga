@@ -37,7 +37,122 @@ public final class Enums {
     private Enums() {
     }
 
-    public enum Entity {
+    /**
+     * Interface representing an entity type in OpenCGA.
+     * This interface can be implemented in enterprise projects to add custom entity types
+     * while maintaining compatibility with the OpenCGA core system.
+     * <p>
+     * Example usage in enterprise project:
+     * <pre>
+     * public enum EnterpriseEntity implements Enums.EntityType {
+     *     CONTRACTS(EnterpriseResource.CONTRACT),
+     *     INVOICES(EnterpriseResource.INVOICE);
+     *
+     *     private final ResourceType resource;
+     *
+     *     EnterpriseEntity(ResourceType resource) {
+     *         this.resource = resource;
+     *     }
+     *
+     *     public ResourceType getResource() {
+     *         return resource;
+     *     }
+     * }
+     * </pre>
+     */
+    public interface EntityType {
+        /**
+         * Returns the resource type associated with this entity.
+         *
+         * @return the resource type
+         */
+        ResourceType getResource();
+
+        /**
+         * Returns the name of this entity type.
+         *
+         * @return the entity name
+         */
+        String name();
+    }
+
+    /**
+     * Interface representing a resource type in OpenCGA.
+     * This interface can be implemented in enterprise projects to add custom resource types
+     * while maintaining compatibility with the OpenCGA core system, including permissions,
+     * auditing, and authorization.
+     * <p>
+     * Enterprise implementations should provide their own permission management logic
+     * by implementing the three methods: getFullPermissionList(), toStudyPermission(),
+     * and fromStudyPermission().
+     * <p>
+     * Example usage in enterprise project:
+     * <pre>
+     * public enum EnterpriseResource implements Enums.ResourceType {
+     *     CONTRACT,
+     *     INVOICE,
+     *     BILLING;
+     *
+     *     public List&lt;String&gt; getFullPermissionList() {
+     *         // Return enterprise-specific permissions
+     *         return Arrays.asList("VIEW", "EDIT", "DELETE", "APPROVE");
+     *     }
+     *
+     *     public String toStudyPermission(String permission) {
+     *         // Convert to study permission if applicable
+     *         return permission;
+     *     }
+     *
+     *     public String fromStudyPermission(String permission) {
+     *         // Convert from study permission if applicable
+     *         return permission;
+     *     }
+     * }
+     * </pre>
+     */
+    public interface ResourceType {
+        /**
+         * Returns the full list of permissions available for this resource type.
+         * Enterprise implementations should return the list of permissions specific to their custom resources.
+         *
+         * @return list of permission strings
+         */
+        List<String> getFullPermissionList();
+
+        /**
+         * Converts a resource-specific permission to its equivalent study-level permission.
+         * This is used for hierarchical permission management where study permissions control
+         * access to resources within the study.
+         *
+         * @param permission the resource-specific permission
+         * @return the equivalent study permission string
+         */
+        String toStudyPermission(String permission);
+
+        /**
+         * Converts a study-level permission to its equivalent resource-specific permission.
+         * This is the inverse operation of {@link #toStudyPermission(String)}.
+         *
+         * @param permission the study permission
+         * @return the equivalent resource-specific permission string
+         * @throws IllegalArgumentException if the study permission doesn't have an equivalent for this resource
+         */
+        String fromStudyPermission(String permission);
+
+        /**
+         * Returns the name of this resource type.
+         *
+         * @return the resource name
+         */
+        String name();
+    }
+
+    /**
+     * Standard OpenCGA entity types.
+     * Each entity represents a collection of resources that can be queried and managed together.
+     * Entities are used primarily for permission rules that apply to multiple instances of a resource type.
+     */
+    public enum Entity implements EntityType {
         SAMPLES(Resource.SAMPLE),
         FILES(Resource.FILE),
         COHORTS(Resource.COHORT),
@@ -58,7 +173,17 @@ public final class Enums {
         }
     }
 
-    public enum Resource {
+    /**
+     * Standard OpenCGA resource types.
+     * Resources represent the main data objects in OpenCGA that can be accessed, modified,
+     * and have permissions assigned to them. They are used throughout the system for:
+     * <ul>
+     *   <li>Audit logging - tracking operations performed on resources</li>
+     *   <li>Authorization - managing access control and permissions</li>
+     *   <li>API endpoints - routing requests to appropriate handlers</li>
+     * </ul>
+     */
+    public enum Resource implements ResourceType {
         AUDIT,
         NOTE,
         ORGANIZATION,

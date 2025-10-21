@@ -421,16 +421,16 @@ public interface AuthorizationManager {
 
     void resetPermissionsFromAllEntities(String organizationId, long studyId, List<String> members) throws CatalogException;
 
-    void applyPermissionRule(String organizationId, long studyId, PermissionRule permissionRule, Enums.Entity entry)
+    void applyPermissionRule(String organizationId, long studyId, PermissionRule permissionRule, Enums.EntityType entry)
             throws CatalogException;
 
-    void removePermissionRuleAndRemovePermissions(String organizationId, Study study, String permissionRuleId, Enums.Entity entry)
+    void removePermissionRuleAndRemovePermissions(String organizationId, Study study, String permissionRuleId, Enums.EntityType entry)
             throws CatalogException;
 
-    void removePermissionRuleAndRestorePermissions(String organizationId, Study study, String permissionRuleId, Enums.Entity entry)
+    void removePermissionRuleAndRestorePermissions(String organizationId, Study study, String permissionRuleId, Enums.EntityType entry)
             throws CatalogException;
 
-    void removePermissionRule(String organizationId, long studyId, String permissionRuleId, Enums.Entity entry) throws CatalogException;
+    void removePermissionRule(String organizationId, long studyId, String permissionRuleId, Enums.EntityType entry) throws CatalogException;
 
     class CatalogAclParams {
         private List<Long> ids;

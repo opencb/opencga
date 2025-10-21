@@ -141,7 +141,7 @@ analysis:
       - id: "default"
         executor: "local"
         description: "Default queue for local execution"
-        type: "CPU"
+        processorType: "CPU"
         cpu: 1
         memory: "2G"
     defaultRequest:

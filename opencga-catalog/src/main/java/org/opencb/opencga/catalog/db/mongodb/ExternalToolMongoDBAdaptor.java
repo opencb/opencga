@@ -139,7 +139,7 @@ public class ExternalToolMongoDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     @Override
-    OpenCGAResult<Document> nativeGet(Query query, QueryOptions options)
+    public OpenCGAResult<Document> nativeGet(Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long startTime = startQuery();
         try (DBIterator<Document> dbIterator = nativeIterator(query, options)) {

@@ -300,7 +300,7 @@ public interface StudyDBAdaptor extends Iterable<Study> {
      * @return OpenCGAResult object.
      * @throws CatalogDBException if the permission rule id already existed.
      */
-    OpenCGAResult<PermissionRule> createPermissionRule(long studyId, Enums.Entity entry, PermissionRule permissionRules)
+    OpenCGAResult<PermissionRule> createPermissionRule(long studyId, Enums.EntityType entry, PermissionRule permissionRules)
             throws CatalogDBException;
 
     /**
@@ -311,7 +311,7 @@ public interface StudyDBAdaptor extends Iterable<Study> {
      * @return the list of permission rules defined.
      * @throws CatalogDBException if there is any error.
      */
-    OpenCGAResult<PermissionRule> getPermissionRules(long studyId, Enums.Entity entry) throws CatalogDBException;
+    OpenCGAResult<PermissionRule> getPermissionRules(long studyId, Enums.EntityType entry) throws CatalogDBException;
 
     /**
      * Mark a concrete permission rule to be deleted by the daemon.
@@ -330,8 +330,9 @@ public interface StudyDBAdaptor extends Iterable<Study> {
      * @return OpenCGAResult object.
      * @throws CatalogDBException if the permission rule does not exist.
      */
-    OpenCGAResult<PermissionRule> markDeletedPermissionRule(long studyId, Enums.Entity entry, String permissionRuleId,
+    OpenCGAResult<PermissionRule> markDeletedPermissionRule(long studyId, Enums.EntityType entry, String permissionRuleId,
                                                             PermissionRule.DeleteAction deleteAction) throws CatalogDBException;
+
 
     /*
      * VariableSet Methods

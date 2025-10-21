@@ -23,6 +23,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.PrivateFields;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
@@ -116,4 +117,6 @@ public interface DBAdaptorFactory extends AutoCloseable {
     InterpretationDBAdaptor getInterpretationDBAdaptor(String organization) throws CatalogDBException;
 
     ExternalToolDBAdaptor getWorkflowDBAdaptor(String organization) throws CatalogDBException;
+
+    DBAdaptor<?> getDBAdaptor(String organization, Class<? extends PrivateFields> clazz) throws CatalogDBException;
 }

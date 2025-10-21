@@ -746,7 +746,7 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
     }
 
     @Override
-    public OpenCGAResult<PermissionRule> createPermissionRule(long studyId, Enums.Entity entry, PermissionRule permissionRule)
+    public OpenCGAResult<PermissionRule> createPermissionRule(long studyId, Enums.EntityType entry, PermissionRule permissionRule)
             throws CatalogDBException {
         if (entry == null) {
             throw new CatalogDBException("Missing entry parameter");
@@ -771,7 +771,8 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
 
         // We update the study document to contain the new permission rules
         Query query = new Query(QueryParams.UID.key(), studyId);
-        Document update = new Document("$set", new Document(QueryParams.PERMISSION_RULES.key() + "." + entry, permissionDocumentList));
+        Document update = new Document("$set", new Document(QueryParams.PERMISSION_RULES.key() + "." + entry.name(),
+                permissionDocumentList));
         DataResult result = studyCollection.update(parseQuery(query), update, QueryOptions.empty());
 
         if (result.getNumUpdated() == 0) {
@@ -781,7 +782,7 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
     }
 
     @Override
-    public OpenCGAResult<PermissionRule> markDeletedPermissionRule(long studyId, Enums.Entity entry, String permissionRuleId,
+    public OpenCGAResult<PermissionRule> markDeletedPermissionRule(long studyId, Enums.EntityType entry, String permissionRuleId,
                                                                    PermissionRule.DeleteAction deleteAction) throws CatalogDBException {
         if (entry == null) {
             throw new CatalogDBException("Missing entry parameter");
@@ -791,9 +792,9 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
 
         Document query = new Document()
                 .append(PRIVATE_UID, studyId)
-                .append(QueryParams.PERMISSION_RULES.key() + "." + entry + ".id", permissionRuleId);
+                .append(QueryParams.PERMISSION_RULES.key() + "." + entry.name() + ".id", permissionRuleId);
         // Change permissionRule id
-        Document update = new Document("$set", new Document(QueryParams.PERMISSION_RULES.key() + "." + entry + ".$.id",
+        Document update = new Document("$set", new Document(QueryParams.PERMISSION_RULES.key() + "." + entry.name() + ".$.id",
                 newPermissionRuleId));
 
         logger.debug("Mark permission rule for deletion: Query {}, Update {}", query.toBsonDocument(), update.toBsonDocument());
@@ -816,7 +817,7 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
      */
 
     @Override
-    public OpenCGAResult<PermissionRule> getPermissionRules(long studyId, Enums.Entity entry) throws CatalogDBException {
+    public OpenCGAResult<PermissionRule> getPermissionRules(long studyId, Enums.EntityType entry) throws CatalogDBException {
         // Get permission rules from study
         Query query = new Query(QueryParams.UID.key(), studyId);
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.PERMISSION_RULES.key());
@@ -826,17 +827,24 @@ public class StudyMongoDBAdaptor extends CatalogMongoDBAdaptor implements StudyD
             throw new CatalogDBException("Unexpected error: Study " + studyId + " not found");
         }
 
-        List<PermissionRule> permissionRules = studyDataResult.first().getPermissionRules().get(entry);
-        if (permissionRules == null) {
-            permissionRules = Collections.emptyList();
+        Study study = studyDataResult.first();
+        Map<String, List<PermissionRule>> permissionRules = study.getPermissionRules();
+
+        // Get the rules for this entity by name
+        List<PermissionRule> rules = null;
+        if (permissionRules != null) {
+            rules = permissionRules.get(entry.name());
+        }
+
+        if (rules == null) {
+            rules = Collections.emptyList();
         }
 
         // Remove all permission rules that are pending of some actions such as deletion
-        permissionRules.removeIf(permissionRule ->
-                StringUtils.splitByWholeSeparatorPreserveAllTokens(permissionRule.getId(), INTERNAL_DELIMITER, 2).length == 2);
+        rules.removeIf(rule ->
+                StringUtils.splitByWholeSeparatorPreserveAllTokens(rule.getId(), INTERNAL_DELIMITER, 2).length == 2);
 
-        return new OpenCGAResult<>(studyDataResult.getTime(), Collections.emptyList(), permissionRules.size(), permissionRules,
-                permissionRules.size(), new ObjectMap());
+        return new OpenCGAResult<>(studyDataResult.getTime(), studyDataResult.getEvents(), rules.size(), rules, rules.size());
     }
 
     @Override

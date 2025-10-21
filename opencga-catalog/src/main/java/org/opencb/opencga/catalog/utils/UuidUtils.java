@@ -36,7 +36,26 @@ public class UuidUtils {
 
     public static final Pattern UUID_PATTERN = Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-00[0-9a-f]{2}-[0-9a-f]{4}-[0-9a-f]{12}");
 
-    public enum Entity {
+    /**
+     * Interface representing an entity type that can be used to generate OpenCGA UUIDs.
+     * This interface can be implemented to add custom entity types
+     * while maintaining compatibility with the UUID generation mechanism.
+     */
+    public interface EntityType {
+        /**
+         * Returns the mask value used in UUID generation for this entity type.
+         * Each entity type should have a unique mask value.
+         *
+         * @return the mask value (0-255)
+         */
+        int getMask();
+    }
+
+    /**
+     * Enum containing the standard OpenCGA entity types.
+     * Each entity type has a unique mask value used in UUID generation.
+     */
+    public enum Entity implements EntityType {
         AUDIT(0),
         PROJECT(1),
         STUDY(2),
@@ -59,16 +78,31 @@ public class UuidUtils {
             this.mask = mask;
         }
 
+        @Override
         public int getMask() {
             return mask;
         }
     }
 
-    public static String generateOpenCgaUuid(Entity entity) {
+    /**
+     * Generates a new OpenCGA UUID for the specified entity type using the current date.
+     *
+     * @param entity the entity type for which to generate the UUID
+     * @return a UUID string in OpenCGA format
+     */
+    public static String generateOpenCgaUuid(EntityType entity) {
         return generateOpenCgaUuid(entity, new Date());
     }
 
-    public static String generateOpenCgaUuid(Entity entity, Date date) {
+    /**
+     * Generates a new OpenCGA UUID for the specified entity type using a specific date.
+     * The UUID encodes both temporal information and the entity type.
+     *
+     * @param entity the entity type for which to generate the UUID
+     * @param date the date to encode in the UUID
+     * @return a UUID string in OpenCGA format
+     */
+    public static String generateOpenCgaUuid(EntityType entity, Date date) {
         long mostSignificantBits = getMostSignificantBits(date, entity);
         long leastSignificantBits = getLeastSignificantBits();
 
@@ -78,6 +112,13 @@ public class UuidUtils {
         return new UUID(mostSignificantBits, leastSignificantBits).toString();
     }
 
+    /**
+     * Checks whether the provided string is a valid OpenCGA UUID.
+     * An OpenCGA UUID must match the specific pattern with version bits set to 00.
+     *
+     * @param id the string to check
+     * @return true if the string is a valid OpenCGA UUID, false otherwise
+     */
     public static boolean isOpenCgaUuid(String id) {
         if (id.length() == 36) {
             try {
@@ -90,7 +131,7 @@ public class UuidUtils {
         return false;
     }
 
-    private static long getMostSignificantBits(Date date, Entity entity) {
+    private static long getMostSignificantBits(Date date, EntityType entity) {
         long time = date.getTime();
 
         long timeLow = time & 0xffffffffL;

@@ -28,6 +28,7 @@ public class FieldConstants {
             + "the quality of the individual.";
     public static final String GENERIC_CUSTOM_STATUS = "Object to set a custom status.";
     public static final String GENERIC_INTERNAL = "Internal field to manage the object.";
+    public static final String GENERIC_INTERNAL_DESCRIPTION = "Internal field to manage the object.";
     public static final String GENERIC_NAME = "Name of the .";
     public static final String GENERIC_ID_DESCRIPTION = "Object ID is a mandatory parameter when creating a new one, this ID cannot be"
             + " changed at the moment.";

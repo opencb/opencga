@@ -1,4 +1,3 @@
-
 /*
  * Copyright 2015-2020 OpenCB
  *
@@ -25,7 +24,6 @@ import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.PrivateFields;
 import org.opencb.opencga.core.models.common.AdditionalInfo;
-import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.ExternalSource;
 import org.opencb.opencga.core.models.federation.FederationClientParamsRef;
 import org.opencb.opencga.core.models.notes.Note;
@@ -130,7 +128,7 @@ public class Study extends PrivateFields {
 
     @DataField(id = "permissionRules",
             description = FieldConstants.STUDY_PERMISSION_RULES)
-    private Map<Enums.Entity, List<PermissionRule>> permissionRules;
+    private Map<String, List<PermissionRule>> permissionRules;
 
     @DataField(id = "uri",
             description = FieldConstants.STUDY_URI)
@@ -196,7 +194,7 @@ public class Study extends PrivateFields {
 
     public Study(String id, String name, String alias, String creationDate, String modificationDate, String description, StudyType type,
                  List<ExternalSource> sources, StudyNotification notification, long size, List<Group> groups,List<VariableSet> variableSets,
-                 Map<Enums.Entity, List<PermissionRule>> permissionRules, URI uri, int release, Status status, StudyInternal internal,
+                 Map<String, List<PermissionRule>> permissionRules, URI uri, int release, Status status, StudyInternal internal,
                  List<AdditionalInfo> additionalInfo, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -398,11 +396,11 @@ public class Study extends PrivateFields {
         return this;
     }
 
-    public Map<Enums.Entity, List<PermissionRule>> getPermissionRules() {
+    public Map<String, List<PermissionRule>> getPermissionRules() {
         return permissionRules;
     }
 
-    public Study setPermissionRules(Map<Enums.Entity, List<PermissionRule>> permissionRules) {
+    public Study setPermissionRules(Map<String, List<PermissionRule>> permissionRules) {
         this.permissionRules = permissionRules;
         return this;
     }
