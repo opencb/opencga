@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -28,17 +29,24 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.ClinicalAnalysisLoadResult;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.family.FamilyCreateParams;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationCreateParams;
 import org.opencb.opencga.core.models.organizations.OrganizationUpdateParams;
+import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
 import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleCreateParams;
+import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyCreateParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -47,16 +55,17 @@ import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
 
 @Category(MediumTests.class)
 public class AbstractClinicalManagerTest extends GenericTest {
+
+    public static final String TIERING_MODE = "tiering";
 
     public final static String PASSWORD = "Password1234;";
 
@@ -70,6 +79,9 @@ public class AbstractClinicalManagerTest extends GenericTest {
 
     public final static String CA_ID4 = "clinical-analysis-4";
     public final static String PROBAND_ID4 = "HG105";
+
+    public final static String CA_OPA = "opa-case";
+    public final static String PROBAND_OPA = "111002516";
 
     private static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
 
@@ -91,10 +103,9 @@ public class AbstractClinicalManagerTest extends GenericTest {
     @Before
     public void setUp() throws IOException, CatalogException, URISyntaxException {
         catalogManager = catalogManagerResource.getCatalogManager();
-        setUpCatalogManager();
     }
 
-    public void setUpCatalogManager() throws IOException, CatalogException, URISyntaxException {
+    public void setUpCatalogManager(String mode) throws IOException, CatalogException, URISyntaxException {
         ClinicalAnalysis auxClinicalAnalysis;
 
         // Create new organization, owner and admins
@@ -107,16 +118,19 @@ public class AbstractClinicalManagerTest extends GenericTest {
 
         token = catalogManager.getUserManager().login(organizationId, "user", PASSWORD).first().getToken();
 
-        ProjectCreateParams projectCreateParams = new ProjectCreateParams()
-                .setId("1000G")
-                .setOrganism(new ProjectOrganism("hsapiens", "grch38"));
-        Project project = catalogManager.getProjectManager().create(projectCreateParams, INCLUDE_RESULT, token).first();
-        System.out.println("project.toString() = " + project.toString());
+        if (TIERING_MODE.equalsIgnoreCase(mode)) {
+            prepareOpaCase();
+        } else {
+            ProjectCreateParams projectCreateParams = new ProjectCreateParams()
+                    .setId("1000G")
+                    .setOrganism(new ProjectOrganism("hsapiens", "grch38"));
+            Project project = catalogManager.getProjectManager().create(projectCreateParams, INCLUDE_RESULT, token).first();
+            System.out.println("project.toString() = " + project.toString());
 
-        Study study = catalogManager.getStudyManager().create("1000G", new Study().setId("phase1"), INCLUDE_RESULT, token).first();
-        studyFqn = study.getFqn();
+            Study study = catalogManager.getStudyManager().create("1000G", new Study().setId("phase1"), INCLUDE_RESULT, token).first();
+            studyFqn = study.getFqn();
 
-        family = catalogManager.getFamilyManager().create(studyFqn, getFamily(), QueryOptions.empty(), token).first();
+            family = catalogManager.getFamilyManager().create(studyFqn, getFamily(), QueryOptions.empty(), token).first();
 //
         // Clinical analysis
         auxClinicalAnalysis = new ClinicalAnalysis()
@@ -130,129 +144,129 @@ public class AbstractClinicalManagerTest extends GenericTest {
                         new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token)
                 .first();
 //
-        catalogUploadFile("/biofiles/family.vcf");
+            catalogUploadFile("/biofiles/family.vcf");
 
-        //---------------------------------------------------------------------
-        // Clinical analysis for exomiser test (SINGLE, manuel)
-        //---------------------------------------------------------------------
+            //---------------------------------------------------------------------
+            // Clinical analysis for exomiser test (SINGLE, manuel)
+            //---------------------------------------------------------------------
 
-        catalogManager.getIndividualManager().create(studyFqn, getMamuel(), QueryOptions.empty(), token).first();
+            catalogManager.getIndividualManager().create(studyFqn, getMamuel(), QueryOptions.empty(), token).first();
 
-        auxClinicalAnalysis = new ClinicalAnalysis()
-                .setId(CA_ID2).setDescription("My description - exomiser").setType(ClinicalAnalysis.Type.SINGLE)
-                .setDueDate("20180510100000")
-                .setDisorder(getDisorder())
-                .setProband(getMamuel());
+            auxClinicalAnalysis = new ClinicalAnalysis()
+                    .setId(CA_ID2).setDescription("My description - exomiser").setType(ClinicalAnalysis.Type.SINGLE)
+                    .setDueDate("20180510100000")
+                    .setDisorder(getDisorder())
+                    .setProband(getMamuel());
 
-        clinicalAnalysis2 = catalogManager.getClinicalAnalysisManager()
-                .create(studyFqn, auxClinicalAnalysis, new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token)
-                .first();
+            clinicalAnalysis2 = catalogManager.getClinicalAnalysisManager()
+                    .create(studyFqn, auxClinicalAnalysis, new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token)
+                    .first();
 
-        catalogUploadFile("/biofiles/exomiser.vcf.gz");
+            catalogUploadFile("/biofiles/exomiser.vcf.gz");
 
-        //---------------------------------------------------------------------
-        // Chinese trio: FAMILY (clinicalAnalysis3)
-        //---------------------------------------------------------------------
+            //---------------------------------------------------------------------
+            // Chinese trio: FAMILY (clinicalAnalysis3)
+            //---------------------------------------------------------------------
 
-        Individual hg006Individual =  new Individual().setId("HG006_individual")
-                .setPhenotypes(Collections.emptyList())
-                .setSex(SexOntologyTermAnnotation.initMale())
-                .setSamples(Collections.singletonList(new Sample().setId("HG006")));
+            Individual hg006Individual = new Individual().setId("HG006_individual")
+                    .setPhenotypes(Collections.emptyList())
+                    .setSex(SexOntologyTermAnnotation.initMale())
+                    .setSamples(Collections.singletonList(new Sample().setId("HG006")));
 
-        Individual hg007Individual =  new Individual().setId("HG007_individual")
-                .setPhenotypes(Collections.emptyList())
-                .setSex(SexOntologyTermAnnotation.initFemale())
-                .setSamples(Collections.singletonList(new Sample().setId("HG007")));
+            Individual hg007Individual = new Individual().setId("HG007_individual")
+                    .setPhenotypes(Collections.emptyList())
+                    .setSex(SexOntologyTermAnnotation.initFemale())
+                    .setSamples(Collections.singletonList(new Sample().setId("HG007")));
 
-        Individual hg005Individual =  new Individual().setId("HG005_individual")
-                .setDisorders(Collections.singletonList(getDisorder()))
-                .setPhenotypes(getPhenotypes())
-                .setFather(hg006Individual)
-                .setMother(hg007Individual)
-                .setSex(SexOntologyTermAnnotation.initMale())
-                .setSamples(Collections.singletonList(new Sample().setId(PROBAND_ID3)));
+            Individual hg005Individual = new Individual().setId("HG005_individual")
+                    .setDisorders(Collections.singletonList(getDisorder()))
+                    .setPhenotypes(getPhenotypes())
+                    .setFather(hg006Individual)
+                    .setMother(hg007Individual)
+                    .setSex(SexOntologyTermAnnotation.initMale())
+                    .setSamples(Collections.singletonList(new Sample().setId(PROBAND_ID3)));
 
-        Individual hg004Individual =  new Individual().setId("HG004_individual")
-                .setFather(hg006Individual)
-                .setMother(hg007Individual)
-                .setSex(SexOntologyTermAnnotation.initFemale())
-                .setSamples(Collections.singletonList(new Sample().setId("HG004")));
+            Individual hg004Individual = new Individual().setId("HG004_individual")
+                    .setFather(hg006Individual)
+                    .setMother(hg007Individual)
+                    .setSex(SexOntologyTermAnnotation.initFemale())
+                    .setSamples(Collections.singletonList(new Sample().setId("HG004")));
 
-        Family chineseFamily = new Family("chinese_trio_family", "chinese_trio_family", null, null,
-                Arrays.asList(hg005Individual, hg006Individual, hg007Individual, hg004Individual), "", 4, Collections.emptyList(),
-                Collections.emptyMap());
-        catalogManager.getFamilyManager().create(studyFqn, chineseFamily, QueryOptions.empty(), token).first();
+            Family chineseFamily = new Family("chinese_trio_family", "chinese_trio_family", null, null,
+                    Arrays.asList(hg005Individual, hg006Individual, hg007Individual, hg004Individual), "", 4, Collections.emptyList(),
+                    Collections.emptyMap());
+            catalogManager.getFamilyManager().create(studyFqn, chineseFamily, QueryOptions.empty(), token).first();
 
-        auxClinicalAnalysis = new ClinicalAnalysis()
-                .setId(CA_ID3)
-                .setDescription("My description - exomiser - trio - family")
-                .setType(ClinicalAnalysis.Type.FAMILY)
-                .setDueDate("20180510100000")
-                .setDisorder(getDisorder())
-                .setProband(hg005Individual)
-                .setFamily(chineseFamily);
+            auxClinicalAnalysis = new ClinicalAnalysis()
+                    .setId(CA_ID3)
+                    .setDescription("My description - exomiser - trio - family")
+                    .setType(ClinicalAnalysis.Type.FAMILY)
+                    .setDueDate("20180510100000")
+                    .setDisorder(getDisorder())
+                    .setProband(hg005Individual)
+                    .setFamily(chineseFamily);
 
-        catalogManager.getClinicalAnalysisManager().create(studyFqn, auxClinicalAnalysis, QueryOptions.empty(), token)
-                .first();
+            catalogManager.getClinicalAnalysisManager().create(studyFqn, auxClinicalAnalysis, QueryOptions.empty(), token)
+                    .first();
 
-        catalogUploadFile("/biofiles/HG004.1k.vcf.gz");
-        catalogUploadFile("/biofiles/HG005.1k.vcf.gz");
-        catalogUploadFile("/biofiles/HG006.1k.vcf.gz");
-        catalogUploadFile("/biofiles/HG007.1k.vcf.gz");
+            catalogUploadFile("/biofiles/HG004.1k.vcf.gz");
+            catalogUploadFile("/biofiles/HG005.1k.vcf.gz");
+            catalogUploadFile("/biofiles/HG006.1k.vcf.gz");
+            catalogUploadFile("/biofiles/HG007.1k.vcf.gz");
 
-        //---------------------------------------------------------------------
-        // Chinese trio: SINGLE (clinicalAnalysis4)
-        //---------------------------------------------------------------------
+            //---------------------------------------------------------------------
+            // Chinese trio: SINGLE (clinicalAnalysis4)
+            //---------------------------------------------------------------------
 
-        Individual hg106Individual =  new Individual().setId("HG106_individual")
-                .setPhenotypes(Collections.emptyList())
-                .setSex(SexOntologyTermAnnotation.initMale())
-                .setSamples(Collections.singletonList(new Sample().setId("HG106")));
+            Individual hg106Individual = new Individual().setId("HG106_individual")
+                    .setPhenotypes(Collections.emptyList())
+                    .setSex(SexOntologyTermAnnotation.initMale())
+                    .setSamples(Collections.singletonList(new Sample().setId("HG106")));
 
-        Individual hg107Individual =  new Individual().setId("HG107_individual")
-                .setPhenotypes(Collections.emptyList())
-                .setSex(SexOntologyTermAnnotation.initFemale())
-                .setSamples(Collections.singletonList(new Sample().setId("HG107")));
+            Individual hg107Individual = new Individual().setId("HG107_individual")
+                    .setPhenotypes(Collections.emptyList())
+                    .setSex(SexOntologyTermAnnotation.initFemale())
+                    .setSamples(Collections.singletonList(new Sample().setId("HG107")));
 
-        Individual hg105Individual =  new Individual().setId("HG105_individual")
-                .setDisorders(Collections.singletonList(getDisorder()))
-                .setPhenotypes(getPhenotypes())
-                .setFather(hg106Individual)
-                .setMother(hg107Individual)
-                .setSex(SexOntologyTermAnnotation.initMale())
-                .setSamples(Collections.singletonList(new Sample().setId(PROBAND_ID4)));
+            Individual hg105Individual = new Individual().setId("HG105_individual")
+                    .setDisorders(Collections.singletonList(getDisorder()))
+                    .setPhenotypes(getPhenotypes())
+                    .setFather(hg106Individual)
+                    .setMother(hg107Individual)
+                    .setSex(SexOntologyTermAnnotation.initMale())
+                    .setSamples(Collections.singletonList(new Sample().setId(PROBAND_ID4)));
 
-        Individual hg104Individual =  new Individual().setId("HG104_individual")
-                .setFather(hg106Individual)
-                .setMother(hg107Individual)
-                .setSex(SexOntologyTermAnnotation.initFemale())
-                .setSamples(Collections.singletonList(new Sample().setId("HG104")));
+            Individual hg104Individual = new Individual().setId("HG104_individual")
+                    .setFather(hg106Individual)
+                    .setMother(hg107Individual)
+                    .setSex(SexOntologyTermAnnotation.initFemale())
+                    .setSamples(Collections.singletonList(new Sample().setId("HG104")));
 
-        Family chineseSingle = new Family("chinese_trio_single", "chinese_trio_single", null, null,
-                Arrays.asList(hg105Individual, hg106Individual, hg107Individual, hg104Individual), "", 4, Collections.emptyList(),
-                Collections.emptyMap());
-        catalogManager.getFamilyManager().create(studyFqn, chineseSingle, QueryOptions.empty(), token).first();
+            Family chineseSingle = new Family("chinese_trio_single", "chinese_trio_single", null, null,
+                    Arrays.asList(hg105Individual, hg106Individual, hg107Individual, hg104Individual), "", 4, Collections.emptyList(),
+                    Collections.emptyMap());
+            catalogManager.getFamilyManager().create(studyFqn, chineseSingle, QueryOptions.empty(), token).first();
 
-        auxClinicalAnalysis = new ClinicalAnalysis()
-                .setId(CA_ID4)
-                .setDescription("My description - exomiser - trio - single")
-                .setType(ClinicalAnalysis.Type.SINGLE)
-                .setDueDate("20180510100000")
-                .setDisorder(getDisorder())
-                .setProband(hg105Individual)
-                .setFamily(chineseSingle);
+            auxClinicalAnalysis = new ClinicalAnalysis()
+                    .setId(CA_ID4)
+                    .setDescription("My description - exomiser - trio - single")
+                    .setType(ClinicalAnalysis.Type.SINGLE)
+                    .setDueDate("20180510100000")
+                    .setDisorder(getDisorder())
+                    .setProband(hg105Individual)
+                    .setFamily(chineseSingle);
 
-        catalogManager.getClinicalAnalysisManager().create(studyFqn, auxClinicalAnalysis, QueryOptions.empty(), token)
-                .first();
+            catalogManager.getClinicalAnalysisManager().create(studyFqn, auxClinicalAnalysis, QueryOptions.empty(), token)
+                    .first();
 
-        catalogUploadFile("/biofiles/HG104.1k.vcf.gz");
-        catalogUploadFile("/biofiles/HG105.1k.vcf.gz");
-        catalogUploadFile("/biofiles/HG106.1k.vcf.gz");
-        catalogUploadFile("/biofiles/HG107.1k.vcf.gz");
+            catalogUploadFile("/biofiles/HG104.1k.vcf.gz");
+            catalogUploadFile("/biofiles/HG105.1k.vcf.gz");
+            catalogUploadFile("/biofiles/HG106.1k.vcf.gz");
+            catalogUploadFile("/biofiles/HG107.1k.vcf.gz");
 
-
-        OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().search(studyFqn, new Query(), new QueryOptions(INCLUDE, "id"), token);
-        Assert.assertEquals(12, sampleResult.getNumResults());
+            OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().search(studyFqn, new Query(), new QueryOptions(INCLUDE, "id"), token);
+            Assert.assertEquals(12, sampleResult.getNumResults());
+        }
     }
 
     private void catalogUploadFile(String path) throws IOException, CatalogException {
@@ -309,4 +323,78 @@ public class AbstractClinicalManagerTest extends GenericTest {
         phenotypes.add(new Phenotype("HP:0000244", "Brachyturricephaly", "HPO"));
         return phenotypes;
     }
+
+    private void prepareOpaCase() throws CatalogException, IOException {
+        //---------------------------------------------------------------------
+        // OPA (clinicalAnalysis5)
+        //---------------------------------------------------------------------
+        ProjectCreateParams projectCreateParams = new ProjectCreateParams()
+                .setId("CASES")
+                .setOrganism(new ProjectOrganism("hsapiens", "grch38"));
+        Project project = catalogManager.getProjectManager().create(projectCreateParams, INCLUDE_RESULT, token).first();
+        System.out.println("project.toString() = " + project.toString());
+
+        Study study = catalogManager.getStudyManager().create("CASES", new Study().setId("OPA"), INCLUDE_RESULT, token).first();
+        studyFqn = study.getFqn();
+
+        Path path = Paths.get("/opt/tiering-data/opa-case.json");
+
+        // Read the clinical analysis from file and save into a ClinicalAnalysis object
+        ClinicalAnalysis ca = JacksonUtils.getDefaultObjectMapper().readerFor(ClinicalAnalysis.class).readValue(path.toFile());
+        ca.setId(CA_OPA);
+        ca.setInterpretation(null);
+        ca.setSecondaryInterpretations(null);
+        Map<String, List<String>> individualSamples = new HashMap<>();
+
+        // Create samples
+        for (Individual member : ca.getFamily().getMembers()) {
+            if (CollectionUtils.isNotEmpty(member.getSamples())) {
+                individualSamples.put(member.getId(), member.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
+                for (Sample sample : member.getSamples()) {
+                    try {
+                        Sample sampleForCreation = SampleCreateParams.of(sample).toSample();
+                        sampleForCreation.setIndividualId(null);
+                        catalogManager.getSampleManager().create(studyFqn, sampleForCreation, QueryOptions.empty(), token);
+                    } catch (CatalogException e) {
+                        if (!e.getMessage().contains("already exists")) {
+                            throw e;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Create family with individuals
+        try {
+            Family family = FamilyCreateParams.of(ca.getFamily()).toFamily();
+            catalogManager.getFamilyManager().create(studyFqn, family, QueryOptions.empty(), token);
+        } catch (CatalogException e) {
+            if (!e.getMessage().contains("already exists")) {
+                throw e;
+            }
+        }
+
+        // Associate individuals and samples
+        for (Map.Entry<String, List<String>> entry : individualSamples.entrySet()) {
+            catalogManager.getIndividualManager().update(studyFqn, entry.getKey(), new IndividualUpdateParams().setSamples(
+                            entry.getValue().stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList())),
+                    QueryOptions.empty(), token);
+        }
+
+        // Add panels
+        for (Panel panel : ca.getPanels()) {
+            try {
+                catalogManager.getPanelManager().create(studyFqn, panel, QueryOptions.empty(), token);
+            } catch (CatalogException e) {
+                if (!e.getMessage().contains("already exists")) {
+                    throw e;
+                }
+            }
+        }
+
+        clinicalAnalysis = catalogManager.getClinicalAnalysisManager().create(studyFqn, ca, INCLUDE_RESULT, token).first();
+
+        catalogUploadFile("/biofiles/opa/opa.vcf.gz");
+    }
+
 }

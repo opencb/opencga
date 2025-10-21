@@ -42,15 +42,22 @@ import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.managers.AbstractClinicalManagerTest.TIERING_MODE;
+
 @Category(MediumTests.class)
 public class ClinicalAnalysisUtilsTest {
 
     public static AbstractClinicalManagerTest getClinicalTest(OpenCGATestExternalResource opencga) throws IOException, CatalogException, URISyntaxException, StorageEngineException, ToolException {
+        return getClinicalTest(opencga, null);
+    }
+
+    public static AbstractClinicalManagerTest getClinicalTest(OpenCGATestExternalResource opencga, String mode) throws IOException, CatalogException, URISyntaxException, StorageEngineException, ToolException {
 
         AbstractClinicalManagerTest clinicalTest = new AbstractClinicalManagerTest();
 
         clinicalTest.catalogManagerResource = opencga.getCatalogManagerExternalResource();
         clinicalTest.setUp();
+        clinicalTest.setUpCatalogManager(mode);
 
         // Storage
         ObjectMap storageOptions = new ObjectMap()
@@ -63,17 +70,20 @@ public class ClinicalAnalysisUtilsTest {
         Files.createDirectories(outDir);
 
         VariantOperationsTest.dummyVariantSetup(variantStorageManager, clinicalTest.studyFqn, clinicalTest.token);
-        variantStorageManager.index(clinicalTest.studyFqn, "family.vcf", outDir.toString(), storageOptions, clinicalTest.token);
-        variantStorageManager.index(clinicalTest.studyFqn, "exomiser.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
-        variantStorageManager.index(clinicalTest.studyFqn, "HG004.1k.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
-        variantStorageManager.index(clinicalTest.studyFqn, "HG005.1k.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
-        variantStorageManager.index(clinicalTest.studyFqn, "HG006.1k.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
-        variantStorageManager.index(clinicalTest.studyFqn, "HG007.1k.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
-        variantStorageManager.index(clinicalTest.studyFqn, "HG104.1k.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
-        variantStorageManager.index(clinicalTest.studyFqn, "HG105.1k.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
-        variantStorageManager.index(clinicalTest.studyFqn, "HG106.1k.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
-        variantStorageManager.index(clinicalTest.studyFqn, "HG107.1k.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
-
+        if (TIERING_MODE.equalsIgnoreCase(mode)) {
+            variantStorageManager.index(clinicalTest.studyFqn, "opa.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
+        } else {
+            variantStorageManager.index(clinicalTest.studyFqn, "family.vcf", outDir.toString(), storageOptions, clinicalTest.token);
+            variantStorageManager.index(clinicalTest.studyFqn, "exomiser.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
+            variantStorageManager.index(clinicalTest.studyFqn, "HG004.1k.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
+            variantStorageManager.index(clinicalTest.studyFqn, "HG005.1k.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
+            variantStorageManager.index(clinicalTest.studyFqn, "HG006.1k.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
+            variantStorageManager.index(clinicalTest.studyFqn, "HG007.1k.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
+            variantStorageManager.index(clinicalTest.studyFqn, "HG104.1k.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
+            variantStorageManager.index(clinicalTest.studyFqn, "HG105.1k.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
+            variantStorageManager.index(clinicalTest.studyFqn, "HG106.1k.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
+            variantStorageManager.index(clinicalTest.studyFqn, "HG107.1k.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
+        }
         return clinicalTest;
     }
 

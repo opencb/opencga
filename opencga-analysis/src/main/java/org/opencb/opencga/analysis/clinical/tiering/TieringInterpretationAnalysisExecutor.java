@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.analysis.clinical.tiering;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
@@ -37,6 +38,7 @@ import org.opencb.opencga.analysis.clinical.ClinicalUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -84,7 +86,7 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaToolExecutor i
                         + ParamConstants.POP_FREQ_1000G + ":EAS<0.01;" + ParamConstants.POP_FREQ_1000G + ":EUR<0.01;" + ParamConstants.POP_FREQ_1000G + ":SAS<0.01;GNOMAD_EXOMES:AFR<0.01;GNOMAD_EXOMES:AMR<0.01;"
                         + "GNOMAD_EXOMES:EAS<0.01;GNOMAD_EXOMES:FIN<0.01;GNOMAD_EXOMES:NFE<0.01;GNOMAD_EXOMES:ASJ<0.01;"
                         + "GNOMAD_EXOMES:OTH<0.01")
-                .append(VariantQueryParam.STATS_MAF.key(), "ALL<0.01")
+//                .append(VariantQueryParam.STATS_MAF.key(), "ALL<0.01")
                 .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), ModeOfInheritance.extendedLof);
 
         dominantQuery = new Query()
@@ -93,7 +95,7 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaToolExecutor i
                         + ParamConstants.POP_FREQ_1000G + ":EAS<0.002;" + ParamConstants.POP_FREQ_1000G + ":EUR<0.002;" + ParamConstants.POP_FREQ_1000G + ":SAS<0.002;GNOMAD_EXOMES:AFR<0.001;GNOMAD_EXOMES:AMR<0.001;"
                         + "GNOMAD_EXOMES:EAS<0.001;GNOMAD_EXOMES:FIN<0.001;GNOMAD_EXOMES:NFE<0.001;GNOMAD_EXOMES:ASJ<0.001;"
                         + "GNOMAD_EXOMES:OTH<0.002")
-                .append(VariantQueryParam.STATS_MAF.key(), "ALL<0.001")
+//                .append(VariantQueryParam.STATS_MAF.key(), "ALL<0.001")
                 .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), ModeOfInheritance.extendedLof);
 
         mitochondrialQuery = new Query()
@@ -101,7 +103,7 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaToolExecutor i
                 .append(VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), ParamConstants.POP_FREQ_1000G + ":AFR<0.002;" + ParamConstants.POP_FREQ_1000G + ":AMR<0.002;"
                         + ParamConstants.POP_FREQ_1000G + ":EAS<0.002;" + ParamConstants.POP_FREQ_1000G + ":EUR<0.002;" + ParamConstants.POP_FREQ_1000G + ":SAS<0.002;")
                 .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), ModeOfInheritance.extendedLof)
-                .append(VariantQueryParam.STATS_MAF.key(), "ALL<0.01")
+//                .append(VariantQueryParam.STATS_MAF.key(), "ALL<0.01")
                 .append(VariantQueryParam.REGION.key(), "M,Mt,mt,m,MT");
     }
 
@@ -191,7 +193,7 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaToolExecutor i
                 }
             }
         } catch (InterruptedException e) {
-            throw new ToolException("Error launching threads when execuging the Tiering interpretation analysis", e);
+            throw new ToolException("Error launching threads when executing the Tiering interpretation analysis", e);
         }
 
         List<Variant> variantList = new ArrayList<>();
@@ -361,6 +363,14 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaToolExecutor i
             return false;
         }
         addGenotypeFilter(genotypes, sampleMap, query);
+
+        logger.info("Moi: {}; Query: {}", moi, query.toJson());
+        try {
+            logger.info("Moi: {}; genotypes: {}", moi, JacksonUtils.getDefaultObjectMapper().writerFor(Map.class)
+                    .writeValueAsString(genotypes));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
 
         try {
             resultMap.put(moi, clinicalInterpretationManager.getVariantStorageManager().get(query, QueryOptions.empty(), sessionId)
