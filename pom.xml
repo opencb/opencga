@@ -1539,6 +1539,19 @@
         </profile>
 
         <profile>
+            <id>hbase2.0</id>
+            <activation>
+                <property>
+                    <name>hadoop</name>
+                    <value>hbase2.0</value>
+                </property>
+            </activation>
+            <properties>
+                <opencga-hadoop-shaded.id>hbase2.0</opencga-hadoop-shaded.id>
+                <opencga-storage-hadoop-compat.id>hbase2.0</opencga-storage-hadoop-compat.id>
+            </properties>
+        </profile>
+        <profile>
             <id>hdp3.1</id>
             <activation>
                 <property>
