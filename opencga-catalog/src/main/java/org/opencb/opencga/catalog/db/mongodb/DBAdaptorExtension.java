@@ -30,9 +30,12 @@ public interface DBAdaptorExtension {
      * Provides a mapping of PrivateFields classes to their corresponding CatalogMongoDBAdaptor instances.
      *
      * @param mongoDataStore the MongoDB data store used to create adaptors
+     * @param dbAdaptorFactory the database adaptor factory for the organization
      * @param configuration  the configuration object for the catalog
      * @return a map linking PrivateFields classes to their CatalogMongoDBAdaptor instances
      */
-    Map<Class<? extends PrivateFields>, DBAdaptor<?>> getAdaptors(MongoDataStore mongoDataStore, Configuration configuration);
+    Map<Class<? extends PrivateFields>, DBAdaptor<?>> getAdaptors(MongoDataStore mongoDataStore,
+                                                                  OrganizationMongoDBAdaptorFactory dbAdaptorFactory,
+                                                                  Configuration configuration);
 
 }

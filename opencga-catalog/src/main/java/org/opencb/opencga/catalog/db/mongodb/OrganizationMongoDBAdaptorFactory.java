@@ -297,7 +297,7 @@ public class OrganizationMongoDBAdaptorFactory {
 
         extensionAdaptors = new HashMap<>();
         if (extension != null) {
-            extensionAdaptors.putAll(extension.getAdaptors(mongoDataStore, configuration));
+            extensionAdaptors.putAll(extension.getAdaptors(mongoDataStore, this, configuration));
         }
     }
 

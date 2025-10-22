@@ -74,7 +74,6 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
-import static org.opencb.commons.datastore.core.QueryOptions.COUNT;
 import static org.opencb.opencga.catalog.db.api.SampleDBAdaptor.QueryParams.ANNOTATION;
 import static org.opencb.opencga.catalog.utils.ParamUtils.AclAction.ADD;
 import static org.opencb.opencga.catalog.utils.ParamUtils.AclAction.SET;
