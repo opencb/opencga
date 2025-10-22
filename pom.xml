@@ -119,7 +119,7 @@
         <opencga.war.name>opencga</opencga.war.name>
         <opencga.env.file>opencga-env.sh</opencga.env.file>
 
-        <opencga.hadoop.thirdparty.version>1.0.0-SNAPSHOT</opencga.hadoop.thirdparty.version>
+        <opencga.hadoop.thirdparty.version>1.1.0-SNAPSHOT</opencga.hadoop.thirdparty.version>
 
         <opencga-hadoop-shaded.id.default>hdp3.1</opencga-hadoop-shaded.id.default>
         <opencga-hadoop-shaded.id>${opencga-hadoop-shaded.id.default}</opencga-hadoop-shaded.id>
@@ -1591,6 +1591,19 @@
             <properties>
                 <opencga-hadoop-shaded.id>emr6.13</opencga-hadoop-shaded.id>
                 <opencga-storage-hadoop-compat.id>hbase2.4</opencga-storage-hadoop-compat.id>
+            </properties>
+        </profile>
+        <profile>
+            <id>emr7.5</id>
+            <activation>
+                <property>
+                    <name>hadoop</name>
+                    <value>emr7.5</value>
+                </property>
+            </activation>
+            <properties>
+                <opencga-hadoop-shaded.id>emr7.5</opencga-hadoop-shaded.id>
+                <opencga-storage-hadoop-compat.id>hbase2.5</opencga-storage-hadoop-compat.id>
             </properties>
         </profile>
         <profile>

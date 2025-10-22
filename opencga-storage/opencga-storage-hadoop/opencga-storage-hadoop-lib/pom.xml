@@ -94,6 +94,7 @@
                 <module>opencga-storage-hadoop-lib-hdi5.1</module>
                 <module>opencga-storage-hadoop-lib-emr6.1</module>
                 <module>opencga-storage-hadoop-lib-emr6.13</module>
+                <module>opencga-storage-hadoop-lib-emr7.5</module>
             </modules>
         </profile>
         <profile>

@@ -38,4 +38,6 @@ public abstract class HBaseCompatApi {
     public abstract byte[][] getTableStartKeys(Admin admin, Table table) throws IOException;
 
     public abstract boolean isSnappyAvailable();
+
+    public abstract Class<?>[] getClassesForDependencyJars();
 }
