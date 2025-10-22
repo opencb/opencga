@@ -48,6 +48,7 @@
         <java-common-libs.version>7.0.0-SNAPSHOT</java-common-libs.version>
         <iva.version>5.0.0-SNAPSHOT</iva.version>
 
+
         <oskar.version>0.2.0</oskar.version>
 
         <jackson.version>2.14.3</jackson.version>
