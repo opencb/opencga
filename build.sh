@@ -157,7 +157,7 @@ function print_usage() {
   echo "            --skip-opencga-build  FLAG           Skip OpenCGA build."
   echo "     -s     --test-save-reports   FLAG           Save OpenCGA JUnit test reports to XetaBase Report server (Quality Team)."
   echo "     -d     --docker              FLAG           Publish docker of OpenCGA-enterprise."
-  echo "     -p     --docker-tag          FLAG           Tag for docker of OpenCGA-enterprise."
+  echo "     -p     --docker-tag          STRING         Tag for docker of OpenCGA-enterprise."
   echo "     -c     --cellbase-db         STRING         Connection to mongodb to test cellbase (host:port)."
   echo "     -v     --verbose             FLAG           Print verbose logs"
   echo "     -h     --help                FLAG           Print this help and exit"
