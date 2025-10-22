@@ -9,6 +9,7 @@ import org.opencb.biodata.models.variant.exceptions.NonStandardCompliantSampleFi
 import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.ClinicalAnalysisUtilsTest;
 import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysis;
@@ -24,6 +25,9 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -80,6 +84,17 @@ public class TieringInterpretationAnalysisTest {
         TieringInterpretationAnalysis tiering = new TieringInterpretationAnalysis();
 
         tiering.setUp(opencga.getOpencgaHome().toAbsolutePath().toString(), new ObjectMap(), outDir, clinicalTest.token);
+
+//        try {
+//            VariantQueryResult<Variant> variantQueryResult = tiering.getVariantStorageManager().get(new Query(VariantQueryParam.STUDY.key(), clinicalTest.studyFqn),
+//                    QueryOptions.empty(), clinicalTest.token);
+//            for (Variant variant : variantQueryResult.getResults()) {
+//                System.out.println("variant = " + variant);
+//            }
+//        } catch (StorageEngineException e) {
+//            throw new RuntimeException(e);
+//        }
+
         tiering.setStudyId(clinicalTest.studyFqn)
                 .setClinicalAnalysisId(clinicalTest.CA_OPA)
                 .setDiseasePanelIds(panelIds);

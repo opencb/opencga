@@ -62,7 +62,7 @@ public class ClinicalAnalysisUtilsTest {
         // Storage
         ObjectMap storageOptions = new ObjectMap()
                 .append(VariantStorageOptions.ANNOTATE.key(), true)
-                .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), true);
 
         VariantStorageManager variantStorageManager = opencga.getVariantStorageManager();
 

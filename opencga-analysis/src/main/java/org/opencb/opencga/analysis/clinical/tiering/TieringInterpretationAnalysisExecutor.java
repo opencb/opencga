@@ -27,7 +27,7 @@ import org.opencb.biodata.models.clinical.interpretation.exceptions.Interpretati
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.tools.clinical.TieringClinicalVariantCreator;
+import org.opencb.biodata.tools.clinical.tiering.TieringClinicalVariantCreator;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -86,7 +86,7 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaToolExecutor i
                         + ParamConstants.POP_FREQ_1000G + ":EAS<0.01;" + ParamConstants.POP_FREQ_1000G + ":EUR<0.01;" + ParamConstants.POP_FREQ_1000G + ":SAS<0.01;GNOMAD_EXOMES:AFR<0.01;GNOMAD_EXOMES:AMR<0.01;"
                         + "GNOMAD_EXOMES:EAS<0.01;GNOMAD_EXOMES:FIN<0.01;GNOMAD_EXOMES:NFE<0.01;GNOMAD_EXOMES:ASJ<0.01;"
                         + "GNOMAD_EXOMES:OTH<0.01")
-//                .append(VariantQueryParam.STATS_MAF.key(), "ALL<0.01")
+                .append(VariantQueryParam.STATS_MAF.key(), "ALL<0.01")
                 .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), ModeOfInheritance.extendedLof);
 
         dominantQuery = new Query()
