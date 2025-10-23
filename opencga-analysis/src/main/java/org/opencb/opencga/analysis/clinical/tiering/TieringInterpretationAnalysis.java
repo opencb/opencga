@@ -16,35 +16,45 @@
 
 package org.opencb.opencga.analysis.clinical.tiering;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
-import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
+import org.opencb.biodata.models.clinical.ClinicalProperty.Penetrance;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
+import org.opencb.biodata.tools.clinical.tiering.TieringConfiguration;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.InterpretationAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.clinical.tiering.TieringInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.core.tools.annotations.ToolParams;
+import org.yaml.snakeyaml.Yaml;
 
-import java.util.List;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+import static org.opencb.opencga.core.tools.ResourceManager.ANALYSIS_DIRNAME;
 
 @Tool(id = TieringInterpretationAnalysis.ID, resource = Enums.Resource.CLINICAL)
 public class TieringInterpretationAnalysis extends InterpretationAnalysis {
 
-    public final static String ID = "interpretation-tiering";
+    public static final String ID = "interpretation-tiering";
     public static final String DESCRIPTION = "Run tiering interpretation analysis";
 
-    private String studyId;
-    private String clinicalAnalysisId;
-    private List<String> diseasePanelIds;
-    private ClinicalProperty.Penetrance penetrance;
-    private TieringInterpretationConfiguration config;
-
     private ClinicalAnalysis clinicalAnalysis;
-    private List<DiseasePanel> diseasePanels;
+    private TieringConfiguration tieringConfiguration;
+
+    @ToolParams
+    protected final TieringInterpretationAnalysisParams analysisParams = new TieringInterpretationAnalysisParams();
 
     @Override
     protected InterpretationMethod getInterpretationMethod() {
@@ -53,105 +63,105 @@ public class TieringInterpretationAnalysis extends InterpretationAnalysis {
 
     @Override
     protected void check() throws Exception {
+        // IMPORTANT: the first thing to do since it initializes "study" from params.get(STUDY_PARAM)
         super.check();
 
-        // Check study
-        if (StringUtils.isEmpty(studyId)) {
-            // Missing study
-            throw new ToolException("Missing study ID");
-        }
+        setUpStorageEngineExecutor(study);
 
         // Check clinical analysis
-        if (StringUtils.isEmpty(clinicalAnalysisId)) {
+        if (StringUtils.isEmpty(analysisParams.getClinicalAnalysisId())) {
             throw new ToolException("Missing clinical analysis ID");
         }
 
-        // Get clinical analysis to ckeck proband sample ID, family ID
-        OpenCGAResult<ClinicalAnalysis> clinicalAnalysisQueryResult;
+        // Get clinical analysis to check diseases, proband and family
         try {
-            clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager().get(studyId, clinicalAnalysisId, QueryOptions.empty(),
-                    token);
+            clinicalAnalysis = catalogManager.getClinicalAnalysisManager().get(study, analysisParams.getClinicalAnalysisId(),
+                    QueryOptions.empty(), token).first();
         } catch (
                 CatalogException e) {
             throw new ToolException(e);
         }
-        if (clinicalAnalysisQueryResult.getNumResults() != 1) {
-            throw new ToolException("Clinical analysis " + clinicalAnalysisId + " not found in study " + studyId);
+
+        // Check disease panels in clinical analysis
+        if (CollectionUtils.isEmpty(clinicalAnalysis.getPanels())) {
+            throw new ToolException("Missing disease panels in clinical analysis " + clinicalAnalysis.getId());
         }
 
-        clinicalAnalysis = clinicalAnalysisQueryResult.first();
+        // Check proband in clinical analysis
+        if (clinicalAnalysis.getProband() == null || StringUtils.isEmpty(clinicalAnalysis.getProband().getId())) {
+            throw new ToolException("Missing proband in clinical analysis " + clinicalAnalysis.getId());
+        }
+        OpenCGAResult<Individual> indvidualResult = getCatalogManager().getIndividualManager().get(study,
+                clinicalAnalysis.getProband().getId(), QueryOptions.empty(), token);
+        if (indvidualResult.getNumResults() == 0) {
+            throw new ToolException("Proband '" + clinicalAnalysis.getProband().getId() + "' in clinical analysis "
+                    + clinicalAnalysis.getId() + " not found.");
+        }
 
-        // Check disease panels
-        diseasePanels = clinicalInterpretationManager.getDiseasePanels(studyId, diseasePanelIds, token);
+        // Check family in clinical analysis
+        if (clinicalAnalysis.getFamily() == null || StringUtils.isEmpty(clinicalAnalysis.getFamily().getId())) {
+            throw new ToolException("Missing family in clinical analysis " + clinicalAnalysis.getId());
+        }
+        OpenCGAResult<Family> familyResult = getCatalogManager().getFamilyManager().get(study, clinicalAnalysis.getFamily().getId(),
+                QueryOptions.empty(), token);
+        if (familyResult.getNumResults() == 0) {
+            throw new ToolException("Family '" + clinicalAnalysis.getFamily().getId() + "' in clinical analysis "
+                    + clinicalAnalysis.getId() + " not found.");
+        }
 
         // Check primary
+        this.primary = analysisParams.isPrimary();
         checkPrimaryInterpretation(clinicalAnalysis);
 
-        // Check interpretation method
+        // Check interpretation method in both primary and secondary interpretations (only one interpretation of each method can exist
+        // in the clinical analysis)
         checkInterpretationMethod(getInterpretationMethod(ID).getName(), clinicalAnalysis);
 
-        // Update executor params with OpenCGA home and session ID
-        setUpStorageEngineExecutor(studyId);
+        // Read tiering configuration file from the user parameters or default one if not provided
+        Path configPath;
+        if (StringUtils.isNotEmpty(analysisParams.getConfigFile())) {
+            logger.info("Using custom tiering configuration file: {}", analysisParams.getConfigFile());
+            File opencgaFile = getCatalogManager().getFileManager().get(study, analysisParams.getConfigFile(), QueryOptions.empty(), token)
+                    .first();
+            configPath = Paths.get(opencgaFile.getUri());
+        } else {
+            logger.info("Using default tiering configuration file");
+            configPath = getOpencgaHome().resolve(ANALYSIS_DIRNAME).resolve("tiering").resolve("tiering-configuration.yml");
+        }
+        if (!Files.exists(configPath)) {
+            throw new ToolException("Tiering configuration file not found: " + configPath);
+        }
+        tieringConfiguration = JacksonUtils.getDefaultObjectMapper().convertValue(new Yaml().load(Files.newInputStream(configPath)),
+                TieringConfiguration.class);
+
+        // Finally, update tiering configuration with the parameters provided by the user and set default values if needed
+        updateTieringConfiguration();
     }
 
     @Override
     protected void run() throws ToolException {
         step(() -> {
-//            new TieringInterpretationAnalysisExecutor()
-            getToolExecutor(TieringInterpretationAnalysisExecutor.class)
-                    .setStudyId(studyId)
-                    .setClinicalAnalysisId(clinicalAnalysisId)
-                    .setDiseasePanels(diseasePanels)
-                    .setPenetrance(penetrance)
-                    .setConfig(config)
+            TieringInterpretationAnalysisExecutor executor = getToolExecutor(TieringInterpretationAnalysisExecutor.class);
+            executor.setStudy(study)
+                    .setClinicalAnalysis(clinicalAnalysis)
+                    .setTieringConfiguration(tieringConfiguration)
                     .execute();
 
-            saveInterpretation(studyId, clinicalAnalysis, null);
+            saveInterpretation(study, clinicalAnalysis, null);
         });
     }
 
-    public String getStudyId() {
-        return studyId;
-    }
+    private void updateTieringConfiguration() {
+        // Update tiering configuration with the parameters provided by the user
+        if (analysisParams.getTieringParams() != null && StringUtils.isNotEmpty(analysisParams.getTieringParams().getPenetrance())) {
+            // Check and update penetrance value
+            Penetrance penetrance = Penetrance.valueOf(analysisParams.getTieringParams().getPenetrance());
+            tieringConfiguration.setPenetrance(penetrance.name());
+        }
 
-    public TieringInterpretationAnalysis setStudyId(String studyId) {
-        this.studyId = studyId;
-        return this;
-    }
-
-    public String getClinicalAnalysisId() {
-        return clinicalAnalysisId;
-    }
-
-    public TieringInterpretationAnalysis setClinicalAnalysisId(String clinicalAnalysisId) {
-        this.clinicalAnalysisId = clinicalAnalysisId;
-        return this;
-    }
-
-    public List<String> getDiseasePanelIds() {
-        return diseasePanelIds;
-    }
-
-    public TieringInterpretationAnalysis setDiseasePanelIds(List<String> diseasePanelIds) {
-        this.diseasePanelIds = diseasePanelIds;
-        return this;
-    }
-
-    public ClinicalProperty.Penetrance getPenetrance() {
-        return penetrance;
-    }
-
-    public TieringInterpretationAnalysis setPenetrance(ClinicalProperty.Penetrance penetrance) {
-        this.penetrance = penetrance;
-        return this;
-    }
-
-    public TieringInterpretationConfiguration getConfig() {
-        return config;
-    }
-
-    public TieringInterpretationAnalysis setConfig(TieringInterpretationConfiguration config) {
-        this.config = config;
-        return this;
+        // Set update values if not present in the configuration
+        if (StringUtils.isEmpty(tieringConfiguration.getPenetrance())) {
+            tieringConfiguration.setPenetrance(ClinicalProperty.Penetrance.COMPLETE.name());
+        }
     }
 }

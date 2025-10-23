@@ -1,47 +1,42 @@
 package org.opencb.opencga.analysis.clinical.tiering;
 
-import org.apache.commons.lang3.StringUtils;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
-import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.exceptions.NonStandardCompliantSampleField;
-import org.opencb.biodata.tools.variant.VariantNormalizer;
-import org.opencb.commons.datastore.core.Event;
+import org.opencb.biodata.tools.clinical.tiering.TieringConfiguration;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.ClinicalAnalysisUtilsTest;
-import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysis;
+import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
-import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
-import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserWrapperAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.ResourceException;
 import org.opencb.opencga.catalog.managers.AbstractClinicalManagerTest;
 import org.opencb.opencga.catalog.utils.ResourceManager;
+import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.clinical.tiering.TieringInterpretationAnalysisParams;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
-import org.opencb.opencga.core.tools.result.ExecutionResult;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
+import org.yaml.snakeyaml.Yaml;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 
-import static com.mongodb.assertions.Assertions.assertFalse;
+import static com.fasterxml.jackson.databind.type.LogicalType.Map;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.opencb.opencga.catalog.managers.AbstractClinicalManagerTest.TIERING_MODE;
+import static org.opencb.opencga.core.tools.ResourceManager.ANALYSIS_DIRNAME;
 
 @Category(MediumTests.class)
 public class TieringInterpretationAnalysisTest {
@@ -49,80 +44,110 @@ public class TieringInterpretationAnalysisTest {
     private static AbstractClinicalManagerTest clinicalTest;
     private static ResourceManager resourceManager;
 
-    Path outDir;
+    private ToolRunner toolRunner;
+
+    private ClinicalAnalysis ca;
+    private Path outDir;
 
     @ClassRule
     public static OpenCGATestExternalResource opencga = new OpenCGATestExternalResource(true);
 
-    @BeforeClass
-    public static void setUp() throws Exception {
+    @Before
+    public void setUp() throws Exception {
         opencga.clear();
         clinicalTest = ClinicalAnalysisUtilsTest.getClinicalTest(opencga, TIERING_MODE);
         resourceManager = new ResourceManager(opencga.getOpencgaHome());
+
+        toolRunner = new ToolRunner(opencga.getOpencgaHome().toAbsolutePath().toString(), clinicalTest.catalogManager,
+                opencga.getVariantStorageManager());
     }
 
-    @AfterClass
-    public static void tearDown() throws Exception {
+    @After
+    public void tearDown() throws Exception {
         opencga.clear();
     }
 
     @Test
-    public void tieringAnalysis() throws IOException, CatalogException, ToolException {
-        outDir = Paths.get(opencga.createTmpOutdir("_interpretation_analysis_tiering"));
+    public void tieringAnalysisDefaultConfig() throws IOException, CatalogException, ToolException {
+        checkClinicalAnalysis();
 
+        outDir = Paths.get(opencga.createTmpOutdir("_tiering_default_config"));
+        System.out.println("opencga.getOpencgaHome() = " + opencga.getOpencgaHome().toAbsolutePath());
+        System.out.println("outDir = " + outDir);
+
+        TieringInterpretationAnalysisParams params = new TieringInterpretationAnalysisParams();
+        params.setClinicalAnalysisId(ca.getId());
+
+        toolRunner.execute(TieringInterpretationAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, clinicalTest.studyFqn),
+                outDir, null, false, clinicalTest.token);
+
+        ca = clinicalTest.catalogManager.getClinicalAnalysisManager().get(clinicalTest.studyFqn,
+                clinicalTest.CA_OPA, QueryOptions.empty(), clinicalTest.token).first();
+
+        assertEquals(1, ca.getSecondaryInterpretations().size());
+        assertEquals(0, ca.getSecondaryInterpretations().get(0).getPrimaryFindings().size());
+
+        // Clean up interpretations
+        deleteInterpretations();
+    }
+
+    @Test
+    public void tieringAnalysisCustomConfig() throws IOException, CatalogException, ToolException {
+        checkClinicalAnalysis();
+
+        outDir = Paths.get(opencga.createTmpOutdir("_tiering_custom_config"));
+        System.out.println("opencga.getOpencgaHome() = " + opencga.getOpencgaHome().toAbsolutePath());
+        System.out.println("outDir = " + outDir);
+
+        // Read tiering configuration and register in catalog
+        Path configPath = opencga.getOpencgaHome().resolve(ANALYSIS_DIRNAME).resolve("tiering").resolve("tiering-configuration.yml");
+        TieringConfiguration tieringConfiguration = JacksonUtils.getDefaultObjectMapper().convertValue(new Yaml().load(Files.newInputStream(configPath)), TieringConfiguration.class);
+        for (String key: tieringConfiguration.getQueries().keySet()) {
+            Map<String, Object> filters = (Map<String, Object>) tieringConfiguration.getQueries().get(key);
+            filters.remove("cohortStatsMaf");
+        }
+        Path updatedConfigPath = Paths.get(opencga.createTmpOutdir("_tiering_custom_config_data")).resolve(configPath.getFileName());
+        JacksonUtils.getDefaultObjectMapper().writerFor(TieringConfiguration.class).writeValue(updatedConfigPath.toFile(), tieringConfiguration);
+        InputStream inputStream = Files.newInputStream(updatedConfigPath);
+        File opencgaFile = opencga.getCatalogManager().getFileManager().upload(clinicalTest.studyFqn, inputStream,
+                new File().setPath("data/" + updatedConfigPath.getFileName()), false, true, false, clinicalTest.token).first();
+
+        TieringInterpretationAnalysisParams params = new TieringInterpretationAnalysisParams();
+        params.setClinicalAnalysisId(ca.getId());
+        params.setConfigFile(opencgaFile.getId());
+
+        toolRunner.execute(TieringInterpretationAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, clinicalTest.studyFqn),
+                outDir, null, false, clinicalTest.token);
+
+        ca = clinicalTest.catalogManager.getClinicalAnalysisManager().get(clinicalTest.studyFqn,
+                clinicalTest.CA_OPA, QueryOptions.empty(), clinicalTest.token).first();
+
+        assertEquals(1, ca.getSecondaryInterpretations().size());
+        assertEquals(10, ca.getSecondaryInterpretations().get(0).getPrimaryFindings().size());
+
+        // Clean up interpretations
+        deleteInterpretations();
+    }
+
+
+    private void checkClinicalAnalysis() throws CatalogException {
         OpenCGAResult<ClinicalAnalysis> caResult = clinicalTest.catalogManager.getClinicalAnalysisManager()
                 .get(clinicalTest.studyFqn, clinicalTest.CA_OPA, QueryOptions.empty(), clinicalTest.token);
         assertEquals(1, caResult.getNumResults());
         assertEquals(0, caResult.first().getSecondaryInterpretations().size());
 
-        // Create the list of panel IDs from the clinical analysis
-        List<String> panelIds = caResult.first().getPanels().stream().map(panel -> panel.getId()).collect(Collectors.toList());
+        ca = caResult.first();
+    }
 
-        System.out.println("opencga.getOpencgaHome() = " + opencga.getOpencgaHome().toAbsolutePath());
-        System.out.println("outDir = " + outDir);
+    private void deleteInterpretations() throws CatalogException {
+        // Delete all interpretations
+        clinicalTest.catalogManager.getInterpretationManager().delete(clinicalTest.studyFqn, ca.getId(),
+                Arrays.asList(ca.getInterpretation().getId(), ca.getSecondaryInterpretations().get(0).getId()), false, clinicalTest.token);
 
-        TieringInterpretationAnalysis tiering = new TieringInterpretationAnalysis();
-
-        tiering.setUp(opencga.getOpencgaHome().toAbsolutePath().toString(), new ObjectMap(), outDir, clinicalTest.token);
-
-//        try {
-//            VariantQueryResult<Variant> variantQueryResult = tiering.getVariantStorageManager().get(new Query(VariantQueryParam.STUDY.key(), clinicalTest.studyFqn),
-//                    QueryOptions.empty(), clinicalTest.token);
-//            for (Variant variant : variantQueryResult.getResults()) {
-//                System.out.println("variant = " + variant);
-//            }
-//        } catch (StorageEngineException e) {
-//            throw new RuntimeException(e);
-//        }
-
-        tiering.setStudyId(clinicalTest.studyFqn)
-                .setClinicalAnalysisId(clinicalTest.CA_OPA)
-                .setDiseasePanelIds(panelIds);
-        ExecutionResult result = tiering.start();
-        System.out.println(result);
-
-
-        // Refresh clinical analysis
-        ClinicalAnalysis clinicalAnalysis = clinicalTest.catalogManager.getClinicalAnalysisManager().get(clinicalTest.studyFqn,
+        ca = clinicalTest.catalogManager.getClinicalAnalysisManager().get(clinicalTest.studyFqn,
                 clinicalTest.CA_OPA, QueryOptions.empty(), clinicalTest.token).first();
-        System.out.println("clinicalAnalysis.getId() = " + clinicalAnalysis.getId());
-//        assertEquals(1, clinicalAnalysis.getSecondaryInterpretations().size());
-//        assertTrue(clinicalAnalysis.getSecondaryInterpretations().get(0).getPrimaryFindings().size() > 0);
-//
-//        // Check Exomiser docker CLI
-//        boolean pedFound = false;
-//        for (Event event : result.getEvents()) {
-//            if (event.getType() == Event.Type.WARNING && StringUtils.isNotEmpty(event.getMessage())
-//                    && event.getMessage().startsWith(DockerWrapperAnalysisExecutor.DOCKER_CLI_MSG)) {
-//                List<String> splits = Arrays.asList(event.getMessage().split(" "));
-//                pedFound = splits.contains("--ped") && splits.contains("/jobdir/" + clinicalTest.PROBAND_ID2 + ".ped");
-//            }
-//        }
-//        assertFalse(pedFound);
-//
-//        // Only proband sample is returned in primary findings
-//        for (ClinicalVariant cv : clinicalAnalysis.getInterpretation().getPrimaryFindings()) {
-//            assertEquals(1, cv.getStudies().get(0).getSamples().size());
-//        }
+
+        assertEquals(null, ca.getInterpretation());
+        assertEquals(0, ca.getSecondaryInterpretations().size());
     }
 }

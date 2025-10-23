@@ -1,8 +1,6 @@
 ---
-panels:
-
-# Define common configurations using anchors
-common_configs:
+# Commons: dominant_query
+_COMMONS:
   dominant_query: &dominant_query
     filter: PASS
     unknownGenotype: "./."
@@ -31,8 +29,7 @@ common_configs:
       - GNOMAD_EXOMES:NFE<0.001
       - GNOMAD_EXOMES:ASJ<0.001
       - GNOMAD_EXOMES:OTH<0.002
-    cohortStatsMaf:
-      ALL<0.001
+    cohortStatsMaf: ALL<0.001
     ct:
       - transcript_ablation
       - splice_acceptor_variant
@@ -49,6 +46,7 @@ common_configs:
       - splice_region_variant
       - incomplete_terminal_codon_variant
 
+  # Commons: recessive_query
   recessive_query: &recessive_query
     filter: PASS
     unknownGenotype: "./."
@@ -77,8 +75,7 @@ common_configs:
       - GNOMAD_EXOMES:NFE<0.01
       - GNOMAD_EXOMES:ASJ<0.01
       - GNOMAD_EXOMES:OTH<0.01
-    cohortStatsMaf:
-      ALL<0.01
+    cohortStatsMaf: ALL<0.01
     ct:
       - transcript_ablation
       - splice_acceptor_variant
@@ -94,7 +91,6 @@ common_configs:
       - missense_variant
       - splice_region_variant
       - incomplete_terminal_codon_variant
-
 
 queries:
   AUTOSOMAL_DOMINANT: *dominant_query
@@ -135,6 +131,8 @@ queries:
 
 tiers:
   TIER1:
+    panel: true
+    moi: true
     ct:
       - transcript_ablation
       - splice_acceptor_variant
@@ -146,6 +144,8 @@ tiers:
       - initiator_codon_variant
 
   TIER2:
+    panel: true
+    moi: true
     ct:
       - transcript_amplification
       - inframe_insertion
@@ -153,3 +153,7 @@ tiers:
       - missense_variant
       - splice_region_variant
       - incomplete_terminal_codon_variant
+
+  TIER3:
+    panel: true
+    moi: true

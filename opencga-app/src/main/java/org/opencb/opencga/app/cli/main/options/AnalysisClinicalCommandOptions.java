@@ -928,17 +928,20 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean jobDryRun; 
     
-        @Parameter(names = {"--clinical-analysis"}, description = "The body web service clinicalAnalysis parameter", required = false, arity = 1)
-        public String clinicalAnalysis;
+        @Parameter(names = {"--clinical-analysis-id"}, description = "Clinical analysis ID to be interpret.", required = false, arity = 1)
+        public String clinicalAnalysisId;
     
-        @Parameter(names = {"--panels"}, description = "The body web service panels parameter", required = false, arity = 1)
-        public String panels;
-    
-        @Parameter(names = {"--penetrance"}, description = "The body web service penetrance parameter", required = false, arity = 1)
-        public String penetrance;
-    
-        @Parameter(names = {"--primary"}, description = "The body web service primary parameter", required = false, help = true, arity = 0)
+        @Parameter(names = {"--primary"}, description = "Set the tiering interpretation as primary (true) or secondary (false).", required = false, help = true, arity = 0)
         public boolean primary = false;
+    
+        @Parameter(names = {"--tiering-params-penetrance"}, description = "Penetrance of the clinical analysis: COMPLETE, INCOMPLETE or UNKNOWN.", required = false, arity = 1)
+        public String tieringParamsPenetrance;
+    
+        @Parameter(names = {"--config-file"}, description = "Tiering configuration file, if not provided default configuration will be used.", required = false, arity = 1)
+        public String configFile;
+    
+        @Parameter(names = {"--outdir"}, description = "Output dir for the job.", required = false, arity = 1)
+        public String outdir;
     
     }
 

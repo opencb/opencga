@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.opencb.biodata.models.clinical.ClinicalDiscussion;
-import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.commons.datastore.core.FacetField;
@@ -53,8 +52,9 @@ import org.opencb.opencga.core.models.clinical.PriorityParam;
 import org.opencb.opencga.core.models.clinical.ProbandParam;
 import org.opencb.opencga.core.models.clinical.RgaAnalysisParams;
 import org.opencb.opencga.core.models.clinical.TeamInterpretationAnalysisParams;
-import org.opencb.opencga.core.models.clinical.TieringInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.clinical.ZettaInterpretationAnalysisParams;
+import org.opencb.opencga.core.models.clinical.tiering.TieringInterpretationAnalysisParams;
+import org.opencb.opencga.core.models.clinical.tiering.TieringParams;
 import org.opencb.opencga.core.models.common.StatusParam;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.job.Job;
@@ -741,10 +741,11 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), TieringInterpretationAnalysisParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "clinicalAnalysis", commandOptions.clinicalAnalysis, true);
-            putNestedIfNotNull(beanParams, "panels", commandOptions.panels, true);
-            putNestedIfNotNull(beanParams, "penetrance", commandOptions.penetrance, true);
+            putNestedIfNotEmpty(beanParams, "clinicalAnalysisId", commandOptions.clinicalAnalysisId, true);
             putNestedIfNotNull(beanParams, "primary", commandOptions.primary, true);
+            putNestedIfNotEmpty(beanParams, "tieringParams.penetrance", commandOptions.tieringParamsPenetrance, true);
+            putNestedIfNotEmpty(beanParams, "configFile", commandOptions.configFile, true);
+            putNestedIfNotEmpty(beanParams, "outdir", commandOptions.outdir, true);
 
             tieringInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

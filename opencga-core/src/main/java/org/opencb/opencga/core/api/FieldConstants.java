@@ -626,4 +626,14 @@ public class FieldConstants {
     public static final String FETCH_RESOURCES_DESCRIPTION = "List of resource IDs, separated by commas, to fetch (available resources are"
             + " specified in the configuration file). The wildcard '*' can be used: for example, use '*' to fetch all resources, or"
             + " 'EXOMISER_*' to fetch only Exomiser resources.";
+
+    // Tiering
+    public static final String TIERING_INTERPRETATION_PARAMS_DESCRIPTION = "Tiering interpretation analysis params";
+    public static final String TIERING_CLINICAL_ANALYSIS_ID_DESCRIPTION = "Clinical analysis ID to be interpret.";
+    public static final String TIERING_PRIMARY_DESCRIPTION = "Set the tiering interpretation as primary (true) or secondary (false).";
+    public static final String TIERING_PARAMS_DESCRIPTION = "Tiering interpretation configuration params";
+    public static final String TIERING_CONFIG_FILE_DESCRIPTION = "Tiering configuration file, if not provided default configuration will"
+            + " be used.";
+
+    public static final String PENETRANCE_DESCRIPTION = "Penetrance of the clinical analysis: COMPLETE, INCOMPLETE or UNKNOWN.";
 }

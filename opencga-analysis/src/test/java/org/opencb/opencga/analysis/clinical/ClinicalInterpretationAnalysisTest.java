@@ -21,7 +21,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.junit.*;
 import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.clinical.ClinicalDiscussion;
-import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.biodata.models.clinical.interpretation.Interpretation;
@@ -32,8 +31,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationConfiguration;
-import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
-import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationConfiguration;
 import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationConfiguration;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
@@ -83,24 +80,24 @@ public class ClinicalInterpretationAnalysisTest {
         opencga.clear();
     }
 
-    @Test
-    public void tieringAnalysis() throws Exception {
-        outDir = Paths.get(opencga.createTmpOutdir("_interpretation_analysis"));
-
-        TieringInterpretationConfiguration config = new TieringInterpretationConfiguration();
-        TieringInterpretationAnalysis tieringAnalysis = new TieringInterpretationAnalysis();
-        tieringAnalysis.setUp(opencga.getOpencgaHome().toString(), new ObjectMap(), outDir, clinicalTest.token);
-        tieringAnalysis.setStudyId(clinicalTest.studyFqn)
-                .setClinicalAnalysisId(clinicalTest.clinicalAnalysis.getId())
-                .setPenetrance(ClinicalProperty.Penetrance.COMPLETE)
-                .setConfig(config);
-
-        ExecutionResult result = tieringAnalysis.start();
-
-        System.out.println(result);
-
-        checkInterpretation(0, result);
-    }
+//    @Test
+//    public void tieringAnalysis() throws Exception {
+//        outDir = Paths.get(opencga.createTmpOutdir("_interpretation_analysis"));
+//
+//        TieringInterpretationConfiguration config = new TieringInterpretationConfiguration();
+//        TieringInterpretationAnalysis tieringAnalysis = new TieringInterpretationAnalysis();
+//        tieringAnalysis.setUp(opencga.getOpencgaHome().toString(), new ObjectMap(), outDir, clinicalTest.token);
+//        tieringAnalysis.setStudyId(clinicalTest.studyFqn)
+//                .setClinicalAnalysisId(clinicalTest.clinicalAnalysis.getId())
+//                .setPenetrance(ClinicalProperty.Penetrance.COMPLETE)
+//                .setConfig(config);
+//
+//        ExecutionResult result = tieringAnalysis.start();
+//
+//        System.out.println(result);
+//
+//        checkInterpretation(0, result);
+//    }
 
     @Test
     public void teamAnalysis() throws IOException {

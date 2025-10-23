@@ -248,6 +248,11 @@
             <artifactId>solr-test-framework</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <version>1.33</version>
+        </dependency>
 
         <dependency>
             <!-- Need dependency for running hadoop tests. -->
