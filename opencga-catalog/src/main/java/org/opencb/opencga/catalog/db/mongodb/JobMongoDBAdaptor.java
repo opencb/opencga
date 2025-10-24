@@ -306,7 +306,7 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
                 Projections.computed("difference", new Document("$toDouble",
                         new Document("$subtract",
                                 Arrays.asList("$" + QueryParams.EXECUTION_END.key(), "$" + QueryParams.EXECUTION_START.key()))))
-                )));
+        )));
         aggregation.add(new Document("$group", new Document()
                 .append("_id", new Document()
                         .append("month", new Document("$month", "$date"))
@@ -408,8 +408,11 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
         UpdateDocument document = new UpdateDocument();
 
         String[] acceptedParams = {QueryParams.USER_ID.key(), QueryParams.DESCRIPTION.key(), QueryParams.COMMAND_LINE.key(),
-                QueryParams.SCHEDULED_START_TIME.key()};
+                QueryParams.SCHEDULED_START_TIME.key(), QueryParams.EXECUTION_ID.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
+
+        String[] acceptedStringListParams = {QueryParams.EXECUTION_EXTERNAL_FILES.key()};
+        filterStringListParams(parameters, document.getSet(), acceptedStringListParams);
 
         String[] acceptedBooleanParams = {QueryParams.VISITED.key(), QueryParams.INTERNAL_KILL_JOB_REQUESTED.key()};
         filterBooleanParams(parameters, document.getSet(), acceptedBooleanParams);
@@ -498,8 +501,10 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
                     Enums.Priority.getPriority(parameters.getString(QueryParams.PRIORITY.key())).getValue());
         }
 
-        String[] acceptedObjectParams = {QueryParams.EXECUTION.key(), QueryParams.STUDY.key(), QueryParams.INTERNAL_STATUS.key(),
-                QueryParams.TOOL_EXTERNAL_EXECUTOR.key()};
+        String[] acceptedObjectParams = {QueryParams.STUDY.key(), QueryParams.INTERNAL_STATUS.key(),
+                QueryParams.TOOL_EXTERNAL_EXECUTOR.key(), QueryParams.EXECUTION_EXECUTOR.key(), QueryParams.EXECUTION_QUEUE.key(),
+                QueryParams.EXECUTION_STATUS.key(), QueryParams.EXECUTION_DEPENDENCIES.key(), QueryParams.EXECUTION_STEPS.key(),
+                QueryParams.EXECUTION_EVENTS.key(), QueryParams.EXECUTION_ATTRIBUTES.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
 
         if (document.getSet().containsKey(QueryParams.STUDY.key())) {

@@ -52,6 +52,7 @@ import org.opencb.opencga.core.models.job.*;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyPermissions;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -400,8 +401,7 @@ public class JobManager extends ResourceManager<Job> {
             job.setInput(inputFiles);
         }
 
-
-
+        job.setExecution(new ExecutionResult());
         job.setAttributes(ParamUtils.defaultObject(job.getAttributes(), HashMap::new));
     }
 

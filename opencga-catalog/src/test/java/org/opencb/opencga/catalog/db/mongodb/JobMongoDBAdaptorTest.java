@@ -36,6 +36,7 @@ import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobInternal;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
+import org.opencb.opencga.core.tools.result.ExecutionResult;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -247,6 +248,21 @@ public class JobMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
         assertTrue(Arrays.asList(5L, 6L, 7L).containsAll(queryResult.first().getInput().stream().map(File::getUid).collect(Collectors.toList())));
         assertTrue(Arrays.asList(15L, 16L, 17L)
                 .containsAll(queryResult.first().getOutput().stream().map(File::getUid).collect(Collectors.toList())));
+    }
+
+    @Test
+    public void updateExecutionInfo() throws Exception {
+        Job job = getNewJob("jobName1")
+                .setExecution(new ExecutionResult())
+                .setOutDir(new File().setUid(5));
+        catalogJobDBAdaptor.insert(studyUid, job, null);
+        job = getJob(studyUid, "jobName1");
+
+        ObjectMap params = new ObjectMap("execution", new ObjectMap("queue", new ObjectMap("id", "blabla")));
+        DataResult<?> result = catalogJobDBAdaptor.update(job.getUid(), params, QueryOptions.empty());
+        assertEquals(1, result.getNumUpdated());
+        job = getJob(studyUid, "jobName1");
+        assertEquals("blabla", job.getExecution().getQueue().getId());
     }
 
     @Test

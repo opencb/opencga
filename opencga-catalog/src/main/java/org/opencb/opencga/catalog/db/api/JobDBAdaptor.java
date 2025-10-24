@@ -146,8 +146,18 @@ public interface JobDBAdaptor extends CoreDBAdaptor<Job> {
         SCHEDULED_START_TIME("scheduledStartTime", TEXT, ""),
 
         EXECUTION("execution", OBJECT, ""),
+        @Deprecated
+        EXECUTION_ID("execution.id", STRING, ""),
+        EXECUTION_EXECUTOR("execution.executor", OBJECT, ""),
+        EXECUTION_QUEUE("execution.queue", OBJECT, ""),
         EXECUTION_START("execution.start", DATE, ""),
         EXECUTION_END("execution.end", DATE, ""),
+        EXECUTION_STATUS("execution.status", OBJECT, ""),
+        EXECUTION_DEPENDENCIES("execution.dependencies", OBJECT, ""),
+        EXECUTION_EXTERNAL_FILES("execution.externalFiles", TEXT_ARRAY, ""),
+        EXECUTION_STEPS("execution.steps", OBJECT, ""),
+        EXECUTION_EVENTS("execution.events", OBJECT, ""),
+        EXECUTION_ATTRIBUTES("execution.attributes", OBJECT, ""),
         EXECUTION_QUEUE_ID(ParamConstants.JOB_EXECUTION_QUEUE_ID_PARAM, STRING, ""),
 
         STDOUT("stdout", OBJECT, ""),
