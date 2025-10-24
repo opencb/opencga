@@ -57,7 +57,7 @@ jobs:
       - name: OpenCGA Enterprise Maven Build (skip tests)
         run: |
           branch_name=$(git rev-parse --abbrev-ref HEAD)
-          ./build.sh --storage-hadoop ${{ inputs.storage_hadoop }} -b -T "$branch_name"
+          ./build.sh --storage-hadoop ${{ inputs.storage_hadoop }} --prepare-branches --prepare-hadoop --task "$branch_name"
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.artifact_name }}
