@@ -1,0 +1,89 @@
+#!/bin/bash
+
+set -e
+set -o pipefail
+
+
+function main() {
+  HADOOP_FLAVOUR="hbase2.0"
+
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    value="$2"
+    case $key in
+    --hadoop-flavour)
+      HADOOP_FLAVOUR="$value"
+      shift # past argument
+      shift # past value
+      ;;
+    --hadoop-thirdparty-version)
+      HADOOP_THIRDPARTY_VERSION="$value"
+      shift # past argument
+      shift # past value
+      ;;
+    *) # unknown option
+      echo "Unknown option $key"
+      return 1
+      ;;
+    esac
+  done
+
+  if [ -z "$HADOOP_THIRDPARTY_VERSION" ]; then
+    HADOOP_THIRDPARTY_VERSION=$(mvn help:evaluate -Dexpression=opencga.hadoop.thirdparty.version -q -DforceStdout)
+  fi
+
+  # Check if HADOOP_THIRDPARTY_VERSION jar exists in local maven repository
+  HADOOP_THIRDPARTY_JAR_PATH="$HOME/.m2/repository/org/opencb/opencga/hadoop/thirdparty/opencga-hadoop-shaded-${HADOOP_FLAVOUR}/$HADOOP_THIRDPARTY_VERSION/opencga-hadoop-shaded-${HADOOP_FLAVOUR}-$HADOOP_THIRDPARTY_VERSION.jar"
+  echo "Looking for:"
+  echo " - $HADOOP_THIRDPARTY_JAR_PATH"
+  if [ -f "$HADOOP_THIRDPARTY_JAR_PATH" ]; then
+    echo "Hadoop thirdparty jar found in local maven repository."
+    return 0;
+  else
+    echo "Hadoop thirdparty jar not found in local maven repository. Building opencga-hadoop-thirdparty..."
+    local GIT_REF=
+    if [[ "$HADOOP_THIRDPARTY_VERSION" == *"-SNAPSHOT" ]]; then
+      local VERSION=$(echo "$HADOOP_THIRDPARTY_VERSION" | cut -d "-" -f 1)
+      local MAJOR=$(echo "$VERSION" | cut -d "." -f 1)
+      local MINOR=$(echo "$VERSION" | cut -d "." -f 2)
+      local PATCH=$(echo "$VERSION" | cut -d "." -f 3)
+      if [ $PATCH -gt 0 ]; then ## It's a hotfix
+        GIT_REF="release-$MAJOR.$MINOR.x"
+      elif [ $MINOR -eq 0 ]; then ## It's a develop branch
+        GIT_REF="develop"
+      else  ## It's a release branch
+        GIT_REF="release-$MAJOR.x.x"
+      fi
+    else
+      GIT_REF="v$HADOOP_THIRDPARTY_VERSION"
+    fi
+    install "$GIT_REF" "$HADOOP_FLAVOUR"
+    if [ $? -ne 0 ]; then
+      echo "Failed to build opencga-hadoop-thirdparty."
+      return 1
+    fi
+  fi
+  return 0;
+}
+
+
+function install(){
+  local GIT_REF=${1:?"Git reference (branch, tag) is required"}
+  local HADOOP=${2:?"Hadoop flavour is required"}
+  local REPO="opencga-hadoop-thirdparty"
+  local TMP_DIR_HOME="dependency-checkouts/"
+  mkdir -p "$TMP_DIR_HOME"
+  rm -rf "${TMP_DIR_HOME:?}"/*
+  TEMP_DIR="$(mktemp -d --tmpdir="$TMP_DIR_HOME" --suffix="$(date +%Y%m%d%H%M%S)-$REPO")"
+  cd "$TEMP_DIR" || return 2
+  echo "Cloning repository $REPO with ref $GIT_REF"
+  git clone "git@github.com:opencb/${REPO}.git" -b "$GIT_REF"
+  cd "$REPO" || return 2
+  ./dev/build.sh "$HADOOP"
+  cd - || return 2
+}
+
+
+main "$@"
+exit $?
+
