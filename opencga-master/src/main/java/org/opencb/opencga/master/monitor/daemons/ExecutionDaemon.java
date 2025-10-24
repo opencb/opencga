@@ -859,16 +859,22 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
             }
         }
 
-        // Ensure the directory is empty
+        // Ensure the outdir is a directory, exists physically and is empty
         IOManager ioManager;
         try {
             ioManager = catalogManager.getIoManagerFactory().get(outDir.getUri());
         } catch (IOException e) {
             throw CatalogIOException.ioManagerException(outDir.getUri(), e);
         }
-        if (!ioManager.isDirectory(outDir.getUri())) {
-            throw new CatalogException(OUTDIR_PARAM + " seems not to be a directory");
+        // Check if it is a directory
+        if (outDir.getType() != File.Type.DIRECTORY) {
+            throw new CatalogException(OUTDIR_PARAM + " seems not to be a directory: " + outDir.getType());
         }
+        // It's possible that the path exists in the catalog but not physically in the file system; so it must be created
+        if (!ioManager.exists(outDir.getUri())) {
+            ioManager.createDirectory(outDir.getUri(), true);
+        }
+        // Finally, check if the directory is empty
         if (!ioManager.listFiles(outDir.getUri()).isEmpty()) {
             throw new CatalogException(OUTDIR_PARAM + " " + outDirPath + " is not an empty directory");
         }
@@ -878,9 +884,8 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
 
     private File getValidDefaultOutDir(String organizationId, Job job) throws CatalogException {
         File folder = fileManager.createFolder(job.getStudy().getId(), "JOBS/" + organizationId + "/" + job.getUserId() + "/"
-                        + TimeUtils.getDay() + "/" + job.getId(), true, "Job " + job.getTool().getId(), job.getId(), QueryOptions.empty(),
-                        token)
-                .first();
+                                + TimeUtils.getDay() + "/" + job.getId(), true, "Job " + job.getTool().getId(), job.getId(),
+                        QueryOptions.empty(), token).first();
 
         // By default, OpenCGA will not create the physical folders until there is a file, so we need to create it manually
         try {
