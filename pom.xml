@@ -121,7 +121,7 @@
 
         <opencga.hadoop.thirdparty.version>1.1.0-SNAPSHOT</opencga.hadoop.thirdparty.version>
 
-        <opencga-hadoop-shaded.id.default>hdp3.1</opencga-hadoop-shaded.id.default>
+        <opencga-hadoop-shaded.id.default>hbase2.0</opencga-hadoop-shaded.id.default>
         <opencga-hadoop-shaded.id>${opencga-hadoop-shaded.id.default}</opencga-hadoop-shaded.id>
         <opencga-hadoop-lib.artifactId>opencga-storage-hadoop-lib-${opencga-hadoop-shaded.id}</opencga-hadoop-lib.artifactId>
         <opencga-hadoop-shaded.artifactId>opencga-hadoop-shaded-${opencga-hadoop-shaded.id}</opencga-hadoop-shaded.artifactId>
@@ -1549,6 +1549,7 @@
             <properties>
                 <opencga-hadoop-shaded.id>hbase2.0</opencga-hadoop-shaded.id>
                 <opencga-storage-hadoop-compat.id>hbase2.0</opencga-storage-hadoop-compat.id>
+                <jetty-for-hadoop-test.version>9.3.25.v20180904</jetty-for-hadoop-test.version>
             </properties>
         </profile>
         <profile>
