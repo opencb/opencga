@@ -530,11 +530,20 @@ public abstract class OpenCgaTool {
         void run() throws Exception;
     }
 
+    @FunctionalInterface
+    protected interface ErrorStepRunnable {
+        void run(String error) throws Exception;
+    }
+
     protected final void step(StepRunnable step) throws ToolException {
-        step(getId(), step);
+        step(getId(), step, null);
     }
 
     protected final void step(String stepId, StepRunnable step) throws ToolException {
+        step(stepId, step, null);
+    }
+
+    protected final void step(String stepId, StepRunnable step, ErrorStepRunnable errorHandler) throws ToolException {
         if (checkStep(stepId)) {
             try {
                 StopWatch stopWatch = StopWatch.createStarted();
@@ -544,14 +553,29 @@ public abstract class OpenCgaTool {
                 step.run();
                 privateLogger.info("------- Step '" + stepId + "' executed in " + TimeUtils.durationToString(stopWatch) + " -------");
             } catch (ToolException e) {
+                if (errorHandler != null) {
+                    try {
+                        errorHandler.run(e.getMessage());
+                    } catch (Exception ex) {
+                        privateLogger.error("Error executing error handler for step '" + stepId + "'", ex);
+                    }
+                }
                 throw e;
             } catch (Exception e) {
+                if (errorHandler != null) {
+                    try {
+                        errorHandler.run(e.getMessage());
+                    } catch (Exception ex) {
+                        privateLogger.error("Error executing error handler for step '" + stepId + "'", ex);
+                    }
+                }
                 throw new ToolException("Exception from step '" + stepId + "'", e);
             }
         } else {
             privateLogger.info("------- Skip step " + stepId + " -------");
         }
     }
+
 
     protected final void setManualSteps(List<ToolStep> steps) throws ToolException {
         erm.setManualSteps(steps);
