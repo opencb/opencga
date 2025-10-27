@@ -391,7 +391,7 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
         #' @param jobScheduledStartTime Time when the job is scheduled to start.
         #' @param jobPriority Priority of the job.
         #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
-        #' @param data Parameters to prepare the clinical pipeline.
+        #' @param data Parameters to execute the command ngs-pipeline-prepare.
         runPipelinePrepare=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="clinical/pipeline/prepare", subcategoryId=NULL, action="run", params=params,
                 httpMethod="POST", as.queryParam=NULL, ...),

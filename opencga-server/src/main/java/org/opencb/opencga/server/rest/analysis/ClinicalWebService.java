@@ -1499,7 +1499,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
-            @ApiParam(value = ClinicalPipelinePrepareWrapperParams.DESCRIPTION, required = true) ClinicalPipelinePrepareWrapperParams params) {
+            @ApiParam(value = "Parameters to execute the command " + ClinicalPipelinePrepareWrapperAnalysis.ID, required = true) ClinicalPipelinePrepareWrapperParams params) {
         return submitJob(study, JobType.NATIVE, ClinicalPipelinePrepareWrapperAnalysis.ID, params, jobName, jobDescription, dependsOn,
                 jobTags, scheduledStartTime, jobPriority, dryRun);
     }

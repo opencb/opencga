@@ -22,8 +22,6 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 public class ClinicalPipelinePrepareWrapperParams extends ToolParams {
 
-    public static final String DESCRIPTION = "Parameters to prepare the clinical pipeline";
-
     @DataField(id = "pipelineParams", description = FieldConstants.CLINICAL_PIPELINE_PREPARE_PARAMS_DESCRIPTION)
     private ClinicalPipelinePrepareParams pipelineParams;
 
