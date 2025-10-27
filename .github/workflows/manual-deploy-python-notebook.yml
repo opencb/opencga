@@ -11,11 +11,6 @@ on:
         description: "The tag for the new docker."
         type: string
         required: true
-      hadoop:
-        type: string
-        description: 'Hadoop flavour. Any of: [hdp3.1, hdi5.1, emr6.1, emr6.13]'
-        required: false
-        default: "hdp3.1"
       pyopencga_version:
         type: string
         description: 'PyOpenCGA version.'
@@ -42,7 +37,7 @@ jobs:
         run: |
           if [ -f "./.github/workflows/scripts/get_same_branch.sh" ]; then
             chmod +x ./.github/workflows/scripts/get_same_branch.sh
-            ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }} ${{ inputs.hadoop }}
+            ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }} 
           fi
       - name: Maven Build (skip tests)
         run: mvn -T 2 clean install -DskipTests

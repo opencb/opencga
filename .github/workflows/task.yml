@@ -12,7 +12,7 @@ jobs:
   build:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      maven_opts: -Phdp3.1,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
+      maven_opts: -Phdi5.1,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
 
   test:
     uses: ./.github/workflows/test-analysis.yml
@@ -23,7 +23,14 @@ jobs:
 
   deploy-docker:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
-    needs: test
+    needs: build
     with:
-      cli: python3 ./build/cloud/docker/docker-build.py push --images base,workflow --tag ${{ github.ref_name }}
+      cli: python3 ./build/cloud/docker/docker-build.py push --images workflow --tag "${{ needs.build.outputs.version }}"
+    secrets: inherit
+
+  deploy-zetta-docker:
+    uses: opencb/java-common-libs/.github/workflows/deploy-zetta-docker-hub-workflow.yml@develop
+    needs: build
+    with:
+      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag "${{ github.ref_name }}"  # Use branch name as tag
     secrets: inherit

@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        hadoop: [ "hdp3.1", "hdi5.1", "emr6.1", "emr6.13" ]
+        hadoop: ["hdi5.1", "emr6.1", "emr6.13", "emr7.5", "hbase2.0"]
     uses: ./.github/workflows/test-analysis.yml
     with:
       test_profile: runShortTests,runMediumTests,runLongTests

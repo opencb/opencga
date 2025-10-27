@@ -1,7 +1,7 @@
 #!/bin/bash
 
 BRANCH_NAME=$1
-HADOOP=${2:-hdp3.1}
+HADOOP=${2:-hdi5.1}
 
 if [[ -z "$BRANCH_NAME"  ]]; then
   echo "The first parameter is mandatory and must be a valid branch name."

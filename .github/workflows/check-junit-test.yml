@@ -8,11 +8,10 @@ on:
         type: choice
         description: 'Hadoop flavour.'
         required: false
-        default: "hdp3.1"
+        default: "hdpi5.1"
         options:
           - "all"
           - "hbase2.0"
-          - "hdp3.1"
           - "hdi5.1"
           - "emr6.1"
           - "emr6.13"
@@ -72,7 +71,7 @@ jobs:
             hadoop='["${{ inputs.hadoop }}"]'
           
             if [ "${{ inputs.hadoop }}" == "all" ]; then
-              hadoop='["hdp3.1", "hdi5.1", "emr6.1", "emr6.13", "emr7.5", "hbase2.0"]'
+              hadoop='["hdi5.1", "emr6.1", "emr6.13", "emr7.5", "hbase2.0"]'
             elif [ "${{ inputs.module }}" == "all" ]; then
               # Only execute modules with matrix strategy if we are testing one single hadoop profile
               modules='["opencga-analysis", "opencga-app", "opencga-catalog", "opencga-client", "opencga-core", "opencga-master", "opencga-server", "opencga-storage", "opencga-test"]'
