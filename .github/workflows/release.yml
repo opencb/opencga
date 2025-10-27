@@ -63,7 +63,7 @@ jobs:
   # Add the release job that depends on all the previous jobs
   release:
     uses: opencb/java-common-libs/.github/workflows/release-github-workflow.yml@develop
-    needs: [ build-hdi, deploy-docker-hdp, deploy-maven, deploy-python, deploy-docker-python-notebook]
+    needs: [ build-hdi, deploy-docker-hdi, deploy-maven, deploy-python, deploy-docker-python-notebook]
     with:
       artifact: build-folder
       file: |

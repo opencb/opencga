@@ -8,7 +8,7 @@ on:
         type: choice
         description: 'Hadoop flavour.'
         required: false
-        default: "hdpi5.1"
+        default: "hdi5.1"
         options:
           - "all"
           - "hbase2.0"
