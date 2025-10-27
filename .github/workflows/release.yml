@@ -6,19 +6,6 @@ on:
       - '*'
 
 jobs:
-  build-hdp:
-    uses: ./.github/workflows/build-java-enterprise-workflow.yml
-    with:
-      storage_hadoop: hdi5.1
-      artifact_name: build-folder
-      release: true
-
-  deploy-hdp-docker:
-    uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
-    needs: build-hdp
-    secrets: inherit
-    with:
-      artifact_name: build-folder
 
   build-emr:
     uses: ./.github/workflows/build-java-enterprise-workflow.yml
@@ -62,10 +49,24 @@ jobs:
     with:
       artifact_name: emr13-build-folder
 
+  build-emr75:
+    uses: ./.github/workflows/build-java-enterprise-workflow.yml
+    with:
+      storage_hadoop: emr7.5
+      artifact_name: emr75-build-folder
+      release: true
+
+  deploy-emr75-docker:
+    uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
+    needs:  build-emr75
+    secrets: inherit
+    with:
+      artifact_name: emr75-build-folder
+
   release:
     name: Create GitHub Release
     runs-on: ${{ vars.UBUNTU_VERSION }}
-    needs: [ build-hdp, deploy-hdp-docker, build-emr, deploy-emr-docker, build-hdi, deploy-hdi-docker, build-emr13, deploy-emr13-docker ]
+    needs: [ build-emr75, deploy-emr75-docker, build-emr, deploy-emr-docker, build-hdi, deploy-hdi-docker, build-emr13, deploy-emr13-docker ]
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -77,9 +78,9 @@ jobs:
           tag_name: ${{ github.ref }}
           generate_release_notes: true
           files: |
-            opencga-enterprise-client-${{ needs.build-hdp.outputs.version }}.tar.gz
+            opencga-enterprise-client-${{ needs.build-hdi.outputs.version }}.tar.gz
       - id: echo_result
         name: Results
         run: |
-          echo "### The release of __Xetabase ${{ needs.build-hdp.outputs.version }}__ has been successful!!!! :heavy_check_mark: " | tee -a ${GITHUB_STEP_SUMMARY}
+          echo "### The release of __Xetabase ${{ needs.build-hdi.outputs.version }}__ has been successful!!!! :heavy_check_mark: " | tee -a ${GITHUB_STEP_SUMMARY}
 
