@@ -28,9 +28,6 @@ public class ClinicalVariantSearch extends VariantSearchModel {
     @Field("studyId")
     private String studyId;
 
-    @Field("viewers")
-    private List<String> viewers;
-
     // "Primary" and "foreign" keys
 
     @Field("caId")
@@ -96,7 +93,6 @@ public class ClinicalVariantSearch extends VariantSearchModel {
     }
 
     private void init() {
-        viewers = new ArrayList<>();
         comments = new ArrayList<>();
         annotations = new HashMap<>();
         annotationScores = new HashMap<>();
@@ -107,7 +103,6 @@ public class ClinicalVariantSearch extends VariantSearchModel {
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClinicalVariantSearch{");
         sb.append("studyId='").append(studyId).append('\'');
-        sb.append(", viewers=").append(viewers);
         sb.append(", caId='").append(caId).append('\'');
         sb.append(", ciId='").append(ciId).append('\'');
         sb.append(", primaryFinding=").append(primaryFinding);
@@ -134,15 +129,6 @@ public class ClinicalVariantSearch extends VariantSearchModel {
 
     public ClinicalVariantSearch setStudyId(String studyId) {
         this.studyId = studyId;
-        return this;
-    }
-
-    public List<String> getViewers() {
-        return viewers;
-    }
-
-    public ClinicalVariantSearch setViewers(List<String> viewers) {
-        this.viewers = viewers;
         return this;
     }
 

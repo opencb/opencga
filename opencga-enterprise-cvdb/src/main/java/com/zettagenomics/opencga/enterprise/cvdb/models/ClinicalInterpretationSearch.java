@@ -29,9 +29,6 @@ public class ClinicalInterpretationSearch {
     @Field("studyId")
     private String studyId;
 
-    @Field("viewers")
-    private List<String> viewers;
-
     // "Primary" and "foreign" keys
 
     @Field("id")
@@ -118,7 +115,6 @@ public class ClinicalInterpretationSearch {
     private String maxJson;
 
     public ClinicalInterpretationSearch() {
-        viewers = new ArrayList<>();
         panelIds = new ArrayList<>();
         methodDependencies = new ArrayList<>();
         comments = new ArrayList<>();
@@ -128,7 +124,6 @@ public class ClinicalInterpretationSearch {
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClinicalInterpretationSearch{");
         sb.append("studyId='").append(studyId).append('\'');
-        sb.append(", viewers=").append(viewers);
         sb.append(", id='").append(id).append('\'');
         sb.append(", caId='").append(caId).append('\'');
         sb.append(", primary=").append(primary);
@@ -165,15 +160,6 @@ public class ClinicalInterpretationSearch {
 
     public ClinicalInterpretationSearch setStudyId(String studyId) {
         this.studyId = studyId;
-        return this;
-    }
-
-    public List<String> getViewers() {
-        return viewers;
-    }
-
-    public ClinicalInterpretationSearch setViewers(List<String> viewers) {
-        this.viewers = viewers;
         return this;
     }
 

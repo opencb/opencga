@@ -91,13 +91,15 @@ public class MetaClient extends ParentClient {
 
     /**
      * Opencga openapi json.
+     * @param url Opencga host with environment.
      * @param params Map containing any of the following optional parameters.
-     *       token: List of categories to get API from.
+     *       study: Opencga study to be default in queries.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<String> openapi(ObjectMap params) throws ClientException {
+    public RestResponse<String> openapi(String url, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
+        params.putIfNotNull("url", url);
         return execute("meta", null, null, null, "openapi", params, GET, String.class);
     }
 
