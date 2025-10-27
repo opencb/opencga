@@ -9,7 +9,7 @@ jobs:
   build-hdp:
     uses: ./.github/workflows/build-java-enterprise-workflow.yml
     with:
-      storage_hadoop: hdp3.1
+      storage_hadoop: hdi5.1
       artifact_name: build-folder
       release: true
 

@@ -13,14 +13,16 @@ on:
         required: false
       hadoop:
         type: choice
-        description: 'Hadoop flavour. Any of: [hdp3.1, hdi5.1, emr6.1, emr6.13]'
+        description: 'Hadoop flavour.'
         required: false
-        default: hdp3.1
+        default: "hdpi5.1"
         options:
-          - hdp3.1
-          - hdi5.1
-          - emr6.1
-          - emr6.13
+          - "all"
+          - "hbase2.0"
+          - "hdi5.1"
+          - "emr6.1"
+          - "emr6.13"
+          - "emr7.5"
       release:
         type: boolean
         required: false

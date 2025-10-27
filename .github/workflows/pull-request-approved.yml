@@ -79,4 +79,4 @@ jobs:
           SSH_PORT: ${{ env.SSH_PORT }}
       - name: Run all OpenCB Junit tests, ie. java-common-libs, biodata, cellbase, opencga and opencga-enterprise
         run: |
-          ./build.sh --test --test-level runShortTests --docker --prepare-branches --prepare-hadoop --test-save-reports --task ${{ github.event.pull_request.head.ref }} --cellbase-db localhost:27018 --storage-hadoop hdp3.1
+          ./build.sh --test --test-level runShortTests --docker --prepare-branches --prepare-hadoop --test-save-reports --task ${{ github.event.pull_request.head.ref }} --cellbase-db localhost:27018 --storage-hadoop hdi5.1
