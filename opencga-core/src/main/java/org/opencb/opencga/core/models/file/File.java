@@ -615,6 +615,8 @@ public class File extends Annotable {
 
         @Deprecated VCF4,
 
+        CVDB,
+
         VARIANT,
         ALIGNMENT,
         COVERAGE,

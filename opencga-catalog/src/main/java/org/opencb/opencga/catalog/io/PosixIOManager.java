@@ -17,6 +17,8 @@
 package org.opencb.opencga.catalog.io;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.exec.Command;
 import org.opencb.commons.utils.FileUtils;
@@ -38,6 +40,7 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Stream;
+import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -139,6 +142,8 @@ public class PosixIOManager extends IOManager {
     public void deleteFile(URI fileUri) throws CatalogIOException {
         try {
             Files.delete(Paths.get(fileUri));
+        } catch (NoSuchFileException e) {
+            logger.warn("File {} does not exist. Nothing to delete.", fileUri);
         } catch (IOException e) {
             throw new CatalogIOException("Could not delete file " + fileUri, e);
         }
@@ -416,8 +421,36 @@ public class PosixIOManager extends IOManager {
     }
 
     @Override
-    protected void decompressTarBall(Path file, Path destDir) throws CatalogIOException {
+    protected void decompressTarBall(Path file, Path outputPath) throws CatalogIOException {
+        try {
+            byte[] buffer = new byte[1024];
 
+            if (!Files.exists(outputPath)) {
+                Files.createDirectories(outputPath);
+            }
+
+            try (FileInputStream fis = new FileInputStream(file.toFile());
+                 GZIPInputStream gis = new GZIPInputStream(fis);
+                 TarArchiveInputStream tarInput = new TarArchiveInputStream(gis)) {
+
+                TarArchiveEntry entry;
+                while ((entry = tarInput.getNextTarEntry()) != null) {
+                    if (entry.isDirectory()) {
+                        Files.createDirectories(outputPath.resolve(entry.getName()));
+                    } else {
+                        Path entryOutputPath = outputPath.resolve(entry.getName());
+                        try (FileOutputStream fos = new FileOutputStream(entryOutputPath.toFile())) {
+                            int len;
+                            while ((len = tarInput.read(buffer)) > 0) {
+                                fos.write(buffer, 0, len);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (IOException e) {
+            throw new CatalogIOException(e.getMessage(), e);
+        }
     }
 
     @Override

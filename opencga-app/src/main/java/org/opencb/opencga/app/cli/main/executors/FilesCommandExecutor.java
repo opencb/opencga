@@ -824,15 +824,15 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     private RestResponse<DataInputStream> download() throws Exception {
         logger.debug("Executing download in Files command line");
 
-        FilesCommandOptions.DownloadCommandOptions commandOptions = filesCommandOptions.downloadCommandOptions;
-
+        CustomFilesCommandOptions.DownloadCommandOptions commandOptions = filesCommandOptions.downloadCommandOptions;
         ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("file", commandOptions.file);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
-
-        return openCGAClient.getFileClient().download(commandOptions.file, queryParams);
+        CustomFilesCommandExecutor customFilesCommandExecutor = new CustomFilesCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), appHome, getLogger());
+        return customFilesCommandExecutor.download(commandOptions);
     }
 
     private RestResponse<FileContent> grep() throws Exception {

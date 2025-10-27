@@ -229,9 +229,11 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{file}/download")
+    @Produces(MediaType.APPLICATION_OCTET_STREAM)
     @ApiOperation(value = "Download file", response = DataInputStream.class,
-            notes = "The usage of /{file}/download webservice through Swagger is <b>discouraged</b>. Please, don't click the 'Try it "
-                    + "out' button here as it may hang this web page. Instead, build the final URL in a different tab.<br>"
+            notes = "The usage of /{file}/download webservice through Swagger is <b>discouraged</b> for large files. Please, don't click "
+                    + "the 'Execute' button here as it may hang this web page. Instead, build the final URL in a different tab or "
+                    + "run the curl command.<br>"
                     + "An special <b>DOWNLOAD</b> permission is needed to download files from OpenCGA.")
     public Response download(@ApiParam(value = "File id, name or path. Paths must be separated by : instead of /") @PathParam("file") String fileIdStr,
                              @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)

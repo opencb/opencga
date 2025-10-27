@@ -1069,13 +1069,12 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
         }
 
         // Look for all the samples associated to the files
-        Query query = new Query(FileDBAdaptor.QueryParams.ID.key(),
-                clinicalAnalysis.getFiles().stream().map(File::getId).collect(Collectors.toList()));
+        List<String> fileIds = clinicalAnalysis.getFiles().stream().map(File::getId).collect(Collectors.toList());
         QueryOptions fileOptions = keepFieldInQueryOptions(FileManager.INCLUDE_FILE_URI_PATH, FileDBAdaptor.QueryParams.SAMPLE_IDS.key());
-        OpenCGAResult<File> fileResults = getFileDBAdaptor(organizationId).get(study.getUid(), query, fileOptions, userId);
+        InternalGetDataResult<File> fileResults = catalogManager.getFileManager().internalGet(organizationId, study.getUid(), fileIds,
+                fileOptions, userId, false);
 
         if (fileResults.getNumResults() != clinicalAnalysis.getFiles().size()) {
-            Set<String> fileIds = clinicalAnalysis.getFiles().stream().map(File::getId).collect(Collectors.toSet());
             String notFoundFiles = fileResults.getResults().stream().map(File::getId).filter(f -> !fileIds.contains(f))
                     .collect(Collectors.joining(", "));
             throw new CatalogException("Files '" + notFoundFiles + "' not found");

@@ -238,7 +238,7 @@ public class UsersCommandOptions extends CustomUsersCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"password-reset"}, commandDescription ="Reset password")
+    @Parameters(commandNames = {"password-reset"}, commandDescription ="[DEPRECATED]")
     public class ResetPasswordCommandOptions {
     
         @ParametersDelegate

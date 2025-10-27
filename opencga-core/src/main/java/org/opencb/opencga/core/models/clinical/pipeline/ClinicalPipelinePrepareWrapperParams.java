@@ -29,7 +29,6 @@ public class ClinicalPipelinePrepareWrapperParams extends ToolParams {
     private String outdir;
 
     public ClinicalPipelinePrepareWrapperParams() {
-        this.pipelineParams = new ClinicalPipelinePrepareParams();
     }
 
     public ClinicalPipelinePrepareWrapperParams(ClinicalPipelinePrepareParams pipelineParams, String outdir) {
