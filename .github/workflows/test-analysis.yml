@@ -9,6 +9,7 @@ on:
         type: string
         required: true
       hadoop:
+        type: string
         required: false
         default: "hdpi5.1"
       mvn_opts:
