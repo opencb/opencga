@@ -182,7 +182,7 @@
 
 \item{fileData}{Filter by file data (i.e. FILTER, QUAL and INFO columns from VCF file). [{file}:]{key}{op}{value}\link{,;}* . If no file is specified, will use all files from "file" filter. e.g. AN>200 or file_1.vcf:AN>200;file_2.vcf:AN<10 . Many fields can be combined. e.g. file_1.vcf:AN>200;DB=true;file_2.vcf:AN<10,FILTER=PASS,LowDP.}
 
-\item{sample}{Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND (;) and OR (,) operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND (;) and OR (,) operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: \link{ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous }. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. .}
+\item{sample}{Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND ';' and OR ',' operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND ';' and OR ',' operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: \link{ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous }. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. .}
 
 \item{sampleData}{Filter by any SampleData field from samples. [{sample}:]{key}{op}{value}\link{,;}* . If no sample is specified, will use all samples from "sample" or "genotype" filter. e.g. DP>200 or HG0097:DP>200,HG0098:DP<10 . Many FORMAT fields can be combined. e.g. HG0097:DP>200;GT=1/1,0/1,HG0098:DP<10.}
 
@@ -268,6 +268,8 @@
 
 \item{panelIntersection}{Intersect panel genes and regions with given genes and regions from que input query. This will prevent returning variants from regions out of the panel.}
 
+\item{source}{Select the variant data source from where to fetch the data. Accepted values are 'variant_index' (default) and 'secondary_sample_index'. When selecting a secondary_index, the data will be retrieved exclusively from that secondary index, and the 'include/exclude' parameters will be ignored. If the given query can not be fully resolved using the secondary index, an exception will be raised. As the returned variants will only contain data from the secondary_index, some data might be missing or be partial.}
+
 \item{trait}{List of traits, based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...}
 
 \item{member}{User or group ID.}
@@ -323,10 +325,12 @@ This function implements the OpenCGA calls for managing Analysis - Clinical.
 The following table summarises the available \emph{actions} for this client:\tabular{llr}{
    endpointName \tab Endpoint WS \tab parameters accepted \cr
    updateAcl \tab /{apiVersion}/analysis/clinical/acl/{members}/update \tab study, members\link{*}, action\link{*}, propagate, body\link{*} \cr
+   aggregationStats \tab /{apiVersion}/analysis/clinical/aggregationStats \tab study, id, uuid, type, disorder, files, sample, individual, proband, probandSamples, family, familyMembers, familyMemberSamples, panels, locked, analystId, priority, flags, creationDate, modificationDate, dueDate, qualityControlSummary, release, snapshot, status, internalStatus, annotation, deleted, field \cr
    loadAnnotationSets \tab /{apiVersion}/analysis/clinical/annotationSets/load \tab study, variableSetId\link{*}, path\link{*}, parents, annotationSetId, body \cr
    updateClinicalConfiguration \tab /{apiVersion}/analysis/clinical/clinical/configuration/update \tab study, body \cr
    create \tab /{apiVersion}/analysis/clinical/create \tab include, exclude, study, skipCreateDefaultInterpretation, includeResult, body\link{*} \cr
    distinct \tab /{apiVersion}/analysis/clinical/distinct \tab study, id, uuid, type, disorder, files, sample, individual, proband, probandSamples, family, familyMembers, familyMemberSamples, panels, locked, analystId, priority, flags, creationDate, modificationDate, dueDate, qualityControlSummary, release, snapshot, status, internalStatus, annotation, deleted, field\link{*} \cr
+   aggregationStatsInterpretation \tab /{apiVersion}/analysis/clinical/interpretation/aggregationStats \tab study, id, uuid, name, clinicalAnalysisId, analystId, methodName, panels, primaryFindings, secondaryFindings, creationDate, modificationDate, status, internalStatus, release, field \cr
    distinctInterpretation \tab /{apiVersion}/analysis/clinical/interpretation/distinct \tab study, id, uuid, name, clinicalAnalysisId, analystId, methodName, panels, primaryFindings, secondaryFindings, creationDate, modificationDate, status, internalStatus, release, field\link{*} \cr
    searchInterpretation \tab /{apiVersion}/analysis/clinical/interpretation/search \tab include, exclude, limit, skip, sort, study, id, uuid, name, clinicalAnalysisId, analystId, methodName, panels, primaryFindings, secondaryFindings, creationDate, modificationDate, status, internalStatus, release \cr
    infoInterpretation \tab /{apiVersion}/analysis/clinical/interpretation/{interpretations}/info \tab include, exclude, interpretations\link{*}, study, version, deleted \cr
@@ -345,7 +349,7 @@ The following table summarises the available \emph{actions} for this client:\tab
    queryRgaVariant \tab /{apiVersion}/analysis/clinical/rga/variant/query \tab include, exclude, limit, skip, count, includeIndividual, skipIndividual, limitIndividual, sampleId, individualId, sex, phenotypes, disorders, numParents, geneId, geneName, chromosome, start, end, transcriptId, variants, dbSnps, knockoutType, filter, type, clinicalSignificance, populationFrequency, consequenceType, study \cr
    summaryRgaVariant \tab /{apiVersion}/analysis/clinical/rga/variant/summary \tab limit, skip, count, sampleId, individualId, sex, phenotypes, disorders, numParents, geneId, geneName, chromosome, start, end, transcriptId, variants, dbSnps, knockoutType, filter, type, clinicalSignificance, populationFrequency, consequenceType, study \cr
    search \tab /{apiVersion}/analysis/clinical/search \tab include, exclude, limit, skip, count, flattenAnnotations, study, id, uuid, type, disorder, files, sample, individual, proband, probandSamples, family, familyMembers, familyMemberSamples, panels, locked, analystId, priority, flags, creationDate, modificationDate, dueDate, qualityControlSummary, release, snapshot, status, internalStatus, annotation, deleted \cr
-   queryVariant \tab /{apiVersion}/analysis/clinical/variant/query \tab include, exclude, limit, skip, count, approximateCount, approximateCountSamplingSize, savedFilter, includeInterpretation, id, region, type, study, file, filter, qual, fileData, sample, sampleData, sampleAnnotation, cohort, cohortStatsRef, cohortStatsAlt, cohortStatsMaf, cohortStatsMgf, cohortStatsPass, missingAlleles, missingGenotypes, score, family, familyDisorder, familySegregation, familyMembers, familyProband, gene, ct, xref, biotype, proteinSubstitution, conservation, populationFrequencyAlt, populationFrequencyRef, populationFrequencyMaf, transcriptFlag, geneTraitId, go, expression, proteinKeyword, drug, functionalScore, clinical, clinicalSignificance, clinicalConfirmedStatus, customAnnotation, panel, panelModeOfInheritance, panelConfidence, panelRoleInCancer, panelFeatureType, panelIntersection, trait \cr
+   queryVariant \tab /{apiVersion}/analysis/clinical/variant/query \tab include, exclude, limit, skip, count, approximateCount, approximateCountSamplingSize, savedFilter, includeInterpretation, id, region, type, study, file, filter, qual, fileData, sample, sampleData, sampleAnnotation, cohort, cohortStatsRef, cohortStatsAlt, cohortStatsMaf, cohortStatsMgf, cohortStatsPass, missingAlleles, missingGenotypes, score, family, familyDisorder, familySegregation, familyMembers, familyProband, gene, ct, xref, biotype, proteinSubstitution, conservation, populationFrequencyAlt, populationFrequencyRef, populationFrequencyMaf, transcriptFlag, geneTraitId, go, expression, proteinKeyword, drug, functionalScore, clinical, clinicalSignificance, clinicalConfirmedStatus, customAnnotation, panel, panelModeOfInheritance, panelConfidence, panelRoleInCancer, panelFeatureType, panelIntersection, source, trait \cr
    acl \tab /{apiVersion}/analysis/clinical/{clinicalAnalyses}/acl \tab clinicalAnalyses\link{*}, study, member, silent \cr
    delete \tab /{apiVersion}/analysis/clinical/{clinicalAnalyses}/delete \tab study, force, clinicalAnalyses\link{*} \cr
    update \tab /{apiVersion}/analysis/clinical/{clinicalAnalyses}/update \tab include, exclude, clinicalAnalyses\link{*}, study, commentsAction, flagsAction, analystsAction, filesAction, panelsAction, annotationSetsAction, includeResult, body\link{*} \cr
@@ -362,6 +366,11 @@ The following table summarises the available \emph{actions} for this client:\tab
 \section{Endpoint /{apiVersion}/analysis/clinical/acl/{members}/update}{
 
 Update the set of permissions granted for the member.
+}
+
+\section{Endpoint /{apiVersion}/analysis/clinical/aggregationStats}{
+
+Fetch catalog clinical analysis aggregation stats.
 }
 
 \section{Endpoint /{apiVersion}/analysis/clinical/annotationSets/load}{
@@ -382,6 +391,11 @@ Create a new clinical analysis.
 \section{Endpoint /{apiVersion}/analysis/clinical/distinct}{
 
 Clinical Analysis distinct method.
+}
+
+\section{Endpoint /{apiVersion}/analysis/clinical/interpretation/aggregationStats}{
+
+Fetch catalog interpretation aggregation stats.
 }
 
 \section{Endpoint /{apiVersion}/analysis/clinical/interpretation/distinct}{

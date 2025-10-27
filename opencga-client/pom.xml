@@ -28,6 +28,7 @@
 
     <artifactId>opencga-client</artifactId>
     <packaging>jar</packaging>
+    <name>OpenCGA Client</name>
 
     <dependencies>
         <dependency>
@@ -123,10 +124,6 @@
 
     <build>
         <resources>
-            <resource>
-                <directory>src/main/R</directory>
-                <filtering>true</filtering>
-            </resource>
             <resource>
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>

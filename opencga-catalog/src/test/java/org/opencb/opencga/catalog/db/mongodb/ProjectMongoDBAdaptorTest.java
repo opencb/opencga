@@ -32,6 +32,7 @@ import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.project.ProjectInternal;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.StudyInternal;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
@@ -143,7 +144,9 @@ public class ProjectMongoDBAdaptorTest extends AbstractMongoDBAdaptorTest {
         catalogIOManager.createProject(organizationId, Long.toString(p1.getUid()));
 
         // Add study
-        catalogStudyDBAdaptor.insert(p1, new Study().setId("study").setFqn(FqnUtils.buildFqn(organizationId, "myp1", "study")), null);
+        catalogStudyDBAdaptor.insert(p1, new Study().setId("study")
+                .setInternal(new StudyInternal())
+                .setFqn(FqnUtils.buildFqn(organizationId, "myp1", "study")), null);
 
         catalogProjectDBAdaptor.update(p1.getUid(), new ObjectMap(ProjectDBAdaptor.QueryParams.ID.key(), "newpmp"), QueryOptions.empty());
         Project project = getProject("newpmp");

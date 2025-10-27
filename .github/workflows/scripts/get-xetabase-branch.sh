@@ -50,3 +50,4 @@ fi
 
 # Call the function with the input branch name
 get_xetabase_branch "$1" "$2"
+
