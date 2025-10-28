@@ -11,7 +11,7 @@ on:
       hadoop:
         type: string
         required: false
-        default: ${{ vars.HADOOP_FLAVOUR }}
+        default: "hdi5.1"
       mvn_opts:
         type: string
         required: false
