@@ -70,6 +70,7 @@ function main() {
 function install(){
   local GIT_REF=${1:?"Git reference (branch, tag) is required"}
   local HADOOP=${2:?"Hadoop flavour is required"}
+  echo "Installing $HADOOP hadoop flavour from $GIT_REF"
   local REPO="opencga-hadoop-thirdparty"
   local TMP_DIR_HOME="dependency-checkouts/"
   mkdir -p "$TMP_DIR_HOME"

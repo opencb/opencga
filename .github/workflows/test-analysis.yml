@@ -52,6 +52,10 @@ jobs:
           else
              echo "./.github/workflows/scripts/get_same_branch.sh does not exist."
           fi
+      - name: Prepare hadoop profile
+        run: |
+            chmod +x ./.github/workflows/scripts/prepare_hadoop.sh
+            ./.github/workflows/scripts/prepare_hadoop.sh --hadoop-flavour ${{ inputs.hadoop }}
       - name: Test and Analyze
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
