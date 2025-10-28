@@ -15,7 +15,7 @@ on:
         type: choice
         description: 'Hadoop flavour.'
         required: false
-        default: "hdpi5.1"
+        default: ${{ vars.HADOOP_FLAVOUR }}
         options:
           - "all"
           - "hbase2.0"

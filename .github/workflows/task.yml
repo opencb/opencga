@@ -15,7 +15,7 @@ jobs:
   build:
     uses: ./.github/workflows/build-java-enterprise-workflow.yml
     with:
-      storage_hadoop: hdi5.1
+      storage_hadoop: ${{ vars.HADOOP_FLAVOUR }}
       artifact_name: build-folder
 
   deploy-docker-hub:
