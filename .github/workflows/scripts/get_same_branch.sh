@@ -27,5 +27,4 @@ function install(){
 
 install "java-common-libs"
 install "biodata"
-install "cellbase"
 install "opencga-hadoop-thirdparty"

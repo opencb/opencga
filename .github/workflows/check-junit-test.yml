@@ -8,7 +8,7 @@ on:
         type: choice
         description: 'Hadoop flavour.'
         required: false
-        default: "hdi5.1"
+        default: ${{ vars.HADOOP_FLAVOUR }}
         options:
           - "all"
           - "hbase2.0"
@@ -33,18 +33,22 @@ on:
           - "opencga-storage"
           - "opencga-test"
       short_tests:
+        description: 'Run short tests.'
         type: boolean
         required: false
         default: true
       medium_tests:
+        description: 'Run medium tests.'
         type: boolean
         required: false
         default: false
       long_tests:
+        description: 'Run long tests.'
         type: boolean
         required: false
         default: false
       mvn_opts:
+        description: 'Maven options.'
         type: string
         required: false
         default: ""

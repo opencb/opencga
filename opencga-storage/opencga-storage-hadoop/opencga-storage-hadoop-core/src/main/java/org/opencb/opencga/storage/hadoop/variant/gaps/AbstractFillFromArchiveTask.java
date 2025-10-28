@@ -115,10 +115,6 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Abstra
         rowKeyFactory = new ArchiveRowKeyFactory(configuration);
     }
 
-    public void setQuiet(boolean quiet) {
-        fillGapsTask.setQuiet(quiet);
-    }
-
     public void setTimestamp(long timestamp) {
         this.timestamp = timestamp;
     }
@@ -353,7 +349,7 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Abstra
         }
 
         // If any of the genotypes is HOM_REF, the variant won't be completely loaded, so there may be a gap.
-        return !FillGapsTask.hasAnyReferenceGenotype(slice, vcfRecord);
+        return !FillGapsTask.FillGapsRecordVcfSlice.hasAnyReferenceGenotype(slice, vcfRecord);
     }
 
     public Map<String, Long> takeStats() {

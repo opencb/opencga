@@ -79,6 +79,18 @@
             <version>${phoenix-thirdparty.version}</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId> com.lmax</groupId>
+            <artifactId>disruptor</artifactId>
+            <version>${disruptor.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tephra</groupId>
+            <artifactId>tephra-core</artifactId>
+            <version>${tephra.version}</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
 

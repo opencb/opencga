@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.filter.Filter;
@@ -27,6 +28,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.ConfigurationOption;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
@@ -35,6 +37,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.hadoop.HBaseCompatApi;
 import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDriver;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
@@ -55,10 +58,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.net.URI;
+import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Created on 27/10/17.
@@ -71,6 +74,8 @@ public class VariantMapReduceUtil {
     private static final Pattern JAVA_OPTS_XMX_PATTERN =
             Pattern.compile(".*(?:^|\\s)-Xmx(\\d+)([gGmMkK]?)(?:$|\\s).*");
 
+    public static final String SCAN_COLUMNS = "VariantMapReduceUtil.scan.columns";
+    public static final String METADATA_MANAGER_LOCAL = "VariantMapReduceUtil.metadataManager.local";
 
     public static void initTableMapperJob(Job job, String inTable, String outTable, Scan scan, Class<? extends TableMapper> mapperClass)
             throws IOException {
@@ -152,11 +157,21 @@ public class VariantMapReduceUtil {
 
     public static void initVariantMapperJob(Job job, Class<? extends VariantMapper> mapperClass, String variantTable,
                                                VariantStorageMetadataManager metadataManager, Query query, QueryOptions queryOptions,
-                                               boolean skipSampleIndex) throws IOException {
+                                               boolean skipSampleIndex, boolean recordMetadataMode) throws IOException {
         VariantQueryParser variantQueryParser = new HadoopVariantQueryParser(null, metadataManager);
         ParsedVariantQuery variantQuery = variantQueryParser.parseQuery(query, queryOptions);
         query = variantQuery.getQuery();
         queryOptions = variantQuery.getInputOptions();
+        if (recordMetadataMode) {
+            // Need to make sure that all files from samples are correctly recorded.
+            // These might be needed even if they don't belong to the query
+            for (VariantQueryProjection.StudyVariantQueryProjection study : variantQuery.getProjection().getStudies().values()) {
+                int studyId = study.getId();
+                for (Integer fileId : metadataManager.getFileIdsFromSampleIds(studyId, study.getSamples())) {
+                    metadataManager.getFileMetadata(studyId, fileId);
+                }
+            }
+        }
 
         setQuery(job, query);
         setQueryOptions(job, queryOptions);
@@ -186,7 +201,7 @@ public class VariantMapReduceUtil {
 
             VariantHBaseQueryParser parser = new VariantHBaseQueryParser(metadataManager);
             List<Scan> scans = parser.parseQueryMultiRegion(variantQuery, queryOptions);
-            configureMapReduceScans(scans, job.getConfiguration());
+            configureMapReduceScans(scans, job);
 
             initVariantMapperJobFromHBase(job, variantTable, scans, mapperClass, useSampleIndex, sampleIndexTable);
 
@@ -293,7 +308,7 @@ public class VariantMapReduceUtil {
 
             VariantHBaseQueryParser parser = new VariantHBaseQueryParser(metadataManager);
             List<Scan> scans = parser.parseQueryMultiRegion(query, queryOptions);
-            configureMapReduceScans(scans, job.getConfiguration());
+            configureMapReduceScans(scans, job);
 
             initVariantRowMapperJobFromHBase(job, variantTable, scans, mapperClass, useSampleIndex, sampleIndexTable);
 
@@ -561,12 +576,13 @@ public class VariantMapReduceUtil {
         }
     }
 
-    public static Scan configureMapReduceScan(Scan scan, Configuration conf) {
-        configureMapReduceScans(Collections.singletonList(scan), conf);
-        return scan;
+    public static Scan configureMapReduceScan(Scan scan, Job job) {
+        return configureMapReduceScans(Collections.singletonList(scan), job).get(0);
     }
 
-    public static List<Scan> configureMapReduceScans(List<Scan> scans, Configuration conf) {
+
+    public static List<Scan> configureMapReduceScans(List<Scan> scans, Job job) {
+        Configuration conf = job.getConfiguration();
         int caching = Integer.parseInt(getParam(conf, HadoopVariantStorageOptions.MR_HBASE_SCAN_CACHING));
         int maxColumns = Integer.parseInt(getParam(conf, HadoopVariantStorageOptions.MR_HBASE_SCAN_MAX_COLUMNS));
         int maxFilters = Integer.parseInt(getParam(conf, HadoopVariantStorageOptions.MR_HBASE_SCAN_MAX_FILTERS));
@@ -579,6 +595,7 @@ public class VariantMapReduceUtil {
             LOGGER.info("Scan with {} columns exceeds the max threshold of {} columns. Returning all columns",
                     scans.get(0).getFamilyMap().get(GenomeHelper.COLUMN_FAMILY_BYTES).size(),
                     maxColumns);
+            setScanColumns(conf, scans.get(0));
         }
         Filter f = scans.get(0).getFilter();
         int numFilters = getNumFilters(f);
@@ -600,6 +617,25 @@ public class VariantMapReduceUtil {
         }
 
         return scans;
+    }
+
+    public static void setScanColumns(Configuration conf, Scan scan) {
+        // Keep an unmodified copy of the columns
+        StringBuilder sb = new StringBuilder();
+        for (byte[] column : scan.getFamilyMap().get(GenomeHelper.COLUMN_FAMILY_BYTES)) {
+            sb.append(Bytes.toString(column)).append(",");
+        }
+        sb.deleteCharAt(sb.length() - 1);
+        conf.set(SCAN_COLUMNS, sb.toString());
+    }
+
+    public static Set<String> getScanColumns(Configuration conf) {
+        HashSet<String> columns = new HashSet<>(conf.getStringCollection(VariantMapReduceUtil.SCAN_COLUMNS));
+        if (columns == null || columns.isEmpty()) {
+            return null;
+        } else {
+            return columns;
+        }
     }
 
     private static int getNumFilters(Filter f) {
@@ -746,4 +782,16 @@ public class VariantMapReduceUtil {
         }
     }
 
+    public static void configureLocalMetadataManager(Job job, List<URI> uris) throws IOException {
+        FileSystem fs = FileSystem.get(uris.get(0), job.getConfiguration());
+        long size = 0;
+        for (URI uri : uris) {
+            size += fs.getFileStatus(new org.apache.hadoop.fs.Path(uri)).getLen();
+        }
+        LOGGER.info("Configuring local metadata manager with {} files and {}", uris.size(), IOUtils.humanReadableByteCount(size, false));
+        job.getConfiguration().set("tmpfiles", uris.stream()
+                .map(URI::toString)
+                .collect(Collectors.joining(",")));
+        job.getConfiguration().setBoolean(METADATA_MANAGER_LOCAL, true);
+    }
 }

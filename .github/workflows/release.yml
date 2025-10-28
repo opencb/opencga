@@ -7,30 +7,21 @@ on:
   workflow_dispatch:
 
 jobs:
-
-  # Compile and deploy HDI 5.1 flavour (default)
   # Add the build-hdi and deploy-docker-hdi jobs
   build-hdi:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      maven_opts: -P hdi5.1,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
+      maven_opts: -P${{ vars.HADOOP_FLAVOUR }} -Dopencga.war.name=opencga -Dcheckstyle.skip
       build_folder: build-folder-hdi
 
   deploy-docker-hdi:
-    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/deploy-zetta-docker-hub-workflow.yml@develop
     needs: build-hdi
     with:
-      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag "${{ needs.build-hdi.outputs.version }}-hdi5.1"
+      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag "${{ needs.build-hdi.outputs.version }}-${{ vars.HADOOP_FLAVOUR }}" --org zettagenomics
       build_folder: build-folder-hdi
     secrets: inherit
 
-  # Add the deploy-maven and deploy-python jobs they depend on the build-hdi job
-  deploy-maven:
-    uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
-    needs: build-hdi
-    with:
-      maven_opts: -P hdi5.1 -Dopencga.war.name=opencga
-    secrets: inherit
 
   check-pypi-version:
     runs-on: ubuntu-latest
@@ -63,7 +54,7 @@ jobs:
   # Add the release job that depends on all the previous jobs
   release:
     uses: opencb/java-common-libs/.github/workflows/release-github-workflow.yml@develop
-    needs: [ build-hdi, deploy-docker-hdi, deploy-maven, deploy-python, deploy-docker-python-notebook]
+    needs: [ build-hdi, deploy-docker-hdi,  deploy-python, deploy-docker-python-notebook]
     with:
       artifact: build-folder
       file: |
@@ -83,14 +74,14 @@ jobs:
   build-emr:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      maven_opts: -P emr6.1,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
+      maven_opts: -P emr6.1 -Dopencga.war.name=opencga -Dcheckstyle.skip
       build_folder: build-folder-emr
 
   deploy-docker-emr:
-    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/deploy-zetta-docker-hub-workflow.yml@develop
     needs: build-emr
     with:
-      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag "${{ needs.build-emr.outputs.version }}-emr6.1"
+      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag "${{ needs.build-emr.outputs.version }}-emr6.1" --org zettagenomics
       build_folder: build-folder-emr
     secrets: inherit
 
@@ -98,14 +89,14 @@ jobs:
   build-emr613:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      maven_opts: -P emr6.13,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
+      maven_opts: -P emr6.13 -Dopencga.war.name=opencga -Dcheckstyle.skip
       build_folder: build-folder-emr613
 
   deploy-docker-emr613:
-    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/deploy-zetta-docker-hub-workflow.yml@develop
     needs: build-emr613
     with:
-      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag "${{ needs.build-emr613.outputs.version }}-emr6.13"
+      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag "${{ needs.build-emr613.outputs.version }}-emr6.13" --org zettagenomics
       build_folder: build-folder-emr613
     secrets: inherit
 
@@ -123,3 +114,4 @@ jobs:
       cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag "${{ needs.build-emr613.outputs.version }}-emr7.5"
       build_folder: build-folder-emr75
     secrets: inherit
+

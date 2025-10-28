@@ -6,7 +6,7 @@ jobs:
   build:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      maven_opts: -Phdi5.1,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
+      maven_opts: -P${{ vars.HADOOP_FLAVOUR }},RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
 
 
   build-and-push-docker:
@@ -18,7 +18,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: ${{ inputs.build_folder }}
+          name: build-folder
           path: build
 
       - name: Set up Docker Buildx
@@ -36,11 +36,10 @@ jobs:
         run: |
           TAG=$(grep 'Version:' build/clients/R/DESCRIPTION | cut -d' ' -f2)
           echo "version=$TAG" >> $GITHUB_OUTPUT
-
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: "{{defaultContext}}:opencga-app/app/cloud/docker/opencga-r-builder/"
           push: true
           tags: |
             opencb/opencga-r-builder:latest

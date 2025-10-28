@@ -85,6 +85,8 @@ public enum VariantStorageOptions implements ConfigurationOption {
     ANNOTATOR_EXTENSION_LIST("annotator.extension.list"),
     ANNOTATOR_EXTENSION_COSMIC_FILE("annotator.extension.cosmic.file"),
     ANNOTATOR_EXTENSION_COSMIC_VERSION("annotator.extension.cosmic.version"),
+    ANNOTATOR_EXTENSION_COSMIC_ASSEMBLY("annotator.extension.cosmic.assembly"),
+    ANNOTATOR_EXTENSION_COSMIC_INDEX_CREATION_DATE("annotator.extension.cosmic.indexCreationDate"),
 
     INDEX_SEARCH("indexSearch", false), // Build secondary indexes using search engine.
 
@@ -106,6 +108,7 @@ public enum VariantStorageOptions implements ConfigurationOption {
     WALKER_DOCKER_ENV("walker.docker.env", "", true),
     WALKER_DOCKER_MOUNT("walker.docker.mount", "", true),
     WALKER_DOCKER_OPTS("walker.docker.opts", "", true),
+    WALKER_DOCKER_MAX_BYTES_PER_MAP("walker.docker.maxBytesPerMap", null, true),
 
     // Search intersect options
     INTERSECT_ACTIVE("search.intersect.active", true),                       // Allow intersect queries with the SearchEngine (Solr)
@@ -135,8 +138,7 @@ public enum VariantStorageOptions implements ConfigurationOption {
 
     RELEASE("release", 1),
 
-    MERGE_MODE("merge.mode", VariantStorageEngine.MergeMode.ADVANCED),
-    SEARCH_INDEX_LAST_TIMESTAMP("search.index.last.timestamp", 0);
+    MERGE_MODE("merge.mode", VariantStorageEngine.MergeMode.ADVANCED);
 
     private final String key;
     private final Object value;

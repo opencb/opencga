@@ -11,16 +11,16 @@ jobs:
   build:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      maven_opts: -Phdi5.1,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
+      maven_opts: -P${{ vars.HADOOP_FLAVOUR }},RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
 
   deploy-maven:
     uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
     needs: build
     with:
-      maven_opts: -P hdi5.1 -Dopencga.war.name=opencga
+      maven_opts: -P${{ vars.HADOOP_FLAVOUR }} -Dopencga.war.name=opencga
     secrets: inherit
 
-  deploy-docker:
+  deploy-docker-workflow:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
     needs: build
     with:
@@ -31,5 +31,5 @@ jobs:
     uses: opencb/java-common-libs/.github/workflows/deploy-zetta-docker-hub-workflow.yml@develop
     needs: build
     with:
-      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag "${{ needs.build.outputs.version }}-hdi5.1"
+      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag "${{ needs.build.outputs.version }}-${{ vars.HADOOP_FLAVOUR }}"
     secrets: inherit

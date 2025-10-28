@@ -145,7 +145,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
         assertEquals(3, result.getNumResults());
 
         OpenCGAResult<Individual> search = catalogManager.getIndividualManager().search(studyFqn,
-                new Query(IndividualDBAdaptor.QueryParams.DISORDERS.key(), "disorder1, description 1,disorder2, description 2"),
+                new Query(IndividualDBAdaptor.QueryParams.DISORDERS.key(), "\"disorder1, description 1\",\"disorder2, description 2\""),
                 IndividualManager.INCLUDE_INDIVIDUAL_IDS, ownerToken);
         assertEquals(2, search.getNumResults());
         assertTrue(Arrays.asList("i1", "i2").containsAll(search.getResults().stream().map(Individual::getId).collect(Collectors.toList())));
@@ -210,6 +210,73 @@ public class IndividualManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void filterPhenotypesTest() throws CatalogException {
+        Individual individual1 = new Individual()
+                .setId("i1")
+                .setName("phenotypeTesting") // Used to only get these individuals
+                .setPhenotypes(Arrays.asList(
+                        new Phenotype("phenotype0", "phenotypeName0", "SOURCE"),
+                        new Phenotype("phenotype1", "phenotypeName1", "SOURCE"),
+                        new Phenotype("phenotype2", "phenotypeName2", "SOURCE")
+                ));
+        catalogManager.getIndividualManager().create(studyFqn, individual1, null, ownerToken);
+
+        Individual individual2 = new Individual()
+                .setId("i2")
+                .setName("phenotypeTesting")
+                .setPhenotypes(Arrays.asList(
+                        new Phenotype("phenotype3", "phenotypeName3", "SOURCE"),
+                        new Phenotype("phenotype4", "phenotypeName4", "SOURCE")
+                ));
+        catalogManager.getIndividualManager().create(studyFqn, individual2, null, ownerToken);
+
+        Individual individual3 = new Individual()
+                .setId("i3")
+                .setName("phenotypeTesting")
+                .setPhenotypes(Arrays.asList(
+                        new Phenotype("phenotype1", "phenotypeName1", "SOURCE"),
+                        new Phenotype("phenotype4", "phenotypeName4", "SOURCE")
+                ));
+        catalogManager.getIndividualManager().create(studyFqn, individual3, null, ownerToken);
+
+        // Filter individuals with phenotypes "phenotype1" or "phenotype4"
+        Query query = new Query()
+                .append(IndividualDBAdaptor.QueryParams.PHENOTYPES.key(), "phenotype1,phenotype4")
+                .append(IndividualDBAdaptor.QueryParams.NAME.key(), "phenotypeTesting");
+        OpenCGAResult<Individual> result = catalogManager.getIndividualManager().search(studyFqn, query, QueryOptions.empty(), ownerToken);
+        assertEquals(3, result.getNumResults());
+        List<String> individualIds = result.getResults().stream().map(Individual::getId).collect(Collectors.toList());
+        assertTrue(individualIds.containsAll(Arrays.asList("i1", "i2", "i3")));
+
+        // Filter individuals with phenotype "phenotype1" and "phenotype4"
+        query = new Query()
+                .append(IndividualDBAdaptor.QueryParams.PHENOTYPES.key(), "phenotype1;phenotype4")
+                .append(IndividualDBAdaptor.QueryParams.NAME.key(), "phenotypeTesting");
+        result = catalogManager.getIndividualManager().search(studyFqn, query, QueryOptions.empty(), ownerToken);
+        assertEquals(1, result.getNumResults());
+        individualIds = result.getResults().stream().map(Individual::getId).collect(Collectors.toList());
+        assertTrue(individualIds.contains("i3"));
+
+        // Filter individuals that do not have the phenotype "phenotype0" or the phenotype "phenotype1"
+        query = new Query()
+                .append(IndividualDBAdaptor.QueryParams.PHENOTYPES.key(), "!phenotype0,!phenotype1")
+                .append(IndividualDBAdaptor.QueryParams.NAME.key(), "phenotypeTesting");
+        result = catalogManager.getIndividualManager().search(studyFqn, query, QueryOptions.empty(), ownerToken);
+        assertEquals(2, result.getNumResults());
+        individualIds = result.getResults().stream().map(Individual::getId).collect(Collectors.toList());
+        assertTrue(individualIds.containsAll(Arrays.asList("i2", "i3")));
+
+        // Filter individuals that do not have the phenotype "phenotype0" and the phenotype "phenotype1"
+        query = new Query()
+                .append(IndividualDBAdaptor.QueryParams.PHENOTYPES.key(), "!phenotype0;!phenotype1")
+                .append(IndividualDBAdaptor.QueryParams.NAME.key(), "phenotypeTesting");;
+        result = catalogManager.getIndividualManager().search(studyFqn, query, QueryOptions.empty(), ownerToken);
+        assertEquals(1, result.getNumResults());
+        individualIds = result.getResults().stream().map(Individual::getId).collect(Collectors.toList());
+        assertTrue(individualIds.contains("i2"));
+    }
+
+    @Test
     public void testUpdateDisorders() throws CatalogException {
         Individual individual = new Individual().setId("i1");
         catalogManager.getIndividualManager().create(studyFqn, individual, null, ownerToken);
@@ -267,6 +334,73 @@ public class IndividualManagerTest extends AbstractManagerTest {
         for (int i = 0; i < individual.getDisorders().size(); i++) {
             assertEquals("disorder" + (i + 2), individual.getDisorders().get(i).getId());
         }
+    }
+
+    @Test
+    public void filterDisordersTest() throws CatalogException {
+        Individual individual1 = new Individual()
+                .setId("i1")
+                .setName("disorderTesting") // Used to only get these individuals
+                .setDisorders(Arrays.asList(
+                        new Disorder("disorder0", "disorderName0", "SOURCE", Collections.emptyMap(), "", Collections.emptyList()),
+                        new Disorder("disorder1", "disorderName1", "SOURCE", Collections.emptyMap(), "", Collections.emptyList()),
+                        new Disorder("disorder2", "disorderName2", "SOURCE", Collections.emptyMap(), "", Collections.emptyList())
+                ));
+        catalogManager.getIndividualManager().create(studyFqn, individual1, null, ownerToken);
+
+        Individual individual2 = new Individual()
+                .setId("i2")
+                .setName("disorderTesting")
+                .setDisorders(Arrays.asList(
+                        new Disorder("disorder3", "disorderName3", "SOURCE", Collections.emptyMap(), "", Collections.emptyList()),
+                        new Disorder("disorder4", "disorderName4", "SOURCE", Collections.emptyMap(), "", Collections.emptyList())
+                ));
+        catalogManager.getIndividualManager().create(studyFqn, individual2, null, ownerToken);
+
+        Individual individual3 = new Individual()
+                .setId("i3")
+                .setName("disorderTesting")
+                .setDisorders(Arrays.asList(
+                        new Disorder("disorder1", "disorderName1", "SOURCE", Collections.emptyMap(), "", Collections.emptyList()),
+                        new Disorder("disorder4", "disorderName4", "SOURCE", Collections.emptyMap(), "", Collections.emptyList())
+                ));
+        catalogManager.getIndividualManager().create(studyFqn, individual3, null, ownerToken);
+
+        // Filter individuals with phenotypes "disorder1" or "disorder4"
+        Query query = new Query()
+                .append(IndividualDBAdaptor.QueryParams.DISORDERS.key(), "disorder1,disorder4")
+                .append(IndividualDBAdaptor.QueryParams.NAME.key(), "disorderTesting");
+        OpenCGAResult<Individual> result = catalogManager.getIndividualManager().search(studyFqn, query, QueryOptions.empty(), ownerToken);
+        assertEquals(3, result.getNumResults());
+        List<String> individualIds = result.getResults().stream().map(Individual::getId).collect(Collectors.toList());
+        assertTrue(individualIds.containsAll(Arrays.asList("i1", "i2", "i3")));
+
+        // Filter individuals with phenotype "disorder1" and "disorder4"
+        query = new Query()
+                .append(IndividualDBAdaptor.QueryParams.DISORDERS.key(), "disorder1;disorder4")
+                .append(IndividualDBAdaptor.QueryParams.NAME.key(), "disorderTesting");
+        result = catalogManager.getIndividualManager().search(studyFqn, query, QueryOptions.empty(), ownerToken);
+        assertEquals(1, result.getNumResults());
+        individualIds = result.getResults().stream().map(Individual::getId).collect(Collectors.toList());
+        assertTrue(individualIds.contains("i3"));
+
+        // Filter individuals that do not have the disorder "disorder0" or the disorder "disorder1"
+        query = new Query()
+                .append(IndividualDBAdaptor.QueryParams.DISORDERS.key(), "!disorder0,!disorder1")
+                .append(IndividualDBAdaptor.QueryParams.NAME.key(), "disorderTesting");
+        result = catalogManager.getIndividualManager().search(studyFqn, query, QueryOptions.empty(), ownerToken);
+        assertEquals(2, result.getNumResults());
+        individualIds = result.getResults().stream().map(Individual::getId).collect(Collectors.toList());
+        assertTrue(individualIds.containsAll(Arrays.asList("i2", "i3")));
+
+        // Filter individuals that do not have the disorder "disorder0" and the disorder "disorder1"
+        query = new Query()
+                .append(IndividualDBAdaptor.QueryParams.DISORDERS.key(), "!disorder0;!disorder1")
+                .append(IndividualDBAdaptor.QueryParams.NAME.key(), "disorderTesting");;
+        result = catalogManager.getIndividualManager().search(studyFqn, query, QueryOptions.empty(), ownerToken);
+        assertEquals(1, result.getNumResults());
+        individualIds = result.getResults().stream().map(Individual::getId).collect(Collectors.toList());
+        assertTrue(individualIds.contains("i2"));
     }
 
     @Test
@@ -432,6 +566,91 @@ public class IndividualManagerTest extends AbstractManagerTest {
             if (!entry.getKey().equals("newId1")) {
                 assertTrue(entry.getValue().containsKey("newId1"));
             }
+        }
+    }
+
+    @Test
+    public void fatherMotherOptionsTest() throws CatalogException {
+        Individual individual = new Individual()
+                .setId("father")
+                .setName("father");
+        catalogManager.getIndividualManager().create(studyFqn, individual, Collections.emptyList(), QueryOptions.empty(), ownerToken);
+
+        individual = new Individual()
+                .setId("mother")
+                .setName("mother");
+        catalogManager.getIndividualManager().create(studyFqn, individual, Collections.emptyList(), QueryOptions.empty(), ownerToken);
+
+        individual = new Individual().setId("brother")
+                .setName("brother")
+                .setFather(new Individual().setId("father"))
+                .setMother(new Individual().setId("mother"));
+        catalogManager.getIndividualManager().create(studyFqn, individual, Collections.emptyList(), QueryOptions.empty(), ownerToken);
+
+        individual = new Individual().setId("sister")
+                .setName("sister")
+                .setFather(new Individual().setId("father"))
+                .setMother(new Individual().setId("mother"));
+        catalogManager.getIndividualManager().create(studyFqn, individual, Collections.emptyList(), QueryOptions.empty(), ownerToken);
+
+        OpenCGAResult<Individual> result = catalogManager.getIndividualManager().get(studyFqn, Arrays.asList("brother", "sister"),
+                QueryOptions.empty(), ownerToken);
+        assertEquals(2, result.getNumResults());
+        for (Individual tIndividual : result.getResults()) {
+            assertTrue("brother".equals(tIndividual.getId()) || "sister".equals(tIndividual.getId()));
+            assertNotNull(tIndividual.getFather());
+            assertNotNull(tIndividual.getMother());
+            assertEquals("father", tIndividual.getFather().getId());
+            assertEquals("father", tIndividual.getFather().getName());
+            assertEquals("mother", tIndividual.getMother().getId());
+            assertEquals("mother", tIndividual.getMother().getName());
+        }
+
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(IndividualDBAdaptor.QueryParams.NAME.key(),
+                IndividualDBAdaptor.QueryParams.FATHER.key() + "." + IndividualDBAdaptor.QueryParams.ID.key(),
+                IndividualDBAdaptor.QueryParams.FATHER.key() + "." + IndividualDBAdaptor.QueryParams.NAME.key(),
+                IndividualDBAdaptor.QueryParams.MOTHER.key() + "." + IndividualDBAdaptor.QueryParams.ID.key()));
+        result = catalogManager.getIndividualManager().get(studyFqn, Arrays.asList("brother", "sister"), options, ownerToken);
+        assertEquals(2, result.getNumResults());
+        for (Individual tIndividual : result.getResults()) {
+            assertTrue("brother".equals(tIndividual.getId()) || "sister".equals(tIndividual.getId()));
+            assertTrue("brother".equals(tIndividual.getName()) || "sister".equals(tIndividual.getName()));
+            assertNotNull(tIndividual.getFather());
+            assertNotNull(tIndividual.getMother());
+            assertEquals("father", tIndividual.getFather().getId());
+            assertEquals("father", tIndividual.getFather().getName());
+            assertEquals("mother", tIndividual.getMother().getId());
+            assertNull(tIndividual.getMother().getName());
+        }
+
+        options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                IndividualDBAdaptor.QueryParams.FATHER.key() + "." + IndividualDBAdaptor.QueryParams.ID.key(),
+                IndividualDBAdaptor.QueryParams.MOTHER.key() + "." + IndividualDBAdaptor.QueryParams.ID.key(),
+                IndividualDBAdaptor.QueryParams.MOTHER.key() + "." + IndividualDBAdaptor.QueryParams.NAME.key()));
+        result = catalogManager.getIndividualManager().get(studyFqn, Arrays.asList("brother", "sister"), options, ownerToken);
+        assertEquals(2, result.getNumResults());
+        for (Individual tIndividual : result.getResults()) {
+            assertTrue("brother".equals(tIndividual.getId()) || "sister".equals(tIndividual.getId()));
+            assertNull(tIndividual.getName());
+            assertNotNull(tIndividual.getFather());
+            assertNotNull(tIndividual.getMother());
+            assertEquals("father", tIndividual.getFather().getId());
+            assertNull(tIndividual.getFather().getName());
+            assertEquals("mother", tIndividual.getMother().getId());
+            assertEquals("mother", tIndividual.getMother().getName());
+        }
+
+        options = new QueryOptions(QueryOptions.INCLUDE, Collections.singletonList(IndividualDBAdaptor.QueryParams.FATHER.key()
+                + "." + IndividualDBAdaptor.QueryParams.ID.key()));
+        result = catalogManager.getIndividualManager().get(studyFqn, Arrays.asList("brother", "sister"), options, ownerToken);
+        assertEquals(2, result.getNumResults());
+        for (Individual tIndividual : result.getResults()) {
+            assertTrue("brother".equals(tIndividual.getId()) || "sister".equals(tIndividual.getId()));
+            assertNull(tIndividual.getName());
+            assertNotNull(tIndividual.getFather());
+            assertNull(tIndividual.getMother());
+            assertEquals("father", tIndividual.getFather().getId());
+            assertNull(tIndividual.getFather().getName());
         }
     }
 

@@ -29,7 +29,7 @@
     <!--<groupId>org.opencb.opencga</groupId>-->
     <artifactId>opencga-storage-hadoop-compat-hbase2.0</artifactId>
     <packaging>jar</packaging>
-
+    <name>OpenCGA Storage Hadoop Compatibility HBase 2.0</name>
     <properties>
         <hbase.version>2.0.2</hbase.version>
         <hadoop.version>2.7.7</hadoop.version>
@@ -77,6 +77,16 @@
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>${guava.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId> com.lmax</groupId>
+            <artifactId>disruptor</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tephra</groupId>
+            <artifactId>tephra-core</artifactId>
             <scope>provided</scope>
         </dependency>
     </dependencies>

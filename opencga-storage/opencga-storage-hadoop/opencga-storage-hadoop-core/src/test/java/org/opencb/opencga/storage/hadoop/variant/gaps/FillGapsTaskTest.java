@@ -40,6 +40,13 @@ public class FillGapsTaskTest {
     private VariantStorageMetadataManager metadataManager;
     private StudyMetadata studyMetadata;
     private VariantToVcfSliceConverter toSliceConverter;
+    private int studyId;
+    private int file1;
+    private int file2;
+    private int sample1;
+    private int sample2;
+    private int sample3;
+    private int sample4;
 
     @Before
     public void setUp() throws Exception {
@@ -52,9 +59,13 @@ public class FillGapsTaskTest {
             sm.getVariantHeader().getComplexLines().add(new VariantFileHeaderComplexLine("INFO", "OTHER", "asdf", "1", "String", Collections.emptyMap()));
             return sm;
         });
-        int studyId = studyMetadata.getId();
-        int file1 = metadataManager.registerFile(studyId, "file1.vcf", Arrays.asList("S1", "S2"));
-        int file2 = metadataManager.registerFile(studyId, "file2.vcf", Arrays.asList("S3", "S4"));
+        studyId = studyMetadata.getId();
+        file1 = metadataManager.registerFile(studyId, "file1.vcf", Arrays.asList("S1", "S2"));
+        file2 = metadataManager.registerFile(studyId, "file2.vcf", Arrays.asList("S3", "S4"));
+        sample1 = metadataManager.getSampleId(studyId, "S1");
+        sample2 = metadataManager.getSampleId(studyId, "S2");
+        sample3 = metadataManager.getSampleId(studyId, "S3");
+        sample4 = metadataManager.getSampleId(studyId, "S4");
         metadataManager.addIndexedFiles(studyId, Arrays.asList(file1, file2));
         toSliceConverter = new VariantToVcfSliceConverter(
                 new HashSet<>(Arrays.asList("FILTER", "QUAL", "OTHER")),
@@ -322,7 +333,7 @@ public class FillGapsTaskTest {
     protected Variant fillGaps(FillGapsTask task,
                                VariantOverlappingStatus expected, String variant, VcfSliceProtos.VcfSlice nonRefVcfSlice, VcfSliceProtos.VcfSlice refVcfSlice) {
         Put put = new Put(VariantPhoenixKeyFactory.generateVariantRowKey(new Variant(variant)));
-        VariantOverlappingStatus overlappingStatus = task.fillGaps(new Variant(variant), new HashSet<>(Arrays.asList(1, 2)), put, 1, nonRefVcfSlice, refVcfSlice);
+        VariantOverlappingStatus overlappingStatus = task.fillGaps(new Variant(variant), new HashSet<>(Arrays.asList(sample1, sample2)), put, file1, nonRefVcfSlice, refVcfSlice);
         assertEquals(expected, overlappingStatus);
 
         return putToVariant(put);

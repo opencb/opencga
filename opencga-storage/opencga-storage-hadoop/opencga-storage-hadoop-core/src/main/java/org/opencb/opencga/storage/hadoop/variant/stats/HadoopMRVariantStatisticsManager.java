@@ -61,6 +61,8 @@ public class HadoopMRVariantStatisticsManager extends VariantStatisticsManager {
 //                    .collect(Collectors.toMap(c -> c, c -> Collections.emptySet())), null, updateStats, overwriteStats);
 //        dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(sc, options);
 
+        // Start time of the operation before pre-calculate step
+        long startTime = System.currentTimeMillis();
         preCalculateStats(metadataManager, sm, cohorts, overwriteStats, options);
 
         options.put(VariantStatsDriver.COHORTS, cohorts);
@@ -77,7 +79,7 @@ public class HadoopMRVariantStatisticsManager extends VariantStatisticsManager {
             error = true;
             throw e;
         } finally {
-            postCalculateStats(metadataManager, sm, cohorts, error);
+            postCalculateStats(metadataManager, sm, cohorts, startTime, error);
         }
 
         dbAdaptor.updateStatsColumns(sm);
