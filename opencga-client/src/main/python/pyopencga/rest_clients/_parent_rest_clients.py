@@ -70,7 +70,11 @@ class _ParentRestClient(object):
 
         if self.auto_refresh:
             self._refresh_token_client()
-        return RestResponse(response)
+
+        if isinstance(response, dict):
+            return RestResponse(response)
+        else:  # Not a JSON (e.g. /{apiVersion}/files/{file}/download)
+            return response
 
     def _get(self, category, resource, query_id=None, subcategory=None,
              second_query_id=None, **options):

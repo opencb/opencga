@@ -40,7 +40,7 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
      */
     MR_HBASE_KEYVALUE_SIZE_MAX("storage.hadoop.mr.hbase.client.keyvalue.maxsize", 10 * 1024 * 1024), // 10MB
     MR_HBASE_SCAN_CACHING("storage.hadoop.mr.scan.caching", 50),
-    MR_HBASE_SCAN_MAX_COLUMNS("storage.hadoop.mr.scan.maxColumns", 25000),
+    MR_HBASE_SCAN_MAX_COLUMNS("storage.hadoop.mr.scan.maxColumns", 50000),
     MR_HBASE_SCAN_MAX_FILTERS("storage.hadoop.mr.scan.maxFilters", 2000),
     MR_HBASE_PHOENIX_SCAN_SPLIT("storage.hadoop.mr.phoenix.scanSplit", 5),
 
@@ -57,6 +57,7 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     MR_EXECUTOR_SSH_KEY("storage.hadoop.mr.executor.ssh.key"),
     MR_EXECUTOR_SSH_PASSWORD("storage.hadoop.mr.executor.ssh.password"),
     MR_EXECUTOR_SSH_REMOTE_OPENCGA_HOME("storage.hadoop.mr.executor.ssh.remoteOpenCgaHome"),
+    MR_EXECUTOR_SSH_REMOTE_TMP("storage.hadoop.mr.executor.ssh.remoteTmp", "/tmp"),
     MR_EXECUTOR_SSH_HADOOP_SSH_BIN("storage.hadoop.mr.executor.ssh.hadoop-ssh.bin", "misc/scripts/hadoop-ssh.sh"),
     MR_EXECUTOR_SSH_HADOOP_SCP_BIN("storage.hadoop.mr.executor.ssh.hadoop-scp.bin", "misc/scripts/hadoop-scp.sh"),
     MR_EXECUTOR_SSH_HADOOP_TERMINATION_GRACE_PERIOD_SECONDS("storage.hadoop.mr.executor.ssh.terminationGracePeriodSeconds", 120),
@@ -130,6 +131,8 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     FILL_MISSING_SIMPLIFIED_MULTIALLELIC_VARIANTS("storage.hadoop.fill_missing.simplifiedMultiAllelicVariants", true),
     FILL_MISSING_GAP_GENOTYPE("storage.hadoop.fill_missing.gap_genotype", "0/0"),
     FILL_GAPS_GAP_GENOTYPE("storage.hadoop.fill_gaps.gap_genotype", "0/0"),
+    FILL_GAPS_GAP_LOCAL_BUFFER_SIZE("storage.hadoop.fill_gaps.local.bufferSize", 10000),
+    FILL_GAPS_GAP_LOCAL_ENABLED("storage.hadoop.fill_gaps.local.enabled", true),
 
     WRITE_MAPPERS_LIMIT_FACTOR("storage.hadoop.write.mappers.limit.factor", 1.5F),
 

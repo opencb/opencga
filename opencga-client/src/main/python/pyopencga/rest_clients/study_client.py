@@ -166,6 +166,19 @@ class Study(_ParentRestClient):
 
         return self._get(category='studies', resource='groups', query_id=study, **options)
 
+    def sync_groups(self, study, data=None, **options):
+        """
+        Associate a remote group from an authentication origin with a local
+            group in a study.
+        PATH: /{apiVersion}/studies/{study}/groups/sync
+
+        :param dict data: JSON containing the parameters. (REQUIRED)
+        :param str study: Study [[organization@]project:]study where study and
+            project can be either the ID or UUID. (REQUIRED)
+        """
+
+        return self._post(category='studies', resource='sync', query_id=study, subcategory='groups', data=data, **options)
+
     def update_groups(self, study, data=None, **options):
         """
         Add or remove a group.
@@ -385,6 +398,21 @@ class Study(_ParentRestClient):
         """
 
         return self._post(category='studies', resource='update', query_id=study, data=data, **options)
+
+    def sync_users(self, study, authentication_origin_id, **options):
+        """
+        Synchronize all users from the remote groups of a given authentication
+            origin.
+        PATH: /{apiVersion}/studies/{study}/users/sync
+
+        :param str authentication_origin_id: Authentication origin ID.
+            (REQUIRED)
+        :param str study: Study [[organization@]project:]study where study and
+            project can be either the ID or UUID. (REQUIRED)
+        """
+
+        options['authenticationOriginId'] = authentication_origin_id
+        return self._post(category='studies', resource='sync', query_id=study, subcategory='users', **options)
 
     def variable_sets(self, study, **options):
         """

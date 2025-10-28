@@ -62,13 +62,7 @@ public class ToolsCommandExecutor extends InternalCommandExecutor {
     }
 
     private void listTools() {
-        Collection<Class<? extends OpenCgaTool>> tools;
-        if (configuration != null && configuration.getAnalysis() != null
-                && CollectionUtils.isNotEmpty(configuration.getAnalysis().getPackages())) {
-            tools = new ToolFactory().getTools(configuration.getAnalysis().getPackages());
-        } else {
-             tools = new ToolFactory().getTools();
-        }
+        Collection<Class<? extends OpenCgaTool>> tools = new ToolFactory().getTools(configuration.getAnalysis());
         int toolIdSize = tools.stream().mapToInt(c -> c.getAnnotation(Tool.class).id().length()).max().orElse(0) + 2;
         int toolTypeSize = Arrays.stream(Tool.Type.values()).mapToInt(e->e.toString().length()).max().orElse(0) + 2;
         int toolResourceSize = Arrays.stream(Enums.Resource.values()).mapToInt(e->e.toString().length()).max().orElse(0) + 2;
