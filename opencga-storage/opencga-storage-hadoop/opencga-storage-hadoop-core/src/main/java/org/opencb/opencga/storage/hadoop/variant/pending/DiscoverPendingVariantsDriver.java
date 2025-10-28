@@ -87,7 +87,7 @@ public class DiscoverPendingVariantsDriver extends AbstractVariantsTableDriver {
 
         Scan scan = new Scan();
         descriptor.configureScan(scan, getMetadataManager());
-        VariantMapReduceUtil.configureMapReduceScan(scan, getConf());
+        VariantMapReduceUtil.configureMapReduceScan(scan, job);
         logger.info("Scan variants table " + variantTable + " with scan " + scan.toString(50));
 
         if (VariantQueryUtils.isValidParam(query, VariantQueryParam.REGION)) {

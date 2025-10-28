@@ -129,6 +129,7 @@ This function implements the OpenCGA calls for managing Individuals.
 The following table summarises the available \emph{actions} for this client:\tabular{llr}{
    endpointName \tab Endpoint WS \tab parameters accepted \cr
    updateAcl \tab /{apiVersion}/individuals/acl/{members}/update \tab study, members\link{*}, action\link{*}, propagate, body\link{*} \cr
+   aggregationStats \tab /{apiVersion}/individuals/aggregationStats \tab study, id, uuid, name, father, mother, samples, familyIds, sex, dateOfBirth, ethnicity, disorders, phenotypes, populationName, populationSubpopulation, karyotypicSex, lifeStatus, internalStatus, status, deleted, creationDate, modificationDate, annotation, acl, release, snapshot, field \cr
    loadAnnotationSets \tab /{apiVersion}/individuals/annotationSets/load \tab study, variableSetId\link{*}, path\link{*}, parents, annotationSetId, body \cr
    create \tab /{apiVersion}/individuals/create \tab include, exclude, study, samples, includeResult, body\link{*} \cr
    distinct \tab /{apiVersion}/individuals/distinct \tab study, id, uuid, name, familyIds, father, mother, samples, sex, ethnicity, dateOfBirth, disorders, phenotypes, populationName, populationSubpopulation, karyotypicSex, lifeStatus, internalStatus, status, deleted, creationDate, modificationDate, annotation, acl, release, snapshot, field\link{*} \cr
@@ -144,6 +145,11 @@ The following table summarises the available \emph{actions} for this client:\tab
 \section{Endpoint /{apiVersion}/individuals/acl/{members}/update}{
 
 Update the set of permissions granted for the member.
+}
+
+\section{Endpoint /{apiVersion}/individuals/aggregationStats}{
+
+Fetch catalog individual stats.
 }
 
 \section{Endpoint /{apiVersion}/individuals/annotationSets/load}{

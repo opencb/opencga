@@ -105,6 +105,7 @@ This function implements the OpenCGA calls for managing Families.
 The following table summarises the available \emph{actions} for this client:\tabular{llr}{
    endpointName \tab Endpoint WS \tab parameters accepted \cr
    updateAcl \tab /{apiVersion}/families/acl/{members}/update \tab study, members\link{*}, action\link{*}, propagate, body\link{*} \cr
+   aggregationStats \tab /{apiVersion}/families/aggregationStats \tab study, id, name, uuid, members, expectedSize, samples, phenotypes, disorders, creationDate, modificationDate, deleted, internalStatus, status, annotation, acl, release, snapshot, field \cr
    loadAnnotationSets \tab /{apiVersion}/families/annotationSets/load \tab study, variableSetId\link{*}, path\link{*}, parents, annotationSetId, body \cr
    create \tab /{apiVersion}/families/create \tab include, exclude, study, members, includeResult, body\link{*} \cr
    distinct \tab /{apiVersion}/families/distinct \tab study, id, name, uuid, members, expectedSize, samples, phenotypes, disorders, creationDate, modificationDate, deleted, internalStatus, status, annotation, acl, release, snapshot, field\link{*} \cr
@@ -119,6 +120,11 @@ The following table summarises the available \emph{actions} for this client:\tab
 \section{Endpoint /{apiVersion}/families/acl/{members}/update}{
 
 Update the set of permissions granted for the member.
+}
+
+\section{Endpoint /{apiVersion}/families/aggregationStats}{
+
+Fetch catalog family stats.
 }
 
 \section{Endpoint /{apiVersion}/families/annotationSets/load}{
