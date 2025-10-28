@@ -13,12 +13,13 @@
 #' @include AllGenerics.R
 #' @include commons.R
 
-#' @description This function implements the OpenCGA calls for managing CVDB.
+#' @description This function implements the OpenCGA calls for managing Analysis - CVDB.
 
 #' The following table summarises the available *actions* for this client:
 #'
 #' | endpointName | Endpoint WS | parameters accepted |
 #' | -- | :-- | --: |
+#' | updateAcl | /{apiVersion}/analysis/cvdb/acl/update | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | aggregateAnalysis | /{apiVersion}/analysis/cvdb/analysis/aggregate | project, study, caId, caDescription, caType, caDisorderId, caFilename, caProbandId, caProbandDisorderId, caProbandPhenotypeName, caFamilyId, caFamilyPhenotypeName, caFamilyMemberId, caReport, caStatus, caLocked, ciId, ciPrimary, ciDescription, ciPanelId, ciAnalystId, ciAnalystName, ciAnalystEmail, ciAnalystAssignedBy, ciAnalystDate, ciMethodName, ciMethodVersion, ciMethodCommit, ciMethodDependencies, ciComments, ciLocked, ciStatusId, ciStatusName, ciStatusDescription, ciStatusDate, ciCreationDate, ciModificationDate, ciVersion, cvId, cvVariantId, cvPrimaryFinding, cvPrimaryInterpretation, cvComments, cvDiscussionAuthor, cvDiscussionDate, cvDiscussionText, cvConfidenceValue, cvConfidenceAuthor, cvConfidenceDate, cvTag, cvStatus, cvRegion, cvBiotype, cvCt, cvTranscriptFlag, cvGene, cvXref, cvAnnotRoleInCancerGenes, cvType, cvProteinSubstitution, cvConservation, cvFunctionalScore, cvPopulationFrequencyAlt, cvPopulationFrequencyMaf, cvPopulationFrequencyRef, cvCohortStatsAlt, cvCohortStatsMaf, cvCohortStatsRef, cvCohortStatsPass, cvScore, cvAnnotGoGenes, cvAnnotExpressionGenes, cvGeneTraitId, cvTrait, cvProteinKeyword, cveVariantId, cvePrimaryFinding, cvePrimaryInterpretation, cvePhenotypeName, cveGeneName, cveTranscriptId, cveSoTermName, cveXrefId, cvePanelId, cveMoi, cvePenetrance, cveAcmg, cveTier, cveClinicalSignificance, cveDrugResponse, cveTraitAssociation, cveFunctionalEffect, cveTumorigenesis, cveOtherClassification, cveRoleInCancer, cveReviewAcmg, cveReviewTier, cveReviewClinicalSignificance, cveReviewText, field |
 #' | queryAnalysis | /{apiVersion}/analysis/cvdb/analysis/query | project, study, include, exclude, limit, skip, caId, caDescription, caType, caDisorderId, caFilename, caProbandId, caProbandDisorderId, caProbandPhenotypeName, caFamilyId, caFamilyPhenotypeName, caFamilyMemberId, caReport, caStatus, caLocked, ciId, ciPrimary, ciDescription, ciPanelId, ciAnalystId, ciAnalystName, ciAnalystEmail, ciAnalystAssignedBy, ciAnalystDate, ciMethodName, ciMethodVersion, ciMethodCommit, ciMethodDependencies, ciComments, ciLocked, ciStatusId, ciStatusName, ciStatusDescription, ciStatusDate, ciCreationDate, ciModificationDate, ciVersion, cvId, cvVariantId, cvPrimaryFinding, cvPrimaryInterpretation, cvComments, cvDiscussionAuthor, cvDiscussionDate, cvDiscussionText, cvConfidenceValue, cvConfidenceAuthor, cvConfidenceDate, cvTag, cvStatus, cvRegion, cvBiotype, cvCt, cvTranscriptFlag, cvGene, cvXref, cvAnnotRoleInCancerGenes, cvType, cvProteinSubstitution, cvConservation, cvFunctionalScore, cvPopulationFrequencyAlt, cvPopulationFrequencyMaf, cvPopulationFrequencyRef, cvCohortStatsAlt, cvCohortStatsMaf, cvCohortStatsRef, cvCohortStatsPass, cvScore, cvAnnotGoGenes, cvAnnotExpressionGenes, cvGeneTraitId, cvTrait, cvProteinKeyword, cveVariantId, cvePrimaryFinding, cvePrimaryInterpretation, cvePhenotypeName, cveGeneName, cveTranscriptId, cveSoTermName, cveXrefId, cvePanelId, cveMoi, cvePenetrance, cveAcmg, cveTier, cveClinicalSignificance, cveDrugResponse, cveTraitAssociation, cveFunctionalEffect, cveTumorigenesis, cveOtherClassification, cveRoleInCancer, cveReviewAcmg, cveReviewTier, cveReviewClinicalSignificance, cveReviewText |
 #' | aggregateEvidence | /{apiVersion}/analysis/cvdb/evidence/aggregate | project, study, caId, caDescription, caType, caDisorderId, caFilename, caProbandId, caProbandDisorderId, caProbandPhenotypeName, caFamilyId, caFamilyPhenotypeName, caFamilyMemberId, caReport, caStatus, caLocked, ciId, ciPrimary, ciDescription, ciPanelId, ciAnalystId, ciAnalystName, ciAnalystEmail, ciAnalystAssignedBy, ciAnalystDate, ciMethodName, ciMethodVersion, ciMethodCommit, ciMethodDependencies, ciComments, ciLocked, ciStatusId, ciStatusName, ciStatusDescription, ciStatusDate, ciCreationDate, ciModificationDate, ciVersion, cvId, cvVariantId, cvPrimaryFinding, cvPrimaryInterpretation, cvComments, cvDiscussionAuthor, cvDiscussionDate, cvDiscussionText, cvConfidenceValue, cvConfidenceAuthor, cvConfidenceDate, cvTag, cvStatus, cvRegion, cvBiotype, cvCt, cvTranscriptFlag, cvGene, cvXref, cvAnnotRoleInCancerGenes, cvType, cvProteinSubstitution, cvConservation, cvFunctionalScore, cvPopulationFrequencyAlt, cvPopulationFrequencyMaf, cvPopulationFrequencyRef, cvCohortStatsAlt, cvCohortStatsMaf, cvCohortStatsRef, cvCohortStatsPass, cvScore, cvAnnotGoGenes, cvAnnotExpressionGenes, cvGeneTraitId, cvTrait, cvProteinKeyword, cveVariantId, cvePrimaryFinding, cvePrimaryInterpretation, cvePhenotypeName, cveGeneName, cveTranscriptId, cveSoTermName, cveXrefId, cvePanelId, cveMoi, cvePenetrance, cveAcmg, cveTier, cveClinicalSignificance, cveDrugResponse, cveTraitAssociation, cveFunctionalEffect, cveTumorigenesis, cveOtherClassification, cveRoleInCancer, cveReviewAcmg, cveReviewTier, cveReviewClinicalSignificance, cveReviewText, field |
@@ -38,6 +39,20 @@
 
 setMethod("cvdbClient", "OpencgaR", function(OpencgaR, variantId, endpointName, params=NULL, ...) {
     switch(endpointName,
+
+        #' @section Endpoint /{apiVersion}/analysis/cvdb/acl/update:
+        #' Update the set of permissions granted in CVDB for the OpenCGA users that have access to the clinical analyses.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param jobId Job ID. It must be a unique string within the study. An ID will be autogenerated automatically if not provided.
+        #' @param jobDescription Job description.
+        #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
+        #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
+        #' @param data Parameters for the ACL updating task (cvdb-acl-update).
+        updateAcl=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL, subcategory="cvdb/acl",
+                subcategoryId=NULL, action="update", params=params, httpMethod="POST", as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/analysis/cvdb/analysis/aggregate:
         #' Calculate and fetch clinical analysis aggregation stats.

@@ -20,9 +20,7 @@
 
     <properties>
         <opencga.version>5.0.0-SNAPSHOT</opencga.version>
-        <pyopencga.version>5.0.0_dev</pyopencga.version>
-        <opencgar.version>5.0.0_dev</opencgar.version>
-        <cellbase.version>8.0.0-SNAPSHOT</cellbase.version>
+        <cellbase.version>6.6.0</cellbase.version>
         <biodata.version>5.0.0-SNAPSHOT</biodata.version>
         <java-common-libs.version>7.0.0-SNAPSHOT</java-common-libs.version>
         <iva.version>5.0.0-SNAPSHOT</iva.version>
@@ -56,14 +54,14 @@
 
         <!--        <opencga.war.name>opencga-enterprise</opencga.war.name>-->
         <opencga.env.file>opencga-env.sh</opencga.env.file>
+        <opencga.hadoop.thirdparty.version>1.1.0</opencga.hadoop.thirdparty.version>
+        <opencga-hadoop-shaded.id-default>hdi5.1</opencga-hadoop-shaded.id-default>
 
-        <opencga.hadoop.thirdparty.version>1.1.0-SNAPSHOT</opencga.hadoop.thirdparty.version>
-
-        <opencga-hadoop-shaded.id-default>hdi3.1</opencga-hadoop-shaded.id-default>
         <opencga-storage-hadoop-lib.artifactId-default>opencga-storage-hadoop-${opencga-hadoop-shaded.id-default}</opencga-storage-hadoop-lib.artifactId-default>
         <opencga-hadoop-shaded.id>${opencga-hadoop-shaded.id-default}</opencga-hadoop-shaded.id>
         <opencga-storage-hadoop-lib.artifactId>opencga-storage-hadoop-lib-${opencga-hadoop-shaded.id}</opencga-storage-hadoop-lib.artifactId>
         <opencga-storage-hadoop-thirdparty.artifactId>opencga-hadoop-shaded-${opencga-hadoop-shaded.id}</opencga-storage-hadoop-thirdparty.artifactId>
+
 
         <sonar.organization>opencb</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
@@ -155,6 +153,12 @@
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-analysis</artifactId>
                 <version>${opencga.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.opencb.opencga</groupId>
+                        <artifactId>${opencga-storage-hadoop-deps.artifactId-default}</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>

@@ -113,6 +113,16 @@ class Organization(_ParentRestClient):
 
         return self._post(category='organizations', resource='update', subcategory='notes', second_query_id=id, data=data, **options)
 
+    def reset_user_password(self, **options):
+        """
+        Reset user's password.
+        PATH: /{apiVersion}/organizations/user/password/reset
+
+        :param str user_id: User whose password needs to be reset.
+        """
+
+        return self._post(category='organizations', resource='reset', subcategory='user/password', **options)
+
     def user_update_status(self, user, data=None, **options):
         """
         Update the user status.
@@ -170,46 +180,6 @@ class Organization(_ParentRestClient):
         """
 
         return self._post(category='organizations', resource='update', query_id=organization, subcategory='configuration', data=data, **options)
-
-    def query_events(self, organization, **options):
-        """
-        Search events.
-        PATH: /{apiVersion}/organizations/{organization}/events/query
-
-        :param str organization: Organization id. (REQUIRED)
-        :param str study: Study [[organization@]project:]study where study and
-            project can be either the ID or UUID.
-        :param str creation_date: Creation date. Format: yyyyMMddHHmmss.
-            Examples: >2018, 2017-2018, <201805.
-        :param str modification_date: Modification date. Format:
-            yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
-        :param bool successful: Boolean indicating if the event was successful
-            or not.
-        """
-
-        return self._get(category='organizations', resource='query', query_id=organization, subcategory='events', **options)
-
-    def archive_events(self, organization, event_id, **options):
-        """
-        Archive an event.
-        PATH: /{apiVersion}/organizations/{organization}/events/{eventId}/archive
-
-        :param str event_id: Event id. (REQUIRED)
-        :param str organization: Organization id. (REQUIRED)
-        """
-
-        return self._post(category='organizations', resource='archive', query_id=organization, subcategory='events', second_query_id=event_id, **options)
-
-    def retry_events(self, organization, event_id, **options):
-        """
-        Retry unsuccessful event.
-        PATH: /{apiVersion}/organizations/{organization}/events/{eventId}/retry
-
-        :param str event_id: Event id. (REQUIRED)
-        :param str organization: Organization id. (REQUIRED)
-        """
-
-        return self._post(category='organizations', resource='retry', query_id=organization, subcategory='events', second_query_id=event_id, **options)
 
     def info(self, organization, **options):
         """

@@ -49,6 +49,7 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.commons.datastore.solr.SolrCollection;
 import org.opencb.commons.datastore.solr.SolrManager;
+import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBIterator;
@@ -56,6 +57,7 @@ import org.opencb.opencga.catalog.db.api.OrganizationDBAdaptor;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.managers.ProjectManager;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.catalog.utils.FqnUtils;
 import org.opencb.opencga.core.client.GenericClient;
@@ -72,6 +74,7 @@ import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.federation.FederationClientParams;
 import org.opencb.opencga.core.models.organizations.Organization;
+import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -100,6 +103,7 @@ public class CvdbSolrEngine {
 
     private SolrManager solrManager;
     private CatalogManager catalogManager;
+    private CollectionNameGenerator collectionNameGenerator;
     private VariantStorageMetadataManager variantStorageMetadataManager;
 
     private Configuration configuration;
@@ -116,16 +120,6 @@ public class CvdbSolrEngine {
     public static final String NO_ACCESS_FOR_ANONYMOUS_USERS_MSG = "Access to CVDB is restricted for anonymous users. Please log in to"
             + " proceed.";
 
-    public static final String CLINICAL_ANALYSES_COLLECTION_SUFFIX = "_analyses";
-    public static final String INTERPRETATIONS_COLLECTION_SUFFIX = "_interpretations";
-    public static final String CLINICAL_VARIANTS_COLLECTION_SUFFIX = "_variants";
-    public static final String CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX = "_evidences";
-
-    protected static final List<String> COLLECTION_SUFFIXES = Arrays.asList(CLINICAL_ANALYSES_COLLECTION_SUFFIX,
-            INTERPRETATIONS_COLLECTION_SUFFIX,
-            CLINICAL_VARIANTS_COLLECTION_SUFFIX,
-            CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX);
-
     public static final String CLINICAL_ANALYSIS_CONFIGSET = "opencga-ca-configset-"
             + GitRepositoryState.load(GIT_ENTERPRISE_PROPERTIES).getBuildVersion();
     public static final String INTERPRETATION_CONFIGSET = "opencga-ci-configset-"
@@ -134,13 +128,16 @@ public class CvdbSolrEngine {
             + GitRepositoryState.load(GIT_ENTERPRISE_PROPERTIES).getBuildVersion();
     public static final String CLINICAL_VARIANT_EVIDENCE_CONFIGSET = "opencga-cve-configset-"
             + GitRepositoryState.load(GIT_ENTERPRISE_PROPERTIES).getBuildVersion();
+    public static final String CLINICAL_VIEWERS_CONFIGSET = "opencga-viewers-configset-"
+            + GitRepositoryState.load(GIT_ENTERPRISE_PROPERTIES).getBuildVersion();
 
-    protected static final List<String> COLLECTION_CONFIGSETS = Arrays.asList(CLINICAL_ANALYSIS_CONFIGSET,
-            INTERPRETATION_CONFIGSET,
-            CLINICAL_VARIANT_CONFIGSET,
-            CLINICAL_VARIANT_EVIDENCE_CONFIGSET);
-
-    public static final String WITHOUT_ID = "-234";
+    private static final Map<String, String> COLLECTION_CONFIGSETS_MAP = new HashMap<String, String>() {{
+        put(CollectionNameGenerator.CLINICAL_ANALYSES_COLLECTION_SUFFIX, CLINICAL_ANALYSIS_CONFIGSET);
+        put(CollectionNameGenerator.INTERPRETATIONS_COLLECTION_SUFFIX, INTERPRETATION_CONFIGSET);
+        put(CollectionNameGenerator.CLINICAL_VARIANTS_COLLECTION_SUFFIX, CLINICAL_VARIANT_CONFIGSET);
+        put(CollectionNameGenerator.CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX, CLINICAL_VARIANT_EVIDENCE_CONFIGSET);
+        put(CollectionNameGenerator.CLINICAL_VIEWERS_COLLECTION_SUFFIX, CLINICAL_VIEWERS_CONFIGSET);
+    }};
 
     private final QueryOptions ORGANIZATION_OPTIONS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             OrganizationDBAdaptor.QueryParams.ID.key(), OrganizationDBAdaptor.QueryParams.OWNER.key(),
@@ -164,6 +161,7 @@ public class CvdbSolrEngine {
         this.solrManager = new SolrManager(cvdbConfig.getDatabase().getHosts(), cvdbConfig.getDatabase().getMode(),
                 cvdbConfig.getDatabase().getTimeout());
         this.catalogManager = catalogManager;
+        this.collectionNameGenerator = new CollectionNameGenerator(catalogManager);
         this.variantStorageMetadataManager = variantStorageMetadataManager;
 
         init();
@@ -182,11 +180,7 @@ public class CvdbSolrEngine {
     // P U B L I C      M E T H O D S
     //----------------------------------------------------------------------
 
-    public String getCollectionName(String organizationId, String projectId, String suffix) {
-        return CvdbUtils.getCollectionName(configuration.getDatabasePrefix(), organizationId, projectId, suffix);
-    }
-
-    public CvdbIndexResult indexProject(String projectId, CatalogManager catalogManager, boolean overwrite, String token)
+    public CvdbIndexResult indexProject(String projectId, boolean overwrite, String token)
             throws CatalogException {
         logger.info("Loading all clinical analyses from project: '{}'", projectId);
 
@@ -206,7 +200,7 @@ public class CvdbSolrEngine {
                 token);
         List<String> studyFqns = studyResults.getResults().stream().map(Study::getFqn).collect(Collectors.toList());
         for (String studyFqn : studyFqns) {
-            CvdbIndexResult tmpResult = indexStudy(studyFqn, catalogManager, overwrite, token);
+            CvdbIndexResult tmpResult = indexStudy(studyFqn, overwrite, token);
             result.setNumIndexed(result.getNumIndexed() + tmpResult.getNumIndexed());
             result.getFailures().putAll(tmpResult.getFailures());
         }
@@ -218,7 +212,7 @@ public class CvdbSolrEngine {
         return result;
     }
 
-    public CvdbIndexResult indexStudy(String studyFqn, CatalogManager catalogManager, boolean overwrite, String token)
+    public CvdbIndexResult indexStudy(String studyFqn, boolean overwrite, String token)
             throws CatalogException {
         logger.info("Loading all clinical analyses from study: '{}'", studyFqn);
 
@@ -250,7 +244,7 @@ public class CvdbSolrEngine {
         while (iterator.hasNext()) {
             caIds.add(iterator.next().getId());
             if (caIds.size() == listSize) {
-                CvdbIndexResult tmpResult = indexClinicalAnalyses(caIds, studyFqn, catalogManager, overwrite, token);
+                CvdbIndexResult tmpResult = indexClinicalAnalyses(caIds, studyFqn, overwrite, token);
                 result.setNumIndexed(result.getNumIndexed() + tmpResult.getNumIndexed());
                 result.getFailures().putAll(tmpResult.getFailures());
 
@@ -261,7 +255,7 @@ public class CvdbSolrEngine {
 
         // Check if there are still clinical analyses to index
         if (CollectionUtils.isNotEmpty(caIds)) {
-            CvdbIndexResult tmpResult = indexClinicalAnalyses(caIds, studyFqn, catalogManager, overwrite, token);
+            CvdbIndexResult tmpResult = indexClinicalAnalyses(caIds, studyFqn, overwrite, token);
             result.setNumIndexed(result.getNumIndexed() + tmpResult.getNumIndexed());
             result.getFailures().putAll(tmpResult.getFailures());
         }
@@ -273,8 +267,8 @@ public class CvdbSolrEngine {
         return result;
     }
 
-    public CvdbIndexResult indexClinicalAnalyses(List<String> clinicalAnalysisIds, String studyFqn, CatalogManager catalogManager,
-                                                 boolean overwrite, String token) throws CatalogException {
+    public CvdbIndexResult indexClinicalAnalyses(List<String> clinicalAnalysisIds, String studyFqn, boolean overwrite, String token)
+            throws CatalogException {
         logger.info("Loading {} clinical analyses from the input list", clinicalAnalysisIds.size());
 
         JwtPayload jwtPayload = catalogManager.getUserManager().validateToken(token);
@@ -306,6 +300,8 @@ public class CvdbSolrEngine {
                 token);
         String projectId = projectResult.first().getId();
 
+        String collectionPrefix = collectionNameGenerator.getCollectionPrefix(organizationId, projectId, token);
+
         // Get the input clinical analyses
         Query caQuery = new Query();
         for (String caId : clinicalAnalysisIds) {
@@ -318,7 +314,7 @@ public class CvdbSolrEngine {
                 // If overwrite, we need to remove interpretations, clinical variants and evidences for that clinical analysis
                 if (overwrite) {
                     try {
-                        removeClinicalAnalysis(caId, organizationId, projectId, study.getId());
+                        removeClinicalAnalysis(caId, organizationId, projectId, study.getId(), collectionPrefix);
                     } catch (CvdbException e) {
                         String key = caId + " (" + study.getFqn() + ")";
                         failures.put(key, e.getMessage());
@@ -335,7 +331,12 @@ public class CvdbSolrEngine {
                 }
 
                 try {
-                    if (index(clinicalAnalysis, organizationId, projectId, study.getFqn(), caIdUserIdsMap.get(caId))) {
+                    if (index(clinicalAnalysis, organizationId, projectId, study.getFqn(), collectionPrefix)) {
+                        List<String> viewers = caIdUserIdsMap.get(caId);
+                        if (CollectionUtils.isNotEmpty(viewers)) {
+                            // Add the user IDs to the clinical viewers collection
+                            indexViewers(clinicalAnalysis.getId(), study.getId(), viewers, collectionPrefix);
+                        }
                         numIndexed++;
                         updateClinicalAnalysisCvdbIndexStatus(study.getFqn(), clinicalAnalysis, new CvdbIndexStatus(READY), token);
                     } else {
@@ -363,7 +364,24 @@ public class CvdbSolrEngine {
         return new CvdbIndexResult(numIndexed, failures, (int) stopWatch.getTime(TimeUnit.SECONDS));
     }
 
-    private void removeClinicalAnalysis(String caId, String organizationId, String projectId, String studyId) throws CvdbException {
+    public void indexViewers(String caId, String studyId, List<String> viewers, String collectionPrefix)
+            throws CvdbException, SolrServerException, IOException {
+        SolrClient solrClient = getSolrClient();
+
+        String viewerCollectionName = collectionNameGenerator.getClinicalViewerCollectionName(collectionPrefix);
+
+        // Index viewers for that clinical analysis ID
+        UpdateResponse updateResponse = solrClient.addBean(viewerCollectionName, new ClinicalViewersSearch(caId, studyId, viewers));
+        if (updateResponse.getStatus() != 0) {
+            rollback(solrClient, updateResponse.getStatus());
+        }
+
+        // Commit
+        solrClient.commit(viewerCollectionName);
+    }
+
+    private void removeClinicalAnalysis(String caId, String organizationId, String projectId, String studyId, String collectionPrefix)
+            throws CvdbException {
         logger.info("Removing clinical analysis {} and its interpretations, clinical variants and evidences", caId);
 
         SolrClient solrClient = getSolrClient();
@@ -373,7 +391,8 @@ public class CvdbSolrEngine {
 
             // Delete clinical analysis
             String query = "id:" + ClientUtils.escapeQueryChars(caId) + " AND " + "studyId:" + ClientUtils.escapeQueryChars(studyId);
-            String caCollectionName = getCollectionName(organizationId, projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX);
+
+            String caCollectionName = collectionNameGenerator.getClinicalAnalysisCollectionName(collectionPrefix);
             updateResponse = solrClient.deleteByQuery(caCollectionName, query);
             if (updateResponse.getStatus() != 0) {
                 rollback(solrClient, updateResponse.getStatus());
@@ -383,20 +402,20 @@ public class CvdbSolrEngine {
             query = CA_ID_NAME + ":" + ClientUtils.escapeQueryChars(caId) + " AND " + "studyId:" + ClientUtils.escapeQueryChars(studyId);
 
             // Delete interpretations for that clinical analysis
-            String ciCollectionName = getCollectionName(organizationId, projectId, INTERPRETATIONS_COLLECTION_SUFFIX);
+            String ciCollectionName = collectionNameGenerator.getClinicalInterpretationCollectionName(collectionPrefix);
             updateResponse = solrClient.deleteByQuery(ciCollectionName, query);
             if (updateResponse.getStatus() != 0) {
                 rollback(solrClient, updateResponse.getStatus());
             }
             // Delete clinical variants for that clinical analysis
-            String cvCollectionName = getCollectionName(organizationId, projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX);
+            String cvCollectionName = collectionNameGenerator.getClinicalVariantCollectionName(collectionPrefix);
             updateResponse = solrClient.deleteByQuery(cvCollectionName, query);
             if (updateResponse.getStatus() != 0) {
                 rollback(solrClient, updateResponse.getStatus());
             }
 
             // Delete clinical evidences for that clinical analysis
-            String cveCollectionName = getCollectionName(organizationId, projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX);
+            String cveCollectionName = collectionNameGenerator.getClinicalVariantEvidenceCollectionName(collectionPrefix);
             updateResponse = solrClient.deleteByQuery(cveCollectionName, query);
             if (updateResponse.getStatus() != 0) {
                 rollback(solrClient, updateResponse.getStatus());
@@ -444,12 +463,11 @@ public class CvdbSolrEngine {
 
         // Execute query
         try {
-            String collection = getCollectionName(getOrganizationId(token), query.getString(PROJECT_PARAM_NAME),
-                    CLINICAL_ANALYSES_COLLECTION_SUFFIX);
-            return new ClinicalIterator(solrManager.getSolrClient(), collection, solrQuery, queryOptions, ClinicalAnalysisSearch.class,
+            String collectionName = collectionNameGenerator.getClinicalAnalysisCollectionName(query.getString(PROJECT_PARAM_NAME), token);
+            return new ClinicalIterator(solrManager.getSolrClient(), collectionName, solrQuery, queryOptions, ClinicalAnalysisSearch.class,
                     ClinicalAnalysisConverter.class);
         } catch (SolrServerException | NoSuchMethodException | InvocationTargetException | InstantiationException
-                | IllegalAccessException e) {
+                 | IllegalAccessException e) {
             throw new CvdbException(e.getMessage(), e);
         }
     }
@@ -461,9 +479,8 @@ public class CvdbSolrEngine {
 
         // Execute query
         try {
-            String collection = getCollectionName(getOrganizationId(token), query.getString(PROJECT_PARAM_NAME),
-                    CLINICAL_ANALYSES_COLLECTION_SUFFIX);
-            return new ClinicalSolrIterator(getSolrClient(), collection, solrQuery, ClinicalAnalysisSearch.class);
+            String collectionName = collectionNameGenerator.getClinicalAnalysisCollectionName(query.getString(PROJECT_PARAM_NAME), token);
+            return new ClinicalSolrIterator(getSolrClient(), collectionName, solrQuery, ClinicalAnalysisSearch.class);
         } catch (SolrServerException e) {
             throw new CvdbException(e.getMessage(), e);
         }
@@ -474,9 +491,8 @@ public class CvdbSolrEngine {
         // Parse query
         SolrQuery solrQuery = parseClinicalAnalysisQuery(query, QueryOptions.empty(), token);
 
-        String collection = getCollectionName(getOrganizationId(token), query.getString(PROJECT_PARAM_NAME),
-                CLINICAL_ANALYSES_COLLECTION_SUFFIX);
-        SolrCollection solrCollection = getSolrManager().getCollection(collection);
+        String collectionName = collectionNameGenerator.getClinicalAnalysisCollectionName(query.getString(PROJECT_PARAM_NAME), token);
+        SolrCollection solrCollection = getSolrManager().getCollection(collectionName);
         // Execute query
         try {
             return solrCollection.count(solrQuery);
@@ -489,19 +505,17 @@ public class CvdbSolrEngine {
             throws IOException, CvdbException, CatalogException {
         // Check
         checkFacet(query, queryOptions, token);
+        String collectionPrefix = collectionNameGenerator.getCollectionPrefix(query.getString(PROJECT_PARAM_NAME), token);
 
         // Parse query
-        String collectionPrefix = CvdbUtils.getCollectionPrefix(catalogManager.getConfiguration().getDatabasePrefix(),
-                getOrganizationId(token));
         ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(collectionPrefix, variantStorageMetadataManager);
         SolrQuery solrQuery = parser.parse(query, queryOptions);
 
         // Execute query
         DataResult<FacetField> facetResult;
         try {
-            String collection = getCollectionName(getOrganizationId(token), query.getString(PROJECT_PARAM_NAME),
-                    CLINICAL_ANALYSES_COLLECTION_SUFFIX);
-            SolrCollection solrCollection = solrManager.getCollection(collection);
+            String collectionName = collectionNameGenerator.getClinicalAnalysisCollectionName(collectionPrefix);
+            SolrCollection solrCollection = solrManager.getCollection(collectionName);
             facetResult = solrCollection.facet(solrQuery);
 //            postProcessing(facetResult, new CaFieldMapping());
         } catch (SolrServerException e) {
@@ -515,13 +529,12 @@ public class CvdbSolrEngine {
             throws CatalogException, CvdbException {
         // Check
         checkQuery(query, queryOptions, token);
+        String collectionPrefix = collectionNameGenerator.getCollectionPrefix(query.getString(PROJECT_PARAM_NAME), token);
 
         // Update query with user from token
         setViewerInQuery(query, token);
 
         // Parse query
-        String collectionPrefix = CvdbUtils.getCollectionPrefix(catalogManager.getConfiguration().getDatabasePrefix(),
-                getOrganizationId(token));
         ClinicalAnalysisQueryParser parser = new ClinicalAnalysisQueryParser(collectionPrefix, variantStorageMetadataManager);
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         if (queryOptions.containsKey(INCLUDE)) {
@@ -572,15 +585,55 @@ public class CvdbSolrEngine {
 
     public ClinicalIterator<Interpretation, ClinicalInterpretationSearch, ClinicalInterpretationConverter> clinicalInterpretationIterator(
             Query query, QueryOptions queryOptions, String token) throws CvdbException, IOException, CatalogException {
+        // Parse query
+        SolrQuery solrQuery = parseClinicalInterpretationQuery(query, queryOptions, token);
+
+        // Execute query
+        try {
+            String collectionName = collectionNameGenerator.getClinicalInterpretationCollectionName(query.getString(PROJECT_PARAM_NAME),
+                    token);
+            return new ClinicalIterator(solrManager.getSolrClient(), collectionName, solrQuery, queryOptions,
+                    ClinicalInterpretationSearch.class, ClinicalInterpretationConverter.class);
+        } catch (SolrServerException | NoSuchMethodException | InvocationTargetException | InstantiationException
+                 | IllegalAccessException e) {
+            throw new CvdbException(e.getMessage(), e);
+        }
+    }
+
+    public DataResult<FacetField> facetClinicalInterpretations(Query query, QueryOptions queryOptions, String token)
+            throws IOException, CvdbException, CatalogException {
+        // Check
+        checkFacet(query, queryOptions, token);
+        String collectionPrefix = collectionNameGenerator.getCollectionPrefix(query.getString(PROJECT_PARAM_NAME), token);
+
+        // Parse query
+        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(collectionPrefix, variantStorageMetadataManager);
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+
+        // Execute query
+        DataResult<FacetField> facetResult;
+        try {
+            String collectionName = collectionNameGenerator.getClinicalInterpretationCollectionName(collectionPrefix);
+            SolrCollection solrCollection = solrManager.getCollection(collectionName);
+            facetResult = solrCollection.facet(solrQuery);
+//            postProcessing(facetResult, new CiFieldMapping());
+        } catch (SolrServerException e) {
+            throw new CvdbException(e.getMessage(), e);
+        }
+
+        return facetResult;
+    }
+
+    private SolrQuery parseClinicalInterpretationQuery(Query query, QueryOptions queryOptions, String token)
+            throws CatalogException, CvdbException {
         // Check
         checkQuery(query, queryOptions, token);
+        String collectionPrefix = collectionNameGenerator.getCollectionPrefix(query.getString(PROJECT_PARAM_NAME), token);
 
         // Update query with user from token
         setViewerInQuery(query, token);
 
         // Parse query
-        String collectionPrefix = CvdbUtils.getCollectionPrefix(catalogManager.getConfiguration().getDatabasePrefix(),
-                getOrganizationId(token));
         ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(collectionPrefix, variantStorageMetadataManager);
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         if (queryOptions.containsKey(INCLUDE)) {
@@ -604,42 +657,7 @@ public class CvdbSolrEngine {
             queryOptions.put(INCLUDE, StringUtils.join(includeList, ","));
         }
 
-        // Execute query
-        try {
-            String collection = getCollectionName(getOrganizationId(token), query.getString(PROJECT_PARAM_NAME),
-                    INTERPRETATIONS_COLLECTION_SUFFIX);
-            return new ClinicalIterator(solrManager.getSolrClient(), collection, solrQuery, queryOptions,
-                    ClinicalInterpretationSearch.class, ClinicalInterpretationConverter.class);
-        } catch (SolrServerException | NoSuchMethodException | InvocationTargetException | InstantiationException
-                | IllegalAccessException e) {
-            throw new CvdbException(e.getMessage(), e);
-        }
-    }
-
-    public DataResult<FacetField> facetClinicalInterpretations(Query query, QueryOptions queryOptions, String token)
-            throws IOException, CvdbException, CatalogException {
-        // Check
-        checkFacet(query, queryOptions, token);
-
-        // Parse query
-        String collectionPrefix = CvdbUtils.getCollectionPrefix(catalogManager.getConfiguration().getDatabasePrefix(),
-                getOrganizationId(token));
-        ClinicalInterpretationQueryParser parser = new ClinicalInterpretationQueryParser(collectionPrefix, variantStorageMetadataManager);
-        SolrQuery solrQuery = parser.parse(query, queryOptions);
-
-        // Execute query
-        DataResult<FacetField> facetResult;
-        try {
-            String collection = getCollectionName(getOrganizationId(token), query.getString(PROJECT_PARAM_NAME),
-                    INTERPRETATIONS_COLLECTION_SUFFIX);
-            SolrCollection solrCollection = solrManager.getCollection(collection);
-            facetResult = solrCollection.facet(solrQuery);
-//            postProcessing(facetResult, new CiFieldMapping());
-        } catch (SolrServerException e) {
-            throw new CvdbException(e.getMessage(), e);
-        }
-
-        return facetResult;
+        return solrQuery;
     }
 
     //----------------------------------------------------------------------
@@ -672,12 +690,11 @@ public class CvdbSolrEngine {
 
         // Execute query
         try {
-            String collection = getCollectionName(getOrganizationId(token), query.getString(PROJECT_PARAM_NAME),
-                    CLINICAL_VARIANTS_COLLECTION_SUFFIX);
-            return new ClinicalIterator(solrManager.getSolrClient(), collection, solrQuery, queryOptions, ClinicalVariantSearch.class,
+            String collectionName = collectionNameGenerator.getClinicalVariantCollectionName(query.getString(PROJECT_PARAM_NAME), token);
+            return new ClinicalIterator(solrManager.getSolrClient(), collectionName, solrQuery, queryOptions, ClinicalVariantSearch.class,
                     ClinicalVariantConverter.class);
         } catch (SolrServerException | NoSuchMethodException | InvocationTargetException | InstantiationException
-                | IllegalAccessException e) {
+                 | IllegalAccessException e) {
             throw new CvdbException(e.getMessage(), e);
         }
     }
@@ -689,25 +706,46 @@ public class CvdbSolrEngine {
 
         // Execute query
         try {
-            String collection = getCollectionName(getOrganizationId(token), query.getString(PROJECT_PARAM_NAME),
-                    CLINICAL_VARIANTS_COLLECTION_SUFFIX);
-            return new ClinicalSolrIterator<>(getSolrClient(), collection, solrQuery, ClinicalVariantSearch.class);
+            String collectionName = collectionNameGenerator.getClinicalVariantCollectionName(query.getString(PROJECT_PARAM_NAME), token);
+            return new ClinicalSolrIterator<>(getSolrClient(), collectionName, solrQuery, ClinicalVariantSearch.class);
         } catch (SolrServerException e) {
             throw new CvdbException(e.getMessage(), e);
         }
+    }
+
+    public DataResult<FacetField> facetClinicalVariants(Query query, QueryOptions queryOptions, String token)
+            throws IOException, CvdbException, CatalogException {
+        // Check
+        checkFacet(query, queryOptions, token);
+        String collectionPrefix = collectionNameGenerator.getCollectionPrefix(query.getString(PROJECT_PARAM_NAME), token);
+
+        // Parse query
+        ClinicalVariantQueryParser parser = new ClinicalVariantQueryParser(collectionPrefix, variantStorageMetadataManager);
+        SolrQuery solrQuery = parser.parse(query, queryOptions);
+
+        // Execute query
+        DataResult<FacetField> facetResult;
+        try {
+            String collectionName = collectionNameGenerator.getClinicalVariantCollectionName(collectionPrefix);
+            SolrCollection solrCollection = solrManager.getCollection(collectionName);
+            facetResult = solrCollection.facet(solrQuery);
+        } catch (SolrServerException e) {
+            throw new CvdbException(e.getMessage(), e);
+        }
+
+        return facetResult;
     }
 
     private SolrQuery parseClinicalVariantQuery(Query query, QueryOptions queryOptions, String token)
             throws CatalogException, CvdbException {
         // Check
         checkQuery(query, queryOptions, token);
+        String collectionPrefix = collectionNameGenerator.getCollectionPrefix(query.getString(PROJECT_PARAM_NAME), token);
 
         // Update query with user from token
         setViewerInQuery(query, token);
 
         // Parse query
-        String collectionPrefix = CvdbUtils.getCollectionPrefix(catalogManager.getConfiguration().getDatabasePrefix(),
-                getOrganizationId(token));
         ClinicalVariantQueryParser parser = new ClinicalVariantQueryParser(collectionPrefix, variantStorageMetadataManager);
         SolrQuery solrQuery = parser.parse(query, queryOptions);
         if (queryOptions.containsKey(INCLUDE)) {
@@ -724,31 +762,6 @@ public class CvdbSolrEngine {
         }
 
         return solrQuery;
-    }
-
-    public DataResult<FacetField> facetClinicalVariants(Query query, QueryOptions queryOptions, String token)
-            throws IOException, CvdbException, CatalogException {
-        // Check
-        checkFacet(query, queryOptions, token);
-
-        // Parse query
-        String collectionPrefix = CvdbUtils.getCollectionPrefix(catalogManager.getConfiguration().getDatabasePrefix(),
-                getOrganizationId(token));
-        ClinicalVariantQueryParser parser = new ClinicalVariantQueryParser(collectionPrefix, variantStorageMetadataManager);
-        SolrQuery solrQuery = parser.parse(query, queryOptions);
-
-        // Execute query
-        DataResult<FacetField> facetResult;
-        try {
-            String collection = getCollectionName(getOrganizationId(token), query.getString(PROJECT_PARAM_NAME),
-                    CLINICAL_VARIANTS_COLLECTION_SUFFIX);
-            SolrCollection solrCollection = solrManager.getCollection(collection);
-            facetResult = solrCollection.facet(solrQuery);
-        } catch (SolrServerException e) {
-            throw new CvdbException(e.getMessage(), e);
-        }
-
-        return facetResult;
     }
 
     //----------------------------------------------------------------------
@@ -775,18 +788,19 @@ public class CvdbSolrEngine {
     }
 
     public ClinicalIterator<ClinicalVariantEvidence, ClinicalVariantEvidenceSearch, ClinicalVariantEvidenceConverter>
-    clinicalVariantEvidenceIterator(Query query, QueryOptions queryOptions, String token) throws CvdbException, IOException, CatalogException {
+    clinicalVariantEvidenceIterator(Query query, QueryOptions queryOptions, String token)
+            throws CvdbException, IOException, CatalogException {
         // Parse query
         SolrQuery solrQuery = parseClinicalVariantEvidenceQuery(query, queryOptions, token);
 
         // Execute query
         try {
-            String collection = getCollectionName(getOrganizationId(token), query.getString(PROJECT_PARAM_NAME),
-                    CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX);
-            return new ClinicalIterator(solrManager.getSolrClient(), collection, solrQuery, queryOptions,
+            String collectionName = collectionNameGenerator.getClinicalVariantEvidenceCollectionName(query.getString(PROJECT_PARAM_NAME),
+                    token);
+            return new ClinicalIterator(solrManager.getSolrClient(), collectionName, solrQuery, queryOptions,
                     ClinicalVariantEvidenceSearch.class, ClinicalVariantEvidenceConverter.class);
         } catch (SolrServerException | NoSuchMethodException | InvocationTargetException | InstantiationException
-                | IllegalAccessException e) {
+                 | IllegalAccessException e) {
             throw new CvdbException(e.getMessage(), e);
         }
     }
@@ -799,45 +813,28 @@ public class CvdbSolrEngine {
 
         // Execute query
         try {
-            String collection = getCollectionName(getOrganizationId(token), query.getString(PROJECT_PARAM_NAME),
-                    CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX);
+            String collection = collectionNameGenerator.getClinicalVariantEvidenceCollectionName(query.getString(PROJECT_PARAM_NAME),
+                    token);
             return new ClinicalSolrIterator<>(getSolrClient(), collection, solrQuery, ClinicalVariantEvidenceSearch.class);
         } catch (SolrServerException e) {
             throw new CvdbException(e.getMessage(), e);
         }
     }
 
-    private SolrQuery parseClinicalVariantEvidenceQuery(Query query, QueryOptions queryOptions, String token)
-            throws CatalogException, CvdbException {
-        // Check
-        checkQuery(query, queryOptions, token);
-
-        // Update query with user from token
-        setViewerInQuery(query, token);
-
-        // Parse query
-        String collectionPrefix = CvdbUtils.getCollectionPrefix(catalogManager.getConfiguration().getDatabasePrefix(),
-                getOrganizationId(token));
-        ClinicalVariantEvidenceQueryParser parser = new ClinicalVariantEvidenceQueryParser(collectionPrefix, variantStorageMetadataManager);
-        return parser.parse(query, queryOptions);
-    }
-
     public DataResult<FacetField> facetClinicalVariantEvidences(Query query, QueryOptions queryOptions, String token)
             throws IOException, CvdbException, CatalogException {
         // Check
         checkFacet(query, queryOptions, token);
+        String collectionPrefix = collectionNameGenerator.getCollectionPrefix(query.getString(PROJECT_PARAM_NAME), token);
 
         // Parse query
-        String collectionPrefix = CvdbUtils.getCollectionPrefix(catalogManager.getConfiguration().getDatabasePrefix(),
-                getOrganizationId(token));
         ClinicalVariantEvidenceQueryParser parser = new ClinicalVariantEvidenceQueryParser(collectionPrefix, variantStorageMetadataManager);
         SolrQuery solrQuery = parser.parse(query, queryOptions);
 
         // Execute query
         DataResult<FacetField> facetResult;
         try {
-            String collection = getCollectionName(getOrganizationId(token), query.getString(PROJECT_PARAM_NAME),
-                    CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX);
+            String collection = collectionNameGenerator.getClinicalVariantEvidenceCollectionName(collectionPrefix);
             SolrCollection solrCollection = solrManager.getCollection(collection);
             facetResult = solrCollection.facet(solrQuery);
 //            postProcessing(facetResult, new CveFieldMapping());
@@ -846,6 +843,20 @@ public class CvdbSolrEngine {
         }
 
         return facetResult;
+    }
+
+    private SolrQuery parseClinicalVariantEvidenceQuery(Query query, QueryOptions queryOptions, String token)
+            throws CatalogException, CvdbException {
+        // Check
+        checkQuery(query, queryOptions, token);
+        String collectionPrefix = collectionNameGenerator.getCollectionPrefix(query.getString(PROJECT_PARAM_NAME), token);
+
+        // Update query with user from token
+        setViewerInQuery(query, token);
+
+        // Parse query
+        ClinicalVariantEvidenceQueryParser parser = new ClinicalVariantEvidenceQueryParser(collectionPrefix, variantStorageMetadataManager);
+        return parser.parse(query, queryOptions);
     }
 
     //----------------------------------------------------------------------
@@ -891,13 +902,16 @@ public class CvdbSolrEngine {
             if (project.getInternal().isFederated()) {
                 federatedProjects.putIfAbsent(project.getFederation().getId(), new LinkedList<>());
                 federatedProjects.get(project.getFederation().getId()).add(project);
-            } else if (existCollections(organizationId, project.getId())) {
-                localProjects.add(project);
+            } else {
+                String collectionPrefix = collectionNameGenerator.getCollectionPrefix(organizationId, project.getId(), token);
+                if (existCollections(collectionPrefix)) {
+                    localProjects.add(project);
+                }
             }
         }
 
         // Get summary stats from federated projects
-        ExecutorService executor = null;
+        ExecutorService executor;
         List<Future<RestResponse<ClinicalVariantSummaryStats>>> federatedSummaryFutureList = new ArrayList<>(federatedProjects.size());
         if (!federatedProjects.isEmpty()) {
             String variantId = StringUtils.join(variantIds, ",");
@@ -1124,13 +1138,13 @@ public class CvdbSolrEngine {
         } else {
             // Both project and study are defined, check congruency
             OpenCGAResult<Project> projectResult = catalogManager.getProjectManager().get(projectInputValue, empty(), token);
-            OpenCGAResult<Study> studytResult = catalogManager.getStudyManager().get(studyInputValue, empty(), token);
-            if (!projectResult.first().getId().equals(FqnUtils.getProject(studytResult.first().getFqn()))) {
+            OpenCGAResult<Study> studyResult = catalogManager.getStudyManager().get(studyInputValue, empty(), token);
+            if (!projectResult.first().getId().equals(FqnUtils.getProject(studyResult.first().getFqn()))) {
                 throw new CvdbException("Project ID '" + projectResult.first().getFqn() + "' and study ID '"
-                        + studytResult.first().getFqn() + "' mismatch. Please ensure that the study belongs to the specified project");
+                        + studyResult.first().getFqn() + "' mismatch. Please ensure that the study belongs to the specified project");
             }
             query.put(PROJECT_PARAM_NAME, projectResult.first().getId());
-            query.put(STUDY_PARAM_NAME, studytResult.first().getId());
+            query.put(STUDY_PARAM_NAME, studyResult.first().getId());
         }
     }
 
@@ -1142,18 +1156,18 @@ public class CvdbSolrEngine {
         }
     }
 
-    private boolean index(ClinicalAnalysis clinicalAnalysis, String organizationId, String projectId, String studyFqn, List<String> viewers)
-            throws CvdbException {
+    private boolean index(ClinicalAnalysis clinicalAnalysis, String organizationId, String projectId, String studyFqn,
+                          String collectionPrefix ) throws CvdbException {
         SolrClient solrClient = solrManager.getSolrClient();
 
         try {
             // Index
-            if (index(clinicalAnalysis, organizationId, projectId, studyFqn, viewers, solrClient)) {
+            if (index(clinicalAnalysis, organizationId, projectId, studyFqn, collectionPrefix, solrClient)) {
                 // Commit
-                solrClient.commit(getCollectionName(organizationId, projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX));
-                solrClient.commit(getCollectionName(organizationId, projectId, INTERPRETATIONS_COLLECTION_SUFFIX));
-                solrClient.commit(getCollectionName(organizationId, projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX));
-                solrClient.commit(getCollectionName(organizationId, projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX));
+                solrClient.commit(collectionNameGenerator.getClinicalAnalysisCollectionName(collectionPrefix));
+                solrClient.commit(collectionNameGenerator.getClinicalInterpretationCollectionName(collectionPrefix));
+                solrClient.commit(collectionNameGenerator.getClinicalVariantCollectionName(collectionPrefix));
+                solrClient.commit(collectionNameGenerator.getClinicalVariantEvidenceCollectionName(collectionPrefix));
                 return true;
             }
         } catch (SolrServerException | IOException e) {
@@ -1164,16 +1178,16 @@ public class CvdbSolrEngine {
         return false;
     }
 
-    private boolean index(ClinicalAnalysis clinicalAnalysis, String organizationId, String projectId, String studyFqn, List<String> viewers,
-                          SolrClient solrClient) throws CvdbException {
+    private boolean index(ClinicalAnalysis clinicalAnalysis, String organizationId, String projectId, String studyFqn,
+                          String collectionPrefix, SolrClient solrClient) throws CvdbException {
         try {
             logger.info("Indexing clinical analysis {} ...", clinicalAnalysis.getId());
             UpdateResponse updateResponse;
 
             boolean exists;
             try {
-                exists = clinicalAnalysisExists(clinicalAnalysis.getId(), getCollectionName(organizationId, projectId,
-                        CLINICAL_ANALYSES_COLLECTION_SUFFIX), solrClient);
+                exists = clinicalAnalysisExists(clinicalAnalysis.getId(),
+                        collectionNameGenerator.getClinicalAnalysisCollectionName(collectionPrefix), solrClient);
             } catch (SolrServerException | IOException e) {
                 logger.warn("Something wrong happened, clinical analysis {} could not be indexed: {}", clinicalAnalysis.getId(),
                         e.getMessage());
@@ -1182,23 +1196,23 @@ public class CvdbSolrEngine {
 
             if (!exists) {
                 // Clinical analysis
-                ClinicalAnalysisSearch cas = caConverter.toClinicalAnalysisSearch(clinicalAnalysis, FqnUtils.getStudy(studyFqn), viewers);
+                ClinicalAnalysisSearch cas = caConverter.toClinicalAnalysisSearch(clinicalAnalysis, FqnUtils.getStudy(studyFqn));
 
                 // Index
-                updateResponse = solrClient.addBean(getCollectionName(organizationId, projectId, CLINICAL_ANALYSES_COLLECTION_SUFFIX), cas);
+                updateResponse = solrClient.addBean(collectionNameGenerator.getClinicalAnalysisCollectionName(collectionPrefix), cas);
                 if (updateResponse.getStatus() != 0) {
                     rollback(solrClient, updateResponse.getStatus());
                 }
 
                 // Primary interpretation
                 if (clinicalAnalysis.getInterpretation() != null) {
-                    index(clinicalAnalysis.getInterpretation(), true, organizationId, projectId, studyFqn, viewers, solrClient);
+                    index(clinicalAnalysis.getInterpretation(), true, organizationId, projectId, studyFqn, collectionPrefix, solrClient);
                 }
 
                 // Secondary interpretations
                 if (CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations())) {
                     for (Interpretation secondaryInterpretation : clinicalAnalysis.getSecondaryInterpretations()) {
-                        index(secondaryInterpretation, false, organizationId, projectId, studyFqn, viewers, solrClient);
+                        index(secondaryInterpretation, false, organizationId, projectId, studyFqn, collectionPrefix, solrClient);
                     }
                 }
                 logger.info("Done! Indexed clinical analysis {}", clinicalAnalysis.getId());
@@ -1217,15 +1231,15 @@ public class CvdbSolrEngine {
     }
 
     private void index(Interpretation interpretation, boolean isPrimaryInterpretation, String organizationId, String projectId,
-                       String studyFqn, List<String> viewers, SolrClient solrClient) throws CvdbException {
+                       String studyFqn, String collectionPrefix, SolrClient solrClient) throws CvdbException {
         try {
             UpdateResponse updateResponse;
 
             // Interpretation
-            ClinicalInterpretationSearch cis = ciConverter.toInterpretationSearch(interpretation, isPrimaryInterpretation, FqnUtils.getStudy(studyFqn),
-                    viewers);
+            ClinicalInterpretationSearch cis = ciConverter.toInterpretationSearch(interpretation, isPrimaryInterpretation,
+                    FqnUtils.getStudy(studyFqn));
 
-            updateResponse = solrClient.addBean(getCollectionName(organizationId, projectId, INTERPRETATIONS_COLLECTION_SUFFIX), cis);
+            updateResponse = solrClient.addBean(collectionNameGenerator.getClinicalInterpretationCollectionName(collectionPrefix), cis);
             if (updateResponse.getStatus() != 0) {
                 rollback(solrClient, updateResponse.getStatus());
             }
@@ -1234,14 +1248,14 @@ public class CvdbSolrEngine {
             if (CollectionUtils.isNotEmpty(interpretation.getPrimaryFindings())) {
                 for (ClinicalVariant primaryFinding : interpretation.getPrimaryFindings()) {
                     index(primaryFinding, true, interpretation.getId(), isPrimaryInterpretation, interpretation.getClinicalAnalysisId(),
-                            organizationId, projectId, studyFqn, viewers, solrClient);
+                            organizationId, projectId, studyFqn, collectionPrefix, solrClient);
                 }
             }
             // Secondary findings
             if (CollectionUtils.isNotEmpty(interpretation.getSecondaryFindings())) {
                 for (ClinicalVariant secondaryFinding : interpretation.getSecondaryFindings()) {
                     index(secondaryFinding, false, interpretation.getId(), isPrimaryInterpretation, interpretation.getClinicalAnalysisId(),
-                            organizationId, projectId, studyFqn, viewers, solrClient);
+                            organizationId, projectId, studyFqn, collectionPrefix, solrClient);
                 }
             }
         } catch (SolrServerException | IOException e) {
@@ -1250,9 +1264,8 @@ public class CvdbSolrEngine {
     }
 
     private void index(ClinicalVariant clinicalVariant, boolean isPrimaryFinding, String interpretationId, boolean isPrimaryInterpretation,
-                       String clinicalAnalysisId, String organizationId, String projectId, String studyFqn, List<String> viewers,
-                       SolrClient solrClient)
-            throws CvdbException {
+                       String clinicalAnalysisId, String organizationId, String projectId, String studyFqn, String collectionPrefix,
+                       SolrClient solrClient) throws CvdbException {
         try {
             UpdateResponse updateResponse;
 
@@ -1267,9 +1280,9 @@ public class CvdbSolrEngine {
             clinicalVariant.getAttributes().put(OPENCGA_PRIMARY_FINDING, isPrimaryFinding);
 
             ClinicalVariantSearch cvs = cvConverter.toClinicalVariantSearch(clinicalVariant, isPrimaryFinding, interpretationId,
-                    isPrimaryInterpretation, clinicalAnalysisId, FqnUtils.getStudy(studyFqn), viewers);
+                    isPrimaryInterpretation, clinicalAnalysisId, FqnUtils.getStudy(studyFqn));
 
-            updateResponse = solrClient.addBean(getCollectionName(organizationId, projectId, CLINICAL_VARIANTS_COLLECTION_SUFFIX), cvs);
+            updateResponse = solrClient.addBean(collectionNameGenerator.getClinicalVariantCollectionName(collectionPrefix), cvs);
             if (updateResponse.getStatus() != 0) {
                 solrClient.rollback();
             }
@@ -1277,7 +1290,7 @@ public class CvdbSolrEngine {
             int evidenceIndex = 0;
             for (ClinicalVariantEvidence evidence : clinicalVariant.getEvidences()) {
                 index(evidence, evidenceIndex++, clinicalVariant.getId(), isPrimaryFinding, interpretationId, isPrimaryInterpretation,
-                        clinicalAnalysisId, organizationId, projectId, studyFqn, viewers, solrClient);
+                        clinicalAnalysisId, organizationId, projectId, studyFqn, collectionPrefix, solrClient);
             }
         } catch (SolrServerException | IOException e) {
             logger.warn("Indexing clinical variant", e);
@@ -1287,7 +1300,7 @@ public class CvdbSolrEngine {
 
     private void index(ClinicalVariantEvidence clinicalVariantEvidence, int evidenceIndex, String variantId, boolean isPrimaryFinding,
                        String interpretationId, boolean isPrimaryInterpretation, String clinicalAnalysisId, String organizationId,
-                       String projectId, String studyFqn, List<String> viewers, SolrClient solrClient)
+                       String projectId, String studyFqn, String collectionPrefix, SolrClient solrClient)
             throws CvdbException {
         try {
             UpdateResponse updateResponse;
@@ -1304,11 +1317,10 @@ public class CvdbSolrEngine {
             clinicalVariantEvidence.getAttributes().put(OPENCGA_PRIMARY_FINDING, isPrimaryFinding);
 
             ClinicalVariantEvidenceSearch cves = cveConverter.toClinicalVariantEvidenceSearch(clinicalVariantEvidence, evidenceIndex,
-                    variantId, isPrimaryFinding, interpretationId, isPrimaryInterpretation, clinicalAnalysisId, FqnUtils.getStudy(studyFqn),
-                    viewers);
+                    variantId, isPrimaryFinding, interpretationId, isPrimaryInterpretation, clinicalAnalysisId,
+                    FqnUtils.getStudy(studyFqn));
 
-            updateResponse = solrClient.addBean(getCollectionName(organizationId, projectId, CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX),
-                    cves);
+            updateResponse = solrClient.addBean(collectionNameGenerator.getClinicalVariantEvidenceCollectionName(collectionPrefix), cves);
             if (updateResponse.getStatus() != 0) {
                 solrClient.rollback();
             }
@@ -1323,9 +1335,7 @@ public class CvdbSolrEngine {
             solrClient.rollback();
             throw new CvdbException("Error when adding Solr documents (status = " + status + ")");
         } catch (SolrServerException | IOException e) {
-            e.printStackTrace();
             String msg = "Error when rollingback Solr after adding documents (status = " + status + ")";
-            logger.error(msg, e);
             throw new CvdbException(msg, e);
         }
     }
@@ -1335,45 +1345,91 @@ public class CvdbSolrEngine {
             solrClient.rollback();
             throw new CvdbException("Solr exception", exception);
         } catch (SolrServerException | IOException e) {
-            e.printStackTrace();
             String msg = "Error when rollingback after Solr exception (" + exception.getMessage() + ")";
-            logger.error(msg, e);
             throw new CvdbException(msg, e);
         }
     }
 
-    public boolean existCollections(String organizationId, String projectId) throws CvdbException {
+    public boolean existCollections(String collectionPrefix) throws CvdbException {
         try {
-            for (String suffix : COLLECTION_SUFFIXES) {
-                if (!solrManager.exists(getCollectionName(organizationId, projectId, suffix))) {
+            List<String> collectionNames = collectionNameGenerator.getCollectionNames(collectionPrefix);
+            for (String collectionName : collectionNames) {
+                if (!solrManager.exists(collectionName)) {
+                    logger.info("Collection '{}' does not exist", collectionName);
                     return false;
                 }
             }
             return true;
         } catch (SolrException e) {
-            e.printStackTrace();
-            String msg = "Checking if Solr CVDB collections exist for organization '" + organizationId + " and 'project '" + projectId
-                    + "'";
-            logger.error(msg, e);
+            String msg = "Checking if Solr CVDB collections exist (collection prefix = '" + collectionPrefix + "')";
             throw new CvdbException(msg, e);
         }
     }
 
-    public void createCollections(String organizationId, String projectId) throws CvdbException {
+    public List<String> getCollectionNames(String collectionPrefix) throws CvdbException {
         try {
-            for (int i = 0 ; i < COLLECTION_SUFFIXES.size() ; i++) {
-                String name = getCollectionName(organizationId, projectId, COLLECTION_SUFFIXES.get(i));
-                if (!solrManager.exists(name)) {
-                    logger.info("Creating collection name = {}, config set = {}", name, COLLECTION_CONFIGSETS.get(i));
-                    solrManager.create(name, COLLECTION_CONFIGSETS.get(i));
+            List<String> collectionNames = collectionNameGenerator.getCollectionNames(collectionPrefix);
+            for (String collectionName : collectionNames) {
+                if (!solrManager.exists(collectionName)) {
+                    String msg = "Error getting CVDB collection names: not all CVDB collections found for prefix '" + collectionPrefix
+                            + "'. Collection '" + collectionName + "' does not exist";
+                    throw new CvdbException(msg);
                 }
             }
+            return collectionNames;
         } catch (SolrException e) {
-            e.printStackTrace();
-            String msg = "Creating Solr CVDB collections for organization '" + organizationId + " and 'project '" + projectId + "'";
-            logger.error(msg, e);
+            String msg = "Getting Solr CVDB collection names (collection prefix = '" + collectionPrefix + "')";
             throw new CvdbException(msg, e);
         }
+    }
+
+    public void createCollections(String projectFqn, String collectionPrefix, String token) throws CvdbException {
+        // Sanity check
+        Project project;
+        ProjectManager projectManager = catalogManager.getProjectManager();
+        QueryOptions queryOptions = new QueryOptions().append(INCLUDE, ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES_CVDB.key());
+        try {
+            project = projectManager.get(projectFqn, queryOptions, token).first();
+        } catch (CatalogException e) {
+            String msg = "Error checking project '" + projectFqn + "' when creating CVDB collections.";
+            throw new CvdbException(msg, e);
+        }
+        if (project == null) {
+            String msg = "Project '" + projectFqn + "' not found when creating CVDB collections.";
+            logger.error(msg);
+            throw new CvdbException(msg);
+        }
+
+        // Create collections
+        logger.info("Creating CVDB collections for project '{}', collection prefix '{}'", projectFqn, collectionPrefix);
+        createCollections(collectionPrefix);
+
+        // If created successfully, set the CVDB datastore in the project
+        DataStore cvdbDatastore = new DataStore("solr", collectionPrefix, new ObjectMap());
+        logger.info("Setting CVDB datastore in project '{}': {}", projectFqn, cvdbDatastore);
+        try {
+            projectManager.setDatastoreCvdb(project.getFqn(), cvdbDatastore, token);
+        } catch (CatalogException e) {
+            throw new CvdbException("Error setting CVDB datastore after creating CVDB collections", e);
+        }
+    }
+
+    private List<String> createCollections(String collectionPrefix) throws CvdbException {
+        List<String> collectionNames = new ArrayList<>();
+        try {
+            for (String collectionSuffix : collectionNameGenerator.getCollectionSuffixes()) {
+                String collectionName = collectionNameGenerator.getCollectionName(collectionPrefix, collectionSuffix);
+                if (!solrManager.exists(collectionName)) {
+                    String configSet = COLLECTION_CONFIGSETS_MAP.get(collectionSuffix);
+                    logger.info("Creating collection name = {}, config set = {}", collectionName, configSet);
+                    solrManager.create(collectionName, configSet);
+                }
+                collectionNames.add(collectionName);
+            }
+        } catch (SolrException e) {
+            throw new CvdbException("Creating Solr CVDB collections; collection prefix = '" + collectionPrefix + "'", e);
+        }
+        return collectionNames;
     }
 
     private boolean clinicalAnalysisExists(String clinicalAnalysisId, String collectionName, SolrClient solrClient)
@@ -1393,6 +1449,52 @@ public class CvdbSolrEngine {
         } catch (CatalogException e) {
             throw new CvdbException("Error updating clinical anslysis CVBD index status", e);
         }
+    }
+
+    //----------------------------------------------------------------------
+
+    public List<String> getCvdbProjects(List<String> organizationIds, String token) throws CvdbException, CatalogException {
+        List<String> projectFqns = new ArrayList<>();
+
+        Query query = new Query();
+        QueryOptions queryOptions = new QueryOptions(INCLUDE, Arrays.asList(ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES_CVDB.key(),
+                ProjectDBAdaptor.QueryParams.ID.key(), ProjectDBAdaptor.QueryParams.FQN.key()));
+        for (String organizationId : organizationIds) {
+            OpenCGAResult<Project> projectResults = catalogManager.getProjectManager().search(organizationId, query, queryOptions, token);
+            if (CollectionUtils.isNotEmpty(projectResults.getResults())) {
+                for (Project project : projectResults.getResults()) {
+                    String dbPrefix = getCvdbPrefix(organizationId, project);
+                    if (existCollections(dbPrefix)) {
+                        projectFqns.add(project.getFqn());
+                    }
+                }
+            }
+        }
+
+        return  projectFqns;
+    }
+
+    public DataStore getCvdbDatastore(String projectFqn, String token) throws CatalogException, CvdbException {
+        QueryOptions queryOptions = new QueryOptions(INCLUDE, Arrays.asList(ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES_CVDB.key(),
+                ProjectDBAdaptor.QueryParams.ID.key(), ProjectDBAdaptor.QueryParams.FQN.key()));
+        Project project = catalogManager.getProjectManager().get(projectFqn, queryOptions, token).first();
+        String dbPrefix = getCvdbPrefix(FqnUtils.getOrganization(projectFqn), project);
+
+        return new DataStore("solr", dbPrefix, new ObjectMap("collections", getCollectionNames(dbPrefix)));
+    }
+
+    private String getCvdbPrefix(String organizationId, Project project) {
+        String dbPrefix;
+        if (project.getInternal() != null && project.getInternal().getDatastores() != null
+                && project.getInternal().getDatastores().getCvdb() != null
+                && StringUtils.isNotEmpty(project.getInternal().getDatastores().getCvdb().getDbName())) {
+            dbPrefix = project.getInternal().getDatastores().getCvdb().getDbName();
+        } else {
+            dbPrefix = VariantStorageManager.buildDatabaseName(catalogManager.getConfiguration().getDatabasePrefix(), "cvdb",
+                    organizationId, project.getId());
+        }
+        logger.info("Checking CVDB database prefix '{}' for project '{}'", dbPrefix, project.getFqn());
+        return dbPrefix;
     }
 
     //----------------------------------------------------------------------
@@ -1542,6 +1644,26 @@ public class CvdbSolrEngine {
     }
 
     //----------------------------------------------------------------------
+
+    public void close() {
+        logger.debug("Closing CVDB engine (i.e., Solr client connection used by the solrManager = {})", solrManager);
+        if (solrManager != null) {
+            try {
+                solrManager.close();
+                logger.debug("CVDB engine closed successfully (i.e., the Solr client used by SolrManager)");
+            } catch (IOException e) {
+                logger.error("Error closing Solr manager", e);
+            }
+        }
+        if (catalogManager != null) {
+            catalogManager = null;
+        }
+        if (variantStorageMetadataManager != null) {
+            variantStorageMetadataManager = null;
+        }
+    }
+
+    //----------------------------------------------------------------------
     // G E T T E R S     A N D      S E T T E R S
     //----------------------------------------------------------------------
 
@@ -1560,6 +1682,15 @@ public class CvdbSolrEngine {
 
     public CvdbSolrEngine setSolrManager(SolrManager solrManager) {
         this.solrManager = solrManager;
+        return this;
+    }
+
+    public CollectionNameGenerator getCollectionNameGenerator() {
+        return collectionNameGenerator;
+    }
+
+    public CvdbSolrEngine setCollectionNameGenerator(CollectionNameGenerator collectionNameGenerator) {
+        this.collectionNameGenerator = collectionNameGenerator;
         return this;
     }
 

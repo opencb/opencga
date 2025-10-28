@@ -233,7 +233,7 @@ public class UserClient extends ParentClient {
     }
 
     /**
-     * Reset password.
+     * [DEPRECATED].
      * @param user User ID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.

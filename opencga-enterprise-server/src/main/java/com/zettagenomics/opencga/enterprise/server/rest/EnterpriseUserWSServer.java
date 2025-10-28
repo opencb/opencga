@@ -2,6 +2,7 @@ package com.zettagenomics.opencga.enterprise.server.rest;
 
 import com.zettagenomics.opencga.enterprise.catalog.managers.EnterpriseFactory;
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
+import com.zettagenomics.opencga.enterprise.server.commons.EnterpriseParamConstants;
 import org.apache.commons.lang3.StringUtils;
 import org.jasig.cas.client.authentication.AttributePrincipal;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -36,7 +37,7 @@ public class EnterpriseUserWSServer extends UserWSServer {
     @GET
     @Path("/sso/login")
     @ApiOperation(httpMethod = "GET", value = "Single Sign On.", response = AuthenticationResponse.class)
-    public Response singleSignOn(@ApiParam(value = "Callback URL") @QueryParam("url") String service) {
+    public Response singleSignOn(@ApiParam(value = EnterpriseParamConstants.USERS_CALLBACK_URL_DESCRIPTION) @QueryParam("url") String service) {
         if (StringUtils.isEmpty(service)) {
             return createErrorResponse(new CatalogParameterException("Missing mandatory field 'service'"));
         }
@@ -68,8 +69,8 @@ public class EnterpriseUserWSServer extends UserWSServer {
     @Path("/sso/logout")
     @ApiOperation(httpMethod = "GET", value = "Logout from Single Sign On.", response = AuthenticationResponse.class)
     public Response singleSignOnLogout(
-            @ApiParam(value = "Callback URL") @QueryParam("url") String service,
-            @ApiParam(value = "Successfully logout from CAS service", hidden = true, defaultValue = "false") @QueryParam("logout") boolean logout
+            @ApiParam(value = EnterpriseParamConstants.USERS_CALLBACK_URL_DESCRIPTION) @QueryParam("url") String service,
+            @ApiParam(value = EnterpriseParamConstants.USERS_LOGOUT_DESCRIPTION, hidden = true, defaultValue = "false") @QueryParam("logout") boolean logout
     ) {
         EnterpriseConfiguration enterpriseConfiguration = EnterpriseFactory.getEnterpriseConfiguration();
         if (enterpriseConfiguration.getSso() == null || !enterpriseConfiguration.getSso().isActive()) {
