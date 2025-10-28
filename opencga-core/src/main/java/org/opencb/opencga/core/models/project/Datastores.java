@@ -23,6 +23,7 @@ import java.util.Objects;
 public class Datastores {
 
     private DataStore variant;
+    private DataStore cvdb;
 //    private DataStore alignment;
 //    private DataStore expression;
 
@@ -37,6 +38,8 @@ public class Datastores {
         switch (bioformat) {
             case VARIANT:
                 return variant;
+            case CVDB:
+                return cvdb;
             default:
                 return null;
         }
@@ -63,6 +66,7 @@ public class Datastores {
     public String toString() {
         final StringBuilder sb = new StringBuilder("DataStores{");
         sb.append("variant=").append(variant);
+        sb.append(", cvdb=").append(cvdb);
         sb.append('}');
         return sb.toString();
     }
@@ -76,4 +80,12 @@ public class Datastores {
         return this;
     }
 
+    public DataStore getCvdb() {
+        return cvdb;
+    }
+
+    public Datastores setCvdb(DataStore cvdb) {
+        this.cvdb = cvdb;
+        return this;
+    }
 }
