@@ -18,7 +18,7 @@ function install(){
     if [[ "$REPO" == "opencga-hadoop-thirdparty" ]]; then
       ./dev/build.sh "$HADOOP"
     else
-      mvn clean install -DskipTests
+      mvn clean install -DskipTests --no-transfer-progress
     fi
   else
     echo "$CURRENT Branch is NOT EQUALS $BRANCH_NAME "

@@ -91,6 +91,10 @@ jobs:
         with:
           mongodb-version: 6.0
           mongodb-replica-set: rs-test
+      - name: Prepare hadoop profile
+        run: |
+          chmod +x ./.github/workflows/scripts/prepare_hadoop.sh
+          ./.github/workflows/scripts/prepare_hadoop.sh --hadoop-flavour ${{ inputs.hadoop }}
       - name: Maven build (skip tests)
         run: mvn -B clean install -DskipTests -P ${{ inputs.hadoop }} -Dcheckstyle.skip ${{ inputs.mvn_opts }}
       - name: Build Junit log file name
@@ -102,10 +106,6 @@ jobs:
           fi
           TAGS=$(echo ${{ inputs.test_profile }} | sed -e 's/run\([^,]*\)Tests/\1/g'  | tr ',' '_' | tr '[:upper:]' '[:lower:]' )
           echo "TESTS_LOG_FILE_NAME=junit_${{ inputs.hadoop }}_${TAGS}_${MODULE}.log.gz" >> $GITHUB_OUTPUT
-      - name: Prepare hadoop profile
-        run: |
-          chmod +x ./.github/workflows/scripts/prepare_hadoop.sh
-          ./.github/workflows/scripts/prepare_hadoop.sh --hadoop-flavour ${{ inputs.hadoop }}
       - name: Run Junit tests
         run: mvn -B verify surefire-report:report --fail-never -Dsurefire.testFailureIgnore=true -f ${{ (inputs.module == '' || inputs.module == 'all') && '.' || inputs.module }} -P ${{ inputs.hadoop }},${{ inputs.test_profile }} -Dcheckstyle.skip ${{ inputs.mvn_opts }}  |& tee >(gzip > ${{ steps.BuildJunitLogFileName.outputs.TESTS_LOG_FILE_NAME }} ) |& grep -a -P '^\[[^\]]*(INFO|WARNING|ERROR)' --colour=never --line-buffered
       - name: Upload Junit test logs
