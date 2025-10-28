@@ -181,7 +181,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
 
                 loadFromAvro(inputUri, outdir, helper, progressLogger);
             }
-            logger.info("File \"{}\" loaded in {}", Paths.get(inputUri).getFileName(), TimeUtils.durationToString(stopWatch));
+            logger.info("File \"{}\" loaded in {}", Paths.get(inputUri.getPath()).getFileName(), TimeUtils.durationToString(stopWatch));
 
             // Mark file as DONE
             getMetadataManager().setStatus(getStudyId(), taskId, Status.DONE);

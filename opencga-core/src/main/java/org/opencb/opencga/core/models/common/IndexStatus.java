@@ -1,5 +1,7 @@
 package org.opencb.opencga.core.models.common;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -41,6 +43,21 @@ public class IndexStatus extends InternalStatus {
     @Override
     public String getName() {
         return super.getName();
+    }
+
+    @JsonIgnore
+    public boolean isReady() {
+        return getId().equals(READY);
+    }
+
+    @JsonIgnore
+    public boolean isIndexing() {
+        return getId().equals(INDEXING);
+    }
+
+    @JsonIgnore
+    public boolean isNone() {
+        return getId().equals(NONE);
     }
 
     public static IndexStatus init() {

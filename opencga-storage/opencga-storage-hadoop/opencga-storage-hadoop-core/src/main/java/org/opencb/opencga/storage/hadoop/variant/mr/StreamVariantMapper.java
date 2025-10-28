@@ -153,7 +153,7 @@ public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
                     // or if the chromosome changes
                     if (processedBytes > maxInputBytesPerProcess) {
                         LOG.info("Processed bytes = " + processedBytes + " > " + maxInputBytesPerProcess + ". Restarting process.");
-                        restartProcess(context, "bytes_limit", false);
+                        restartProcess(context, "bytes_limit", true);
                     } else if (!VariantLocusKey.naturalConsecutiveChromosomes(currentChromosome, currentValue.getChromosome())) {
                         LOG.info("Chromosome changed from " + currentChromosome + " to " + currentValue.getChromosome()
                                 + ". Restarting process.");
@@ -443,7 +443,8 @@ public class StreamVariantMapper extends VariantMapper<VariantLocusKey, Text> {
         variantDataWriter = writerFactory.newDataWriter(format, stdin, new Query(query), new QueryOptions(options));
 
 
-        if (format.inPlain() == VariantWriterFactory.VariantOutputFormat.JSON) {
+        if (format.inPlain() == VariantWriterFactory.VariantOutputFormat.JSON
+                || format.inPlain() == VariantWriterFactory.VariantOutputFormat.JSON_SPARSE) {
             if (metadata == null) {
                 VariantMetadataFactory metadataFactory = new VariantMetadataFactory(metadataManager);
                 metadata = metadataFactory.makeVariantMetadata(query, options);
