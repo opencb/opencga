@@ -51,10 +51,18 @@ jobs:
       artifact: build-folder
     secrets: inherit
 
+  # Add the deploy-maven and deploy-python jobs they depend on the build-hdi job
+  deploy-maven:
+    uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
+    needs: build-hdi
+    with:
+      maven_opts: -P hdi5.1 -Dopencga.war.name=opencga
+    secrets: inherit
+
   # Add the release job that depends on all the previous jobs
   release:
     uses: opencb/java-common-libs/.github/workflows/release-github-workflow.yml@develop
-    needs: [ build-hdi, deploy-docker-hdi,  deploy-python, deploy-docker-python-notebook]
+    needs: [ build-hdi, deploy-docker-hdi, deploy-maven, deploy-python, deploy-docker-python-notebook]
     with:
       artifact: build-folder
       file: |
