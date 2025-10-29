@@ -78,11 +78,22 @@ function install(){
   TEMP_DIR="$(mktemp -d --tmpdir="$TMP_DIR_HOME" --suffix="$(date +%Y%m%d%H%M%S)-$REPO")"
   cd "$TEMP_DIR" || return 2
   echo "Cloning repository $REPO with ref $GIT_REF"
-  git clone "git@github.com:opencb/${REPO}.git" -b "$GIT_REF"
+
+  # Build HTTPS clone URL using optional token for private access
+  local CLONE_URL
+  if [[ -n "${OPENCGA_READ_TOKEN:-}" ]]; then
+    CLONE_URL="https://x-access-token:${OPENCGA_READ_TOKEN}@github.com/opencb/${REPO}.git"
+  else
+    CLONE_URL="https://github.com/opencb/${REPO}.git"
+  fi
+
+  # Shallow clone at the requested ref
+  git clone --depth 1 -b "$GIT_REF" "$CLONE_URL"
   cd "$REPO" || return 2
   ./dev/build.sh "$HADOOP"
   cd - || return 2
 }
+
 
 
 main "$@"
