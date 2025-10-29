@@ -7,14 +7,12 @@ import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
-import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.opencga.core.response.RestResponse;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.io.VcfDataWriter;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 
 import java.io.PrintStream;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -39,66 +37,47 @@ public class VcfOutputWriter extends AbstractOutputWriter {
         if (checkErrors(queryResponse)) {
             return;
         }
-        print(new VariantQueryResult<Variant>(queryResponse.first()), null);
+        print(new VariantQueryResult<Variant>(queryResponse.first()));
     }
 
     public void print(VariantQueryResult<Variant> variantQueryResult) {
-        print(variantQueryResult, null);
-    }
-
-    public void print(Iterator<VariantProto.Variant> variantIterator) {
-        print(null, variantIterator);
-    }
-
-    private void print(VariantQueryResult<Variant> variantQueryResult, Iterator<VariantProto.Variant> variantIterator) {
-        if (variantQueryResult != null) {
-            if (metadata.getStudies().isEmpty()) {
-                // If excluding studies, we need to create a dummy study.
-                metadata.getStudies().add(VariantStudyMetadata
-                        .newBuilder()
-                        .setId("any")
-                        .setSampleSetType(SampleSetType.UNKNOWN)
-                        .setAggregatedHeader(VariantFileHeader
-                                .newBuilder()
-                                .setVersion("")
-                                .build())
-                        .build());
-            }
-            String study = metadata.getStudies().get(0).getId();
-            VcfDataWriter<Variant> writer = VcfDataWriter.newWriterForAvro(metadata, annotations, outputStream);
-            if (variantQueryResult.getSamples() != null) {
-                writer.setSamples(variantQueryResult.getSamples().get(study));
-            }
-            writer.open();
-            writer.pre();
-            for (Variant variant : variantQueryResult.getResults()) {
-                // FIXME: The server may be returning the StudyEntry with a different name
-                String shortStudy = study.substring(study.lastIndexOf(':') + 1, study.length());
-                if (variant.getStudy(study) == null && variant.getStudy(shortStudy) != null) {
-                    variant.addStudyEntry(variant.getStudy(shortStudy).setStudyId(study));
-                }
-
-                // FIXME: This should not be needed! VariantAvroToVariantContextConverter must be fixed
-                if (variant.getStudy(study) == null) {
-                    StudyEntry studyEntry = new StudyEntry(study);
-                    studyEntry.getFiles().add(new FileEntry("", null, Collections.emptyMap()));
-                    variant.addStudyEntry(studyEntry);
-                }
-                writer.write(variant);
-            }
-            writer.post();
-            writer.close();
-        } else {
-            VcfDataWriter<VariantProto.Variant> writer = VcfDataWriter.newWriterForProto(metadata, annotations, outputStream);
-            writer.open();
-            writer.pre();
-            while (variantIterator.hasNext()) {
-                VariantProto.Variant next = variantIterator.next();
-                writer.write(next);
-            }
-            writer.post();
-            writer.close();
+        if (metadata.getStudies().isEmpty()) {
+            // If excluding studies, we need to create a dummy study.
+            metadata.getStudies().add(VariantStudyMetadata
+                    .newBuilder()
+                    .setId("any")
+                    .setSampleSetType(SampleSetType.UNKNOWN)
+                    .setAggregatedHeader(VariantFileHeader
+                            .newBuilder()
+                            .setVersion("")
+                            .build())
+                    .build());
         }
+        String study = metadata.getStudies().get(0).getId();
+        VcfDataWriter<Variant> writer = VcfDataWriter.newWriterForAvro(metadata, annotations, outputStream);
+        if (variantQueryResult.getSamples() != null) {
+            writer.setSamples(variantQueryResult.getSamples().get(study));
+        }
+        writer.open();
+        writer.pre();
+        for (Variant variant : variantQueryResult.getResults()) {
+            // FIXME: The server may be returning the StudyEntry with a different name
+            String shortStudy = study.substring(study.lastIndexOf(':') + 1, study.length());
+            if (variant.getStudy(study) == null && variant.getStudy(shortStudy) != null) {
+                variant.addStudyEntry(variant.getStudy(shortStudy).setStudyId(study));
+            }
+
+            // FIXME: This should not be needed! VariantAvroToVariantContextConverter must be fixed
+            if (variant.getStudy(study) == null) {
+                StudyEntry studyEntry = new StudyEntry(study);
+                studyEntry.getFiles().add(new FileEntry("", null, Collections.emptyMap()));
+                variant.addStudyEntry(studyEntry);
+            }
+            writer.write(variant);
+        }
+        writer.post();
+        writer.close();
+
         outputStream.close();
 
     }

@@ -170,20 +170,20 @@ public final class ClientConfiguration {
         return null;
     }
 
-    public void setDefaultIndexByName(String name) throws ClientException {
+    public void setDefaultIndexByName(String hostname) throws ClientException {
         if (CollectionUtils.isEmpty(rest.getHosts()) || rest.getDefaultHostIndex() < 0
                 || rest.getDefaultHostIndex() > rest.getHosts().size()) {
-            throw new ClientException("Hosts not found");
+            throw new ClientException("Host name not found");
         }
-        boolean finded = false;
+        boolean found = false;
         for (int i = 0; i < rest.getHosts().size(); i++) {
-            if (rest.getHosts().get(i).getName().equalsIgnoreCase(name)) {
+            if (rest.getHosts().get(i).getName().equalsIgnoreCase(hostname)) {
                 rest.setDefaultHostIndex(i);
-                finded = true;
+                found = true;
             }
         }
-        if (!finded) {
-            throw new ClientException("Invalid name. Host not found");
+        if (!found) {
+            throw new ClientException("Invalid host name. Host not found");
         }
     }
 
