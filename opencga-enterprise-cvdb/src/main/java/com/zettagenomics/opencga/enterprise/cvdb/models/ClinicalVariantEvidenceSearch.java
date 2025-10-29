@@ -30,9 +30,6 @@ public class ClinicalVariantEvidenceSearch {
     @Field("studyId")
     private String studyId;
 
-    @Field("viewers")
-    private List<String> viewers;
-
     // "Primary" and "foreign" keys
 
     @Field("id")
@@ -129,7 +126,6 @@ public class ClinicalVariantEvidenceSearch {
     private String json;
 
     public ClinicalVariantEvidenceSearch() {
-        viewers = new ArrayList<>();
         phenotypeNames = new ArrayList<>();
         soTermNames = new ArrayList<>();
         xrefIds = new ArrayList<>();
@@ -145,7 +141,6 @@ public class ClinicalVariantEvidenceSearch {
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClinicalVariantEvidenceSearch{");
         sb.append("studyId='").append(studyId).append('\'');
-        sb.append(", viewers=").append(viewers);
         sb.append(", id='").append(id).append('\'');
         sb.append(", caId='").append(caId).append('\'');
         sb.append(", ciId='").append(ciId).append('\'');
@@ -186,15 +181,6 @@ public class ClinicalVariantEvidenceSearch {
 
     public ClinicalVariantEvidenceSearch setStudyId(String studyId) {
         this.studyId = studyId;
-        return this;
-    }
-
-    public List<String> getViewers() {
-        return viewers;
-    }
-
-    public ClinicalVariantEvidenceSearch setViewers(List<String> viewers) {
-        this.viewers = viewers;
         return this;
     }
 

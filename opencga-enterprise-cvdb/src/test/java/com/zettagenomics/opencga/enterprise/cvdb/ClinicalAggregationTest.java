@@ -35,6 +35,7 @@ import static org.opencb.commons.datastore.solr.FacetQueryParser.FACET_SEPARATOR
 public class ClinicalAggregationTest {
 
     protected static CvdbSolrEngine cvdbEngine;
+    protected static CollectionNameGenerator collectionNameGenerator;
     protected static String organizationId = "test";
     protected static String projectId = "project1";
     protected static Study study;
@@ -52,9 +53,6 @@ public class ClinicalAggregationTest {
 
     @BeforeClass
     public static void before() throws Throwable {
-        cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, organizationId, projectId);
-        cvdbSolrExternalResource.before();
-
         catalogManagerResource = new OpenCGAEnterpriseCatalogManagerExternalResource();
         catalogManagerResource.before();
 
@@ -64,12 +62,18 @@ public class ClinicalAggregationTest {
         setUpCatalogManager(catalogManager);
 
         // CVDB
+        collectionNameGenerator = new CollectionNameGenerator(catalogManager);
+        String collectionPrefix = collectionNameGenerator.getCollectionPrefix(organizationId, projectId, userToken);
+        cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, organizationId, projectId, collectionPrefix);
+        cvdbSolrExternalResource.before();
+
         cvdbEngine = cvdbSolrExternalResource.configure();
         cvdbEngine.setCatalogManager(catalogManager);
+        cvdbEngine.setCollectionNameGenerator(collectionNameGenerator);
         cvdbEngine.setVariantStorageMetadataManager(new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory()));
 
-        if (!cvdbEngine.existCollections(organizationId, projectId)) {
-            cvdbEngine.createCollections(organizationId, projectId);
+        if (!cvdbEngine.existCollections(collectionPrefix)) {
+            cvdbEngine.createCollections(projectId, collectionPrefix, userToken);
         }
 
         // Load and index
@@ -77,7 +81,7 @@ public class ClinicalAggregationTest {
                 catalogManager);
 
         // CVDB index from catalog
-        CvdbIndexResult indexResult = cvdbEngine.indexProject(projectId, catalogManager, true, userToken);
+        CvdbIndexResult indexResult = cvdbEngine.indexProject(projectId, true, userToken);
         System.out.println(indexResult.getFailures());
         assertEquals(2, indexResult.getNumIndexed());
         assertEquals(0, indexResult.getFailures().size());

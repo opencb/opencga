@@ -20,7 +20,7 @@ on:
 jobs:
   deploy-docker-hub:
     name: Push Docker image
-    runs-on: ubuntu-22.04
+    runs-on: ${{ vars.UBUNTU_VERSION }}
     steps:
       - uses: actions/checkout@v4
         with:

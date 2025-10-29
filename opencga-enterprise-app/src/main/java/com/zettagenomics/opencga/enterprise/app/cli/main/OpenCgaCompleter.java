@@ -24,7 +24,7 @@ import static java.util.stream.Collectors.toList;
 
 public abstract class OpenCgaCompleter implements Completer {
 
-    protected List<Candidate> commands = asList("login","logout","help","use","variant","projects","panels","clinical","jobs","admin","individuals","families","tools","users","samples","alignments","meta","organizations","studies","files","federations","operations","cohorts")
+    protected List<Candidate> commands = asList("login","logout","help","use","variant","projects","panels","clinical","jobs","admin","individuals","families","tools","users","samples","cvdb","alignments","meta","organizations","studies","files","federations","operations","cohorts")
             .stream()
             .map(Candidate::new)
             .collect(toList());
@@ -84,6 +84,11 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
+    private List<Candidate> cvdbList = asList( "acl-update","analysis-aggregate","analysis-query","evidence-aggregate","evidence-query","index-run","interpretation-aggregate","interpretation-query","variant-aggregate","variant-query","variant-stats")
+            .stream()
+            .map(Candidate::new)
+            .collect(toList());
+
     private List<Candidate> alignmentsList = asList( "bwa-run","coverage-index-run","coverage-qc-genecoveragestats-run","coverage-query","coverage-ratio","coverage-stats","deeptools-run","fastqc-run","index-run","picard-run","qc-run","query","samtools-run")
             .stream()
             .map(Candidate::new)
@@ -94,12 +99,12 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> organizationsList = asList( "create","notes-create","notes-search","notes-delete","notes-update","update-status-user","user-update","configuration-update","info","update")
+    private List<Candidate> organizationsList = asList( "create","notes-create","notes-search","notes-delete","notes-update","user-password-reset","update-status-user","user-update","configuration-update","info","update")
             .stream()
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> studiesList = asList( "acl-update","create","search","acl","info","audit-search","groups","groups-update","groups-users-update","notes-create","notes-search","notes-delete","notes-update","permissionrules","permission-rules-update","templates-run","templates-upload","templates-delete","update","variablesets","variable-sets-update","variable-sets-variables-update")
+    private List<Candidate> studiesList = asList( "acl-update","create","search","acl","info","audit-search","groups","groups-sync","groups-update","groups-users-update","notes-create","notes-search","notes-delete","notes-update","permissionrules","permission-rules-update","templates-run","templates-upload","templates-delete","update","users-sync","variablesets","variable-sets-update","variable-sets-variables-update")
             .stream()
             .map(Candidate::new)
             .collect(toList());
@@ -114,7 +119,7 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> operationsList = asList( "cellbase-configure","variant-aggregate","variant-annotation-delete","variant-annotation-index","variant-annotation-save","variant-configure","variant-delete","variant-family-aggregate","variant-family-index","variant-index","variant-index-launcher","variant-julie-run","variant-metadata-repair","variant-metadata-synchronize","variant-prune","variant-sample-delete","variant-sample-index","variant-sample-index-configure","variant-score-delete","variant-score-index","variant-secondary-annotation-index","variant-secondary-sample-index","configure-variant-secondary-sample-index","variant-secondary-index","variant-secondary-index-delete","variant-setup","variant-stats-delete","variant-stats-index","variant-study-delete")
+    private List<Candidate> operationsList = asList( "cellbase-configure","variant-aggregate","variant-annotation-delete","variant-annotation-extension-configure","variant-annotation-index","variant-annotation-save","variant-configure","variant-delete","variant-family-aggregate","variant-family-index","variant-index","variant-index-launcher","variant-julie-run","variant-metadata-repair","variant-metadata-synchronize","variant-prune","variant-sample-delete","variant-sample-index","variant-sample-index-configure","variant-score-delete","variant-score-index","variant-secondary-annotation-index","variant-secondary-sample-index","configure-variant-secondary-sample-index","variant-secondary-index","variant-secondary-index-delete","variant-setup","variant-stats-delete","variant-stats-index","variant-study-delete")
             .stream()
             .map(Candidate::new)
             .collect(toList());
@@ -143,6 +148,7 @@ public abstract class OpenCgaCompleter implements Completer {
         mapCandidates.put( "tools", toolsList);
         mapCandidates.put( "users", usersList);
         mapCandidates.put( "samples", samplesList);
+        mapCandidates.put( "cvdb", cvdbList);
         mapCandidates.put( "alignments", alignmentsList);
         mapCandidates.put( "meta", metaList);
         mapCandidates.put( "organizations", organizationsList);

@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class EnterpriseUserManager extends EnterpriseAbstractManager {
 
@@ -153,16 +154,20 @@ public class EnterpriseUserManager extends EnterpriseAbstractManager {
             return Collections.emptyList();
         }
         Object o = principal.getAttributes().get(groupsKey);
+        List<String> groupList;
         if (o instanceof List) {
-            return (List<String>) o;
+            groupList = (List<String>) o;
         } else if (o instanceof String) {
             logger.debug("Groups value is instance of String: {}.", o);
-            return Arrays.asList(((String) o).split(","));
+            groupList = Arrays.asList(((String) o).split(","));
         } else {
             logger.warn("Cannot fetch groups from SSO user '{}'. Groups value is instance of '{}'.",
                     principal.getName(), o.getClass());
-            return Collections.emptyList();
+            groupList = Collections.emptyList();
         }
+
+        // Remove empty spaces in all the strings of the list
+        return groupList.stream().map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toList());
     }
 
     private String getDefaultValue(Map<String, Object> attributes, String key, String defaultValue) {
