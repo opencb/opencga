@@ -239,13 +239,14 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         JCommander userToolsSubCommands = jCommander.getCommands().get("tools");
         userToolsSubCommands.addCommand("acl-update", userToolsCommandOptions.updateAclCommandOptions);
         userToolsSubCommands.addCommand("aggregationstats", userToolsCommandOptions.aggregationStatsCommandOptions);
-        userToolsSubCommands.addCommand("custom-build", userToolsCommandOptions.buildCustomCommandOptions);
+        userToolsSubCommands.addCommand("custom-builder-run", userToolsCommandOptions.runCustomBuilderCommandOptions);
         userToolsSubCommands.addCommand("custom-create", userToolsCommandOptions.createCustomCommandOptions);
         userToolsSubCommands.addCommand("custom-docker-run", userToolsCommandOptions.runCustomDockerCommandOptions);
         userToolsSubCommands.addCommand("custom-run", userToolsCommandOptions.runCustomCommandOptions);
         userToolsSubCommands.addCommand("custom-update", userToolsCommandOptions.updateCustomCommandOptions);
         userToolsSubCommands.addCommand("distinct", userToolsCommandOptions.distinctCommandOptions);
         userToolsSubCommands.addCommand("search", userToolsCommandOptions.searchCommandOptions);
+        userToolsSubCommands.addCommand("walker-create", userToolsCommandOptions.createWalkerCommandOptions);
         userToolsSubCommands.addCommand("workflow-create", userToolsCommandOptions.createWorkflowCommandOptions);
         userToolsSubCommands.addCommand("workflow-import", userToolsCommandOptions.importWorkflowCommandOptions);
         userToolsSubCommands.addCommand("workflow-run", userToolsCommandOptions.runWorkflowCommandOptions);

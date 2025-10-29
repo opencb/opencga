@@ -92,8 +92,8 @@ export default class UserTool extends OpenCGAParentClass {
     *     validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
-    buildCustom(data, params) {
-        return this._post("tools", null, "custom", null, "build", data, params);
+    runCustomBuilder(data, params) {
+        return this._post("tools", null, "custom/builder", null, "run", data, params);
     }
 
     /** Register a new user tool of type CUSTOM_TOOL
@@ -230,6 +230,20 @@ export default class UserTool extends OpenCGAParentClass {
     */
     search(params) {
         return this._get("tools", null, null, null, "search", params);
+    }
+
+    /** Register a new user tool of type VARIANT_WALKER
+    * @param {Object} data - JSON containing workflow information.
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.include] - Fields included in the response, whole JSON path must be provided.
+    * @param {String} [params.exclude] - Fields excluded in the response, whole JSON path must be provided.
+    * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
+    * @param {Boolean} [params.includeResult = "false"] - Flag indicating to include the created or updated document result in the response.
+    *     The default value is false.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    createWalker(data, params) {
+        return this._post("tools", null, "walker", null, "create", data, params);
     }
 
     /** Register a new user tool of type WORKFLOW

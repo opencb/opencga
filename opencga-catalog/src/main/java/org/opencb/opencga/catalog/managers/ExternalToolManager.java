@@ -177,6 +177,17 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
 
     public OpenCGAResult<ExternalTool> createCustomTool(String studyStr, CustomToolCreateParams toolCreateParams, QueryOptions options,
                                                         String token) throws CatalogException {
+        return createGenericTool(studyStr, toolCreateParams, ExternalToolType.CUSTOM_TOOL, options, token);
+    }
+
+    public OpenCGAResult<ExternalTool> createVariantWalkerTool(String studyStr, CustomToolCreateParams toolCreateParams,
+                                                               QueryOptions options, String token) throws CatalogException {
+        return createGenericTool(studyStr, toolCreateParams, ExternalToolType.VARIANT_WALKER, options, token);
+    }
+
+    private OpenCGAResult<ExternalTool> createGenericTool(String studyStr, CustomToolCreateParams toolCreateParams,
+                                                          ExternalToolType toolType, QueryOptions options, String token)
+            throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
@@ -185,6 +196,7 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("customTool", toolCreateParams)
+                .append("toolType", toolType)
                 .append("options", options)
                 .append("token", token);
 
@@ -201,14 +213,14 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
             authorizationManager.checkStudyPermission(organizationId, study.getUid(), tokenPayload,
                     StudyPermissions.Permissions.WRITE_WORKFLOWS);
 
-            // Convert WorkflowCreateParams to ExternalTool
+            // Convert CustomToolCreateParams to ExternalTool
             ExternalTool externalTool = new ExternalTool(toolCreateParams.getId(), toolCreateParams.getName(),
-                    toolCreateParams.getDescription(), ExternalToolType.WORKFLOW, toolCreateParams.getScope(), null,
+                    toolCreateParams.getDescription(), toolType, toolCreateParams.getScope(), null,
                     toolCreateParams.getDocker(), toolCreateParams.getTags(), toolCreateParams.getVariables(),
                     toolCreateParams.getMinimumRequirements(), toolCreateParams.isDraft(), toolCreateParams.getInternal(),
                     toolCreateParams.getCreationDate(), toolCreateParams.getModificationDate(), toolCreateParams.getAttributes());
 
-            // 2. Validate the workflow parameters
+            // 2. Validate the custom tool parameters
             validateNewCustomTool(externalTool, userId);
 
             // 3. We insert the workflow
@@ -548,7 +560,7 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
 
     private void validateDocker(Docker docker) throws CatalogParameterException {
         if (docker == null) {
-            return;
+            throw new CatalogParameterException("Docker information is missing.");
         }
         ParamUtils.checkParameter(docker.getName(), DOCKER.key() + ".name");
         ParamUtils.checkParameter(docker.getTag(), DOCKER.key() + ".tag");
@@ -957,12 +969,15 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
 
     private void validateNewExternalTool(ExternalTool externalTool, String userId) throws CatalogParameterException {
         ParamUtils.checkIdentifier(externalTool.getId(), ID.key());
+        if (externalTool.getWorkflow() == null && externalTool.getDocker() == null) {
+            throw new CatalogParameterException("Missing expected workflow or docker object");
+        }
+        if (externalTool.getWorkflow() != null && externalTool.getDocker() != null) {
+            throw new CatalogParameterException("Both workflow and docker objects found. Please, choose one.");
+        }
         externalTool.setScope(ParamUtils.defaultObject(externalTool.getScope(), ExternalToolScope.OTHER));
         externalTool.setTags(externalTool.getTags() != null
                 ? externalTool.getTags()
-                : Collections.emptyList());
-        externalTool.getWorkflow().setScripts(externalTool.getWorkflow().getScripts() != null
-                ? externalTool.getWorkflow().getScripts()
                 : Collections.emptyList());
 
         externalTool.setName(ParamUtils.defaultString(externalTool.getName(), externalTool.getId()));
@@ -974,10 +989,6 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
         externalTool.setAttributes(ParamUtils.defaultObject(externalTool.getAttributes(), Collections.emptyMap()));
         externalTool.setInternal(new ExternalToolInternal(new InternalStatus(InternalStatus.READY), TimeUtils.getTime(),
                 TimeUtils.getTime(), userId));
-
-        if (externalTool.getWorkflow() == null && externalTool.getDocker() == null) {
-            throw new CatalogParameterException("Missing expected workflow or docker object");
-        }
     }
 
     // **************************   ACLs  ******************************** //

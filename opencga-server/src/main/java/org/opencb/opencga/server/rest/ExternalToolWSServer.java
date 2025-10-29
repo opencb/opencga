@@ -202,7 +202,7 @@ public class ExternalToolWSServer extends OpenCGAWSServer {
     // ********************************** CUSTOM TOOL WS ENDPOINTS **********************************
 
     @POST
-    @Path("/custom/build")
+    @Path("/custom/builder/run")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = CustomToolExecutor.DESCRIPTION, response = Job.class)
     public Response dockerBuildByPost(
@@ -365,6 +365,23 @@ public class ExternalToolWSServer extends OpenCGAWSServer {
 
     // ********************************** VARIANT WALKER WS ENDPOINTS **********************************
 
+    // ********************************** CUSTOM TOOL WS ENDPOINTS **********************************
+
+    @POST
+    @Path("/walker/create")
+    @ApiOperation(value = "Register a new user tool of type VARIANT_WALKER", response = ExternalTool.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query")
+    })
+    public Response createVariantWalkerTool(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
+            @ApiParam(value = "JSON containing workflow information", required = true) CustomToolCreateParams toolCreateParams) {
+        return run(() -> externalToolManager.createVariantWalkerTool(studyStr, toolCreateParams, queryOptions, token));
+    }
 ///tools/walker/{build ?? | create | update}
 ///tools/walker/run x2?
 

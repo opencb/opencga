@@ -35,13 +35,14 @@ public class UserToolsCommandOptions {
 
         public UpdateAclCommandOptions updateAclCommandOptions;
         public AggregationStatsCommandOptions aggregationStatsCommandOptions;
-        public BuildCustomCommandOptions buildCustomCommandOptions;
+        public RunCustomBuilderCommandOptions runCustomBuilderCommandOptions;
         public CreateCustomCommandOptions createCustomCommandOptions;
         public RunCustomDockerCommandOptions runCustomDockerCommandOptions;
         public RunCustomCommandOptions runCustomCommandOptions;
         public UpdateCustomCommandOptions updateCustomCommandOptions;
         public DistinctCommandOptions distinctCommandOptions;
         public SearchCommandOptions searchCommandOptions;
+        public CreateWalkerCommandOptions createWalkerCommandOptions;
         public CreateWorkflowCommandOptions createWorkflowCommandOptions;
         public ImportWorkflowCommandOptions importWorkflowCommandOptions;
         public RunWorkflowCommandOptions runWorkflowCommandOptions;
@@ -57,13 +58,14 @@ public class UserToolsCommandOptions {
         this.commonCommandOptions = commonCommandOptions;
         this.updateAclCommandOptions = new UpdateAclCommandOptions();
         this.aggregationStatsCommandOptions = new AggregationStatsCommandOptions();
-        this.buildCustomCommandOptions = new BuildCustomCommandOptions();
+        this.runCustomBuilderCommandOptions = new RunCustomBuilderCommandOptions();
         this.createCustomCommandOptions = new CreateCustomCommandOptions();
         this.runCustomDockerCommandOptions = new RunCustomDockerCommandOptions();
         this.runCustomCommandOptions = new RunCustomCommandOptions();
         this.updateCustomCommandOptions = new UpdateCustomCommandOptions();
         this.distinctCommandOptions = new DistinctCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
+        this.createWalkerCommandOptions = new CreateWalkerCommandOptions();
         this.createWorkflowCommandOptions = new CreateWorkflowCommandOptions();
         this.importWorkflowCommandOptions = new ImportWorkflowCommandOptions();
         this.runWorkflowCommandOptions = new RunWorkflowCommandOptions();
@@ -165,8 +167,8 @@ public class UserToolsCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"custom-build"}, commandDescription ="Execute an analysis from a custom binary.")
-    public class BuildCustomCommandOptions {
+    @Parameters(commandNames = {"custom-builder-run"}, commandDescription ="Execute an analysis from a custom binary.")
+    public class RunCustomBuilderCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
@@ -626,6 +628,92 @@ public class UserToolsCommandOptions {
     
         @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, help = true, arity = 0)
         public boolean deleted = false; 
+    
+    }
+
+    @Parameters(commandNames = {"walker-create"}, commandDescription ="Register a new user tool of type VARIANT_WALKER")
+    public class CreateWalkerCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String include; 
+    
+        @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String exclude; 
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
+        public boolean includeResult = false; 
+    
+        @Parameter(names = {"--id"}, description = "External tool ID.", required = false, arity = 1)
+        public String id;
+    
+        @Parameter(names = {"--name", "-n"}, description = "Unique 32-character identifier assigned automatically by OpenCGA.", required = false, arity = 1)
+        public String name;
+    
+        @Parameter(names = {"--description"}, description = "Users may provide a description for the entry.", required = false, arity = 1)
+        public String description;
+    
+        @Parameter(names = {"--scope"}, description = "External tool scope. Valid values: SECONDARY_ANALYSIS, RESEARCH_ANALYSIS, CLINICAL_INTERPRETATION_ANALYSIS or OTHER.", required = false, arity = 1)
+        public String scope;
+    
+        @Parameter(names = {"--docker-name"}, description = "Docker name.", required = false, arity = 1)
+        public String dockerName;
+    
+        @Parameter(names = {"--docker-tag"}, description = "Docker tag.", required = false, arity = 1)
+        public String dockerTag;
+    
+        @Parameter(names = {"--docker-command-line"}, description = "Docker CLI.", required = false, arity = 1)
+        public String dockerCommandLine;
+    
+        @Parameter(names = {"--docker-user"}, description = "User that can access the private Docker repository.", required = false, arity = 1)
+        public String dockerUser;
+    
+        @Parameter(names = {"--docker-password"}, description = "Password corresponding to the user that can access the Docker repository.", required = false, arity = 1)
+        public String dockerPassword;
+    
+        @Parameter(names = {"--tags"}, description = "List of tags.", required = false, arity = 1)
+        public String tags;
+    
+        @Parameter(names = {"--minimum-requirements-cpu"}, description = "Minimum number of cpu cores required to execute the process.", required = false, arity = 1)
+        public String minimumRequirementsCpu;
+    
+        @Parameter(names = {"--minimum-requirements-memory"}, description = "Minimum memory required to execute the process.", required = false, arity = 1)
+        public String minimumRequirementsMemory;
+    
+        @Parameter(names = {"--minimum-requirements-disk"}, description = "Minimum disk required to execute the process.", required = false, arity = 1)
+        public String minimumRequirementsDisk;
+    
+        @Parameter(names = {"--draft"}, description = "Flag indicating whether the external tool is a draft or not.", required = false, help = true, arity = 0)
+        public boolean draft = false;
+    
+        @Parameter(names = {"--internal-registration-date"}, description = "Registration date of the internal object.", required = false, arity = 1)
+        public String internalRegistrationDate;
+    
+        @Parameter(names = {"--internal-last-modified"}, description = "Date of the last modification of the internal object.", required = false, arity = 1)
+        public String internalLastModified;
+    
+        @Parameter(names = {"--internal-registration-user-id"}, description = "The body web service registrationUserId parameter", required = false, arity = 1)
+        public String internalRegistrationUserId;
+    
+        @Parameter(names = {"--creation-date", "--cd"}, description = "Autogenerated date following the format YYYYMMDDhhmmss containing the date when the entry was first registered.", required = false, arity = 1)
+        public String creationDate;
+    
+        @Parameter(names = {"--modification-date", "--md"}, description = "Autogenerated date following the format YYYYMMDDhhmmss containing the date when the entry was last modified.", required = false, arity = 1)
+        public String modificationDate;
+    
+        @DynamicParameter(names = {"--attributes"}, description = "You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.. Use: --attributes key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 

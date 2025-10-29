@@ -78,8 +78,8 @@ public class UserToolsCommandExecutor extends OpencgaCommandExecutor {
             case "aggregationstats":
                 queryResponse = aggregationStats();
                 break;
-            case "custom-build":
-                queryResponse = buildCustom();
+            case "custom-builder-run":
+                queryResponse = runCustomBuilder();
                 break;
             case "custom-create":
                 queryResponse = createCustom();
@@ -98,6 +98,9 @@ public class UserToolsCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "search":
                 queryResponse = search();
+                break;
+            case "walker-create":
+                queryResponse = createWalker();
                 break;
             case "workflow-create":
                 queryResponse = createWorkflow();
@@ -193,10 +196,10 @@ public class UserToolsCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getUserToolClient().aggregationStats(queryParams);
     }
 
-    private RestResponse<Job> buildCustom() throws Exception {
-        logger.debug("Executing buildCustom in User Tools command line");
+    private RestResponse<Job> runCustomBuilder() throws Exception {
+        logger.debug("Executing runCustomBuilder in User Tools command line");
 
-        UserToolsCommandOptions.BuildCustomCommandOptions commandOptions = userToolsCommandOptions.buildCustomCommandOptions;
+        UserToolsCommandOptions.RunCustomBuilderCommandOptions commandOptions = userToolsCommandOptions.runCustomBuilderCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -216,7 +219,7 @@ public class UserToolsCommandExecutor extends OpencgaCommandExecutor {
         if (commandOptions.jsonDataModel) {
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/tools/custom/build"));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/tools/custom/builder/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
             jobToolBuildParams = JacksonUtils.getDefaultObjectMapper()
@@ -236,7 +239,7 @@ public class UserToolsCommandExecutor extends OpencgaCommandExecutor {
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
                     .readValue(beanParams.toJson(), JobToolBuildParams.class);
         }
-        return openCGAClient.getUserToolClient().buildCustom(jobToolBuildParams, queryParams);
+        return openCGAClient.getUserToolClient().runCustomBuilder(jobToolBuildParams, queryParams);
     }
 
     private RestResponse<ExternalTool> createCustom() throws Exception {
@@ -490,6 +493,60 @@ public class UserToolsCommandExecutor extends OpencgaCommandExecutor {
         }
 
         return openCGAClient.getUserToolClient().search(queryParams);
+    }
+
+    private RestResponse<ExternalTool> createWalker() throws Exception {
+        logger.debug("Executing createWalker in User Tools command line");
+
+        UserToolsCommandOptions.CreateWalkerCommandOptions commandOptions = userToolsCommandOptions.createWalkerCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("include", commandOptions.include);
+        queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        CustomToolCreateParams customToolCreateParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<ExternalTool> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/tools/walker/create"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            customToolCreateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), CustomToolCreateParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
+            putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "description", commandOptions.description, true);
+            putNestedIfNotNull(beanParams, "scope", commandOptions.scope, true);
+            putNestedIfNotEmpty(beanParams, "docker.name", commandOptions.dockerName, true);
+            putNestedIfNotEmpty(beanParams, "docker.tag", commandOptions.dockerTag, true);
+            putNestedIfNotEmpty(beanParams, "docker.commandLine", commandOptions.dockerCommandLine, true);
+            putNestedIfNotEmpty(beanParams, "docker.user", commandOptions.dockerUser, true);
+            putNestedIfNotEmpty(beanParams, "docker.password", commandOptions.dockerPassword, true);
+            putNestedIfNotNull(beanParams, "tags", commandOptions.tags, true);
+            putNestedIfNotEmpty(beanParams, "minimumRequirements.cpu", commandOptions.minimumRequirementsCpu, true);
+            putNestedIfNotEmpty(beanParams, "minimumRequirements.memory", commandOptions.minimumRequirementsMemory, true);
+            putNestedIfNotEmpty(beanParams, "minimumRequirements.disk", commandOptions.minimumRequirementsDisk, true);
+            putNestedIfNotNull(beanParams, "draft", commandOptions.draft, true);
+            putNestedIfNotEmpty(beanParams, "internal.registrationDate", commandOptions.internalRegistrationDate, true);
+            putNestedIfNotEmpty(beanParams, "internal.lastModified", commandOptions.internalLastModified, true);
+            putNestedIfNotEmpty(beanParams, "internal.registrationUserId", commandOptions.internalRegistrationUserId, true);
+            putNestedIfNotEmpty(beanParams, "creationDate", commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate", commandOptions.modificationDate, true);
+            putNestedMapIfNotEmpty(beanParams, "attributes", commandOptions.attributes, true);
+
+            customToolCreateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), CustomToolCreateParams.class);
+        }
+        return openCGAClient.getUserToolClient().createWalker(customToolCreateParams, queryParams);
     }
 
     private RestResponse<ExternalTool> createWorkflow() throws Exception {
