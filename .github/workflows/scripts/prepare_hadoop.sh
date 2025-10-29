@@ -81,8 +81,8 @@ function install(){
 
   # Build HTTPS clone URL using optional token for private access
   local CLONE_URL
-  if [[ -n "${OPENCGA_READ_TOKEN:-}" ]]; then
-    CLONE_URL="https://x-access-token:${OPENCGA_READ_TOKEN}@github.com/opencb/${REPO}.git"
+  if [[ -n "${THIRDPARTY_READ_TOKEN:-}" ]]; then
+    CLONE_URL="https://x-access-token:${THIRDPARTY_READ_TOKEN}@github.com/opencb/${REPO}.git"
   else
     CLONE_URL="https://github.com/opencb/${REPO}.git"
   fi
