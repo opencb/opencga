@@ -85,10 +85,10 @@ class UserTool(_ParentRestClient):
 
         return self._get(category='tools', resource='aggregationStats', **options)
 
-    def build_custom(self, data=None, **options):
+    def run_custom_builder(self, data=None, **options):
         """
         Execute an analysis from a custom binary.
-        PATH: /{apiVersion}/tools/custom/build
+        PATH: /{apiVersion}/tools/custom/builder/run
 
         :param dict data: body. (REQUIRED)
         :param str study: Study [[organization@]project:]study where study and
@@ -108,7 +108,7 @@ class UserTool(_ParentRestClient):
             execution, but the job will not actually run.
         """
 
-        return self._post(category='tools', resource='build', subcategory='custom', data=data, **options)
+        return self._post(category='tools', resource='run', subcategory='custom/builder', data=data, **options)
 
     def create_custom(self, data=None, **options):
         """
@@ -306,6 +306,24 @@ class UserTool(_ParentRestClient):
         """
 
         return self._get(category='tools', resource='search', **options)
+
+    def create_walker(self, data=None, **options):
+        """
+        Register a new user tool of type VARIANT_WALKER.
+        PATH: /{apiVersion}/tools/walker/create
+
+        :param dict data: JSON containing workflow information. (REQUIRED)
+        :param str include: Fields included in the response, whole JSON path
+            must be provided.
+        :param str exclude: Fields excluded in the response, whole JSON path
+            must be provided.
+        :param str study: Study [[organization@]project:]study where study and
+            project can be either the ID or UUID.
+        :param bool include_result: Flag indicating to include the created or
+            updated document result in the response.
+        """
+
+        return self._post(category='tools', resource='create', subcategory='walker', data=data, **options)
 
     def create_workflow(self, data=None, **options):
         """

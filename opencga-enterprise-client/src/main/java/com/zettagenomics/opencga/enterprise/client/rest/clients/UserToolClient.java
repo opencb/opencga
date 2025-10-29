@@ -126,10 +126,10 @@ public class UserToolClient extends ParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Job> buildCustom(JobToolBuildParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Job> runCustomBuilder(JobToolBuildParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
-        return execute("tools", null, "custom", null, "build", params, POST, Job.class);
+        return execute("tools", null, "custom/builder", null, "run", params, POST, Job.class);
     }
 
     /**
@@ -284,6 +284,23 @@ public class UserToolClient extends ParentClient {
     public RestResponse<ExternalTool> search(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         return execute("tools", null, null, null, "search", params, GET, ExternalTool.class);
+    }
+
+    /**
+     * Register a new user tool of type VARIANT_WALKER.
+     * @param data JSON containing workflow information.
+     * @param params Map containing any of the following optional parameters.
+     *       include: Fields included in the response, whole JSON path must be provided.
+     *       exclude: Fields excluded in the response, whole JSON path must be provided.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
+     *       includeResult: Flag indicating to include the created or updated document result in the response.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<ExternalTool> createWalker(CustomToolCreateParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("tools", null, "walker", null, "create", params, POST, ExternalTool.class);
     }
 
     /**

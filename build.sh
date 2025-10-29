@@ -680,7 +680,7 @@ function print_log() {
 # Initialize the global variable LOG_SUMMARY
 LOG_SUMMARY=""
 OPENCGA_HOME_DIR="$PWD/opencga-home/"
-STORAGE_HADOOP_DEPS="hdp3.1"
+STORAGE_HADOOP_DEPS="hdi5.1"
 TEST_TAG="runShortTests"
 FAIL_NEVER=""
 DOCKER_TAG=""
