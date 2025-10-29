@@ -1002,11 +1002,44 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         removeSamples(studyId, samples, fileIds, false);
     }
 
-    public void removeSamples(int studyId, Collection<Integer> sampleId) throws StorageEngineException {
-        removeSamples(studyId, sampleId, Collections.emptyList(), true);
+    public void removeSamples(int studyId, Collection<Integer> sampleIds) throws StorageEngineException {
+        removeSamples(studyId, sampleIds, Collections.emptyList(), true);
     }
 
-    public void removeSamples(int studyId, Collection<Integer> sampleIds, Collection<Integer> removedFileIds, boolean removeFromAllFiles)
+    public void removeSamples(int studyId, Collection<Integer> sampleIds, Collection<Integer> otherRemovedFileIds)
+            throws StorageEngineException {
+        removeSamples(studyId, sampleIds, otherRemovedFileIds, true);
+    }
+
+
+    /**
+     * Remove samples from the study metadata and clean up related references.
+     *
+     * This method performs the following steps:
+     * For each sample:
+     * - If {@code removeFromAllFiles} is true, removes the sample from all its files.
+     * - If false, only removes from files that are not indexed; if any file is still indexed, the sample is only partially removed.
+     * - Updates the sample status if fully removed.
+     * - Collects cohort IDs associated with the sample for further cleanup.
+     * <p>
+     * After processing samples:
+     * - Removes the sample references from each affected file metadata (those in {@code fileIdsToCleanSamples}).
+     * - Removes samples from cohorts via {@link #removeSamplesFromCohorts(int, Collection, Collection, Collection)}.
+     * <p>
+     * Notes:
+     * - {@code otherRemovedFileIds} are file ids that are being removed by other operations and should be ignored
+     *   when deciding whether a sample is totally removed.
+     * - If {@code removeFromAllFiles} is true, the sample will be removed from all files (regardless of indexing).
+     * - Order of file lists in sample metadata must be preserved; do not mutate sample.getFiles() directly here.
+     *
+     * @param studyId                 Study identifier.
+     * @param sampleIds               Collection of sample IDs to remove.
+     * @param otherRemovedFileIds     Files that are concurrently being removed and should be ignored when computing removal.
+     * @param removeFromAllFiles      If true, remove samples from all files; otherwise, only from non-indexed files.
+     * @throws StorageEngineException if there is any metadata update error.
+     */
+    private void removeSamples(int studyId, Collection<Integer> sampleIds, Collection<Integer> otherRemovedFileIds,
+                              boolean removeFromAllFiles)
             throws StorageEngineException {
         Set<Integer> fileIdsToCleanSamples = new HashSet<>();
         Set<Integer> cohortIds = new HashSet<>();
@@ -1016,7 +1049,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 boolean totalRemove = true;
 
                 for (Integer fileId : sample.getFiles()) {
-                    if (!removedFileIds.contains(fileId)) {
+                    if (!otherRemovedFileIds.contains(fileId)) {
                         if (removeFromAllFiles) {
                             fileIdsToCleanSamples.add(fileId);
                         } else {
@@ -1052,7 +1085,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             });
         }
 
-        removeSamplesFromCohorts(studyId, cohortIds, removedFileIds, removedSampleIds);
+        removeSamplesFromCohorts(studyId, cohortIds, otherRemovedFileIds, removedSampleIds);
     }
 
     public void removeIndexedSamples(int studyId, Collection<Integer> sampleIds) throws StorageEngineException {

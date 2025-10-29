@@ -1161,7 +1161,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 }
 
                 // Remove samples
-                metadataManager.removeSamples(studyMetadata.getId(), samplesPartial, fileIds, true);
+                metadataManager.removeSamples(studyMetadata.getId(), samplesPartial, fileIds);
 
                 // Restore default cohort with indexed samples
                 metadataManager.setSamplesToCohort(studyMetadata.getId(), StudyEntry.DEFAULT_COHORT,
