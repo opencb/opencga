@@ -19,13 +19,19 @@ package org.opencb.opencga.catalog.managers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
+import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.common.Status;
+import org.opencb.biodata.tools.clinical.DiseasePanelParsers;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
@@ -43,10 +49,7 @@ import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.panel.Panel;
-import org.opencb.opencga.core.models.panel.PanelInternal;
-import org.opencb.opencga.core.models.panel.PanelPermissions;
-import org.opencb.opencga.core.models.panel.PanelUpdateParams;
+import org.opencb.opencga.core.models.panel.*;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyPermissions;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -60,6 +63,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -69,7 +73,7 @@ public class PanelManager extends ResourceManager<Panel> {
 
     public static final QueryOptions INCLUDE_PANEL_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             PanelDBAdaptor.QueryParams.ID.key(), PanelDBAdaptor.QueryParams.UID.key(), PanelDBAdaptor.QueryParams.UUID.key(),
-            PanelDBAdaptor.QueryParams.VERSION.key(), PanelDBAdaptor.QueryParams.STUDY_UID.key()));
+            PanelDBAdaptor.QueryParams.VERSION.key(), PanelDBAdaptor.QueryParams.STUDY_UID.key(), PanelDBAdaptor.QueryParams.SOURCE.key()));
     protected static Logger logger = LoggerFactory.getLogger(PanelManager.class);
     private UserManager userManager;
     private StudyManager studyManager;
@@ -193,6 +197,7 @@ public class PanelManager extends ResourceManager<Panel> {
         }
     }
 
+    @Deprecated
     public OpenCGAResult<Panel> importFromSource(String studyId, String source, String panelIds, String token) throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, tokenPayload);
@@ -313,6 +318,143 @@ public class PanelManager extends ResourceManager<Panel> {
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                             exception.getError()), new ObjectMap());
             throw exception;
+        }
+    }
+
+    public OpenCGAResult<Panel> importFromSource(String studyId, PanelImportParams params, String token) throws CatalogException {
+        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
+        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, tokenPayload);
+        String organizationId = studyFqn.getOrganizationId();
+        String userId = tokenPayload.getUserId(organizationId);
+        Study study = catalogManager.getStudyManager().resolveId(studyId, userId, organizationId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyId)
+                .append("params", params)
+                .append("token", token);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
+
+        try {
+            // 1. We check everything can be done
+            authorizationManager.checkStudyPermission(organizationId, study.getUid(), userId, StudyPermissions.Permissions.WRITE_PANELS);
+            ParamUtils.checkObj(params, "import params");
+            ParamUtils.checkObj(params.getSource(), "source");
+
+            List<Panel> panelList;
+            if (params.getSource() == PanelImportParams.Source.PANEL_APP) {
+                 panelList = downloadPanelAppPanels(params.getPanelIds());
+            } else if (params.getSource() == PanelImportParams.Source.CANCER_GENE_CENSUS) {
+                throw new CatalogException("Import from Cancer Gene Census not yet implemented.");
+            } else {
+                throw new CatalogException("Unknown panel source '" + params.getSource() + "'.");
+            }
+
+            List<Panel> importedPanels = new LinkedList<>();
+            List<Panel> outdatedPanels = new LinkedList<>();
+            int upToDatePanels = 0;
+            for (Panel panel : panelList) {
+                Query query = new Query()
+                        .append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                        .append(PanelDBAdaptor.QueryParams.SOURCE.key(), panel.getSource().getId());
+                OpenCGAResult<Panel> panelOpenCGAResult = getPanelDBAdaptor(organizationId).get(query, INCLUDE_PANEL_IDS);
+                if (panelOpenCGAResult.getNumResults() > 0) {
+                    Panel existingPanel = panelOpenCGAResult.first();
+                    if (!existingPanel.getSource().getVersion().equals(panel.getSource().getVersion())) {
+                        // Provide panel uid to be able to update it
+                        panel.setUid(existingPanel.getUid());
+                        // The panel is outdated
+                        outdatedPanels.add(panel);
+                    } else {
+                        // The panel is up to date
+                        upToDatePanels++;
+                    }
+                } else {
+                    // New panel
+                    autoCompletePanel(organizationId, study, panel);
+                    importedPanels.add(panel);
+                }
+            }
+
+            OpenCGAResult<Panel> result = OpenCGAResult.empty(Panel.class);
+            if (!importedPanels.isEmpty()) {
+                logger.info("Importing {} new panels in the database", importedPanels.size());
+                result.append(getPanelDBAdaptor(organizationId).insert(study.getUid(), importedPanels));
+            }
+            if (!outdatedPanels.isEmpty()) {
+                for (Panel outdatedPanel : outdatedPanels) {
+                    PanelUpdateParams updateParams = new PanelUpdateParams(outdatedPanel);
+                    // We set id to null to avoid trying to change it
+                    updateParams.setId(null);
+                    ObjectMap updateMap;
+                    try {
+                        updateMap = updateParams.getUpdateMap();
+                    } catch (JsonProcessingException e) {
+                        throw new CatalogException("Could not parse PanelUpdateParams object: " + e.getMessage(), e);
+                    }
+                    logger.info("Updating panel '{}' to version '{}'", outdatedPanel.getId(), outdatedPanel.getSource().getVersion());
+                    result.append(getPanelDBAdaptor(organizationId).update(outdatedPanel.getUid(), updateMap, QueryOptions.empty()));
+                }
+            }
+            result.setNumMatches(result.getNumMatches() + upToDatePanels);
+
+            auditManager.initAuditBatch(operationId);
+            // Audit creation
+            for (Panel importedPanel : importedPanels) {
+                auditManager.audit(organizationId, operationId, userId, Enums.Action.IMPORT, Enums.Resource.DISEASE_PANEL,
+                        importedPanel.getId(), importedPanel.getUuid(), study.getId(), study.getUuid(), auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
+            }
+            for (Panel outdatedPanel : outdatedPanels) {
+                auditManager.audit(organizationId, operationId, userId, Enums.Action.IMPORT, Enums.Resource.DISEASE_PANEL,
+                        outdatedPanel.getId(), outdatedPanel.getUuid(), study.getId(), study.getUuid(), auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
+            }
+            auditManager.finishAuditBatch(organizationId, operationId);
+
+            return result;
+        } catch (CatalogException e) {
+            auditManager.audit(organizationId, operationId, userId, Enums.Action.IMPORT, Enums.Resource.DISEASE_PANEL, "", "",
+                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()),
+                    new ObjectMap());
+            throw e;
+        }
+    }
+
+    List<Panel> downloadPanelAppPanels(List<String> panelAppIds) throws CatalogException {
+        try {
+            if (CollectionUtils.isEmpty(panelAppIds)) {
+                throw new CatalogParameterException("Missing list of PanelApp panel ids to download.");
+            }
+            if (panelAppIds.size() > 25) {
+                throw new CatalogParameterException("Maximum number of PanelApp panel ids to download is 25. "
+                        + "Please, split your request in smaller requests.");
+            }
+
+            List<Panel> parsedPanels = new ArrayList<>(panelAppIds.size());
+
+            StopWatch totalWatch = StopWatch.createStarted();
+            StopWatch stopWatch = StopWatch.createStarted();
+
+            for (String panelAppId : panelAppIds) {
+                URL url = new URL("https://panelapp.genomicsengland.co.uk/api/v1/panels/" + panelAppId + "?format=json");
+                try (InputStream in = url.openStream()) {
+                    logger.info("Downloaded panel '{}' in {} ms", panelAppId, stopWatch.getTime(TimeUnit.MILLISECONDS));
+                    stopWatch.reset();
+                    stopWatch.start();
+                    Map<String, Object> panel = JacksonUtils.getDefaultObjectMapper().readValue(in, Map.class);
+                    DiseasePanel diseasePanel = DiseasePanelParsers.parsePanelApp(panel);
+                    parsedPanels.add(new Panel(diseasePanel));
+                }
+            }
+
+            logger.info("Total time downloading {} panels: {} ms", panelAppIds.size(), totalWatch.getTime(TimeUnit.MILLISECONDS));
+            return parsedPanels;
+        } catch (IOException e) {
+            logger.error("IO error downloading PanelApp panels: {}", e.getMessage(), e);
+            throw new CatalogException("Error downloading panels from PanelApp: " + e.getMessage(), e);
+        } catch (Exception e) {
+            logger.error("Unexpected error downloading PanelApp panels: {}", e.getMessage(), e);
+            throw new CatalogException("Unexpected error downloading panels from PanelApp: " + e.getMessage(), e);
         }
     }
 
@@ -559,6 +701,13 @@ public class PanelManager extends ResourceManager<Panel> {
 
         // Check update permissions
         authorizationManager.checkPanelPermission(organizationId, study.getUid(), panel.getUid(), userId, PanelPermissions.WRITE);
+
+        if (panel.getSource() != null && panel.getSource().getProject() != null
+                && ("PanelApp".equals(panel.getSource().getProject()) || "Cancer Gene Census".equals(panel.getSource().getProject()))) {
+            // Cannot update panels that have been imported
+            throw new CatalogException("Cannot update imported panel '" + panel.getId() + "'. Please call to import again so it gets"
+                    + " updated.");
+        }
 
         if (parameters.containsKey(PanelDBAdaptor.QueryParams.ID.key())) {
             ParamUtils.checkIdentifier(parameters.getString(PanelDBAdaptor.QueryParams.ID.key()),

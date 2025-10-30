@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -36,6 +37,7 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.panel.Panel;
+import org.opencb.opencga.core.models.panel.PanelImportParams;
 import org.opencb.opencga.core.models.panel.PanelUpdateParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
@@ -43,6 +45,7 @@ import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
@@ -78,6 +81,143 @@ public class PanelManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void importFromSourceWithParamsTest() throws CatalogException {
+        PanelImportParams params = new PanelImportParams()
+                .setSource(PanelImportParams.Source.PANEL_APP)
+                .setPanelIds(Arrays.asList("VACTERL-like phenotypes", "Pneumothorax - familial", "Familial Neural Tube Defects",
+                        "Structural eye disease", "1358"));
+
+        OpenCGAResult<Panel> result = panelManager.importFromSource(studyFqn, params, ownerToken);
+        assertEquals(5, result.getNumInserted());
+        assertEquals(0, result.getNumUpdated());
+        assertEquals(5, result.getNumMatches());
+        assertEquals(0, result.getNumResults());
+    }
+
+    @Test
+    public void importFromSourceWithParamsUpdateTest() throws CatalogException, JsonProcessingException {
+        // First import
+        PanelImportParams params = new PanelImportParams()
+                .setSource(PanelImportParams.Source.PANEL_APP)
+                .setPanelIds(Arrays.asList("VACTERL-like phenotypes", "Pneumothorax - familial"));
+
+        OpenCGAResult<Panel> result = panelManager.importFromSource(studyFqn, params, ownerToken);
+        assertEquals(2, result.getNumInserted());
+
+        // Get the imported panels
+        OpenCGAResult<Panel> panels = panelManager.search(studyFqn,
+                new Query(PanelDBAdaptor.QueryParams.SOURCE.key(), Arrays.asList("VACTERL-like phenotypes", "Pneumothorax - familial")),
+                QueryOptions.empty(), ownerToken);
+        assertEquals(2, panels.getNumResults());
+
+        // Update source version to simulate outdated panels
+        for (Panel panel : panels.getResults()) {
+            PanelUpdateParams updateParams = new PanelUpdateParams()
+                    .setSource(new DiseasePanel.SourcePanel()
+                            .setId(panel.getSource().getId())
+                            .setVersion("old_version"));
+            panelManager.getPanelDBAdaptor(organizationId).update(panel.getUid(), updateParams.getUpdateMap(), QueryOptions.empty());
+        }
+
+        // Import again - should update the panels
+        result = panelManager.importFromSource(studyFqn, params, ownerToken);
+        assertEquals(0, result.getNumInserted());
+        assertEquals(2, result.getNumUpdated());
+        assertEquals(2, result.getNumMatches());
+
+        // Verify panels have version 3 (we have previously manually updated them so they were in version 2)
+        panels = panelManager.search(studyFqn,
+                new Query(PanelDBAdaptor.QueryParams.SOURCE.key(), Arrays.asList("VACTERL-like phenotypes", "Pneumothorax - familial")),
+                QueryOptions.empty(), ownerToken);
+        for (Panel panel : panels.getResults()) {
+            assertEquals(3, panel.getVersion());
+        }
+    }
+
+    @Test
+    public void ensureImportedPanelsCannotBeUpdated() throws CatalogException, JsonProcessingException {
+        // First import - import 2 panels
+        PanelImportParams params1 = new PanelImportParams()
+                .setSource(PanelImportParams.Source.PANEL_APP)
+                .setPanelIds(Arrays.asList("VACTERL-like phenotypes", "Pneumothorax - familial"));
+
+        OpenCGAResult<Panel> result = panelManager.importFromSource(studyFqn, params1, ownerToken);
+        assertEquals(2, result.getNumInserted());
+
+        // Update only one panel to simulate outdated version
+        PanelUpdateParams updateParams = new PanelUpdateParams()
+                .setSource(new DiseasePanel.SourcePanel()
+                        .setVersion("old_version"));
+        Query query = new Query(PanelDBAdaptor.QueryParams.SOURCE.key(), "VACTERL-like phenotypes");
+        // Ensure update doesn't work in public API
+        CatalogException exception = assertThrows(CatalogException.class,
+                () -> panelManager.update(studyFqn, query, updateParams, QueryOptions.empty(), ownerToken));
+        assertTrue(exception.getMessage().contains("call to import"));
+    }
+
+    @Test
+    public void importFromSourceWithParamsMixedStateTest() throws CatalogException, JsonProcessingException {
+        // First import - import 2 panels
+        PanelImportParams params1 = new PanelImportParams()
+                .setSource(PanelImportParams.Source.PANEL_APP)
+                .setPanelIds(Arrays.asList("VACTERL-like phenotypes", "Pneumothorax - familial"));
+
+        OpenCGAResult<Panel> result = panelManager.importFromSource(studyFqn, params1, ownerToken);
+        assertEquals(2, result.getNumInserted());
+
+        // Update only one panel to simulate outdated version
+        PanelUpdateParams updateParams = new PanelUpdateParams()
+                .setSource(new DiseasePanel.SourcePanel()
+                        .setVersion("old_version"));
+        Query query = new Query(PanelDBAdaptor.QueryParams.SOURCE.key(), "VACTERL-like phenotypes");
+        panelManager.getPanelDBAdaptor(organizationId).update(query, updateParams.getUpdateMap(), QueryOptions.empty());
+
+        // Second import with mixed states:
+        // - "VACTERL-like phenotypes": needs update (outdated)
+        // - "Pneumothorax - familial": up to date
+        // - "Familial Neural Tube Defects": new panel
+        // - "Structural eye disease": new panel
+        PanelImportParams params2 = new PanelImportParams()
+                .setSource(PanelImportParams.Source.PANEL_APP)
+                .setPanelIds(Arrays.asList("VACTERL-like phenotypes", "Pneumothorax - familial",
+                        "Familial Neural Tube Defects", "Structural eye disease"));
+
+        result = panelManager.importFromSource(studyFqn, params2, ownerToken);
+        assertEquals(2, result.getNumInserted()); // 2 new panels
+        assertEquals(1, result.getNumUpdated()); // 1 outdated panel
+        assertEquals(4, result.getNumMatches()); // 1 up to date panel
+        assertEquals(0, result.getNumResults());
+
+        // Verify the updated panel has version 3
+        OpenCGAResult<Panel> panel = panelManager.search(studyFqn, query, QueryOptions.empty(), ownerToken);
+        assertEquals(3, panel.first().getVersion());
+
+        // Verify all panels exist
+        OpenCGAResult<Panel> allPanels = panelManager.search(studyFqn,
+                new Query(PanelDBAdaptor.QueryParams.SOURCE.key(),
+                        "VACTERL-like phenotypes,Pneumothorax - familial,Familial Neural Tube Defects,Structural eye disease"),
+                QueryOptions.empty(), ownerToken);
+        assertEquals(4, allPanels.getNumResults());
+    }
+
+    @Test
+    public void importFromSourceWithParamsInvalidPanelTest() throws CatalogException {
+        PanelImportParams params = new PanelImportParams()
+                .setSource(PanelImportParams.Source.PANEL_APP)
+                .setPanelIds(Collections.singletonList("NonExistentPanel"));
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("Error downloading panels from PanelApp");
+        panelManager.importFromSource(studyFqn, params, ownerToken);
+    }
+
+    @Test
+    public void downloadPanelsFromPanelAppTest() throws CatalogException {
+        List<Panel> panels = panelManager.downloadPanelAppPanels(Arrays.asList("VACTERL-like phenotypes", "Pneumothorax - familial", "Familial Neural Tube Defects", "Structural eye disease", "1358"));
+        assertEquals(5, panels.size());
+    }
+
+    @Test
     public void importFromSourceInvalidId() throws CatalogException {
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Unknown panel");
@@ -92,7 +232,7 @@ public class PanelManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    public void updateTest() throws CatalogException {
+    public void updateTest() throws CatalogException, JsonProcessingException {
         panelManager.importFromSource(studyFqn, "gene-census", null, ownerToken);
         Panel panel = panelManager.get(studyFqn, "gene-census", QueryOptions.empty(), ownerToken).first();
         assertEquals(1, panel.getVersion());
@@ -116,7 +256,7 @@ public class PanelManagerTest extends AbstractManagerTest {
                 .setVariants(Collections.singletonList(variantPanel))
                 .setGenes(Collections.singletonList(genePanel));
 
-        DataResult<Panel> updateResult = panelManager.update(studyFqn, "gene-census", updateParams, null, ownerToken);
+        OpenCGAResult<Panel> updateResult = panelManager.getPanelDBAdaptor(organizationId).update(panel.getUid(), updateParams.getUpdateMap(), QueryOptions.empty());
         assertEquals(1, updateResult.getNumUpdated());
 
         Panel updatedPanel = panelManager.get(studyFqn, "gene-census", QueryOptions.empty(), ownerToken).first();
@@ -161,7 +301,7 @@ public class PanelManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    public void deletePanelWithVersionsTest() throws CatalogException {
+    public void deletePanelWithVersionsTest() throws CatalogException, JsonProcessingException {
         panelManager.importFromSource(studyFqn, "gene-census", null, ownerToken);
         Panel panel = panelManager.get(studyFqn, "gene-census", QueryOptions.empty(), ownerToken).first();
         assertEquals(1, panel.getVersion());
@@ -169,7 +309,7 @@ public class PanelManagerTest extends AbstractManagerTest {
         PanelUpdateParams updateParams = new PanelUpdateParams()
                 .setSource(new DiseasePanel.SourcePanel().setAuthor("author"))
                 .setDisorders(Collections.singletonList(new OntologyTerm().setId("ontologyTerm")));
-        DataResult<Panel> updateResult = panelManager.update(studyFqn, "gene-census", updateParams, null, ownerToken);
+        DataResult<Panel> updateResult = panelManager.getPanelDBAdaptor(organizationId).update(panel.getUid(), updateParams.getUpdateMap(), QueryOptions.empty());
         assertEquals(1, updateResult.getNumUpdated());
 
         OpenCGAResult<?> result = panelManager.delete(studyFqn, Collections.singletonList("gene-census"), QueryOptions.empty(), ownerToken);
