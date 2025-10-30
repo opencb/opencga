@@ -275,7 +275,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
             }
             scans = Collections.singletonList(scan);
         }
-        VariantMapReduceUtil.configureMapReduceScans(scans, getConf());
+        VariantMapReduceUtil.configureMapReduceScans(scans, job);
 
         for (int i = 0; i < scans.size(); i++) {
             Scan s = scans.get(i);

@@ -39,7 +39,6 @@ public class FillMissingFromArchiveMapper extends AbstractHBaseVariantMapper<Byt
                 FILL_MISSING_GAP_GENOTYPE.defaultValue());
         task = new FillMissingFromArchiveTask(getStudyMetadata(), metadataManager,
                 context.getConfiguration(), overwrite, simplifiedNewMultiAllelicVariants, gapsGenotype);
-        task.setQuiet(true);
         task.pre();
     }
 
