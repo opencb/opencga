@@ -122,7 +122,7 @@ setMethod("adminClient", "OpencgaR", function(OpencgaR, user, endpointName, para
                 subcategoryId=NULL, action="search", params=params, httpMethod="GET", as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/admin/users/sync:
-        #' Synchronise a group of users from an authentication origin with a group in a study from catalog.
+        #' [DEPRECATED] Moved to /users/sync.
         #' @param organization Organization id.
         #' @param data JSON containing the parameters.
         syncUsers=fetchOpenCGA(object=OpencgaR, category="admin", categoryId=NULL, subcategory="users",

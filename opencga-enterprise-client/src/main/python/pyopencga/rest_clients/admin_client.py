@@ -155,8 +155,7 @@ class Admin(_ParentRestClient):
 
     def sync_users(self, data=None, **options):
         """
-        Synchronise a group of users from an authentication origin with a
-            group in a study from catalog.
+        [DEPRECATED] Moved to /users/sync.
         PATH: /{apiVersion}/admin/users/sync
 
         :param dict data: JSON containing the parameters. (REQUIRED)

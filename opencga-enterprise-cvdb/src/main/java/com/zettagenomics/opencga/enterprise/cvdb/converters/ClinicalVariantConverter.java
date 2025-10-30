@@ -33,16 +33,16 @@ public class ClinicalVariantConverter extends SearchConverter<ClinicalVariant, C
     }
 
     public ClinicalVariantSearch toClinicalVariantSearch(ClinicalVariant cv, boolean isPrimaryFinding, String interpretationId,
-                                                         boolean isPrimaryInterpretation, String clinicalAnalysisId, String studyId,
-                                                         List<String> viewers) throws CvdbException {
+                                                         boolean isPrimaryInterpretation, String clinicalAnalysisId, String studyId)
+            throws CvdbException {
         return toClinicalVariantSearch(Collections.singletonList(cv), isPrimaryFinding, interpretationId, isPrimaryInterpretation,
-                clinicalAnalysisId, studyId, viewers)
+                clinicalAnalysisId, studyId)
                 .get(0);
     }
 
     public List<ClinicalVariantSearch> toClinicalVariantSearch(List<ClinicalVariant> cvList, boolean isPrimaryFinding,
                                                                String interpretationId, boolean isPrimaryInterpretation,
-                                                               String clinicalAnalysisId, String studyId, List<String> viewers)
+                                                               String clinicalAnalysisId, String studyId)
             throws CvdbException {
         List<ClinicalVariantSearch> cvsList = new ArrayList<>();
 
@@ -56,8 +56,7 @@ public class ClinicalVariantConverter extends SearchConverter<ClinicalVariant, C
                     .setCiId(interpretationId)
                     .setPrimaryInterpretation(isPrimaryInterpretation)
                     .setCaId(clinicalAnalysisId)
-                    .setStudyId(studyId)
-                    .setViewers(viewers);
+                    .setStudyId(studyId);
 
             // Comments are stores: author -- message -- tag1:tag2:.. -- date
             if (CollectionUtils.isNotEmpty(cv.getComments())) {

@@ -18,6 +18,7 @@ package com.zettagenomics.opencga.enterprise.app.cli.admin;
 
 import com.beust.jcommander.ParameterException;
 import com.zettagenomics.opencga.enterprise.app.cli.admin.executors.EnterpriseServerCommandExecutor;
+import com.zettagenomics.opencga.enterprise.app.cli.admin.executors.EnterpriseStorageCommandExecutor;
 import com.zettagenomics.opencga.enterprise.core.GitUtils;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
@@ -114,7 +115,7 @@ public class AdminMain {
                             commandExecutor = new MigrationCommandExecutor(cliOptionsParser.getMigrationCommandOptions());
                             break;
                         case "storage":
-                            commandExecutor = new StorageCommandExecutor(cliOptionsParser.getStorageCommandOptions());
+                            commandExecutor = new EnterpriseStorageCommandExecutor(cliOptionsParser.getStorageCommandOptions());
                             break;
                         default:
                             System.out.printf("ERROR: not valid command passed: '%s'", parsedCommand);
