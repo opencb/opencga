@@ -101,7 +101,8 @@ public abstract class VariantStatisticsManager {
     }
 
     public void postCalculateStats(
-            VariantStorageMetadataManager metadataManager, StudyMetadata studyMetadata, Collection<String> cohorts, boolean error)
+            VariantStorageMetadataManager metadataManager, StudyMetadata studyMetadata, Collection<String> cohorts,
+            long startTime, boolean error)
             throws StorageEngineException {
 
         TaskMetadata.Status status = error ? TaskMetadata.Status.ERROR : TaskMetadata.Status.READY;
@@ -109,6 +110,9 @@ public abstract class VariantStatisticsManager {
             Integer cohortId = metadataManager.getCohortId(studyMetadata.getId(), cohortName);
             metadataManager.updateCohortMetadata(studyMetadata.getId(), cohortId,
                     cohort -> cohort.setStatsStatus(status));
+        }
+        if (startTime > 0 && !error) {
+            metadataManager.updateStatsIndexTimestamp();
         }
     }
 

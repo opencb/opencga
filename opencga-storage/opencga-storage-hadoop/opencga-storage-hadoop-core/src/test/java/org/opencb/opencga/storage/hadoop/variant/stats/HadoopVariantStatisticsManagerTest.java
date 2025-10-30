@@ -34,7 +34,7 @@ import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
-import org.opencb.opencga.storage.core.variant.annotation.DummyTestAnnotator;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantAnnotator;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManagerTest;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
@@ -139,7 +139,7 @@ public class HadoopVariantStatisticsManagerTest extends VariantStatisticsManager
         HadoopVariantStorageEngine engine = (HadoopVariantStorageEngine) this.variantStorageEngine;
 
         engine.getOptions().put(VariantStorageOptions.ANNOTATOR.key(), "other");
-        engine.getOptions().put(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyTestAnnotator.class.getName());
+        engine.getOptions().put(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyVariantAnnotator.class.getName());
         engine.annotate(outputUri, new QueryOptions(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
 
         runETL(engine, getResourceUri("gnomad/gnomad.genomes.v3.1.2.sites.small.vcf"), "GNOMAD_GENOMES", new ObjectMap());

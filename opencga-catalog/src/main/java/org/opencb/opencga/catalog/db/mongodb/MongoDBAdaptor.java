@@ -241,7 +241,7 @@ public abstract class MongoDBAdaptor extends AbstractDBAdaptor {
      * @param andBsonList  The list where created filter will be added to.
      */
     protected void addAutoOrQuery(String mongoDbField, String queryParam, Query query, QueryParam.Type paramType, List<Bson> andBsonList) {
-        if (query != null && query.getString(queryParam) != null) {
+        if (query != null && query.get(queryParam) != null) {
             Bson filter = MongoDBQueryUtils.createAutoFilter(mongoDbField, queryParam, query, paramType);
             if (filter != null) {
                 andBsonList.add(filter);

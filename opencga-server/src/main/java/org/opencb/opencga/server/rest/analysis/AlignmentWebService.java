@@ -58,7 +58,7 @@ import static org.opencb.opencga.core.api.ParamConstants.*;
  */
 @Path("/{apiVersion}/analysis/alignment")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "Analysis - Alignment", description = "Methods for working with 'files' endpoint")
+@Api(value = "Analysis - Alignment", description = "Methods for working with Alignments")
 public class AlignmentWebService extends AnalysisWebService {
 
     public AlignmentWebService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
@@ -87,7 +87,7 @@ public class AlignmentWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
-            @ApiParam(value = AlignmentIndexParams.DESCRIPTION, required = true) AlignmentIndexParams params) {
+            @ApiParam(value = ParamConstants.ALIGNMENT_INDEX_PARAMS_DESCRIPTION, required = true) AlignmentIndexParams params) {
         return submitJob(study, JobType.NATIVE, AlignmentIndexOperation.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
@@ -172,6 +172,7 @@ public class AlignmentWebService extends AnalysisWebService {
     // COVERAGE: index/run, query, ratio and stats
     //-------------------------------------------------------------------------
 
+
     @POST
     @Path("/coverage/index/run")
     @ApiOperation(value = AlignmentCoverageAnalysis.DESCRIPTION, response = Job.class)
@@ -184,7 +185,7 @@ public class AlignmentWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
-            @ApiParam(value = CoverageIndexParams.DESCRIPTION, required = true) CoverageIndexParams params) {
+            @ApiParam(value = ParamConstants.COVERAGE_INDEX_PARAMS_DESCRIPTION, required = true) CoverageIndexParams params) {
 
         return submitJob(study, JobType.NATIVE, AlignmentCoverageAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
 

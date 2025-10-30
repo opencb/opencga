@@ -6,6 +6,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -48,7 +49,7 @@ public abstract class VariantStatisticsManagerMultiFilesTest extends VariantStor
         }
         storageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
         storageEngine.getOptions().put(VariantStorageOptions.STATS_CALCULATE.key(), false);
-        storageEngine.getOptions().put(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
+        storageEngine.getOptions().put(VariantStorageOptions.LOAD_ARCHIVE.key(), YesNoAuto.YES);
 //        storageEngine.index(inputFiles.subList(0, inputFiles.size()/2), outputUri, true, true, true);
 //        storageEngine.index(inputFiles.subList(inputFiles.size()/2, inputFiles.size()), outputUri, true, true, true);
         storageEngine.index(inputFiles, outputUri, true, true, true);
