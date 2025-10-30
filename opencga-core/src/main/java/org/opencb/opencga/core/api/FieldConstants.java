@@ -676,5 +676,15 @@ public class FieldConstants {
     public static final String TIERING_CONFIG_FILE_DESCRIPTION = "Tiering configuration file, if not provided default configuration will"
             + " be used.";
 
+    // Clinical interpretation
+    public static final String CLINICAL_INTERPRETATION_CLINICAL_ANALYSIS_ID_DESCRIPTION = "Clinical analysis ID to be interpret.";
+    public static final String CLINICAL_INTERPRETATION_PRIMARY_DESCRIPTION = "Set the clinical interpretation computed as primary (true) or secondary (false).";
+    public static final String CLINICAL_INTERPRETATION_PARAMS_DESCRIPTION = "Clinical interpretation configuration params";
+    public static final String CLINICAL_INTERPRETATION_CONFIG_FILE_DESCRIPTION = "Clinical interpretation configuration file, if not provided default configuration will"
+            + " be used.";
+
     public static final String PENETRANCE_DESCRIPTION = "Penetrance of the clinical analysis: COMPLETE, INCOMPLETE or UNKNOWN.";
+    public static final String DISCARD_UNTIERED_EVIDENCE_DESCRIPTION = "Do not report untiered evidences (and variants) in the clinical interpretation.";
+    public static final String ONE_CONSEQUENCE_PER_EVIDENCE_DESCRIPTION = "Report only one variant consequence per evidence in the clinical interpretation.";
+
 }

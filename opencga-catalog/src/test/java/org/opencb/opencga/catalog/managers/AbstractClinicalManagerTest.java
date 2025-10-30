@@ -66,6 +66,7 @@ import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
 public class AbstractClinicalManagerTest extends GenericTest {
 
     public static final String TIERING_MODE = "tiering";
+    public static final String INTERPRETATION_MODE = "interpretation";
 
     public final static String PASSWORD = "Password1234;";
 
@@ -118,7 +119,7 @@ public class AbstractClinicalManagerTest extends GenericTest {
 
         token = catalogManager.getUserManager().login(organizationId, "user", PASSWORD).first().getToken();
 
-        if (TIERING_MODE.equalsIgnoreCase(mode)) {
+        if (TIERING_MODE.equalsIgnoreCase(mode) || INTERPRETATION_MODE.equalsIgnoreCase(mode)) {
             prepareOpaCase();
         } else {
             ProjectCreateParams projectCreateParams = new ProjectCreateParams()
