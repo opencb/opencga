@@ -12,6 +12,9 @@ jobs:
     name: Prepare hadoop profile
     runs-on: ${{ vars.UBUNTU_VERSION }}
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: '10'
       - name: Compile Hadoop Profile
         run: |
           chmod +x ./.github/workflows/scripts/prepare_hadoop.sh
