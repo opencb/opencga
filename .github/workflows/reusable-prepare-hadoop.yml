@@ -7,16 +7,12 @@ on:
         type: string
         required: true
 
-
-
-
-
-
 jobs:
   prepare-hadoop:
-    - name: Prepare hadoop profile
-      runs-on: ${{ vars.UBUNTU_VERSION }}
-      steps:
+    name: Prepare hadoop profile
+    runs-on: ${{ vars.UBUNTU_VERSION }}
+    steps:
+      - name: Compile Hadoop Profile
         run: |
           chmod +x ./.github/workflows/scripts/prepare_hadoop.sh
           ./.github/workflows/scripts/prepare_hadoop.sh --hadoop-flavour ${{ inputs.hadoop }}
