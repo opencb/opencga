@@ -17,7 +17,7 @@ RUN apt-get update -y && \
     pip3 install --no-cache-dir --user multiqc --break-system-packages && \
     pip3 install --no-cache-dir pydantic --break-system-packages && \
 
-    ## 2. Install samtools and bcftools 1.21 and plugins
+    ## 2. Install samtools
     wget https://github.com/samtools/samtools/releases/download/1.22.1/samtools-1.22.1.tar.bz2 && \
     tar xjvf samtools-1.22.1.tar.bz2 && \
     cd samtools-1.22.1 && \
@@ -25,28 +25,42 @@ RUN apt-get update -y && \
     make && make install && \
     cd .. && \
 
+    ## 3. Install bcftools with liftover and affy2vcf plugins
     wget http://github.com/samtools/bcftools/releases/download/1.22/bcftools-1.22.tar.bz2 && \
     tar xjvf bcftools-1.22.tar.bz2 && \
     bash -c 'wget -P bcftools-1.22 http://raw.githubusercontent.com/DrTimothyAldenDavis/SuiteSparse/stable/{SuiteSparse_config/SuiteSparse_config,CHOLMOD/Include/cholmod}.h' && \
-    cd bcftools-1.22/ && \
+    cd bcftools-1.22 && \
+    ## liftover plugin
     bash -c '/bin/rm -f plugins/{score.{c,h},{munge,liftover,metal,blup}.c,pgs.{c,mk}}' && \
     bash -c 'wget -P plugins http://raw.githubusercontent.com/freeseek/score/master/{score.{c,h},{munge,liftover,metal,blup}.c,pgs.{c,mk}}' && \
+    ## affy2vcf plugin
+    bash -c '/bin/rm -f plugins/{idat2gtc.c,gtc2vcf.{c,h},affy2vcf.c}' && \
+    bash -c 'wget -P plugins http://raw.githubusercontent.com/freeseek/gtc2vcf/master/{idat2gtc.c,gtc2vcf.{c,h},affy2vcf.c,BAFregress.c}' && \
     make && \
-    bash -c '/bin/cp bcftools plugins/{munge,liftover,score,metal,pgs,blup}.so /usr/local/bin/' && \
+    bash -c '/bin/cp bcftools plugins/{munge,liftover,score,metal,pgs,blup,idat2gtc,gtc2vcf,affy2vcf,BAFregress}.so /usr/local/bin/' && \
     wget -P /usr/local/bin http://raw.githubusercontent.com/freeseek/score/master/assoc_plot.R && \
     chmod a+x /usr/local/bin/assoc_plot.R && \
     cd .. && \
 
-    ## 3. Install bwa-mem2
+    ## 4. Install bwa-mem2
     curl -L https://github.com/bwa-mem2/bwa-mem2/releases/download/v2.2.1/bwa-mem2-2.2.1_x64-linux.tar.bz2 | tar jxf - && \
     mv bwa-mem2-2.2.1_x64-linux/bwa-mem2* /usr/local/bin/ && \
 
-    ## 4. Installation dependencies using R install.packages() is slower than apt-get but final size is 400MB smaller.
+    ## 5. Install Thermofisher APT tools
+    mkdir affy && \
+    cd affy && \
+    wget https://downloads.thermofisher.com/APT/APT_2.12.0/apt_2.12.0_linux_64_x86_binaries.zip && \
+    unzip apt_2.12.0_linux_64_x86_binaries.zip && \
+    chmod +x bin/* && \
+    cp bin/*-axiom /usr/local/bin/ && \
+    cd .. && \
+
+    ## 6. Installation dependencies using R install.packages() is slower than apt-get but final size is 400MB smaller.
     R -e "install.packages(c('BiocManager', 'RCircos', 'nnls', 'ggplot2', 'jsonlite', 'optparse', 'knitr', 'configr', 'dplyr', 'rmarkdown', 'tidyr', 'httr', 'kinship2', 'limSolve'))" && \
     R -e "BiocManager::install('BiocStyle')" && \
     R -e "BiocManager::install('BSgenome.Hsapiens.UCSC.hg38')" && \
 
-    ## 5. Install signature.tools.lib installation \
+    ## 7. Install signature.tools.lib installation \
     R -e "install.packages(c('devtools', 'getopt'), repos=c('http://cran.rstudio.com/', 'https://www.stats.bris.ac.uk/R/'))" && \
     git clone https://github.com/Nik-Zainal-Group/signature.tools.lib.git /opt/opencga/signature.tools.lib && \
     cd /opt/opencga/signature.tools.lib && \
@@ -58,8 +72,8 @@ RUN apt-get update -y && \
     R -e "options(timeout = 3600);devtools::install(repos='https://www.stats.bris.ac.uk/R/')" && \
     cd .. && \
 
-    ## 6. Clean up
-    rm -rf samtools-1.22.1 bcftools-1.22 bwa-mem2-2.2.1_x64-linux /var/lib/apt/lists/* /tmp/* /opt/opencga/signature.tools.lib/.git && \
+    ## 8. Clean up
+    rm -rf samtools-1.22.1 bcftools-1.22 bwa-mem2-2.2.1_x64-linux affy /var/lib/apt/lists/* /tmp/* /opt/opencga/signature.tools.lib/.git && \
     strip --remove-section=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so.5
 
 ENV BCFTOOLS_PLUGINS="/usr/local/bin"
