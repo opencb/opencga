@@ -155,6 +155,11 @@ public abstract class OpenCgaDockerToolScopeStudy extends OpenCgaToolScopeStudy 
 
     protected String runDocker(String image, List<AbstractMap.SimpleEntry<String, String>> userOutputBindings, String cmdParams,
                                Map<String, String> userDockerParams) throws IOException {
+        return runDocker(image, userOutputBindings, cmdParams, userDockerParams, null, null, null);
+    }
+
+    protected String runDocker(String image, List<AbstractMap.SimpleEntry<String, String>> userOutputBindings, String cmdParams,
+                               Map<String, String> userDockerParams, String registry, String username, String password) throws IOException {
         List<AbstractMap.SimpleEntry<String, String>> outputBindings = CollectionUtils.isNotEmpty(userOutputBindings)
                 ? userOutputBindings
                 : Collections.singletonList(new AbstractMap.SimpleEntry<>(getOutDir().toAbsolutePath().toString(), getOutDir().toAbsolutePath().toString()));
@@ -169,7 +174,7 @@ public abstract class OpenCgaDockerToolScopeStudy extends OpenCgaToolScopeStudy 
             dockerParams.putAll(userDockerParams);
         }
 
-        return DockerUtils.run(image, dockerInputBindings, outputBindings, cmdParams, dockerParams);
+        return DockerUtils.run(image, dockerInputBindings, outputBindings, cmdParams, dockerParams, registry, username, password);
     }
 
 }

@@ -10,19 +10,18 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaDockerToolScopeStudy;
-import org.opencb.opencga.catalog.db.api.WorkflowDBAdaptor;
-import org.opencb.opencga.catalog.utils.InputFileUtils;
+import org.opencb.opencga.catalog.db.api.ExternalToolDBAdaptor;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.externalTool.ExternalTool;
+import org.opencb.opencga.core.models.externalTool.ExternalToolRunParams;
+import org.opencb.opencga.core.models.externalTool.ExternalToolVariable;
+import org.opencb.opencga.core.models.externalTool.WorkflowScript;
 import org.opencb.opencga.core.models.job.ToolInfoExecutor;
-import org.opencb.opencga.core.models.workflow.NextFlowRunParams;
-import org.opencb.opencga.core.models.workflow.Workflow;
-import org.opencb.opencga.core.models.workflow.WorkflowScript;
-import org.opencb.opencga.core.models.workflow.WorkflowVariable;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.ToolDependency;
 import org.opencb.opencga.core.tools.annotations.Tool;
@@ -44,16 +43,16 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Stream;
 
-@Tool(id = NextFlowExecutor.ID, resource = Enums.Resource.WORKFLOW, description = NextFlowExecutor.DESCRIPTION)
+@Tool(id = NextFlowExecutor.ID, resource = Enums.Resource.EXTERNAL_TOOL, description = NextFlowExecutor.DESCRIPTION)
 public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
 
     public final static String ID = "nextflow";
     public static final String DESCRIPTION = "Execute a Nextflow analysis.";
 
     @ToolParams
-    protected NextFlowRunParams nextflowParams = new NextFlowRunParams();
+    protected ExternalToolRunParams runParams = new ExternalToolRunParams();
 
-    private Workflow workflow;
+    private ExternalTool externalTool;
     private String cliParams;
 
     private String outDirPath;
@@ -68,36 +67,34 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
     protected void check() throws Exception {
         super.check();
 
-        if (nextflowParams.getId() == null) {
+        if (runParams.getId() == null) {
             throw new IllegalArgumentException("Missing Nextflow ID");
         }
 
-        InputFileUtils inputFileUtils = new InputFileUtils(catalogManager);
-
-        OpenCGAResult<Workflow> result;
-        if (nextflowParams.getVersion() != null) {
-            Query query = new Query(WorkflowDBAdaptor.QueryParams.VERSION.key(), nextflowParams.getVersion());
-            result = catalogManager.getWorkflowManager().get(study, Collections.singletonList(nextflowParams.getId()), query,
+        OpenCGAResult<ExternalTool> result;
+        if (runParams.getVersion() != null) {
+            Query query = new Query(ExternalToolDBAdaptor.QueryParams.VERSION.key(), runParams.getVersion());
+            result = catalogManager.getExternalToolManager().get(study, Collections.singletonList(runParams.getId()), query,
                     QueryOptions.empty(), false, token);
         } else {
-            result = catalogManager.getWorkflowManager().get(study, nextflowParams.getId(), QueryOptions.empty(), token);
+            result = catalogManager.getExternalToolManager().get(study, runParams.getId(), QueryOptions.empty(), token);
         }
         if (result.getNumResults() == 0) {
-            throw new ToolException("Workflow '" + nextflowParams.getId() + "' not found");
+            throw new ToolException("Workflow '" + runParams.getId() + "' not found");
         }
-        workflow = result.first();
+        externalTool = result.first();
 
-        if (workflow == null) {
-            throw new ToolException("Workflow '" + nextflowParams.getId() + "' is null");
+        if (externalTool == null) {
+            throw new ToolException("Workflow '" + runParams.getId() + "' is null");
         }
 
         outDirPath = getOutDir().toAbsolutePath().toString();
         ephimeralDirPath = getScratchDir().toAbsolutePath().toString();
 
         Set<String> mandatoryParams = new HashSet<>();
-        Map<String, WorkflowVariable> variableMap = new HashMap<>();
-        if (CollectionUtils.isNotEmpty(workflow.getVariables())) {
-            for (WorkflowVariable variable : workflow.getVariables()) {
+        Map<String, ExternalToolVariable> variableMap = new HashMap<>();
+        if (CollectionUtils.isNotEmpty(externalTool.getVariables())) {
+            for (ExternalToolVariable variable : externalTool.getVariables()) {
                 String variableId = removePrefix(variable.getId());
                 variableMap.put(variableId, variable);
                 if (variable.isRequired()) {
@@ -106,38 +103,40 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
             }
         }
 
-        if (StringUtils.isEmpty(workflow.getManager().getVersion())) {
-            workflow.getManager().setVersion(ParamConstants.DEFAULT_MIN_NEXTFLOW_VERSION);
+        if (StringUtils.isEmpty(externalTool.getWorkflow().getManager().getVersion())) {
+            externalTool.getWorkflow().getManager().setVersion(ParamConstants.DEFAULT_MIN_NEXTFLOW_VERSION);
         }
         // Update job tags and attributes
-        ToolInfoExecutor toolInfoExecutor = new ToolInfoExecutor(workflow.getManager().getId().name().toLowerCase(),
-                workflow.getManager().getVersion());
+        ToolInfoExecutor toolInfoExecutor = new ToolInfoExecutor(externalTool.getWorkflow().getManager().getId().name().toLowerCase(),
+                externalTool.getWorkflow().getManager().getVersion());
         Set<String> tags = new HashSet<>();
         tags.add(ID);
-        tags.add(workflow.getManager().getId().name());
-        tags.add(workflow.getManager().getId() + ":" + workflow.getManager().getVersion());
-        tags.add(workflow.getId());
-        if (CollectionUtils.isNotEmpty(workflow.getTags())) {
-            tags.addAll(workflow.getTags());
+        tags.add(externalTool.getWorkflow().getManager().getId().name());
+        tags.add(externalTool.getWorkflow().getManager().getId() + ":" + externalTool.getWorkflow().getManager().getVersion());
+        tags.add(externalTool.getId());
+        if (CollectionUtils.isNotEmpty(externalTool.getTags())) {
+            tags.addAll(externalTool.getTags());
         }
         List<ToolDependency> dependencyList = new ArrayList<>(4);
         dependencyList.add(new ToolDependency("opencb/opencga-workflow", GitRepositoryState.getInstance().getBuildVersion() + "-hdp3.1"));
-        dependencyList.add(new ToolDependency("nextflow", workflow.getManager().getVersion()));
-        dependencyList.add(new ToolDependency(workflow.getId(), String.valueOf(workflow.getVersion())));
-        if (workflow.getRepository() != null && StringUtils.isNotEmpty(workflow.getRepository().getId())) {
-            dependencyList.add(new ToolDependency(workflow.getRepository().getId(), workflow.getRepository().getVersion()));
+        dependencyList.add(new ToolDependency("nextflow", externalTool.getWorkflow().getManager().getVersion()));
+        dependencyList.add(new ToolDependency(externalTool.getId(), String.valueOf(externalTool.getVersion())));
+        if (externalTool.getWorkflow().getRepository() != null) {
+            if (StringUtils.isNotEmpty(externalTool.getWorkflow().getRepository().getName())) {
+                dependencyList.add(new ToolDependency(externalTool.getWorkflow().getRepository().getName(), externalTool.getWorkflow().getRepository().getTag()));
+            }
         }
         addDependencies(dependencyList);
         updateJobInformation(new ArrayList<>(tags), toolInfoExecutor);
 
         StringBuilder cliParamsBuilder = new StringBuilder();
-        if (MapUtils.isNotEmpty(nextflowParams.getParams())) {
-            for (Map.Entry<String, String> entry : nextflowParams.getParams().entrySet()) {
+        if (MapUtils.isNotEmpty(runParams.getParams())) {
+            for (Map.Entry<String, String> entry : runParams.getParams().entrySet()) {
                 String variableId = removePrefix(entry.getKey());
                 // Remove from the mandatoryParams set
                 mandatoryParams.remove(variableId);
 
-                WorkflowVariable workflowVariable = variableMap.get(variableId);
+                ExternalToolVariable externalToolVariable = variableMap.get(variableId);
 
                 if (entry.getKey().startsWith("-")) {
                     cliParamsBuilder.append(entry.getKey()).append(" ");
@@ -145,17 +144,17 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
                     cliParamsBuilder.append("--").append(entry.getKey()).append(" ");
                 }
                 if (StringUtils.isNotEmpty(entry.getValue())) {
-                    if ((workflowVariable != null && workflowVariable.isOutput()) || inputFileUtils.isDynamicOutputFolder(entry.getValue())) {
+                    if ((externalToolVariable != null && externalToolVariable.isOutput()) || inputFileUtils.isDynamicOutputFolder(entry.getValue())) {
                         processOutputCli(entry.getValue(), inputFileUtils, cliParamsBuilder);
                     } else if (!inputFileUtils.isFlag(entry.getValue())) {
                         processInputCli(entry.getValue(), inputFileUtils, cliParamsBuilder);
                     }
-                } else if (workflowVariable != null) {
-                    if (StringUtils.isNotEmpty(workflowVariable.getDefaultValue())) {
-                        cliParamsBuilder.append(workflowVariable.getDefaultValue()).append(" ");
-                    } else if (workflowVariable.isOutput()) {
+                } else if (externalToolVariable != null) {
+                    if (StringUtils.isNotEmpty(externalToolVariable.getDefaultValue())) {
+                        cliParamsBuilder.append(externalToolVariable.getDefaultValue()).append(" ");
+                    } else if (externalToolVariable.isOutput()) {
                         processOutputCli("", inputFileUtils, cliParamsBuilder);
-                    } else if (workflowVariable.isRequired() && workflowVariable.getType() != WorkflowVariable.WorkflowVariableType.FLAG) {
+                    } else if (externalToolVariable.isRequired() && externalToolVariable.getType() != ExternalToolVariable.WorkflowVariableType.FLAG) {
                         throw new ToolException("Missing value for mandatory parameter: '" + variableId + "'.");
                     }
                 }
@@ -164,23 +163,23 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
 
         for (String mandatoryParam : mandatoryParams) {
             logger.info("Processing missing mandatory param: '{}'", mandatoryParam);
-            WorkflowVariable workflowVariable = variableMap.get(mandatoryParam);
+            ExternalToolVariable externalToolVariable = variableMap.get(mandatoryParam);
 
-            if (workflowVariable.getId().startsWith("-")) {
-                cliParamsBuilder.append(workflowVariable.getId()).append(" ");
+            if (externalToolVariable.getId().startsWith("-")) {
+                cliParamsBuilder.append(externalToolVariable.getId()).append(" ");
             } else {
-                cliParamsBuilder.append("--").append(workflowVariable.getId()).append(" ");
+                cliParamsBuilder.append("--").append(externalToolVariable.getId()).append(" ");
             }
 
-            if (StringUtils.isNotEmpty(workflowVariable.getDefaultValue())) {
-                if (workflowVariable.isOutput()) {
-                    processOutputCli(workflowVariable.getDefaultValue(), inputFileUtils, cliParamsBuilder);
+            if (StringUtils.isNotEmpty(externalToolVariable.getDefaultValue())) {
+                if (externalToolVariable.isOutput()) {
+                    processOutputCli(externalToolVariable.getDefaultValue(), inputFileUtils, cliParamsBuilder);
                 } else {
-                    processInputCli(workflowVariable.getDefaultValue(), inputFileUtils, cliParamsBuilder);
+                    processInputCli(externalToolVariable.getDefaultValue(), inputFileUtils, cliParamsBuilder);
                 }
-            } else if (workflowVariable.isOutput()) {
+            } else if (externalToolVariable.isOutput()) {
                 processOutputCli("", inputFileUtils, cliParamsBuilder);
-            } else if (workflowVariable.getType() != WorkflowVariable.WorkflowVariableType.FLAG) {
+            } else if (externalToolVariable.getType() != ExternalToolVariable.WorkflowVariableType.FLAG) {
                 throw new ToolException("Missing mandatory parameter: '" + mandatoryParam + "'.");
             }
         }
@@ -190,9 +189,9 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
 
     @Override
     protected void run() throws Exception {
-        for (WorkflowScript script : workflow.getScripts()) {
+        for (WorkflowScript script : externalTool.getWorkflow().getScripts()) {
             // Write script files
-            Path path = temporalInputDir.resolve(script.getFileName());
+            Path path = temporalInputDir.resolve(script.getName());
             Files.write(path, script.getContent().getBytes());
             dockerInputBindings.add(new AbstractMap.SimpleEntry<>(path.toString(), path.toString()));
         }
@@ -216,23 +215,23 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
         String dockerImage = "opencb/opencga-workflow:" + GitRepositoryState.getInstance().getBuildVersion() + "-hdp3.1";
         StringBuilder stringBuilder = new StringBuilder()
                 .append("bash -c \"NXF_VER=")
-                .append(workflow.getManager().getVersion())
+                .append(externalTool.getWorkflow().getManager().getVersion())
                 .append(" nextflow -c ")
                 .append(nextflowConfigPath)
                 .append(" run ");
-        if (workflow.getRepository() != null && StringUtils.isNotEmpty(workflow.getRepository().getId())) {
+        if (externalTool.getWorkflow().getRepository() != null && StringUtils.isNotEmpty(externalTool.getWorkflow().getRepository().getName())) {
 //            stringBuilder.append(workflow.getRepository().getImage()).append(" -with-docker");
-            stringBuilder.append(workflow.getRepository().getId());
+            stringBuilder.append(externalTool.getWorkflow().getRepository().getName());
             // Add the repository version if we have it and the user is not specifying it
-            if (StringUtils.isNotEmpty(workflow.getRepository().getVersion()) && !cliParams.contains("-r ")) {
+            if (StringUtils.isNotEmpty(externalTool.getWorkflow().getRepository().getTag()) && !cliParams.contains("-r ")) {
                 stringBuilder
                         .append(" -r ")
-                        .append(workflow.getRepository().getVersion());
+                        .append(externalTool.getWorkflow().getRepository().getTag());
             }
         } else {
-            for (WorkflowScript script : workflow.getScripts()) {
+            for (WorkflowScript script : externalTool.getWorkflow().getScripts()) {
                 if (script.isMain()) {
-                    stringBuilder.append(temporalInputDir.resolve(script.getFileName()));
+                    stringBuilder.append(temporalInputDir.resolve(script.getName()));
                     break;
                 }
             }
@@ -299,16 +298,16 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
     }
 
     private void writeResourceLimitsConfig(BufferedWriter writer) throws IOException {
-        if (workflow.getMinimumRequirements() == null || StringUtils.isEmpty(workflow.getMinimumRequirements().getMemory()) ||
-                StringUtils.isEmpty(workflow.getMinimumRequirements().getCpu())) {
+        if (externalTool.getMinimumRequirements() == null || StringUtils.isEmpty(externalTool.getMinimumRequirements().getMemory()) ||
+                StringUtils.isEmpty(externalTool.getMinimumRequirements().getCpu())) {
             return;
         }
 
         writer.newLine();
         writer.write("process {\n");
         writer.write("    resourceLimits = [\n");
-        writer.write("        cpus: " + workflow.getMinimumRequirements().getCpu() + ",\n");
-        writer.write("        memory: " + workflow.getMinimumRequirements().getMemory() + "\n");
+        writer.write("        cpus: " + externalTool.getMinimumRequirements().getCpu() + ",\n");
+        writer.write("        memory: " + externalTool.getMinimumRequirements().getMemory() + "\n");
         writer.write("    ]\n");
         writer.write("}\n");
     }

@@ -37,8 +37,8 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.migration.MigrationManager;
 import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.core.common.JwtUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.common.JwtUtils;
 import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -89,7 +89,7 @@ public class CatalogManager implements AutoCloseable {
     private ClinicalAnalysisManager clinicalAnalysisManager;
     private InterpretationManager interpretationManager;
     private PanelManager panelManager;
-    private WorkflowManager workflowManager;
+    private ExternalToolManager externalToolManager;
 
     private AuditManager auditManager;
     private AuthorizationManager authorizationManager;
@@ -165,8 +165,8 @@ public class CatalogManager implements AutoCloseable {
         clinicalAnalysisManager = new ClinicalAnalysisManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 configuration);
         interpretationManager = new InterpretationManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
-        workflowManager = new WorkflowManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, ioManagerFactory,
-                catalogIOManager, configuration);
+        externalToolManager = new ExternalToolManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
+                configuration);
     }
 
     private void initializeAdmin(Configuration configuration) throws CatalogDBException {
@@ -460,7 +460,7 @@ public class CatalogManager implements AutoCloseable {
         return migrationManager;
     }
 
-    public WorkflowManager getWorkflowManager() {
-        return workflowManager;
+    public ExternalToolManager getExternalToolManager() {
+        return externalToolManager;
     }
 }

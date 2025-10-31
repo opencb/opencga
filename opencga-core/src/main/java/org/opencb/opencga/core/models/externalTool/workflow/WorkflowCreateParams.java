@@ -1,7 +1,8 @@
-package org.opencb.opencga.core.models.workflow;
+package org.opencb.opencga.core.models.externalTool.workflow;
 
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
+import org.opencb.opencga.core.models.externalTool.*;
 import org.opencb.opencga.core.models.job.MinimumRequirements;
 
 import java.util.List;
@@ -10,38 +11,35 @@ import java.util.Map;
 public class WorkflowCreateParams {
 
     @DataField(id = "id", required = true, indexed = true, unique = true, immutable = true,
-            description = FieldConstants.WORKFLOW_ID_DESCRIPTION)
+            description = FieldConstants.EXTERNAL_TOOL_ID_DESCRIPTION)
     private String id;
 
-    @DataField(id = "name", description = FieldConstants.WORKFLOW_NAME_DESCRIPTION)
+    @DataField(id = "name", description = FieldConstants.GENERIC_UUID_DESCRIPTION)
     private String name;
 
     @DataField(id = "description", description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
 
-    @DataField(id = "manager", description = FieldConstants.WORKFLOW_MANAGER_DESCRIPTION)
-    private WorkflowSystem manager;
+    @DataField(id = "scope", description = FieldConstants.EXTERNAL_TOOL_SCOPE_DESCRIPTION)
+    private ExternalToolScope scope;
 
-    @DataField(id = "type", description = FieldConstants.WORKFLOW_TYPE_DESCRIPTION)
-    private Workflow.Type type;
+    @DataField(id = "workflow", description = FieldConstants.EXTERNAL_TOOL_WORKFLOW_DESCRIPTION)
+    private Workflow workflow;
 
-    @DataField(id = "tags", description = FieldConstants.WORKFLOW_TAGS_DESCRIPTION)
+    @DataField(id = "tags", description = FieldConstants.EXTERNAL_TOOL_TAGS_DESCRIPTION)
     private List<String> tags;
 
-    @DataField(id = "draft", description = FieldConstants.WORKFLOW_DRAFT_DESCRIPTION)
-    private boolean draft;
-
-    @DataField(id = "repository", description = FieldConstants.WORKFLOW_REPOSITORY_DESCRIPTION)
-    private WorkflowRepository repository;
-
-    @DataField(id = "variables", description = FieldConstants.WORKFLOW_VARIABLES_DESCRIPTION)
-    private List<WorkflowVariable> variables;
+    @DataField(id = "variables", description = FieldConstants.EXTERNAL_TOOL_VARIABLES_DESCRIPTION)
+    private List<ExternalToolVariable> variables;
 
     @DataField(id = "minimumRequirements", description = FieldConstants.MINIMUM_REQUIREMENTS_DESCRIPTION)
     private MinimumRequirements minimumRequirements;
 
-    @DataField(id = "scripts", description = FieldConstants.WORKFLOW_SCRIPTS_DESCRIPTION)
-    private List<WorkflowScript> scripts;
+    @DataField(id = "draft", description = FieldConstants.EXTERNAL_TOOL_DRAFT_DESCRIPTION)
+    private boolean draft;
+
+    @DataField(id = "internal", description = FieldConstants.EXTERNAL_TOOL_INTERNAL_DESCRIPTION)
+    private ExternalToolInternal internal;
 
     @DataField(id = "creationDate", indexed = true, description = FieldConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
@@ -55,21 +53,20 @@ public class WorkflowCreateParams {
     public WorkflowCreateParams() {
     }
 
-    public WorkflowCreateParams(String id, String name, String description, WorkflowSystem manager, Workflow.Type type, List<String> tags,
-                                boolean draft, WorkflowRepository repository, List<WorkflowVariable> variables,
-                                MinimumRequirements minimumRequirements, List<WorkflowScript> scripts, String creationDate,
-                                String modificationDate, Map<String, Object> attributes) {
+    public WorkflowCreateParams(String id, String name, String description, ExternalToolScope scope, Workflow workflow, List<String> tags,
+                                List<ExternalToolVariable> variables, MinimumRequirements minimumRequirements, boolean draft,
+                                ExternalToolInternal internal, String creationDate, String modificationDate,
+                                Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.description = description;
-        this.manager = manager;
-        this.type = type;
+        this.scope = scope;
+        this.workflow = workflow;
         this.tags = tags;
-        this.draft = draft;
-        this.repository = repository;
         this.variables = variables;
         this.minimumRequirements = minimumRequirements;
-        this.scripts = scripts;
+        this.draft = draft;
+        this.internal = internal;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
         this.attributes = attributes;
@@ -81,24 +78,18 @@ public class WorkflowCreateParams {
         sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
-        sb.append(", manager=").append(manager);
-        sb.append(", type=").append(type);
+        sb.append(", scope=").append(scope);
+        sb.append(", workflow=").append(workflow);
         sb.append(", tags=").append(tags);
-        sb.append(", draft=").append(draft);
-        sb.append(", repository=").append(repository);
         sb.append(", variables=").append(variables);
         sb.append(", minimumRequirements=").append(minimumRequirements);
-        sb.append(", scripts=").append(scripts);
+        sb.append(", draft=").append(draft);
+        sb.append(", internal=").append(internal);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
-    }
-
-    public Workflow toWorkflow() {
-        return new Workflow(id, name, description, type, manager, tags, variables, minimumRequirements, draft, repository, scripts,
-                new WorkflowInternal(), creationDate, modificationDate, attributes);
     }
 
     public String getId() {
@@ -128,21 +119,21 @@ public class WorkflowCreateParams {
         return this;
     }
 
-    public WorkflowSystem getManager() {
-        return manager;
+    public ExternalToolScope getScope() {
+        return scope;
     }
 
-    public WorkflowCreateParams setManager(WorkflowSystem manager) {
-        this.manager = manager;
+    public WorkflowCreateParams setScope(ExternalToolScope scope) {
+        this.scope = scope;
         return this;
     }
 
-    public Workflow.Type getType() {
-        return type;
+    public Workflow getWorkflow() {
+        return workflow;
     }
 
-    public WorkflowCreateParams setType(Workflow.Type type) {
-        this.type = type;
+    public WorkflowCreateParams setWorkflow(Workflow workflow) {
+        this.workflow = workflow;
         return this;
     }
 
@@ -155,29 +146,11 @@ public class WorkflowCreateParams {
         return this;
     }
 
-    public boolean isDraft() {
-        return draft;
-    }
-
-    public WorkflowCreateParams setDraft(boolean draft) {
-        this.draft = draft;
-        return this;
-    }
-
-    public WorkflowRepository getRepository() {
-        return repository;
-    }
-
-    public WorkflowCreateParams setRepository(WorkflowRepository repository) {
-        this.repository = repository;
-        return this;
-    }
-
-    public List<WorkflowVariable> getVariables() {
+    public List<ExternalToolVariable> getVariables() {
         return variables;
     }
 
-    public WorkflowCreateParams setVariables(List<WorkflowVariable> variables) {
+    public WorkflowCreateParams setVariables(List<ExternalToolVariable> variables) {
         this.variables = variables;
         return this;
     }
@@ -191,12 +164,21 @@ public class WorkflowCreateParams {
         return this;
     }
 
-    public List<WorkflowScript> getScripts() {
-        return scripts;
+    public boolean isDraft() {
+        return draft;
     }
 
-    public WorkflowCreateParams setScripts(List<WorkflowScript> scripts) {
-        this.scripts = scripts;
+    public WorkflowCreateParams setDraft(boolean draft) {
+        this.draft = draft;
+        return this;
+    }
+
+    public ExternalToolInternal getInternal() {
+        return internal;
+    }
+
+    public WorkflowCreateParams setInternal(ExternalToolInternal internal) {
+        this.internal = internal;
         return this;
     }
 

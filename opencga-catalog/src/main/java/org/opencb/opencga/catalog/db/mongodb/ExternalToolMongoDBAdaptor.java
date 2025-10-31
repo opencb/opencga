@@ -10,7 +10,7 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.WorkflowDBAdaptor;
+import org.opencb.opencga.catalog.db.api.ExternalToolDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.WorkflowConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.WorkflowCatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -22,8 +22,8 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.workflow.Workflow;
-import org.opencb.opencga.core.models.workflow.WorkflowPermissions;
+import org.opencb.opencga.core.models.externalTool.ExternalTool;
+import org.opencb.opencga.core.models.externalTool.ExternalToolPermissions;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +36,7 @@ import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryP
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
-public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements WorkflowDBAdaptor {
+public class ExternalToolMongoDBAdaptor extends CatalogMongoDBAdaptor implements ExternalToolDBAdaptor {
 
     private final MongoDBCollection workflowCollection;
     private final MongoDBCollection archiveWorkflowCollection;
@@ -44,10 +44,10 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
     private final SnapshotVersionedMongoDBAdaptor versionedMongoDBAdaptor;
     private final WorkflowConverter workflowConverter;
 
-    public WorkflowMongoDBAdaptor(MongoDBCollection workflowCollection, MongoDBCollection archiveWorkflowCollection,
-                                  MongoDBCollection deleteWorkflowCollection, Configuration configuration,
-                                  OrganizationMongoDBAdaptorFactory dbAdaptorFactory) {
-        super(configuration, LoggerFactory.getLogger(WorkflowMongoDBAdaptor.class));
+    public ExternalToolMongoDBAdaptor(MongoDBCollection workflowCollection, MongoDBCollection archiveWorkflowCollection,
+                                      MongoDBCollection deleteWorkflowCollection, Configuration configuration,
+                                      OrganizationMongoDBAdaptorFactory dbAdaptorFactory) {
+        super(configuration, LoggerFactory.getLogger(ExternalToolMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.workflowCollection = workflowCollection;
         this.archiveWorkflowCollection = archiveWorkflowCollection;
@@ -65,66 +65,66 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
         return archiveWorkflowCollection;
     }
 
-    Workflow insert(ClientSession clientSession, long studyUid, Workflow workflow) throws CatalogDBException {
+    ExternalTool insert(ClientSession clientSession, long studyUid, ExternalTool externalTool) throws CatalogDBException {
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyUid);
-        if (StringUtils.isEmpty(workflow.getId())) {
-            throw new CatalogDBException("Missing workflow id");
+        if (StringUtils.isEmpty(externalTool.getId())) {
+            throw new CatalogDBException("Missing user tool id");
         }
 
         // Check the workflow does not exist
         Bson bson = Filters.and(
-                Filters.eq(QueryParams.ID.key(), workflow.getId()),
+                Filters.eq(QueryParams.ID.key(), externalTool.getId()),
                 Filters.eq(QueryParams.STUDY_UID.key(), studyUid)
         );
         DataResult<Long> count = workflowCollection.count(clientSession, bson);
         if (count.getNumMatches() > 0) {
-            throw new CatalogDBException("Workflow { id: '" + workflow.getId() + "'} already exists.");
+            throw new CatalogDBException("User tool { id: '" + externalTool.getId() + "'} already exists.");
         }
 
         long uid = getNewUid(clientSession);
-        workflow.setUid(uid);
-        workflow.setStudyUid(studyUid);
-        workflow.setRelease(dbAdaptorFactory.getCatalogStudyDBAdaptor().getCurrentRelease(clientSession, studyUid));
+        externalTool.setUid(uid);
+        externalTool.setStudyUid(studyUid);
+        externalTool.setRelease(dbAdaptorFactory.getCatalogStudyDBAdaptor().getCurrentRelease(clientSession, studyUid));
 
-        Document workflowObject = workflowConverter.convertToStorageType(workflow);
+        Document workflowObject = workflowConverter.convertToStorageType(externalTool);
 
-        workflowObject.put(PRIVATE_CREATION_DATE,
-                StringUtils.isNotEmpty(workflow.getCreationDate()) ? TimeUtils.toDate(workflow.getCreationDate()) : TimeUtils.getDate());
-        workflowObject.put(PRIVATE_MODIFICATION_DATE, StringUtils.isNotEmpty(workflow.getModificationDate())
-                ? TimeUtils.toDate(workflow.getModificationDate()) : TimeUtils.getDate());
+        workflowObject.put(PRIVATE_CREATION_DATE, StringUtils.isNotEmpty(externalTool.getCreationDate())
+                ? TimeUtils.toDate(externalTool.getCreationDate()) : TimeUtils.getDate());
+        workflowObject.put(PRIVATE_MODIFICATION_DATE, StringUtils.isNotEmpty(externalTool.getModificationDate())
+                ? TimeUtils.toDate(externalTool.getModificationDate()) : TimeUtils.getDate());
 
-        logger.debug("Inserting workflow '{}' ({})...", workflow.getId(), workflow.getUid());
+        logger.debug("Inserting user tool '{}' ({})...", externalTool.getId(), externalTool.getUid());
         versionedMongoDBAdaptor.insert(clientSession, workflowObject);
-        logger.debug("Workflow '{}' successfully inserted", workflow.getId());
+        logger.debug("User tool '{}' successfully inserted", externalTool.getId());
 
-        return workflow;
+        return externalTool;
     }
 
     @Override
-    public OpenCGAResult<Workflow> insert(long studyUid, Workflow workflow, QueryOptions options) throws CatalogException {
+    public OpenCGAResult<ExternalTool> insert(long studyUid, ExternalTool externalTool, QueryOptions options) throws CatalogException {
         return runTransaction(clientSession -> {
             long tmpStartTime = startQuery();
-            logger.debug("Starting workflow insert transaction for workflow id '{}'", workflow.getId());
+            logger.debug("Starting user tool insert transaction for user tool id '{}'", externalTool.getId());
 
-            insert(clientSession, studyUid, workflow);
+            insert(clientSession, studyUid, externalTool);
             return endWrite(tmpStartTime, 1, 1, 0, 0, null);
-        }, e -> logger.error("Could not create workflow {}: {}", workflow.getId(), e.getMessage()));
+        }, e -> logger.error("Could not create user tool {}: {}", externalTool.getId(), e.getMessage()));
     }
 
     @Override
-    public OpenCGAResult<Workflow> get(long studyUid, Query query, QueryOptions options, String user)
+    public OpenCGAResult<ExternalTool> get(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         long startTime = startQuery();
-        try (DBIterator<Workflow> dbIterator = iterator(studyUid, query, options, user)) {
+        try (DBIterator<ExternalTool> dbIterator = iterator(studyUid, query, options, user)) {
             return endQuery(startTime, dbIterator);
         }
     }
 
     @Override
-    public OpenCGAResult<Workflow> get(Query query, QueryOptions options)
+    public OpenCGAResult<ExternalTool> get(Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long startTime = startQuery();
-        try (DBIterator<Workflow> dbIterator = iterator(query, options)) {
+        try (DBIterator<ExternalTool> dbIterator = iterator(query, options)) {
             return endQuery(startTime, dbIterator);
         }
     }
@@ -148,7 +148,7 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
     }
 
     @Override
-    public DBIterator<Workflow> iterator(long studyUid, Query query, QueryOptions options, String user)
+    public DBIterator<ExternalTool> iterator(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         query.put(PRIVATE_STUDY_UID, studyUid);
         MongoDBIterator<Document> mongoCursor = getMongoCursor(null, query, options, user);
@@ -156,7 +156,7 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
     }
 
     @Override
-    public DBIterator<Workflow> iterator(Query query, QueryOptions options)
+    public DBIterator<ExternalTool> iterator(Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         MongoDBIterator<Document> mongoCursor = getMongoCursor(null, query, options, null);
         return new WorkflowCatalogMongoDBIterator<>(mongoCursor, null, workflowConverter, null, options);
@@ -197,30 +197,30 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
     }
 
     @Override
-    public OpenCGAResult<Workflow> groupBy(Query query, List<String> fields, QueryOptions options, String user)
+    public OpenCGAResult<ExternalTool> groupBy(Query query, List<String> fields, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         return null;
     }
 
     @Override
-    public OpenCGAResult<Workflow> groupBy(Query query, String field, QueryOptions options)
+    public OpenCGAResult<ExternalTool> groupBy(Query query, String field, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bsonQuery = parseQuery(query);
-        return groupBy(workflowCollection, bsonQuery, field, WorkflowDBAdaptor.QueryParams.ID.key(), options);
+        return groupBy(workflowCollection, bsonQuery, field, ExternalToolDBAdaptor.QueryParams.ID.key(), options);
     }
 
     @Override
-    public OpenCGAResult<Workflow> groupBy(Query query, List<String> fields, QueryOptions options)
+    public OpenCGAResult<ExternalTool> groupBy(Query query, List<String> fields, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bsonQuery = parseQuery(query);
-        return groupBy(workflowCollection, bsonQuery, fields, WorkflowDBAdaptor.QueryParams.ID.key(), options);
+        return groupBy(workflowCollection, bsonQuery, fields, ExternalToolDBAdaptor.QueryParams.ID.key(), options);
     }
 
     @Override
     public OpenCGAResult<?> distinct(long studyUid, String field, Query query, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query finalQuery = query != null ? new Query(query) : new Query();
-        finalQuery.put(WorkflowDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+        finalQuery.put(ExternalToolDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
         Bson bson = parseQuery(finalQuery, userId);
         return new OpenCGAResult<>(workflowCollection.distinct(field, bson));
     }
@@ -230,7 +230,7 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         StopWatch stopWatch = StopWatch.createStarted();
         Query finalQuery = query != null ? new Query(query) : new Query();
-        finalQuery.put(WorkflowDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+        finalQuery.put(ExternalToolDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
         Bson bson = parseQuery(finalQuery, userId);
 
         Set<String> results = new LinkedHashSet<>();
@@ -250,29 +250,29 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
     }
 
     @Override
-    public OpenCGAResult<Workflow> stats(Query query) {
+    public OpenCGAResult<ExternalTool> stats(Query query) {
         return null;
     }
 
     @Override
-    public OpenCGAResult<Workflow> update(long uid, ObjectMap parameters, QueryOptions queryOptions)
+    public OpenCGAResult<ExternalTool> update(long uid, ObjectMap parameters, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query query = new Query(QueryParams.UID.key(), uid);
         return update(query, parameters, queryOptions);
     }
 
     @Override
-    public OpenCGAResult<Workflow> update(Query query, ObjectMap parameters, QueryOptions queryOptions)
+    public OpenCGAResult<ExternalTool> update(Query query, ObjectMap parameters, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         try {
             return runTransaction(clientSession -> privateUpdate(clientSession, query, parameters, queryOptions));
         } catch (CatalogException e) {
-            logger.error("Could not update workflows for query {}", query.toJson(), e);
-            throw new CatalogDBException("Could not update workflows based on query " + query.toJson() + ": " + e.getMessage(), e);
+            logger.error("Could not update user tools for query {}", query.toJson(), e);
+            throw new CatalogDBException("Could not update user tools based on query " + query.toJson(), e);
         }
     }
 
-    OpenCGAResult<Workflow> privateUpdate(ClientSession clientSession, Query query, ObjectMap parameters, QueryOptions queryOptions)
+    OpenCGAResult<ExternalTool> privateUpdate(ClientSession clientSession, Query query, ObjectMap parameters, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long tmpStartTime = startQuery();
         Bson bsonQuery = parseQuery(query);
@@ -296,12 +296,12 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
                     new QueryOptions(MongoDBCollection.MULTI, true));
 
             if (result.getNumMatches() == 0) {
-                throw new CatalogDBException("Workflow(s) '" + workflowIds + "' not found");
+                throw new CatalogDBException("User tool(s) '" + workflowIds + "' not found");
             }
             if (result.getNumUpdated() == 0) {
-                events.add(new Event(Event.Type.WARNING, workflowIds, "Workflow(s) already updated"));
+                events.add(new Event(Event.Type.WARNING, workflowIds, "User tool(s) already updated"));
             }
-            logger.debug("Workflow(s) '{}' successfully updated", workflowIds);
+            logger.debug("User tool(s) '{}' successfully updated", workflowIds);
 
 
             return endWrite(tmpStartTime, result.getNumMatches(), result.getNumUpdated(), events);
@@ -310,7 +310,7 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
 
     private UpdateDocument parseAndValidateUpdateParams(ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         if (parameters.containsKey(QueryParams.ID.key())) {
-            throw new CatalogDBException("It is not allowed to update the 'id' of a workflow");
+            throw new CatalogDBException("It is not allowed to update the 'id' of a user tool");
         }
 
         UpdateDocument document = new UpdateDocument();
@@ -331,8 +331,7 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
         final String[] acceptedBooleanParams = {QueryParams.DRAFT.key()};
         filterBooleanParams(parameters, document.getSet(), acceptedBooleanParams);
 
-        final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.DESCRIPTION.key(), QueryParams.COMMAND_LINE.key(),
-            QueryParams.TYPE.key()};
+        final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.DESCRIPTION.key(), QueryParams.SCOPE.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
         final String[] acceptedStringListParams = {QueryParams.TAGS.key()};
@@ -341,33 +340,10 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        final String[] acceptedListParams = {QueryParams.MANAGER.key(), QueryParams.SCRIPTS.key(),
-                QueryParams.REPOSITORY.key(), QueryParams.VARIABLES.key(), QueryParams.MINIMUM_REQUIREMENTS.key()};
+        final String[] acceptedListParams = {QueryParams.DOCKER.key(), QueryParams.WORKFLOW_MANAGER.key(),
+                QueryParams.WORKFLOW_SCRIPTS.key(), QueryParams.WORKFLOW_REPOSITORY.key(), QueryParams.TAGS.key(),
+                QueryParams.VARIABLES.key(), QueryParams.MINIMUM_REQUIREMENTS.key()};
         filterObjectParams(parameters, document.getSet(), acceptedListParams);
-
-//        // Check if the scripts exist.
-//        if (parameters.containsKey(QueryParams.SCRIPTS.key())) {
-//            List<WorkflowScript> scriptList = parameters.getAsList(QueryParams.SCRIPTS.key(), WorkflowScript.class);
-//
-//            if (!scriptList.isEmpty()) {
-//                Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
-//                ParamUtils.BasicUpdateAction operation =
-//                        ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.SCRIPTS.key(), ParamUtils.BasicUpdateAction.ADD);
-//                switch (operation) {
-//                    case SET:
-//                        document.getSet().put(QueryParams.SCRIPTS.key(), scriptList);
-//                        break;
-//                    case REMOVE:
-//                        document.getPullAll().put(QueryParams.SCRIPTS.key(), scriptList);
-//                        break;
-//                    case ADD:
-//                        document.getAddToSet().put(QueryParams.SCRIPTS.key(), scriptList);
-//                        break;
-//                    default:
-//                        throw new IllegalArgumentException("Unknown update action " + operation);
-//                }
-//            }
-//        }
 
         if (!document.toFinalUpdateDocument().isEmpty()) {
             String time = TimeUtils.getTime();
@@ -384,27 +360,28 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
     }
 
     @Override
-    public OpenCGAResult<Workflow> delete(Workflow workflow)
+    public OpenCGAResult<ExternalTool> delete(ExternalTool externalTool)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         try {
             Query query = new Query()
-                    .append(QueryParams.UID.key(), workflow.getUid())
-                    .append(QueryParams.STUDY_UID.key(), workflow.getStudyUid());
+                    .append(QueryParams.UID.key(), externalTool.getUid())
+                    .append(QueryParams.STUDY_UID.key(), externalTool.getStudyUid());
             OpenCGAResult<Document> result = nativeGet(query, new QueryOptions());
             if (result.getNumResults() == 0) {
-                throw new CatalogDBException("Could not find workflow " + workflow.getId() + " with uid " + workflow.getUid());
+                throw new CatalogDBException("Could not find user tool " + externalTool.getId() + " with uid " + externalTool.getUid());
             }
             return runTransaction(clientSession -> privateDelete(clientSession, result.first()));
         } catch (CatalogException e) {
-            logger.error("Could not delete workflow {}: {}", workflow.getId(), e.getMessage(), e);
-            throw new CatalogDBException("Could not delete workflow " + workflow.getId() + ": " + e.getMessage(), e);
+            logger.error("Could not delete user tool {}: {}", externalTool.getId(), e.getMessage(), e);
+            throw new CatalogDBException("Could not delete user tool " + externalTool.getId() + ": " + e.getMessage(), e);
         }
     }
 
     @Override
-    public OpenCGAResult<Workflow> delete(Query query) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public OpenCGAResult<ExternalTool> delete(Query query)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         try (DBIterator<Document> iterator = nativeIterator(query, new QueryOptions())) {
-            OpenCGAResult<Workflow> result = OpenCGAResult.empty(Workflow.class);
+            OpenCGAResult<ExternalTool> result = OpenCGAResult.empty(ExternalTool.class);
             while (iterator.hasNext()) {
                 Document workflow = iterator.next();
                 String workflowId = workflow.getString(QueryParams.ID.key());
@@ -412,7 +389,7 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
                 try {
                     result.append(runTransaction(clientSession -> privateDelete(clientSession, workflow)));
                 } catch (CatalogException e) {
-                    logger.error("Could not delete workflow {}: {}", workflowId, e.getMessage(), e);
+                    logger.error("Could not delete user tool {}: {}", workflowId, e.getMessage(), e);
                     result.getEvents().add(new Event(Event.Type.ERROR, workflowId, e.getMessage()));
                     result.setNumMatches(result.getNumMatches() + 1);
                 }
@@ -421,7 +398,7 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
         }
     }
 
-    OpenCGAResult<Workflow> privateDelete(ClientSession clientSession, Document workflowDocument)
+    OpenCGAResult<ExternalTool> privateDelete(ClientSession clientSession, Document workflowDocument)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long tmpStartTime = startQuery();
 
@@ -429,29 +406,29 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
         long workflowUid = workflowDocument.getLong(PRIVATE_UID);
         long studyUid = workflowDocument.getLong(PRIVATE_STUDY_UID);
 
-        logger.debug("Deleting workflow {} ({})", workflowId, workflowUid);
+        logger.debug("Deleting user tool {} ({})", workflowId, workflowUid);
         // Delete workflow
         Query workflowQuery = new Query()
                 .append(QueryParams.UID.key(), workflowUid)
                 .append(QueryParams.STUDY_UID.key(), studyUid);
         Bson bsonQuery = parseQuery(workflowQuery);
         versionedMongoDBAdaptor.delete(clientSession, bsonQuery);
-        logger.debug("Workflow {}({}) deleted", workflowId, workflowUid);
+        logger.debug("User tool {}({}) deleted", workflowId, workflowUid);
         return endWrite(tmpStartTime, 1, 0, 0, 1, Collections.emptyList());
     }
 
     @Override
-    public OpenCGAResult<Workflow> restore(long id, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult<ExternalTool> restore(long id, QueryOptions queryOptions) throws CatalogDBException {
         return null;
     }
 
     @Override
-    public OpenCGAResult<Workflow> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult<ExternalTool> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         return null;
     }
 
     @Override
-    public OpenCGAResult<Workflow> rank(Query query, String field, int numResults, boolean asc)
+    public OpenCGAResult<ExternalTool> rank(Query query, String field, int numResults, boolean asc)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return null;
     }
@@ -506,11 +483,11 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
             boolean simplifyPermissions = simplifyPermissions();
 
             if (query.containsKey(ParamConstants.ACL_PARAM)) {
-                andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.WORKFLOW, user,
+                andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.EXTERNAL_TOOL, user,
                         simplifyPermissions));
             } else {
-                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, WorkflowPermissions.VIEW.name(),
-                            Enums.Resource.WORKFLOW, simplifyPermissions));
+                andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, ExternalToolPermissions.VIEW.name(),
+                        Enums.Resource.EXTERNAL_TOOL, simplifyPermissions));
             }
 
             query.remove(ParamConstants.ACL_PARAM);
@@ -519,18 +496,18 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
         Query queryCopy = new Query(query);
 //        queryCopy.remove(WorkflowDBAdaptor.QueryParams.DELETED.key());
 
-        if ("all".equalsIgnoreCase(queryCopy.getString(WorkflowDBAdaptor.QueryParams.VERSION.key()))) {
+        if ("all".equalsIgnoreCase(queryCopy.getString(ExternalToolDBAdaptor.QueryParams.VERSION.key()))) {
             queryCopy.put(Constants.ALL_VERSIONS, true);
-            queryCopy.remove(WorkflowDBAdaptor.QueryParams.VERSION.key());
+            queryCopy.remove(ExternalToolDBAdaptor.QueryParams.VERSION.key());
         }
 
         boolean uidVersionQueryFlag = versionedMongoDBAdaptor.generateUidVersionQuery(queryCopy, andBsonList);
 
         for (Map.Entry<String, Object> entry : queryCopy.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
-            WorkflowDBAdaptor.QueryParams queryParam = WorkflowDBAdaptor.QueryParams.getParam(entry.getKey()) != null
-                    ? WorkflowDBAdaptor.QueryParams.getParam(entry.getKey())
-                    : WorkflowDBAdaptor.QueryParams.getParam(key);
+            ExternalToolDBAdaptor.QueryParams queryParam = ExternalToolDBAdaptor.QueryParams.getParam(entry.getKey()) != null
+                    ? ExternalToolDBAdaptor.QueryParams.getParam(entry.getKey())
+                    : ExternalToolDBAdaptor.QueryParams.getParam(key);
             if (queryParam == null) {
                 if (Constants.ALL_VERSIONS.equals(entry.getKey())) {
                     continue;
@@ -555,28 +532,17 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
                     case STUDY_UID:
                         addAutoOrQuery(PRIVATE_STUDY_UID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
-//                    case STATUS:
-//                    case STATUS_ID:
-//                        addAutoOrQuery(WorkflowDBAdaptor.QueryParams.STATUS_ID.key(), queryParam.key(), query,
-//                        WorkflowDBAdaptor.QueryParams.STATUS_ID.type(), andBsonList);
-//                        break;
-//                    case INTERNAL_STATUS:
-//                    case INTERNAL_STATUS_ID:
-//                        // Convert the status to a positive status
-//                        query.put(queryParam.key(), InternalStatus.getPositiveStatus(InternalStatus.STATUS_LIST,
-//                                query.getString(queryParam.key())));
-//                        addAutoOrQuery(WorkflowDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), queryParam.key(), query,
-//                                WorkflowDBAdaptor.QueryParams.INTERNAL_STATUS_ID.type(), andBsonList);
-//                        break;
                     case ID:
                     case UUID:
                     case NAME:
+                    case WORKFLOW_REPOSITORY_NAME:
+                    case DOCKER_NAME:
                     case TAGS:
                     case RELEASE:
                     case VERSION:
                     case INTERNAL_REGISTRATION_USER_ID:
-                    case MANAGER_ID:
                     case TYPE:
+                    case SCOPE:
                     case DRAFT:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
@@ -594,8 +560,8 @@ public class WorkflowMongoDBAdaptor extends CatalogMongoDBAdaptor implements Wor
 
         // If the user doesn't look for a concrete version...
         if (!uidVersionQueryFlag && !queryCopy.getBoolean(Constants.ALL_VERSIONS)
-                && !queryCopy.containsKey(WorkflowDBAdaptor.QueryParams.VERSION.key())
-                && queryCopy.containsKey(WorkflowDBAdaptor.QueryParams.SNAPSHOT.key())) {
+                && !queryCopy.containsKey(ExternalToolDBAdaptor.QueryParams.VERSION.key())
+                && queryCopy.containsKey(ExternalToolDBAdaptor.QueryParams.SNAPSHOT.key())) {
             // If the user looks for anything from some release, we will try to find the latest from the release (snapshot)
             andBsonList.add(Filters.eq(LAST_OF_RELEASE, true));
         }

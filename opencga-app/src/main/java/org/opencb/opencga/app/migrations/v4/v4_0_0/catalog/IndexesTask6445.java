@@ -5,12 +5,12 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
 
 @Migration(id = "new_indexes_6445",
         description = "New indexes from #TASK-6445", version = "4.0.0",
-        language = Migration.MigrationLanguage.JAVA, domain = Migration.MigrationDomain.CATALOG, date = 20241113)
+        language = Migration.MigrationLanguage.JAVA, domain = Migration.MigrationDomain.CATALOG, date = 20241113,
+        deprecatedSince = "5.0.0")
 public class IndexesTask6445 extends MigrationTool {
 
     @Override
     protected void run() throws Exception {
-        catalogManager.installIndexes(organizationId, token);
     }
 
 }

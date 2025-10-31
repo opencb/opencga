@@ -1,4 +1,4 @@
-package org.opencb.opencga.core.models.workflow;
+package org.opencb.opencga.core.models.externalTool;
 
 import org.opencb.commons.annotations.DataClass;
 import org.opencb.commons.annotations.DataField;
@@ -9,11 +9,11 @@ import org.opencb.opencga.core.models.job.MinimumRequirements;
 import java.util.List;
 import java.util.Map;
 
-@DataClass(id = "Workflow", since = "3.3.0", description = "Job data model hosts information about any job.")
-public class Workflow extends PrivateStudyUid {
+@DataClass(id = "ExternalTool", since = "3.3.0", description = "External Tool.")
+public class ExternalTool extends PrivateStudyUid {
 
     @DataField(id = "id", required = true, indexed = true, unique = true, immutable = true,
-            description = FieldConstants.WORKFLOW_ID_DESCRIPTION)
+            description = FieldConstants.EXTERNAL_TOOL_ID_DESCRIPTION)
     private String id;
 
     @DataField(id = "uuid", managed = true, indexed = true, unique = true, immutable = true,
@@ -26,29 +26,29 @@ public class Workflow extends PrivateStudyUid {
     @DataField(id = "description", description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
 
-    @DataField(id = "type", description = FieldConstants.WORKFLOW_TYPE_DESCRIPTION)
-    private Type type;
+    @DataField(id = "type", description = FieldConstants.EXTERNAL_TOOL_TYPE_DESCRIPTION)
+    private ExternalToolType type;
 
-    @DataField(id = "manager", description = FieldConstants.WORKFLOW_MANAGER_DESCRIPTION)
-    private WorkflowSystem manager;
+    @DataField(id = "scope", description = FieldConstants.EXTERNAL_TOOL_SCOPE_DESCRIPTION)
+    private ExternalToolScope scope;
 
-    @DataField(id = "tags", description = FieldConstants.WORKFLOW_TAGS_DESCRIPTION)
+    @DataField(id = "workflow", description = FieldConstants.EXTERNAL_TOOL_WORKFLOW_DESCRIPTION)
+    private Workflow workflow;
+
+    @DataField(id = "docker", description = FieldConstants.EXTERNAL_TOOL_DOCKER_DESCRIPTION)
+    private Docker docker;
+
+    @DataField(id = "tags", description = FieldConstants.EXTERNAL_TOOL_TAGS_DESCRIPTION)
     private List<String> tags;
 
-    @DataField(id = "variables", description = FieldConstants.WORKFLOW_VARIABLES_DESCRIPTION)
-    private List<WorkflowVariable> variables;
+    @DataField(id = "variables", description = FieldConstants.EXTERNAL_TOOL_VARIABLES_DESCRIPTION)
+    private List<ExternalToolVariable> variables;
 
     @DataField(id = "minimumRequirements", description = FieldConstants.MINIMUM_REQUIREMENTS_DESCRIPTION)
     private MinimumRequirements minimumRequirements;
 
-    @DataField(id = "draft", description = FieldConstants.WORKFLOW_DRAFT_DESCRIPTION)
+    @DataField(id = "draft", description = FieldConstants.EXTERNAL_TOOL_DRAFT_DESCRIPTION)
     private boolean draft;
-
-    @DataField(id = "repository", description = FieldConstants.WORKFLOW_REPOSITORY_DESCRIPTION)
-    private WorkflowRepository repository;
-
-    @DataField(id = "scripts", description = FieldConstants.WORKFLOW_SCRIPTS_DESCRIPTION)
-    private List<WorkflowScript> scripts;
 
     @DataField(id = "version", managed = true, indexed = true, description = FieldConstants.GENERIC_VERSION_DESCRIPTION)
     private int version;
@@ -56,8 +56,8 @@ public class Workflow extends PrivateStudyUid {
     @DataField(id = "release", managed = true, indexed = true, description = FieldConstants.GENERIC_RELEASE_DESCRIPTION)
     private int release;
 
-    @DataField(id = "internal", description = FieldConstants.WORKFLOW_INTERNAL_DESCRIPTION)
-    private WorkflowInternal internal;
+    @DataField(id = "internal", description = FieldConstants.EXTERNAL_TOOL_INTERNAL_DESCRIPTION)
+    private ExternalToolInternal internal;
 
     @DataField(id = "creationDate", indexed = true, description = FieldConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
@@ -68,31 +68,24 @@ public class Workflow extends PrivateStudyUid {
     @DataField(id = "attributes", description = FieldConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
-    public enum Type {
-        SECONDARY_ANALYSIS,
-        RESEARCH_ANALYSIS,
-        CLINICAL_INTERPRETATION_ANALYSIS,
-        OTHER
+    public ExternalTool() {
     }
 
-    public Workflow() {
-    }
-
-    public Workflow(String id, String name, String description, Type type, WorkflowSystem manager, List<String> tags,
-                    List<WorkflowVariable> variables, MinimumRequirements minimumRequirements, boolean draft,
-                    WorkflowRepository repository, List<WorkflowScript> scripts, WorkflowInternal internal, String creationDate,
-                    String modificationDate, Map<String, Object> attributes) {
+    public ExternalTool(String id, String name, String description, ExternalToolType type, ExternalToolScope scope,
+                        Workflow workflow, Docker docker, List<String> tags, List<ExternalToolVariable> variables,
+                        MinimumRequirements minimumRequirements, boolean draft, ExternalToolInternal internal, String creationDate,
+                        String modificationDate, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.description = description;
-        this.draft = draft;
         this.type = type;
-        this.manager = manager;
-        this.repository = repository;
-        this.scripts = scripts;
+        this.scope = scope;
+        this.workflow = workflow;
+        this.docker = docker;
         this.tags = tags;
         this.variables = variables;
         this.minimumRequirements = minimumRequirements;
+        this.draft = draft;
         this.internal = internal;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
@@ -101,19 +94,19 @@ public class Workflow extends PrivateStudyUid {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("Workflow{");
+        final StringBuilder sb = new StringBuilder("ExternalTool{");
         sb.append("id='").append(id).append('\'');
         sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", type=").append(type);
-        sb.append(", manager=").append(manager);
+        sb.append(", scope=").append(scope);
+        sb.append(", workflow=").append(workflow);
+        sb.append(", docker=").append(docker);
         sb.append(", tags=").append(tags);
         sb.append(", variables=").append(variables);
         sb.append(", minimumRequirements=").append(minimumRequirements);
         sb.append(", draft=").append(draft);
-        sb.append(", repository=").append(repository);
-        sb.append(", scripts=").append(scripts);
         sb.append(", version=").append(version);
         sb.append(", release=").append(release);
         sb.append(", internal=").append(internal);
@@ -129,13 +122,13 @@ public class Workflow extends PrivateStudyUid {
     }
 
     @Override
-    public Workflow setId(String id) {
+    public ExternalTool setId(String id) {
         this.id = id;
         return this;
     }
 
     @Override
-    public Workflow setUid(long uid) {
+    public ExternalTool setUid(long uid) {
         super.setUid(uid);
         return this;
     }
@@ -144,7 +137,7 @@ public class Workflow extends PrivateStudyUid {
         return uuid;
     }
 
-    public Workflow setUuid(String uuid) {
+    public ExternalTool setUuid(String uuid) {
         this.uuid = uuid;
         return this;
     }
@@ -153,7 +146,7 @@ public class Workflow extends PrivateStudyUid {
         return name;
     }
 
-    public Workflow setName(String name) {
+    public ExternalTool setName(String name) {
         this.name = name;
         return this;
     }
@@ -162,71 +155,44 @@ public class Workflow extends PrivateStudyUid {
         return description;
     }
 
-    public Workflow setDescription(String description) {
+    public ExternalTool setDescription(String description) {
         this.description = description;
         return this;
     }
 
-    public boolean isDraft() {
-        return draft;
-    }
-
-    public Workflow setDraft(boolean draft) {
-        this.draft = draft;
-        return this;
-    }
-
-    public int getVersion() {
-        return version;
-    }
-
-    public Workflow setVersion(int version) {
-        this.version = version;
-        return this;
-    }
-
-    public int getRelease() {
-        return release;
-    }
-
-    public Workflow setRelease(int release) {
-        this.release = release;
-        return this;
-    }
-
-    public Type getType() {
+    public ExternalToolType getType() {
         return type;
     }
 
-    public Workflow setType(Type type) {
+    public ExternalTool setType(ExternalToolType type) {
         this.type = type;
         return this;
     }
 
-    public WorkflowSystem getManager() {
-        return manager;
+    public ExternalToolScope getScope() {
+        return scope;
     }
 
-    public Workflow setManager(WorkflowSystem manager) {
-        this.manager = manager;
+    public ExternalTool setScope(ExternalToolScope scope) {
+        this.scope = scope;
         return this;
     }
 
-    public WorkflowRepository getRepository() {
-        return repository;
+    public Workflow getWorkflow() {
+        return workflow;
     }
 
-    public Workflow setRepository(WorkflowRepository repository) {
-        this.repository = repository;
+    public ExternalTool setWorkflow(Workflow workflow) {
+        this.workflow = workflow;
         return this;
     }
 
-    public List<WorkflowScript> getScripts() {
-        return scripts;
+    public Docker getDocker() {
+        return docker;
     }
 
-    public Workflow setScripts(List<WorkflowScript> scripts) {
-        this.scripts = scripts;
+    public ExternalTool setDocker(Docker docker) {
+        this.docker = docker;
         return this;
     }
 
@@ -234,16 +200,16 @@ public class Workflow extends PrivateStudyUid {
         return tags;
     }
 
-    public Workflow setTags(List<String> tags) {
+    public ExternalTool setTags(List<String> tags) {
         this.tags = tags;
         return this;
     }
 
-    public List<WorkflowVariable> getVariables() {
+    public List<ExternalToolVariable> getVariables() {
         return variables;
     }
 
-    public Workflow setVariables(List<WorkflowVariable> variables) {
+    public ExternalTool setVariables(List<ExternalToolVariable> variables) {
         this.variables = variables;
         return this;
     }
@@ -252,16 +218,43 @@ public class Workflow extends PrivateStudyUid {
         return minimumRequirements;
     }
 
-    public Workflow setMinimumRequirements(MinimumRequirements minimumRequirements) {
+    public ExternalTool setMinimumRequirements(MinimumRequirements minimumRequirements) {
         this.minimumRequirements = minimumRequirements;
         return this;
     }
 
-    public WorkflowInternal getInternal() {
+    public boolean isDraft() {
+        return draft;
+    }
+
+    public ExternalTool setDraft(boolean draft) {
+        this.draft = draft;
+        return this;
+    }
+
+    public int getVersion() {
+        return version;
+    }
+
+    public ExternalTool setVersion(int version) {
+        this.version = version;
+        return this;
+    }
+
+    public int getRelease() {
+        return release;
+    }
+
+    public ExternalTool setRelease(int release) {
+        this.release = release;
+        return this;
+    }
+
+    public ExternalToolInternal getInternal() {
         return internal;
     }
 
-    public Workflow setInternal(WorkflowInternal internal) {
+    public ExternalTool setInternal(ExternalToolInternal internal) {
         this.internal = internal;
         return this;
     }
@@ -270,7 +263,7 @@ public class Workflow extends PrivateStudyUid {
         return creationDate;
     }
 
-    public Workflow setCreationDate(String creationDate) {
+    public ExternalTool setCreationDate(String creationDate) {
         this.creationDate = creationDate;
         return this;
     }
@@ -279,7 +272,7 @@ public class Workflow extends PrivateStudyUid {
         return modificationDate;
     }
 
-    public Workflow setModificationDate(String modificationDate) {
+    public ExternalTool setModificationDate(String modificationDate) {
         this.modificationDate = modificationDate;
         return this;
     }
@@ -288,7 +281,7 @@ public class Workflow extends PrivateStudyUid {
         return attributes;
     }
 
-    public Workflow setAttributes(Map<String, Object> attributes) {
+    public ExternalTool setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
         return this;
     }
