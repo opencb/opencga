@@ -30,9 +30,17 @@ on:
         required: true
 
 jobs:
+
+  prepare-hadoop:
+    uses: ./.github/workflows/reusable-prepare-hadoop.yml
+    with:
+      hadoop: ${{ inputs.hadoop }}
+    secrets: inherit
+
   analysis:
     name: Execute Sonar Analysis
     runs-on: ${{ vars.UBUNTU_VERSION }}
+    needs: prepare-hadoop
     if: ${{ inputs.sonar }}
     steps:
       - uses: actions/checkout@v4
@@ -52,10 +60,6 @@ jobs:
           else
              echo "./.github/workflows/scripts/get_same_branch.sh does not exist."
           fi
-      - name: Prepare hadoop profile
-        run: |
-            chmod +x ./.github/workflows/scripts/prepare_hadoop.sh
-            ./.github/workflows/scripts/prepare_hadoop.sh --hadoop-flavour ${{ inputs.hadoop }}
       - name: Test and Analyze
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
@@ -66,6 +70,7 @@ jobs:
   test:
     name: Execute JUnit and Jacoco tests
     runs-on: ${{ vars.UBUNTU_VERSION }}
+    needs: prepare-hadoop
     steps:
       - uses: actions/checkout@v4
         with:
@@ -91,12 +96,6 @@ jobs:
         with:
           mongodb-version: 6.0
           mongodb-replica-set: rs-test
-      - name: Prepare hadoop profile
-        run: |
-          chmod +x ./.github/workflows/scripts/prepare_hadoop.sh
-          ./.github/workflows/scripts/prepare_hadoop.sh --hadoop-flavour ${{ inputs.hadoop }}
-        env:
-          THIRDPARTY_READ_TOKEN: ${{ secrets.THIRDPARTY_READ_TOKEN }}
       - name: Maven build (skip tests)
         run: mvn -B clean install -DskipTests -P ${{ inputs.hadoop }} -Dcheckstyle.skip ${{ inputs.mvn_opts }}
       - name: Build Junit log file name

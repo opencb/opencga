@@ -1,0 +1,24 @@
+name: Reusable delete docker workflow from DockerHub
+
+on:
+  workflow_call:
+    inputs:
+      hadoop:
+        type: string
+        required: true
+
+
+
+
+
+
+jobs:
+  prepare-hadoop:
+    - name: Prepare hadoop profile
+      runs-on: ${{ vars.UBUNTU_VERSION }}
+      steps:
+        run: |
+          chmod +x ./.github/workflows/scripts/prepare_hadoop.sh
+          ./.github/workflows/scripts/prepare_hadoop.sh --hadoop-flavour ${{ inputs.hadoop }}
+        env:
+          THIRDPARTY_READ_TOKEN: ${{ secrets.THIRDPARTY_READ_TOKEN }}
