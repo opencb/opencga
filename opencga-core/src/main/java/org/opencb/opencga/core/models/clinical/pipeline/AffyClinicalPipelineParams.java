@@ -62,7 +62,7 @@ public class AffyClinicalPipelineParams extends ToolParams {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("ClinicalPipelineExecuteParams{");
+        final StringBuilder sb = new StringBuilder("AffyClinicalPipelineParams{");
         sb.append("samples=").append(samples);
         sb.append(", indexDir='").append(indexDir).append('\'');
         sb.append(", steps=").append(steps);
