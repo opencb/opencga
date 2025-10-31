@@ -14,6 +14,7 @@ categories:
       - panels
       - samples
       - cohorts
+      - tools
       - meta
   - name: Analysis
     description: "Analysis commands:"

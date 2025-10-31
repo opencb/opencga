@@ -10,7 +10,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Map;
 
 public class EnterpriseConfiguration {
@@ -37,18 +36,14 @@ public class EnterpriseConfiguration {
         yamlMapper.writerWithDefaultPrettyPrinter().writeValue(configurationOututStream, this);
     }
 
-    public static EnterpriseConfiguration load(Path opencgaHome) {
+    public static EnterpriseConfiguration load(Path opencgaHome) throws IOException {
         // Read enterprise configuration file
-        Path configDirPath = opencgaHome.resolve("conf");
-        InputStream configInputStream;
         try {
-            String confPath = configDirPath.toFile().getAbsolutePath()  + "/enterprise-configuration.yml";
-            logger.info("Reading enterprise-configuration.yml file: '{}'", confPath);
-            configInputStream = Files.newInputStream(Paths.get(confPath));
-            return EnterpriseConfiguration.load(configInputStream);
+            Path configPath = opencgaHome.resolve("conf/enterprise-configuration.yml");
+            logger.info("Reading OpenCGA Enterprise configuration file from '{}'", configPath);
+            return EnterpriseConfiguration.load(Files.newInputStream(configPath));
         } catch (IOException e) {
-            logger.error("Could not load enterprise-configuration.yml file");
-            throw new RuntimeException(e);
+            throw new IOException("Error reading OpenCGA Enterprise configuration file '" + opencgaHome + "': " + e.getMessage(), e);
         }
     }
 
@@ -77,7 +72,7 @@ public class EnterpriseConfiguration {
                     break;
             }
         } catch (IOException e) {
-            throw new IOException("EnterpriseConfiguration file could not be parsed: " + e.getMessage(), e);
+            throw new IOException("OpenCGA Enterprise configuration file could not be parsed: " + e.getMessage(), e);
         }
 
         overwriteWithEnvironmentVariables(enterpriseConfiguration);

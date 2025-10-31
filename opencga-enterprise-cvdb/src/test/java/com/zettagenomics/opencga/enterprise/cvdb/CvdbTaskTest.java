@@ -42,8 +42,7 @@ public class CvdbTaskTest {
 
     private ToolRunner toolRunner;
 
-    @Rule
-    public CvdbSolrExtenalResource cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, organizationId, projectId);
+    public CvdbSolrExtenalResource cvdbSolrExternalResource;
 
     @Rule
     public OpenCGAEnterpriseCatalogManagerExternalResource catalogManagerResource = new OpenCGAEnterpriseCatalogManagerExternalResource();
@@ -57,11 +56,17 @@ public class CvdbTaskTest {
     private static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
 
     @Before
-    public void before() throws Exception {
+    public void before() throws Throwable {
         // Catalog
         catalogManager = catalogManagerResource.getCatalogManager();
         familyManager = catalogManager.getFamilyManager();
         setUpCatalogManager(catalogManager);
+
+        // CVBD
+        CollectionNameGenerator collectionNameGenerator = new CollectionNameGenerator(catalogManager);
+        String collectionPrefix = collectionNameGenerator.getCollectionPrefix(organizationId, projectId, sessionIdUser);
+        cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, organizationId, projectId, collectionPrefix);
+        cvdbSolrExternalResource.before();
 
         // Copy the enterprise configuration in the opencga home
         InputStream stream = CvdbIndexTask.class.getClassLoader().getResourceAsStream("enterprise-configuration.yml");

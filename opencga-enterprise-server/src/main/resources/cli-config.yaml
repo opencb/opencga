@@ -19,6 +19,9 @@ options:
     - java.lang.Float
     - java.lang.
 apiConfig:
+  restMethodParseList:
+    - rest: "tools/custom/run"
+      methodName: "run-custom-docker"
   executorsParentClass: com.zettagenomics.opencga.enterprise.app.cli.main.executors.EnterpriseOpencgaCommandExecutor
   executorsOpencgaClientPrefix: enterprise
   optionsParserParentClass: com.zettagenomics.opencga.enterprise.app.cli.main.options.*
@@ -101,6 +104,9 @@ apiConfig:
       executorExtended: True
       optionExtended: True
       commands:
+        - name: download
+          executorExtended: True
+          optionExtended: True
         - name: upload
           executorExtended: True
           optionExtended: True
@@ -176,6 +182,9 @@ apiConfig:
         - name: import
           ## Rename needed as `import` is a reserved word in Java
           rename: importPanels
+    - name: tools
+      ignore: False
+      key: UserTool
     - name: analysisAlignment
       commandName: alignments
       ignore: False
@@ -219,7 +228,7 @@ apiConfig:
       commandName: meta
       ignore: False
       key: Meta
-    - name: cvdb
+    - name: analysisCvdb  # This is The path of api in camel case @Path("/{apiVersion}/analysis/cvdb")
       commandName: cvdb
       ignore: False
       key: CVDB

@@ -188,6 +188,9 @@ public class EnterpriseCommandProcessor extends CommandProcessor{
             case "federations":
                 commandExecutor = new FederationsCommandExecutor(cliOptionsParser.getFederationsCommandOptions());
                 break;
+            case "cvdb":
+                commandExecutor = new AnalysisCVDBCommandExecutor(cliOptionsParser.getAnalysisCVDBCommandOptions());
+                break;
             case "organizations":
                 commandExecutor = new OrganizationsCommandExecutor(cliOptionsParser.getOrganizationsCommandOptions());
                 break;
@@ -220,6 +223,9 @@ public class EnterpriseCommandProcessor extends CommandProcessor{
                 break;
             case "families":
                 commandExecutor = new FamiliesCommandExecutor(cliOptionsParser.getFamiliesCommandOptions());
+                break;
+            case "tools":
+                commandExecutor = new UserToolsCommandExecutor(cliOptionsParser.getUserToolsCommandOptions());
                 break;
             case "alignments":
                 commandExecutor =

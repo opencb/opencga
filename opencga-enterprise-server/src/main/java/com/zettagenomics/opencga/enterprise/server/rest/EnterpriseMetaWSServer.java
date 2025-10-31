@@ -7,6 +7,7 @@ import com.zettagenomics.opencga.enterprise.catalog.managers.EnterpriseFactory;
 import com.zettagenomics.opencga.enterprise.core.GitUtils;
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import com.zettagenomics.opencga.enterprise.server.EnterpriseResourceConfig;
+import com.zettagenomics.opencga.enterprise.server.commons.EnterpriseParamConstants;
 import com.zettagenomics.opencga.enterprise.server.generator.EnterpriseApiCommonsImpl;
 import org.apache.commons.lang3.StringUtils;
 import org.jasig.cas.client.authentication.AttributePrincipal;
@@ -67,7 +68,7 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
     @GET
     @Path("/api")
     @ApiOperation(value = "API", response = List.class)
-    public Response api(@ApiParam(value = "List of categories to get API from") @QueryParam("category") String categoryStr,
+    public Response api(@ApiParam(value = EnterpriseParamConstants.API_CATEGORY_DESCRIPTION) @QueryParam("category") String categoryStr,
                         @QueryParam("summary") boolean summary) {
         List<Class<?>> classes = new ArrayList<>();
         if (StringUtils.isNotEmpty(categoryStr)) {
@@ -87,14 +88,15 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
     @GET
     @Path("/openapi")
     @ApiOperation(value = "Opencga openapi json", response = String.class)
-    public String openApi(@ApiParam(value = "List of categories to get API from") @QueryParam("token") String token, @QueryParam("environment") String environment) {
+    public String openApi(@ApiParam(value = EnterpriseParamConstants.META_HOST_DESCRIPTION, required = true) @QueryParam("url") String url,
+                          @ApiParam(value = "Opencga study to be default in queries.") @QueryParam("study") String study) {
         JsonOpenApiGenerator generator = new JsonOpenApiGenerator();
-        Swagger swagger = generator.generateJsonOpenApi(new EnterpriseApiCommonsImpl(), token, environment);
-        String swaggerJson ="ERROR: Swagger could not be generated";
+        Swagger swagger = generator.generateJsonOpenApi(new EnterpriseApiCommonsImpl(), token, url, apiVersion, study);
+        String swaggerJson ="ERROR: openapi schema for swagger could not be generated";
         ObjectMapper mapper = new ObjectMapper();
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         try {
-            swaggerJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(swagger).replace("{apiVersion}", "v2");
+            swaggerJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(swagger);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
@@ -104,7 +106,7 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
     @GET
     @Path("/sso/login")
     @ApiOperation(httpMethod = "GET", value = "Single Sign On.", response = Map.class, hidden = true)
-    public Response singleSignOn(@ApiParam(value = "Callback URL") @QueryParam("url") String service) {
+    public Response singleSignOn(@ApiParam(value = EnterpriseParamConstants.SSO_LOGIN_CALLBACK_DESCRIPTION) @QueryParam("url") String service) {
         if (StringUtils.isEmpty(service)) {
             return createErrorResponse(new CatalogParameterException("Missing mandatory field 'service'"));
         }
@@ -137,8 +139,8 @@ public class EnterpriseMetaWSServer extends MetaWSServer {
     @Path("/sso/logout")
     @ApiOperation(httpMethod = "GET", value = "Logout from Single Sign On.", response = Map.class, hidden = true)
     public Response singleSignOnLogout(
-            @ApiParam(value = "Callback URL") @QueryParam("url") String service,
-            @ApiParam(value = "Successfully logout from CAS service", hidden = true, defaultValue = "false") @QueryParam("logout") boolean logout
+            @ApiParam(value = EnterpriseParamConstants.SSO_LOGOUT_CALLBACK_DESCRIPTION) @QueryParam("url") String service,
+            @ApiParam(value = EnterpriseParamConstants.SSO_LOGOUT_SUCCESS_DESCRIPTION, hidden = true, defaultValue = "false") @QueryParam("logout") boolean logout
     ) {
         EnterpriseConfiguration enterpriseConfiguration = EnterpriseFactory.getEnterpriseConfiguration();
         if (enterpriseConfiguration.getSso() == null || !enterpriseConfiguration.getSso().isActive()) {

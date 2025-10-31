@@ -26,8 +26,10 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
     private final AdminCommandOptions adminCommandOptions;
     private final IndividualsCommandOptions individualsCommandOptions;
     private final FamiliesCommandOptions familiesCommandOptions;
+    private final UserToolsCommandOptions userToolsCommandOptions;
     private final UsersCommandOptions usersCommandOptions;
     private final SamplesCommandOptions samplesCommandOptions;
+    private final AnalysisCVDBCommandOptions analysisCVDBCommandOptions;
     private final AnalysisAlignmentCommandOptions analysisAlignmentCommandOptions;
     private final MetaCommandOptions metaCommandOptions;
     private final OrganizationsCommandOptions organizationsCommandOptions;
@@ -222,6 +224,27 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         familiesSubCommands.addCommand("update", familiesCommandOptions.updateCommandOptions);
         familiesSubCommands.addCommand("annotation-sets-annotations-update", familiesCommandOptions.updateAnnotationSetsAnnotationsCommandOptions);
 
+        userToolsCommandOptions = new UserToolsCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("tools", userToolsCommandOptions);
+        JCommander userToolsSubCommands = jCommander.getCommands().get("tools");
+        userToolsSubCommands.addCommand("acl-update", userToolsCommandOptions.updateAclCommandOptions);
+        userToolsSubCommands.addCommand("aggregationstats", userToolsCommandOptions.aggregationStatsCommandOptions);
+        userToolsSubCommands.addCommand("custom-builder-run", userToolsCommandOptions.runCustomBuilderCommandOptions);
+        userToolsSubCommands.addCommand("custom-create", userToolsCommandOptions.createCustomCommandOptions);
+        userToolsSubCommands.addCommand("custom-docker-run", userToolsCommandOptions.runCustomDockerCommandOptions);
+        userToolsSubCommands.addCommand("custom-run", userToolsCommandOptions.runCustomCommandOptions);
+        userToolsSubCommands.addCommand("custom-update", userToolsCommandOptions.updateCustomCommandOptions);
+        userToolsSubCommands.addCommand("distinct", userToolsCommandOptions.distinctCommandOptions);
+        userToolsSubCommands.addCommand("search", userToolsCommandOptions.searchCommandOptions);
+        userToolsSubCommands.addCommand("walker-create", userToolsCommandOptions.createWalkerCommandOptions);
+        userToolsSubCommands.addCommand("workflow-create", userToolsCommandOptions.createWorkflowCommandOptions);
+        userToolsSubCommands.addCommand("workflow-import", userToolsCommandOptions.importWorkflowCommandOptions);
+        userToolsSubCommands.addCommand("workflow-run", userToolsCommandOptions.runWorkflowCommandOptions);
+        userToolsSubCommands.addCommand("workflow-update", userToolsCommandOptions.updateWorkflowCommandOptions);
+        userToolsSubCommands.addCommand("acl", userToolsCommandOptions.aclCommandOptions);
+        userToolsSubCommands.addCommand("delete", userToolsCommandOptions.deleteCommandOptions);
+        userToolsSubCommands.addCommand("info", userToolsCommandOptions.infoCommandOptions);
+
         usersCommandOptions = new UsersCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("users", usersCommandOptions);
         JCommander usersSubCommands = jCommander.getCommands().get("users");
@@ -255,6 +278,21 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         samplesSubCommands.addCommand("info", samplesCommandOptions.infoCommandOptions);
         samplesSubCommands.addCommand("update", samplesCommandOptions.updateCommandOptions);
         samplesSubCommands.addCommand("annotation-sets-annotations-update", samplesCommandOptions.updateAnnotationSetsAnnotationsCommandOptions);
+
+        analysisCVDBCommandOptions = new AnalysisCVDBCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("cvdb", analysisCVDBCommandOptions);
+        JCommander analysisCVDBSubCommands = jCommander.getCommands().get("cvdb");
+        analysisCVDBSubCommands.addCommand("acl-update", analysisCVDBCommandOptions.updateAclCommandOptions);
+        analysisCVDBSubCommands.addCommand("analysis-aggregate", analysisCVDBCommandOptions.aggregateAnalysisCommandOptions);
+        analysisCVDBSubCommands.addCommand("analysis-query", analysisCVDBCommandOptions.queryAnalysisCommandOptions);
+        analysisCVDBSubCommands.addCommand("evidence-aggregate", analysisCVDBCommandOptions.aggregateEvidenceCommandOptions);
+        analysisCVDBSubCommands.addCommand("evidence-query", analysisCVDBCommandOptions.queryEvidenceCommandOptions);
+        analysisCVDBSubCommands.addCommand("index-run", analysisCVDBCommandOptions.runIndexCommandOptions);
+        analysisCVDBSubCommands.addCommand("interpretation-aggregate", analysisCVDBCommandOptions.aggregateInterpretationCommandOptions);
+        analysisCVDBSubCommands.addCommand("interpretation-query", analysisCVDBCommandOptions.queryInterpretationCommandOptions);
+        analysisCVDBSubCommands.addCommand("variant-aggregate", analysisCVDBCommandOptions.aggregateVariantCommandOptions);
+        analysisCVDBSubCommands.addCommand("variant-query", analysisCVDBCommandOptions.queryVariantCommandOptions);
+        analysisCVDBSubCommands.addCommand("variant-stats", analysisCVDBCommandOptions.statsVariantCommandOptions);
 
         analysisAlignmentCommandOptions = new AnalysisAlignmentCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("alignments", analysisAlignmentCommandOptions);
@@ -292,6 +330,7 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         organizationsSubCommands.addCommand("notes-search", organizationsCommandOptions.searchNotesCommandOptions);
         organizationsSubCommands.addCommand("notes-delete", organizationsCommandOptions.deleteNotesCommandOptions);
         organizationsSubCommands.addCommand("notes-update", organizationsCommandOptions.updateNotesCommandOptions);
+        organizationsSubCommands.addCommand("user-password-reset", organizationsCommandOptions.resetUserPasswordCommandOptions);
         organizationsSubCommands.addCommand("update-status-user", organizationsCommandOptions.userUpdateStatusCommandOptions);
         organizationsSubCommands.addCommand("user-update", organizationsCommandOptions.updateUserCommandOptions);
         organizationsSubCommands.addCommand("configuration-update", organizationsCommandOptions.updateConfigurationCommandOptions);
@@ -308,6 +347,7 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         studiesSubCommands.addCommand("info", studiesCommandOptions.infoCommandOptions);
         studiesSubCommands.addCommand("audit-search", studiesCommandOptions.searchAuditCommandOptions);
         studiesSubCommands.addCommand("groups", studiesCommandOptions.groupsCommandOptions);
+        studiesSubCommands.addCommand("groups-sync", studiesCommandOptions.syncGroupsCommandOptions);
         studiesSubCommands.addCommand("groups-update", studiesCommandOptions.updateGroupsCommandOptions);
         studiesSubCommands.addCommand("groups-users-update", studiesCommandOptions.updateGroupsUsersCommandOptions);
         studiesSubCommands.addCommand("notes-create", studiesCommandOptions.createNotesCommandOptions);
@@ -320,6 +360,7 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         studiesSubCommands.addCommand("templates-upload", studiesCommandOptions.uploadTemplatesCommandOptions);
         studiesSubCommands.addCommand("templates-delete", studiesCommandOptions.deleteTemplatesCommandOptions);
         studiesSubCommands.addCommand("update", studiesCommandOptions.updateCommandOptions);
+        studiesSubCommands.addCommand("users-sync", studiesCommandOptions.syncUsersCommandOptions);
         studiesSubCommands.addCommand("variablesets", studiesCommandOptions.variableSetsCommandOptions);
         studiesSubCommands.addCommand("variable-sets-update", studiesCommandOptions.updateVariableSetsCommandOptions);
         studiesSubCommands.addCommand("variable-sets-variables-update", studiesCommandOptions.updateVariableSetsVariablesCommandOptions);
@@ -377,6 +418,7 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
         operationsVariantStorageSubCommands.addCommand("cellbase-configure", operationsVariantStorageCommandOptions.configureCellbaseCommandOptions);
         operationsVariantStorageSubCommands.addCommand("variant-aggregate", operationsVariantStorageCommandOptions.aggregateVariantCommandOptions);
         operationsVariantStorageSubCommands.addCommand("variant-annotation-delete", operationsVariantStorageCommandOptions.deleteVariantAnnotationCommandOptions);
+        operationsVariantStorageSubCommands.addCommand("variant-annotation-extension-configure", operationsVariantStorageCommandOptions.variantAnnotationExtensionConfigureCommandOptions);
         operationsVariantStorageSubCommands.addCommand("variant-annotation-index", operationsVariantStorageCommandOptions.indexVariantAnnotationCommandOptions);
         operationsVariantStorageSubCommands.addCommand("variant-annotation-save", operationsVariantStorageCommandOptions.saveVariantAnnotationCommandOptions);
         operationsVariantStorageSubCommands.addCommand("variant-configure", operationsVariantStorageCommandOptions.configureVariantCommandOptions);
@@ -461,6 +503,11 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
     }
     
     
+    public UserToolsCommandOptions getUserToolsCommandOptions() {
+        return userToolsCommandOptions;
+    }
+    
+    
     public UsersCommandOptions getUsersCommandOptions() {
         return usersCommandOptions;
     }
@@ -468,6 +515,11 @@ public class EnterpriseCliOptionsParser extends CustomCliOptionsParser {
     
     public SamplesCommandOptions getSamplesCommandOptions() {
         return samplesCommandOptions;
+    }
+    
+    
+    public AnalysisCVDBCommandOptions getAnalysisCVDBCommandOptions() {
+        return analysisCVDBCommandOptions;
     }
     
     

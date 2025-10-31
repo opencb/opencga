@@ -3,9 +3,14 @@ package com.zettagenomics.opencga.enterprise.app.cli.main.options;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
+import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.ParametersDelegate;
 
-import static org.opencb.opencga.app.cli.GeneralCliOptions.CommonCommandOptions;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.List;
+
+import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 
 
 /*
@@ -19,47 +24,92 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.CommonCommandOptions;
 */
 
 /**
- * This class contains methods for the CVDB command line.
+ * This class contains methods for the Analysis - CVDB command line.
  *    PATH: /{apiVersion}/analysis/cvdb
  */
-@Parameters(commandNames = {"cvdb"}, commandDescription = "CVDB commands")
-public class
-CVDBCommandOptions {
+@Parameters(commandNames = {"cvdb"}, commandDescription = "Analysis - CVDB commands")
+public class AnalysisCVDBCommandOptions {
 
         public JCommander jCommander;
         public CommonCommandOptions commonCommandOptions;
 
-        public AggregateCaseCommandOptions aggregateCaseCommandOptions;
-        public QueryCaseCommandOptions queryCaseCommandOptions;
-        public AggregateClinicalVariantCommandOptions aggregateClinicalVariantCommandOptions;
-        public QueryClinicalVariantCommandOptions queryClinicalVariantCommandOptions;
-        public StatsClinicalVariantCommandOptions statsClinicalVariantCommandOptions;
+        public UpdateAclCommandOptions updateAclCommandOptions;
+        public AggregateAnalysisCommandOptions aggregateAnalysisCommandOptions;
+        public QueryAnalysisCommandOptions queryAnalysisCommandOptions;
+        public AggregateEvidenceCommandOptions aggregateEvidenceCommandOptions;
+        public QueryEvidenceCommandOptions queryEvidenceCommandOptions;
         public RunIndexCommandOptions runIndexCommandOptions;
         public AggregateInterpretationCommandOptions aggregateInterpretationCommandOptions;
         public QueryInterpretationCommandOptions queryInterpretationCommandOptions;
-        public AggregateVariantEvidenceCommandOptions aggregateVariantEvidenceCommandOptions;
-        public QueryVariantEvidenceCommandOptions queryVariantEvidenceCommandOptions;
+        public AggregateVariantCommandOptions aggregateVariantCommandOptions;
+        public QueryVariantCommandOptions queryVariantCommandOptions;
+        public StatsVariantCommandOptions statsVariantCommandOptions;
 
 
-    public CVDBCommandOptions(CommonCommandOptions commonCommandOptions, JCommander jCommander) {
+    public AnalysisCVDBCommandOptions(CommonCommandOptions commonCommandOptions, JCommander jCommander) {
     
         this.jCommander = jCommander;
         this.commonCommandOptions = commonCommandOptions;
-        this.aggregateCaseCommandOptions = new AggregateCaseCommandOptions();
-        this.queryCaseCommandOptions = new QueryCaseCommandOptions();
-        this.aggregateClinicalVariantCommandOptions = new AggregateClinicalVariantCommandOptions();
-        this.queryClinicalVariantCommandOptions = new QueryClinicalVariantCommandOptions();
-        this.statsClinicalVariantCommandOptions = new StatsClinicalVariantCommandOptions();
+        this.updateAclCommandOptions = new UpdateAclCommandOptions();
+        this.aggregateAnalysisCommandOptions = new AggregateAnalysisCommandOptions();
+        this.queryAnalysisCommandOptions = new QueryAnalysisCommandOptions();
+        this.aggregateEvidenceCommandOptions = new AggregateEvidenceCommandOptions();
+        this.queryEvidenceCommandOptions = new QueryEvidenceCommandOptions();
         this.runIndexCommandOptions = new RunIndexCommandOptions();
         this.aggregateInterpretationCommandOptions = new AggregateInterpretationCommandOptions();
         this.queryInterpretationCommandOptions = new QueryInterpretationCommandOptions();
-        this.aggregateVariantEvidenceCommandOptions = new AggregateVariantEvidenceCommandOptions();
-        this.queryVariantEvidenceCommandOptions = new QueryVariantEvidenceCommandOptions();
+        this.aggregateVariantCommandOptions = new AggregateVariantCommandOptions();
+        this.queryVariantCommandOptions = new QueryVariantCommandOptions();
+        this.statsVariantCommandOptions = new StatsVariantCommandOptions();
     
     }
     
-    @Parameters(commandNames = {"case-aggregate"}, commandDescription ="Calculate and fetch clinical analysis aggregation stats")
-    public class AggregateCaseCommandOptions {
+    @Parameters(commandNames = {"acl-update"}, commandDescription ="Update the set of permissions granted in CVDB for the OpenCGA users that have access to the clinical analyses.")
+    public class UpdateAclCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--job-id"}, description = "Job ID. It must be a unique string within the study. An ID will be autogenerated automatically if not provided.", required = false, arity = 1)
+        public String jobId; 
+    
+        @Parameter(names = {"--job-description"}, description = "Job description", required = false, arity = 1)
+        public String jobDescription; 
+    
+        @Parameter(names = {"--job-depends-on"}, description = "Comma separated list of existing job IDs the job will depend on.", required = false, arity = 1)
+        public String jobDependsOn; 
+    
+        @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
+        public String jobTags; 
+    
+        @Parameter(names = {"--job-scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String jobScheduledStartTime; 
+    
+        @Parameter(names = {"--job-priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String jobPriority; 
+    
+        @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean jobDryRun; 
+    
+        @Parameter(names = {"--clinical-analysis-ids"}, description = "List of clinical analyses to update ACLs.", required = false, arity = 1)
+        public String clinicalAnalysisIds;
+    
+        @Parameter(names = {"--all-project"}, description = "Updates ACLs from all clinical analyses within the project.", required = false, help = true, arity = 0)
+        public boolean allProject = false;
+    
+    }
+
+    @Parameters(commandNames = {"analysis-aggregate"}, commandDescription ="Calculate and fetch clinical analysis aggregation stats")
+    public class AggregateAnalysisCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
@@ -366,8 +416,8 @@ CVDBCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"case-query"}, commandDescription ="Filter and fetch clinical analyses from CVDB")
-    public class QueryCaseCommandOptions {
+    @Parameters(commandNames = {"analysis-query"}, commandDescription ="Filter and fetch clinical analyses from CVDB")
+    public class QueryAnalysisCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
@@ -683,8 +733,8 @@ CVDBCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"clinical-variant-aggregate"}, commandDescription ="Calculate and fetch clinical variant aggregation stats")
-    public class AggregateClinicalVariantCommandOptions {
+    @Parameters(commandNames = {"evidence-aggregate"}, commandDescription ="Calculate and fetch clinical variant evidence aggregation stats")
+    public class AggregateEvidenceCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
@@ -986,13 +1036,13 @@ CVDBCommandOptions {
         @Parameter(names = {"--cve-review-text"}, description = "Clinical variant evidence review text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
         public String cveReviewText; 
     
-        @Parameter(names = {"--field"}, description = "List of facet fields separated by semicolons, e.g.: type;biotypes. For nested faceted fields use >>, e.g.: type>>biotypes. Accepted values: caId, ciId, variantId, studyId, primary, discussionAuthor, discussionDate,discussionText, confidenceValue, confidenceAuthor, confidenceDate, tags, status, chromosome, start, end, xrefs, type, release, studies, phastCons, phylop, gerp, caddRaw, caddScaled, sift, siftDesc, polyphen, polyphenDesc, genes, biotypes, soAcc, clinicalSig", required = false, arity = 1)
+        @Parameter(names = {"--field"}, description = "List of facet fields separated by semicolons, e.g.: geneName;tier. For nested faceted fields use >>, e.g.: geneName>>tier. Accepted values: caId, ciId, cvId, variantId, studyId, phenotypeNames, geneName, transcriptId, soTermNames, xrefIds, panelId, mois, penetrance, acmgs, tier, clinicalSignificance, drugResponse, traitAssociation, functionalEffect, tumorigenesis, otherClassifications, rolesInCancer, reviewAcmgs, reviewTier, reviewClinicalSignificance", required = false, arity = 1)
         public String field; 
     
     }
 
-    @Parameters(commandNames = {"clinical-variant-query"}, commandDescription ="Filter and fetch clinical variants from CVDB")
-    public class QueryClinicalVariantCommandOptions {
+    @Parameters(commandNames = {"evidence-query"}, commandDescription ="Filter and fetch clinical variant evidences from CVDB")
+    public class QueryEvidenceCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
@@ -1305,29 +1355,6 @@ CVDBCommandOptions {
     
         @Parameter(names = {"--cve-review-text"}, description = "Clinical variant evidence review text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
         public String cveReviewText; 
-    
-    }
-
-    @Parameters(commandNames = {"clinical-variant-stats"}, commandDescription ="Get clinical variant summary from CVDB")
-    public class StatsClinicalVariantCommandOptions {
-    
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
-    
-        @Parameter(names = {"--variant-ids"}, description = "Comma separated list of variant IDs", required = true, arity = 1)
-        public String variantIds; 
-    
-        @Parameter(names = {"--project", "-p"}, description = "Project ID", required = false, arity = 1)
-        public String project; 
-    
-        @Parameter(names = {"--ci-status-id"}, description = "Clinical interpretation status ID (or list of IDs separated by commas). Valid values: NOT_STARTED, ACTIVE, DONE, CLOSED.", required = false, arity = 1)
-        public String ciStatusId; 
-    
-        @Parameter(names = {"--stats-order"}, description = "The sorting order of the results (i.e., buckets) based on their counts. For ascending order use, 'asc' or 'ascending'; for descending order, 'desc' or 'descending'. Default value: desc", required = false, arity = 1)
-        public String statsOrder = "desc"; 
-    
-        @Parameter(names = {"--stats-limit"}, description = "Maximum number of results (i.e., buckets) to return for each aggregation. Default value: 10", required = false, arity = 1)
-        public Integer statsLimit = 10; 
     
     }
 
@@ -2003,8 +2030,8 @@ CVDBCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"variant-evidence-aggregate"}, commandDescription ="Calculate and fetch clinical variant evidence aggregation stats")
-    public class AggregateVariantEvidenceCommandOptions {
+    @Parameters(commandNames = {"variant-aggregate"}, commandDescription ="Calculate and fetch clinical variant aggregation stats")
+    public class AggregateVariantCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
@@ -2306,13 +2333,13 @@ CVDBCommandOptions {
         @Parameter(names = {"--cve-review-text"}, description = "Clinical variant evidence review text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
         public String cveReviewText; 
     
-        @Parameter(names = {"--field"}, description = "List of facet fields separated by semicolons, e.g.: geneName;tier. For nested faceted fields use >>, e.g.: geneName>>tier. Accepted values: caId, ciId, cvId, variantId, studyId, phenotypeNames, geneName, transcriptId, soTermNames, xrefIds, panelId, mois, penetrance, acmgs, tier, clinicalSignificance, drugResponse, traitAssociation, functionalEffect, tumorigenesis, otherClassifications, rolesInCancer, reviewAcmgs, reviewTier, reviewClinicalSignificance", required = false, arity = 1)
+        @Parameter(names = {"--field"}, description = "List of facet fields separated by semicolons, e.g.: type;biotypes. For nested faceted fields use >>, e.g.: type>>biotypes. Accepted values: caId, ciId, variantId, studyId, primary, discussionAuthor, discussionDate,discussionText, confidenceValue, confidenceAuthor, confidenceDate, tags, status, chromosome, start, end, xrefs, type, release, studies, phastCons, phylop, gerp, caddRaw, caddScaled, sift, siftDesc, polyphen, polyphenDesc, genes, biotypes, soAcc, clinicalSig", required = false, arity = 1)
         public String field; 
     
     }
 
-    @Parameters(commandNames = {"variant-evidence-query"}, commandDescription ="Filter and fetch clinical variant evidences from CVDB")
-    public class QueryVariantEvidenceCommandOptions {
+    @Parameters(commandNames = {"variant-query"}, commandDescription ="Filter and fetch clinical variants from CVDB")
+    public class QueryVariantCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
@@ -2625,6 +2652,20 @@ CVDBCommandOptions {
     
         @Parameter(names = {"--cve-review-text"}, description = "Clinical variant evidence review text (word or list of words contained in the text, if the words are separated by a comma an OR will be applied; if the words are separated by a semicolon, an AND will be applied)", required = false, arity = 1)
         public String cveReviewText; 
+    
+    }
+
+    @Parameters(commandNames = {"variant-stats"}, commandDescription ="Get clinical variant summary from CVDB")
+    public class StatsVariantCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--variant-id"}, description = "Variant ID (or comma separated list of variant IDs)", required = true, arity = 1)
+        public String variantId; 
+    
+        @Parameter(names = {"--project", "-p"}, description = "Project ID(or command separated list of project IDs)", required = false, arity = 1)
+        public String project; 
     
     }
 
