@@ -57,10 +57,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -194,130 +192,6 @@ public class PanelManager extends ResourceManager<Panel> {
             auditManager.auditCreate(organizationId, userId, Enums.Resource.DISEASE_PANEL, panel.getId(), "", study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
-        }
-    }
-
-    @Deprecated
-    public OpenCGAResult<Panel> importFromSource(String studyId, String source, String panelIds, String token) throws CatalogException {
-        JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
-        CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, tokenPayload);
-        String organizationId = studyFqn.getOrganizationId();
-        String userId = tokenPayload.getUserId(organizationId);
-        Study study = catalogManager.getStudyManager().resolveId(studyId, userId, organizationId);
-
-        ObjectMap auditParams = new ObjectMap()
-                .append("studyId", studyId)
-                .append("source", source)
-                .append("panelIds", panelIds)
-                .append("token", token);
-        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
-
-        try {
-            // 1. We check everything can be done
-            authorizationManager.checkStudyPermission(organizationId, study.getUid(), userId, StudyPermissions.Permissions.WRITE_PANELS);
-            ParamUtils.checkParameter(source, "source");
-
-            List<String> sources = Arrays.asList(source.split(","));
-            if (StringUtils.isNotEmpty(panelIds) && sources.size() > 1) {
-                throw new CatalogParameterException("List of panel ids only valid for 1 source. More than 1 source found.");
-            }
-
-            HashSet<String> sourceSet = new HashSet<>(sources);
-            if (sourceSet.size() < sources.size()) {
-                throw new CatalogException("Duplicated sources found.");
-            }
-
-            String host = configuration.getPanel().getHost();
-            if (StringUtils.isEmpty(host)) {
-                throw new CatalogException("Configuration of panel host missing. Please, consult with your administrator.");
-            }
-            if (!host.endsWith("/")) {
-                host = host + "/";
-            }
-
-            // Obtain available sources from panel host
-            Set<String> availableSources = new HashSet<>();
-            URL url = new URL(host + "sources.txt");
-            logger.info("Fetching available sources from '{}'", url);
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    availableSources.add(line.toLowerCase());
-                }
-            }
-
-            // Validate sources are known
-            for (String auxSource : sources) {
-                if (!availableSources.contains(auxSource.toLowerCase())) {
-                    throw new CatalogException("Unknown source '" + source + "'. Available sources are " + availableSources);
-                }
-            }
-
-            OpenCGAResult<Panel> result = OpenCGAResult.empty();
-            List<Panel> importedPanels = new LinkedList<>();
-            for (String auxSource : sources) {
-                // Obtain available panel ids from panel host
-                Set<String> availablePanelIds = new HashSet<>();
-                url = new URL(host + auxSource + "/panels.txt");
-                logger.info("Fetching available panel ids from '{}'", url);
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()))) {
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        availablePanelIds.add(line);
-                    }
-                }
-
-                List<String> panelIdList;
-                if (StringUtils.isNotEmpty(panelIds)) {
-                    panelIdList = Arrays.asList(panelIds.split(","));
-
-                    // Validate all panel ids exist
-                    for (String panelId : panelIdList) {
-                        if (!availablePanelIds.contains(panelId)) {
-                            throw new CatalogException("Unknown panel id '" + panelId + "'.");
-                        }
-                    }
-                } else {
-                    panelIdList = new ArrayList<>(availablePanelIds);
-                }
-
-                List<Panel> panelList = new ArrayList<>(panelIdList.size());
-                // First we download all the parsed panels to avoid possible issues
-                for (String panelId : panelIdList) {
-                    url = new URL(host + auxSource + "/" + panelId + ".json");
-                    logger.info("Downloading panel '{}' from '{}'", panelId, url);
-                    try (InputStream inputStream = url.openStream()) {
-                        Panel panel = JacksonUtils.getDefaultObjectMapper().readValue(inputStream, Panel.class);
-                        autoCompletePanel(organizationId, study, panel);
-                        panelList.add(panel);
-                    }
-                }
-
-                logger.info("Inserting panels in database");
-                result.append(getPanelDBAdaptor(organizationId).insert(study.getUid(), panelList));
-            }
-            result.setResults(importedPanels);
-            auditManager.initAuditBatch(operationId);
-            // Audit creation
-            for (Panel importedPanel : importedPanels) {
-                auditManager.audit(organizationId, operationId, userId, Enums.Action.IMPORT, Enums.Resource.DISEASE_PANEL,
-                        importedPanel.getId(), importedPanel.getUuid(), study.getId(), study.getUuid(), auditParams,
-                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
-            }
-            auditManager.finishAuditBatch(organizationId, operationId);
-
-            return result;
-        } catch (CatalogException e) {
-            auditManager.audit(organizationId, operationId, userId, Enums.Action.IMPORT, Enums.Resource.DISEASE_PANEL, "", "",
-                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()),
-                    new ObjectMap());
-            throw e;
-        } catch (IOException e) {
-            CatalogException exception = new CatalogException("Error parsing panels: " + e.getMessage(), e);
-            auditManager.audit(organizationId, operationId, userId, Enums.Action.IMPORT, Enums.Resource.DISEASE_PANEL, "", "",
-                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
-                            exception.getError()), new ObjectMap());
-            throw exception;
         }
     }
 
