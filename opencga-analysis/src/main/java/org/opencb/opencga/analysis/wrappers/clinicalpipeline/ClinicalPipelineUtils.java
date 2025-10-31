@@ -19,6 +19,7 @@ public class ClinicalPipelineUtils {
     public static final String NGS_PIPELINE_SCRIPT = "main.py";
     public static final String PREPARERE_NGS_PIPELINE_SCRIPT_COMMAND = "prepare";
     public static final String GENOMICS_NGS_PIPELINE_SCRIPT_COMMAND = "genomics";
+    public static final String AFFY_PIPELINE_SCRIPT_COMMAND = "affy";
 
     public static final String INDEX_VIRTUAL_PATH = "/index";
     public static final String REFERENCE_VIRTUAL_PATH = "/reference";
@@ -31,8 +32,11 @@ public class ClinicalPipelineUtils {
     public static final String QUALITY_CONTROL_PIPELINE_STEP = "quality-control";
     public static final String ALIGNMENT_PIPELINE_STEP = "alignment";
     public static final String VARIANT_CALLING_PIPELINE_STEP = "variant-calling";
+    public static final String GENOTYPE_PIPELINE_STEP = "genotype";
     protected static final Set<String> VALID_PIPELINE_STEPS = new HashSet<>(Arrays.asList(QUALITY_CONTROL_PIPELINE_STEP,
             ALIGNMENT_PIPELINE_STEP, VARIANT_CALLING_PIPELINE_STEP));
+    protected static final Set<String> VALID_AFFY_PIPELINE_STEPS = new HashSet<>(Arrays.asList(QUALITY_CONTROL_PIPELINE_STEP,
+            GENOTYPE_PIPELINE_STEP));
 
     private ClinicalPipelineUtils() {
         throw new IllegalStateException("Utility class");

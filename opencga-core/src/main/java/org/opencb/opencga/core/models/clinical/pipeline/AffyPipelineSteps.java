@@ -23,22 +23,22 @@ public class AffyPipelineSteps {
     @DataField(id = "qualityControl", description = "Quality control step")
     private QualityControlPipelineStep qualityControl;
 
-    @DataField(id = "variantCalling", description = "Variant calling step")
-    private GenomicsVariantCallingPipelineStep variantCalling;
+    @DataField(id = "genotype", description = "Genotype step")
+    private AffyGenotypePipelineStep genotype;
 
     public AffyPipelineSteps() {
     }
 
-    public AffyPipelineSteps(QualityControlPipelineStep qualityControl, GenomicsVariantCallingPipelineStep variantCalling) {
+    public AffyPipelineSteps(QualityControlPipelineStep qualityControl, AffyGenotypePipelineStep genotype) {
         this.qualityControl = qualityControl;
-        this.variantCalling = variantCalling;
+        this.genotype = genotype;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("PipelineSteps{");
         sb.append("qualityControl=").append(qualityControl);
-        sb.append(", variantCalling=").append(variantCalling);
+        sb.append(", genotype=").append(genotype);
         sb.append('}');
         return sb.toString();
     }
@@ -52,12 +52,12 @@ public class AffyPipelineSteps {
         return this;
     }
 
-    public GenomicsVariantCallingPipelineStep getVariantCalling() {
-        return variantCalling;
+    public AffyGenotypePipelineStep getGenotypeStep() {
+        return genotype;
     }
 
-    public AffyPipelineSteps setVariantCalling(GenomicsVariantCallingPipelineStep variantCalling) {
-        this.variantCalling = variantCalling;
+    public AffyPipelineSteps setGenotypeStep(AffyGenotypePipelineStep genotype) {
+        this.genotype = genotype;
         return this;
     }
 }

@@ -42,16 +42,16 @@ public class AffyClinicalPipelineParams extends ToolParams {
     private String pipelineFile;
 
     @DataField(id = "pipeline", description = FieldConstants.CLINICAL_PIPELINE_PIPELINE_DESCRIPTION)
-    private PipelineConfig pipeline;
+    private AffyPipelineConfig pipeline;
 
     public AffyClinicalPipelineParams() {
         this.samples = new ArrayList<>();
         this.steps = new ArrayList<>();
-        pipeline = new PipelineConfig();
+        pipeline = new AffyPipelineConfig();
     }
 
     public AffyClinicalPipelineParams(List<String> samples, String indexDir, List<String> steps, VariantIndexParams variantIndexParams,
-                                      String pipelineFile, PipelineConfig pipeline) {
+                                      String pipelineFile, AffyPipelineConfig pipeline) {
         this.samples = samples;
         this.indexDir = indexDir;
         this.steps = steps;
@@ -118,11 +118,11 @@ public class AffyClinicalPipelineParams extends ToolParams {
         return this;
     }
 
-    public PipelineConfig getPipeline() {
+    public AffyPipelineConfig getPipeline() {
         return pipeline;
     }
 
-    public AffyClinicalPipelineParams setPipeline(PipelineConfig pipeline) {
+    public AffyClinicalPipelineParams setPipeline(AffyPipelineConfig pipeline) {
         this.pipeline = pipeline;
         return this;
     }
