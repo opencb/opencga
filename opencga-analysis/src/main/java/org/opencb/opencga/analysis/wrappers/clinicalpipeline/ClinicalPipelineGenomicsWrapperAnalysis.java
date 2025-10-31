@@ -41,12 +41,12 @@ public class ClinicalPipelineGenomicsWrapperAnalysis extends OpenCgaToolScopeStu
     private static final String VARIANT_INDEX_STEP = "variant-index";
 
     private List<String> pipelineSteps;
-    private PipelineConfig updatedPipelineConfig = new PipelineConfig();
+    private GenomicsPipelineConfig updatedPipelineConfig = new GenomicsPipelineConfig();
 
     private List<String> variantCallingToolIds = new ArrayList<>();
 
     @ToolParams
-    protected final ClinicalPipelineGenomicsWrapperParams analysisParams = new ClinicalPipelineGenomicsWrapperParams();
+    protected final GenomicsClinicalPipelineWrapperParams analysisParams = new GenomicsClinicalPipelineWrapperParams();
 
     @Override
     protected void check() throws Exception {
@@ -306,7 +306,7 @@ public class ClinicalPipelineGenomicsWrapperAnalysis extends OpenCgaToolScopeStu
         }
     }
 
-    private void validateAlignmentTool(PipelineAlignmentTool tool) throws ToolException, CatalogException {
+    private void validateAlignmentTool(GenomicsAlignmentPipelineTool tool) throws ToolException, CatalogException {
         validateTool(ALIGNMENT_PIPELINE_STEP, tool);
 
         // Check the index is provided, and update with the real path (from OpenCGA catalog)
@@ -328,11 +328,11 @@ public class ClinicalPipelineGenomicsWrapperAnalysis extends OpenCgaToolScopeStu
         }
     }
 
-    private void validateVariantCallingTools(List<PipelineVariantCallingTool> pipelineTools) throws ToolException, CatalogException {
+    private void validateVariantCallingTools(List<GenomicsVariantCallingPipelineTool> pipelineTools) throws ToolException, CatalogException {
         if (CollectionUtils.isEmpty(pipelineTools)) {
             throw new ToolException("Missing tools for clinical pipeline step: " + VARIANT_CALLING_PIPELINE_STEP);
         }
-        for ( PipelineVariantCallingTool tool : pipelineTools) {
+        for ( GenomicsVariantCallingPipelineTool tool : pipelineTools) {
             validateTool(VARIANT_CALLING_PIPELINE_STEP, tool);
 
             // Check the reference is provided, and update with the real path (from OpenCGA catalog)

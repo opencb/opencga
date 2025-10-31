@@ -46,25 +46,25 @@ public class ClinicalPipelineGenomicsWrapperAnalysisExecutor extends DockerWrapp
     private String study;
 
     private Path scriptPath;
-    private PipelineConfig pipelineConfig;
+    private GenomicsPipelineConfig pipelineConfig;
     private List<String> pipelineSteps;
 
     @Override
     protected void run() throws Exception {
         // First, run QC (e.g. FastQC) and alignment (e.g. BWA)
         if (pipelineSteps.contains(QUALITY_CONTROL_PIPELINE_STEP) || pipelineSteps.contains(ALIGNMENT_PIPELINE_STEP)) {
-            PipelineConfig pipeline = ClinicalPipelineUtils.copyPipelineConfig(pipelineConfig);
+            GenomicsPipelineConfig pipeline = ClinicalPipelineUtils.copyPipelineConfig(pipelineConfig);
             runQcAndAlignment(pipeline);
         }
 
         // Then, run the variant calling (e.g. GATK HaplotypeCaller)
         if (pipelineSteps.contains(VARIANT_CALLING_PIPELINE_STEP)) {
-            PipelineConfig pipeline = ClinicalPipelineUtils.copyPipelineConfig(pipelineConfig);
+            GenomicsPipelineConfig pipeline = ClinicalPipelineUtils.copyPipelineConfig(pipelineConfig);
             runVariantCalling(pipeline);
         }
     }
 
-    private void runQcAndAlignment(PipelineConfig pipeline) throws ToolExecutorException {
+    private void runQcAndAlignment(GenomicsPipelineConfig pipeline) throws ToolExecutorException {
         try {
             // Input bindings (and read only input bindings)
             List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
@@ -99,7 +99,7 @@ public class ClinicalPipelineGenomicsWrapperAnalysisExecutor extends DockerWrapp
                     && pipeline.getSteps().getAlignment() != null
                     && pipeline.getSteps().getAlignment().getTool() != null
                     && StringUtils.isNotEmpty(pipeline.getSteps().getAlignment().getTool().getIndex())) {
-                PipelineAlignmentTool tool = pipeline.getSteps().getAlignment().getTool();
+                GenomicsAlignmentPipelineTool tool = pipeline.getSteps().getAlignment().getTool();
                 Path virtualPath = Paths.get(INDEX_VIRTUAL_PATH + "_" + tool.getId().replace("-", "_"));
                 inputBindings.add(new AbstractMap.SimpleEntry<>(Paths.get(tool.getIndex()).toAbsolutePath().toString(),
                         virtualPath.toString()));
@@ -131,7 +131,7 @@ public class ClinicalPipelineGenomicsWrapperAnalysisExecutor extends DockerWrapp
         }
     }
 
-    private void runVariantCalling(PipelineConfig pipeline) throws ToolExecutorException {
+    private void runVariantCalling(GenomicsPipelineConfig pipeline) throws ToolExecutorException {
         try {
             // Input bindings (and read only input bindings)
             List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
@@ -144,7 +144,7 @@ public class ClinicalPipelineGenomicsWrapperAnalysisExecutor extends DockerWrapp
             // Update variant calling reference if necessary
             if (pipeline.getSteps().getVariantCalling() != null
                     && CollectionUtils.isNotEmpty(pipeline.getSteps().getVariantCalling().getTools())) {
-                for (PipelineVariantCallingTool tool : pipeline.getSteps().getVariantCalling().getTools()) {
+                for (GenomicsVariantCallingPipelineTool tool : pipeline.getSteps().getVariantCalling().getTools()) {
                     if (StringUtils.isNotEmpty(tool.getReference())) {
                         Path virtualPath = Paths.get(REFERENCE_VIRTUAL_PATH + "_" + tool.getId().replace("-", "_"));
                         inputBindings.add(new AbstractMap.SimpleEntry<>(Paths.get(tool.getReference()).toAbsolutePath().toString(),
@@ -272,7 +272,7 @@ public class ClinicalPipelineGenomicsWrapperAnalysisExecutor extends DockerWrapp
         return pipelineConfig;
     }
 
-    public ClinicalPipelineGenomicsWrapperAnalysisExecutor setPipelineConfig(PipelineConfig pipelineConfig) {
+    public ClinicalPipelineGenomicsWrapperAnalysisExecutor setPipelineConfig(GenomicsPipelineConfig pipelineConfig) {
         this.pipelineConfig = pipelineConfig;
         return this;
     }

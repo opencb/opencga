@@ -20,19 +20,19 @@ import org.opencb.commons.annotations.DataField;
 
 import java.util.Map;
 
-public class PipelineAlignmentTool extends PipelineTool {
+public class GenomicsAlignmentPipelineTool extends PipelineTool {
 
     @DataField(id = "index", description = "Tool index path")
     private String index;
 
-    public PipelineAlignmentTool() {
+    public GenomicsAlignmentPipelineTool() {
     }
 
-    public PipelineAlignmentTool(String index) {
+    public GenomicsAlignmentPipelineTool(String index) {
         this.index = index;
     }
 
-    public PipelineAlignmentTool(String id, Map<String, Object> parameters, Map<String, Object> options, String index) {
+    public GenomicsAlignmentPipelineTool(String id, Map<String, Object> parameters, Map<String, Object> options, String index) {
         super(id, parameters, options);
         this.index = index;
     }
@@ -52,7 +52,7 @@ public class PipelineAlignmentTool extends PipelineTool {
         return index;
     }
 
-    public PipelineAlignmentTool setIndex(String index) {
+    public GenomicsAlignmentPipelineTool setIndex(String index) {
         this.index = index;
         return this;
     }

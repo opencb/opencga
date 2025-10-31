@@ -38,10 +38,18 @@ public class ClinicalPipelineUtils {
         throw new IllegalStateException("Utility class");
     }
 
-    public static PipelineConfig copyPipelineConfig(PipelineConfig input) throws JsonProcessingException {
+//    public static PipelineConfig copyPipelineConfig(PipelineConfig input) throws JsonProcessingException {
+//        ObjectMapper mapper = new ObjectMapper();
+//        String pipeline = mapper.writeValueAsString(input);
+//        return mapper.readValue(pipeline, PipelineConfig.class);
+//    }
+
+    public static <T extends PipelineConfig> T copyPipelineConfig(T input) throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
         String pipeline = mapper.writeValueAsString(input);
-        return mapper.readValue(pipeline, PipelineConfig.class);
+        @SuppressWarnings("unchecked")
+        T copy = (T) mapper.readValue(pipeline, input.getClass());
+        return copy;
     }
 
     public static boolean isURL(String input) {

@@ -20,40 +20,38 @@ import org.opencb.commons.annotations.DataField;
 
 import java.util.Map;
 
-public class PipelineVariantCallingTool extends PipelineTool {
+public class QualityControlPipelineStep extends PipelineStep {
 
-    @DataField(id = "reference", description = "Reference genome path")
-    private String reference;
+    @DataField(id = "tool", description = "Quality control tool")
+    private PipelineTool tool;
 
-    public PipelineVariantCallingTool() {
+    public QualityControlPipelineStep() {
     }
 
-    public PipelineVariantCallingTool(String reference) {
-        this.reference = reference;
+    public QualityControlPipelineStep(GenomicsAlignmentPipelineTool tool) {
+        this.tool = tool;
     }
 
-    public PipelineVariantCallingTool(String id, Map<String, Object> parameters, Map<String, Object> options, String reference) {
-        super(id, parameters, options);
-        this.reference = reference;
+    public QualityControlPipelineStep(Map<String, Object> options, GenomicsAlignmentPipelineTool tool) {
+        super(options);
+        this.tool = tool;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("PipelineVariantCallingTool{");
-        sb.append("reference='").append(reference).append('\'');
-        sb.append(", id='").append(id).append('\'');
-        sb.append(", parameters=").append(parameters);
+        final StringBuilder sb = new StringBuilder("PipelineQualityControlStep{");
+        sb.append("tool=").append(tool);
         sb.append(", options=").append(options);
         sb.append('}');
         return sb.toString();
     }
 
-    public String getReference() {
-        return reference;
+    public PipelineTool getTool() {
+        return tool;
     }
 
-    public PipelineVariantCallingTool setReference(String reference) {
-        this.reference = reference;
+    public QualityControlPipelineStep setTool(PipelineTool tool) {
+        this.tool = tool;
         return this;
     }
 }

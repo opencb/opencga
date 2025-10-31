@@ -34,8 +34,8 @@ def parse_args(argv=None):
     ## --- genomics command ---
     run_parser = subparsers.add_parser("genomics", help="Align reads to reference genome")
     run_parser.add_argument("-p", "--pipeline", help="Pipeline step to execute")
-    run_parser.add_argument("-i", "--index-dir", help="Input data file or directory")
     run_parser.add_argument("-s", "--samples", help="Input data file or directory")
+    run_parser.add_argument("-i", "--index-dir", help="Input data file or directory")
     run_parser.add_argument("--steps", default="quality-control,alignment,variant-calling", help="Pipeline step to execute")
     run_parser.add_argument("--overwrite", action="store_true", help="Force re-run even if step previously completed")
     run_parser.add_argument("-c", "--clean", action="store_true", help="Clean existing directory before running")
@@ -55,6 +55,20 @@ def parse_args(argv=None):
     run_parser.add_argument("-l", "--log-level", default="INFO", choices=["debug", "info", "warning", "error"],
                             help="Set console logging level")
     run_parser.add_argument("-o", "--outdir", required=True, help="Base output directory, step subfolders will be created")
+
+    ## --- affy command ---
+    run_parser = subparsers.add_parser("affy", help="Align reads to reference genome")
+    run_parser.add_argument("-p", "--pipeline", help="Pipeline step to execute")
+    run_parser.add_argument("-s", "--samples", help="Input data file or directory")
+    run_parser.add_argument("--index-dir", help="Input data file or directory")
+    run_parser.add_argument("--steps", default="quality-control,genotype",
+                            help="Pipeline step to execute")
+    run_parser.add_argument("--overwrite", action="store_true", help="Force re-run even if step previously completed")
+    run_parser.add_argument("-c", "--clean", action="store_true", help="Clean existing directory before running")
+    run_parser.add_argument("-l", "--log-level", default="INFO", choices=["debug", "info", "warning", "error"],
+                            help="Set console logging level")
+    run_parser.add_argument("-o", "--outdir", required=True,
+                            help="Base output directory, step subfolders will be created")
 
     return parser.parse_args(argv)
 

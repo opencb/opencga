@@ -24,7 +24,7 @@ import org.opencb.opencga.core.tools.ToolParams;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ClinicalPipelineGenomicsParams extends ToolParams {
+public class AffyClinicalPipelineParams extends ToolParams {
 
     @DataField(id = "samples", description = FieldConstants.CLINICAL_PIPELINE_SAMPLES_DESCRIPTION)
     private List<String> samples;
@@ -44,14 +44,14 @@ public class ClinicalPipelineGenomicsParams extends ToolParams {
     @DataField(id = "pipeline", description = FieldConstants.CLINICAL_PIPELINE_PIPELINE_DESCRIPTION)
     private PipelineConfig pipeline;
 
-    public ClinicalPipelineGenomicsParams() {
+    public AffyClinicalPipelineParams() {
         this.samples = new ArrayList<>();
         this.steps = new ArrayList<>();
         pipeline = new PipelineConfig();
     }
 
-    public ClinicalPipelineGenomicsParams(List<String> samples, String indexDir, List<String> steps, VariantIndexParams variantIndexParams,
-                                          String pipelineFile, PipelineConfig pipeline) {
+    public AffyClinicalPipelineParams(List<String> samples, String indexDir, List<String> steps, VariantIndexParams variantIndexParams,
+                                      String pipelineFile, PipelineConfig pipeline) {
         this.samples = samples;
         this.indexDir = indexDir;
         this.steps = steps;
@@ -77,7 +77,7 @@ public class ClinicalPipelineGenomicsParams extends ToolParams {
         return samples;
     }
 
-    public ClinicalPipelineGenomicsParams setSamples(List<String> samples) {
+    public AffyClinicalPipelineParams setSamples(List<String> samples) {
         this.samples = samples;
         return this;
     }
@@ -86,7 +86,7 @@ public class ClinicalPipelineGenomicsParams extends ToolParams {
         return indexDir;
     }
 
-    public ClinicalPipelineGenomicsParams setIndexDir(String indexDir) {
+    public AffyClinicalPipelineParams setIndexDir(String indexDir) {
         this.indexDir = indexDir;
         return this;
     }
@@ -95,7 +95,7 @@ public class ClinicalPipelineGenomicsParams extends ToolParams {
         return steps;
     }
 
-    public ClinicalPipelineGenomicsParams setSteps(List<String> steps) {
+    public AffyClinicalPipelineParams setSteps(List<String> steps) {
         this.steps = steps;
         return this;
     }
@@ -104,7 +104,7 @@ public class ClinicalPipelineGenomicsParams extends ToolParams {
         return variantIndexParams;
     }
 
-    public ClinicalPipelineGenomicsParams setVariantIndexParams(VariantIndexParams variantIndexParams) {
+    public AffyClinicalPipelineParams setVariantIndexParams(VariantIndexParams variantIndexParams) {
         this.variantIndexParams = variantIndexParams;
         return this;
     }
@@ -113,7 +113,7 @@ public class ClinicalPipelineGenomicsParams extends ToolParams {
         return pipelineFile;
     }
 
-    public ClinicalPipelineGenomicsParams setPipelineFile(String pipelineFile) {
+    public AffyClinicalPipelineParams setPipelineFile(String pipelineFile) {
         this.pipelineFile = pipelineFile;
         return this;
     }
@@ -122,7 +122,7 @@ public class ClinicalPipelineGenomicsParams extends ToolParams {
         return pipeline;
     }
 
-    public ClinicalPipelineGenomicsParams setPipeline(PipelineConfig pipeline) {
+    public AffyClinicalPipelineParams setPipeline(PipelineConfig pipeline) {
         this.pipeline = pipeline;
         return this;
     }

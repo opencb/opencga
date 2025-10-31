@@ -20,37 +20,37 @@ import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
-public class ClinicalPipelineGenomicsWrapperParams extends ToolParams {
+public class AffyClinicalPipelineWrapperParams extends ToolParams {
 
     @DataField(id = "pipelineParams", description = FieldConstants.CLINICAL_PIPELINE_GENOMICS_PARAMS_DESCRIPTION)
-    private ClinicalPipelineGenomicsParams pipelineParams;
+    private AffyClinicalPipelineParams pipelineParams;
 
     @DataField(id = "outdir", description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
     private String outdir;
 
-    public ClinicalPipelineGenomicsWrapperParams() {
-        this.pipelineParams = new ClinicalPipelineGenomicsParams();
+    public AffyClinicalPipelineWrapperParams() {
+        this.pipelineParams = new AffyClinicalPipelineParams();
     }
 
-    public ClinicalPipelineGenomicsWrapperParams(ClinicalPipelineGenomicsParams pipelineParams, String outdir) {
+    public AffyClinicalPipelineWrapperParams(AffyClinicalPipelineParams pipelineParams, String outdir) {
         this.pipelineParams = pipelineParams;
         this.outdir = outdir;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("ClinicalPipelineExecuteWrapperParams{");
+        final StringBuilder sb = new StringBuilder("ClinicalPipelineAffyWrapperParams{");
         sb.append("pipelineParams=").append(pipelineParams);
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
         return sb.toString();
     }
 
-    public ClinicalPipelineGenomicsParams getPipelineParams() {
+    public AffyClinicalPipelineParams getPipelineParams() {
         return pipelineParams;
     }
 
-    public ClinicalPipelineGenomicsWrapperParams setPipelineParams(ClinicalPipelineGenomicsParams pipelineParams) {
+    public AffyClinicalPipelineWrapperParams setPipelineParams(AffyClinicalPipelineParams pipelineParams) {
         this.pipelineParams = pipelineParams;
         return this;
     }
@@ -59,7 +59,7 @@ public class ClinicalPipelineGenomicsWrapperParams extends ToolParams {
         return outdir;
     }
 
-    public ClinicalPipelineGenomicsWrapperParams setOutdir(String outdir) {
+    public AffyClinicalPipelineWrapperParams setOutdir(String outdir) {
         this.outdir = outdir;
         return this;
     }

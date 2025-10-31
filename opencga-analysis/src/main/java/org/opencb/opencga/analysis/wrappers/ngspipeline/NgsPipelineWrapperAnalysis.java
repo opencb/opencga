@@ -48,6 +48,7 @@ import static org.opencb.opencga.analysis.wrappers.ngspipeline.NgsPipelineWrappe
 import static org.opencb.opencga.analysis.wrappers.ngspipeline.NgsPipelineWrapperAnalysisExecutor.PREPARE_CMD;
 import static org.opencb.opencga.catalog.utils.ResourceManager.ANALYSIS_DIRNAME;
 
+@Deprecated
 @Tool(id = NgsPipelineWrapperAnalysis.ID, resource = Enums.Resource.VARIANT, description = NgsPipelineWrapperAnalysis.DESCRIPTION)
 public class NgsPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
 

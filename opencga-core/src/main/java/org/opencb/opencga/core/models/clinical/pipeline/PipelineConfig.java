@@ -21,29 +21,29 @@ import org.opencb.commons.annotations.DataField;
 public class PipelineConfig {
 
     @DataField(id = "name", description = "Pipeline name")
-    private String name;
+    protected String name;
 
     @DataField(id = "version", description = "Pipeline version")
-    private String version;
+    protected String version;
+
+    @DataField(id = "type", description = "Pipeline type")
+    protected String type;
 
     @DataField(id = "description", description = "Pipeline description")
-    private String description;
+    protected String description;
 
     @DataField(id = "input", description = "Pipeline input configuration")
-    private PipelineInput input;
-
-    @DataField(id = "steps", description = "Pipeline steps (quality control, alignment, variant calling)")
-    private PipelineSteps steps;
+    protected PipelineInput input;
 
     public PipelineConfig() {
     }
 
-    public PipelineConfig(String name, String version, String description, PipelineInput input, PipelineSteps steps) {
+    public PipelineConfig(String name, String version, String type, String description, PipelineInput input) {
         this.name = name;
         this.version = version;
+        this.type = type;
         this.description = description;
         this.input = input;
-        this.steps = steps;
     }
 
     @Override
@@ -51,9 +51,9 @@ public class PipelineConfig {
         final StringBuilder sb = new StringBuilder("PipelineConfig{");
         sb.append("name='").append(name).append('\'');
         sb.append(", version='").append(version).append('\'');
+        sb.append(", type='").append(type).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", input=").append(input);
-        sb.append(", steps=").append(steps);
         sb.append('}');
         return sb.toString();
     }
@@ -76,6 +76,15 @@ public class PipelineConfig {
         return this;
     }
 
+    public String getType() {
+        return type;
+    }
+
+    public PipelineConfig setType(String type) {
+        this.type = type;
+        return this;
+    }
+
     public String getDescription() {
         return description;
     }
@@ -91,15 +100,6 @@ public class PipelineConfig {
 
     public PipelineConfig setInput(PipelineInput input) {
         this.input = input;
-        return this;
-    }
-
-    public PipelineSteps getSteps() {
-        return steps;
-    }
-
-    public PipelineConfig setSteps(PipelineSteps steps) {
-        this.steps = steps;
         return this;
     }
 }

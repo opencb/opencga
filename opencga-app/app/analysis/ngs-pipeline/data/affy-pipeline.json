@@ -2,7 +2,7 @@
   "name": "Example Pipeline",
   "version": "1",
   "description": "A sample bioinformatics pipeline configuration.",
-  "type": "genomics",
+  "type": "affy",
   "input": {
     "indexDir": "/home/imedina/soft/index-dir",
     "samples": [
@@ -41,55 +41,27 @@
       "options": {
       },
       "tool": {
-        "id": "fastqc",
+        "id": "apt-geno-qc-axiom",
         "parameters": {
           "threads": 4
         }
       }
     },
-    "alignment": {
+    "genotype": {
       "active": true,
       "options": {
         "clean": true,
-        "cram": false,
         "qc": true
       },
       "tool": {
-        "id": "bwa",
+        "id": "apt-genotype-axiom",
+        "options": {
+          "joint": true,
+          "mendelianError": false
+        },
         "parameters": {
-          "t": 4
         }
       }
-    },
-    "variantCalling": {
-      "active": true,
-      "options": {
-        "clean": true,
-        "qc": true
-      },
-      "tools": [
-        {
-          "id": "gatk",
-          "options": {
-            "joint": true,
-            "mendelianError": false
-          },
-          "parameters": {
-          }
-        },
-        {
-          "id": "freebayes",
-          "active": false,
-          "parameters": {
-          }
-        },
-        {
-          "id": "mutect2",
-          "active": false,
-          "parameters": {
-          }
-        }
-      ]
     }
   }
 }

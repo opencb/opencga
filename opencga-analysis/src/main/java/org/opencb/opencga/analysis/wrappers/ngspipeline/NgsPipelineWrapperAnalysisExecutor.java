@@ -16,6 +16,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
+@Deprecated
 @ToolExecutor(id = NgsPipelineWrapperAnalysisExecutor.ID,
         tool = NgsPipelineWrapperAnalysis.ID,
         source = ToolExecutor.Source.STORAGE,

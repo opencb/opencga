@@ -159,7 +159,7 @@ public class ClinicalPipelineWrapperAnalysisTest {
 
         // Get the pipeline parameters from the json file in resources and load them into an ObjectMap
         InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream("ngspipeline/pipeline.json");
-        PipelineConfig ngsPipeline = JacksonUtils.getDefaultObjectMapper().readerFor(PipelineConfig.class).readValue(inputStream);
+        GenomicsPipelineConfig ngsPipeline = JacksonUtils.getDefaultObjectMapper().readerFor(PipelineConfig.class).readValue(inputStream);
         // Remove the tool freebayes of the step variant-calling for the test
         ngsPipeline.getSteps().setVariantCalling(ngsPipeline.getSteps().getVariantCalling().setTools(
                 ngsPipeline.getSteps().getVariantCalling().getTools().stream().filter(t -> !t.getId().equals("freebayes")).collect(Collectors.toList())
@@ -227,8 +227,8 @@ public class ClinicalPipelineWrapperAnalysisTest {
         File indexDirFile = opencga.getCatalogManager().getFileManager().link(studyId, new FileLinkParams(outDir.toAbsolutePath().toString(),
                 "", "", "", null, null, null, null, null), false, token).first();
 
-        ClinicalPipelineGenomicsWrapperParams genomicsWrapperParams = new ClinicalPipelineGenomicsWrapperParams();
-        ClinicalPipelineGenomicsParams genomicsParams = new ClinicalPipelineGenomicsParams();
+        GenomicsClinicalPipelineWrapperParams genomicsWrapperParams = new GenomicsClinicalPipelineWrapperParams();
+        GenomicsClinicalPipelineParams genomicsParams = new GenomicsClinicalPipelineParams();
         // Set sample with the two fastq files
         genomicsParams.setSamples(Collections.singletonList("ANN0831" + ClinicalPipelineUtils.SAMPLE_FIELD_SEP
                 + fastq1File.getId() + ClinicalPipelineUtils.SAMPLE_FILE_SEP + fastq2File.getId()));
@@ -267,7 +267,7 @@ public class ClinicalPipelineWrapperAnalysisTest {
 
         // Get the pipeline parameters from the json file in resources and load them into an ObjectMap
         InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream("ngspipeline/pipeline.json");
-        PipelineConfig ngsPipeline = JacksonUtils.getDefaultObjectMapper().readerFor(PipelineConfig.class).readValue(inputStream);
+        GenomicsPipelineConfig ngsPipeline = JacksonUtils.getDefaultObjectMapper().readerFor(PipelineConfig.class).readValue(inputStream);
         // Remove the tool freebayes of the step variant-calling for the test
         ngsPipeline.getSteps().setVariantCalling(ngsPipeline.getSteps().getVariantCalling().setTools(
                 ngsPipeline.getSteps().getVariantCalling().getTools().stream().filter(t -> !t.getId().equals("freebayes")).collect(Collectors.toList())
@@ -335,8 +335,8 @@ public class ClinicalPipelineWrapperAnalysisTest {
         File indexDirFile = opencga.getCatalogManager().getFileManager().link(studyId, new FileLinkParams(outDir.toAbsolutePath().toString(),
                 "", "", "", null, null, null, null, null), false, token).first();
 
-        ClinicalPipelineGenomicsWrapperParams genomicsWrapperParams = new ClinicalPipelineGenomicsWrapperParams();
-        ClinicalPipelineGenomicsParams genomicsParams = new ClinicalPipelineGenomicsParams();
+        GenomicsClinicalPipelineWrapperParams genomicsWrapperParams = new GenomicsClinicalPipelineWrapperParams();
+        GenomicsClinicalPipelineParams genomicsParams = new GenomicsClinicalPipelineParams();
         // Set sample with the two fastq files
         genomicsParams.setSamples(Collections.singletonList("ANN0831" + ClinicalPipelineUtils.SAMPLE_FIELD_SEP
                 + fastq1File.getId() + ClinicalPipelineUtils.SAMPLE_FILE_SEP + fastq2File.getId()));

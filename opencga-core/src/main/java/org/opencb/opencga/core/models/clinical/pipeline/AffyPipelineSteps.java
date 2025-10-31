@@ -18,26 +18,19 @@ package org.opencb.opencga.core.models.clinical.pipeline;
 
 import org.opencb.commons.annotations.DataField;
 
-import java.util.Map;
-
-public class PipelineSteps {
+public class AffyPipelineSteps {
 
     @DataField(id = "qualityControl", description = "Quality control step")
-    private PipelineQualityControlStep qualityControl;
-
-    @DataField(id = "alignment", description = "Alignment step")
-    private PipelineAlignmentStep alignment;
+    private QualityControlPipelineStep qualityControl;
 
     @DataField(id = "variantCalling", description = "Variant calling step")
-    private PipelineVariantCallingStep variantCalling;
+    private GenomicsVariantCallingPipelineStep variantCalling;
 
-    public PipelineSteps() {
+    public AffyPipelineSteps() {
     }
 
-    public PipelineSteps(PipelineQualityControlStep qualityControl, PipelineAlignmentStep alignment,
-                         PipelineVariantCallingStep variantCalling) {
+    public AffyPipelineSteps(QualityControlPipelineStep qualityControl, GenomicsVariantCallingPipelineStep variantCalling) {
         this.qualityControl = qualityControl;
-        this.alignment = alignment;
         this.variantCalling = variantCalling;
     }
 
@@ -45,35 +38,25 @@ public class PipelineSteps {
     public String toString() {
         final StringBuilder sb = new StringBuilder("PipelineSteps{");
         sb.append("qualityControl=").append(qualityControl);
-        sb.append(", alignment=").append(alignment);
         sb.append(", variantCalling=").append(variantCalling);
         sb.append('}');
         return sb.toString();
     }
 
-    public PipelineQualityControlStep getQualityControl() {
+    public QualityControlPipelineStep getQualityControl() {
         return qualityControl;
     }
 
-    public PipelineSteps setQualityControl(PipelineQualityControlStep qualityControl) {
+    public AffyPipelineSteps setQualityControl(QualityControlPipelineStep qualityControl) {
         this.qualityControl = qualityControl;
         return this;
     }
 
-    public PipelineAlignmentStep getAlignment() {
-        return alignment;
-    }
-
-    public PipelineSteps setAlignment(PipelineAlignmentStep alignment) {
-        this.alignment = alignment;
-        return this;
-    }
-
-    public PipelineVariantCallingStep getVariantCalling() {
+    public GenomicsVariantCallingPipelineStep getVariantCalling() {
         return variantCalling;
     }
 
-    public PipelineSteps setVariantCalling(PipelineVariantCallingStep variantCalling) {
+    public AffyPipelineSteps setVariantCalling(GenomicsVariantCallingPipelineStep variantCalling) {
         this.variantCalling = variantCalling;
         return this;
     }

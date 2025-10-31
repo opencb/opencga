@@ -18,40 +18,41 @@ package org.opencb.opencga.core.models.clinical.pipeline;
 
 import org.opencb.commons.annotations.DataField;
 
+import java.util.List;
 import java.util.Map;
 
-public class PipelineQualityControlStep extends PipelineStep {
+public class GenomicsVariantCallingPipelineStep extends PipelineStep {
 
-    @DataField(id = "tool", description = "Quality control tool")
-    private PipelineTool tool;
+    @DataField(id = "tools", description = "Variant calling tools")
+    private List<GenomicsVariantCallingPipelineTool> tools;
 
-    public PipelineQualityControlStep() {
+    public GenomicsVariantCallingPipelineStep() {
     }
 
-    public PipelineQualityControlStep(PipelineAlignmentTool tool) {
-        this.tool = tool;
+    public GenomicsVariantCallingPipelineStep(List<GenomicsVariantCallingPipelineTool> tools) {
+        this.tools = tools;
     }
 
-    public PipelineQualityControlStep(Map<String, Object> options, PipelineAlignmentTool tool) {
+    public GenomicsVariantCallingPipelineStep(Map<String, Object> options, List<GenomicsVariantCallingPipelineTool> tools) {
         super(options);
-        this.tool = tool;
+        this.tools = tools;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("PipelineQualityControlStep{");
-        sb.append("tool=").append(tool);
+        final StringBuilder sb = new StringBuilder("PipelineVariantCallingStep{");
+        sb.append("tools=").append(tools);
         sb.append(", options=").append(options);
         sb.append('}');
         return sb.toString();
     }
 
-    public PipelineTool getTool() {
-        return tool;
+    public List<GenomicsVariantCallingPipelineTool> getTools() {
+        return tools;
     }
 
-    public PipelineQualityControlStep setTool(PipelineTool tool) {
-        this.tool = tool;
+    public GenomicsVariantCallingPipelineStep setTools(List<GenomicsVariantCallingPipelineTool> tools) {
+        this.tools = tools;
         return this;
     }
 }
