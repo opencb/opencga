@@ -58,12 +58,12 @@ import org.opencb.opencga.core.models.clinical.TieringInterpretationAnalysisPara
 import org.opencb.opencga.core.models.clinical.ZettaInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.clinical.pipeline.AffyClinicalPipelineParams;
 import org.opencb.opencga.core.models.clinical.pipeline.AffyClinicalPipelineWrapperParams;
+import org.opencb.opencga.core.models.clinical.pipeline.AffyPipelineConfig;
 import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelinePrepareParams;
 import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelinePrepareWrapperParams;
 import org.opencb.opencga.core.models.clinical.pipeline.GenomicsClinicalPipelineParams;
 import org.opencb.opencga.core.models.clinical.pipeline.GenomicsClinicalPipelineWrapperParams;
 import org.opencb.opencga.core.models.clinical.pipeline.GenomicsPipelineConfig;
-import org.opencb.opencga.core.models.clinical.pipeline.PipelineConfig;
 import org.opencb.opencga.core.models.common.StatusParam;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.job.Job;

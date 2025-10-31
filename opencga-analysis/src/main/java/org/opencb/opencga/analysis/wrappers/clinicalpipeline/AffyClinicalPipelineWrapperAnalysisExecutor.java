@@ -111,10 +111,10 @@ public class AffyClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAn
         readOnlyInputBindings.add(virtualScriptPath.toString());
 
         // Index binding
-        Path virtualIndexPath = Paths.get(INDEX_VIRTUAL_PATH);
-        inputBindings.add(new AbstractMap.SimpleEntry<>(pipelineInput.getIndexDir(), virtualIndexPath.toString()));
-        readOnlyInputBindings.add(virtualIndexPath.toString());
-        pipelineInput.setIndexDir(virtualIndexPath.toAbsolutePath().toString());
+//        Path virtualIndexPath = Paths.get(INDEX_VIRTUAL_PATH);
+//        inputBindings.add(new AbstractMap.SimpleEntry<>(pipelineInput.getIndexDir(), virtualIndexPath.toString()));
+//        readOnlyInputBindings.add(virtualIndexPath.toString());
+//        pipelineInput.setIndexDir(virtualIndexPath.toAbsolutePath().toString());
 
         // Input binding, and update samples with virtual paths
         int inputCounter = 0;

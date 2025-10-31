@@ -183,7 +183,7 @@ public class ClinicalPipelineGenomicsWrapperAnalysis extends OpenCgaToolScopeStu
                 throw new ToolException("Clinical pipeline configuration file '" + pipelineFile + "' is not a file.");
             }
             Path pipelinePath = Paths.get(opencgaFile.getUri()).toAbsolutePath();
-            updatedPipelineConfig = JacksonUtils.getDefaultObjectMapper().readerFor(PipelineConfig.class).readValue(pipelinePath.toFile());
+            updatedPipelineConfig = JacksonUtils.getDefaultObjectMapper().readerFor(GenomicsPipelineConfig.class).readValue(pipelinePath.toFile());
         } else {
             logger.info("Getting clinical pipeline configuration provided directly in the parameters");
             updatedPipelineConfig = copyPipelineConfig(analysisParams.getPipelineParams().getPipeline());

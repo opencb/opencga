@@ -27,7 +27,7 @@
   },
   "steps": {
     "qualityControl": {
-      "id": "quality-control",
+      "active": true,
       "options": {
       },
       "tool": {
@@ -38,7 +38,7 @@
       }
     },
     "alignment": {
-      "id": "alignment",
+      "active": true,
       "options": {
         "clean": true,
         "qc": true,
@@ -53,7 +53,7 @@
       }
     },
     "variantCalling": {
-      "id": "variant-calling",
+      "active": true,
       "options": {
         "qc": true,
         "clean": true

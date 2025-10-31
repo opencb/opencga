@@ -8,6 +8,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
+import org.opencb.opencga.analysis.wrappers.clinicalpipeline.AffyClinicalPipelineWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelineGenomicsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelinePrepareWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelineUtils;
@@ -37,6 +38,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -159,7 +161,7 @@ public class ClinicalPipelineWrapperAnalysisTest {
 
         // Get the pipeline parameters from the json file in resources and load them into an ObjectMap
         InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream("ngspipeline/pipeline.json");
-        GenomicsPipelineConfig ngsPipeline = JacksonUtils.getDefaultObjectMapper().readerFor(PipelineConfig.class).readValue(inputStream);
+        GenomicsPipelineConfig ngsPipeline = JacksonUtils.getDefaultObjectMapper().readerFor(GenomicsPipelineConfig.class).readValue(inputStream);
         // Remove the tool freebayes of the step variant-calling for the test
         ngsPipeline.getSteps().setVariantCalling(ngsPipeline.getSteps().getVariantCalling().setTools(
                 ngsPipeline.getSteps().getVariantCalling().getTools().stream().filter(t -> !t.getId().equals("freebayes")).collect(Collectors.toList())
@@ -257,7 +259,6 @@ public class ClinicalPipelineWrapperAnalysisTest {
     }
 
     @Test
-    @Ignore
     public void testClinicalPipelineGenomicsRef() throws IOException, ToolException, CatalogException, StorageEngineException {
         Assume.assumeTrue(isDataAvailable());
         System.out.println("opencga.getOpencgaHome() = " + opencga.getOpencgaHome().toAbsolutePath());
@@ -267,7 +268,7 @@ public class ClinicalPipelineWrapperAnalysisTest {
 
         // Get the pipeline parameters from the json file in resources and load them into an ObjectMap
         InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream("ngspipeline/pipeline.json");
-        GenomicsPipelineConfig ngsPipeline = JacksonUtils.getDefaultObjectMapper().readerFor(PipelineConfig.class).readValue(inputStream);
+        GenomicsPipelineConfig ngsPipeline = JacksonUtils.getDefaultObjectMapper().readerFor(GenomicsPipelineConfig.class).readValue(inputStream);
         // Remove the tool freebayes of the step variant-calling for the test
         ngsPipeline.getSteps().setVariantCalling(ngsPipeline.getSteps().getVariantCalling().setTools(
                 ngsPipeline.getSteps().getVariantCalling().getTools().stream().filter(t -> !t.getId().equals("freebayes")).collect(Collectors.toList())
@@ -343,7 +344,6 @@ public class ClinicalPipelineWrapperAnalysisTest {
         // Set index dir
         genomicsParams.setIndexDir(indexDirFile.getId());
         // Set pipeline config
-        ngsPipeline.getSteps().getVariantCalling().getTools().get(0).setReference(refFile.getId());
         genomicsParams.setPipeline(ngsPipeline);
         // Variant index parameters
         VariantIndexParams variantIndexParams = new VariantIndexParams();
@@ -380,6 +380,64 @@ public class ClinicalPipelineWrapperAnalysisTest {
             }
         }
         return true;
+    }
+
+    @Test
+    public void testClinicalPipelineAffy() throws IOException, ToolException, CatalogException, StorageEngineException {
+        Assume.assumeTrue(isDataAvailable());
+        System.out.println("opencga.getOpencgaHome() = " + opencga.getOpencgaHome().toAbsolutePath());
+
+        Path outDir = Paths.get(opencga.createTmpOutdir("_clinical_pipeline_affy"));
+        System.out.println("outDir = " + outDir.toAbsolutePath());
+
+        // Get the pipeline parameters from the json file in resources and load them into an ObjectMap
+        InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream("ngspipeline/affy-pipeline.json");
+        AffyPipelineConfig ngsPipeline = JacksonUtils.getDefaultObjectMapper().readerFor(AffyPipelineConfig.class).readValue(inputStream);
+
+        // CEL files
+        List<File> opencgaCelFiles = new ArrayList<>();
+        List<String> celFilenames = Arrays.asList("1521a99hpp_av06.CEL.gz", "1521b99hpp_av06.CEL.gz", "1532a99hpp_av04.CEL.gz");
+        for (String celFilename: celFilenames) {
+            Path celLocalPath = NGS_PIPELINE_DATA_PATH.resolve("affy").resolve(celFilename);
+            inputStream = Files.newInputStream(celLocalPath);
+            File ceFile = opencga.getCatalogManager().getFileManager().upload(studyId, inputStream,
+                    new File().setPath("data/" + celLocalPath.getFileName()), false, true, false, token).first();
+            System.out.println("ceFile.getUri() = " + ceFile.getUri());
+            opencgaCelFiles.add(ceFile);
+        }
+
+
+        //---------------------------------
+        // Run affy clinical pipeline
+        //---------------------------------
+
+        AffyClinicalPipelineWrapperParams affyWrapperParams = new AffyClinicalPipelineWrapperParams();
+        AffyClinicalPipelineParams affyParams = new AffyClinicalPipelineParams();
+        // Set sample with the two fastq files
+        affyParams.setSamples(Collections.singletonList("ANN0831" + ClinicalPipelineUtils.SAMPLE_FIELD_SEP
+                + opencgaCelFiles.get(0).getId()));
+        // Set index dir
+//        affyParams.setIndexDir(indexDirFile.getId());
+        // Set pipeline config
+        affyParams.setPipeline(ngsPipeline);
+        // Variant index parameters
+        VariantIndexParams variantIndexParams = new VariantIndexParams();
+        variantIndexParams.setAnnotate(true);
+        variantIndexParams.setCalculateStats(true);
+        affyParams.setVariantIndexParams(variantIndexParams);
+
+        affyWrapperParams.setPipelineParams(affyParams);
+
+        toolRunner.execute(AffyClinicalPipelineWrapperAnalysis.class, affyWrapperParams,
+                new ObjectMap(ParamConstants.STUDY_PARAM, studyId), outDir, null, false, token);
+
+        VariantQueryResult<Variant> variantQueryResult = opencga.getVariantStorageManager()
+                .get(new Query(ParamConstants.STUDY_PARAM, studyId), QueryOptions.empty(), token);
+        for (Variant variant : variantQueryResult.getResults()) {
+            System.out.println(variant.toStringSimple());
+        }
+        System.out.println("variantQueryResult.getNumResults() = " + variantQueryResult.getNumResults());
+        assertEquals(10, variantQueryResult.getNumResults());
     }
 }
 

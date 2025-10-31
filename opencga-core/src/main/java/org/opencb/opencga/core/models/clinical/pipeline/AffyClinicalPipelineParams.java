@@ -19,12 +19,11 @@ package org.opencb.opencga.core.models.clinical.pipeline;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.models.operations.variant.VariantIndexParams;
-import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class AffyClinicalPipelineParams extends ToolParams {
+public class AffyClinicalPipelineParams {
 
     @DataField(id = "samples", description = FieldConstants.CLINICAL_PIPELINE_SAMPLES_DESCRIPTION)
     private List<String> samples;

@@ -175,7 +175,7 @@ public class ClinicalPipelineGenomicsWrapperAnalysisExecutor extends DockerWrapp
         }
     }
 
-    private String buildScriptCli(PipelineConfig pipeline, String pipelineFilename, String steps,
+    private String buildScriptCli(GenomicsPipelineConfig pipeline, String pipelineFilename, String steps,
                                   List<AbstractMap.SimpleEntry<String, String>> inputBindings,
                                   Set<String> readOnlyInputBindings, List<AbstractMap.SimpleEntry<String, String>> outputBindings)
             throws IOException {
@@ -213,7 +213,7 @@ public class ClinicalPipelineGenomicsWrapperAnalysisExecutor extends DockerWrapp
         Path pipelineParamsPath = getOutDir().resolve(pipelineFilename);
         Path virtualPipelineParamsPath = Paths.get(INPUT_VIRTUAL_PATH).resolve(pipelineParamsPath.getFileName());
         // Write the JSON file for Python script
-        JacksonUtils.getDefaultObjectMapper().writerFor(PipelineConfig.class).writeValue(pipelineParamsPath.toFile(), pipeline);
+        JacksonUtils.getDefaultObjectMapper().writerFor(GenomicsPipelineConfig.class).writeValue(pipelineParamsPath.toFile(), pipeline);
         inputBindings.add(new AbstractMap.SimpleEntry<>(pipelineParamsPath.toAbsolutePath().toString(),
                 virtualPipelineParamsPath.toString()));
         readOnlyInputBindings.add(virtualPipelineParamsPath.toString());
@@ -232,7 +232,7 @@ public class ClinicalPipelineGenomicsWrapperAnalysisExecutor extends DockerWrapp
                 + " --steps " + steps;
     }
 
-    private void prepareCallerInputFromAlignmentOutput(PipelineConfig pipeline) throws ToolExecutorException {
+    private void prepareCallerInputFromAlignmentOutput(GenomicsPipelineConfig pipeline) throws ToolExecutorException {
         // Check output files from the alignment step from the output directory (alignment directory) and update the input of the
         // pipeline configuration to be executed by the variant-calling step (overwritten the pipeline configuration input)
         Path alignmentPath = getOutDir().resolve(ALIGNMENT_PIPELINE_STEP);
@@ -268,7 +268,7 @@ public class ClinicalPipelineGenomicsWrapperAnalysisExecutor extends DockerWrapp
         return this;
     }
 
-    public PipelineConfig getPipelineConfig() {
+    public GenomicsPipelineConfig getPipelineConfig() {
         return pipelineConfig;
     }
 

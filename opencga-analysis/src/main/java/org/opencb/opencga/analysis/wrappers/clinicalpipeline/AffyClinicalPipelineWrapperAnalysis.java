@@ -94,13 +94,13 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
             throw new ToolException("Missing clinical pipeline index directory. You can either provide an index directory in the"
                     + " pipeline configuration or in the execute parameters.");
         }
-        logger.info("Checking index dir {}", indexDir);
-        File opencgaFile = getCatalogManager().getFileManager().get(study, indexDir, QueryOptions.empty(), token).first();
-        if (opencgaFile.getType() != File.Type.DIRECTORY) {
-            throw new ToolException("Clinical pipeline index dir '" + indexDir + "' is not a folder.");
-        }
-        // Update the index dir in the pipeline config
-        updatedPipelineConfig.getInput().setIndexDir(Paths.get(opencgaFile.getUri()).toAbsolutePath().toString());
+//        logger.info("Checking index dir {}", indexDir);
+//        File opencgaFile = getCatalogManager().getFileManager().get(study, indexDir, QueryOptions.empty(), token).first();
+//        if (opencgaFile.getType() != File.Type.DIRECTORY) {
+//            throw new ToolException("Clinical pipeline index dir '" + indexDir + "' is not a folder.");
+//        }
+//        // Update the index dir in the pipeline config
+//        updatedPipelineConfig.getInput().setIndexDir(Paths.get(opencgaFile.getUri()).toAbsolutePath().toString());
 
         checkPipelineSteps();
     }
@@ -140,7 +140,7 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
     private void runVariantIndex() throws CatalogException, StorageEngineException, ToolException, IOException {
         // Find the .sorted.<variant calling tool ID>.vcf.gz file within the genotype/variant-calling folder
         Path vcfPath;
-        String genotypeToolId = updatedPipelineConfig.getSteps().getGenotypeStep().getTool().getId();
+        String genotypeToolId = updatedPipelineConfig.getSteps().getGenotype().getTool().getId();
         try (Stream<Path> stream = Files.list(getOutDir().resolve(GENOTYPE_PIPELINE_STEP).resolve(genotypeToolId))) {
             vcfPath = stream
                     .filter(Files::isRegularFile)
@@ -238,7 +238,7 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
 
     private void validatePipelineConfigSteps() throws ToolException {
         if (updatedPipelineConfig.getSteps() == null || (updatedPipelineConfig.getSteps().getQualityControl() == null
-                && updatedPipelineConfig.getSteps().getGenotypeStep() == null)) {
+                && updatedPipelineConfig.getSteps().getGenotype() == null)) {
             throw new ToolException("All clinical pipeline configuration steps are missing.");
         }
     }
@@ -247,7 +247,7 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
         pipelineSteps = analysisParams.getPipelineParams().getSteps();
         // If no steps are provided, set all the steps by default
         if (CollectionUtils.isEmpty(pipelineSteps)) {
-            pipelineSteps = Arrays.asList(QUALITY_CONTROL_PIPELINE_STEP, ALIGNMENT_PIPELINE_STEP, VARIANT_CALLING_PIPELINE_STEP);
+            pipelineSteps = Arrays.asList(QUALITY_CONTROL_PIPELINE_STEP, GENOTYPE_PIPELINE_STEP);
         }
 
         // Validate provided steps in the
@@ -267,12 +267,12 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
                     break;
                 }
 
-                case AFFY_PIPELINE_STEP: {
-                    if (updatedPipelineConfig.getSteps().getGenotypeStep() == null) {
-                        throw new ToolException("Affy clinical pipeline step '" + AFFY_PIPELINE_STEP + "' is not present in the"
+                case GENOTYPE_PIPELINE_STEP: {
+                    if (updatedPipelineConfig.getSteps().getGenotype() == null) {
+                        throw new ToolException("Affy clinical pipeline step '" + GENOTYPE_PIPELINE_STEP + "' is not present in the"
                                 + " pipeline configuration.");
                     }
-                    validateTool(AFFY_PIPELINE_STEP, updatedPipelineConfig.getSteps().getGenotypeStep().getTool());
+                    validateTool(GENOTYPE_PIPELINE_STEP, updatedPipelineConfig.getSteps().getGenotype().getTool());
                     break;
                 }
 

@@ -52,11 +52,11 @@ public class AffyPipelineSteps {
         return this;
     }
 
-    public AffyGenotypePipelineStep getGenotypeStep() {
+    public AffyGenotypePipelineStep getGenotype() {
         return genotype;
     }
 
-    public AffyPipelineSteps setGenotypeStep(AffyGenotypePipelineStep genotype) {
+    public AffyPipelineSteps setGenotype(AffyGenotypePipelineStep genotype) {
         this.genotype = genotype;
         return this;
     }

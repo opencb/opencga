@@ -22,6 +22,9 @@ import java.util.Map;
 
 public class PipelineStep {
 
+    @DataField(id = "active", description = "Active step")
+    protected Boolean active;
+
     @DataField(id = "options", description = "Step-specific options")
     protected Map<String, Object> options;
 
@@ -32,16 +35,31 @@ public class PipelineStep {
         this.options = options;
     }
 
+    public Map<String, Object> getOptions() {
+        return options;
+    }
+
+    public PipelineStep(Boolean active, Map<String, Object> options) {
+        this.active = active;
+        this.options = options;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("PipelineStep{");
+        sb.append("active=").append(active);
         sb.append(", options=").append(options);
         sb.append('}');
         return sb.toString();
     }
 
-    public Map<String, Object> getOptions() {
-        return options;
+    public Boolean getActive() {
+        return active;
+    }
+
+    public PipelineStep setActive(Boolean active) {
+        this.active = active;
+        return this;
     }
 
     public PipelineStep setOptions(Map<String, Object> options) {

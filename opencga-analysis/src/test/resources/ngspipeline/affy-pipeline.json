@@ -4,7 +4,7 @@
   "description": "A sample bioinformatics pipeline configuration.",
   "type": "affy",
   "input": {
-    "indexDir": "",
+    "indexDir": "/home/imedina/soft/index-dir",
     "samples": [
       {
         "id": "s1",
