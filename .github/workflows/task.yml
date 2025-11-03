@@ -9,10 +9,14 @@ on:
 # WARNING Develop branch needed for prod
 
 jobs:
+
   build:
-    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@TASK-7809
     with:
-      maven_opts: -P${{ vars.HADOOP_FLAVOUR }},RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
+      needs_hadoop_preparation: true
+      hadoop_flavour: ${{ vars.HADOOP_FLAVOUR }}
+      maven_opts: -P${{ vars.HADOOP_FLAVOUR }} -Dopencga.war.name=opencga -Dcheckstyle.skip
+    secrets: inherit
 
   test:
     uses: ./.github/workflows/test-analysis.yml

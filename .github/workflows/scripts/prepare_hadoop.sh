@@ -97,6 +97,8 @@ function install(){
 
   # Shallow clone at the requested ref
   git clone --depth 1 -b "$GIT_REF" "$CLONE_URL"
+  PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+  echo "Cloned repository $REPO with ref $GIT_REF and version $PROJECT_VERSION"
   cd "$REPO" || return 2
   ./dev/build.sh "$HADOOP"
   cd - || return 2

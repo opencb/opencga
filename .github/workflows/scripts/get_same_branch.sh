@@ -15,11 +15,7 @@ function install(){
   if [ -d "./$REPO" ]; then
     cd "$REPO" || exit 2
     echo "Branch name $BRANCH_NAME already exists."
-    if [[ "$REPO" == "opencga-hadoop-thirdparty" ]]; then
-      ./dev/build.sh "$HADOOP"
-    else
       mvn clean install -DskipTests --no-transfer-progress
-    fi
   else
     echo "$CURRENT Branch is NOT EQUALS $BRANCH_NAME "
   fi
@@ -27,4 +23,3 @@ function install(){
 
 install "java-common-libs"
 install "biodata"
-install "opencga-hadoop-thirdparty"

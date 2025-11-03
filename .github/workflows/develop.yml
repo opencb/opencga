@@ -11,7 +11,10 @@ jobs:
   build:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      maven_opts: -P${{ vars.HADOOP_FLAVOUR }},RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
+      needs_hadoop_preparation: true
+      hadoop_flavour: ${{ vars.HADOOP_FLAVOUR }}
+      maven_opts: -P${{ vars.HADOOP_FLAVOUR }} -Dopencga.war.name=opencga -Dcheckstyle.skip
+    secrets: inherit
 
   deploy-maven:
     uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
