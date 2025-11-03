@@ -30,10 +30,20 @@ on:
         required: true
 
 jobs:
+
+  build:
+    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@TASK-7809
+    with:
+      needs_hadoop_preparation: true
+      hadoop_flavour: ${{ inputs.hadoop }}
+      maven_opts: -P${{ inputs.hadoop }} -Dopencga.war.name=opencga -Dcheckstyle.skip
+    secrets: inherit
+
   analysis:
     name: Execute Sonar Analysis
     runs-on: ${{ vars.UBUNTU_VERSION }}
     if: ${{ inputs.sonar }}
+    needs: build
     steps:
       - uses: actions/checkout@v4
         with:
@@ -62,6 +72,7 @@ jobs:
   test:
     name: Execute JUnit and Jacoco tests
     runs-on: ${{ vars.UBUNTU_VERSION }}
+    needs: build
     steps:
       - uses: actions/checkout@v4
         with:
@@ -87,8 +98,6 @@ jobs:
         with:
           mongodb-version: 6.0
           mongodb-replica-set: rs-test
-      - name: Maven build (skip tests)
-        run: mvn -B clean install -DskipTests -P ${{ inputs.hadoop }} -Dcheckstyle.skip ${{ inputs.mvn_opts }}
       - name: Build Junit log file name
         id: BuildJunitLogFileName
         run: |

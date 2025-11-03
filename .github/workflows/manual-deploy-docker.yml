@@ -13,33 +13,12 @@ on:
 
 jobs:
   build:
-    name: Build Java app
-    runs-on: ${{ vars.UBUNTU_VERSION }}
-    outputs:
-      version: ${{ steps.get_project_version.outputs.version }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: '10'
-          ref: "${{ inputs.branch }}"
-      - name: Set up JDK 8
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '8'
-          cache: 'maven'
-      - name: Install dependencies branches
-        run: |
-          if [ -f "./.github/workflows/scripts/get_same_branch.sh" ]; then
-            chmod +x ./.github/workflows/scripts/get_same_branch.sh
-            ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }} 
-          fi
-      - name: Maven Build (skip tests)
-        run: mvn -T 2 clean install -DskipTests -P${{ inputs.hadoop }} -Dopencga.war.name=opencga -Dcheckstyle.skip  --no-transfer-progress -pl ':opencga-app' --also-make
-      - uses: actions/upload-artifact@v4
-        with:
-          name: build-folder
-          path: build
+    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@TASK-7809
+    with:
+      needs_hadoop_preparation: true
+      hadoop_flavour: ${{ vars.HADOOP_FLAVOUR }}
+      maven_opts: -P${{ vars.HADOOP_FLAVOUR }} -Dopencga.war.name=opencga -Dcheckstyle.skip
+    secrets: inherit
 
   deploy-zetta-docker:
     uses: opencb/java-common-libs/.github/workflows/deploy-zetta-docker-hub-workflow.yml@develop
