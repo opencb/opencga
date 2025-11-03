@@ -45,6 +45,8 @@ public class AffyClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAn
 
     private String study;
 
+    private String sample;
+
     private Path scriptPath;
     private AffyPipelineConfig pipelineConfig;
     private List<String> pipelineSteps;
@@ -118,20 +120,26 @@ public class AffyClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAn
 
         // Input binding, and update samples with virtual paths
         int inputCounter = 0;
-        for (PipelineSample pipelineSample : pipelineInput.getSamples()) {
-            List<String> virtualPaths = new ArrayList<>(pipelineSample.getFiles().size());
-            for (String file : pipelineSample.getFiles()) {
-                Path virtualInputPath = Paths.get(INPUT_VIRTUAL_PATH + "_" + inputCounter).resolve(Paths.get(file).getFileName());
-                inputBindings.add(new AbstractMap.SimpleEntry<>(Paths.get(file).toAbsolutePath().toString(),
-                        virtualInputPath.toString()));
-                readOnlyInputBindings.add(virtualInputPath.toString());
-                inputCounter++;
+//        for (PipelineSample pipelineSample : pipelineInput.getSamples()) {
+//            List<String> virtualPaths = new ArrayList<>(pipelineSample.getFiles().size());
+//            for (String file : pipelineSample.getFiles()) {
+//                Path virtualInputPath = Paths.get(INPUT_VIRTUAL_PATH + "_" + inputCounter).resolve(Paths.get(file).getFileName());
+//                inputBindings.add(new AbstractMap.SimpleEntry<>(Paths.get(file).toAbsolutePath().toString(),
+//                        virtualInputPath.toString()));
+//                readOnlyInputBindings.add(virtualInputPath.toString());
+//                inputCounter++;
+//
+//                // Add to the list of virtual files
+//                virtualPaths.add(virtualInputPath.toString());
+//            }
+//            pipelineSample.setFiles(virtualPaths);
+//        }
 
-                // Add to the list of virtual files
-                virtualPaths.add(virtualInputPath.toString());
-            }
-            pipelineSample.setFiles(virtualPaths);
-        }
+        // Index binding
+        Path virtualSamplePath = Paths.get(SAMPLE_VIRTUAL_PATH);
+        inputBindings.add(new AbstractMap.SimpleEntry<>(this.sample, virtualSamplePath.toString()));
+        readOnlyInputBindings.add(virtualSamplePath.toString());
+//        pipelineInput.setIndexDir(virtualIndexPath.toAbsolutePath().toString());
 
         // Pipeline params binding
         Path pipelineParamsPath = getOutDir().resolve(pipelineFilename);
@@ -151,6 +159,7 @@ public class AffyClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAn
         // -p /input/pipeline.json
         // --steps quality-control,genotype
         return "python3 " + virtualScriptPath + "/" + NGS_PIPELINE_SCRIPT + " " + AFFY_PIPELINE_SCRIPT_COMMAND
+                + " -s " + virtualSamplePath
                 + " -o " + OUTPUT_VIRTUAL_PATH
                 + " -p " + virtualPipelineParamsPath
                 + " --steps " + steps;
@@ -189,6 +198,11 @@ public class AffyClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAn
 
     public AffyClinicalPipelineWrapperAnalysisExecutor setPipelineSteps(List<String> pipelineSteps) {
         this.pipelineSteps = pipelineSteps;
+        return this;
+    }
+
+    public AffyClinicalPipelineWrapperAnalysisExecutor setSample(String sample) {
+        this.sample = sample;
         return this;
     }
 }

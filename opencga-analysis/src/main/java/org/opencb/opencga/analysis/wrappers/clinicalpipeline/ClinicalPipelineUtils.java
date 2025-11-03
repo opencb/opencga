@@ -22,6 +22,7 @@ public class ClinicalPipelineUtils {
     public static final String AFFY_PIPELINE_SCRIPT_COMMAND = "affy";
 
     public static final String INDEX_VIRTUAL_PATH = "/index";
+    public static final String SAMPLE_VIRTUAL_PATH = "/sample";
     public static final String REFERENCE_VIRTUAL_PATH = "/reference";
     public static final String PIPELINE_PARAMS_FILENAME_PREFIX = "pipeline";
 

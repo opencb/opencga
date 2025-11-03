@@ -58,11 +58,17 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
 
         // If samples are provided in the pipeline params, set them in the pipeline config to be processed later
         if (CollectionUtils.isNotEmpty(analysisParams.getPipelineParams().getSamples())) {
-            List<PipelineSample> pipelineSamples = new ArrayList<>();
-            for (String sample : analysisParams.getPipelineParams().getSamples()) {
-                pipelineSamples.add(createPipelineSampleFromString(sample));
+            String sampleParam = analysisParams.getPipelineParams().getSamples().get(0);
+            File opencgaFile = getCatalogManager().getFileManager().get(study, sampleParam, QueryOptions.empty(), token).first();
+            if (opencgaFile.getType() == File.Type.DIRECTORY) {
+                analysisParams.getPipelineParams().setSamples(Collections.singletonList(opencgaFile.getUri().toString()));
+            } else {
+                List<PipelineSample> pipelineSamples = new ArrayList<>();
+                for (String sample : analysisParams.getPipelineParams().getSamples()) {
+                    pipelineSamples.add(createPipelineSampleFromString(sample));
+                }
+                updatedPipelineConfig.getInput().setSamples(pipelineSamples);
             }
-            updatedPipelineConfig.getInput().setSamples(pipelineSamples);
         }
 
         // If index dir is provided in the pipeline params, set it in the pipeline config to be processed later
@@ -72,21 +78,21 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
         }
 
         // Update sample files (by getting the real paths) in the pipeline configuration
-        for (PipelineSample sample : updatedPipelineConfig.getInput().getSamples()) {
-            List<String> updatedFiles = new ArrayList<>();
-            for (String file : sample.getFiles()) {
-                logger.info("Checking sample file {}", file);
-                File opencgaFile = getCatalogManager().getFileManager().get(study, file, QueryOptions.empty(), token).first();
-                if (opencgaFile.getType() != File.Type.FILE) {
-                    throw new ToolException("Clinical pipeline sample file '" + file + "' for sample ID '" + sample.getId()
-                            + "' is not a file.");
-                }
-                // Add the real path to the updated files
-                updatedFiles.add(Paths.get(opencgaFile.getUri()).toAbsolutePath().toString());
-            }
-            // Set updated files in the sample
-            sample.setFiles(updatedFiles);
-        }
+//        for (PipelineSample sample : updatedPipelineConfig.getInput().getSamples()) {
+//            List<String> updatedFiles = new ArrayList<>();
+//            for (String file : sample.getFiles()) {
+//                logger.info("Checking sample file {}", file);
+//                File opencgaFile = getCatalogManager().getFileManager().get(study, file, QueryOptions.empty(), token).first();
+//                if (opencgaFile.getType() != File.Type.FILE) {
+//                    throw new ToolException("Clinical pipeline sample file '" + file + "' for sample ID '" + sample.getId()
+//                            + "' is not a file.");
+//                }
+//                // Add the real path to the updated files
+//                updatedFiles.add(Paths.get(opencgaFile.getUri()).toAbsolutePath().toString());
+//            }
+//            // Set updated files in the sample
+//            sample.setFiles(updatedFiles);
+//        }
 
         // Update index dir (by getting the real path) in the pipeline configuration
         indexDir = updatedPipelineConfig.getInput().getIndexDir();
@@ -133,6 +139,7 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
                 .setScriptPath(getOpencgaHome().resolve(ANALYSIS_DIRNAME).resolve(PIPELINE_ANALYSIS_DIRNAME))
                 .setPipelineConfig(updatedPipelineConfig)
                 .setPipelineSteps(pipelineSteps)
+                .setSample(analysisParams.getPipelineParams().getSamples().get(0))
                 .execute();
     }
 
