@@ -37,6 +37,7 @@ jobs:
       needs_hadoop_preparation: true
       hadoop_flavour: ${{ inputs.hadoop }}
       maven_opts: -P${{ inputs.hadoop }} -Dopencga.war.name=opencga -Dcheckstyle.skip
+      upload-artifact: false
     secrets: inherit
 
   analysis:
