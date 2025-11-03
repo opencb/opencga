@@ -12,7 +12,6 @@ jobs:
 
   build:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@TASK-7809
-    needs: prepare-hadoop
     with:
       needs_hadoop_preparation: true
       hadoop_flavour: ${{ vars.HADOOP_FLAVOUR }}

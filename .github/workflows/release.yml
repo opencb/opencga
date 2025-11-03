@@ -11,7 +11,9 @@ jobs:
   build-hdi:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      maven_opts: -P${{ vars.HADOOP_FLAVOUR }} -Dopencga.war.name=opencga -Dcheckstyle.skip
+#      needs_hadoop_preparation: true
+#      hadoop_flavour: hdi5.1
+      maven_opts: -Phdi5.1 -Dopencga.war.name=opencga -Dcheckstyle.skip
       build_folder: build-folder-hdi
 
   deploy-docker-hdi:
