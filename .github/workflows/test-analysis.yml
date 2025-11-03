@@ -30,17 +30,9 @@ on:
         required: true
 
 jobs:
-
-  prepare-hadoop:
-    uses: ./.github/workflows/reusable-prepare-hadoop.yml
-    with:
-      hadoop: ${{ inputs.hadoop }}
-    secrets: inherit
-
   analysis:
     name: Execute Sonar Analysis
     runs-on: ${{ vars.UBUNTU_VERSION }}
-    needs: prepare-hadoop
     if: ${{ inputs.sonar }}
     steps:
       - uses: actions/checkout@v4
@@ -70,7 +62,6 @@ jobs:
   test:
     name: Execute JUnit and Jacoco tests
     runs-on: ${{ vars.UBUNTU_VERSION }}
-    needs: prepare-hadoop
     steps:
       - uses: actions/checkout@v4
         with:
