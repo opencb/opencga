@@ -17,8 +17,9 @@
 package org.opencb.opencga.core.models.clinical.pipeline;
 
 import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.tools.ToolParams;
 
-public class PipelineConfig {
+public class PipelineConfig extends ToolParams {
 
     @DataField(id = "name", description = "Pipeline name")
     protected String name;

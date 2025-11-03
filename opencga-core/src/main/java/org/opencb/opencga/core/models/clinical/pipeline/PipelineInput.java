@@ -17,11 +17,11 @@
 package org.opencb.opencga.core.models.clinical.pipeline;
 
 import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
-public class PipelineInput {
-
+public class PipelineInput extends ToolParams {
     @DataField(id = "indexDir", description = "Directory containing pipeline indexes")
     private String indexDir;
 
