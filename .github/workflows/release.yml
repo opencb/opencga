@@ -20,7 +20,7 @@ jobs:
     uses: opencb/java-common-libs/.github/workflows/deploy-zetta-docker-hub-workflow.yml@develop
     needs: build-hdi
     with:
-      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag "${{ needs.build-hdi.outputs.version }}-${{ vars.HADOOP_FLAVOUR }}" --org zettagenomics
+      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag "${{ needs.build-hdi.outputs.version }}-hdi5.1" --org zettagenomics
       build_folder: build-folder-hdi
     secrets: inherit
 

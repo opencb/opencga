@@ -16,6 +16,7 @@ jobs:
       needs_hadoop_preparation: true
       hadoop_flavour: ${{ vars.HADOOP_FLAVOUR }}
       maven_opts: -P${{ vars.HADOOP_FLAVOUR }} -Dopencga.war.name=opencga -Dcheckstyle.skip
+    secrets: inherit
 
   test:
     uses: ./.github/workflows/test-analysis.yml
