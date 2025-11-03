@@ -32,6 +32,13 @@ function main() {
     HADOOP_THIRDPARTY_VERSION=$(mvn help:evaluate -Dexpression=opencga.hadoop.thirdparty.version -q -DforceStdout)
   fi
 
+  # Check if HADOOP_THIRDPARTY can be download
+  mvn dependency:get "-Dartifact=org.opencb.opencga.hadoop.thirdparty:opencga-hadoop-shaded-${HADOOP_FLAVOUR}:${HADOOP_THIRDPARTY_VERSION}" &> /dev/null
+  if [ $? -eq 0 ]; then
+    echo "Hadoop thirdparty jar found in remote maven repository."
+    return 0;
+  fi
+
   # Check if HADOOP_THIRDPARTY_VERSION jar exists in local maven repository
   HADOOP_THIRDPARTY_JAR_PATH="$HOME/.m2/repository/org/opencb/opencga/hadoop/thirdparty/opencga-hadoop-shaded-${HADOOP_FLAVOUR}/$HADOOP_THIRDPARTY_VERSION/opencga-hadoop-shaded-${HADOOP_FLAVOUR}-$HADOOP_THIRDPARTY_VERSION.jar"
   echo "Looking for:"
@@ -39,30 +46,31 @@ function main() {
   if [ -f "$HADOOP_THIRDPARTY_JAR_PATH" ]; then
     echo "Hadoop thirdparty jar found in local maven repository."
     return 0;
-  else
-    echo "Hadoop thirdparty jar not found in local maven repository. Building opencga-hadoop-thirdparty..."
-    local GIT_REF=
-    if [[ "$HADOOP_THIRDPARTY_VERSION" == *"-SNAPSHOT" ]]; then
-      local VERSION=$(echo "$HADOOP_THIRDPARTY_VERSION" | cut -d "-" -f 1)
-      local MAJOR=$(echo "$VERSION" | cut -d "." -f 1)
-      local MINOR=$(echo "$VERSION" | cut -d "." -f 2)
-      local PATCH=$(echo "$VERSION" | cut -d "." -f 3)
-      if [ $PATCH -gt 0 ]; then ## It's a hotfix
-        GIT_REF="release-$MAJOR.$MINOR.x"
-      elif [ $MINOR -eq 0 ]; then ## It's a develop branch
-        GIT_REF="develop"
-      else  ## It's a release branch
-        GIT_REF="release-$MAJOR.x.x"
-      fi
-    else
-      GIT_REF="v$HADOOP_THIRDPARTY_VERSION"
-    fi
-    install "$GIT_REF" "$HADOOP_FLAVOUR"
-    if [ $? -ne 0 ]; then
-      echo "Failed to build opencga-hadoop-thirdparty."
-      return 1
-    fi
   fi
+
+  echo "Hadoop thirdparty jar not found in local maven repository. Building opencga-hadoop-thirdparty..."
+  local GIT_REF=
+  if [[ "$HADOOP_THIRDPARTY_VERSION" == *"-SNAPSHOT" ]]; then
+    local VERSION=$(echo "$HADOOP_THIRDPARTY_VERSION" | cut -d "-" -f 1)
+    local MAJOR=$(echo "$VERSION" | cut -d "." -f 1)
+    local MINOR=$(echo "$VERSION" | cut -d "." -f 2)
+    local PATCH=$(echo "$VERSION" | cut -d "." -f 3)
+    if [ $PATCH -gt 0 ]; then ## It's a hotfix
+      GIT_REF="release-$MAJOR.$MINOR.x"
+    elif [ $MINOR -eq 0 ]; then ## It's a develop branch
+      GIT_REF="develop"
+    else  ## It's a release branch
+      GIT_REF="release-$MAJOR.x.x"
+    fi
+  else
+    GIT_REF="v$HADOOP_THIRDPARTY_VERSION"
+  fi
+  install "$GIT_REF" "$HADOOP_FLAVOUR"
+  if [ $? -ne 0 ]; then
+    echo "Failed to build opencga-hadoop-thirdparty."
+    return 1
+  fi
+
   return 0;
 }
 
