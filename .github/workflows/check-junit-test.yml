@@ -103,4 +103,5 @@ jobs:
       module: ${{ matrix.module }}
       mvn_opts: ${{ inputs.mvn_opts }}
       sonar: false
+      upload-artifact: false
     secrets: inherit
