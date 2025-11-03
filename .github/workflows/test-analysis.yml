@@ -25,6 +25,11 @@ on:
         description: "Maven modules to test. Empty means all. Only top-level modules. Example: 'opencga-storage'"
         required: false
         default: ""
+      upload-artifact:
+        type: boolean
+        description: "Whether to upload the build artifact or not"
+        required: false
+        default: false
     secrets:
       SONAR_TOKEN:
         required: true
@@ -37,7 +42,7 @@ jobs:
       needs_hadoop_preparation: true
       hadoop_flavour: ${{ inputs.hadoop }}
       maven_opts: -P${{ inputs.hadoop }} -Dopencga.war.name=opencga -Dcheckstyle.skip
-      upload-artifact: false
+      upload-artifact: ${{ inputs.upload-artifact }}
     secrets: inherit
 
   analysis:
