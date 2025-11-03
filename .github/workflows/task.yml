@@ -10,18 +10,13 @@ on:
 
 jobs:
 
-  prepare-hadoop:
-    uses: ./.github/workflows/reusable-prepare-hadoop.yml
-    with:
-      hadoop: ${{ vars.HADOOP_FLAVOUR }}
-      ref: ${{ github.ref }}
-    secrets: inherit
-
   build:
-    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@TASK-7809
     needs: prepare-hadoop
     with:
-      maven_opts: -P${{ vars.HADOOP_FLAVOUR }},RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
+      needs_hadoop_preparation: true
+      hadoop_flavour: ${{ vars.HADOOP_FLAVOUR }}
+      maven_opts: -P${{ vars.HADOOP_FLAVOUR }} -Dopencga.war.name=opencga -Dcheckstyle.skip
 
   test:
     uses: ./.github/workflows/test-analysis.yml
