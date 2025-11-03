@@ -308,7 +308,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
         }
         analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/ngs-pipeline/processing")).toAbsolutePath();
         ngsFiles = Arrays.asList("__init__.py", "alignment.py", "base_processor.py", "prepare_reference_indexes.py", "quality_control.py",
-                "variant_calling.py");
+                "variant_calling.py", "affymetrix_microarray.py");
         for (String ngsFile : ngsFiles) {
             try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/ngs-pipeline/processing/" + ngsFile)) {
                 Files.copy(inputStream, analysisPath.resolve(ngsFile), StandardCopyOption.REPLACE_EXISTING);

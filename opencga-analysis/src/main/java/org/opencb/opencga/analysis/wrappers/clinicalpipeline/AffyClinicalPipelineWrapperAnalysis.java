@@ -94,13 +94,13 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
             throw new ToolException("Missing clinical pipeline index directory. You can either provide an index directory in the"
                     + " pipeline configuration or in the execute parameters.");
         }
-//        logger.info("Checking index dir {}", indexDir);
-//        File opencgaFile = getCatalogManager().getFileManager().get(study, indexDir, QueryOptions.empty(), token).first();
-//        if (opencgaFile.getType() != File.Type.DIRECTORY) {
-//            throw new ToolException("Clinical pipeline index dir '" + indexDir + "' is not a folder.");
-//        }
-//        // Update the index dir in the pipeline config
-//        updatedPipelineConfig.getInput().setIndexDir(Paths.get(opencgaFile.getUri()).toAbsolutePath().toString());
+        logger.info("Checking index dir {}", indexDir);
+        File opencgaFile = getCatalogManager().getFileManager().get(study, indexDir, QueryOptions.empty(), token).first();
+        if (opencgaFile.getType() != File.Type.DIRECTORY) {
+            throw new ToolException("Clinical pipeline index dir '" + indexDir + "' is not a folder.");
+        }
+        // Update the index dir in the pipeline config
+        updatedPipelineConfig.getInput().setIndexDir(Paths.get(opencgaFile.getUri()).toAbsolutePath().toString());
 
         checkPipelineSteps();
     }
@@ -141,10 +141,10 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
         // Find the .sorted.<variant calling tool ID>.vcf.gz file within the genotype/variant-calling folder
         Path vcfPath;
         String genotypeToolId = updatedPipelineConfig.getSteps().getGenotype().getTool().getId();
-        try (Stream<Path> stream = Files.list(getOutDir().resolve(GENOTYPE_PIPELINE_STEP).resolve(genotypeToolId))) {
+        try (Stream<Path> stream = Files.list(getOutDir())) {
             vcfPath = stream
                     .filter(Files::isRegularFile)
-                    .filter(path -> path.getFileName().toString().endsWith(genotypeToolId + ".vcf.gz"))
+                    .filter(path -> path.getFileName().toString().endsWith(".vcf.gz"))
                     .findFirst()
                     .orElse(null);
         }

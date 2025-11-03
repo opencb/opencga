@@ -67,7 +67,7 @@ class AffymetrixMicroarray(BaseProcessor):
         cmd = (["bcftools"] + ["+affy2vcf"]
                + ["--calls", str(self.output / "Axiom_KU8.calls.txt")]
                + ["--confidences", str(self.output / "Axiom_KU8.confidences.txt")]
-               + ["--fasta-ref", "/home/imedina/soft/index-dir/reference-genome-index/Homo_sapiens.GRCh38.dna.primary_assembly.fa"]
+               + ["--fasta-ref", index_dir + "/Homo_sapiens.GRCh38.dna.primary_assembly.fa"]
                + ["--snp", str(self.output / "Axiom_KU8.snp-posteriors.txt")]
                + ["--csv", index_dir + "/Axiom_KU8.na36.r1.a2.annot.csv"]
                + ["--output", str(self.output / "Axiom_KU8.vcf")])
