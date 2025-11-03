@@ -7,7 +7,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from processing import QualityControl, Alignment, VariantCalling, PrepareReferenceIndexes
+from processing import QualityControl, Alignment, VariantCalling, PrepareReferenceIndexes, AffymetrixMicroarray
 
 # Define global constants
 VALID_STEPS = ["quality-control", "alignment", "variant-calling"]
@@ -47,7 +47,7 @@ def parse_args(argv=None):
     run_parser = subparsers.add_parser("rna-seq", help="Align reads to reference genome")
     run_parser.add_argument("-p", "--pipeline", help="Pipeline step to execute")
     run_parser.add_argument("-s", "--samples", help="Input data file or directory")
-    run_parser.add_argument("--index-dir", help="Input data file or directory")
+    run_parser.add_argument("-i", "--index-dir", help="Input data file or directory")
     run_parser.add_argument("--steps", default="quality-control,alignment,variant-calling",
                             help="Pipeline step to execute")
     run_parser.add_argument("--overwrite", action="store_true", help="Force re-run even if step previously completed")
@@ -60,9 +60,9 @@ def parse_args(argv=None):
     run_parser = subparsers.add_parser("affy", help="Align reads to reference genome")
     run_parser.add_argument("-p", "--pipeline", help="Pipeline step to execute")
     run_parser.add_argument("-s", "--samples", help="Input data file or directory")
-    run_parser.add_argument("--index-dir", help="Input data file or directory")
-    run_parser.add_argument("--steps", default="quality-control,genotype",
-                            help="Pipeline step to execute")
+    run_parser.add_argument("--chip-type", help="Input data file or directory")
+    run_parser.add_argument("-i", "--index-dir", help="Input data file or directory")
+    run_parser.add_argument("--steps", default="quality-control,genotype", help="Pipeline step to execute")
     run_parser.add_argument("--overwrite", action="store_true", help="Force re-run even if step previously completed")
     run_parser.add_argument("-c", "--clean", action="store_true", help="Clean existing directory before running")
     run_parser.add_argument("-l", "--log-level", default="INFO", choices=["debug", "info", "warning", "error"],
@@ -236,6 +236,74 @@ def genomics(args):
 def rna_seq(args):
     pass
 
+def affy(args):
+    ## 1. Load pipeline configuration
+    pipeline_path = Path(args.pipeline).resolve()
+    if not pipeline_path.is_file():
+        logger.error(f"ERROR: 'pipeline' configuration file not found: {pipeline_path}")
+        return 1
+    with pipeline_path.open("r", encoding="utf-8") as fh:
+        pipeline = json.load(fh)
+    if not isinstance(pipeline, dict):
+        logger.error(f"ERROR: 'pipeline' configuration is not a JSON object: {pipeline_path}")
+        return 1
+
+    ## 2. Set reference in pipeline configuration if provided
+    if args.index_dir:
+        pipeline.get("input", {}).update({"indexDir": args.index_dir})
+
+
+
+    ## 3. Set input in pipeline configuration if provided
+    if args.samples:
+        samples = []
+        # This can be a string or a directory path
+        if Path(args.samples).is_dir():
+            samples_path = Path(args.samples).resolve()
+            logger.debug(f"Loading samples from file/directory: {args.samples}")
+            # Sample are *.CEL file names in the directory
+            cel_files = list(samples_path.glob("*.CEL"))
+            for cel_file in cel_files:
+                sample_id = cel_file.stem
+                samples.append(f"{sample_id}::{str(cel_file)}::0::U")
+            logger.debug(f"Parsed sample IDs: {samples}")
+        else:
+            samples = samples.split(";")
+
+        ## Reset pipeline samples list
+        pipeline.get("input", {}).update({"samples": []})
+        # samples = args.samples.split(";")
+        for sample in samples:
+            ## Parse sample string, format: sample_id::file1,file2::somatic(0/1)::role(T/N/U)
+            parts = sample.split("::")
+            parts += [""] * (4 - len(parts))  # complete 'parts' to length 4
+            sample_id, files, somatic, role = parts[0], parts[1].split(","), parts[2] or 0, parts[3] or "U"
+            logger.debug(f"Sample '{sample_id}' files='{files}' somatic='{somatic}' role='{role}'")
+            ## Append to existing samples list
+            sample_list = pipeline.get("input", {}).get("samples", []) + [
+                {"id": sample_id, "files": files, "somatic": somatic, "role": role}]
+            pipeline.get("input", {}).update({"samples": sample_list})
+        logger.info("Input set in pipeline configuration: %s", json.dumps(pipeline.get("input", {}), ensure_ascii=False))
+
+    ## 4. Check input files exist
+    samples = pipeline.get("input", {}).get("samples", [])
+    if not samples:
+        logger.error("ERROR: No input files specified in pipeline configuration or via --samples")
+        return 1
+    for sample in samples:
+        for f in sample.get("files", []):
+            fpath = Path(f).resolve()
+            if not fpath.is_file():
+                logger.error(f"ERROR: Input file for sample '{sample.get('id')}' not found: {fpath}")
+                return 1
+    logger.debug(f"All input files verified for {len(samples)} samples.")
+
+
+
+    affy_impl = AffymetrixMicroarray(pipeline=pipeline, output=outdir, logger=logger)
+    affy_impl.execute()
+    return 0
+
 def main(argv=None):
     args = parse_args(argv)
 
@@ -260,6 +328,8 @@ def main(argv=None):
             return genomics(args)
         case "rna-seq":
             return rna_seq(args)
+        case "affy":
+            return affy(args)
         case _:
             logger.error(f"Unknown command: {args.command}")
             return 1

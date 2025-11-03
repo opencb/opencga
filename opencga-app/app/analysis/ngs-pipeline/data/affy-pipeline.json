@@ -1,5 +1,5 @@
 {
-  "name": "Example Pipeline",
+  "name": "Example Affy Pipeline",
   "version": "1",
   "description": "A sample bioinformatics pipeline configuration.",
   "type": "affy",
@@ -7,31 +7,12 @@
     "indexDir": "",
     "samples": [
       {
-        "id": "s1",
+        "id": "",
         "files": [
-          "fastq1",
-          "fastq2"
+          ""
         ],
         "somatic": false,
-        "role": "father"
-      },
-      {
-        "id": "s2",
-        "files": [
-          "fastq1",
-          "fastq2"
-        ],
-        "somatic": true,
-        "role": "mother"
-      },
-      {
-        "id": "son",
-        "files": [
-          "fastq1",
-          "fastq2"
-        ],
-        "somatic": false,
-        "role": "child"
+        "role": "U"
       }
     ]
   },
