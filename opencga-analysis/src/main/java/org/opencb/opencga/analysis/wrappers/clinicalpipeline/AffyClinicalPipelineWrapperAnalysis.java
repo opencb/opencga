@@ -61,7 +61,7 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
             String sampleParam = analysisParams.getPipelineParams().getSamples().get(0);
             File opencgaFile = getCatalogManager().getFileManager().get(study, sampleParam, QueryOptions.empty(), token).first();
             if (opencgaFile.getType() == File.Type.DIRECTORY) {
-                analysisParams.getPipelineParams().setSamples(Collections.singletonList(opencgaFile.getUri().toString()));
+                analysisParams.getPipelineParams().setSamples(Collections.singletonList(Paths.get(opencgaFile.getUri()).toAbsolutePath().toString()));
             } else {
                 List<PipelineSample> pipelineSamples = new ArrayList<>();
                 for (String sample : analysisParams.getPipelineParams().getSamples()) {
