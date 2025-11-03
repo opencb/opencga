@@ -435,10 +435,6 @@ public class OrganizationMongoDBAdaptorFactory {
         return migrationDBAdaptor;
     }
 
-    public MetaMongoDBAdaptor getCatalogMetaDBAdaptor() {
-        return null;
-    }
-
     public NoteMongoDBAdaptor getCatalogNotesDBAdaptor() {
         return notesDBAdaptor;
     }

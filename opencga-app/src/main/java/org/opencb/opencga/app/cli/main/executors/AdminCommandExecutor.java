@@ -17,7 +17,6 @@ import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.Acl;
 import org.opencb.opencga.core.models.admin.DeprecatedGroupSyncParams;
 import org.opencb.opencga.core.models.admin.InstallationParams;
-import org.opencb.opencga.core.models.admin.JWTParams;
 import org.opencb.opencga.core.models.admin.UserImportParams;
 import org.opencb.opencga.core.models.admin.UserUpdateGroup;
 import org.opencb.opencga.core.models.common.Enums.Resource;
@@ -69,9 +68,6 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "catalog-install":
                 queryResponse = installCatalog();
-                break;
-            case "catalog-jwt":
-                queryResponse = jwtCatalog();
                 break;
             case "organizations-list":
                 queryResponse = listOrganizations();
@@ -147,35 +143,6 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), InstallationParams.class);
         }
         return openCGAClient.getAdminClient().installCatalog(installationParams);
-    }
-
-    private RestResponse<ObjectMap> jwtCatalog() throws Exception {
-        logger.debug("Executing jwtCatalog in Admin command line");
-
-        AdminCommandOptions.JwtCatalogCommandOptions commandOptions = adminCommandOptions.jwtCatalogCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("organization", commandOptions.organization);
-
-
-        JWTParams jWTParams = null;
-        if (commandOptions.jsonDataModel) {
-            RestResponse<ObjectMap> res = new RestResponse<>();
-            res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/catalog/jwt"));
-            return res;
-        } else if (commandOptions.jsonFile != null) {
-            jWTParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), JWTParams.class);
-        } else {
-            ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "secretKey", commandOptions.secretKey, true);
-
-            jWTParams = JacksonUtils.getDefaultObjectMapper().copy()
-                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), JWTParams.class);
-        }
-        return openCGAClient.getAdminClient().jwtCatalog(jWTParams, queryParams);
     }
 
     private RestResponse<String> listOrganizations() throws Exception {

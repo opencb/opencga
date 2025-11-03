@@ -21,7 +21,6 @@
 #' | -- | :-- | --: |
 #' | groupByAudit | /{apiVersion}/admin/audit/groupBy | count, limit, fields[*], entity[*], action, before, after, date |
 #' | installCatalog | /{apiVersion}/admin/catalog/install | body[*] |
-#' | jwtCatalog | /{apiVersion}/admin/catalog/jwt | organization, body[*] |
 #' | listOrganizations | /{apiVersion}/admin/organizations/list |  |
 #' | fetchResource | /{apiVersion}/admin/resource/fetch | jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | createUsers | /{apiVersion}/admin/users/create | body[*] |
@@ -59,13 +58,6 @@ setMethod("adminClient", "OpencgaR", function(OpencgaR, user, endpointName, para
         #' @param data JSON containing the mandatory parameters.
         installCatalog=fetchOpenCGA(object=OpencgaR, category="admin", categoryId=NULL, subcategory="catalog",
                 subcategoryId=NULL, action="install", params=params, httpMethod="POST", as.queryParam=NULL, ...),
-
-        #' @section Endpoint /{apiVersion}/admin/catalog/jwt:
-        #' Change JWT secret key.
-        #' @param organization Organization id.
-        #' @param data JSON containing the parameters.
-        jwtCatalog=fetchOpenCGA(object=OpencgaR, category="admin", categoryId=NULL, subcategory="catalog",
-                subcategoryId=NULL, action="jwt", params=params, httpMethod="POST", as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/admin/organizations/list:
         #' List current Organizations.
