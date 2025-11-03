@@ -11,10 +11,11 @@ jobs:
   build-hdi:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-#      needs_hadoop_preparation: true
-#      hadoop_flavour: hdi5.1
+      needs_hadoop_preparation: true
+      hadoop_flavour: hdi5.1
       maven_opts: -Phdi5.1 -Dopencga.war.name=opencga -Dcheckstyle.skip
       build_folder: build-folder-hdi
+    secrets: inherit
 
   deploy-docker-hdi:
     uses: opencb/java-common-libs/.github/workflows/deploy-zetta-docker-hub-workflow.yml@develop
@@ -84,8 +85,11 @@ jobs:
   build-emr:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      maven_opts: -P emr6.1 -Dopencga.war.name=opencga -Dcheckstyle.skip
+      needs_hadoop_preparation: true
+      hadoop_flavour: emr6.1
+      maven_opts: -Pemr6.1 -Dopencga.war.name=opencga -Dcheckstyle.skip
       build_folder: build-folder-emr
+    secrets: inherit
 
   deploy-docker-emr:
     uses: opencb/java-common-libs/.github/workflows/deploy-zetta-docker-hub-workflow.yml@develop
@@ -99,8 +103,11 @@ jobs:
   build-emr613:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      maven_opts: -P emr6.13 -Dopencga.war.name=opencga -Dcheckstyle.skip
+      needs_hadoop_preparation: true
+      hadoop_flavour: emr6.13
+      maven_opts: -Pemr6.13 -Dopencga.war.name=opencga -Dcheckstyle.skip
       build_folder: build-folder-emr613
+    secrets: inherit
 
   deploy-docker-emr613:
     uses: opencb/java-common-libs/.github/workflows/deploy-zetta-docker-hub-workflow.yml@develop
@@ -114,8 +121,11 @@ jobs:
   build-emr75:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      maven_opts: -P emr7.5,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
+      needs_hadoop_preparation: true
+      hadoop_flavour: emr7.5
+      maven_opts: -Pemr7.5 -Dopencga.war.name=opencga -Dcheckstyle.skip
       build_folder: build-folder-emr75
+    secrets: inherit
 
   deploy-docker-emr75:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
