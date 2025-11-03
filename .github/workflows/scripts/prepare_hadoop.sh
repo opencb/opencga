@@ -21,6 +21,10 @@ function main() {
       shift # past argument
       shift # past value
       ;;
+    --verbose)
+      set -x
+      shift # past key
+      ;;
     *) # unknown option
       echo "Unknown option $key"
       return 1
@@ -33,8 +37,7 @@ function main() {
   fi
 
   # Check if HADOOP_THIRDPARTY can be download
-  mvn dependency:get "-Dartifact=org.opencb.opencga.hadoop.thirdparty:opencga-hadoop-shaded-${HADOOP_FLAVOUR}:${HADOOP_THIRDPARTY_VERSION}" &> /dev/null
-  if [ $? -eq 0 ]; then
+  if mvn dependency:get "-Dartifact=org.opencb.opencga.hadoop.thirdparty:opencga-hadoop-shaded-${HADOOP_FLAVOUR}:${HADOOP_THIRDPARTY_VERSION}" &> /dev/null; then
     echo "Hadoop thirdparty jar found in remote maven repository."
     return 0;
   fi
@@ -92,7 +95,7 @@ function install(){
   if [[ -n "${THIRDPARTY_READ_TOKEN:-}" ]]; then
     CLONE_URL="https://x-access-token:${THIRDPARTY_READ_TOKEN}@github.com/opencb/${REPO}.git"
   else
-    CLONE_URL="https://github.com/opencb/${REPO}.git"
+    CLONE_URL="git@github.com:opencb/${REPO}.git"
   fi
 
   # Shallow clone at the requested ref
