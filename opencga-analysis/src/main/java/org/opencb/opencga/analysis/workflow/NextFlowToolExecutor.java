@@ -3,7 +3,6 @@ package org.opencb.opencga.analysis.workflow;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -18,7 +17,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.externalTool.ExternalTool;
-import org.opencb.opencga.core.models.externalTool.ExternalToolRunParams;
+import org.opencb.opencga.core.models.externalTool.ExternalToolParams;
 import org.opencb.opencga.core.models.externalTool.ExternalToolVariable;
 import org.opencb.opencga.core.models.externalTool.WorkflowScript;
 import org.opencb.opencga.core.models.job.ToolInfoExecutor;
@@ -43,14 +42,14 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Stream;
 
-@Tool(id = NextFlowExecutor.ID, resource = Enums.Resource.EXTERNAL_TOOL, description = NextFlowExecutor.DESCRIPTION)
-public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
+@Tool(id = NextFlowToolExecutor.ID, resource = Enums.Resource.EXTERNAL_TOOL, description = NextFlowToolExecutor.DESCRIPTION)
+public class NextFlowToolExecutor extends OpenCgaDockerToolScopeStudy {
 
     public final static String ID = "nextflow";
     public static final String DESCRIPTION = "Execute a Nextflow analysis.";
 
     @ToolParams
-    protected ExternalToolRunParams runParams = new ExternalToolRunParams();
+    protected ExternalToolParams runParams = new ExternalToolParams();
 
     private ExternalTool externalTool;
     private String cliParams;
@@ -61,7 +60,7 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
     private Thread thread;
     private final int monitorThreadPeriod = 5000;
 
-    private final static Logger logger = LoggerFactory.getLogger(NextFlowExecutor.class);
+    private final static Logger logger = LoggerFactory.getLogger(NextFlowToolExecutor.class);
 
     @Override
     protected void check() throws Exception {
@@ -130,9 +129,10 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
         updateJobInformation(new ArrayList<>(tags), toolInfoExecutor);
 
         StringBuilder cliParamsBuilder = new StringBuilder();
-        if (MapUtils.isNotEmpty(runParams.getParams())) {
-            for (Map.Entry<String, String> entry : runParams.getParams().entrySet()) {
+        if (runParams.getParams() != null) {
+            for (Map.Entry<String, Object> entry : runParams.getParams().toParams().entrySet()) {
                 String variableId = removePrefix(entry.getKey());
+                String value = entry.getValue().toString();
                 // Remove from the mandatoryParams set
                 mandatoryParams.remove(variableId);
 
@@ -143,11 +143,11 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
                 } else {
                     cliParamsBuilder.append("--").append(entry.getKey()).append(" ");
                 }
-                if (StringUtils.isNotEmpty(entry.getValue())) {
-                    if ((externalToolVariable != null && externalToolVariable.isOutput()) || inputFileUtils.isDynamicOutputFolder(entry.getValue())) {
-                        processOutputCli(entry.getValue(), inputFileUtils, cliParamsBuilder);
-                    } else if (!inputFileUtils.isFlag(entry.getValue())) {
-                        processInputCli(entry.getValue(), inputFileUtils, cliParamsBuilder);
+                if (StringUtils.isNotEmpty(value)) {
+                    if ((externalToolVariable != null && externalToolVariable.isOutput()) || inputFileUtils.isDynamicOutputFolder(value)) {
+                        processOutputCli(value, inputFileUtils, cliParamsBuilder);
+                    } else if (!inputFileUtils.isFlag(value)) {
+                        processInputCli(value, inputFileUtils, cliParamsBuilder);
                     }
                 } else if (externalToolVariable != null) {
                     if (StringUtils.isNotEmpty(externalToolVariable.getDefaultValue())) {

@@ -1,13 +1,20 @@
 package org.opencb.opencga.core.models.externalTool.custom;
 
+import org.opencb.opencga.core.tools.ToolParams;
+
 import java.util.Map;
 
-public class CustomToolRunParams {
+public class CustomToolRunParams extends ToolParams  {
 
     private String commandLine;
     private Map<String, String> params;
 
     public CustomToolRunParams() {
+    }
+
+    public CustomToolRunParams(CustomToolRunParams other) {
+        this.commandLine = other.commandLine;
+        this.params = other.params;
     }
 
     public CustomToolRunParams(String commandLine, Map<String, String> params) {

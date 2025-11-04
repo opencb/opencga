@@ -436,7 +436,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = VariantWalkerParams.DESCRIPTION, required = true) VariantWalkerParams params) {
-        return submitJob(project, study, JobType.WALKER, VariantWalkerTool.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(project, study, JobType.DEPRECATED_WALKER, VariantWalkerTool.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @GET

@@ -13,6 +13,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.externalTool.*;
+import org.opencb.opencga.core.models.externalTool.custom.CustomToolRunParams;
 import org.opencb.opencga.core.models.job.ToolInfoExecutor;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.ToolDependency;
@@ -30,7 +31,7 @@ public class CustomToolExecutor extends OpenCgaDockerToolScopeStudy {
     public static final String DESCRIPTION = "Execute an analysis from a custom binary.";
 
     @ToolParams
-    protected ExternalToolRunParams runParams = new ExternalToolRunParams();
+    protected ExternalToolParams<CustomToolRunParams> runParams = new ExternalToolParams<>();
 
     private String cliParams;
     private String dockerImage;
@@ -59,14 +60,14 @@ public class CustomToolExecutor extends OpenCgaDockerToolScopeStudy {
         }
     }
 
-    private Docker generateDockerObject(ExternalToolRunParams runParams) throws CatalogException, ToolException {
+    private Docker generateDockerObject(ExternalToolParams<CustomToolRunParams> runParams) throws CatalogException, ToolException {
         OpenCGAResult<ExternalTool> result;
         if (runParams.getVersion() != null) {
             Query query = new Query(ExternalToolDBAdaptor.QueryParams.VERSION.key(), runParams.getVersion());
-            result = catalogManager.getExternalToolManager().get(study, Collections.singletonList(runParams.getId()), query,
+            result = catalogManager.getExternalToolManager().get(runParams.getStudy(), Collections.singletonList(runParams.getId()), query,
                     QueryOptions.empty(), false, token);
         } else {
-            result = catalogManager.getExternalToolManager().get(study, runParams.getId(), QueryOptions.empty(), token);
+            result = catalogManager.getExternalToolManager().get(runParams.getStudy(), runParams.getId(), QueryOptions.empty(), token);
         }
         if (result.getNumResults() == 0) {
             throw new ToolException("Custom tool '" + runParams.getId() + "' not found");
@@ -76,22 +77,24 @@ public class CustomToolExecutor extends OpenCgaDockerToolScopeStudy {
         if (externalTool == null) {
             throw new ToolException("Custom tool '" + runParams.getId() + "' is null");
         }
-        if (externalTool.getType() != ExternalToolType.CUSTOM_TOOL) {
-            throw new ToolException("External tool '" + runParams.getId() + "' is not of type " + ExternalToolType.CUSTOM_TOOL);
+        if (externalTool.getType() != ExternalToolType.CUSTOM) {
+            throw new ToolException("External tool '" + runParams.getId() + "' is not of type " + ExternalToolType.CUSTOM);
         }
         if (externalTool.getDocker() == null) {
             throw new ToolException("External tool '" + runParams.getId() + "' does not have a docker object");
         }
 
         Docker docker = externalTool.getDocker();
-        String commandLine = StringUtils.isNotEmpty(runParams.getCommandLine())
-                ? runParams.getCommandLine()
+        String commandLine = StringUtils.isNotEmpty(runParams.getParams().getCommandLine())
+                ? runParams.getParams().getCommandLine()
                 : docker.getCommandLine();
 
         // Process docker command line to replace variables
         Map<String, String> params = new HashMap<>();
         if (runParams.getParams() != null) {
-            params.putAll(runParams.getParams());
+            for (Map.Entry<String, Object> entry : runParams.getParams().toParams().entrySet()) {
+                params.put(entry.getKey(),  entry.getValue().toString());
+            }
         }
         if (CollectionUtils.isNotEmpty(externalTool.getVariables())) {
             for (ExternalToolVariable variable : externalTool.getVariables()) {
@@ -101,8 +104,8 @@ public class CustomToolExecutor extends OpenCgaDockerToolScopeStudy {
                 }
             }
         }
-        String processedCli = inputFileUtils.processCommandLine(study, commandLine, params, temporalInputDir, dockerInputBindings,
-                getOutDir().toString(), token);
+        String processedCli = inputFileUtils.processCommandLine(runParams.getStudy(), commandLine, params, temporalInputDir,
+                dockerInputBindings, getOutDir().toString(), token);
         docker.setCommandLine(processedCli);
 
         return docker;

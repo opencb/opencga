@@ -94,8 +94,9 @@ public class WorkflowWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = DeprecatedWorkflowRunParams.DESCRIPTION, required = true) DeprecatedWorkflowRunParams params) {
-        return run(() -> catalogManager.getExternalToolManager().submitWorkflow(study, params.getId(), params.getVersion(), params.getParams(),
-                jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun, token));
+        WorkflowToolParams workflowToolParams = new WorkflowToolParams(params.getParams());
+        return run(() -> catalogManager.getExternalToolManager().submitWorkflow(study, params.getId(), params.getVersion(),
+                workflowToolParams, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun, token));
     }
 
     @POST
