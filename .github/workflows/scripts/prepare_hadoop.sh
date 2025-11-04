@@ -37,17 +37,11 @@ function main() {
   fi
 
   # Check if HADOOP_THIRDPARTY can be download
-  if mvn dependency:get "-Dartifact=org.opencb.opencga.hadoop.thirdparty:opencga-hadoop-shaded-${HADOOP_FLAVOUR}:${HADOOP_THIRDPARTY_VERSION}" &> /dev/null; then
-    echo "Hadoop thirdparty jar found in remote maven repository."
-    return 0;
-  fi
-
-  # Check if HADOOP_THIRDPARTY_VERSION jar exists in local maven repository
-  HADOOP_THIRDPARTY_JAR_PATH="$HOME/.m2/repository/org/opencb/opencga/hadoop/thirdparty/opencga-hadoop-shaded-${HADOOP_FLAVOUR}/$HADOOP_THIRDPARTY_VERSION/opencga-hadoop-shaded-${HADOOP_FLAVOUR}-$HADOOP_THIRDPARTY_VERSION.jar"
-  echo "Looking for:"
-  echo " - $HADOOP_THIRDPARTY_JAR_PATH"
-  if [ -f "$HADOOP_THIRDPARTY_JAR_PATH" ]; then
-    echo "Hadoop thirdparty jar found in local maven repository."
+  ARTIFACT="org.opencb.opencga.hadoop.thirdparty:opencga-hadoop-shaded-${HADOOP_FLAVOUR}:${HADOOP_THIRDPARTY_VERSION}"
+  echo "Looking for artifact:"
+  echo " - $ARTIFACT"
+  if mvn dependency:get "-Dartifact=${ARTIFACT}" &> /dev/null; then
+    echo "Hadoop thirdparty jar found."
     return 0;
   fi
 
