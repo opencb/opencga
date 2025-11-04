@@ -36,7 +36,6 @@ import java.util.Map;
 public abstract class ToolParams {
     private Map<String, Class<?>> internalPropertiesMap = null;
 
-    private final Logger logger = org.slf4j.LoggerFactory.getLogger(this.getClass());
 
     public String toJson() {
         ObjectMapper objectMapper = getObjectMapper();
