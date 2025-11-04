@@ -25,7 +25,6 @@ import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.models.clinical.pipeline.AffyPipelineConfig;
 import org.opencb.opencga.core.models.clinical.pipeline.PipelineConfig;
 import org.opencb.opencga.core.models.clinical.pipeline.PipelineInput;
-import org.opencb.opencga.core.models.clinical.pipeline.PipelineSample;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 
 import java.io.IOException;

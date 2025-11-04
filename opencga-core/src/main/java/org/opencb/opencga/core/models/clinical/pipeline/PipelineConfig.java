@@ -17,9 +17,8 @@
 package org.opencb.opencga.core.models.clinical.pipeline;
 
 import org.opencb.commons.annotations.DataField;
-import org.opencb.opencga.core.tools.ToolParams;
 
-public class PipelineConfig extends ToolParams {
+public class PipelineConfig {
 
     @DataField(id = "name", description = "Pipeline name")
     protected String name;
@@ -37,6 +36,7 @@ public class PipelineConfig extends ToolParams {
     protected PipelineInput input;
 
     public PipelineConfig() {
+        this.input = new PipelineInput();
     }
 
     public PipelineConfig(String name, String version, String type, String description, PipelineInput input) {

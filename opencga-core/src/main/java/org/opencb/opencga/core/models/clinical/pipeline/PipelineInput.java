@@ -17,11 +17,14 @@
 package org.opencb.opencga.core.models.clinical.pipeline;
 
 import org.opencb.commons.annotations.DataField;
-import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
-public class PipelineInput extends ToolParams {
+public class PipelineInput {
+
+    @DataField(id = "dataDir", description = "Directory containing data pipeline (e.g., CEL files in affy-pipeline,...)")
+    private String dataDir;
+
     @DataField(id = "indexDir", description = "Directory containing pipeline indexes")
     private String indexDir;
 
@@ -31,22 +34,46 @@ public class PipelineInput extends ToolParams {
     public PipelineInput() {
     }
 
-    public PipelineInput(String indexDir, List<PipelineSample> samples) {
+    public PipelineInput(String dataDir, String indexDir, List<PipelineSample> samples) {
+        this.dataDir = dataDir;
         this.indexDir = indexDir;
         this.samples = samples;
     }
 
-    public String getIndexDir() { return indexDir; }
-    public PipelineInput setIndexDir(String indexDir) { this.indexDir = indexDir; return this; }
-
-    public List<PipelineSample> getSamples() { return samples; }
-    public PipelineInput setSamples(List<PipelineSample> samples) { this.samples = samples; return this; }
-
     @Override
     public String toString() {
-        return "PipelineInput{" +
-                "indexDir='" + indexDir + '\'' +
-                ", samples=" + samples +
-                '}';
+        final StringBuilder sb = new StringBuilder("PipelineInput{");
+        sb.append("dataDir='").append(dataDir).append('\'');
+        sb.append(", indexDir='").append(indexDir).append('\'');
+        sb.append(", samples=").append(samples);
+        sb.append('}');
+        return sb.toString();
+    }
+
+    public String getDataDir() {
+        return dataDir;
+    }
+
+    public PipelineInput setDataDir(String dataDir) {
+        this.dataDir = dataDir;
+        return this;
+    }
+
+    public String getIndexDir() {
+        return indexDir;
+    }
+
+    public PipelineInput setIndexDir(String indexDir) {
+        this.indexDir = indexDir;
+        return this;
+    }
+
+    public List<PipelineSample> getSamples() {
+        return samples;
+    }
+
+    public PipelineInput setSamples(List<PipelineSample> samples) {
+        this.samples = samples;
+        return this;
     }
 }

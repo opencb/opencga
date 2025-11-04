@@ -164,6 +164,7 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
                 "", "", "", null, null, null, null, null), false, token).first();
 
         ObjectMap storageOptions = analysisParams.getPipelineParams().getVariantIndexParams() != null
+                // ? new ObjectMap(analysisParams.getPipelineParams().getVariantIndexParams())
                 ? analysisParams.getPipelineParams().getVariantIndexParams().toObjectMap()
                 : new ObjectMap();
 
@@ -191,11 +192,13 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
             updatedPipelineConfig = JacksonUtils.getDefaultObjectMapper().readerFor(PipelineConfig.class).readValue(pipelinePath.toFile());
         } else {
             logger.info("Getting clinical pipeline configuration provided directly in the parameters");
-            updatedPipelineConfig = copyPipelineConfig(analysisParams.getPipelineParams().getPipeline());
+            AffyPipelineConfig affyPipelineConfig = JacksonUtils.getDefaultObjectMapper().convertValue(analysisParams.getPipelineParams()
+                    .getPipeline(), AffyPipelineConfig.class);
+            updatedPipelineConfig = copyPipelineConfig(affyPipelineConfig);
         }
 
         // Check mandatory parameters in pipeline config: input and steps
-        if (updatedPipelineConfig.getInput() == null) {
+        if (updatedPipelineConfig.getInput() == null && CollectionUtils.isEmpty(analysisParams.getPipelineParams().getSamples())) {
             throw new ToolException("Missing clinical pipeline configuration input.");
         }
     }

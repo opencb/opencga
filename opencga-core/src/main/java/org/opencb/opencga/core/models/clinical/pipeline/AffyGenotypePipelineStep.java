@@ -26,13 +26,14 @@ public class AffyGenotypePipelineStep extends PipelineStep {
     private PipelineTool tool;
 
     public AffyGenotypePipelineStep() {
+        super();
     }
 
-    public AffyGenotypePipelineStep(GenomicsAlignmentPipelineTool tool) {
+    public AffyGenotypePipelineStep(PipelineTool tool) {
         this.tool = tool;
     }
 
-    public AffyGenotypePipelineStep(Map<String, Object> options, GenomicsAlignmentPipelineTool tool) {
+    public AffyGenotypePipelineStep(Map<String, Object> options, PipelineTool tool) {
         super(options);
         this.tool = tool;
     }

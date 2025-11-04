@@ -16,13 +16,16 @@
 
 package org.opencb.opencga.core.models.clinical.pipeline;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.operations.variant.VariantIndexParams;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class AffyClinicalPipelineParams extends ToolParams {
 
@@ -47,7 +50,6 @@ public class AffyClinicalPipelineParams extends ToolParams {
     public AffyClinicalPipelineParams() {
         this.samples = new ArrayList<>();
         this.steps = new ArrayList<>();
-        pipeline = new AffyPipelineConfig();
     }
 
     public AffyClinicalPipelineParams(List<String> samples, String indexDir, List<String> steps, VariantIndexParams variantIndexParams,
@@ -58,6 +60,18 @@ public class AffyClinicalPipelineParams extends ToolParams {
         this.variantIndexParams = variantIndexParams;
         this.pipelineFile = pipelineFile;
         this.pipeline = pipeline;
+    }
+
+    public AffyClinicalPipelineParams(String input) throws JsonProcessingException {
+        // Construct this from a JSON string
+        AffyClinicalPipelineParams params = JacksonUtils.getDefaultObjectMapper().readerFor(AffyClinicalPipelineParams.class)
+                .readValue(input);
+        this.samples = params.samples;
+        this.indexDir = params.indexDir;
+        this.steps = params.steps;
+        this.variantIndexParams = params.variantIndexParams;
+        this.pipelineFile = params.pipelineFile;
+        this.pipeline = params.pipeline;
     }
 
     @Override
