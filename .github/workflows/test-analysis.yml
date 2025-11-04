@@ -30,6 +30,11 @@ on:
         description: "Whether to upload the build artifact or not"
         required: false
         default: true
+      fail_never:
+        description: 'Set to true to never fail the workflow (useful for nightly builds).'
+        type: boolean
+        required: false
+        default: false
     secrets:
       SONAR_TOKEN:
         required: true
@@ -104,7 +109,7 @@ jobs:
           TAGS=$(echo ${{ inputs.test_profile }} | sed -e 's/run\([^,]*\)Tests/\1/g'  | tr ',' '_' | tr '[:upper:]' '[:lower:]' )
           echo "TESTS_LOG_FILE_NAME=junit_${{ inputs.hadoop }}_${TAGS}_${MODULE}.log.gz" >> $GITHUB_OUTPUT
       - name: Run Junit tests
-        run: mvn -B verify surefire-report:report --fail-never -Dsurefire.testFailureIgnore=true -f ${{ (inputs.module == '' || inputs.module == 'all') && '.' || inputs.module }} -P ${{ inputs.hadoop }},${{ inputs.test_profile }} -Dcheckstyle.skip ${{ inputs.mvn_opts }}  |& tee >(gzip > ${{ steps.BuildJunitLogFileName.outputs.TESTS_LOG_FILE_NAME }} ) |& grep -a -P '^\[[^\]]*(INFO|WARNING|ERROR)' --colour=never --line-buffered
+        run: mvn -B verify surefire-report:report ${{ inputs.fail_never && '--fail-never' || '' }} -Dsurefire.testFailureIgnore=true -f ${{ (inputs.module == '' || inputs.module == 'all') && '.' || inputs.module }} -P ${{ inputs.hadoop }},${{ inputs.test_profile }} -Dcheckstyle.skip ${{ inputs.mvn_opts }}  |& tee >(gzip > ${{ steps.BuildJunitLogFileName.outputs.TESTS_LOG_FILE_NAME }} ) |& grep -a -P '^\[[^\]]*(INFO|WARNING|ERROR)' --colour=never --line-buffered
       - name: Upload Junit test logs
         if: success() || failure()
         uses: actions/upload-artifact@v4
@@ -124,4 +129,3 @@ jobs:
           commit: '${{ github.sha }}'
           fail_on_test_failures: true
           fail_if_no_tests: false
-
