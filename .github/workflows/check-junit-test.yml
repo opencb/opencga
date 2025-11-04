@@ -52,11 +52,6 @@ on:
         type: string
         required: false
         default: ""
-      fail_never:
-        description: 'Set to true to never fail the workflow (useful for nightly builds).'
-        type: boolean
-        required: false
-        default: false
 
 jobs:
   get_profiles:
@@ -109,5 +104,4 @@ jobs:
       mvn_opts: ${{ inputs.mvn_opts }}
       sonar: false
       upload-artifact: false
-      fail_never: ${{ inputs.fail_never }}
     secrets: inherit
