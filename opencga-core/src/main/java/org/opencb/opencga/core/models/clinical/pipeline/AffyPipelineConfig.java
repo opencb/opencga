@@ -24,6 +24,7 @@ public class AffyPipelineConfig extends PipelineConfig {
     private AffyPipelineSteps steps;
 
     public AffyPipelineConfig() {
+        super();
     }
 
     public AffyPipelineConfig(String name, String version, String type, String description, PipelineInput input, AffyPipelineSteps steps) {
