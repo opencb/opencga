@@ -692,8 +692,9 @@ public class FieldConstants {
     public static final String CLINICAL_PIPELINE_GENOMICS_PARAMS_DESCRIPTION = "Map of parameters to execute the clinical pipeline";
     public static final String CLINICAL_PIPELINE_SAMPLES_DESCRIPTION = "List of samples following the format: sample_id:file_id1;file_id2[:"
             + "rol[:somatic]]; 'rol' can be 'mother', 'father' or 'child'. If the sample is somatic, then add ':somatic' at";
-    public static final String CLINICAL_PIPELINE_INDEX_DIR_DESCRIPTION = "Directory where the reference genome and aligner indexes are"
-            + " located";
+    public static final String CLINICAL_PIPELINE_INDEX_DIR_DESCRIPTION = "Directory where the reference genome, aligner, affymetrix..."
+            + " indexes are located";
+    public static final String CLINICAL_PIPELINE_DATA_DIR_DESCRIPTION = "Directory where the data files are located, e.g. CEL files,...";
     public static final String CLINICAL_PIPELINE_STEPS_DESCRIPTION = "Pipeline steps: quality-control, alignment, variant-calling";
     public static final String CLINICAL_PIPELINE_VARIANT_INDEX_DESCRIPTION = "Parameters to index the resulting variants";
     public static final String CLINICAL_PIPELINE_FILE_DESCRIPTION = "JSON file containing the configuration of the clinical pipeline";

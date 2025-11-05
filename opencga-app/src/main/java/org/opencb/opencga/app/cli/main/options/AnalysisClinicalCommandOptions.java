@@ -1289,7 +1289,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--pipeline-params-samples"}, description = "List of samples following the format: sample_id:file_id1;file_id2[:rol[:somatic]]; 'rol' can be 'mother', 'father' or 'child'. If the sample is somatic, then add ':somatic' at", required = false, arity = 1)
         public String pipelineParamsSamples;
     
-        @Parameter(names = {"--pipeline-params-index-dir"}, description = "Directory where the reference genome and aligner indexes are located", required = false, arity = 1)
+        @Parameter(names = {"--pipeline-params-index-dir"}, description = "Directory where the reference genome, aligner, affymetrix... indexes are located", required = false, arity = 1)
         public String pipelineParamsIndexDir;
     
         @Parameter(names = {"--pipeline-params-steps"}, description = "Pipeline steps: quality-control, alignment, variant-calling", required = false, arity = 1)
@@ -1342,7 +1342,7 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--pipeline-params-samples"}, description = "List of samples following the format: sample_id:file_id1;file_id2[:rol[:somatic]]; 'rol' can be 'mother', 'father' or 'child'. If the sample is somatic, then add ':somatic' at", required = false, arity = 1)
         public String pipelineParamsSamples;
     
-        @Parameter(names = {"--pipeline-params-index-dir"}, description = "Directory where the reference genome and aligner indexes are located", required = false, arity = 1)
+        @Parameter(names = {"--pipeline-params-index-dir"}, description = "Directory where the reference genome, aligner, affymetrix... indexes are located", required = false, arity = 1)
         public String pipelineParamsIndexDir;
     
         @Parameter(names = {"--pipeline-params-steps"}, description = "Pipeline steps: quality-control, alignment, variant-calling", required = false, arity = 1)

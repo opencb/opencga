@@ -35,6 +35,9 @@ public class AffyClinicalPipelineParams extends ToolParams {
     @DataField(id = "indexDir", description = FieldConstants.CLINICAL_PIPELINE_INDEX_DIR_DESCRIPTION)
     private String indexDir;
 
+    @DataField(id = "dataDir", description = FieldConstants.CLINICAL_PIPELINE_DATA_DIR_DESCRIPTION)
+    private String dataDir;
+
     @DataField(id = "steps", description = FieldConstants.CLINICAL_PIPELINE_STEPS_DESCRIPTION)
     private List<String> steps;
 
