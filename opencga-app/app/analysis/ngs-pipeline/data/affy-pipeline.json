@@ -5,6 +5,7 @@
   "type": "affy",
   "input": {
     "indexDir": "",
+    "dataDir": "/.../.../.../...",
     "samples": [
       {
         "id": "",

@@ -60,6 +60,7 @@ def parse_args(argv=None):
     run_parser = subparsers.add_parser("affy", help="Align reads to reference genome")
     run_parser.add_argument("-p", "--pipeline", help="Pipeline step to execute")
     run_parser.add_argument("-s", "--samples", help="Input data file or directory")
+    run_parser.add_argument("-d", "--data-dir", help="Input data file or directory")
     run_parser.add_argument("--chip-type", help="Input data file or directory")
     run_parser.add_argument("-i", "--index-dir", help="Input data file or directory")
     run_parser.add_argument("--steps", default="quality-control,genotype", help="Pipeline step to execute")
