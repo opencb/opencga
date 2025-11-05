@@ -6,9 +6,8 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.clinical.pipeline.*;
+import org.opencb.opencga.core.models.clinical.pipeline.PipelineTool;
 import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyClinicalPipelineWrapperParams;
 import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyPipelineConfig;
 import org.opencb.opencga.core.models.common.Enums;
@@ -22,7 +21,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -43,7 +41,7 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
     private static final String VARIANT_INDEX_STEP = "variant-index";
 
     private List<String> pipelineSteps;
-    private AffyPipelineConfig updatedPipelineConfig = new AffyPipelineConfig();
+    private AffyPipelineConfig updatedPipelineConfig;
 
     @ToolParams
     protected final AffyClinicalPipelineWrapperParams analysisParams = new AffyClinicalPipelineWrapperParams();
@@ -56,28 +54,12 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
         setUpStorageEngineExecutor(study);
 
         // Check pipeline configuration
-        checkPipelineConfig();
+        updatedPipelineConfig = checkPipelineConfig(analysisParams.getPipelineParams().getPipelineFile(),
+                analysisParams.getPipelineParams().getPipeline(), catalogManager, study, token);
 
-        // If samples are provided in the pipeline params, set them in the pipeline config and get the real file paths
-        if (CollectionUtils.isNotEmpty(analysisParams.getPipelineParams().getSamples())) {
-            List<PipelineSample> pipelineSamples = new ArrayList<>();
-            for (String sample : analysisParams.getPipelineParams().getSamples()) {
-                pipelineSamples.add(createPipelineSampleFromString(sample));
-            }
-            updatedPipelineConfig.getInput().setSamples(pipelineSamples);
-        }
-        
-        // If data dir is provided in the pipeline params, set it in the pipeline config to be processed later
-        String dataDir = analysisParams.getPipelineParams().getDataDir();
-        if (StringUtils.isNotEmpty(dataDir)) {
-            updatedPipelineConfig.getInput().setDataDir(analysisParams.getPipelineParams().getDataDir());
-        }
-
-        // If index dir is provided in the pipeline params, set it in the pipeline config to be processed later
-        String indexDir = analysisParams.getPipelineParams().getIndexDir();
-        if (StringUtils.isNotEmpty(indexDir)) {
-            updatedPipelineConfig.getInput().setIndexDir(analysisParams.getPipelineParams().getIndexDir());
-        }
+        // Update from params: samples, data dir and index dir
+        updatePipelineConfigFromParams(updatedPipelineConfig, analysisParams.getPipelineParams().getSamples(),
+                analysisParams.getPipelineParams().getDataDir(), analysisParams.getPipelineParams().getIndexDir());
 
         updatePipelineConfig(updatedPipelineConfig, study, catalogManager, token);
 
@@ -142,42 +124,6 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
                 : new ObjectMap();
 
         getVariantStorageManager().index(study, vcfFile.getId(), getScratchDir().toAbsolutePath().toString(), storageOptions, token);
-    }
-
-    private PipelineSample createPipelineSampleFromString(String sampleString) throws ToolException {
-        // Parse the input format: sample_id::file_id1[,file_id2][::somatic::role]
-        String[] fields = sampleString.split(SAMPLE_FIELD_SEP);
-        if (fields.length < 2) {
-            throw new ToolException("Invalid input format. Expected format: sample_id" + SAMPLE_FIELD_SEP + "file_id1["
-                    + SAMPLE_FILE_SEP + "file_id2][" + SAMPLE_FIELD_SEP + "somatic" + SAMPLE_FIELD_SEP + "role],"
-                    + " but got: " + sampleString);
-        }
-
-        PipelineSample pipelineSample = new PipelineSample();
-
-        // Set sample ID
-        pipelineSample.setId(fields[0]);
-
-        // Parse and set files
-        String inputFiles = fields[1];
-        if (StringUtils.isEmpty(inputFiles)) {
-            throw new ToolException("Missing input files for sample '" + fields[0] + "': " + sampleString);
-        }
-        pipelineSample.setFiles(Arrays.asList(inputFiles.split(SAMPLE_FILE_SEP)));
-
-        // Parse optional somatic field (default: false)
-        if (fields.length > 2 && StringUtils.isNotEmpty(fields[2])) {
-            pipelineSample.setSomatic("somatic".equalsIgnoreCase(fields[2]));
-        } else {
-            pipelineSample.setSomatic(false);
-        }
-
-        // Parse optional role field (default: null)
-        if (fields.length > 3 && StringUtils.isNotEmpty(fields[3])) {
-            pipelineSample.setRole(fields[3]);
-        }
-
-        return pipelineSample;
     }
 
     private void checkPipelineSteps() throws ToolException, CatalogException {

@@ -11,7 +11,6 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.pipeline.PipelineConfig;
 import org.opencb.opencga.core.models.clinical.pipeline.PipelineSample;
-import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyPipelineConfig;
 import org.opencb.opencga.core.models.file.File;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +48,7 @@ public class ClinicalPipelineUtils {
     public static final String GENOTYPE_PIPELINE_STEP = "genotype";
     protected static final Set<String> VALID_PIPELINE_STEPS = new HashSet<>(Arrays.asList(QUALITY_CONTROL_PIPELINE_STEP,
             ALIGNMENT_PIPELINE_STEP, VARIANT_CALLING_PIPELINE_STEP));
-    protected static final Set<String> VALID_AFFY_PIPELINE_STEPS = new HashSet<>(Arrays.asList(QUALITY_CONTROL_PIPELINE_STEP,
+    public static final Set<String> VALID_AFFY_PIPELINE_STEPS = new HashSet<>(Arrays.asList(QUALITY_CONTROL_PIPELINE_STEP,
             GENOTYPE_PIPELINE_STEP));
 
 
@@ -162,15 +161,31 @@ public class ClinicalPipelineUtils {
                     .readValue(pipelinePath.toFile());
         } else {
             logger.info("Getting clinical pipeline configuration provided directly in the parameters");
-            T copyPipelineConfig = JacksonUtils.getDefaultObjectMapper().convertValue(analysisParams.getPipelineParams()
-                    .getPipeline(), AffyPipelineConfig.class);
-            updatedPipelineConfig = copyPipelineConfig(affyPipelineConfig);
+            updatedPipelineConfig = copyPipelineConfig(pipelineConfig);
         }
 
-        // Check pipeline input (i.e, samples and data dir)
-        if (updatedPipelineConfig.getInput() == null && (CollectionUtils.isEmpty(analysisParams.getPipelineParams().getSamples())
-                || StringUtils.isEmpty(analysisParams.getPipelineParams().getDataDir()))) {
-            throw new ToolException("Missing clinical pipeline configuration input.");
+        return updatedPipelineConfig;
+    }
+
+    public static  <T extends PipelineConfig> void updatePipelineConfigFromParams(T pipelineConfig, List<String> samples, String dataDir,
+                                                                                  String indexDir) throws ToolException {
+        // If samples are provided in the pipeline params, set them in the pipeline config and get the real file paths
+        if (CollectionUtils.isNotEmpty(samples)) {
+            List<PipelineSample> pipelineSamples = new ArrayList<>();
+            for (String sample : samples) {
+                pipelineSamples.add(createPipelineSampleFromString(sample));
+            }
+            pipelineConfig.getInput().setSamples(pipelineSamples);
+        }
+
+        // If data dir is provided in the pipeline params, set it in the pipeline config to be processed later
+        if (StringUtils.isNotEmpty(dataDir)) {
+            pipelineConfig.getInput().setDataDir(dataDir);
+        }
+
+        // If index dir is provided in the pipeline params, set it in the pipeline config to be processed later
+        if (StringUtils.isNotEmpty(indexDir)) {
+            pipelineConfig.getInput().setIndexDir(indexDir);
         }
     }
 
@@ -216,6 +231,42 @@ public class ClinicalPipelineUtils {
             // Update the data dir in the pipeline config
             pipelineConfig.getInput().setIndexDir(Paths.get(opencgaFile.getUri()).toAbsolutePath().toString());
         }
+    }
+
+    private static PipelineSample createPipelineSampleFromString(String sampleString) throws ToolException {
+        // Parse the input format: sample_id::file_id1[,file_id2][::somatic::role]
+        String[] fields = sampleString.split(SAMPLE_FIELD_SEP);
+        if (fields.length < 2) {
+            throw new ToolException("Invalid input format. Expected format: sample_id" + SAMPLE_FIELD_SEP + "file_id1["
+                    + SAMPLE_FILE_SEP + "file_id2][" + SAMPLE_FIELD_SEP + "somatic" + SAMPLE_FIELD_SEP + "role],"
+                    + " but got: " + sampleString);
+        }
+
+        PipelineSample pipelineSample = new PipelineSample();
+
+        // Set sample ID
+        pipelineSample.setId(fields[0]);
+
+        // Parse and set files
+        String inputFiles = fields[1];
+        if (StringUtils.isEmpty(inputFiles)) {
+            throw new ToolException("Missing input files for sample '" + fields[0] + "': " + sampleString);
+        }
+        pipelineSample.setFiles(Arrays.asList(inputFiles.split(SAMPLE_FILE_SEP)));
+
+        // Parse optional somatic field (default: false)
+        if (fields.length > 2 && StringUtils.isNotEmpty(fields[2])) {
+            pipelineSample.setSomatic("somatic".equalsIgnoreCase(fields[2]));
+        } else {
+            pipelineSample.setSomatic(false);
+        }
+
+        // Parse optional role field (default: null)
+        if (fields.length > 3 && StringUtils.isNotEmpty(fields[3])) {
+            pipelineSample.setRole(fields[3]);
+        }
+
+        return pipelineSample;
     }
 
 }

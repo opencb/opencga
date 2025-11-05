@@ -23,9 +23,9 @@ import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecu
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
-import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyPipelineConfig;
 import org.opencb.opencga.core.models.clinical.pipeline.PipelineConfig;
 import org.opencb.opencga.core.models.clinical.pipeline.PipelineInput;
+import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyPipelineConfig;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 
 import java.io.IOException;
