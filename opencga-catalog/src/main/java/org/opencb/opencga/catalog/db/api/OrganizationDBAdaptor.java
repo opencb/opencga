@@ -33,6 +33,7 @@ public interface OrganizationDBAdaptor extends Iterable<Organization> {
         FEDERATION_CLIENTS("federation.clients", OBJECT, ""),
         FEDERATION_SERVERS("federation.servers", OBJECT, ""),
         CONFIGURATION("configuration", OBJECT, ""),
+        CONFIGURATION_USER("configuration.user", OBJECT, ""),
         CONFIGURATION_OPTIMIZATIONS("configuration.optimizations", OBJECT, ""),
         CONFIGURATION_AUTHENTICATION_ORIGINS("configuration." + AUTH_ORIGINS_FIELD, OBJECT, ""),
         CONFIGURATION_AUTHENTICATION_ORIGINS_ID("configuration." + AUTH_ORIGINS_FIELD + ".id", STRING, ""),

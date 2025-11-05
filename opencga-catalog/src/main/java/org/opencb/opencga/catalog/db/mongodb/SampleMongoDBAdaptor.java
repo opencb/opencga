@@ -690,7 +690,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 QueryParams.INTERNAL_VARIANT_SECONDARY_SAMPLE_INDEX.key(),
                 QueryParams.INTERNAL_VARIANT_GENOTYPE_INDEX.key(),
                 QueryParams.INTERNAL_VARIANT_ANNOTATION_INDEX.key(),
-                QueryParams.INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX.key()};
+                QueryParams.INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX.key(),
+                QueryParams.INTERNAL_VARIANT_AGGREGATE_FAMILY.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         if (document.getSet().containsKey(QueryParams.STATUS.key())) {
             nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());

@@ -6,6 +6,7 @@ import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.MultiTableInputFormat;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
 import org.apache.hadoop.mapreduce.InputSplit;
+import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 
@@ -20,7 +21,8 @@ public abstract class AbstractHBaseVariantTableInputFormat<KEYOUT> extends Trans
     private Function<Result, KEYOUT> converter;
 
     @Override
-    protected void init(Configuration configuration) throws IOException {
+    protected void init(JobContext context) throws IOException {
+        Configuration configuration = context.getConfiguration();
         if (configuration.getBoolean(MULTI_SCANS, false)) {
             MultiTableInputFormat tableInputFormat;
             if (configuration.getBoolean(USE_SAMPLE_INDEX_TABLE_INPUT_FORMAT, false)) {
@@ -40,16 +42,16 @@ public abstract class AbstractHBaseVariantTableInputFormat<KEYOUT> extends Trans
             tableInputFormat.setConf(configuration);
             inputFormat = tableInputFormat;
         }
-        converter = initConverter(configuration);
+        converter = initConverter(context);
     }
 
-    protected abstract Function<Result, KEYOUT> initConverter(Configuration configuration) throws IOException;
+    protected abstract Function<Result, KEYOUT> initConverter(JobContext context) throws IOException;
 
     @Override
     public RecordReader<ImmutableBytesWritable, KEYOUT> createRecordReader(InputSplit split, TaskAttemptContext context)
             throws IOException, InterruptedException {
         if (inputFormat == null) {
-            init(context.getConfiguration());
+            init(context);
         }
         RecordReader<ImmutableBytesWritable, Result> recordReader = inputFormat.createRecordReader(split, context);
         return new RecordReaderTransform<>(recordReader, converter);

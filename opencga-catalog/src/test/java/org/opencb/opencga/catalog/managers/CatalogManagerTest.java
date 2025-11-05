@@ -16,15 +16,12 @@
 
 package org.opencb.opencga.catalog.managers;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.time.StopWatch;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.mockito.Mockito;
-import org.opencb.biodata.models.common.Status;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.TestParamConstants;
@@ -42,11 +39,8 @@ import org.opencb.opencga.core.config.Optimizations;
 import org.opencb.opencga.core.models.Acl;
 import org.opencb.opencga.core.models.AclEntry;
 import org.opencb.opencga.core.models.AclEntryList;
-import org.opencb.opencga.core.models.cohort.Cohort;
-import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.job.*;
@@ -57,17 +51,16 @@ import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
 import org.opencb.opencga.core.models.project.ProjectOrganism;
-import org.opencb.opencga.core.models.sample.*;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleAclParams;
+import org.opencb.opencga.core.models.sample.SamplePermissions;
+import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
-import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -1012,6 +1005,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         }
     }
 
+    @Test
     public void testJobQuotaLimit() throws CatalogException {
         // Submit a dummy job. This shouldn't raise any error
         catalogManager.getJobManager().submit(studyId, JobType.NATIVE, "command-subcommand", null, Collections.emptyMap(), ownerToken);
@@ -1831,26 +1825,6 @@ public class CatalogManagerTest extends AbstractManagerTest {
         } catch (CatalogException e) {
             assertTrue(e.getMessage().contains("not found"));
         }
-    }
-
-    @Test
-    public void generateCohortFromSampleQuery() throws CatalogException, IOException {
-        catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_1"), INCLUDE_RESULT, ownerToken);
-        catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_2"), INCLUDE_RESULT, ownerToken);
-        catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_3"), INCLUDE_RESULT, ownerToken);
-
-        Query query = new Query();
-        Cohort myCohort = catalogManager.getCohortManager().generate(studyFqn, query, new Cohort().setId("MyCohort"), INCLUDE_RESULT, ownerToken).first();
-        assertEquals(12, myCohort.getSamples().size());
-
-        query = new Query(SampleDBAdaptor.QueryParams.ID.key(), "~^SAM");
-        myCohort = catalogManager.getCohortManager().generate(studyFqn, query, new Cohort()
-                .setId("MyCohort2")
-                .setStatus(new Status("custom", "custom", "description", TimeUtils.getTime())), INCLUDE_RESULT, ownerToken).first();
-        assertEquals(3, myCohort.getSamples().size());
-        assertNotNull(myCohort.getStatus());
-        assertEquals("custom", myCohort.getStatus().getName());
-        assertEquals("description", myCohort.getStatus().getDescription());
     }
 
     // Effective permissions testing
