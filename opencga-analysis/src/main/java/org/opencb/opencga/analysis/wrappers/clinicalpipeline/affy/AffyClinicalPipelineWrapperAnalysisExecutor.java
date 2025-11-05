@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.wrappers.clinicalpipeline;
+package org.opencb.opencga.analysis.wrappers.clinicalpipeline.affy;
 
 
 import org.opencb.commons.datastore.core.Event;
+import org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelineUtils;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
-import org.opencb.opencga.core.models.clinical.pipeline.AffyPipelineConfig;
+import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyPipelineConfig;
 import org.opencb.opencga.core.models.clinical.pipeline.PipelineConfig;
 import org.opencb.opencga.core.models.clinical.pipeline.PipelineInput;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;

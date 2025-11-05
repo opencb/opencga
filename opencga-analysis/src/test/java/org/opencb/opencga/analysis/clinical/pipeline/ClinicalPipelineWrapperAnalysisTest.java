@@ -8,17 +8,23 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
-import org.opencb.opencga.analysis.variant.operations.VariantAnnotationIndexOperationTool;
-import org.opencb.opencga.analysis.wrappers.clinicalpipeline.AffyClinicalPipelineWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelineGenomicsWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelinePrepareWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.clinicalpipeline.affy.AffyClinicalPipelineWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.clinicalpipeline.genomics.ClinicalPipelineGenomicsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.clinicalpipeline.prepare.ClinicalPipelinePrepareWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelineUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.clinical.pipeline.*;
+import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyClinicalPipelineParams;
+import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyClinicalPipelineWrapperParams;
+import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyPipelineConfig;
+import org.opencb.opencga.core.models.clinical.pipeline.genomics.GenomicsClinicalPipelineParams;
+import org.opencb.opencga.core.models.clinical.pipeline.genomics.GenomicsClinicalPipelineWrapperParams;
+import org.opencb.opencga.core.models.clinical.pipeline.genomics.GenomicsPipelineConfig;
+import org.opencb.opencga.core.models.clinical.pipeline.prepare.PrepareClinicalPipelineParams;
+import org.opencb.opencga.core.models.clinical.pipeline.prepare.PrepareClinicalPipelineWrapperParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;
@@ -127,8 +133,8 @@ public class ClinicalPipelineWrapperAnalysisTest {
         // Prepare NGS pipeline
         //---------------------------------
 
-        ClinicalPipelinePrepareWrapperParams params = new ClinicalPipelinePrepareWrapperParams();
-        ClinicalPipelinePrepareParams prepareParams = new ClinicalPipelinePrepareParams();
+        PrepareClinicalPipelineWrapperParams params = new PrepareClinicalPipelineWrapperParams();
+        PrepareClinicalPipelineParams prepareParams = new PrepareClinicalPipelineParams();
         prepareParams.setReferenceGenome("https://ftp.ensembl.org/pub/release-115/fasta/homo_sapiens/dna/" + refBasename + ".fa.gz");
         prepareParams.setAlignerIndexes(Collections.singletonList(ClinicalPipelineUtils.BWA_INDEX));
         params.setPipelineParams(prepareParams);
@@ -195,8 +201,8 @@ public class ClinicalPipelineWrapperAnalysisTest {
         // Prepare clinical pipeline
         //---------------------------------
 
-        ClinicalPipelinePrepareWrapperParams prepareWrapperParams = new ClinicalPipelinePrepareWrapperParams();
-        ClinicalPipelinePrepareParams prepareParams = new ClinicalPipelinePrepareParams();
+        PrepareClinicalPipelineWrapperParams prepareWrapperParams = new PrepareClinicalPipelineWrapperParams();
+        PrepareClinicalPipelineParams prepareParams = new PrepareClinicalPipelineParams();
         prepareParams.setReferenceGenome(refFile.getId());
         prepareParams.setAlignerIndexes(Collections.singletonList(ClinicalPipelineUtils.BWA_INDEX));
         prepareWrapperParams.setPipelineParams(prepareParams);
@@ -302,8 +308,8 @@ public class ClinicalPipelineWrapperAnalysisTest {
         // Prepare clinical pipeline
         //---------------------------------
 
-        ClinicalPipelinePrepareWrapperParams prepareWrapperParams = new ClinicalPipelinePrepareWrapperParams();
-        ClinicalPipelinePrepareParams prepareParams = new ClinicalPipelinePrepareParams();
+        PrepareClinicalPipelineWrapperParams prepareWrapperParams = new PrepareClinicalPipelineWrapperParams();
+        PrepareClinicalPipelineParams prepareParams = new PrepareClinicalPipelineParams();
         prepareParams.setReferenceGenome(refFile.getId());
         prepareParams.setAlignerIndexes(Collections.singletonList(ClinicalPipelineUtils.BWA_INDEX));
         prepareWrapperParams.setPipelineParams(prepareParams);

@@ -680,25 +680,26 @@ public class FieldConstants {
     // Variant caller pipeline
     @Deprecated
     public static final String VARIANT_CALLER_PIPELINE_COMMAND_DESCRIPTION = "Command to be executed: {prepare | run}";
+    @Deprecated
     public static final String VARIANT_CALLER_PIPELINE_INPUT_DESCRIPTION = "List of input files";
+    @Deprecated
     public static final String VARIANT_CALLER_PIPELINE_INDEX_DIR_DESCRIPTION = "Path to the FASTA index files, BWA index files,...";
+    @Deprecated
     public static final String VARIANT_CALLER_PIPELINE_PREPARE_INDICES_DESCRIPTION = "List of indices (separated by commas) to create when"
             + " executing the command 'prepare'; supported values are: reference-genome, bwa and bwa-mem2";
+    @Deprecated
     public static final String VARIANT_CALLER_PIPELINE_PARAMS_DESCRIPTION = "Map of parameters to run the pipeline";
 
-    public static final String CLINICAL_PIPELINE_PREPARE_PARAMS_DESCRIPTION = "Map of parameters to prepare the clinical pipeline";
+    // Clinical pipeline
+    //    Prepare pipeline
+    public static final String CLINICAL_PIPELINE_PREPARE_PARAMS_DESCRIPTION = "Parameters to prepare the clinical pipeline";
     public static final String CLINICAL_PIPELINE_REF_GENOME_DESCRIPTION = "Reference genome (file, or URL to download it)";
     public static final String CLINICAL_PIPELINE_ALIGNER_INDEXES_DESCRIPTION = "Aligner indexes to generate, e.g.: bwa, bwa-mem2";
-    public static final String CLINICAL_PIPELINE_GENOMICS_PARAMS_DESCRIPTION = "Map of parameters to execute the clinical pipeline";
-    public static final String CLINICAL_PIPELINE_SAMPLES_DESCRIPTION = "List of samples following the format: sample_id:file_id1;file_id2[:"
-            + "rol[:somatic]]; 'rol' can be 'mother', 'father' or 'child'. If the sample is somatic, then add ':somatic' at";
-    public static final String CLINICAL_PIPELINE_INDEX_DIR_DESCRIPTION = "Directory where the reference genome, aligner, affymetrix..."
-            + " indexes are located";
-    public static final String CLINICAL_PIPELINE_DATA_DIR_DESCRIPTION = "Directory where the data files are located, e.g. CEL files,...";
-    public static final String CLINICAL_PIPELINE_STEPS_DESCRIPTION = "Pipeline steps: quality-control, alignment, variant-calling";
-    public static final String CLINICAL_PIPELINE_VARIANT_INDEX_DESCRIPTION = "Parameters to index the resulting variants";
-    public static final String CLINICAL_PIPELINE_FILE_DESCRIPTION = "JSON file containing the configuration of the clinical pipeline";
-    public static final String CLINICAL_PIPELINE_PIPELINE_DESCRIPTION = "JSON containing the clinical pipeline configuration";
+    //    Genomics pipeline
+    public static final String CLINICAL_PIPELINE_GENOMICS_PARAMS_DESCRIPTION = "Parameters to execute the genomics pipeline";
+    public static final String CLINICAL_PIPELINE_GENOMICS_PIPELINE_DESCRIPTION = "JSON containing the configuration for genomics pipelines";
+    //    Affy pipeline
+    public static final String CLINICAL_PIPELINE_AFFY_STEPS_DESCRIPTION = "Affy pipeline steps: quality control, genotype)";
 
     // Fetch resources
     public static final String FETCH_RESOURCES_DESCRIPTION = "List of resource IDs, separated by commas, to fetch (available resources are"

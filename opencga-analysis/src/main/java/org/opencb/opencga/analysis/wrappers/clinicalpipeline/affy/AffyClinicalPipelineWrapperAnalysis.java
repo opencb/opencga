@@ -1,4 +1,4 @@
-package org.opencb.opencga.analysis.wrappers.clinicalpipeline;
+package org.opencb.opencga.analysis.wrappers.clinicalpipeline.affy;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -9,6 +9,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.pipeline.*;
+import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyClinicalPipelineWrapperParams;
+import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyPipelineConfig;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;
@@ -56,20 +58,19 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
         // Check pipeline configuration
         checkPipelineConfig();
 
-        // If samples are provided in the pipeline params, set them in the pipeline config to be processed later
+        // If samples are provided in the pipeline params, set them in the pipeline config and get the real file paths
         if (CollectionUtils.isNotEmpty(analysisParams.getPipelineParams().getSamples())) {
-            String sampleParam = analysisParams.getPipelineParams().getSamples().get(0);
-            File opencgaFile = getCatalogManager().getFileManager().get(study, sampleParam, QueryOptions.empty(), token).first();
-            if (opencgaFile.getType() == File.Type.DIRECTORY) {
-                analysisParams.getPipelineParams().setSamples(Collections.singletonList(Paths.get(opencgaFile.getUri()).toAbsolutePath()
-                        .toString()));
-            } else {
-                List<PipelineSample> pipelineSamples = new ArrayList<>();
-                for (String sample : analysisParams.getPipelineParams().getSamples()) {
-                    pipelineSamples.add(createPipelineSampleFromString(sample));
-                }
-                updatedPipelineConfig.getInput().setSamples(pipelineSamples);
+            List<PipelineSample> pipelineSamples = new ArrayList<>();
+            for (String sample : analysisParams.getPipelineParams().getSamples()) {
+                pipelineSamples.add(createPipelineSampleFromString(sample));
             }
+            updatedPipelineConfig.getInput().setSamples(pipelineSamples);
+        }
+        
+        // If data dir is provided in the pipeline params, set it in the pipeline config to be processed later
+        String dataDir = analysisParams.getPipelineParams().getDataDir();
+        if (StringUtils.isNotEmpty(dataDir)) {
+            updatedPipelineConfig.getInput().setDataDir(analysisParams.getPipelineParams().getDataDir());
         }
 
         // If index dir is provided in the pipeline params, set it in the pipeline config to be processed later
@@ -78,37 +79,9 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
             updatedPipelineConfig.getInput().setIndexDir(analysisParams.getPipelineParams().getIndexDir());
         }
 
-        // Update sample files (by getting the real paths) in the pipeline configuration
-//        for (PipelineSample sample : updatedPipelineConfig.getInput().getSamples()) {
-//            List<String> updatedFiles = new ArrayList<>();
-//            for (String file : sample.getFiles()) {
-//                logger.info("Checking sample file {}", file);
-//                File opencgaFile = getCatalogManager().getFileManager().get(study, file, QueryOptions.empty(), token).first();
-//                if (opencgaFile.getType() != File.Type.FILE) {
-//                    throw new ToolException("Clinical pipeline sample file '" + file + "' for sample ID '" + sample.getId()
-//                            + "' is not a file.");
-//                }
-//                // Add the real path to the updated files
-//                updatedFiles.add(Paths.get(opencgaFile.getUri()).toAbsolutePath().toString());
-//            }
-//            // Set updated files in the sample
-//            sample.setFiles(updatedFiles);
-//        }
+        updatePipelineConfig(updatedPipelineConfig, study, catalogManager, token);
 
-        // Update index dir (by getting the real path) in the pipeline configuration
-        indexDir = updatedPipelineConfig.getInput().getIndexDir();
-        if (StringUtils.isEmpty(indexDir)) {
-            throw new ToolException("Missing clinical pipeline index directory. You can either provide an index directory in the"
-                    + " pipeline configuration or in the execute parameters.");
-        }
-        logger.info("Checking index dir {}", indexDir);
-        File opencgaFile = getCatalogManager().getFileManager().get(study, indexDir, QueryOptions.empty(), token).first();
-        if (opencgaFile.getType() != File.Type.DIRECTORY) {
-            throw new ToolException("Clinical pipeline index dir '" + indexDir + "' is not a folder.");
-        }
-        // Update the index dir in the pipeline config
-        updatedPipelineConfig.getInput().setIndexDir(Paths.get(opencgaFile.getUri()).toAbsolutePath().toString());
-
+        // Check pipeline steps
         checkPipelineSteps();
     }
 
@@ -169,38 +142,6 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
                 : new ObjectMap();
 
         getVariantStorageManager().index(study, vcfFile.getId(), getScratchDir().toAbsolutePath().toString(), storageOptions, token);
-    }
-
-    private void checkPipelineConfig() throws ToolException, CatalogException, IOException {
-        // Check pipeline configuration, if a pipeline file is provided, check the file exists and then read the file content
-        // to add it to the params
-        if (StringUtils.isEmpty(analysisParams.getPipelineParams().getPipelineFile())
-                && analysisParams.getPipelineParams().getPipeline() == null) {
-            throw new ToolException("Missing clinical pipeline configuration. You can either provide a pipeline configuration JSON"
-                    + " file or directly the pipeline configuration.");
-        }
-
-        // Get pipeline config
-        String pipelineFile = analysisParams.getPipelineParams().getPipelineFile();
-        if (!StringUtils.isEmpty(pipelineFile)) {
-            logger.info("Checking clinical pipeline configuration file {}", pipelineFile);
-            File opencgaFile = getCatalogManager().getFileManager().get(study, pipelineFile, QueryOptions.empty(), token).first();
-            if (opencgaFile.getType() != File.Type.FILE) {
-                throw new ToolException("Clinical pipeline configuration file '" + pipelineFile + "' is not a file.");
-            }
-            Path pipelinePath = Paths.get(opencgaFile.getUri()).toAbsolutePath();
-            updatedPipelineConfig = JacksonUtils.getDefaultObjectMapper().readerFor(PipelineConfig.class).readValue(pipelinePath.toFile());
-        } else {
-            logger.info("Getting clinical pipeline configuration provided directly in the parameters");
-            AffyPipelineConfig affyPipelineConfig = JacksonUtils.getDefaultObjectMapper().convertValue(analysisParams.getPipelineParams()
-                    .getPipeline(), AffyPipelineConfig.class);
-            updatedPipelineConfig = copyPipelineConfig(affyPipelineConfig);
-        }
-
-        // Check mandatory parameters in pipeline config: input and steps
-        if (updatedPipelineConfig.getInput() == null && CollectionUtils.isEmpty(analysisParams.getPipelineParams().getSamples())) {
-            throw new ToolException("Missing clinical pipeline configuration input.");
-        }
     }
 
     private PipelineSample createPipelineSampleFromString(String sampleString) throws ToolException {
@@ -302,5 +243,20 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
         if (StringUtils.isEmpty(pipelineTool.getId())) {
             throw new ToolException("Missing tool ID for clinical pipeline step: " + step);
         }
+    }
+
+    private Path checkInputDir(String inputDir, String label) throws ToolException, CatalogException {
+        // Update index dir (by getting the real path) in the pipeline configuration
+        if (StringUtils.isEmpty(inputDir)) {
+            throw new ToolException("Missing clinical pipeline " + label + " directory. You can either provide an " + label
+                    + " directory in the pipeline configuration or in the execute parameters.");
+        }
+        logger.info("Checking index dir {}", inputDir);
+        File opencgaFile = getCatalogManager().getFileManager().get(study, inputDir, QueryOptions.empty(), token).first();
+        if (opencgaFile.getType() != File.Type.DIRECTORY) {
+            throw new ToolException("Clinical pipeline " + label + " path '" + inputDir + "' is not a folder.");
+        }
+        // Update the index dir in the pipeline config
+        return Paths.get(opencgaFile.getUri()).toAbsolutePath();
     }
 }

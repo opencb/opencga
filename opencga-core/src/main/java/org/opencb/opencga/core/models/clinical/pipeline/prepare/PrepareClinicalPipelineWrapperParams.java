@@ -14,43 +14,42 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.models.clinical.pipeline;
+package org.opencb.opencga.core.models.clinical.pipeline.prepare;
 
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
-public class GenomicsClinicalPipelineWrapperParams extends ToolParams {
+public class PrepareClinicalPipelineWrapperParams extends ToolParams {
 
-    @DataField(id = "pipelineParams", description = FieldConstants.CLINICAL_PIPELINE_GENOMICS_PARAMS_DESCRIPTION)
-    private GenomicsClinicalPipelineParams pipelineParams;
+    @DataField(id = "pipelineParams", description = FieldConstants.CLINICAL_PIPELINE_PREPARE_PARAMS_DESCRIPTION)
+    private PrepareClinicalPipelineParams pipelineParams;
 
     @DataField(id = "outdir", description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
     private String outdir;
 
-    public GenomicsClinicalPipelineWrapperParams() {
-        this.pipelineParams = new GenomicsClinicalPipelineParams();
+    public PrepareClinicalPipelineWrapperParams() {
     }
 
-    public GenomicsClinicalPipelineWrapperParams(GenomicsClinicalPipelineParams pipelineParams, String outdir) {
+    public PrepareClinicalPipelineWrapperParams(PrepareClinicalPipelineParams pipelineParams, String outdir) {
         this.pipelineParams = pipelineParams;
         this.outdir = outdir;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("GenomicsClinicalPipelineWrapperParams{");
+        final StringBuilder sb = new StringBuilder("ClinicalPipelinePrepareWrapperParams{");
         sb.append("pipelineParams=").append(pipelineParams);
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
         return sb.toString();
     }
 
-    public GenomicsClinicalPipelineParams getPipelineParams() {
+    public PrepareClinicalPipelineParams getPipelineParams() {
         return pipelineParams;
     }
 
-    public GenomicsClinicalPipelineWrapperParams setPipelineParams(GenomicsClinicalPipelineParams pipelineParams) {
+    public PrepareClinicalPipelineWrapperParams setPipelineParams(PrepareClinicalPipelineParams pipelineParams) {
         this.pipelineParams = pipelineParams;
         return this;
     }
@@ -59,7 +58,7 @@ public class GenomicsClinicalPipelineWrapperParams extends ToolParams {
         return outdir;
     }
 
-    public GenomicsClinicalPipelineWrapperParams setOutdir(String outdir) {
+    public PrepareClinicalPipelineWrapperParams setOutdir(String outdir) {
         this.outdir = outdir;
         return this;
     }

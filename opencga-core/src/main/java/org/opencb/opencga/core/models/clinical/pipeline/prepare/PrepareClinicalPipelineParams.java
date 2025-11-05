@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.models.clinical.pipeline;
+package org.opencb.opencga.core.models.clinical.pipeline.prepare;
 
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
@@ -22,7 +22,7 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
-public class ClinicalPipelinePrepareParams extends ToolParams {
+public class PrepareClinicalPipelineParams extends ToolParams {
 
     @DataField(id = "referenceGenome", description = FieldConstants.CLINICAL_PIPELINE_REF_GENOME_DESCRIPTION)
     private String referenceGenome;
@@ -30,10 +30,10 @@ public class ClinicalPipelinePrepareParams extends ToolParams {
     @DataField(id = "alignerIndexes", description = FieldConstants.CLINICAL_PIPELINE_ALIGNER_INDEXES_DESCRIPTION)
     private List<String> alignerIndexes;
 
-    public ClinicalPipelinePrepareParams() {
+    public PrepareClinicalPipelineParams() {
     }
 
-    public ClinicalPipelinePrepareParams(String referenceGenome, List<String> alignerIndexes) {
+    public PrepareClinicalPipelineParams(String referenceGenome, List<String> alignerIndexes) {
         this.referenceGenome = referenceGenome;
         this.alignerIndexes = alignerIndexes;
     }
@@ -51,7 +51,7 @@ public class ClinicalPipelinePrepareParams extends ToolParams {
         return referenceGenome;
     }
 
-    public ClinicalPipelinePrepareParams setReferenceGenome(String referenceGenome) {
+    public PrepareClinicalPipelineParams setReferenceGenome(String referenceGenome) {
         this.referenceGenome = referenceGenome;
         return this;
     }
@@ -60,7 +60,7 @@ public class ClinicalPipelinePrepareParams extends ToolParams {
         return alignerIndexes;
     }
 
-    public ClinicalPipelinePrepareParams setAlignerIndexes(List<String> alignerIndexes) {
+    public PrepareClinicalPipelineParams setAlignerIndexes(List<String> alignerIndexes) {
         this.alignerIndexes = alignerIndexes;
         return this;
     }

@@ -1,4 +1,4 @@
-package org.opencb.opencga.analysis.wrappers.clinicalpipeline;
+package org.opencb.opencga.analysis.wrappers.clinicalpipeline.prepare;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -7,7 +7,7 @@ import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecu
 import org.opencb.opencga.analysis.wrappers.ngspipeline.NgsPipelineWrapperAnalysis;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
-import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelinePrepareParams;
+import org.opencb.opencga.core.models.clinical.pipeline.prepare.PrepareClinicalPipelineParams;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 
 import java.io.IOException;
@@ -28,7 +28,7 @@ public class ClinicalPipelinePrepareWrapperAnalysisExecutor extends DockerWrappe
     private String study;
 
     private Path scriptPath;
-    private ClinicalPipelinePrepareParams prepareParams;
+    private PrepareClinicalPipelineParams prepareParams;
 
     @Override
     protected void run() throws Exception {
@@ -101,11 +101,11 @@ public class ClinicalPipelinePrepareWrapperAnalysisExecutor extends DockerWrappe
         return this;
     }
 
-    public ClinicalPipelinePrepareParams getPrepareParams() {
+    public PrepareClinicalPipelineParams getPrepareParams() {
         return prepareParams;
     }
 
-    public ClinicalPipelinePrepareWrapperAnalysisExecutor setPrepareParams(ClinicalPipelinePrepareParams prepareParams) {
+    public ClinicalPipelinePrepareWrapperAnalysisExecutor setPrepareParams(PrepareClinicalPipelineParams prepareParams) {
         this.prepareParams = prepareParams;
         return this;
     }

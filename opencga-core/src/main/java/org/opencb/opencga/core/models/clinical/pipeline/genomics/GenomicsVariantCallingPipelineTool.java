@@ -14,33 +14,34 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.models.clinical.pipeline;
+package org.opencb.opencga.core.models.clinical.pipeline.genomics;
 
 import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.models.clinical.pipeline.PipelineTool;
 
 import java.util.Map;
 
-public class GenomicsAlignmentPipelineTool extends PipelineTool {
+public class GenomicsVariantCallingPipelineTool extends PipelineTool {
 
-    @DataField(id = "index", description = "Tool index path")
-    private String index;
+    @DataField(id = "reference", description = "Reference genome path")
+    private String reference;
 
-    public GenomicsAlignmentPipelineTool() {
+    public GenomicsVariantCallingPipelineTool() {
     }
 
-    public GenomicsAlignmentPipelineTool(String index) {
-        this.index = index;
+    public GenomicsVariantCallingPipelineTool(String reference) {
+        this.reference = reference;
     }
 
-    public GenomicsAlignmentPipelineTool(String id, Map<String, Object> parameters, Map<String, Object> options, String index) {
+    public GenomicsVariantCallingPipelineTool(String id, Map<String, Object> parameters, Map<String, Object> options, String reference) {
         super(id, parameters, options);
-        this.index = index;
+        this.reference = reference;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("PipelineAlignmentTool{");
-        sb.append("index='").append(index).append('\'');
+        final StringBuilder sb = new StringBuilder("PipelineVariantCallingTool{");
+        sb.append("reference='").append(reference).append('\'');
         sb.append(", id='").append(id).append('\'');
         sb.append(", parameters=").append(parameters);
         sb.append(", options=").append(options);
@@ -48,12 +49,12 @@ public class GenomicsAlignmentPipelineTool extends PipelineTool {
         return sb.toString();
     }
 
-    public String getIndex() {
-        return index;
+    public String getReference() {
+        return reference;
     }
 
-    public GenomicsAlignmentPipelineTool setIndex(String index) {
-        this.index = index;
+    public GenomicsVariantCallingPipelineTool setReference(String reference) {
+        this.reference = reference;
         return this;
     }
 }

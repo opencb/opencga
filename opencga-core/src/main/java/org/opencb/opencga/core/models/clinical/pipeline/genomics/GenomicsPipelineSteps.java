@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.models.clinical.pipeline;
+package org.opencb.opencga.core.models.clinical.pipeline.genomics;
 
 import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.models.clinical.pipeline.QualityControlPipelineStep;
 
 public class GenomicsPipelineSteps {
 

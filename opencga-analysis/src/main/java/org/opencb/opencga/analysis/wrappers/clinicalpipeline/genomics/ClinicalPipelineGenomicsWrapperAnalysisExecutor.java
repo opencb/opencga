@@ -14,17 +14,21 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.wrappers.clinicalpipeline;
+package org.opencb.opencga.analysis.wrappers.clinicalpipeline.genomics;
 
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
+import org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelineUtils;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.models.clinical.pipeline.*;
+import org.opencb.opencga.core.models.clinical.pipeline.genomics.GenomicsAlignmentPipelineTool;
+import org.opencb.opencga.core.models.clinical.pipeline.genomics.GenomicsPipelineConfig;
+import org.opencb.opencga.core.models.clinical.pipeline.genomics.GenomicsVariantCallingPipelineTool;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 
 import java.io.IOException;

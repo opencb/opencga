@@ -1,4 +1,4 @@
-package org.opencb.opencga.analysis.wrappers.clinicalpipeline;
+package org.opencb.opencga.analysis.wrappers.clinicalpipeline.genomics;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -9,6 +9,10 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.pipeline.*;
+import org.opencb.opencga.core.models.clinical.pipeline.genomics.GenomicsAlignmentPipelineTool;
+import org.opencb.opencga.core.models.clinical.pipeline.genomics.GenomicsClinicalPipelineWrapperParams;
+import org.opencb.opencga.core.models.clinical.pipeline.genomics.GenomicsPipelineConfig;
+import org.opencb.opencga.core.models.clinical.pipeline.genomics.GenomicsVariantCallingPipelineTool;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;

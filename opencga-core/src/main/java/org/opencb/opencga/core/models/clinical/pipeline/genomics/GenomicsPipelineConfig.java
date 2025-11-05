@@ -14,27 +14,28 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.models.clinical.pipeline;
+package org.opencb.opencga.core.models.clinical.pipeline.genomics;
 
 import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.models.clinical.pipeline.PipelineConfig;
+import org.opencb.opencga.core.models.clinical.pipeline.PipelineInput;
 
-public class AffyPipelineConfig extends PipelineConfig {
+public class GenomicsPipelineConfig extends PipelineConfig {
 
-    @DataField(id = "steps", description = "Pipeline steps (quality control, variant calling)")
-    private AffyPipelineSteps steps;
+    @DataField(id = "steps", description = "Pipeline steps (quality control, alignment, variant calling)")
+    private GenomicsPipelineSteps steps;
 
-    public AffyPipelineConfig() {
-        super();
+    public GenomicsPipelineConfig() {
     }
 
-    public AffyPipelineConfig(String name, String version, String type, String description, PipelineInput input, AffyPipelineSteps steps) {
+    public GenomicsPipelineConfig(String name, String version, String type, String description, PipelineInput input, GenomicsPipelineSteps steps) {
         super(name, version, type, description, input);
         this.steps = steps;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("AffyPipelineConfig{");
+        final StringBuilder sb = new StringBuilder("GenomicsPipelineConfig{");
         sb.append("steps=").append(steps);
         sb.append(", name='").append(name).append('\'');
         sb.append(", version='").append(version).append('\'');
@@ -45,11 +46,11 @@ public class AffyPipelineConfig extends PipelineConfig {
         return sb.toString();
     }
 
-    public AffyPipelineSteps getSteps() {
+    public GenomicsPipelineSteps getSteps() {
         return steps;
     }
 
-    public AffyPipelineConfig setSteps(AffyPipelineSteps steps) {
+    public GenomicsPipelineConfig setSteps(GenomicsPipelineSteps steps) {
         this.steps = steps;
         return this;
     }

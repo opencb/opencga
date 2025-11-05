@@ -14,29 +14,22 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.models.clinical.pipeline;
+package org.opencb.opencga.core.models.clinical.pipeline.genomics;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.operations.variant.VariantIndexParams;
-import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
-public class AffyClinicalPipelineParams extends ToolParams {
+public class GenomicsClinicalPipelineParams {
 
     @DataField(id = "samples", description = FieldConstants.CLINICAL_PIPELINE_SAMPLES_DESCRIPTION)
     private List<String> samples;
 
     @DataField(id = "indexDir", description = FieldConstants.CLINICAL_PIPELINE_INDEX_DIR_DESCRIPTION)
     private String indexDir;
-
-    @DataField(id = "dataDir", description = FieldConstants.CLINICAL_PIPELINE_DATA_DIR_DESCRIPTION)
-    private String dataDir;
 
     @DataField(id = "steps", description = FieldConstants.CLINICAL_PIPELINE_STEPS_DESCRIPTION)
     private List<String> steps;
@@ -47,16 +40,17 @@ public class AffyClinicalPipelineParams extends ToolParams {
     @DataField(id = "pipelineFile", description = FieldConstants.CLINICAL_PIPELINE_FILE_DESCRIPTION)
     private String pipelineFile;
 
-    @DataField(id = "pipeline", description = FieldConstants.CLINICAL_PIPELINE_PIPELINE_DESCRIPTION)
-    private AffyPipelineConfig pipeline;
+    @DataField(id = "pipeline", description = FieldConstants.CLINICAL_PIPELINE_CONFIG_DESCRIPTION)
+    private GenomicsPipelineConfig pipeline;
 
-    public AffyClinicalPipelineParams() {
+    public GenomicsClinicalPipelineParams() {
         this.samples = new ArrayList<>();
         this.steps = new ArrayList<>();
+        pipeline = new GenomicsPipelineConfig();
     }
 
-    public AffyClinicalPipelineParams(List<String> samples, String indexDir, List<String> steps, VariantIndexParams variantIndexParams,
-                                      String pipelineFile, AffyPipelineConfig pipeline) {
+    public GenomicsClinicalPipelineParams(List<String> samples, String indexDir, List<String> steps, VariantIndexParams variantIndexParams,
+                                          String pipelineFile, GenomicsPipelineConfig pipeline) {
         this.samples = samples;
         this.indexDir = indexDir;
         this.steps = steps;
@@ -65,21 +59,9 @@ public class AffyClinicalPipelineParams extends ToolParams {
         this.pipeline = pipeline;
     }
 
-    public AffyClinicalPipelineParams(String input) throws JsonProcessingException {
-        // Construct this from a JSON string
-        AffyClinicalPipelineParams params = JacksonUtils.getDefaultObjectMapper().readerFor(AffyClinicalPipelineParams.class)
-                .readValue(input);
-        this.samples = params.samples;
-        this.indexDir = params.indexDir;
-        this.steps = params.steps;
-        this.variantIndexParams = params.variantIndexParams;
-        this.pipelineFile = params.pipelineFile;
-        this.pipeline = params.pipeline;
-    }
-
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("AffyClinicalPipelineParams{");
+        final StringBuilder sb = new StringBuilder("ClinicalPipelineExecuteParams{");
         sb.append("samples=").append(samples);
         sb.append(", indexDir='").append(indexDir).append('\'');
         sb.append(", steps=").append(steps);
@@ -94,7 +76,7 @@ public class AffyClinicalPipelineParams extends ToolParams {
         return samples;
     }
 
-    public AffyClinicalPipelineParams setSamples(List<String> samples) {
+    public GenomicsClinicalPipelineParams setSamples(List<String> samples) {
         this.samples = samples;
         return this;
     }
@@ -103,7 +85,7 @@ public class AffyClinicalPipelineParams extends ToolParams {
         return indexDir;
     }
 
-    public AffyClinicalPipelineParams setIndexDir(String indexDir) {
+    public GenomicsClinicalPipelineParams setIndexDir(String indexDir) {
         this.indexDir = indexDir;
         return this;
     }
@@ -112,7 +94,7 @@ public class AffyClinicalPipelineParams extends ToolParams {
         return steps;
     }
 
-    public AffyClinicalPipelineParams setSteps(List<String> steps) {
+    public GenomicsClinicalPipelineParams setSteps(List<String> steps) {
         this.steps = steps;
         return this;
     }
@@ -121,7 +103,7 @@ public class AffyClinicalPipelineParams extends ToolParams {
         return variantIndexParams;
     }
 
-    public AffyClinicalPipelineParams setVariantIndexParams(VariantIndexParams variantIndexParams) {
+    public GenomicsClinicalPipelineParams setVariantIndexParams(VariantIndexParams variantIndexParams) {
         this.variantIndexParams = variantIndexParams;
         return this;
     }
@@ -130,16 +112,16 @@ public class AffyClinicalPipelineParams extends ToolParams {
         return pipelineFile;
     }
 
-    public AffyClinicalPipelineParams setPipelineFile(String pipelineFile) {
+    public GenomicsClinicalPipelineParams setPipelineFile(String pipelineFile) {
         this.pipelineFile = pipelineFile;
         return this;
     }
 
-    public AffyPipelineConfig getPipeline() {
+    public GenomicsPipelineConfig getPipeline() {
         return pipeline;
     }
 
-    public AffyClinicalPipelineParams setPipeline(AffyPipelineConfig pipeline) {
+    public GenomicsClinicalPipelineParams setPipeline(GenomicsPipelineConfig pipeline) {
         this.pipeline = pipeline;
         return this;
     }

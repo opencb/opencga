@@ -19,7 +19,6 @@ package org.opencb.opencga.client.rest.clients;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.client.rest.*;
 import org.opencb.opencga.core.client.ParentClient;
 import org.opencb.opencga.core.config.client.ClientConfiguration;
 import org.opencb.opencga.core.exceptions.ClientException;
@@ -46,9 +45,9 @@ import org.opencb.opencga.core.models.clinical.RgaAnalysisParams;
 import org.opencb.opencga.core.models.clinical.TeamInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.clinical.TieringInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.clinical.ZettaInterpretationAnalysisParams;
-import org.opencb.opencga.core.models.clinical.pipeline.AffyClinicalPipelineWrapperParams;
-import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelinePrepareWrapperParams;
-import org.opencb.opencga.core.models.clinical.pipeline.GenomicsClinicalPipelineWrapperParams;
+import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyClinicalPipelineWrapperParams;
+import org.opencb.opencga.core.models.clinical.pipeline.prepare.PrepareClinicalPipelineWrapperParams;
+import org.opencb.opencga.core.models.clinical.pipeline.genomics.GenomicsClinicalPipelineWrapperParams;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -568,7 +567,7 @@ public class ClinicalAnalysisClient extends ParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Job> runPipelinePrepare(ClinicalPipelinePrepareWrapperParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Job> runPipelinePrepare(PrepareClinicalPipelineWrapperParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("analysis", null, "clinical/pipeline/prepare", null, "run", params, POST, Job.class);
