@@ -25,6 +25,20 @@ public class HBaseCompat extends HBaseCompatApi {
     }
 
     @Override
+    public boolean isTestingAvailable() {
+        // Check for jetty version
+        // This method should exist:
+        //   org.eclipse.jetty.server.session.SessionHandler.getSessionManager()Lorg/eclipse/jetty/server/SessionManager
+        try {
+            Class<?> aClass = Class.forName("org.eclipse.jetty.server.session.SessionHandler");
+            aClass.getMethod("getSessionManager");
+        } catch (ClassNotFoundException | NoSuchMethodException e) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
     public boolean isSolrTestingAvailable() {
         return false;
     }
@@ -57,5 +71,14 @@ public class HBaseCompat extends HBaseCompatApi {
     @Override
     public Class<?>[] getClassesForDependencyJars() {
         return new Class<?>[]{TransactionSystemClient.class, EventFactory.class};
+    }
+
+    @Override
+    public void validateConfiguration(Configuration configuration) throws IllegalArgumentException {
+        int keyValueMaxSize = configuration.getInt("hbase.client.keyvalue.maxsize", -1);
+        if (keyValueMaxSize != 0 && keyValueMaxSize <= 5 * 1024 * 1024) {
+            throw new IllegalArgumentException("HBase configuration property 'hbase.client.keyvalue.maxsize' is set to "
+                    + keyValueMaxSize + ". This value is too low for OpenCGA operations. Please set it to at least 10 MB.");
+        }
     }
 }

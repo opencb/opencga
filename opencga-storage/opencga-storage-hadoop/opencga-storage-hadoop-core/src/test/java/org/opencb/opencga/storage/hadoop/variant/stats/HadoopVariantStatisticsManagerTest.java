@@ -174,9 +174,9 @@ public class HadoopVariantStatisticsManagerTest extends VariantStatisticsManager
                 VariantStats stats = variant.getStudy(populationFrequency.getStudy()).getStats(populationFrequency.getPopulation());
                 Assert.assertNotNull(stats);
                 Assert.assertThat(expected, CoreMatchers.hasItem(populationFrequency.getStudy() + ":" + populationFrequency.getPopulation()));
-                Assert.assertEquals(stats.getAltAlleleFreq().floatValue(), populationFrequency.getAltAlleleFreq());
+                Assert.assertEquals(stats.getAltAlleleFreq().floatValue(), populationFrequency.getAltAlleleFreq(), 0.0000001);
                 Assert.assertEquals(stats.getAltAlleleCount(), populationFrequency.getAltAlleleCount());
-                Assert.assertEquals(stats.getRefAlleleFreq().floatValue(), populationFrequency.getRefAlleleFreq());
+                Assert.assertEquals(stats.getRefAlleleFreq().floatValue(), populationFrequency.getRefAlleleFreq(), 0.0000001);
                 Assert.assertEquals(stats.getRefAlleleCount(), populationFrequency.getRefAlleleCount());
                 Assert.assertEquals(stats.getGenotypeCount().entrySet().stream().filter(e -> GenotypeClass.HOM_ALT.test(e.getKey())).mapToInt(Map.Entry::getValue).sum(),
                         populationFrequency.getAltHomGenotypeCount().intValue());

@@ -2,6 +2,7 @@ package org.opencb.opencga.app.migrations;
 
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -21,6 +22,7 @@ import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.hadoop.HBaseCompatApi;
 
 import java.net.URL;
 import java.util.Arrays;
@@ -125,6 +127,9 @@ public class MigrationsTest {
         if (opencga != null) {
             opencga.after();
             opencga = null;
+        }
+        if (storageHadoop) {
+            Assume.assumeTrue(HBaseCompatApi.getInstance().isTestingAvailable());
         }
         opencga = new OpenCGATestExternalResource(storageHadoop);
         opencga.before();
