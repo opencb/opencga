@@ -16,10 +16,8 @@
 
 package org.opencb.opencga.core.models.clinical.pipeline;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.tools.ToolParams;
 
 public class AffyClinicalPipelineWrapperParams extends ToolParams {
