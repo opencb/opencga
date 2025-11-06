@@ -5,13 +5,13 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 public abstract class ExternalToolParams<TOOL_PARAMS extends ToolParams> extends ToolParams {
 
-    @DataField(id = "id", description = "External tool identifier.")
+    @DataField(id = "id", description = "User tool identifier.")
     protected String id;
 
-    @DataField(id = "version", description = "External tool version. If not provided, the latest version will be used.")
+    @DataField(id = "version", description = "User tool version. If not provided, the latest version will be used.")
     protected Integer version;
 
-    @DataField(id = "params", description = "External tool specific parameters.")
+    @DataField(id = "params", description = "User tool specific parameters.")
     protected TOOL_PARAMS params;
 
     public ExternalToolParams() {

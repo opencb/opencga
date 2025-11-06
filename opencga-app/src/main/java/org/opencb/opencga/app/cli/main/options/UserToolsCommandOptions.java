@@ -267,20 +267,23 @@ public class UserToolsCommandOptions {
         @Parameter(names = {"--scope"}, description = "External tool scope. Valid values: SECONDARY_ANALYSIS, RESEARCH_ANALYSIS, CLINICAL_INTERPRETATION_ANALYSIS or OTHER.", required = false, arity = 1)
         public String scope;
     
-        @Parameter(names = {"--docker-name"}, description = "Docker name.", required = false, arity = 1)
-        public String dockerName;
+        @Parameter(names = {"--container-name"}, description = "Container name. It should contain the repository and the image name. Optionally, it can also contain the registry. If not provided, Docker Hub will be used as default registry. Examples: 'repository/image', 'registry/repository/image' ", required = false, arity = 1)
+        public String containerName;
     
-        @Parameter(names = {"--docker-tag"}, description = "Docker tag.", required = false, arity = 1)
-        public String dockerTag;
+        @Parameter(names = {"--container-tag"}, description = "Container tag. It refers to a specific version of an image.", required = false, arity = 1)
+        public String containerTag;
     
-        @Parameter(names = {"--docker-command-line"}, description = "Docker CLI.", required = false, arity = 1)
-        public String dockerCommandLine;
+        @Parameter(names = {"--container-digest"}, description = "Digest of the Container image. It is a sha256 hash that uniquely identifies a specific Container image.", required = false, arity = 1)
+        public String containerDigest;
     
-        @Parameter(names = {"--docker-user"}, description = "User that can access the private Docker repository.", required = false, arity = 1)
-        public String dockerUser;
+        @Parameter(names = {"--container-command-line"}, description = "Container command line which may contain additional parameters.", required = false, arity = 1)
+        public String containerCommandLine;
     
-        @Parameter(names = {"--docker-password"}, description = "Password corresponding to the user that can access the Docker repository.", required = false, arity = 1)
-        public String dockerPassword;
+        @Parameter(names = {"--container-user"}, description = "User that can access the private Container repository.", required = false, arity = 1)
+        public String containerUser;
+    
+        @Parameter(names = {"--container-password"}, description = "Password corresponding to the user that can access the Container repository.", required = false, arity = 1)
+        public String containerPassword;
     
         @Parameter(names = {"--tags"}, description = "List of tags.", required = false, arity = 1)
         public String tags;
@@ -353,19 +356,22 @@ public class UserToolsCommandOptions {
         @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean jobDryRun; 
     
-        @Parameter(names = {"--container-name"}, description = "Docker name.", required = false, arity = 1)
+        @Parameter(names = {"--container-name"}, description = "Container name. It should contain the repository and the image name. Optionally, it can also contain the registry. If not provided, Docker Hub will be used as default registry. Examples: 'repository/image', 'registry/repository/image' ", required = false, arity = 1)
         public String containerName;
     
-        @Parameter(names = {"--container-tag"}, description = "Docker tag.", required = false, arity = 1)
+        @Parameter(names = {"--container-tag"}, description = "Container tag. It refers to a specific version of an image.", required = false, arity = 1)
         public String containerTag;
     
-        @Parameter(names = {"--container-command-line"}, description = "Docker CLI.", required = false, arity = 1)
+        @Parameter(names = {"--container-digest"}, description = "Digest of the Container image. It is a sha256 hash that uniquely identifies a specific Container image.", required = false, arity = 1)
+        public String containerDigest;
+    
+        @Parameter(names = {"--container-command-line"}, description = "Container command line which may contain additional parameters.", required = false, arity = 1)
         public String containerCommandLine;
     
-        @Parameter(names = {"--container-user"}, description = "User that can access the private Docker repository.", required = false, arity = 1)
+        @Parameter(names = {"--container-user"}, description = "User that can access the private Container repository.", required = false, arity = 1)
         public String containerUser;
     
-        @Parameter(names = {"--container-password"}, description = "Password corresponding to the user that can access the Docker repository.", required = false, arity = 1)
+        @Parameter(names = {"--container-password"}, description = "Password corresponding to the user that can access the Container repository.", required = false, arity = 1)
         public String containerPassword;
     
         @Parameter(names = {"--minimum-requirements-cpu"}, description = "Minimum number of cpu cores required to execute the process.", required = false, arity = 1)
@@ -421,10 +427,10 @@ public class UserToolsCommandOptions {
         @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean jobDryRun; 
     
-        @Parameter(names = {"--command-line"}, description = "The body web service commandLine parameter", required = false, arity = 1)
+        @Parameter(names = {"--command-line"}, description = "Command line to be executed inside the container.", required = false, arity = 1)
         public String commandLine;
     
-        @DynamicParameter(names = {"--params"}, description = "The body web service params parameter. Use: --params key=value", required = false)
+        @DynamicParameter(names = {"--params"}, description = "Key-value pairs of parameters to be used inside the command line.. Use: --params key=value", required = false)
         public java.util.Map<java.lang.String,java.lang.String> params = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
@@ -489,20 +495,23 @@ public class UserToolsCommandOptions {
         @DynamicParameter(names = {"--attributes"}, description = "You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.. Use: --attributes key=value", required = false)
         public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
-        @Parameter(names = {"--docker-name"}, description = "Docker name.", required = false, arity = 1)
-        public String dockerName;
+        @Parameter(names = {"--container-name"}, description = "Container name. It should contain the repository and the image name. Optionally, it can also contain the registry. If not provided, Docker Hub will be used as default registry. Examples: 'repository/image', 'registry/repository/image' ", required = false, arity = 1)
+        public String containerName;
     
-        @Parameter(names = {"--docker-tag"}, description = "Docker tag.", required = false, arity = 1)
-        public String dockerTag;
+        @Parameter(names = {"--container-tag"}, description = "Container tag. It refers to a specific version of an image.", required = false, arity = 1)
+        public String containerTag;
     
-        @Parameter(names = {"--docker-command-line"}, description = "Docker CLI.", required = false, arity = 1)
-        public String dockerCommandLine;
+        @Parameter(names = {"--container-digest"}, description = "Digest of the Container image. It is a sha256 hash that uniquely identifies a specific Container image.", required = false, arity = 1)
+        public String containerDigest;
     
-        @Parameter(names = {"--docker-user"}, description = "User that can access the private Docker repository.", required = false, arity = 1)
-        public String dockerUser;
+        @Parameter(names = {"--container-command-line"}, description = "Container command line which may contain additional parameters.", required = false, arity = 1)
+        public String containerCommandLine;
     
-        @Parameter(names = {"--docker-password"}, description = "Password corresponding to the user that can access the Docker repository.", required = false, arity = 1)
-        public String dockerPassword;
+        @Parameter(names = {"--container-user"}, description = "User that can access the private Container repository.", required = false, arity = 1)
+        public String containerUser;
+    
+        @Parameter(names = {"--container-password"}, description = "Password corresponding to the user that can access the Container repository.", required = false, arity = 1)
+        public String containerPassword;
     
     }
 
@@ -678,20 +687,23 @@ public class UserToolsCommandOptions {
         @Parameter(names = {"--scope"}, description = "External tool scope. Valid values: SECONDARY_ANALYSIS, RESEARCH_ANALYSIS, CLINICAL_INTERPRETATION_ANALYSIS or OTHER.", required = false, arity = 1)
         public String scope;
     
-        @Parameter(names = {"--docker-name"}, description = "Docker name.", required = false, arity = 1)
-        public String dockerName;
+        @Parameter(names = {"--container-name"}, description = "Container name. It should contain the repository and the image name. Optionally, it can also contain the registry. If not provided, Docker Hub will be used as default registry. Examples: 'repository/image', 'registry/repository/image' ", required = false, arity = 1)
+        public String containerName;
     
-        @Parameter(names = {"--docker-tag"}, description = "Docker tag.", required = false, arity = 1)
-        public String dockerTag;
+        @Parameter(names = {"--container-tag"}, description = "Container tag. It refers to a specific version of an image.", required = false, arity = 1)
+        public String containerTag;
     
-        @Parameter(names = {"--docker-command-line"}, description = "Docker CLI.", required = false, arity = 1)
-        public String dockerCommandLine;
+        @Parameter(names = {"--container-digest"}, description = "Digest of the Container image. It is a sha256 hash that uniquely identifies a specific Container image.", required = false, arity = 1)
+        public String containerDigest;
     
-        @Parameter(names = {"--docker-user"}, description = "User that can access the private Docker repository.", required = false, arity = 1)
-        public String dockerUser;
+        @Parameter(names = {"--container-command-line"}, description = "Container command line which may contain additional parameters.", required = false, arity = 1)
+        public String containerCommandLine;
     
-        @Parameter(names = {"--docker-password"}, description = "Password corresponding to the user that can access the Docker repository.", required = false, arity = 1)
-        public String dockerPassword;
+        @Parameter(names = {"--container-user"}, description = "User that can access the private Container repository.", required = false, arity = 1)
+        public String containerUser;
+    
+        @Parameter(names = {"--container-password"}, description = "Password corresponding to the user that can access the Container repository.", required = false, arity = 1)
+        public String containerPassword;
     
         @Parameter(names = {"--tags"}, description = "List of tags.", required = false, arity = 1)
         public String tags;
@@ -1169,7 +1181,7 @@ public class UserToolsCommandOptions {
         @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean jobDryRun; 
     
-        @DynamicParameter(names = {"--params"}, description = "The body web service params parameter. Use: --params key=value", required = false)
+        @DynamicParameter(names = {"--params"}, description = "Key-value pairs of parameters to be used inside the workflow.. Use: --params key=value", required = false)
         public java.util.Map<java.lang.String,java.lang.String> params = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }

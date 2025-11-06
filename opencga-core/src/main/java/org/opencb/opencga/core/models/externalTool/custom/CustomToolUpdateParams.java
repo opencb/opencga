@@ -2,7 +2,7 @@ package org.opencb.opencga.core.models.externalTool.custom;
 
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
-import org.opencb.opencga.core.models.externalTool.Docker;
+import org.opencb.opencga.core.models.externalTool.Container;
 import org.opencb.opencga.core.models.externalTool.ExternalToolScope;
 import org.opencb.opencga.core.models.externalTool.ExternalToolUpdateParams;
 import org.opencb.opencga.core.models.externalTool.ExternalToolVariable;
@@ -13,34 +13,34 @@ import java.util.Map;
 
 public class CustomToolUpdateParams extends ExternalToolUpdateParams {
 
-    @DataField(id = "docker", description = FieldConstants.EXTERNAL_TOOL_DOCKER_DESCRIPTION)
-    private Docker docker;
+    @DataField(id = "container", description = FieldConstants.EXTERNAL_TOOL_CONTAINER_DESCRIPTION)
+    private Container container;
 
     public CustomToolUpdateParams() {
     }
 
     public CustomToolUpdateParams(String name, String description, ExternalToolScope scope, List<String> tags,
                                   List<ExternalToolVariable> variables, MinimumRequirements minimumRequirements, boolean draft,
-                                  String creationDate, String modificationDate, Map<String, Object> attributes, Docker docker) {
+                                  String creationDate, String modificationDate, Map<String, Object> attributes, Container container) {
         super(name, description, scope, tags, variables, minimumRequirements, draft, creationDate, modificationDate, attributes);
-        this.docker = docker;
+        this.container = container;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("CustomToolUpdateParams{");
         sb.append(super.toString());
-        sb.append(", docker=").append(docker);
+        sb.append(", container=").append(container);
         sb.append('}');
         return sb.toString();
     }
 
-    public Docker getDocker() {
-        return docker;
+    public Container getContainer() {
+        return container;
     }
 
-    public CustomToolUpdateParams setDocker(Docker docker) {
-        this.docker = docker;
+    public CustomToolUpdateParams setContainer(Container container) {
+        this.container = container;
         return this;
     }
 

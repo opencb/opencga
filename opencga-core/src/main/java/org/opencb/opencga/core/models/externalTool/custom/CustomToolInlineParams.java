@@ -1,17 +1,17 @@
 package org.opencb.opencga.core.models.externalTool.custom;
 
-import org.opencb.opencga.core.models.externalTool.Docker;
+import org.opencb.opencga.core.models.externalTool.Container;
 import org.opencb.opencga.core.models.job.MinimumRequirements;
 
 public class CustomToolInlineParams {
 
-    private Docker container;
+    private Container container;
     private MinimumRequirements minimumRequirements;
 
     public CustomToolInlineParams() {
     }
 
-    public CustomToolInlineParams(Docker container, MinimumRequirements minimumRequirements) {
+    public CustomToolInlineParams(Container container, MinimumRequirements minimumRequirements) {
         this.container = container;
         this.minimumRequirements = minimumRequirements;
     }
@@ -25,11 +25,11 @@ public class CustomToolInlineParams {
         return sb.toString();
     }
 
-    public Docker getContainer() {
+    public Container getContainer() {
         return container;
     }
 
-    public CustomToolInlineParams setContainer(Docker container) {
+    public CustomToolInlineParams setContainer(Container container) {
         this.container = container;
         return this;
     }

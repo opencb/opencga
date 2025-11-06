@@ -55,7 +55,7 @@ import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 public class ExternalToolManager extends ResourceManager<ExternalTool> {
 
     public static final QueryOptions INCLUDE_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(ID.key(), UID.key(),
-            UUID.key(), VERSION.key(), DESCRIPTION.key(), STUDY_UID.key(), WORKFLOW.key(), DOCKER.key()));
+            UUID.key(), VERSION.key(), DESCRIPTION.key(), STUDY_UID.key(), WORKFLOW.key(), CONTAINER.key()));
 
     private final Logger logger;
 
@@ -220,7 +220,7 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
             // Convert CustomToolCreateParams to ExternalTool
             ExternalTool externalTool = new ExternalTool(toolCreateParams.getId(), toolCreateParams.getName(),
                     toolCreateParams.getDescription(), toolType, toolCreateParams.getScope(), null,
-                    toolCreateParams.getDocker(), toolCreateParams.getTags(), toolCreateParams.getVariables(),
+                    toolCreateParams.getContainer(), toolCreateParams.getTags(), toolCreateParams.getVariables(),
                     toolCreateParams.getMinimumRequirements(), toolCreateParams.isDraft(), toolCreateParams.getInternal(),
                     toolCreateParams.getCreationDate(), toolCreateParams.getModificationDate(), toolCreateParams.getAttributes());
 
@@ -498,8 +498,8 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
     public OpenCGAResult<ExternalTool> updateCustomTool(String studyStr, String externalToolId, CustomToolUpdateParams updateParams,
                                                       QueryOptions options, String token) throws CatalogException {
         return privateUpdate(studyStr, externalToolId, updateParams, externalTool -> {
-            if (updateParams.getDocker() != null) {
-                validateDocker(updateParams.getDocker());
+            if (updateParams.getContainer() != null) {
+                validateDocker(updateParams.getContainer());
             }
         }, options, token);
     }
@@ -592,18 +592,19 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
         }
     }
 
-    private void validateDocker(Docker docker) throws CatalogParameterException {
-        if (docker == null) {
+    private void validateDocker(Container container) throws CatalogParameterException {
+        if (container == null) {
             throw new CatalogParameterException("Docker information is missing.");
         }
-        ParamUtils.checkParameter(docker.getName(), DOCKER.key() + ".name");
-        ParamUtils.checkParameter(docker.getTag(), DOCKER.key() + ".tag");
-        docker.setCommandLine(ParamUtils.defaultString(docker.getCommandLine(), ""));
-        docker.setUser(ParamUtils.defaultString(docker.getUser(), ""));
-        docker.setPassword(ParamUtils.defaultString(docker.getPassword(), ""));
-        if ((StringUtils.isEmpty(docker.getPassword()) && StringUtils.isNotEmpty(docker.getUser()))
-                || (StringUtils.isNotEmpty(docker.getPassword())
-                && StringUtils.isEmpty(docker.getUser()))) {
+        ParamUtils.checkParameter(container.getName(), CONTAINER.key() + ".name");
+        ParamUtils.checkParameter(container.getTag(), CONTAINER.key() + ".tag");
+        container.setDigest(ParamUtils.defaultString(container.getDigest(), ""));
+        container.setCommandLine(ParamUtils.defaultString(container.getCommandLine(), ""));
+        container.setUser(ParamUtils.defaultString(container.getUser(), ""));
+        container.setPassword(ParamUtils.defaultString(container.getPassword(), ""));
+        if ((StringUtils.isEmpty(container.getPassword()) && StringUtils.isNotEmpty(container.getUser()))
+                || (StringUtils.isNotEmpty(container.getPassword())
+                && StringUtils.isEmpty(container.getUser()))) {
             throw new CatalogParameterException("Docker user and password must be set together.");
         }
     }
@@ -990,23 +991,23 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
                     + " image.");
         }
 
-        externalTool.setDocker(null);
+        externalTool.setContainer(null);
         validateNewExternalTool(externalTool, userId);
     }
 
     private void validateNewCustomTool(ExternalTool externalTool, String userId) throws CatalogParameterException {
-        ParamUtils.checkObj(externalTool.getDocker(), DOCKER.key());
-        validateDocker(externalTool.getDocker());
+        ParamUtils.checkObj(externalTool.getContainer(), CONTAINER.key());
+        validateDocker(externalTool.getContainer());
         externalTool.setWorkflow(null);
         validateNewExternalTool(externalTool, userId);
     }
 
     private void validateNewExternalTool(ExternalTool externalTool, String userId) throws CatalogParameterException {
         ParamUtils.checkIdentifier(externalTool.getId(), ID.key());
-        if (externalTool.getWorkflow() == null && externalTool.getDocker() == null) {
+        if (externalTool.getWorkflow() == null && externalTool.getContainer() == null) {
             throw new CatalogParameterException("Missing expected workflow or docker object");
         }
-        if (externalTool.getWorkflow() != null && externalTool.getDocker() != null) {
+        if (externalTool.getWorkflow() != null && externalTool.getContainer() != null) {
             throw new CatalogParameterException("Both workflow and docker objects found. Please, choose one.");
         }
         externalTool.setScope(ParamUtils.defaultObject(externalTool.getScope(), ExternalToolScope.OTHER));

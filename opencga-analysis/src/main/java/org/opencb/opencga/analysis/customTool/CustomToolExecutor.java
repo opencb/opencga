@@ -50,18 +50,18 @@ public class CustomToolExecutor extends OpenCgaDockerToolScopeStudy {
         // Check any condition
         if (runParams == null) {
             throw new ToolException("Missing ExternalToolRunParams object.");
-        } else if (StringUtils.isNotEmpty(runParams.getId()) && runParams.getDocker() == null) {
-            Docker docker = generateDockerObject(runParams);
-            checkDockerObject(docker);
-        } else if (runParams.getDocker() != null && StringUtils.isEmpty(runParams.getId())) {
-            checkDockerObject(runParams.getDocker());
+        } else if (StringUtils.isNotEmpty(runParams.getId()) && runParams.getContainer() == null) {
+            Container container = generateDockerObject(runParams);
+            checkDockerObject(container);
+        } else if (runParams.getContainer() != null && StringUtils.isEmpty(runParams.getId())) {
+            checkDockerObject(runParams.getContainer());
         } else {
             throw new ToolException("Unexpected ExternalToolRunParams object. "
                     + "Either 'id' and 'params/commandLine' or 'docker' should be set.");
         }
     }
 
-    private Docker generateDockerObject(ExternalToolParams<CustomToolRunParams> runParams) throws CatalogException, ToolException {
+    private Container generateDockerObject(ExternalToolParams<CustomToolRunParams> runParams) throws CatalogException, ToolException {
         OpenCGAResult<ExternalTool> result;
         if (runParams.getVersion() != null) {
             Query query = new Query(ExternalToolDBAdaptor.QueryParams.VERSION.key(), runParams.getVersion());
@@ -81,14 +81,14 @@ public class CustomToolExecutor extends OpenCgaDockerToolScopeStudy {
         if (externalTool.getType() != ExternalToolType.CUSTOM) {
             throw new ToolException("User tool '" + runParams.getId() + "' is not of type " + ExternalToolType.CUSTOM);
         }
-        if (externalTool.getDocker() == null) {
+        if (externalTool.getContainer() == null) {
             throw new ToolException("User tool '" + runParams.getId() + "' does not have a docker object");
         }
 
-        Docker docker = externalTool.getDocker();
+        Container container = externalTool.getContainer();
         String commandLine = runParams.getParams() != null && StringUtils.isNotEmpty(runParams.getParams().getCommandLine())
                 ? runParams.getParams().getCommandLine()
-                : docker.getCommandLine();
+                : container.getCommandLine();
 
         // Process docker command line to replace variables
         Map<String, String> params = new HashMap<>();
@@ -107,35 +107,42 @@ public class CustomToolExecutor extends OpenCgaDockerToolScopeStudy {
         }
         String processedCli = inputFileUtils.processCommandLine(study, commandLine, params, temporalInputDir, dockerInputBindings,
                 getOutDir().toString(), token);
-        docker.setCommandLine(processedCli);
+        container.setCommandLine(processedCli);
 
-        return docker;
+        return container;
     }
 
-    private void checkDockerObject(Docker docker) throws ToolException, CatalogException {
-        if (StringUtils.isEmpty(docker.getName())) {
-            docker.setName("opencb/opencga-ext-tools");
-            docker.setTag(GitRepositoryState.getInstance().getBuildVersion());
+    private void checkDockerObject(Container container) throws ToolException, CatalogException {
+        if (StringUtils.isEmpty(container.getName())) {
+            container.setName("opencb/opencga-ext-tools");
+            container.setTag(GitRepositoryState.getInstance().getBuildVersion());
         }
-        this.dockerImage = docker.getName();
-        if (StringUtils.isNotEmpty(docker.getTag())) {
-            this.dockerImage += ":" + docker.getTag();
+        this.dockerImage = container.getName();
+        String tag= "";
+        if (StringUtils.isNotEmpty(container.getTag())) {
+            tag = container.getTag();
+            if (StringUtils.isNotEmpty(container.getDigest())) {
+                tag += "@" + container.getDigest();
+            }
+        }
+        if (StringUtils.isNotEmpty(tag)) {
+            this.dockerImage += ":" + tag;
         }
 
         // Update job tags and attributes
-        ToolInfoExecutor toolInfoExecutor = new ToolInfoExecutor(docker.getName(), docker.getTag());
+        ToolInfoExecutor toolInfoExecutor = new ToolInfoExecutor(container.getName(), tag);
         List<String> tags = new LinkedList<>();
         tags.add(ID);
         tags.add(this.dockerImage);
 
         List<ToolDependency> dependencyList = new ArrayList<>(1);
-        dependencyList.add(new ToolDependency(docker.getName(), docker.getTag()));
+        dependencyList.add(new ToolDependency(container.getName(), tag));
         addDependencies(dependencyList);
         updateJobInformation(tags, toolInfoExecutor);
 
-        this.cliParams = docker.getCommandLine();
-        this.username = docker.getUser();
-        this.password = docker.getPassword();
+        this.cliParams = container.getCommandLine();
+        this.username = container.getUser();
+        this.password = container.getPassword();
     }
 
     @Override

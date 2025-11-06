@@ -15,7 +15,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.common.InternalStatus;
-import org.opencb.opencga.core.models.externalTool.Docker;
+import org.opencb.opencga.core.models.externalTool.Container;
 import org.opencb.opencga.core.models.externalTool.ExternalTool;
 import org.opencb.opencga.core.models.externalTool.ExternalToolAclEntryList;
 import org.opencb.opencga.core.models.externalTool.ExternalToolAclUpdateParams;
@@ -277,11 +277,12 @@ public class UserToolsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
             putNestedIfNotEmpty(beanParams, "description", commandOptions.description, true);
             putNestedIfNotNull(beanParams, "scope", commandOptions.scope, true);
-            putNestedIfNotEmpty(beanParams, "docker.name", commandOptions.dockerName, true);
-            putNestedIfNotEmpty(beanParams, "docker.tag", commandOptions.dockerTag, true);
-            putNestedIfNotEmpty(beanParams, "docker.commandLine", commandOptions.dockerCommandLine, true);
-            putNestedIfNotEmpty(beanParams, "docker.user", commandOptions.dockerUser, true);
-            putNestedIfNotEmpty(beanParams, "docker.password", commandOptions.dockerPassword, true);
+            putNestedIfNotEmpty(beanParams, "container.name", commandOptions.containerName, true);
+            putNestedIfNotEmpty(beanParams, "container.tag", commandOptions.containerTag, true);
+            putNestedIfNotEmpty(beanParams, "container.digest", commandOptions.containerDigest, true);
+            putNestedIfNotEmpty(beanParams, "container.commandLine", commandOptions.containerCommandLine, true);
+            putNestedIfNotEmpty(beanParams, "container.user", commandOptions.containerUser, true);
+            putNestedIfNotEmpty(beanParams, "container.password", commandOptions.containerPassword, true);
             putNestedIfNotNull(beanParams, "tags", commandOptions.tags, true);
             putNestedIfNotEmpty(beanParams, "minimumRequirements.cpu", commandOptions.minimumRequirementsCpu, true);
             putNestedIfNotEmpty(beanParams, "minimumRequirements.memory", commandOptions.minimumRequirementsMemory, true);
@@ -333,6 +334,7 @@ public class UserToolsCommandExecutor extends OpencgaCommandExecutor {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "container.name", commandOptions.containerName, true);
             putNestedIfNotEmpty(beanParams, "container.tag", commandOptions.containerTag, true);
+            putNestedIfNotEmpty(beanParams, "container.digest", commandOptions.containerDigest, true);
             putNestedIfNotEmpty(beanParams, "container.commandLine", commandOptions.containerCommandLine, true);
             putNestedIfNotEmpty(beanParams, "container.user", commandOptions.containerUser, true);
             putNestedIfNotEmpty(beanParams, "container.password", commandOptions.containerPassword, true);
@@ -425,11 +427,12 @@ public class UserToolsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "creationDate", commandOptions.creationDate, true);
             putNestedIfNotEmpty(beanParams, "modificationDate", commandOptions.modificationDate, true);
             putNestedMapIfNotEmpty(beanParams, "attributes", commandOptions.attributes, true);
-            putNestedIfNotEmpty(beanParams, "docker.name", commandOptions.dockerName, true);
-            putNestedIfNotEmpty(beanParams, "docker.tag", commandOptions.dockerTag, true);
-            putNestedIfNotEmpty(beanParams, "docker.commandLine", commandOptions.dockerCommandLine, true);
-            putNestedIfNotEmpty(beanParams, "docker.user", commandOptions.dockerUser, true);
-            putNestedIfNotEmpty(beanParams, "docker.password", commandOptions.dockerPassword, true);
+            putNestedIfNotEmpty(beanParams, "container.name", commandOptions.containerName, true);
+            putNestedIfNotEmpty(beanParams, "container.tag", commandOptions.containerTag, true);
+            putNestedIfNotEmpty(beanParams, "container.digest", commandOptions.containerDigest, true);
+            putNestedIfNotEmpty(beanParams, "container.commandLine", commandOptions.containerCommandLine, true);
+            putNestedIfNotEmpty(beanParams, "container.user", commandOptions.containerUser, true);
+            putNestedIfNotEmpty(beanParams, "container.password", commandOptions.containerPassword, true);
 
             customToolUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -533,11 +536,12 @@ public class UserToolsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
             putNestedIfNotEmpty(beanParams, "description", commandOptions.description, true);
             putNestedIfNotNull(beanParams, "scope", commandOptions.scope, true);
-            putNestedIfNotEmpty(beanParams, "docker.name", commandOptions.dockerName, true);
-            putNestedIfNotEmpty(beanParams, "docker.tag", commandOptions.dockerTag, true);
-            putNestedIfNotEmpty(beanParams, "docker.commandLine", commandOptions.dockerCommandLine, true);
-            putNestedIfNotEmpty(beanParams, "docker.user", commandOptions.dockerUser, true);
-            putNestedIfNotEmpty(beanParams, "docker.password", commandOptions.dockerPassword, true);
+            putNestedIfNotEmpty(beanParams, "container.name", commandOptions.containerName, true);
+            putNestedIfNotEmpty(beanParams, "container.tag", commandOptions.containerTag, true);
+            putNestedIfNotEmpty(beanParams, "container.digest", commandOptions.containerDigest, true);
+            putNestedIfNotEmpty(beanParams, "container.commandLine", commandOptions.containerCommandLine, true);
+            putNestedIfNotEmpty(beanParams, "container.user", commandOptions.containerUser, true);
+            putNestedIfNotEmpty(beanParams, "container.password", commandOptions.containerPassword, true);
             putNestedIfNotNull(beanParams, "tags", commandOptions.tags, true);
             putNestedIfNotEmpty(beanParams, "minimumRequirements.cpu", commandOptions.minimumRequirementsCpu, true);
             putNestedIfNotEmpty(beanParams, "minimumRequirements.memory", commandOptions.minimumRequirementsMemory, true);

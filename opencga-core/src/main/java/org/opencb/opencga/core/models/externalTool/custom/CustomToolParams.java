@@ -1,19 +1,19 @@
 package org.opencb.opencga.core.models.externalTool.custom;
 
 import org.opencb.commons.annotations.DataField;
-import org.opencb.opencga.core.models.externalTool.Docker;
+import org.opencb.opencga.core.models.externalTool.Container;
 import org.opencb.opencga.core.models.externalTool.ExternalToolParams;
 
 public class CustomToolParams extends ExternalToolParams<CustomToolRunParams> {
 
-    @DataField(id = "docker", description = "Docker to be used.")
-    private Docker docker;
+    @DataField(id = "container", description = "Docker container to be used.")
+    private Container container;
 
     public CustomToolParams() {
     }
 
-    public CustomToolParams(Docker docker) {
-        this.docker = docker;
+    public CustomToolParams(Container container) {
+        this.container = container;
     }
 
     public CustomToolParams(String id, Integer version, CustomToolRunParams params) {
@@ -23,7 +23,7 @@ public class CustomToolParams extends ExternalToolParams<CustomToolRunParams> {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("CustomToolParams{");
-        sb.append("docker=").append(docker);
+        sb.append("container=").append(container);
         sb.append(", id='").append(id).append('\'');
         sb.append(", version=").append(version);
         sb.append(", params=").append(params);
@@ -31,12 +31,12 @@ public class CustomToolParams extends ExternalToolParams<CustomToolRunParams> {
         return sb.toString();
     }
 
-    public Docker getDocker() {
-        return docker;
+    public Container getContainer() {
+        return container;
     }
 
-    public CustomToolParams setDocker(Docker docker) {
-        this.docker = docker;
+    public CustomToolParams setContainer(Container container) {
+        this.container = container;
         return this;
     }
 }

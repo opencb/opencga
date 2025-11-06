@@ -8,7 +8,7 @@ import org.opencb.opencga.catalog.db.api.ExternalToolDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.externalTool.Docker;
+import org.opencb.opencga.core.models.externalTool.Container;
 import org.opencb.opencga.core.models.externalTool.ExternalTool;
 import org.opencb.opencga.core.models.externalTool.ExternalToolParams;
 import org.opencb.opencga.core.models.externalTool.ExternalToolType;
@@ -58,8 +58,8 @@ public class VariantWalkerToolExecutor extends OpenCgaTool {
             toolParams.setOutputFileName(toolParams.getOutputFileName() + ".gz");
         }
 
-        Docker docker = generateDockerObject(externalToolParams);
-        checkDockerObject(docker);
+        Container container = generateDockerObject(externalToolParams);
+        checkDockerObject(container);
     }
 
     @Override
@@ -77,7 +77,7 @@ public class VariantWalkerToolExecutor extends OpenCgaTool {
 
     }
 
-    private Docker generateDockerObject(ExternalToolParams<VariantWalkerParams> runParams) throws CatalogException, ToolException {
+    private Container generateDockerObject(ExternalToolParams<VariantWalkerParams> runParams) throws CatalogException, ToolException {
         OpenCGAResult<ExternalTool> result;
         if (runParams.getVersion() != null) {
             Query query = new Query(ExternalToolDBAdaptor.QueryParams.VERSION.key(), runParams.getVersion());
@@ -98,20 +98,27 @@ public class VariantWalkerToolExecutor extends OpenCgaTool {
         if (externalTool.getType() != ExternalToolType.WALKER) {
             throw new ToolException("User tool '" + runParams.getId() + "' is not of type " + ExternalToolType.WALKER);
         }
-        if (externalTool.getDocker() == null) {
+        if (externalTool.getContainer() == null) {
             throw new ToolException("User tool '" + runParams.getId() + "' does not have a docker object");
         }
 
-        return externalTool.getDocker();
+        return externalTool.getContainer();
     }
 
-    private void checkDockerObject(Docker docker) throws ToolException, CatalogException {
-        if (org.apache.commons.lang3.StringUtils.isEmpty(docker.getName())) {
+    private void checkDockerObject(Container container) throws ToolException, CatalogException {
+        if (org.apache.commons.lang3.StringUtils.isEmpty(container.getName())) {
             throw new ToolException("Missing docker image name");
         }
-        this.dockerImage = docker.getName();
-        if (org.apache.commons.lang3.StringUtils.isNotEmpty(docker.getTag())) {
-            this.dockerImage += ":" + docker.getTag();
+        this.dockerImage = container.getName();
+        String tag = "";
+        if (org.apache.commons.lang3.StringUtils.isNotEmpty(container.getTag())) {
+            tag = container.getTag();
+            if (org.apache.commons.lang3.StringUtils.isNotEmpty(container.getDigest())) {
+                tag += "@" + container.getDigest();
+            }
+        }
+        if (org.apache.commons.lang3.StringUtils.isNotEmpty(tag)) {
+            this.dockerImage += ":" + tag;
         }
     }
 

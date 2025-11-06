@@ -1,5 +1,6 @@
 package org.opencb.opencga.core.models.externalTool;
 
+import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.Map;
@@ -8,6 +9,7 @@ public class WorkflowParams extends ToolParams {
 
     public static final String DESCRIPTION = "Workflow tool run parameters";
 
+    @DataField(id = "params", description = "Key-value pairs of parameters to be used inside the workflow.")
     private Map<String, String> params;
 
     public WorkflowParams() {
