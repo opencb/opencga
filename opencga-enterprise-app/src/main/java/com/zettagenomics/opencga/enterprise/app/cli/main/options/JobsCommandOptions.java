@@ -203,7 +203,7 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
         @Parameter(names = {"--tool-resource"}, description = "Tool info resource can have the values AUDIT, USER, PROJECT, STUDY, FILE, SAMPLE, JOB, INDIVIDUAL, COHORT, DISEASE_PANEL, FAMILY, CLINICAL_ANALYSIS, INTERPRETATION, VARIANT, ALIGNMENT, CLINICAL, EXPRESSION, RGA and FUNCTIONAL.", required = false, arity = 1)
         public String toolResource;
     
-        @Parameter(names = {"--type"}, description = "Enum param allowed values: NATIVE, WORKFLOW, CUSTOM, WALKER, DEPRECATED_WALKER", required = false, arity = 1)
+        @Parameter(names = {"--type"}, description = "Enum param allowed values: NATIVE, WORKFLOW, CUSTOM, WALKER", required = false, arity = 1)
         public String type;
     
         @Parameter(names = {"--priority"}, description = "The body web service priority parameter", required = false, arity = 1)

@@ -159,7 +159,7 @@ class UserTool(_ParentRestClient):
         Execute an analysis from a custom binary.
         PATH: /{apiVersion}/tools/custom/{toolId}/run
 
-        :param dict data: External tool run parameters. (REQUIRED)
+        :param dict data: Custom tool run parameters. (REQUIRED)
         :param str tool_id: Comma separated list of external tool IDs up to a
             maximum of 100. Also admits basic regular expressions using the
             operator '~', i.e. '~{perl-regex}' e.g. '~value' for case
@@ -331,7 +331,7 @@ class UserTool(_ParentRestClient):
         Execute an analysis from a custom binary.
         PATH: /{apiVersion}/tools/walker/{toolId}/run
 
-        :param dict data: External tool run parameters. (REQUIRED)
+        :param dict data: Variant walker params. (REQUIRED)
         :param str tool_id: Comma separated list of external tool IDs up to a
             maximum of 100. Also admits basic regular expressions using the
             operator '~', i.e. '~{perl-regex}' e.g. '~value' for case
@@ -394,7 +394,7 @@ class UserTool(_ParentRestClient):
         Execute a user tool of type WORKFLOW.
         PATH: /{apiVersion}/tools/workflow/{toolId}/run
 
-        :param dict data: External tool run parameters. (REQUIRED)
+        :param dict data: Workflow tool run parameters. (REQUIRED)
         :param str tool_id: Comma separated list of external tool IDs up to a
             maximum of 100. Also admits basic regular expressions using the
             operator '~', i.e. '~{perl-regex}' e.g. '~value' for case

@@ -26,8 +26,8 @@ import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.externalTool.ExternalTool;
 import org.opencb.opencga.core.models.externalTool.ExternalToolAclEntryList;
 import org.opencb.opencga.core.models.externalTool.ExternalToolAclUpdateParams;
+import org.opencb.opencga.core.models.externalTool.WorkflowParams;
 import org.opencb.opencga.core.models.externalTool.WorkflowRepositoryParams;
-import org.opencb.opencga.core.models.externalTool.WorkflowToolParams;
 import org.opencb.opencga.core.models.externalTool.custom.CustomToolCreateParams;
 import org.opencb.opencga.core.models.externalTool.custom.CustomToolInlineParams;
 import org.opencb.opencga.core.models.externalTool.custom.CustomToolRunParams;
@@ -36,7 +36,7 @@ import org.opencb.opencga.core.models.externalTool.workflow.WorkflowCreateParams
 import org.opencb.opencga.core.models.externalTool.workflow.WorkflowUpdateParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobToolBuildParams;
-import org.opencb.opencga.core.models.variant.VariantWalkerToolParams;
+import org.opencb.opencga.core.models.variant.VariantWalkerParams;
 import org.opencb.opencga.core.response.RestResponse;
 
 
@@ -177,7 +177,7 @@ public class UserToolClient extends ParentClient {
      * Execute an analysis from a custom binary.
      * @param toolId Comma separated list of external tool IDs up to a maximum of 100. Also admits basic regular expressions using the
      *     operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
-     * @param data External tool run parameters.
+     * @param data Custom tool run parameters.
      * @param params Map containing any of the following optional parameters.
      *       version: Tool version. If not provided, the latest version will be used.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
@@ -309,7 +309,7 @@ public class UserToolClient extends ParentClient {
      * Execute an analysis from a custom binary.
      * @param toolId Comma separated list of external tool IDs up to a maximum of 100. Also admits basic regular expressions using the
      *     operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
-     * @param data External tool run parameters.
+     * @param data Variant walker params.
      * @param params Map containing any of the following optional parameters.
      *       version: Tool version. If not provided, the latest version will be used.
      *       project: Project [organization@]project where project can be either the ID or the alias.
@@ -325,7 +325,7 @@ public class UserToolClient extends ParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Job> runWalker(String toolId, VariantWalkerToolParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Job> runWalker(String toolId, VariantWalkerParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("tools", null, "walker", toolId, "run", params, POST, Job.class);
@@ -366,7 +366,7 @@ public class UserToolClient extends ParentClient {
      * Execute a user tool of type WORKFLOW.
      * @param toolId Comma separated list of external tool IDs up to a maximum of 100. Also admits basic regular expressions using the
      *     operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
-     * @param data External tool run parameters.
+     * @param data Workflow tool run parameters.
      * @param params Map containing any of the following optional parameters.
      *       version: Tool version. If not provided, the latest version will be used.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
@@ -381,7 +381,7 @@ public class UserToolClient extends ParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Job> runWorkflow(String toolId, WorkflowToolParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Job> runWorkflow(String toolId, WorkflowParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("tools", null, "workflow", toolId, "run", params, POST, Job.class);
