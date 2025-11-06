@@ -61,6 +61,28 @@ jobs:
           distribution: 'temurin'
           java-version: '8'
           cache: 'maven'
+      - name: Clone dependencies
+        id: clone_dependencies
+        run: |
+          if [ -f "./.github/workflows/scripts/get_same_branch.sh" ]; then
+            chmod +x ./.github/workflows/scripts/get_same_branch.sh
+            export DEPENDENCIES_SHA=${{ github.sha }}
+            ./.github/workflows/scripts/get_same_branch.sh ${{ steps.clone_dependencies.outputs.dependencies_sha }}
+          fi
+      - name: Cache local Maven repository
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ inputs.storage_hadoop }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-maven-${{ inputs.storage_hadoop }}-
+      - name: Compile dependencies
+        run: |
+          if [ -f "./.github/workflows/scripts/compile_same_branch.sh" ]; then
+            chmod +x ./.github/workflows/scripts/compile_same_branch.sh
+            ./.github/workflows/scripts/compile_same_branch.sh
+          fi
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: OpenCGA Enterprise Maven Build (skip tests)
@@ -80,7 +102,6 @@ jobs:
           fi
           branch_name=$(git rev-parse --abbrev-ref HEAD)
           ./build.sh --storage-hadoop ${{ inputs.storage_hadoop }} --prepare-branches --prepare-hadoop --task "$branch_name" $CLIENTS
-
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.artifact_name }}
