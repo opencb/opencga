@@ -15,6 +15,7 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
@@ -41,17 +42,35 @@ public class VariantRow {
 
     private final Result result;
     private final ResultSet resultSet;
+    private final Set<String> columnsFilter;
     private Variant variant;
     private VariantAnnotation variantAnnotation;
 
     public VariantRow(Result result) {
         this.result = Objects.requireNonNull(result);
         this.resultSet = null;
+        this.columnsFilter = null;
+    }
+
+    private VariantRow(VariantRow other, Set<String> columnsFilter) {
+        this.result = other.result;
+        this.resultSet = other.resultSet;
+        this.variant = other.variant;
+        this.variantAnnotation = other.variantAnnotation;
+        this.columnsFilter = columnsFilter;
     }
 
     public VariantRow(ResultSet resultSet) {
         this.resultSet = Objects.requireNonNull(resultSet);
         this.result = null;
+        this.columnsFilter = null;
+    }
+
+    public VariantRow withColumnsFilter(Set<String> columnsFilter) {
+        if (columnsFilter == null || columnsFilter.isEmpty()) {
+            return this;
+        }
+        return new VariantRow(this, columnsFilter);
     }
 
     public static VariantRowWalkerBuilder walker(Result result) {
@@ -71,6 +90,29 @@ public class VariantRow {
             }
         }
         return variant;
+    }
+
+    public VariantType getType() {
+        if (variant == null) {
+            getVariant();
+        }
+        if (result != null) {
+            Cell cell = result.getColumnLatestCell(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.TYPE.bytes());
+            if (cell != null && cell.getValueLength() > 0) {
+                String string = Bytes.toString(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
+                variant.setType(VariantType.valueOf(string));
+            }
+        } else {
+            try {
+                String type = resultSet.getString(VariantColumn.TYPE.column());
+                if (StringUtils.isNotBlank(type)) {
+                    variant.setType(VariantType.valueOf(type));
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return variant.getType();
     }
 
     public VariantAnnotation getVariantAnnotation(HBaseToVariantAnnotationConverter converter) {
@@ -135,6 +177,10 @@ public class VariantRow {
                     if (bytes == null) {
                         continue;
                     }
+                    if (columnsFilter != null && !columnsFilter.contains(columnName)) {
+                        // Skip columns not in the filter
+                        continue;
+                    }
                     if (file && VariantPhoenixSchema.isFileColumn(columnName)) {
                         walker.file(new BytesFileColumn(bytes, extractStudyId(columnName), extractFileId(columnName)));
                     } else if (sample && VariantPhoenixSchema.isSampleDataColumn(columnName)) {
@@ -164,6 +210,10 @@ public class VariantRow {
             for (Cell cell : result.rawCells()) {
                 String columnName = Bytes.toString(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
 
+                if (columnsFilter != null && !columnsFilter.contains(columnName)) {
+                    // Skip columns not in the filter
+                    continue;
+                }
                 if (file && VariantPhoenixSchema.isFileColumn(columnName)) {
                     walker.file(new BytesFileColumn(cell, extractStudyId(columnName), extractFileId(columnName)));
                 } else if (sample && VariantPhoenixSchema.isSampleDataColumn(columnName)) {

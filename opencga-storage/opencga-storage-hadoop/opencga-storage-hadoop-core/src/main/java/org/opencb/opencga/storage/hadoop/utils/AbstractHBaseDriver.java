@@ -37,7 +37,11 @@ import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -55,6 +59,7 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
     public static final String ERROR_MESSAGE = "ERROR_MESSAGE";
     public static final String OUTPUT_PARAM = "output";
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractHBaseDriver.class);
+    public static final String ARGS_FROM_STDIN = "STDIN";
     protected String table;
 
     public AbstractHBaseDriver() {
@@ -122,6 +127,14 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
 
     }
 
+    /**
+     * Called after the job is submitted, but before it starts.
+     * @param job The job that was submitted.
+     * @throws       IOException on error
+     */
+    protected void postSubmit(Job job) throws IOException {
+    }
+
     protected void postExecution(Job job) throws IOException, StorageEngineException {
         postExecution(job.isSuccessful());
     }
@@ -139,6 +152,9 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         Configuration conf = getConf();
         HBaseConfiguration.addHbaseResources(conf);
         getConf().setClassLoader(AbstractHBaseDriver.class.getClassLoader());
+        if (args.length == 1 && args[0].equals(ARGS_FROM_STDIN)) {
+            args = readArgsFromStream(System.in);
+        }
         if (configFromArgs(args)) {
             return 1;
         }
@@ -201,15 +217,14 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         } else {
             LOGGER.info("   * Reducer       : (no reducer)");
         }
-        String outputFormatClassName;
-        if (job.getOutputFormatClass().equals(LazyOutputFormat.class)) {
-            Class<?> actualOutputFormat = job.getConfiguration().getClass(LazyOutputFormat.OUTPUT_FORMAT, OutputFormat.class);
-            outputFormatClassName = LazyOutputFormat.class.getSimpleName() + ": " + actualOutputFormat.getName();
-        } else {
-            outputFormatClassName = job.getOutputFormatClass().getName();
+        Class<? extends OutputFormat<?, ?>> outputFormatClass = job.getOutputFormatClass();
+        LOGGER.info("   * OutputFormat  : " + outputFormatClass.getName());
+        if (outputFormatClass.equals(LazyOutputFormat.class)) {
+            outputFormatClass = (Class<? extends OutputFormat<?, ?>>) job.getConfiguration()
+                    .getClass(LazyOutputFormat.OUTPUT_FORMAT, null, OutputFormat.class);
+            LOGGER.info("     - BaseOutputFormat  : " + outputFormatClass.getName());
         }
-        LOGGER.info("   * OutputFormat  : " + outputFormatClassName);
-        if (job.getOutputFormatClass().equals(TableOutputFormat.class)
+        if (outputFormatClass.equals(TableOutputFormat.class)
                 && StringUtils.isNotEmpty(job.getConfiguration().get(TableOutputFormat.OUTPUT_TABLE))) {
             LOGGER.info("     - OutputTable : " + job.getConfiguration().get(TableOutputFormat.OUTPUT_TABLE));
         } else if (StringUtils.isNotEmpty(job.getConfiguration().get(FileOutputFormat.OUTDIR))) {
@@ -227,6 +242,7 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         }
         LOGGER.info("=================================================");
         LOGGER.info("tmpjars=" + Arrays.toString(job.getConfiguration().getStrings("tmpjars")));
+        LOGGER.info("tmpfiles=" + Arrays.toString(job.getConfiguration().getStrings("tmpfiles")));
         reportRunningJobs();
         boolean succeed = executeJob(job);
         if (!succeed) {
@@ -249,6 +265,32 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         close();
 
         return succeed ? 0 : 1;
+    }
+
+    public static void writeArgsToStream(String[] args, DataOutputStream stream) throws IOException {
+        for (String arg : args) {
+            // Deal with new lines in args
+            arg = URLEncoder.encode(arg, "UTF-8");
+            stream.writeBytes(arg + "\n");
+        }
+    }
+
+    public static String[] readArgsFromStream(InputStream in) throws IOException {
+        String[] args;
+        // Read args from STDIN
+        List<String> argsFromStdin = new LinkedList<>();
+        Scanner scanner = new Scanner(in);
+        while (scanner.hasNextLine()) {
+            String arg = scanner.nextLine();
+            // Deal with new lines in args
+            arg = URLDecoder.decode(arg, "UTF-8");
+            LOGGER.debug("Read arg from STDIN: " + arg);
+            argsFromStdin.add(arg);
+        }
+        LOGGER.info("Read " + argsFromStdin.size() + " args from STDIN");
+        scanner.close();
+        args = argsFromStdin.toArray(new String[0]);
+        return args;
     }
 
     private static String getExtendedTaskErrorMessage(Job job) {
@@ -321,21 +363,47 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
     private boolean configFromArgs(String[] args) {
         int fixedSizeArgs = getFixedSizeArgs();
 
-        LOGGER.info(Arrays.toString(args));
         boolean help = ArrayUtils.contains(args, "-h") || ArrayUtils.contains(args, "--help");
         if (args.length < fixedSizeArgs || (args.length - fixedSizeArgs) % 2 != 0 || help) {
             System.err.println(getUsage());
             ToolRunner.printGenericCommandUsage(System.err);
             if (!help) {
 //                System.err.println("Found " + Arrays.toString(args));
-                throw new IllegalArgumentException("Wrong number of arguments!");
+                for (int i = 0; i < fixedSizeArgs; i++) {
+                    LOGGER.info("Fixed arg " + i + ": " + (i < args.length ? args[i] : "(not found)"));
+                }
+                for (int i = fixedSizeArgs; i < args.length; i++) {
+                    // read in pairs
+                    LOGGER.info("key/value arg " + (i) + " : '" + args[i] + "' -> "
+                            + (i + 1 < args.length ? ("'" + args[i + 1] + "'") : " (no value found)"));
+                }
+                throw new IllegalArgumentException("Wrong number of arguments! Found " + args.length
+                        + ", expected at least "
+                        + fixedSizeArgs + " and an even number of additional arguments! ");
             }
             return true;
         }
 
+        for (int i = 0; i < fixedSizeArgs; i++) {
+            LOGGER.info("Fixed arg " + i + ": " + args[i]);
+        }
         // Get first other args to avoid overwrite the fixed position args.
         for (int i = fixedSizeArgs; i < args.length; i = i + 2) {
-            getConf().set(args[i], args[i + 1]);
+            String key = args[i];
+            String value = args[i + 1];
+            getConf().set(key, value);
+            float maxLineLength = 300f;
+            for (int batch = 0; batch < Math.ceil(value.length() / maxLineLength); batch++) {
+                String prefix;
+                if (batch == 0) {
+                    prefix = "- " + key + ": ";
+                } else {
+                    prefix = StringUtils.repeat(' ', 6 + key.length());
+                }
+                int start = (int) (batch * maxLineLength);
+                int end = (int) Math.min(value.length(), (batch + 1) * maxLineLength);
+                LOGGER.info(prefix + value.substring(start, end));
+            }
         }
 
         parseFixedParams(args);
@@ -366,6 +434,7 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         });
         try {
             job.submit();
+            postSubmit(job);
             // Add shutdown hook after successfully submitting the job.
             Runtime.getRuntime().addShutdownHook(hook);
             JobID jobID = job.getJobID();

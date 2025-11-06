@@ -28,6 +28,7 @@
 
     <artifactId>opencga-storage-core</artifactId>
     <packaging>jar</packaging>
+    <name>OpenCGA Storage Core</name>
 
     <properties>
         <opencga.storage.configset.version>v5</opencga.storage.configset.version>
@@ -223,6 +224,10 @@
             <groupId>org.opencb.oskar</groupId>
             <artifactId>oskar-analysis</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.rocksdb</groupId>
+            <artifactId>rocksdbjni</artifactId>
+        </dependency>
     </dependencies>
     <build>
         <resources>
@@ -264,6 +269,22 @@
                         <goals>
                             <goal>test-jar</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <id>analyze</id>
+                        <goals>
+                            <goal>analyze-only</goal>
+                        </goals>
+                        <configuration>
+                            <failOnWarning>true</failOnWarning>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

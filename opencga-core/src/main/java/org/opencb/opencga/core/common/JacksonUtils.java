@@ -18,9 +18,11 @@ package org.opencb.opencga.core.common;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.databind.BeanDescription;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
 import com.fasterxml.jackson.databind.util.TokenBuffer;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.avro.generic.GenericRecord;
@@ -56,6 +58,8 @@ import org.opencb.opencga.core.models.workflow.Workflow;
 import javax.ws.rs.ext.ContextResolver;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class JacksonUtils {
 
@@ -221,6 +225,13 @@ public class JacksonUtils {
         }
     }
 
+    public static <T> T copy(T instance) throws IOException {
+        if (instance == null) {
+            return null;
+        }
+        return copy(instance, (Class<T>) instance.getClass());
+    }
+
     public static <T> T copy(T instance, Class<T> clazz) throws IOException {
         if (instance == null) {
             return null;
@@ -243,6 +254,20 @@ public class JacksonUtils {
             return;
         }
         defaultObjectMapper.updateValue(valueToUpdate, overrides);
+    }
+
+    public static Map<String, Class<?>> getFields(Class<?> aClass) {
+        return getFields(aClass, getDefaultObjectMapper());
+    }
+
+    public static Map<String, Class<?>> getFields(Class<?> aClass, ObjectMapper objectMapper) {
+        BeanDescription beanDescription = objectMapper.getSerializationConfig().introspect(objectMapper.constructType(aClass));
+        Map<String, Class<?>> fields = new HashMap<>(beanDescription.findProperties().size());
+        for (BeanPropertyDefinition property : beanDescription.findProperties()) {
+            Class<?> rawPrimaryType = property.getRawPrimaryType();
+            fields.put(property.getName(), rawPrimaryType);
+        }
+        return fields;
     }
 
 }

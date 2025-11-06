@@ -171,13 +171,13 @@ public final class ClientConfiguration {
         return null;
     }
 
-    public void setDefaultIndexByName(String name) throws ClientException {
+    public void setDefaultIndexByName(String hostname) throws ClientException {
         if (CollectionUtils.isEmpty(rest.getHosts())) {
-            throw new ClientException("Hosts not found");
+            throw new ClientException("Host name not found");
         }
         boolean found = false;
         for (int i = 0; i < rest.getHosts().size(); i++) {
-            if (rest.getHosts().get(i).getName().equalsIgnoreCase(name)) {
+            if (rest.getHosts().get(i).getName().equalsIgnoreCase(hostname)) {
                 rest.setDefaultHostIndex(i);
                 logger.debug("Setting default host index to {}", i);
                 found = true;
@@ -185,11 +185,11 @@ public final class ClientConfiguration {
         }
         if (!found) {
             // Check if the name is a valid host URL
-            if (name.startsWith("http://") || name.startsWith("https://")) {
-                rest.getHosts().add(new HostConfig(name, name));
+            if (hostname.startsWith("http://") || hostname.startsWith("https://")) {
+                rest.getHosts().add(new HostConfig(hostname, hostname));
                 rest.setDefaultHostIndex(rest.getHosts().size() - 1);
             } else {
-                throw new ClientException("Invalid host name '" + name
+                throw new ClientException("Invalid host name '" + hostname
                         + "' not found in the list of hosts: " + getRest().getHosts()
                         .stream()
                         .map(HostConfig::getName)

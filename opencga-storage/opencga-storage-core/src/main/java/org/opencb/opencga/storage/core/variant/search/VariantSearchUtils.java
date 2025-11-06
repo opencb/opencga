@@ -157,6 +157,9 @@ public class VariantSearchUtils {
         for (VariantQueryParam modifierParam : MODIFIER_QUERY_PARAMS) {
             engineQuery.putIfNotNull(modifierParam.key(), query.get(modifierParam.key()));
         }
+        for (QueryParam modifierParam : MODIFIER_INTERNAL_QUERY_PARAMS) {
+            engineQuery.putIfNotNull(modifierParam.key(), query.get(modifierParam.key()));
+        }
         // Despite STUDIES is a covered filter, it has to be in the underlying
         // query to be used as defaultStudy
         if (isValidParam(query, STUDY)) {

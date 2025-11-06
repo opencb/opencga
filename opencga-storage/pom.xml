@@ -28,7 +28,7 @@
 
     <artifactId>opencga-storage</artifactId>
     <packaging>pom</packaging>
-
+    <name>OpenCGA Storage</name>
     <properties>
         <storage.configuration.file>storage-configuration.yml</storage.configuration.file>
     </properties>
@@ -96,7 +96,7 @@
                             <goal>analyze-only</goal>
                         </goals>
                         <configuration>
-                            <failOnWarning>false</failOnWarning>
+                            <failOnWarning>true</failOnWarning>
                         </configuration>
                     </execution>
                 </executions>

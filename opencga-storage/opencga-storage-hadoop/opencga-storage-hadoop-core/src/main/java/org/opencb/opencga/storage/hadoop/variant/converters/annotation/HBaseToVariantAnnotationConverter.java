@@ -19,9 +19,9 @@ package org.opencb.opencga.storage.hadoop.variant.converters.annotation;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.cfg.MapperConfig;
 import com.fasterxml.jackson.databind.introspect.Annotated;
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
@@ -120,36 +120,18 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
                 }
             }
         }
-        String[] excludedAnnotationFields = list.toArray(new String[list.size()]);
+        String[] excludedAnnotationFields = list.toArray(new String[0]);
         objectMapper.setAnnotationIntrospector(
                 new JacksonAnnotationIntrospector() {
-
                     @Override
-                    public JsonIgnoreProperties.Value findPropertyIgnorals(Annotated ac) {
-                        JsonIgnoreProperties.Value propertyIgnorals = super.findPropertyIgnorals(ac);
+                    public JsonIgnoreProperties.Value findPropertyIgnoralByName(MapperConfig<?> config, Annotated ac) {
+                        JsonIgnoreProperties.Value propertyIgnoralByName = super.findPropertyIgnoralByName(config, ac);
                         if (!ac.getRawType().equals(VariantAnnotation.class)) {
-                            // Not a VariantAnnotation class. Return propertiesToIgnore as is.
-                            return propertyIgnorals;
+                            // Not a VariantAnnotation class. Return propertyIgnoralByName as is.
+                            return propertyIgnoralByName;
                         }
-                        return JsonIgnoreProperties.Value.merge(propertyIgnorals,
+                        return JsonIgnoreProperties.Value.merge(propertyIgnoralByName,
                                 JsonIgnoreProperties.Value.forIgnoredProperties(excludedAnnotationFields));
-                    }
-
-                    @Override
-                    public String[] findPropertiesToIgnore(Annotated ac, boolean forSerialization) {
-                        String[] propertiesToIgnore = super.findPropertiesToIgnore(ac, forSerialization);
-                        if (!ac.getRawType().equals(VariantAnnotation.class)) {
-                            // Not a VariantAnnotation class. Return propertiesToIgnore as is.
-                            return propertiesToIgnore;
-                        } else if (ArrayUtils.isNotEmpty(propertiesToIgnore)) {
-                            // If there is any property to ignore, merge them
-                            List<String> list = new ArrayList<>();
-                            Collections.addAll(list, excludedAnnotationFields);
-                            Collections.addAll(list, propertiesToIgnore);
-                            return list.toArray(new String[list.size()]);
-                        } else {
-                            return excludedAnnotationFields;
-                        }
                     }
                 });
         return this;
@@ -164,24 +146,23 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
     @Override
     public VariantAnnotation convert(Result result) {
         VariantAnnotation variantAnnotation = null;
-
-        Cell annotationCell = result.getColumnLatestCell(columnFamily, annotationColumn);
-        if (annotationCell != null && annotationCell.getValueLength() > 0) {
-            variantAnnotation = convert(annotationCell.getValueArray(), annotationCell.getValueOffset(), annotationCell.getValueLength());
-        }
+        Cell annotationIdCell = null;
         List<Integer> releases = new ArrayList<>();
         for (Cell cell : result.rawCells()) {
             if (columnStartsWith(cell, VariantPhoenixSchema.RELEASE_PREFIX_BYTES)) {
                 releases.add(getRelease(Bytes.toString(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength())));
+            } else if (CellUtil.matchingQualifier(cell, annotationColumn)) {
+                variantAnnotation = convert(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
+            } else if (CellUtil.matchingQualifier(cell, VariantColumn.ANNOTATION_ID.bytes())) {
+                annotationIdCell = cell;
             }
         }
 
         String annotationId = this.defaultAnnotationId;
         if (defaultAnnotationId == null && annotationIds != null) {
             // Read the annotation Id from ANNOTATION_ID column
-            Cell cell = result.getColumnLatestCell(columnFamily, VariantColumn.ANNOTATION_ID.bytes());
-            if (cell != null) {
-                byte[] annotationIdBytes = CellUtil.cloneValue(cell);
+            if (annotationIdCell != null) {
+                byte[] annotationIdBytes = CellUtil.cloneValue(annotationIdCell);
                 if (annotationIdBytes.length > 0) {
                     int annotationIdNum = ((Integer) PInteger.INSTANCE.toObject(annotationIdBytes));
                     annotationId = annotationIds.get(annotationIdNum);

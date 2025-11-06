@@ -34,7 +34,7 @@ import java.util.*;
 @Category(LongTests.class)
 public class HadoopVariantSearchIndexTest extends VariantSearchIndexTest implements HadoopVariantStorageTest {
 
-    @ClassRule
+    @ClassRule(order = -10)
     public static HadoopSolrSupport solrSupport = new HadoopSolrSupport();
 
     @ClassRule

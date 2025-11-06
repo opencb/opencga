@@ -61,7 +61,6 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
     protected final HBaseToStudyEntryConverter studyEntryConverter;
     protected final Logger logger = LoggerFactory.getLogger(HBaseToVariantConverter.class);
 
-    protected static boolean failOnWrongVariants = false; //FIXME
     protected HBaseVariantConverterConfiguration configuration;
 
     public HBaseToVariantConverter(VariantStorageMetadataManager scm) {
@@ -125,20 +124,16 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         return configure(HBaseVariantConverterConfiguration.builder(configuration).build());
     }
 
-    public static boolean isFailOnWrongVariants() {
-        return failOnWrongVariants;
-    }
-
-    public static void setFailOnWrongVariants(boolean b) {
-        failOnWrongVariants = b;
-    }
-
     public static HBaseToVariantConverter<Result> fromResult(VariantStorageMetadataManager scm) {
         return new ResultToVariantConverter(scm);
     }
 
     public static HBaseToVariantConverter<ResultSet> fromResultSet(VariantStorageMetadataManager scm) {
         return new ResultSetToVariantConverter(scm);
+    }
+
+    public static HBaseToVariantConverter<VariantRow> fromVariantRow(VariantStorageMetadataManager vsmm, Set<String> scanColumns) {
+        return new VariantRowToVariantConverter(vsmm, scanColumns);
     }
 
     protected Variant convert(Variant variant, Map<Integer, StudyEntry> studies,
@@ -168,14 +163,6 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
             throw new IllegalStateException("No Studies registered for variant!!! " + variant);
         }
         return variant;
-    }
-
-    private void wrongVariant(String message) {
-        if (configuration.getFailOnWrongVariants()) {
-            throw new IllegalStateException(message);
-        } else {
-            logger.warn(message);
-        }
     }
 
     private static class ResultSetToVariantConverter extends HBaseToVariantConverter<ResultSet> {
@@ -224,6 +211,36 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
                     studies = Collections.emptyMap();
                 } else {
                     studies = studyEntryConverter.convert(result);
+                }
+                return convert(variant, studies, annotation);
+            } catch (RuntimeException e) {
+                throw new IllegalStateException("Fail to parse variant: " + variant, e);
+            }
+        }
+    }
+
+    private static class VariantRowToVariantConverter extends HBaseToVariantConverter<VariantRow> {
+        private final Set<String> scanColumns;
+
+        VariantRowToVariantConverter(VariantStorageMetadataManager scm, Set<String> scanColumns) {
+            super(scm);
+            this.scanColumns = scanColumns;
+        }
+
+        @Override
+        public Variant convert(VariantRow variantRow) {
+            if (scanColumns != null) {
+                variantRow = variantRow.withColumnsFilter(scanColumns);
+            }
+            Variant variant = variantRow.getVariant();
+            try {
+                variant.setType(variantRow.getType());
+                VariantAnnotation annotation = variantRow.getVariantAnnotation(annotationConverter);
+                Map<Integer, StudyEntry> studies;
+                if (configuration.getProjection() != null && configuration.getProjection().getStudyIds().isEmpty()) {
+                    studies = Collections.emptyMap();
+                } else {
+                    studies = studyEntryConverter.convert(variantRow);
                 }
                 return convert(variant, studies, annotation);
             } catch (RuntimeException e) {

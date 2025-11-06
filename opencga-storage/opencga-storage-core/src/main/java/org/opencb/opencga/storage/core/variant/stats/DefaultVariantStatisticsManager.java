@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.base.Throwables;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
@@ -35,6 +36,7 @@ import org.opencb.commons.io.DataReader;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.common.mixins.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.core.models.common.mixins.VariantStatsJsonMixin;
@@ -97,9 +99,14 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
             throw new IllegalArgumentException(e);
         }
 
+        // Start time of the operation before calculate step
+        long startTime = System.currentTimeMillis();
+
         URI stats = createStats(dbAdaptor, output, study, cohorts, options);
 
-        loadStats(stats, study, options);
+
+        StudyMetadata studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(study);
+        loadStats(stats, studyMetadata, options, startTime);
     }
 
     /**
@@ -347,10 +354,10 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
             IOException, StorageEngineException {
         VariantStorageMetadataManager variantStorageMetadataManager = dbAdaptor.getMetadataManager();
         StudyMetadata studyMetadata = variantStorageMetadataManager.getStudyMetadata(study);
-        loadStats(uri, studyMetadata, options);
+        loadStats(uri, studyMetadata, options, -1);
     }
 
-    public void loadStats(URI uri, StudyMetadata studyMetadata, QueryOptions options) throws
+    public void loadStats(URI uri, StudyMetadata studyMetadata, QueryOptions options, long startTime) throws
             IOException, StorageEngineException {
 
         URI variantStatsUri = UriUtils.replacePath(uri, uri.getPath() + VARIANT_STATS_SUFFIX);
@@ -363,17 +370,17 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
         boolean error = false;
         try {
             logger.info("starting stats loading from {}", variantStatsUri);
-            long start = System.currentTimeMillis();
+            StopWatch stopWatch = StopWatch.createStarted();
 
             loadVariantStats(variantStatsUri, studyMetadata, options);
 //        loadSourceStats(variantDBAdaptor, sourceStatsUri, studyMetadata, options);
 
-            logger.info("finishing stats loading, time: {}ms", System.currentTimeMillis() - start);
+            logger.info("finishing stats loading, time: {}", TimeUtils.durationToString(stopWatch));
         } catch (Exception e) {
             error = true;
             throw e;
         } finally {
-            postCalculateStats(dbAdaptor.getMetadataManager(), studyMetadata, cohorts, error);
+            postCalculateStats(dbAdaptor.getMetadataManager(), studyMetadata, cohorts, startTime, error);
         }
 //        variantDBAdaptor.getMetadataManager().updateStudyMetadata(studyMetadata, options);
     }

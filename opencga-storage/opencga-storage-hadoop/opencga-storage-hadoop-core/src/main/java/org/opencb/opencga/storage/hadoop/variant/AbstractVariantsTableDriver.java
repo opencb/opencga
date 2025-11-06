@@ -28,6 +28,7 @@ import org.apache.hadoop.mapreduce.Job;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.adaptors.VariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -312,12 +313,16 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver {
         return hBaseManager;
     }
 
-    protected VariantStorageMetadataManager getMetadataManager() throws IOException {
+    protected final VariantStorageMetadataManager getMetadataManager() throws IOException {
         if (metadataManager == null) {
-            metadataManager = new VariantStorageMetadataManager(new HBaseVariantStorageMetadataDBAdaptorFactory(
-                    getHBaseManager(), generator.getMetaTableName(), getConf()));
+            metadataManager = new VariantStorageMetadataManager(
+                    newMetadataDbAdaptorFactory());
         }
         return metadataManager;
+    }
+
+    protected VariantStorageMetadataDBAdaptorFactory newMetadataDbAdaptorFactory() {
+        return new HBaseVariantStorageMetadataDBAdaptorFactory(getHBaseManager(), generator.getMetaTableName(), getConf());
     }
 
     private void checkTablesExist(HBaseManager hBaseManager, String... tables) throws IOException {

@@ -60,6 +60,7 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOpti
  */
 public class HadoopVariantExporter extends VariantExporter {
 
+    public static final String SKIP_SMALL_QUERY = "skipSmallQuery";
     private final HadoopVariantStorageEngine engine;
     private final MRExecutor mrExecutor;
     private final Logger logger = LoggerFactory.getLogger(HadoopVariantExporter.class);
@@ -83,7 +84,9 @@ public class HadoopVariantExporter extends VariantExporter {
         Query query = variantQuery.getQuery();
         QueryOptions queryOptions = variantQuery.getInputOptions();
         boolean smallQuery = false;
-        if (!queryOptions.getBoolean("skipSmallQuery", false)) {
+        if (queryOptions.getBoolean(SKIP_SMALL_QUERY, false)) {
+            logger.info("Skip small query check");
+        } else {
             ParsedVariantQuery.VariantQueryXref xrefs = VariantQueryParser.parseXrefs(query);
             if (xrefs.getVariants().size() > 0 && xrefs.getVariants().size() < 2000) {
                 // FIXME: Is this scenario still needed?

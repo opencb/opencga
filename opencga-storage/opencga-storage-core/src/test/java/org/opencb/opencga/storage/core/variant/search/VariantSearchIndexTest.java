@@ -10,6 +10,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.BatchUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
@@ -84,6 +85,7 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
             fileNames.addAll(batchFileNames);
 
             options.put(VariantStorageOptions.STUDY.key(), studyName);
+            options.put(VariantStorageOptions.LOAD_SAMPLE_INDEX.key(), YesNoAuto.NO);
             variantStorageEngine.getOptions().putAll(options);
             variantStorageEngine.getOptions().put(VariantStorageOptions.RELEASE.key(), release++);
             variantStorageEngine.index(inputFiles.subList(0, 2), outputUri, true, true, true);

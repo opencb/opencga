@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.core.variant.io.json;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.util.MinimalPrettyPrinter;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
@@ -118,6 +119,7 @@ public class VariantJsonWriter implements VariantWriter {
 
         try {
             variantsGenerator = factory.createGenerator(variantsStream);
+            variantsGenerator.setPrettyPrinter(new MinimalPrettyPrinter("\n"));
             if (fileStream != null || fileMetadata != null) {
                 fileGenerator = factory.createGenerator(fileStream);
             }
@@ -154,7 +156,6 @@ public class VariantJsonWriter implements VariantWriter {
                 }
             }
             variantsGenerator.writeObject(variant);
-            variantsGenerator.writeRaw('\n');
             numVariantsWritten++;
         } catch (IOException ex) {
             logger.error(variant.toString(), ex);
