@@ -61,6 +61,8 @@ export default class Cohort extends OpenCGAParentClass {
     * @param {String} [params.status] - status.
     * @param {String} [params.internalStatus] - internalStatus.
     * @param {String} [params.annotation] - Cohort annotation.
+    * @param {String} [params.tags] - Tags. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value'
+    *     for case sensitive, '~/value/i' for case insensitive search.
     * @param {String} [params.acl] - acl.
     * @param {String} [params.samples] - Cohort sample IDs.
     * @param {String} [params.numSamples] - Number of samples.
@@ -114,6 +116,8 @@ export default class Cohort extends OpenCGAParentClass {
     *     using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
     * @param {String} [params.uuid] - Comma separated list of cohort IDs up to a maximum of 100.
     * @param {String} [params.type] - Cohort type.
+    * @param {String} [params.tags] - Tags. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value'
+    *     for case sensitive, '~/value/i' for case insensitive search.
     * @param {String} [params.creationDate] - creationDate.
     * @param {String} [params.modificationDate] - modificationDate.
     * @param {Boolean} [params.deleted] - deleted.
@@ -177,6 +181,8 @@ export default class Cohort extends OpenCGAParentClass {
     *     using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
     * @param {String} [params.uuid] - Comma separated list of cohort IDs up to a maximum of 100.
     * @param {String} [params.type] - Cohort type.
+    * @param {String} [params.tags] - Tags. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value'
+    *     for case sensitive, '~/value/i' for case insensitive search.
     * @param {String} [params.creationDate] - creationDate.
     * @param {String} [params.modificationDate] - modificationDate.
     * @param {Boolean} [params.deleted] - deleted.
@@ -241,6 +247,8 @@ export default class Cohort extends OpenCGAParentClass {
     *     default value is ADD.
     * @param {"ADD SET REMOVE"} [params.annotationSetsAction = "ADD"] - Action to be performed if the array of annotationSets is being
     *     updated. The default value is ADD.
+    * @param {"ADD SET REMOVE"} [params.tagsAction = "ADD"] - Action to be performed if the array of tags is being updated. The default
+    *     value is ADD.
     * @param {Boolean} [params.includeResult = "false"] - Flag indicating to include the created or updated document result in the response.
     *     The default value is false.
     * @returns {Promise} Promise object in the form of RestResponse instance.
