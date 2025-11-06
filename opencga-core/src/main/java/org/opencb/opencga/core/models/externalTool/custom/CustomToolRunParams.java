@@ -6,6 +6,8 @@ import java.util.Map;
 
 public class CustomToolRunParams extends ToolParams  {
 
+    public static final String DESCRIPTION = "Custom tool run parameters";
+
     private String commandLine;
     private Map<String, String> params;
 

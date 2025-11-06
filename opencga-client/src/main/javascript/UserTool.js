@@ -132,7 +132,7 @@ export default class UserTool extends OpenCGAParentClass {
     /** Execute an analysis from a custom binary.
     * @param {String} toolId - Comma separated list of external tool IDs up to a maximum of 100. Also admits basic regular expressions using
     *     the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
-    * @param {Object} data - External tool run parameters.
+    * @param {Object} data - Custom tool run parameters.
     * @param {Object} [params] - The Object containing the following optional parameters:
     * @param {Number} [params.version] - Tool version. If not provided, the latest version will be used.
     * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
@@ -249,7 +249,7 @@ export default class UserTool extends OpenCGAParentClass {
     /** Execute an analysis from a custom binary.
     * @param {String} toolId - Comma separated list of external tool IDs up to a maximum of 100. Also admits basic regular expressions using
     *     the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
-    * @param {Object} data - External tool run parameters.
+    * @param {Object} data - Variant walker params.
     * @param {Object} [params] - The Object containing the following optional parameters:
     * @param {Number} [params.version] - Tool version. If not provided, the latest version will be used.
     * @param {String} [params.project] - Project [organization@]project where project can be either the ID or the alias.
@@ -296,7 +296,7 @@ export default class UserTool extends OpenCGAParentClass {
     /** Execute a user tool of type WORKFLOW
     * @param {String} toolId - Comma separated list of external tool IDs up to a maximum of 100. Also admits basic regular expressions using
     *     the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
-    * @param {Object} data - External tool run parameters.
+    * @param {Object} data - Workflow tool run parameters.
     * @param {Object} [params] - The Object containing the following optional parameters:
     * @param {Number} [params.version] - Tool version. If not provided, the latest version will be used.
     * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.

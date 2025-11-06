@@ -13,6 +13,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.externalTool.*;
+import org.opencb.opencga.core.models.externalTool.custom.CustomToolParams;
 import org.opencb.opencga.core.models.externalTool.custom.CustomToolRunParams;
 import org.opencb.opencga.core.models.job.ToolInfoExecutor;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -31,7 +32,7 @@ public class CustomToolExecutor extends OpenCgaDockerToolScopeStudy {
     public static final String DESCRIPTION = "Execute an analysis from a custom binary.";
 
     @ToolParams
-    protected ExternalToolParams<CustomToolRunParams> runParams = new ExternalToolParams<>();
+    protected CustomToolParams runParams = new CustomToolParams();
 
     private String cliParams;
     private String dockerImage;
@@ -64,10 +65,10 @@ public class CustomToolExecutor extends OpenCgaDockerToolScopeStudy {
         OpenCGAResult<ExternalTool> result;
         if (runParams.getVersion() != null) {
             Query query = new Query(ExternalToolDBAdaptor.QueryParams.VERSION.key(), runParams.getVersion());
-            result = catalogManager.getExternalToolManager().get(runParams.getStudy(), Collections.singletonList(runParams.getId()), query,
+            result = catalogManager.getExternalToolManager().get(study, Collections.singletonList(runParams.getId()), query,
                     QueryOptions.empty(), false, token);
         } else {
-            result = catalogManager.getExternalToolManager().get(runParams.getStudy(), runParams.getId(), QueryOptions.empty(), token);
+            result = catalogManager.getExternalToolManager().get(study, runParams.getId(), QueryOptions.empty(), token);
         }
         if (result.getNumResults() == 0) {
             throw new ToolException("Custom tool '" + runParams.getId() + "' not found");
@@ -78,14 +79,14 @@ public class CustomToolExecutor extends OpenCgaDockerToolScopeStudy {
             throw new ToolException("Custom tool '" + runParams.getId() + "' is null");
         }
         if (externalTool.getType() != ExternalToolType.CUSTOM) {
-            throw new ToolException("External tool '" + runParams.getId() + "' is not of type " + ExternalToolType.CUSTOM);
+            throw new ToolException("User tool '" + runParams.getId() + "' is not of type " + ExternalToolType.CUSTOM);
         }
         if (externalTool.getDocker() == null) {
-            throw new ToolException("External tool '" + runParams.getId() + "' does not have a docker object");
+            throw new ToolException("User tool '" + runParams.getId() + "' does not have a docker object");
         }
 
         Docker docker = externalTool.getDocker();
-        String commandLine = StringUtils.isNotEmpty(runParams.getParams().getCommandLine())
+        String commandLine = runParams.getParams() != null && StringUtils.isNotEmpty(runParams.getParams().getCommandLine())
                 ? runParams.getParams().getCommandLine()
                 : docker.getCommandLine();
 
@@ -104,23 +105,17 @@ public class CustomToolExecutor extends OpenCgaDockerToolScopeStudy {
                 }
             }
         }
-        String processedCli = inputFileUtils.processCommandLine(runParams.getStudy(), commandLine, params, temporalInputDir,
-                dockerInputBindings, getOutDir().toString(), token);
+        String processedCli = inputFileUtils.processCommandLine(study, commandLine, params, temporalInputDir, dockerInputBindings,
+                getOutDir().toString(), token);
         docker.setCommandLine(processedCli);
 
         return docker;
     }
 
     private void checkDockerObject(Docker docker) throws ToolException, CatalogException {
-        if (StringUtils.isEmpty(docker.getCommandLine())) {
-            throw new ToolException("Missing commandLine");
-        }
         if (StringUtils.isEmpty(docker.getName())) {
             docker.setName("opencb/opencga-ext-tools");
             docker.setTag(GitRepositoryState.getInstance().getBuildVersion());
-        }
-        if (!docker.getName().contains("/")) {
-            throw new ToolException("Missing repository organization. Format for the docker image should be 'organization/image'");
         }
         this.dockerImage = docker.getName();
         if (StringUtils.isNotEmpty(docker.getTag())) {

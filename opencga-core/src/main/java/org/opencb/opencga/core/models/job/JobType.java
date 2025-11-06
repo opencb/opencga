@@ -4,7 +4,5 @@ public enum JobType {
     NATIVE,
     WORKFLOW,
     CUSTOM,
-    WALKER,
-    @Deprecated
-    DEPRECATED_WALKER
+    WALKER
 }

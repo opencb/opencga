@@ -16,10 +16,7 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.externalTool.ExternalTool;
-import org.opencb.opencga.core.models.externalTool.ExternalToolParams;
-import org.opencb.opencga.core.models.externalTool.ExternalToolVariable;
-import org.opencb.opencga.core.models.externalTool.WorkflowScript;
+import org.opencb.opencga.core.models.externalTool.*;
 import org.opencb.opencga.core.models.job.ToolInfoExecutor;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.ToolDependency;
@@ -49,7 +46,7 @@ public class NextFlowToolExecutor extends OpenCgaDockerToolScopeStudy {
     public static final String DESCRIPTION = "Execute a Nextflow analysis.";
 
     @ToolParams
-    protected ExternalToolParams runParams = new ExternalToolParams();
+    protected WorkflowToolParams runParams = new WorkflowToolParams();
 
     private ExternalTool externalTool;
     private String cliParams;

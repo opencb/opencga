@@ -27,6 +27,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.externalTool.*;
 import org.opencb.opencga.core.models.externalTool.custom.CustomToolCreateParams;
+import org.opencb.opencga.core.models.externalTool.custom.CustomToolParams;
 import org.opencb.opencga.core.models.externalTool.custom.CustomToolRunParams;
 import org.opencb.opencga.core.models.externalTool.custom.CustomToolUpdateParams;
 import org.opencb.opencga.core.models.externalTool.workflow.WorkflowCreateParams;
@@ -36,6 +37,7 @@ import org.opencb.opencga.core.models.job.JobType;
 import org.opencb.opencga.core.models.job.ToolInfo;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyPermissions;
+import org.opencb.opencga.core.models.variant.VariantWalkerParams;
 import org.opencb.opencga.core.models.variant.VariantWalkerToolParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
@@ -245,11 +247,11 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
         }
     }
 
-    public OpenCGAResult<Job> submitWorkflow(String studyStr, String externalToolId, Integer version, WorkflowToolParams params,
+    public OpenCGAResult<Job> submitWorkflow(String studyStr, String externalToolId, Integer version, WorkflowParams params,
                                              String jobId, String jobDescription, String jobDependsOnStr, String jobTagsStr,
                                              String jobScheduledStartTime, String jobPriority, Boolean dryRun, String token)
             throws CatalogException {
-        return submit(studyStr, new ExternalToolParams<>(studyStr, externalToolId, version, params), jobId, jobDescription, jobDependsOnStr,
+        return submit(studyStr, new WorkflowToolParams(externalToolId, version, params), jobId, jobDescription, jobDependsOnStr,
                 jobTagsStr, jobScheduledStartTime, jobPriority, dryRun, token);
     }
 
@@ -257,16 +259,16 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
                                                String jobId, String jobDescription, String jobDependsOnStr, String jobTagsStr,
                                                String jobScheduledStartTime, String jobPriority, Boolean dryRun, String token)
             throws CatalogException {
-        return submit(studyStr, new ExternalToolParams<>(studyStr, externalToolId, version, params), jobId, jobDescription, jobDependsOnStr,
+        return submit(studyStr, new CustomToolParams(externalToolId, version, params), jobId, jobDescription, jobDependsOnStr,
                 jobTagsStr, jobScheduledStartTime, jobPriority, dryRun, token);
     }
 
     public OpenCGAResult<Job> submitVariantWalker(String projectStr, String studyStr, String externalToolId, Integer version,
-                                                  VariantWalkerToolParams params, String jobId, String jobDescription,
+                                                  VariantWalkerParams params, String jobId, String jobDescription,
                                                   String jobDependsOnStr, String jobTagsStr, String jobScheduledStartTime,
                                                   String jobPriority, Boolean dryRun, String token) throws CatalogException {
         studyStr = getStudyFromProject(projectStr, studyStr, token);
-        ExternalToolParams<VariantWalkerToolParams> runParams = new ExternalToolParams<>(studyStr, externalToolId, version, params);
+        VariantWalkerToolParams runParams = new VariantWalkerToolParams(studyStr, externalToolId, version, params);
         return submit(studyStr, runParams, jobId, jobDescription, jobDependsOnStr,
                 jobTagsStr, jobScheduledStartTime, jobPriority, dryRun, token);
     }

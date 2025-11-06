@@ -22,10 +22,10 @@ import org.opencb.opencga.core.models.externalTool.ExternalToolAclUpdateParams;
 import org.opencb.opencga.core.models.externalTool.ExternalToolInternal;
 import org.opencb.opencga.core.models.externalTool.ExternalToolScope;
 import org.opencb.opencga.core.models.externalTool.Workflow;
+import org.opencb.opencga.core.models.externalTool.WorkflowParams;
 import org.opencb.opencga.core.models.externalTool.WorkflowRepository;
 import org.opencb.opencga.core.models.externalTool.WorkflowRepositoryParams;
 import org.opencb.opencga.core.models.externalTool.WorkflowSystem;
-import org.opencb.opencga.core.models.externalTool.WorkflowToolParams;
 import org.opencb.opencga.core.models.externalTool.custom.CustomToolCreateParams;
 import org.opencb.opencga.core.models.externalTool.custom.CustomToolInlineParams;
 import org.opencb.opencga.core.models.externalTool.custom.CustomToolRunParams;
@@ -36,7 +36,7 @@ import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobToolBuildDockerParams;
 import org.opencb.opencga.core.models.job.JobToolBuildParams;
 import org.opencb.opencga.core.models.job.MinimumRequirements;
-import org.opencb.opencga.core.models.variant.VariantWalkerToolParams;
+import org.opencb.opencga.core.models.variant.VariantWalkerParams;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.opencga.core.response.RestResponse;
 
@@ -578,15 +578,15 @@ public class UserToolsCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        VariantWalkerToolParams variantWalkerToolParams = null;
+        VariantWalkerParams variantWalkerParams = null;
         if (commandOptions.jsonDataModel) {
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/tools/walker/{toolId}/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            variantWalkerToolParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), VariantWalkerToolParams.class);
+            variantWalkerParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), VariantWalkerParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
@@ -674,11 +674,11 @@ public class UserToolsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "exclude", commandOptions.exclude, true);
             putNestedIfNotEmpty(beanParams, "commandLine", commandOptions.commandLine, true);
 
-            variantWalkerToolParams = JacksonUtils.getDefaultObjectMapper().copy()
+            variantWalkerParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), VariantWalkerToolParams.class);
+                    .readValue(beanParams.toJson(), VariantWalkerParams.class);
         }
-        return openCGAClient.getUserToolClient().runWalker(commandOptions.toolId, variantWalkerToolParams, queryParams);
+        return openCGAClient.getUserToolClient().runWalker(commandOptions.toolId, variantWalkerParams, queryParams);
     }
 
     private RestResponse<ExternalTool> createWorkflow() throws Exception {
@@ -785,24 +785,24 @@ public class UserToolsCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        WorkflowToolParams workflowToolParams = null;
+        WorkflowParams workflowParams = null;
         if (commandOptions.jsonDataModel) {
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/tools/workflow/{toolId}/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            workflowToolParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), WorkflowToolParams.class);
+            workflowParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), WorkflowParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedMapIfNotEmpty(beanParams, "params", commandOptions.params, true);
 
-            workflowToolParams = JacksonUtils.getDefaultObjectMapper().copy()
+            workflowParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), WorkflowToolParams.class);
+                    .readValue(beanParams.toJson(), WorkflowParams.class);
         }
-        return openCGAClient.getUserToolClient().runWorkflow(commandOptions.toolId, workflowToolParams, queryParams);
+        return openCGAClient.getUserToolClient().runWorkflow(commandOptions.toolId, workflowParams, queryParams);
     }
 
     private RestResponse<ExternalTool> updateWorkflow() throws Exception {

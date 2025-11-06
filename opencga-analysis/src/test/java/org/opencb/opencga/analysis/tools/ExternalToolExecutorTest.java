@@ -44,7 +44,7 @@ public class ExternalToolExecutorTest extends AbstractManagerTest {
 
         StopWatch stopWatch = StopWatch.createStarted();
         NextFlowToolExecutor nextFlowExecutorTest = new NextFlowToolExecutor();
-        ExternalToolParams<WorkflowToolParams> runParams = new ExternalToolParams<>(studyFqn, workflow.getId(), 1, new WorkflowToolParams());
+        WorkflowToolParams runParams = new WorkflowToolParams(workflow.getId(), 1, new WorkflowParams());
         ObjectMap params = runParams.toObjectMap();
         params.put(ParamConstants.STUDY_PARAM, studyFqn);
         nextFlowExecutorTest.setUp(catalogManagerResource.getOpencgaHome().toString(), catalogManager,
@@ -71,7 +71,7 @@ public class ExternalToolExecutorTest extends AbstractManagerTest {
         NextFlowToolExecutor nextFlowExecutorTest = new NextFlowToolExecutor();
         Map<String, String> workflowParams = new HashMap<>();
         workflowParams.put("in", "ocga://myfile.txt");
-        ExternalToolParams<WorkflowToolParams> runParams = new ExternalToolParams<>(studyFqn, workflow.getId(), 1, new WorkflowToolParams(workflowParams));
+        WorkflowToolParams runParams = new WorkflowToolParams(workflow.getId(), 1, new WorkflowParams(workflowParams));
         ObjectMap params = runParams.toObjectMap();
         params.put(ParamConstants.STUDY_PARAM, studyFqn);
         nextFlowExecutorTest.setUp(catalogManagerResource.getOpencgaHome().toString(), catalogManager,
@@ -130,8 +130,7 @@ public class ExternalToolExecutorTest extends AbstractManagerTest {
 //        cliParams.put("outdir", "$OUTPUT");
 //        cliParams.put("genome", "GRCh37");
 //        cliParams.put("-profile", "docker");
-        ExternalToolParams<WorkflowToolParams> runParams = new ExternalToolParams<>(studyFqn, workflow.getId(), 1,
-                new WorkflowToolParams(cliParams));
+        WorkflowToolParams runParams = new WorkflowToolParams(workflow.getId(), 1, new WorkflowParams(cliParams));
         ObjectMap params = runParams.toObjectMap();
         params.put(ParamConstants.STUDY_PARAM, studyFqn);
         nextFlowExecutorTest.setUp(catalogManagerResource.getOpencgaHome().toString(), catalogManager,

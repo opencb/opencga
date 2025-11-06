@@ -1,86 +1,40 @@
 package org.opencb.opencga.core.models.variant;
 
 import org.opencb.commons.annotations.DataField;
-import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.models.externalTool.ExternalToolParams;
 
-public class VariantWalkerToolParams extends VariantQueryParams {
-    public static final String DESCRIPTION = "Variant walker params";
+public class VariantWalkerToolParams extends ExternalToolParams<VariantWalkerParams> {
 
+    public static final String DESCRIPTION = "Variant walker tool run parameters";
 
-    @DataField(description = "Output file name")
-    private String outputFileName;
-    @DataField(description = "Format that will be used as input for the variant walker")
-    private String inputFormat;
-    @DataField(description = ParamConstants.INCLUDE_DESCRIPTION)
-    private String include;
-    @DataField(description = ParamConstants.EXCLUDE_DESCRIPTION)
-    private String exclude;
-    @DataField(description = "Command line to execute from the walker")
-    private String commandLine;
+    @DataField(id = "study", description = "Study FQN where the tool is registered.")
+    private String study;
 
     public VariantWalkerToolParams() {
     }
 
-    public VariantWalkerToolParams(String outputFileName, String inputFormat, String include, String exclude) {
-        this.outputFileName = outputFileName;
-        this.inputFormat = inputFormat;
-        this.include = include;
-        this.exclude = exclude;
+    public VariantWalkerToolParams(String study, String id, Integer version, VariantWalkerParams params) {
+        super(id, version, params);
+        this.study = study;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("VariantWalkerParams2{");
-        sb.append("outputFileName='").append(outputFileName).append('\'');
-        sb.append(", inputFormat='").append(inputFormat).append('\'');
-        sb.append(", include='").append(include).append('\'');
-        sb.append(", exclude='").append(exclude).append('\'');
+        final StringBuilder sb = new StringBuilder("VariantWalkerToolParams{");
+        sb.append("study='").append(study).append('\'');
+        sb.append(", id='").append(id).append('\'');
+        sb.append(", version=").append(version);
+        sb.append(", params=").append(params);
         sb.append('}');
         return sb.toString();
     }
 
-    public String getOutputFileName() {
-        return outputFileName;
+    public String getStudy() {
+        return study;
     }
 
-    public VariantWalkerToolParams setOutputFileName(String outputFileName) {
-        this.outputFileName = outputFileName;
-        return this;
-    }
-
-    public String getInputFormat() {
-        return inputFormat;
-    }
-
-    public VariantWalkerToolParams setInputFormat(String inputFormat) {
-        this.inputFormat = inputFormat;
-        return this;
-    }
-
-    public String getInclude() {
-        return include;
-    }
-
-    public VariantWalkerToolParams setInclude(String include) {
-        this.include = include;
-        return this;
-    }
-
-    public String getExclude() {
-        return exclude;
-    }
-
-    public VariantWalkerToolParams setExclude(String exclude) {
-        this.exclude = exclude;
-        return this;
-    }
-
-    public String getCommandLine() {
-        return commandLine;
-    }
-
-    public VariantWalkerToolParams setCommandLine(String commandLine) {
-        this.commandLine = commandLine;
+    public VariantWalkerToolParams setStudy(String study) {
+        this.study = study;
         return this;
     }
 }

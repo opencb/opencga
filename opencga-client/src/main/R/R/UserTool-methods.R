@@ -131,7 +131,7 @@ setMethod("usertoolClient", "OpencgaR", function(OpencgaR, members, toolId, tool
         #' @param jobScheduledStartTime Time when the job is scheduled to start.
         #' @param jobPriority Priority of the job.
         #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
-        #' @param data External tool run parameters.
+        #' @param data Custom tool run parameters.
         runCustom=fetchOpenCGA(object=OpencgaR, category="tools", categoryId=NULL, subcategory="custom",
                 subcategoryId=toolId, action="run", params=params, httpMethod="POST", as.queryParam=NULL, ...),
 
@@ -219,7 +219,7 @@ setMethod("usertoolClient", "OpencgaR", function(OpencgaR, members, toolId, tool
         #' @param jobScheduledStartTime Time when the job is scheduled to start.
         #' @param jobPriority Priority of the job.
         #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
-        #' @param data External tool run parameters.
+        #' @param data Variant walker params.
         runWalker=fetchOpenCGA(object=OpencgaR, category="tools", categoryId=NULL, subcategory="walker",
                 subcategoryId=toolId, action="run", params=params, httpMethod="POST", as.queryParam=NULL, ...),
 
@@ -252,7 +252,7 @@ setMethod("usertoolClient", "OpencgaR", function(OpencgaR, members, toolId, tool
         #' @param jobScheduledStartTime Time when the job is scheduled to start.
         #' @param jobPriority Priority of the job.
         #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
-        #' @param data External tool run parameters.
+        #' @param data Workflow tool run parameters.
         runWorkflow=fetchOpenCGA(object=OpencgaR, category="tools", categoryId=NULL, subcategory="workflow",
                 subcategoryId=toolId, action="run", params=params, httpMethod="POST", as.queryParam=NULL, ...),
 

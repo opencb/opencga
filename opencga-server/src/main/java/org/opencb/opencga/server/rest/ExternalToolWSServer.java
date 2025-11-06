@@ -10,17 +10,14 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.externalTool.*;
-import org.opencb.opencga.core.models.externalTool.custom.CustomToolCreateParams;
-import org.opencb.opencga.core.models.externalTool.custom.CustomToolInlineParams;
-import org.opencb.opencga.core.models.externalTool.custom.CustomToolRunParams;
-import org.opencb.opencga.core.models.externalTool.custom.CustomToolUpdateParams;
+import org.opencb.opencga.core.models.externalTool.custom.*;
 import org.opencb.opencga.core.models.externalTool.workflow.WorkflowCreateParams;
 import org.opencb.opencga.core.models.externalTool.workflow.WorkflowUpdateParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobToolBuildParams;
 import org.opencb.opencga.core.models.job.JobType;
 import org.opencb.opencga.core.models.job.ToolInfo;
-import org.opencb.opencga.core.models.variant.VariantWalkerToolParams;
+import org.opencb.opencga.core.models.variant.VariantWalkerParams;
 import org.opencb.opencga.core.tools.annotations.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -268,7 +265,7 @@ public class ExternalToolWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = "Container image to be executed and its requirements", required = true) CustomToolInlineParams params) {
         try {
-            ExternalToolParams<?> runParams = new ExternalToolParams<>(params.getContainer());
+            CustomToolParams runParams = new CustomToolParams(params.getContainer());
             ToolInfo toolInfo = new ToolInfo()
                     .setId(params.getContainer().getName())
                     .setMinimumRequirements(params.getMinimumRequirements());
@@ -294,7 +291,7 @@ public class ExternalToolWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
-            @ApiParam(value = ExternalToolParams.DESCRIPTION, required = true) CustomToolRunParams params) {
+            @ApiParam(value = CustomToolRunParams.DESCRIPTION, required = true) CustomToolRunParams params) {
         return run(() -> catalogManager.getExternalToolManager().submitCustomTool(study, toolId, version, params, jobName, jobDescription,
                 dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun, token));
     }
@@ -364,7 +361,7 @@ public class ExternalToolWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
-            @ApiParam(value = ExternalToolParams.DESCRIPTION, required = true) WorkflowToolParams params) {
+            @ApiParam(value = WorkflowParams.DESCRIPTION, required = true) WorkflowParams params) {
         return run(() -> catalogManager.getExternalToolManager().submitWorkflow(study, toolId, version, params, jobName, jobDescription,
                 dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun, token));
     }
@@ -403,7 +400,7 @@ public class ExternalToolWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
-            @ApiParam(value = ExternalToolParams.DESCRIPTION, required = true) VariantWalkerToolParams params) {
+            @ApiParam(value = VariantWalkerParams.DESCRIPTION, required = true) VariantWalkerParams params) {
         return run(() -> catalogManager.getExternalToolManager().submitVariantWalker(project, study, toolId, version, params, jobName, jobDescription,
                 dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun, token));
     }

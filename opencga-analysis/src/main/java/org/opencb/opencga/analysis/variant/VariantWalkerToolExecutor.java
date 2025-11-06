@@ -12,6 +12,7 @@ import org.opencb.opencga.core.models.externalTool.Docker;
 import org.opencb.opencga.core.models.externalTool.ExternalTool;
 import org.opencb.opencga.core.models.externalTool.ExternalToolParams;
 import org.opencb.opencga.core.models.externalTool.ExternalToolType;
+import org.opencb.opencga.core.models.variant.VariantWalkerParams;
 import org.opencb.opencga.core.models.variant.VariantWalkerToolParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
@@ -28,8 +29,8 @@ public class VariantWalkerToolExecutor extends OpenCgaTool {
     public static final String DESCRIPTION = "Filter and walk variants from the variant storage to produce a file";
 
     @ToolParams
-    protected ExternalToolParams<VariantWalkerToolParams> externalToolParams = new ExternalToolParams<>();
-    private VariantWalkerToolParams toolParams;
+    protected VariantWalkerToolParams externalToolParams = new VariantWalkerToolParams();
+    private VariantWalkerParams toolParams;
 
     private VariantWriterFactory.VariantOutputFormat format;
     private String dockerImage;
@@ -76,42 +77,37 @@ public class VariantWalkerToolExecutor extends OpenCgaTool {
 
     }
 
-    private Docker generateDockerObject(ExternalToolParams<VariantWalkerToolParams> runParams) throws CatalogException, ToolException {
+    private Docker generateDockerObject(ExternalToolParams<VariantWalkerParams> runParams) throws CatalogException, ToolException {
         OpenCGAResult<ExternalTool> result;
         if (runParams.getVersion() != null) {
             Query query = new Query(ExternalToolDBAdaptor.QueryParams.VERSION.key(), runParams.getVersion());
-            result = catalogManager.getExternalToolManager().get(runParams.getStudy(), Collections.singletonList(runParams.getId()), query,
-                    QueryOptions.empty(), false, token);
+            result = catalogManager.getExternalToolManager().get(externalToolParams.getStudy(),
+                    Collections.singletonList(runParams.getId()), query, QueryOptions.empty(), false, token);
         } else {
-            result = catalogManager.getExternalToolManager().get(runParams.getStudy(), runParams.getId(), QueryOptions.empty(), token);
+            result = catalogManager.getExternalToolManager().get(externalToolParams.getStudy(), runParams.getId(), QueryOptions.empty(),
+                    token);
         }
         if (result.getNumResults() == 0) {
-            throw new ToolException("Custom tool '" + runParams.getId() + "' not found");
+            throw new ToolException("Variant walker tool '" + runParams.getId() + "' not found");
         }
         ExternalTool externalTool = result.first();
 
         if (externalTool == null) {
-            throw new ToolException("Custom tool '" + runParams.getId() + "' is null");
+            throw new ToolException("Variant walker tool '" + runParams.getId() + "' is null");
         }
-        if (externalTool.getType() != ExternalToolType.CUSTOM) {
-            throw new ToolException("External tool '" + runParams.getId() + "' is not of type " + ExternalToolType.CUSTOM);
+        if (externalTool.getType() != ExternalToolType.WALKER) {
+            throw new ToolException("User tool '" + runParams.getId() + "' is not of type " + ExternalToolType.WALKER);
         }
         if (externalTool.getDocker() == null) {
-            throw new ToolException("External tool '" + runParams.getId() + "' does not have a docker object");
+            throw new ToolException("User tool '" + runParams.getId() + "' does not have a docker object");
         }
 
         return externalTool.getDocker();
     }
 
     private void checkDockerObject(Docker docker) throws ToolException, CatalogException {
-        if (org.apache.commons.lang3.StringUtils.isEmpty(docker.getCommandLine())) {
-            throw new ToolException("Missing commandLine");
-        }
         if (org.apache.commons.lang3.StringUtils.isEmpty(docker.getName())) {
             throw new ToolException("Missing docker image name");
-        }
-        if (!docker.getName().contains("/")) {
-            throw new ToolException("Missing repository organization. Format for the docker image should be 'organization/image'");
         }
         this.dockerImage = docker.getName();
         if (org.apache.commons.lang3.StringUtils.isNotEmpty(docker.getTag())) {

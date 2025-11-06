@@ -19,7 +19,6 @@ package org.opencb.opencga.analysis.tools;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.analysis.customTool.CustomToolExecutor;
-import org.opencb.opencga.analysis.variant.VariantWalkerTool;
 import org.opencb.opencga.analysis.variant.VariantWalkerToolExecutor;
 import org.opencb.opencga.analysis.workflow.NextFlowToolExecutor;
 import org.opencb.opencga.core.config.Analysis;
@@ -188,8 +187,6 @@ public class ToolFactory {
                 return NextFlowToolExecutor.ID;
             case CUSTOM:
                 return CustomToolExecutor.ID;
-            case DEPRECATED_WALKER:
-                return VariantWalkerTool.ID;
             case WALKER:
                 return VariantWalkerToolExecutor.ID;
             default:
