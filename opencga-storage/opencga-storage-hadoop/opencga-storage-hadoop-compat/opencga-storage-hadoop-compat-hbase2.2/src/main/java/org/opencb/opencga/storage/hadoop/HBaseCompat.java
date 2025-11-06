@@ -24,20 +24,6 @@ public class HBaseCompat extends HBaseCompatApi {
     }
 
     @Override
-    public boolean isTestingAvailable() {
-        // Check for jetty version
-        // This method should exist:
-        //   org.eclipse.jetty.server.session.SessionHandler.getSessionManager()Lorg/eclipse/jetty/server/SessionManager
-        try {
-            Class<?> aClass = Class.forName("org.eclipse.jetty.server.session.SessionHandler");
-            aClass.getMethod("getSessionManager");
-        } catch (ClassNotFoundException | NoSuchMethodException e) {
-            return false;
-        }
-        return true;
-    }
-
-    @Override
     public boolean isSolrTestingAvailable() {
         return false;
     }
