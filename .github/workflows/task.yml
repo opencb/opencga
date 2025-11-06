@@ -18,6 +18,7 @@ jobs:
       storage_hadoop: ${{ vars.HADOOP_FLAVOUR }}
       artifact_name: build-folder
       python_client: true
+    secrets: inherit
 
   deploy-docker-hub:
     name: Push Docker image

@@ -13,6 +13,7 @@ jobs:
       storage_hadoop: emr6.1
       artifact_name: emr-build-folder
       release: true
+    secrets: inherit
 
   deploy-emr-docker:
     uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
@@ -27,6 +28,7 @@ jobs:
       storage_hadoop: hdi5.1
       artifact_name: build-hdi-folder
       release: true
+    secrets: inherit
 
   deploy-hdi-docker:
     uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
@@ -41,6 +43,7 @@ jobs:
       storage_hadoop: emr6.13
       artifact_name: emr13-build-folder
       release: true
+    secrets: inherit
 
   deploy-emr13-docker:
     uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
@@ -55,6 +58,7 @@ jobs:
       storage_hadoop: emr7.5
       artifact_name: emr75-build-folder
       release: true
+    secrets: inherit
 
   deploy-emr75-docker:
     uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml

@@ -10,6 +10,7 @@ jobs:
       maven_opts: -Dopencga.war.name=opencga
       opencga_maven_opts: -P storage-hadoop,${{ vars.HADOOP_FLAVOUR }}
       artifact_name: build-folder
+    secrets: inherit
 
   deploy-docker:
     uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml

@@ -13,6 +13,7 @@ jobs:
     with:
       storage_hadoop: ${{ vars.HADOOP_FLAVOUR }}
       artifact_name: build-folder
+    secrets: inherit
 
   deploy-docker:
     uses: ./.github/workflows/deploy-docker-hub-enterprise-workflow.yml
