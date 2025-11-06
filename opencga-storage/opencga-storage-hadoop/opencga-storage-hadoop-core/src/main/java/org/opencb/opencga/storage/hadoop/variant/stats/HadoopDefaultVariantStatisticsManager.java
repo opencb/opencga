@@ -123,8 +123,8 @@ public class HadoopDefaultVariantStatisticsManager extends DefaultVariantStatist
 
     @Override
     public void postCalculateStats(VariantStorageMetadataManager metadataManager, StudyMetadata sm,
-                                   Collection<String> cohorts, boolean error) throws StorageEngineException {
-        super.postCalculateStats(metadataManager, sm, cohorts, error);
+                                   Collection<String> cohorts, long startTime, boolean error) throws StorageEngineException {
+        super.postCalculateStats(metadataManager, sm, cohorts, startTime, error);
 
         dbAdaptor.getMetadataManager().updateProjectMetadata(projectMetadata -> {
             projectMetadata.getAttributes().put(LAST_VARIANT_STATS_INDEX_TS, System.currentTimeMillis());

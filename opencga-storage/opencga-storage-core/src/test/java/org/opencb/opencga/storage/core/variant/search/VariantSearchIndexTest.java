@@ -223,7 +223,7 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
             cohortsMap.put("cohort", samples);
             variantStorageEngine.calculateStats(study, cohortsMap, new QueryOptions());
             Integer fileId = variantStorageEngine.getMetadataManager().getSampleMetadata(studyMetadata.getId(), sample).getFiles().get(0);
-            VariantSetStats stats = variantStorageEngine.getMetadataManager().getVariantFileMetadata(studyMetadata.getId(), fileId, null).first().getStats();
+            VariantSetStats stats = variantStorageEngine.getMetadataManager().getVariantFileMetadata(studyMetadata.getId(), fileId).getStats();
             long expected = stats.getTypeCount().entrySet().stream()
                     .filter(e-> !e.getKey().equals(VariantType.NO_VARIATION.name()))
                     .map(Map.Entry::getValue)
