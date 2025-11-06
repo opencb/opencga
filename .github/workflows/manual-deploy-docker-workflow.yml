@@ -86,14 +86,14 @@ jobs:
           if [ -f "./.github/workflows/scripts/get_same_branch.sh" ]; then
             chmod +x ./.github/workflows/scripts/get_same_branch.sh
             export DEPENDENCIES_SHA=${{ github.sha }}
-            ./.github/workflows/scripts/get_same_branch.sh ${{ steps.clone_dependencies.outputs.dependencies_sha }}
+            ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }}
           fi
       - name: Cache local Maven repository
         id: cache
         uses: actions/cache@v4
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ inputs.storage_hadoop }}-${{ github.sha }}
+          key: ${{ runner.os }}-maven-${{ inputs.storage_hadoop }}-${{ steps.clone_dependencies.outputs.dependencies_sha }}
           restore-keys: |
             ${{ runner.os }}-maven-${{ inputs.storage_hadoop }}-
       - name: Compile dependencies
