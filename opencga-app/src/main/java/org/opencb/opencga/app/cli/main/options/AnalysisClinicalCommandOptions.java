@@ -1250,7 +1250,7 @@ public class AnalysisClinicalCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"pipeline-affy-run"}, commandDescription ="Execute the clinical genomics pipeline that performs QC (e.g.: FastQC), mapping (e.g.: BWA), variant calling (e.g., GATK) and variant indexing in OpenCGA storage.")
+    @Parameters(commandNames = {"pipeline-affy-run"}, commandDescription ="Execute the clinical genomics pipeline that performs QC (FastQC,...), mapping (BWA, Bowtie,...) , variant calling (GATK,...) and variant indexing in OpenCGA storage.")
     public class RunPipelineAffyCommandOptions {
     
         @ParametersDelegate
@@ -1289,13 +1289,16 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--pipeline-params-samples"}, description = "List of samples following the format: sample_id:file_id1;file_id2[:rol[:somatic]]; 'rol' can be 'mother', 'father' or 'child'. If the sample is somatic, then add ':somatic' at", required = false, arity = 1)
         public String pipelineParamsSamples;
     
-        @Parameter(names = {"--pipeline-params-index-dir"}, description = "Directory where the reference genome, aligner, affymetrix... indexes are located", required = false, arity = 1)
+        @Parameter(names = {"--pipeline-params-data-dir"}, description = "Directory where the data files are located, e.g. CEL files in affy pipelines", required = false, arity = 1)
+        public String pipelineParamsDataDir;
+    
+        @Parameter(names = {"--pipeline-params-index-dir"}, description = "Directory where the reference genome, aligner indexes are located, and in affy pipelines, Affymetrix files too", required = false, arity = 1)
         public String pipelineParamsIndexDir;
     
-        @Parameter(names = {"--pipeline-params-steps"}, description = "Pipeline steps: quality-control, alignment, variant-calling", required = false, arity = 1)
+        @Parameter(names = {"--pipeline-params-steps"}, description = "Pipeline steps: quality-control, alignment, variant-calling, genotype,...", required = false, arity = 1)
         public String pipelineParamsSteps;
     
-        @Parameter(names = {"--pipeline-params-pipeline-file"}, description = "JSON file containing the configuration of the clinical pipeline", required = false, arity = 1)
+        @Parameter(names = {"--pipeline-params-pipeline-file"}, description = "Clinical pipeline configuration file", required = false, arity = 1)
         public String pipelineParamsPipelineFile;
     
         @Parameter(names = {"--outdir"}, description = "Output dir for the job.", required = false, arity = 1)
@@ -1303,7 +1306,7 @@ public class AnalysisClinicalCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"pipeline-genomics-run"}, commandDescription ="Execute the clinical genomics pipeline that performs QC (e.g.: FastQC), mapping (e.g.: BWA), variant calling (e.g., GATK) and variant indexing in OpenCGA storage.")
+    @Parameters(commandNames = {"pipeline-genomics-run"}, commandDescription ="Execute the clinical genomics pipeline that performs QC (FastQC,...), mapping (BWA, Bowtie,...) , variant calling (GATK,...) and variant indexing in OpenCGA storage.")
     public class RunPipelineGenomicsCommandOptions {
     
         @ParametersDelegate
@@ -1342,13 +1345,16 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--pipeline-params-samples"}, description = "List of samples following the format: sample_id:file_id1;file_id2[:rol[:somatic]]; 'rol' can be 'mother', 'father' or 'child'. If the sample is somatic, then add ':somatic' at", required = false, arity = 1)
         public String pipelineParamsSamples;
     
-        @Parameter(names = {"--pipeline-params-index-dir"}, description = "Directory where the reference genome, aligner, affymetrix... indexes are located", required = false, arity = 1)
+        @Parameter(names = {"--pipeline-params-data-dir"}, description = "Directory where the data files are located, e.g. CEL files in affy pipelines", required = false, arity = 1)
+        public String pipelineParamsDataDir;
+    
+        @Parameter(names = {"--pipeline-params-index-dir"}, description = "Directory where the reference genome, aligner indexes are located, and in affy pipelines, Affymetrix files too", required = false, arity = 1)
         public String pipelineParamsIndexDir;
     
-        @Parameter(names = {"--pipeline-params-steps"}, description = "Pipeline steps: quality-control, alignment, variant-calling", required = false, arity = 1)
+        @Parameter(names = {"--pipeline-params-steps"}, description = "Pipeline steps: quality-control, alignment, variant-calling, genotype,...", required = false, arity = 1)
         public String pipelineParamsSteps;
     
-        @Parameter(names = {"--pipeline-params-pipeline-file"}, description = "JSON file containing the configuration of the clinical pipeline", required = false, arity = 1)
+        @Parameter(names = {"--pipeline-params-pipeline-file"}, description = "Clinical pipeline configuration file", required = false, arity = 1)
         public String pipelineParamsPipelineFile;
     
         @Parameter(names = {"--outdir"}, description = "Output dir for the job.", required = false, arity = 1)
@@ -1392,11 +1398,11 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean jobDryRun; 
     
-        @Parameter(names = {"--pipeline-params-reference-genome"}, description = "Reference genome (file, or URL to download it)", required = false, arity = 1)
+        @Parameter(names = {"--pipeline-params-reference-genome"}, description = "Reference genome to be used in the clinical pipeline.", required = false, arity = 1)
         public String pipelineParamsReferenceGenome;
     
-        @Parameter(names = {"--pipeline-params-aligner-indexes"}, description = "Aligner indexes to generate, e.g.: bwa, bwa-mem2", required = false, arity = 1)
-        public String pipelineParamsAlignerIndexes;
+        @Parameter(names = {"--pipeline-params-indexes"}, description = "List of indexes to be prepared for the clinical pipeline, e.g., bwa, bowtie, affy,...", required = false, arity = 1)
+        public String pipelineParamsIndexes;
     
         @Parameter(names = {"--outdir"}, description = "Output dir for the job.", required = false, arity = 1)
         public String outdir;

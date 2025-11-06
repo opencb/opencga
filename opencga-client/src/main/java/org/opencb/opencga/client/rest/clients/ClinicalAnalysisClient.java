@@ -19,6 +19,7 @@ package org.opencb.opencga.client.rest.clients;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.client.rest.*;
 import org.opencb.opencga.core.client.ParentClient;
 import org.opencb.opencga.core.config.client.ClientConfiguration;
 import org.opencb.opencga.core.exceptions.ClientException;
@@ -46,8 +47,8 @@ import org.opencb.opencga.core.models.clinical.TeamInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.clinical.TieringInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.clinical.ZettaInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyClinicalPipelineWrapperParams;
-import org.opencb.opencga.core.models.clinical.pipeline.prepare.PrepareClinicalPipelineWrapperParams;
 import org.opencb.opencga.core.models.clinical.pipeline.genomics.GenomicsClinicalPipelineWrapperParams;
+import org.opencb.opencga.core.models.clinical.pipeline.prepare.PrepareClinicalPipelineWrapperParams;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -506,7 +507,7 @@ public class ClinicalAnalysisClient extends ParentClient {
     }
 
     /**
-     * Execute the clinical genomics pipeline that performs QC (e.g.: FastQC), mapping (e.g.: BWA), variant calling (e.g., GATK) and
+     * Execute the clinical genomics pipeline that performs QC (FastQC,...), mapping (BWA, Bowtie,...) , variant calling (GATK,...) and
      *     variant indexing in OpenCGA storage.
      * @param data JSON with parameters to execute the command affy-pipeline.
      * @param params Map containing any of the following optional parameters.
@@ -529,7 +530,7 @@ public class ClinicalAnalysisClient extends ParentClient {
     }
 
     /**
-     * Execute the clinical genomics pipeline that performs QC (e.g.: FastQC), mapping (e.g.: BWA), variant calling (e.g., GATK) and
+     * Execute the clinical genomics pipeline that performs QC (FastQC,...), mapping (BWA, Bowtie,...) , variant calling (GATK,...) and
      *     variant indexing in OpenCGA storage.
      * @param data JSON with parameters to execute the command ngs-pipeline-genomics.
      * @param params Map containing any of the following optional parameters.

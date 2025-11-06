@@ -407,8 +407,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
         return this._post("analysis", null, "clinical/ngsPipeline", null, "run", data, params);
     }
 
-    /** Execute the clinical genomics pipeline that performs QC (e.g.: FastQC), mapping (e.g.: BWA), variant calling (e.g., GATK) and variant
-    * indexing in OpenCGA storage.
+    /** Execute the clinical genomics pipeline that performs QC (FastQC,...), mapping (BWA, Bowtie,...) , variant calling (GATK,...) and
+    * variant indexing in OpenCGA storage.
     * @param {Object} data - JSON with parameters to execute the command affy-pipeline.
     * @param {Object} [params] - The Object containing the following optional parameters:
     * @param {String} [params.study] - study.
@@ -427,8 +427,8 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
         return this._post("analysis", null, "clinical/pipeline/affy", null, "run", data, params);
     }
 
-    /** Execute the clinical genomics pipeline that performs QC (e.g.: FastQC), mapping (e.g.: BWA), variant calling (e.g., GATK) and variant
-    * indexing in OpenCGA storage.
+    /** Execute the clinical genomics pipeline that performs QC (FastQC,...), mapping (BWA, Bowtie,...) , variant calling (GATK,...) and
+    * variant indexing in OpenCGA storage.
     * @param {Object} data - JSON with parameters to execute the command ngs-pipeline-genomics.
     * @param {Object} [params] - The Object containing the following optional parameters:
     * @param {String} [params.study] - study.
