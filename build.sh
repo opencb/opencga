@@ -93,7 +93,15 @@ function manage_dependency() {
   mkdir -p "$TMP_DIR_HOME"
   local TEMP_DIR="$(mktemp -d --tmpdir="$TMP_DIR_HOME" --suffix="opencga-enterprise-$(date +%Y%m%d%H%M%S)-$REPO")"
   cd "$TEMP_DIR" || exit 2
-  git clone "git@github.com:${REPO_ORG}/${REPO}".git
+  if [[ -n "${THIRDPARTY_READ_TOKEN:-}" ]]; then
+    CLONE_URL="https://x-access-token:${THIRDPARTY_READ_TOKEN}@github.com/${REPO_ORG}/${REPO}.git"
+  else
+    CLONE_URL="git@github.com:${REPO_ORG}/${REPO}.git"
+  fi
+
+  # Shallow clone at the requested ref
+  git clone --depth 1 -b "$GIT_REF" "$CLONE_URL"
+
   if [ -d "./$REPO" ]; then
       cd "$REPO" || exit 2
       local BRANCH_NAME="$(calculate_branch "$REPO_VERSION")"

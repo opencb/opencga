@@ -102,6 +102,8 @@ jobs:
           fi
           branch_name=$(git rev-parse --abbrev-ref HEAD)
           ./build.sh --storage-hadoop ${{ inputs.storage_hadoop }} --prepare-branches --prepare-hadoop --task "$branch_name" $CLIENTS
+        env:
+          THIRDPARTY_READ_TOKEN: ${{ secrets.THIRDPARTY_READ_TOKEN }}
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.artifact_name }}
