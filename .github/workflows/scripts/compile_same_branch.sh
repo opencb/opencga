@@ -14,6 +14,5 @@ function compile() {
   echo "::endgroup::"
 }
 
-
 compile "java-common-libs"
 compile "biodata"
