@@ -11,7 +11,7 @@ on:
         description: "The tag for the new docker."
         type: string
         required: false
-      hadoop:
+      storage_hadoop:
         type: choice
         description: 'Hadoop flavour.'
         required: false
@@ -60,7 +60,7 @@ jobs:
           echo "opencga_branch=${opencga_branch}" >> $GITHUB_OUTPUT
           echo "OpenCGA ref: __\"${opencga_branch}\"__" | tee -a ${GITHUB_STEP_SUMMARY}
           echo "Is release: __\"${{ inputs.release }}\"__" | tee -a ${GITHUB_STEP_SUMMARY}         
-          echo "Hadoop: __\"${{ inputs.hadoop }}\"__" | tee -a ${GITHUB_STEP_SUMMARY}
+          echo "Hadoop: __\"${{ inputs.storage_hadoop }}\"__" | tee -a ${GITHUB_STEP_SUMMARY}
           echo "Tag: __\"${{ inputs.tag }}\"__" | tee -a ${GITHUB_STEP_SUMMARY}
       - uses: actions/checkout@v4
         with:
@@ -111,7 +111,7 @@ jobs:
             echo "Building JavaScript client"
             CLIENTS="$CLIENTS --javascript-client"
           fi          
-          ./build.sh --storage-hadoop ${{ inputs.hadoop }} $CLIENTS
+          ./build.sh --storage-hadoop ${{ inputs.storage_hadoop }} $CLIENTS
       - id: get_project_version
         uses: avides/actions-project-version-check@v1.3.0
         with:

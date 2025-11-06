@@ -21,7 +21,7 @@ on:
         type: boolean
         required: false
         default: false
-      hadoop:
+      storage_hadoop:
         type: choice
         description: 'Hadoop flavour.'
         required: false
@@ -110,14 +110,14 @@ jobs:
       - name: OpenCGA Enterprise Maven Build (skip tests)
         run: |
           if [[ -n "${{ inputs.task }}" ]]; then
-            echo "Building OpenCGA Enterprise for task '${{ inputs.task }}' with Hadoop flavour '${{ inputs.hadoop }}'"
-            ./build.sh --prepare-branches --task "${{ inputs.task }}" --storage-hadoop ${{ inputs.hadoop }} --docker --docker-tag "${{ inputs.tag }}"
+            echo "Building OpenCGA Enterprise for task '${{ inputs.task }}' with Hadoop flavour '${{ inputs.storage_hadoop }}'"
+            ./build.sh --prepare-branches --task "${{ inputs.task }}" --storage-hadoop ${{ inputs.storage_hadoop }} --docker --docker-tag "${{ inputs.tag }}"
           else
             if [[ "${{ inputs.branch }}" == v* || "${{ inputs.branch }}" == "main" ]]; then
-              echo "Building OpenCGA Enterprise for tag '${{ inputs.branch }}' with Hadoop flavour '${{ inputs.hadoop }}'"
-              ./build.sh --storage-hadoop ${{ inputs.hadoop }} --docker --docker-tag "${{ inputs.tag }}"
+              echo "Building OpenCGA Enterprise for tag '${{ inputs.branch }}' with Hadoop flavour '${{ inputs.storage_hadoop }}'"
+              ./build.sh --storage-hadoop ${{ inputs.storage_hadoop }} --docker --docker-tag "${{ inputs.tag }}"
             else
-              echo "Building OpenCGA Enterprise for branch '${{ inputs.branch }}' with Hadoop flavour '${{ inputs.hadoop }}'"
-              ./build.sh --prepare-branches --storage-hadoop ${{ inputs.hadoop }} --docker --docker-tag "${{ inputs.tag }}" 
+              echo "Building OpenCGA Enterprise for branch '${{ inputs.branch }}' with Hadoop flavour '${{ inputs.storage_hadoop }}'"
+              ./build.sh --prepare-branches --storage-hadoop ${{ inputs.storage_hadoop }} --docker --docker-tag "${{ inputs.tag }}" 
             fi
           fi

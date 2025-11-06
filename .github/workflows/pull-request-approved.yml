@@ -63,9 +63,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ inputs.storage_hadoop }}-${{ steps.clone_dependencies.outputs.dependencies_sha }}
+          key: ${{ runner.os }}-maven-${{ ${{ vars.HADOOP_FLAVOUR }} }}-${{ steps.clone_dependencies.outputs.dependencies_sha }}
           restore-keys: |
-            ${{ runner.os }}-maven-${{ inputs.storage_hadoop }}-
+            ${{ runner.os }}-maven-${{ ${{ vars.HADOOP_FLAVOUR }} }}-
       - name: Compile dependencies
         run: |
           if [ -f "./.github/workflows/scripts/compile_same_branch.sh" ]; then
