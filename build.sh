@@ -98,7 +98,7 @@ function manage_dependency() {
   else
     CLONE_URL="git@github.com:${REPO_ORG}/${REPO}.git"
   fi
-
+  echo "Cloning repository $REPO from $CLONE_URL"
   git clone "$CLONE_URL"
 
   if [ -d "./$REPO" ]; then
