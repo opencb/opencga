@@ -47,18 +47,6 @@ public class ClinicalPipelineUtils {
     // Common pipeline
     public static final String QUALITY_CONTROL_PIPELINE_STEP = "quality-control";
 
-    // Genomics pipeline
-    public static final String ALIGNMENT_PIPELINE_STEP = "alignment";
-    public static final String VARIANT_CALLING_PIPELINE_STEP = "variant-calling";
-    public static final Set<String> VALID_GENOMIC_PIPELINE_STEPS = new HashSet<>(Arrays.asList(QUALITY_CONTROL_PIPELINE_STEP,
-            ALIGNMENT_PIPELINE_STEP, VARIANT_CALLING_PIPELINE_STEP));
-
-
-    // Affy pipeline
-    public static final String GENOTYPE_PIPELINE_STEP = "genotype";
-    public static final List<String> VALID_AFFY_PIPELINE_STEPS = Arrays.asList(QUALITY_CONTROL_PIPELINE_STEP, GENOTYPE_PIPELINE_STEP);
-
-
     private static final Logger logger = LoggerFactory.getLogger(ClinicalPipelineUtils.class);
 
     private ClinicalPipelineUtils() {
@@ -150,21 +138,6 @@ public class ClinicalPipelineUtils {
 
         return updatedPipelineConfig;
     }
-
-//    public static <T extends PipelineConfig> T checkCommons(ClinicalPipelineParams params, T pipelineConfig, CatalogManager catalogManager,
-//                                                            String study, String token)
-//            throws CatalogException, ToolException, IOException {
-//        // Check pipeline configuration
-//        T updatedPipelineConfig = checkPipelineConfig(params.getPipelineFile(), pipelineConfig, catalogManager, study, token);
-//
-//        // Update from params: samples, data dir and index dir
-//        updatePipelineConfigFromParams(updatedPipelineConfig, params.getSamples(), params.getDataDir(), params.getIndexDir());
-//
-//        // Update physical paths
-//        updatePipelineConfigWithPhysicalPaths(updatedPipelineConfig, study, catalogManager, token);
-//
-//        return updatedPipelineConfig;
-//    }
 
     private static <C extends PipelineConfig> C checkPipelineConfig(String pipelineFile, C pipelineConfig, CatalogManager catalogManager,
                                                                    String study, String token)
@@ -344,7 +317,7 @@ public class ClinicalPipelineUtils {
     }
 
 
-    public static void setInputBindings(PipelineInput pipelineInput, Path pipelineConfigPath, List<String> pipelineSteps, Path scriptPath,
+    public static void setInputBindings(PipelineInput pipelineInput, Path pipelineConfigPath, Path scriptPath,
                                         List<AbstractMap.SimpleEntry<String, String>> inputBindings, Set<String> readOnlyInputBindings)
             throws IOException {
 
@@ -358,13 +331,12 @@ public class ClinicalPipelineUtils {
             for (PipelineSample pipelineSample : pipelineInput.getSamples()) {
                 List<String> virtualPaths = new ArrayList<>(pipelineSample.getFiles().size());
                 for (int i = 0; i < pipelineSample.getFiles().size(); i++) {
-                    Path path = Paths.get(pipelineSample.getFiles().get(i));
-                    Path virtualInputPath = Paths.get(INPUT_VIRTUAL_PATH + "_" + i).resolve(path.getFileName());
-                    inputBindings.add(new AbstractMap.SimpleEntry<>(path.toAbsolutePath().toString(), virtualInputPath.toString()));
-                    readOnlyInputBindings.add(virtualInputPath.toString());
+                    Path path = Paths.get(pipelineSample.getFiles().get(i)).toAbsolutePath();
+                    inputBindings.add(new AbstractMap.SimpleEntry<>(path.toString(), path.toString()));
+                    readOnlyInputBindings.add(path.toString());
 
                     // Add to the list of virtual files
-                    virtualPaths.add(virtualInputPath.toString());
+                    virtualPaths.add(path.toString());
                 }
                 pipelineSample.setFiles(virtualPaths);
             }
@@ -372,18 +344,18 @@ public class ClinicalPipelineUtils {
 
         // Data dir binding
         if (!StringUtils.isEmpty(pipelineInput.getDataDir())) {
-            Path virtualPath = Paths.get(DATA_VIRTUAL_PATH);
-            inputBindings.add(new AbstractMap.SimpleEntry<>(pipelineInput.getDataDir(), virtualPath.toString()));
-            readOnlyInputBindings.add(virtualPath.toString());
-            pipelineInput.setDataDir(virtualPath.toAbsolutePath().toString());
+            Path path = Paths.get(pipelineInput.getDataDir()).toAbsolutePath();
+            inputBindings.add(new AbstractMap.SimpleEntry<>(path.toString(), path.toString()));
+            readOnlyInputBindings.add(path.toString());
+            pipelineInput.setDataDir(path.toString());
         }
 
         // Index dir binding
         if (!StringUtils.isEmpty(pipelineInput.getIndexDir())) {
-            Path virtualPath = Paths.get(INDEX_VIRTUAL_PATH);
-            inputBindings.add(new AbstractMap.SimpleEntry<>(pipelineInput.getIndexDir(), virtualPath.toString()));
-            readOnlyInputBindings.add(virtualPath.toString());
-            pipelineInput.setIndexDir(virtualPath.toAbsolutePath().toString());
+            Path path = Paths.get(pipelineInput.getIndexDir()).toAbsolutePath();
+            inputBindings.add(new AbstractMap.SimpleEntry<>(path.toString(), path.toString()));
+            readOnlyInputBindings.add(path.toString());
+            pipelineInput.setIndexDir(path.toString());
         }
 
         // Pipeline config binding
@@ -401,5 +373,4 @@ public class ClinicalPipelineUtils {
         }
         throw new ToolException("Could not find virtual path for input path: " + path);
     }
-
 }

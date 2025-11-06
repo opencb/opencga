@@ -366,104 +366,6 @@ public class ClinicalPipelineWrapperAnalysisTest {
         assertEquals(10, variantQueryResult.getNumResults());
     }
 
-    private boolean isDataAvailable() {
-        if (!Files.exists(NGS_PIPELINE_DATA_PATH) || !Files.isDirectory(NGS_PIPELINE_DATA_PATH)) {
-            return false;
-        }
-
-        List<String> filenames = Arrays.asList("Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz",
-                "HI.4019.002.index_7.ANN0831_R1.fastq.gz",
-                "HI.4019.002.index_7.ANN0831_R2.fastq.gz");
-        for (String filename : filenames) {
-            Path path = NGS_PIPELINE_DATA_PATH.resolve(filename);
-            if (!Files.exists(path) || path.toFile().length() == 0 || !Files.isRegularFile(path)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-//    @Test
-//    public void testClinicalPipelineAffy() throws IOException, ToolException, CatalogException, StorageEngineException {
-//        Assume.assumeTrue(isDataAvailable());
-//        System.out.println("opencga.getOpencgaHome() = " + opencga.getOpencgaHome().toAbsolutePath());
-//
-//        Path outDir = Paths.get(opencga.createTmpOutdir("_clinical_pipeline_affy"));
-//        System.out.println("outDir = " + outDir.toAbsolutePath());
-//
-//        // Get the pipeline parameters from the json file in resources and load them into an ObjectMap
-//        InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream("ngspipeline/affy-pipeline.json");
-//        AffyPipelineConfig ngsPipeline = JacksonUtils.getDefaultObjectMapper().readerFor(AffyPipelineConfig.class).readValue(inputStream);
-//
-//        Path localPath;
-//
-//        // CEL files
-//        List<File> opencgaCelFiles = new ArrayList<>();
-//        List<String> filenames = Arrays.asList("Axiom_KU8_A01.CEL"); // "1521b99hpp_av06.CEL.gz", "1532a99hpp_av04.CEL.gz");
-//        for (String filename: filenames) {
-//            localPath = NGS_PIPELINE_DATA_PATH.resolve("affy").resolve(filename);
-//            inputStream = Files.newInputStream(localPath);
-//            File ceFile = opencga.getCatalogManager().getFileManager().upload(studyId, inputStream,
-//                    new File().setPath("data/" + localPath.getFileName()), false, true, false, token).first();
-//            System.out.println("ceFile.getUri() = " + ceFile.getUri());
-//            opencgaCelFiles.add(ceFile);
-//        }
-//
-//        // Preparing index dir
-//        String indexDirname = "affy-index";
-//
-////        "Axiom_KU8.snp-posteriors.txt"
-////                , "Axiom_KU8.calls.txt", "Axiom_KU8.confidences.txt", );
-//
-//        filenames = Arrays.asList("Axiom_KU8.r2.spf", "Axiom_KU8.r2.generic_prior.txt", "Axiom_KU8.na36.r1.a2.annot.csv",
-//                "Homo_sapiens.GRCh38.dna.primary_assembly.fa", "Homo_sapiens.GRCh38.dna.primary_assembly.fa.fai");
-//        for (String filename : filenames) {
-//            localPath = NGS_PIPELINE_DATA_PATH.resolve("affy").resolve(filename);
-//            inputStream = Files.newInputStream(localPath);
-//            File opencgaFile = opencga.getCatalogManager().getFileManager().upload(studyId, inputStream,
-//                    new File().setPath(indexDirname + "/" + localPath.getFileName()), false, true, false, token).first();
-//            System.out.println("opencgaFile.getUri() = " + opencgaFile.getUri());
-//        }
-//        File indexDirFile = opencga.getCatalogManager().getFileManager().get(studyId, indexDirname, QueryOptions.empty(), token).first();
-//        System.out.println("indexDirFile.getUri() = " + indexDirFile.getUri());
-//
-//        //---------------------------------
-//        // Run affy clinical pipeline
-//        //---------------------------------
-//
-//        AffyClinicalPipelineWrapperParams affyWrapperParams = new AffyClinicalPipelineWrapperParams();
-//        AffyClinicalPipelineParams affyParams = new AffyClinicalPipelineParams();
-//        // Set sample with the two fastq files
-//        affyParams.setSamples(Collections.singletonList("Axiom_KU8_A01" + ClinicalPipelineUtils.SAMPLE_FIELD_SEP
-//                + opencgaCelFiles.get(0).getId()));
-//        // Set index dir
-//        affyParams.setIndexDir(indexDirFile.getId());
-//        // Set pipeline config
-////        ObjectMap omNgsPipeline = JacksonUtils.getDefaultObjectMapper().convertValue(ngsPipeline, ObjectMap.class);
-////        affyParams.setPipeline(omNgsPipeline);
-//        affyParams.setPipeline(ngsPipeline);
-//        // Variant index parameters
-//        VariantIndexParams variantIndexParams = new VariantIndexParams();
-//        variantIndexParams.setAnnotate(true);
-//        variantIndexParams.setCalculateStats(true);
-////        ObjectMap omVariantIndexParams = JacksonUtils.getDefaultObjectMapper().convertValue(variantIndexParams, ObjectMap.class);
-////        affyParams.setVariantIndexParams(omVariantIndexParams);
-//        affyParams.setVariantIndexParams(variantIndexParams);
-//
-//        affyWrapperParams.setPipelineParams(affyParams);
-//
-//        toolRunner.execute(AffyClinicalPipelineWrapperAnalysis.class, affyWrapperParams,
-//                new ObjectMap(ParamConstants.STUDY_PARAM, studyId), outDir, null, false, token);
-//
-//        VariantQueryResult<Variant> variantQueryResult = opencga.getVariantStorageManager()
-//                .get(new Query(ParamConstants.STUDY_PARAM, studyId), QueryOptions.empty(), token);
-//        for (Variant variant : variantQueryResult.getResults()) {
-//            System.out.println(variant.toStringSimple());
-//        }
-//        System.out.println("variantQueryResult.getNumResults() = " + variantQueryResult.getNumResults());
-//        assertEquals(10, variantQueryResult.getNumResults());
-//    }
-
     @Test
     public void testClinicalPipelineAffyDataDir() throws IOException, ToolException, CatalogException, StorageEngineException {
         Assume.assumeTrue(isDataAvailable());
@@ -536,6 +438,23 @@ public class ClinicalPipelineWrapperAnalysisTest {
         Assert.assertEquals(inputJobId, jobId);
         Job job = opencga.getCatalogManager().getJobManager().get(studyId, jobId, null, token).first();
         toolRunner.execute(job, outDir, token);
+    }
+
+    private boolean isDataAvailable() {
+        if (!Files.exists(NGS_PIPELINE_DATA_PATH) || !Files.isDirectory(NGS_PIPELINE_DATA_PATH)) {
+            return false;
+        }
+
+        List<String> filenames = Arrays.asList("Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz",
+                "HI.4019.002.index_7.ANN0831_R1.fastq.gz",
+                "HI.4019.002.index_7.ANN0831_R2.fastq.gz");
+        for (String filename : filenames) {
+            Path path = NGS_PIPELINE_DATA_PATH.resolve(filename);
+            if (!Files.exists(path) || path.toFile().length() == 0 || !Files.isRegularFile(path)) {
+                return false;
+            }
+        }
+        return true;
     }
 }
 

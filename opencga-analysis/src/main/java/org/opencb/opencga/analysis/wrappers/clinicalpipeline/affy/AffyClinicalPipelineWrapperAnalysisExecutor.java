@@ -74,14 +74,14 @@ public class AffyClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAn
         }
     }
 
-    private String buildScriptCli(PipelineConfig pipeline, List<AbstractMap.SimpleEntry<String, String>> inputBindings,
+    private String buildScriptCli(AffyPipelineConfig pipeline, List<AbstractMap.SimpleEntry<String, String>> inputBindings,
                                   Set<String> readOnlyInputBindings, List<AbstractMap.SimpleEntry<String, String>> outputBindings)
             throws IOException, ToolException {
         // Get the pipeline configuration file path
         Path pipelineConfigPath = getOutDir().resolve(buildPipelineFilename(pipelineSteps));
 
         // Set input bindings
-        setInputBindings(pipeline.getInput(), pipelineConfigPath, pipelineSteps, scriptPath, inputBindings, readOnlyInputBindings);
+        setInputBindings(pipeline.getInput(), pipelineConfigPath, scriptPath, inputBindings, readOnlyInputBindings);
 
         // Output binding
         outputBindings.add(new AbstractMap.SimpleEntry<>(getOutDir().toAbsolutePath().toString(), OUTPUT_VIRTUAL_PATH));

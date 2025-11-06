@@ -38,32 +38,25 @@ public class PrepareClinicalPipelineWrapperAnalysisExecutor extends DockerWrappe
             Path virtualScriptPath = Paths.get(SCRIPT_VIRTUAL_PATH);
             inputBindings.add(new AbstractMap.SimpleEntry<>(scriptPath.toAbsolutePath().toString(), virtualScriptPath.toString()));
 
-            String reference = prepareParams.getReferenceGenome();
-            Path virtualRefPath = null;
-            if (!isURL(reference)) {
-                // We need to bind to a virtual path
-                virtualRefPath = Paths.get(INPUT_VIRTUAL_PATH).resolve(Paths.get(reference).getFileName());
-                inputBindings.add(new AbstractMap.SimpleEntry<>(reference, virtualRefPath.toString()));
-            }
-
             // Read only input bindings
             Set<String> readOnlyInputBindings = new HashSet<>();
             readOnlyInputBindings.add(virtualScriptPath.toString());
-            if (virtualRefPath != null) {
-                readOnlyInputBindings.add(virtualRefPath.toString());
+
+            String reference = prepareParams.getReferenceGenome();
+            if (!isURL(reference)) {
+                // We need to bind to a virtual path
+                inputBindings.add(new AbstractMap.SimpleEntry<>(reference, reference));
+                readOnlyInputBindings.add(reference);
             }
 
             // Output binding
             AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir().toAbsolutePath().toString(),
-                    OUTPUT_VIRTUAL_PATH);
+                    getOutDir().toAbsolutePath().toString());
 
-            // Main command line and params, e.g.:
-            // ./analysis/variant-caller-pipeline/main.py prepare
-            // -r https://ftp.ensembl.org/pub/release-115/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.chromosome.22.fa.gz
-            // -o /tmp/bbb
+            // Python command line
             String params = "python3 " + virtualScriptPath + "/" + NGS_PIPELINE_SCRIPT + " " + PREPARERE_NGS_PIPELINE_SCRIPT_COMMAND
-                    + " -r " + (virtualRefPath != null ? virtualRefPath : reference)
-                    + " -o " + OUTPUT_VIRTUAL_PATH;
+                    + " -r " + reference
+                    + " -o " + getOutDir().toAbsolutePath();
             params += (" -i " + REFERENCE_GENOME_INDEX);
             if (CollectionUtils.isNotEmpty(prepareParams.getIndexes())) {
                 params += ("," + StringUtils.join(prepareParams.getIndexes(), ","));
@@ -72,7 +65,8 @@ public class PrepareClinicalPipelineWrapperAnalysisExecutor extends DockerWrappe
             // Execute Python script in docker
             String dockerImage = getDockerImageName() + ":" + getDockerImageVersion();
 
-            String dockerCli = buildCommandLine(dockerImage, inputBindings, readOnlyInputBindings, outputBinding, params, null);
+            String dockerCli = buildCommandLine(dockerImage, inputBindings, readOnlyInputBindings, outputBinding, params,
+                    getDefaultDockerParams());
             addEvent(Event.Type.INFO, "Docker command line: " + dockerCli);
             logger.info("Docker command line: {}", dockerCli);
 

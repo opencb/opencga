@@ -22,10 +22,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelineUtils.*;
@@ -41,6 +38,12 @@ public class GenomicsClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStu
 
     private static final String GENOMICS_PIPELINE_STEP = "genomics-pipeline";
     private static final String VARIANT_INDEX_STEP = "variant-index";
+
+    // Genomics pipeline
+    private static final String ALIGNMENT_PIPELINE_STEP = "alignment";
+    private static final String VARIANT_CALLING_PIPELINE_STEP = "variant-calling";
+    private static final Set<String> VALID_GENOMIC_PIPELINE_STEPS = new HashSet<>(Arrays.asList(QUALITY_CONTROL_PIPELINE_STEP,
+            ALIGNMENT_PIPELINE_STEP, VARIANT_CALLING_PIPELINE_STEP));
 
     private List<String> pipelineSteps;
     private GenomicsPipelineConfig updatedPipelineConfig = new GenomicsPipelineConfig();

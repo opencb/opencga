@@ -36,6 +36,10 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
     private static final String AFFY_PIPELINE_STEP = "affy-pipeline";
     private static final String VARIANT_INDEX_STEP = "variant-index";
 
+    // Affy pipeline
+    private static final String GENOTYPE_PIPELINE_STEP = "genotype";
+    private static final List<String> VALID_AFFY_PIPELINE_STEPS = Arrays.asList(QUALITY_CONTROL_PIPELINE_STEP, GENOTYPE_PIPELINE_STEP);
+
     private List<String> pipelineSteps;
     private AffyPipelineConfig updatedPipelineConfig;
 

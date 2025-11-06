@@ -17,8 +17,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.GroupPrincipal;
+import java.nio.file.attribute.PosixFileAttributes;
+import java.nio.file.attribute.UserPrincipalLookupService;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -342,11 +347,34 @@ public abstract class DockerWrapperAnalysisExecutor extends OpenCgaToolExecutor 
         sb.append(" ").append(command);
     }
 
-    protected static Map<String, String> getDefaultDockerParams() {
+    protected Map<String, String> getDefaultDockerParams() throws IOException {
         Map<String, String> dockerParams = new HashMap<>();
         dockerParams.put("--volume", "/var/run/docker.sock:/var/run/docker.sock");
-        dockerParams.put("--env", "DOCKER_HOST='tcp://localhost:2375'");
         dockerParams.put("--network", "host");
+
+        // Get default docker params, and get docker group id to avoid permission issues when writing to output directory
+        String dockerGid = getDockerGid();
+        if (!StringUtils.isEmpty(dockerGid)) {
+            dockerParams.put("--group-add", dockerGid);
+        } else {
+            logger.warn("Could not get docker group id to avoid permission issues when writing to output directory");
+        }
+
         return dockerParams;
+    }
+
+    protected String getDockerGid() throws IOException {
+        Path dockerSocket = Paths.get("/var/run/docker.sock");
+        if (Files.exists(dockerSocket)) {
+            PosixFileAttributes attrs = Files.readAttributes(dockerSocket, PosixFileAttributes.class);
+            return String.valueOf(attrs.group().hashCode());
+        } else {
+            // Extract GID from group name
+            UserPrincipalLookupService lookupService =
+                    FileSystems.getDefault().getUserPrincipalLookupService();
+            GroupPrincipal dockerGroup = lookupService.lookupPrincipalByGroupName("docker");
+
+            return dockerGroup.getName().split(":")[1];
+        }
     }
 }
