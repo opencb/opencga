@@ -8,6 +8,7 @@ function compile() {
     echo "Directory ${WORKSPACE}/$REPO does not exist. Skip compile"
     return 0;
   fi
+  BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
   echo "::group::Compiling '$REPO' project from branch $BRANCH_NAME"
   cd "${WORKSPACE}/$REPO" || exit 2
   mvn clean install -DskipTests --no-transfer-progress

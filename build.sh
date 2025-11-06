@@ -93,7 +93,7 @@ function manage_dependency() {
   mkdir -p "$TMP_DIR_HOME"
   local TEMP_DIR="$(mktemp -d --tmpdir="$TMP_DIR_HOME" --suffix="opencga-enterprise-$(date +%Y%m%d%H%M%S)-$REPO")"
   cd "$TEMP_DIR" || exit 2
-  if [[ -n "${THIRDPARTY_READ_TOKEN:-}" ]]; then
+  if [ "$REPO" == "opencga-hadoop-thirdparty" ]; then
     CLONE_URL="https://x-access-token:${THIRDPARTY_READ_TOKEN}@github.com/${REPO_ORG}/${REPO}.git"
   else
     CLONE_URL="git@github.com:${REPO_ORG}/${REPO}.git"
@@ -270,7 +270,7 @@ function prepare_branches() {
     if [ "${PREPARE_BRANCHES_HADOOP:-false}" == "true" ]; then
       OPENCGA_HADOOP_THIRD_PARTY_VERSION="$(mvn help:evaluate -Dexpression=opencga.hadoop.thirdparty.version -q -DforceStdout)"
       echo "Downloading and compiling opencga-hadoop-thirdparty $OPENCGA_HADOOP_THIRD_PARTY_VERSION"
-      manage_dependency "opencb/opencga-hadoop-thirdparty" "$OPENCGA_HADOOP_THIRD_PARTY_VERSION"
+      manage_dependency "opencga-hadoop-thirdparty" "$OPENCGA_HADOOP_THIRD_PARTY_VERSION"
     fi
     JCL_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=java-common-libs.version -q -DforceStdout $MVN_OPTS)"
 
