@@ -3,15 +3,14 @@ package org.opencb.opencga.analysis.clinical.pipeline;
 import org.junit.*;
 import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
+import org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelineUtils;
 import org.opencb.opencga.analysis.wrappers.clinicalpipeline.affy.AffyClinicalPipelineWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.clinicalpipeline.genomics.GenomicsClinicalPipelineWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.clinicalpipeline.prepare.PrepareClinicalPipelineWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelineUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -121,7 +120,7 @@ public class ClinicalPipelineWrapperAnalysisTest {
     }
 
     @Test
-    public void testClinicalPipelinePrepareUrl() throws IOException, ToolException {
+    public void testClinicalPipelinePrepareUrl() throws IOException, ToolException, CatalogException {
         System.out.println("opencga.getOpencgaHome() = " + opencga.getOpencgaHome().toAbsolutePath());
 
         Path outDir = Paths.get(opencga.createTmpOutdir("_clinical_pipeline_prepare"));
@@ -133,14 +132,13 @@ public class ClinicalPipelineWrapperAnalysisTest {
         // Prepare NGS pipeline
         //---------------------------------
 
-        PrepareClinicalPipelineWrapperParams params = new PrepareClinicalPipelineWrapperParams();
+        PrepareClinicalPipelineWrapperParams prepareWrapperParams = new PrepareClinicalPipelineWrapperParams();
         PrepareClinicalPipelineParams prepareParams = new PrepareClinicalPipelineParams();
         prepareParams.setReferenceGenome("https://ftp.ensembl.org/pub/release-115/fasta/homo_sapiens/dna/" + refBasename + ".fa.gz");
         prepareParams.setIndexes(Collections.singletonList(ClinicalPipelineUtils.BWA_INDEX));
-        params.setPipelineParams(prepareParams);
+        prepareWrapperParams.setPipelineParams(prepareParams);
 
-        toolRunner.execute(PrepareClinicalPipelineWrapperAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, studyId),
-                outDir, null, false, token);
+        execute(PrepareClinicalPipelineWrapperAnalysis.ID, "prepare", prepareWrapperParams.toParams(), outDir);
 
         // Check reference genome index files
         assertTrue(Files.exists(outDir.resolve("reference-genome-index")));
@@ -207,8 +205,7 @@ public class ClinicalPipelineWrapperAnalysisTest {
         prepareParams.setIndexes(Collections.singletonList(ClinicalPipelineUtils.BWA_INDEX));
         prepareWrapperParams.setPipelineParams(prepareParams);
 
-        toolRunner.execute(PrepareClinicalPipelineWrapperAnalysis.class, prepareWrapperParams,
-                new ObjectMap(ParamConstants.STUDY_PARAM, studyId), outDir, null, false, token);
+        execute(PrepareClinicalPipelineWrapperAnalysis.ID, "prepare-genomics", prepareWrapperParams.toParams(), outDir);
 
         // Check reference genome index files
         assertTrue(Files.exists(outDir.resolve("reference-genome-index")));
@@ -253,8 +250,7 @@ public class ClinicalPipelineWrapperAnalysisTest {
 
         genomicsWrapperParams.setPipelineParams(genomicsParams);
 
-        toolRunner.execute(GenomicsClinicalPipelineWrapperAnalysis.class, genomicsWrapperParams,
-                new ObjectMap(ParamConstants.STUDY_PARAM, studyId), outDir2, null, false, token);
+        execute(GenomicsClinicalPipelineWrapperAnalysis.ID, "run-genomics", genomicsWrapperParams.toParams(), outDir2);
 
         VariantQueryResult<Variant> variantQueryResult = opencga.getVariantStorageManager()
                 .get(new Query(ParamConstants.STUDY_PARAM, studyId), QueryOptions.empty(), token);
@@ -314,19 +310,7 @@ public class ClinicalPipelineWrapperAnalysisTest {
         prepareParams.setIndexes(Collections.singletonList(ClinicalPipelineUtils.BWA_INDEX));
         prepareWrapperParams.setPipelineParams(prepareParams);
 
-
-//        AffyClinicalPipelineWrapperParams affyWrapperParams = new AffyClinicalPipelineWrapperParams();
-//        AffyClinicalPipelineParams affyParams = new AffyClinicalPipelineParams();
-//        affyParams.setDataDir(dataDirFile.getId());
-//        affyParams.setIndexDir(indexDirFile.getId());
-//        affyParams.setPipeline(ngsPipeline);
-//        affyParams.setVariantIndexParams(null);
-//        affyWrapperParams.setPipelineParams(affyParams);
-
         execute(PrepareClinicalPipelineWrapperAnalysis.ID, "prepare-genomics-ref", prepareWrapperParams.toParams(), outDir);
-
-//        toolRunner.execute(ClinicalPipelinePrepareWrapperAnalysis.class, prepareWrapperParams,
-//                new ObjectMap(ParamConstants.STUDY_PARAM, studyId), outDir, null, false, token);
 
         // Check reference genome index files
         assertTrue(Files.exists(outDir.resolve("reference-genome-index")));
@@ -372,9 +356,6 @@ public class ClinicalPipelineWrapperAnalysisTest {
         genomicsWrapperParams.setPipelineParams(genomicsParams);
 
         execute(GenomicsClinicalPipelineWrapperAnalysis.ID, "run-genomics-ref", genomicsWrapperParams.toParams(), outDir2);
-
-//        toolRunner.execute(GenomicsClinicalPipelineWrapperAnalysis.class, genomicsWrapperParams,
-//                new ObjectMap(ParamConstants.STUDY_PARAM, studyId), outDir2, null, false, token);
 
         VariantQueryResult<Variant> variantQueryResult = opencga.getVariantStorageManager()
                 .get(new Query(ParamConstants.STUDY_PARAM, studyId), QueryOptions.empty(), token);
