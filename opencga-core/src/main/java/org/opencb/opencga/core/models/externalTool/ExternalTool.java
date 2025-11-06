@@ -29,7 +29,6 @@ public class ExternalTool extends PrivateStudyUid {
     @DataField(id = "type", description = FieldConstants.EXTERNAL_TOOL_TYPE_DESCRIPTION)
     private ExternalToolType type;
 
-    //TODO: RENAME OR DELETE
     @DataField(id = "scope", description = FieldConstants.EXTERNAL_TOOL_SCOPE_DESCRIPTION)
     private ExternalToolScope scope;
 
