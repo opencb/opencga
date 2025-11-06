@@ -55,39 +55,39 @@ RUN apt-get update -y && \
     cp bin/*-axiom /usr/local/bin/ && \
     cd .. && \
 
-#    ## 6. Installation dependencies using R install.packages() is slower than apt-get but final size is 400MB smaller.
-#    R -e "install.packages(c('BiocManager', 'RCircos', 'nnls', 'ggplot2', 'jsonlite', 'optparse', 'knitr', 'configr', 'dplyr', 'rmarkdown', 'tidyr', 'httr', 'kinship2', 'limSolve'))" && \
-#    R -e "BiocManager::install('BiocStyle')" && \
-#    R -e "BiocManager::install('BSgenome.Hsapiens.UCSC.hg38')" && \
-#
-#    ## 7. Install signature.tools.lib installation \
-#    R -e "install.packages(c('devtools', 'getopt'), repos=c('http://cran.rstudio.com/', 'https://www.stats.bris.ac.uk/R/'))" && \
-#    git clone https://github.com/Nik-Zainal-Group/signature.tools.lib.git /opt/opencga/signature.tools.lib && \
-#    cd /opt/opencga/signature.tools.lib && \
-#    git fetch origin --tags && \
-#    git checkout tags/v2.4.4 && \
-#    sed -i '/Mmusculus/d' DESCRIPTION && \
-#    sed -i '/Cfamiliaris/d' DESCRIPTION && \
-#    sed -i '/1000genomes/d' DESCRIPTION && \
-#    R -e "options(timeout = 3600);devtools::install(repos='https://www.stats.bris.ac.uk/R/')" && \
-#    cd .. && \
+    ## 6. Installation dependencies using R install.packages() is slower than apt-get but final size is 400MB smaller.
+    R -e "install.packages(c('BiocManager', 'RCircos', 'nnls', 'ggplot2', 'jsonlite', 'optparse', 'knitr', 'configr', 'dplyr', 'rmarkdown', 'tidyr', 'httr', 'kinship2', 'limSolve'))" && \
+    R -e "BiocManager::install('BiocStyle')" && \
+    R -e "BiocManager::install('BSgenome.Hsapiens.UCSC.hg38')" && \
+
+    ## 7. Install signature.tools.lib installation \
+    R -e "install.packages(c('devtools', 'getopt'), repos=c('http://cran.rstudio.com/', 'https://www.stats.bris.ac.uk/R/'))" && \
+    git clone https://github.com/Nik-Zainal-Group/signature.tools.lib.git /opt/opencga/signature.tools.lib && \
+    cd /opt/opencga/signature.tools.lib && \
+    git fetch origin --tags && \
+    git checkout tags/v2.4.4 && \
+    sed -i '/Mmusculus/d' DESCRIPTION && \
+    sed -i '/Cfamiliaris/d' DESCRIPTION && \
+    sed -i '/1000genomes/d' DESCRIPTION && \
+    R -e "options(timeout = 3600);devtools::install(repos='https://www.stats.bris.ac.uk/R/')" && \
+    cd .. && \
 
     ## 8. Clean up
     rm -rf samtools-1.22.1 bcftools-1.22 bwa-mem2-2.2.1_x64-linux affy /var/lib/apt/lists/* /tmp/* /opt/opencga/signature.tools.lib/.git && \
     strip --remove-section=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so.5
 
 # Install prerequisites
-RUN apt-get install -y \
-        apt-transport-https \
-        ca-certificates
-
-# Download and install Docker manually
-RUN curl -fsSL https://get.docker.com -o get-docker.sh && \
-    sh get-docker.sh
-
-# Install Docker Compose manually
-RUN curl -L "https://github.com/docker/compose/releases/download/v2.24.5/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && \
-    chmod +x /usr/local/bin/docker-compose
+#RUN apt-get install -y \
+#        apt-transport-https \
+#        ca-certificates
+#
+## Download and install Docker manually
+#RUN curl -fsSL https://get.docker.com -o get-docker.sh && \
+#    sh get-docker.sh
+#
+## Install Docker Compose manually
+#RUN curl -L "https://github.com/docker/compose/releases/download/v2.24.5/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && \
+#    chmod +x /usr/local/bin/docker-compose
 
 
 ENV BCFTOOLS_PLUGINS="/usr/local/bin"
