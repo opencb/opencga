@@ -37,7 +37,7 @@ on:
 jobs:
 
   build:
-    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@TASK-7809
+    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
       needs_hadoop_preparation: true
       hadoop_flavour: ${{ inputs.hadoop }}
