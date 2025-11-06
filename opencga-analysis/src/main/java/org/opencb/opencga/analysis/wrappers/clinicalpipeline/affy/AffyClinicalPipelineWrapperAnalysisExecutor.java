@@ -24,13 +24,11 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.models.clinical.pipeline.PipelineConfig;
-import org.opencb.opencga.core.models.clinical.pipeline.PipelineInput;
 import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyPipelineConfig;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 
 import static org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelineUtils.*;
@@ -44,8 +42,6 @@ public class AffyClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAn
     public static final String ID = AffyClinicalPipelineWrapperAnalysis.ID + "-local";
 
     private String study;
-
-    private String sample;
 
     private Path scriptPath;
     private AffyPipelineConfig pipelineConfig;
@@ -61,36 +57,13 @@ public class AffyClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAn
             Set<String> readOnlyInputBindings = new HashSet<>();
             List<AbstractMap.SimpleEntry<String, String>> outputBindings = new ArrayList<>();
 
-            // Get pipeline filename
-            StringBuilder pipelineFilename = new StringBuilder(PIPELINE_PARAMS_FILENAME_PREFIX);
-            if (pipelineSteps.contains(QUALITY_CONTROL_PIPELINE_STEP)) {
-                pipelineFilename.append("_").append(QUALITY_CONTROL_PIPELINE_STEP.replace("-", "_"));
-            }
-            if (pipelineSteps.contains(GENOTYPE_PIPELINE_STEP)) {
-                pipelineFilename.append("_").append(GENOTYPE_PIPELINE_STEP);
-            }
-            pipelineFilename.append(".json");
-
-            // Steps parameter
-            StringBuilder steps = new StringBuilder();
-            if (pipelineSteps.contains(QUALITY_CONTROL_PIPELINE_STEP)) {
-                steps.append(QUALITY_CONTROL_PIPELINE_STEP);
-            }
-            if (pipelineSteps.contains(GENOTYPE_PIPELINE_STEP)) {
-                if (steps.length() > 0) {
-                    steps.append(",");
-                }
-                steps.append(GENOTYPE_PIPELINE_STEP);
-            }
-
             // Build the script CLI to be executed in docker
-            String scriptCli = buildScriptCli(pipeline, pipelineFilename.toString(), steps.toString(), inputBindings, readOnlyInputBindings,
-                    outputBindings);
+            String scriptCli = buildScriptCli(pipeline, inputBindings, readOnlyInputBindings, outputBindings);
 
             // Execute Python script in docker
             String dockerImage = getDockerImageName() + ":" + getDockerImageVersion();
-
-            String dockerCli = buildCommandLine(dockerImage, inputBindings, readOnlyInputBindings, outputBindings.get(0), scriptCli, null);
+            String dockerCli = buildCommandLine(dockerImage, inputBindings, readOnlyInputBindings, outputBindings.get(0), scriptCli,
+                    getDefaultDockerParams());
             addEvent(Event.Type.INFO, "Docker command line: " + dockerCli);
             logger.info("Docker command line: {}", dockerCli);
 
@@ -101,68 +74,26 @@ public class AffyClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAn
         }
     }
 
-    private String buildScriptCli(PipelineConfig pipeline, String pipelineFilename, String steps,
-                                  List<AbstractMap.SimpleEntry<String, String>> inputBindings,
+    private String buildScriptCli(PipelineConfig pipeline, List<AbstractMap.SimpleEntry<String, String>> inputBindings,
                                   Set<String> readOnlyInputBindings, List<AbstractMap.SimpleEntry<String, String>> outputBindings)
-            throws IOException {
-        PipelineInput pipelineInput = pipeline.getInput();
+            throws IOException, ToolException {
+        // Get the pipeline configuration file path
+        Path pipelineConfigPath = getOutDir().resolve(buildPipelineFilename(pipelineSteps));
 
-        // Script binding
-        Path virtualScriptPath = Paths.get(SCRIPT_VIRTUAL_PATH);
-        inputBindings.add(new AbstractMap.SimpleEntry<>(scriptPath.toAbsolutePath().toString(), virtualScriptPath.toString()));
-        readOnlyInputBindings.add(virtualScriptPath.toString());
-
-        // Index binding
-        Path virtualIndexPath = Paths.get(INDEX_VIRTUAL_PATH);
-        inputBindings.add(new AbstractMap.SimpleEntry<>(pipelineInput.getIndexDir(), virtualIndexPath.toString()));
-        readOnlyInputBindings.add(virtualIndexPath.toString());
-        pipelineInput.setIndexDir(virtualIndexPath.toAbsolutePath().toString());
-
-        // Input binding, and update samples with virtual paths
-        int inputCounter = 0;
-//        for (PipelineSample pipelineSample : pipelineInput.getSamples()) {
-//            List<String> virtualPaths = new ArrayList<>(pipelineSample.getFiles().size());
-//            for (String file : pipelineSample.getFiles()) {
-//                Path virtualInputPath = Paths.get(INPUT_VIRTUAL_PATH + "_" + inputCounter).resolve(Paths.get(file).getFileName());
-//                inputBindings.add(new AbstractMap.SimpleEntry<>(Paths.get(file).toAbsolutePath().toString(),
-//                        virtualInputPath.toString()));
-//                readOnlyInputBindings.add(virtualInputPath.toString());
-//                inputCounter++;
-//
-//                // Add to the list of virtual files
-//                virtualPaths.add(virtualInputPath.toString());
-//            }
-//            pipelineSample.setFiles(virtualPaths);
-//        }
-
-        // Index binding
-        Path virtualSamplePath = Paths.get(SAMPLE_VIRTUAL_PATH);
-        inputBindings.add(new AbstractMap.SimpleEntry<>(this.sample, virtualSamplePath.toString()));
-        readOnlyInputBindings.add(virtualSamplePath.toString());
-//        pipelineInput.setIndexDir(virtualIndexPath.toAbsolutePath().toString());
-
-        // Pipeline params binding
-        Path pipelineParamsPath = getOutDir().resolve(pipelineFilename);
-        Path virtualPipelineParamsPath = Paths.get(INPUT_VIRTUAL_PATH).resolve(pipelineParamsPath.getFileName());
-        // Write the JSON file for Python script
-        JacksonUtils.getDefaultObjectMapper().writerFor(PipelineConfig.class).writeValue(pipelineParamsPath.toFile(), pipeline);
-        inputBindings.add(new AbstractMap.SimpleEntry<>(pipelineParamsPath.toAbsolutePath().toString(),
-                virtualPipelineParamsPath.toString()));
-        readOnlyInputBindings.add(virtualPipelineParamsPath.toString());
+        // Set input bindings
+        setInputBindings(pipeline.getInput(), pipelineConfigPath, pipelineSteps, scriptPath, inputBindings, readOnlyInputBindings);
 
         // Output binding
         outputBindings.add(new AbstractMap.SimpleEntry<>(getOutDir().toAbsolutePath().toString(), OUTPUT_VIRTUAL_PATH));
 
-        // Main command line and params, e.g.:
-        // ./analysis/ngs-pipeline/main.py affy
-        // -o /tmp/ngs/
-        // -p /input/pipeline.json
-        // --steps quality-control,genotype
-        return "python3 " + virtualScriptPath + "/" + NGS_PIPELINE_SCRIPT + " " + AFFY_PIPELINE_SCRIPT_COMMAND
-                + " -s " + virtualSamplePath
+        // Write the pipeline configuration file since it has been modified with virtual paths to be executed in docker
+        JacksonUtils.getDefaultObjectMapper().writerFor(AffyPipelineConfig.class).writeValue(pipelineConfigPath.toFile(), pipeline);
+
+        // And return the Python command line
+        return "python3 " + SCRIPT_VIRTUAL_PATH + "/" + NGS_PIPELINE_SCRIPT + " " + AFFY_PIPELINE_SCRIPT_COMMAND
                 + " -o " + OUTPUT_VIRTUAL_PATH
-                + " -p " + virtualPipelineParamsPath
-                + " --steps " + steps;
+                + " -p " + getVirtualPath(pipelineConfigPath, inputBindings)
+                + " --steps " + buildStepsParam(pipelineSteps);
     }
 
     public String getStudy() {
@@ -198,11 +129,6 @@ public class AffyClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAn
 
     public AffyClinicalPipelineWrapperAnalysisExecutor setPipelineSteps(List<String> pipelineSteps) {
         this.pipelineSteps = pipelineSteps;
-        return this;
-    }
-
-    public AffyClinicalPipelineWrapperAnalysisExecutor setSample(String sample) {
-        this.sample = sample;
         return this;
     }
 }

@@ -471,7 +471,7 @@ public class ClinicalPipelineWrapperAnalysisTest {
     }
 
     @Test
-    public void testClinicalPipelineAffyInputDir() throws IOException, ToolException, CatalogException, StorageEngineException {
+    public void testClinicalPipelineAffyDataDir() throws IOException, ToolException, CatalogException, StorageEngineException {
         Assume.assumeTrue(isDataAvailable());
         System.out.println("opencga.getOpencgaHome() = " + opencga.getOpencgaHome().toAbsolutePath());
 
@@ -519,35 +519,13 @@ public class ClinicalPipelineWrapperAnalysisTest {
 
         AffyClinicalPipelineWrapperParams affyWrapperParams = new AffyClinicalPipelineWrapperParams();
         AffyClinicalPipelineParams affyParams = new AffyClinicalPipelineParams();
-        // Set sample with the two fastq files
-        affyParams.setSamples(Collections.singletonList(dataDirFile.getId()));
-        // Set index dir
+        affyParams.setDataDir(dataDirFile.getId());
         affyParams.setIndexDir(indexDirFile.getId());
-        // Set pipeline config
-//        ObjectMap omNgsPipeline = JacksonUtils.getDefaultObjectMapper().convertValue(ngsPipeline, ObjectMap.class);
-//        affyParams.setPipeline(omNgsPipeline);
         affyParams.setPipeline(ngsPipeline);
-        // Variant index parameters
-        VariantIndexParams variantIndexParams = new VariantIndexParams();
-        variantIndexParams.setAnnotate(true);
-        variantIndexParams.setCalculateStats(true);
-//        ObjectMap omVariantIndexParams = JacksonUtils.getDefaultObjectMapper().convertValue(variantIndexParams, ObjectMap.class);
-//        affyParams.setVariantIndexParams(omVariantIndexParams);
-        affyParams.setVariantIndexParams(variantIndexParams);
+        affyParams.setVariantIndexParams(null);
         affyWrapperParams.setPipelineParams(affyParams);
 
-
-//        Map<String, Object> params = affyWrapperParams.toObjectMap();
-        Map<String, Object> params = affyWrapperParams.toParams();
-        String inputJobId = "affy-pipeline-job";
-        String jobId = opencga.getCatalogManager().getJobManager().submit(studyId, JobType.NATIVE, AffyClinicalPipelineWrapperAnalysis.ID,
-                Enums.Priority.MEDIUM, params, inputJobId, "", null, null, null, null, false, token).first().getId();
-        Assert.assertEquals(inputJobId, jobId);
-        Job job = opencga.getCatalogManager().getJobManager().get(studyId, jobId, null, token).first();
-        toolRunner.execute(job, outDir, token);
-
-//        toolRunner.execute(AffyClinicalPipelineWrapperAnalysis.class, affyWrapperParams,
-//                new ObjectMap(ParamConstants.STUDY_PARAM, studyId), outDir, null, false, token);
+        execute("affy-pipeline-job", affyWrapperParams.toParams(), outDir);
 
         VariantQueryResult<Variant> variantQueryResult = opencga.getVariantStorageManager()
                 .get(new Query(ParamConstants.STUDY_PARAM, studyId), QueryOptions.empty(), token);
@@ -556,6 +534,14 @@ public class ClinicalPipelineWrapperAnalysisTest {
         }
         System.out.println("variantQueryResult.getNumResults() = " + variantQueryResult.getNumResults());
         assertEquals(10, variantQueryResult.getNumResults());
+    }
+
+    private void execute(String inputJobId, Map<String, Object> params, Path outDir) throws CatalogException, ToolException {
+        String jobId = opencga.getCatalogManager().getJobManager().submit(studyId, JobType.NATIVE, AffyClinicalPipelineWrapperAnalysis.ID,
+                Enums.Priority.MEDIUM, params, inputJobId, "", null, null, null, null, false, token).first().getId();
+        Assert.assertEquals(inputJobId, jobId);
+        Job job = opencga.getCatalogManager().getJobManager().get(studyId, jobId, null, token).first();
+        toolRunner.execute(job, outDir, token);
     }
 }
 

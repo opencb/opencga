@@ -8,7 +8,8 @@ import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.clinical.pipeline.*;
+import org.opencb.opencga.core.models.clinical.pipeline.PipelineSample;
+import org.opencb.opencga.core.models.clinical.pipeline.PipelineTool;
 import org.opencb.opencga.core.models.clinical.pipeline.genomics.GenomicsAlignmentPipelineTool;
 import org.opencb.opencga.core.models.clinical.pipeline.genomics.GenomicsClinicalPipelineWrapperParams;
 import org.opencb.opencga.core.models.clinical.pipeline.genomics.GenomicsPipelineConfig;
@@ -260,9 +261,9 @@ public class ClinicalPipelineGenomicsWrapperAnalysis extends OpenCgaToolScopeStu
 
         // Validate provided steps in the
         for (String step : pipelineSteps) {
-            if (!VALID_PIPELINE_STEPS.contains(step)) {
+            if (!VALID_GENOMIC_PIPELINE_STEPS.contains(step)) {
                 throw new ToolException("Clinical pipeline step '" + step + "' is not valid. Supported steps are: "
-                        + String.join(", ", VALID_PIPELINE_STEPS));
+                        + String.join(", ", VALID_GENOMIC_PIPELINE_STEPS));
             }
 
             switch (step) {
@@ -295,7 +296,7 @@ public class ClinicalPipelineGenomicsWrapperAnalysis extends OpenCgaToolScopeStu
 
                 default: {
                     throw new ToolException("Clinical pipeline step '" + step + "' is not valid. Supported steps are: "
-                            + String.join(", ", VALID_PIPELINE_STEPS));
+                            + String.join(", ", VALID_GENOMIC_PIPELINE_STEPS));
                 }
             }
         }

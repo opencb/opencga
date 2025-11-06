@@ -31,9 +31,9 @@ public abstract class DockerWrapperAnalysisExecutor extends OpenCgaToolExecutor 
     public static final String DOCKER_INPUT_PATH = "/data/input";
     public static final String DOCKER_OUTPUT_PATH = "/data/output";
 
-    protected static final String SCRIPT_VIRTUAL_PATH = "/script";
-    protected static final String INPUT_VIRTUAL_PATH = "/input";
-    protected static final String OUTPUT_VIRTUAL_PATH = "/output";
+    public static final String SCRIPT_VIRTUAL_PATH = "/script";
+    public static final String INPUT_VIRTUAL_PATH = "/input";
+    public static final String OUTPUT_VIRTUAL_PATH = "/output";
     protected static final String RESOURCES_VIRTUAL_PATH = "/" + RESOURCES_DIRNAME;
 
     protected static final String RESOURCES_ATTR_KEY = "resources";
@@ -218,7 +218,7 @@ public abstract class DockerWrapperAnalysisExecutor extends OpenCgaToolExecutor 
                 setUser = false;
             }
             for (String key : dockerParams.keySet()) {
-                commandLine.append("--").append(key).append(" ").append(dockerParams.get(key)).append(" ");
+                commandLine.append(key).append(" ").append(dockerParams.get(key)).append(" ");
             }
         }
 
@@ -340,5 +340,13 @@ public abstract class DockerWrapperAnalysisExecutor extends OpenCgaToolExecutor 
 
         // Append command
         sb.append(" ").append(command);
+    }
+
+    protected static Map<String, String> getDefaultDockerParams() {
+        Map<String, String> dockerParams = new HashMap<>();
+        dockerParams.put("--volume", "/var/run/docker.sock:/var/run/docker.sock");
+        dockerParams.put("--env", "DOCKER_HOST='tcp://localhost:2375'");
+        dockerParams.put("--network", "host");
+        return dockerParams;
     }
 }

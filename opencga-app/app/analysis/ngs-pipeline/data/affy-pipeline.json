@@ -4,17 +4,9 @@
   "description": "A sample bioinformatics pipeline configuration.",
   "type": "affy",
   "input": {
+    "dataDir": "",
     "indexDir": "",
-    "samples": [
-      {
-        "id": "",
-        "files": [
-          ""
-        ],
-        "somatic": false,
-        "role": "U"
-      }
-    ]
+    "samples": []
   },
   "steps": {
     "qualityControl": {

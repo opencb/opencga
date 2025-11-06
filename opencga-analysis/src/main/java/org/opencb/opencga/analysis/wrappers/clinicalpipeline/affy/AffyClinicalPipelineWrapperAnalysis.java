@@ -1,13 +1,10 @@
 package org.opencb.opencga.analysis.wrappers.clinicalpipeline.affy;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.clinical.pipeline.PipelineTool;
 import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyClinicalPipelineWrapperParams;
 import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyPipelineConfig;
 import org.opencb.opencga.core.models.common.Enums;
@@ -20,7 +17,6 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -61,7 +57,8 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
         updatePipelineConfigFromParams(updatedPipelineConfig, analysisParams.getPipelineParams().getSamples(),
                 analysisParams.getPipelineParams().getDataDir(), analysisParams.getPipelineParams().getIndexDir());
 
-        updatePipelineConfig(updatedPipelineConfig, study, catalogManager, token);
+        // Update physical paths
+        updatePipelineConfigWithPhysicalPaths(updatedPipelineConfig, study, catalogManager, token);
 
         // Check pipeline steps
         checkPipelineSteps();
@@ -95,7 +92,6 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
                 .setScriptPath(getOpencgaHome().resolve(ANALYSIS_DIRNAME).resolve(PIPELINE_ANALYSIS_DIRNAME))
                 .setPipelineConfig(updatedPipelineConfig)
                 .setPipelineSteps(pipelineSteps)
-                .setSample(analysisParams.getPipelineParams().getSamples().get(0))
                 .execute();
     }
 
@@ -128,30 +124,21 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
 
     private void checkPipelineSteps() throws ToolException, CatalogException {
         // Ensure pipeline config has steps
-        validatePipelineConfigSteps();
-
-        // Validate each step exists in config and has required tools
-        validateStepsInConfiguration();
-    }
-
-    private void validatePipelineConfigSteps() throws ToolException {
         if (updatedPipelineConfig.getSteps() == null || (updatedPipelineConfig.getSteps().getQualityControl() == null
                 && updatedPipelineConfig.getSteps().getGenotype() == null)) {
             throw new ToolException("All clinical pipeline configuration steps are missing.");
         }
-    }
 
-    private void validateStepsInConfiguration() throws ToolException, CatalogException {
         pipelineSteps = analysisParams.getPipelineParams().getSteps();
         // If no steps are provided, set all the steps by default
         if (CollectionUtils.isEmpty(pipelineSteps)) {
             pipelineSteps = Arrays.asList(QUALITY_CONTROL_PIPELINE_STEP, GENOTYPE_PIPELINE_STEP);
         }
 
-        // Validate provided steps in the
+        // Validate each step exists in config and has required tools
         for (String step : pipelineSteps) {
             if (!VALID_AFFY_PIPELINE_STEPS.contains(step)) {
-                throw new ToolException("Affu clinical pipeline step '" + step + "' is not valid. Supported steps are: "
+                throw new ToolException("Affy clinical pipeline step '" + step + "' is not valid. Supported steps are: "
                         + String.join(", ", VALID_AFFY_PIPELINE_STEPS));
             }
 
@@ -180,29 +167,5 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
                 }
             }
         }
-    }
-
-    private void validateTool(String step, PipelineTool pipelineTool) throws ToolException {
-        if (pipelineTool == null) {
-            throw new ToolException("Missing tool for clinical pipeline step: " + step);
-        }
-        if (StringUtils.isEmpty(pipelineTool.getId())) {
-            throw new ToolException("Missing tool ID for clinical pipeline step: " + step);
-        }
-    }
-
-    private Path checkInputDir(String inputDir, String label) throws ToolException, CatalogException {
-        // Update index dir (by getting the real path) in the pipeline configuration
-        if (StringUtils.isEmpty(inputDir)) {
-            throw new ToolException("Missing clinical pipeline " + label + " directory. You can either provide an " + label
-                    + " directory in the pipeline configuration or in the execute parameters.");
-        }
-        logger.info("Checking index dir {}", inputDir);
-        File opencgaFile = getCatalogManager().getFileManager().get(study, inputDir, QueryOptions.empty(), token).first();
-        if (opencgaFile.getType() != File.Type.DIRECTORY) {
-            throw new ToolException("Clinical pipeline " + label + " path '" + inputDir + "' is not a folder.");
-        }
-        // Update the index dir in the pipeline config
-        return Paths.get(opencgaFile.getUri()).toAbsolutePath();
     }
 }

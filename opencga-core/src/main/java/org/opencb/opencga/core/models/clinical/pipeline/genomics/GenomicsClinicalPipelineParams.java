@@ -25,22 +25,22 @@ import java.util.List;
 
 public class GenomicsClinicalPipelineParams {
 
-    @DataField(id = "samples", description = FieldConstants.CLINICAL_PIPELINE_SAMPLES_DESCRIPTION)
+//    @DataField(id = "samples", description = "List of sample IDs to be processed in the clinical genomics pipeline")
     private List<String> samples;
 
-    @DataField(id = "indexDir", description = FieldConstants.CLINICAL_PIPELINE_INDEX_DIR_DESCRIPTION)
+//    @DataField(id = "indexDir", description = FieldConstants.CLINICAL_PIPELINE_INDEX_DIR_DESCRIPTION)
     private String indexDir;
 
-    @DataField(id = "steps", description = FieldConstants.CLINICAL_PIPELINE_STEPS_DESCRIPTION)
+//    @DataField(id = "steps", description = FieldConstants.CLINICAL_PIPELINE_STEPS_DESCRIPTION)
     private List<String> steps;
 
-    @DataField(id = "variantIndexParams", description = FieldConstants.CLINICAL_PIPELINE_VARIANT_INDEX_DESCRIPTION)
+//    @DataField(id = "variantIndexParams", description = FieldConstants.CLINICAL_PIPELINE_VARIANT_INDEX_DESCRIPTION)
     private VariantIndexParams variantIndexParams;
 
-    @DataField(id = "pipelineFile", description = FieldConstants.CLINICAL_PIPELINE_FILE_DESCRIPTION)
+//    @DataField(id = "pipelineFile", description = FieldConstants.CLINICAL_PIPELINE_FILE_DESCRIPTION)
     private String pipelineFile;
 
-    @DataField(id = "pipeline", description = FieldConstants.CLINICAL_PIPELINE_CONFIG_DESCRIPTION)
+//    @DataField(id = "pipeline", description = FieldConstants.CLINICAL_PIPELINE_CONFIG_DESCRIPTION)
     private GenomicsPipelineConfig pipeline;
 
     public GenomicsClinicalPipelineParams() {

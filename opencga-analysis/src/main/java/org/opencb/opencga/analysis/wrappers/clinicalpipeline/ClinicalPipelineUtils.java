@@ -10,7 +10,10 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.pipeline.PipelineConfig;
+import org.opencb.opencga.core.models.clinical.pipeline.PipelineInput;
 import org.opencb.opencga.core.models.clinical.pipeline.PipelineSample;
+import org.opencb.opencga.core.models.clinical.pipeline.PipelineTool;
+import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyPipelineConfig;
 import org.opencb.opencga.core.models.file.File;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +22,9 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+
+import static org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor.INPUT_VIRTUAL_PATH;
+import static org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor.SCRIPT_VIRTUAL_PATH;
 
 public class ClinicalPipelineUtils {
 
@@ -33,8 +39,8 @@ public class ClinicalPipelineUtils {
     public static final String GENOMICS_NGS_PIPELINE_SCRIPT_COMMAND = "genomics";
     public static final String AFFY_PIPELINE_SCRIPT_COMMAND = "affy";
 
+    public static final String DATA_VIRTUAL_PATH = "/data";
     public static final String INDEX_VIRTUAL_PATH = "/index";
-    public static final String SAMPLE_VIRTUAL_PATH = "/sample";
     public static final String REFERENCE_VIRTUAL_PATH = "/reference";
     public static final String PIPELINE_PARAMS_FILENAME_PREFIX = "pipeline";
 
@@ -42,14 +48,19 @@ public class ClinicalPipelineUtils {
     public static final String SAMPLE_FIELD_SEP = "::";
     public static final String SAMPLE_FILE_SEP = ",";
 
+    // Common pipeline
     public static final String QUALITY_CONTROL_PIPELINE_STEP = "quality-control";
+
+    // Genomics pipeline
     public static final String ALIGNMENT_PIPELINE_STEP = "alignment";
     public static final String VARIANT_CALLING_PIPELINE_STEP = "variant-calling";
-    public static final String GENOTYPE_PIPELINE_STEP = "genotype";
-    protected static final Set<String> VALID_PIPELINE_STEPS = new HashSet<>(Arrays.asList(QUALITY_CONTROL_PIPELINE_STEP,
+    public static final Set<String> VALID_GENOMIC_PIPELINE_STEPS = new HashSet<>(Arrays.asList(QUALITY_CONTROL_PIPELINE_STEP,
             ALIGNMENT_PIPELINE_STEP, VARIANT_CALLING_PIPELINE_STEP));
-    public static final Set<String> VALID_AFFY_PIPELINE_STEPS = new HashSet<>(Arrays.asList(QUALITY_CONTROL_PIPELINE_STEP,
-            GENOTYPE_PIPELINE_STEP));
+
+
+    // Affy pipeline
+    public static final String GENOTYPE_PIPELINE_STEP = "genotype";
+    public static final List<String> VALID_AFFY_PIPELINE_STEPS = Arrays.asList(QUALITY_CONTROL_PIPELINE_STEP, GENOTYPE_PIPELINE_STEP);
 
 
     private static final Logger logger = LoggerFactory.getLogger(ClinicalPipelineUtils.class);
@@ -189,23 +200,30 @@ public class ClinicalPipelineUtils {
         }
     }
 
-    public static <T extends PipelineConfig> void updatePipelineConfig(T pipelineConfig, String study, CatalogManager catalogManager,
-                                                                          String token) throws CatalogException, ToolException {
+    public static <T extends PipelineConfig> void updatePipelineConfigWithPhysicalPaths(T pipelineConfig, String study,
+                                                                                        CatalogManager catalogManager, String token)
+            throws CatalogException, ToolException {
+        if (pipelineConfig.getInput() == null) {
+            throw new ToolException("Clinical pipeline configuration is missing the input section.");
+        }
+
         // Update sample files (by getting the real paths) in the pipeline configuration
-        for (PipelineSample sample : pipelineConfig.getInput().getSamples()) {
-            List<String> updatedFiles = new ArrayList<>();
-            for (String file : sample.getFiles()) {
-                logger.info("Checking sample file {}", file);
-                File opencgaFile = catalogManager.getFileManager().get(study, file, QueryOptions.empty(), token).first();
-                if (opencgaFile.getType() != File.Type.FILE) {
-                    throw new ToolException("Clinical pipeline sample file '" + file + "' for sample ID '" + sample.getId()
-                            + "' is not a file.");
+        if (!CollectionUtils.isEmpty(pipelineConfig.getInput().getSamples())) {
+            for (PipelineSample sample : pipelineConfig.getInput().getSamples()) {
+                List<String> updatedFiles = new ArrayList<>();
+                for (String file : sample.getFiles()) {
+                    logger.info("Checking sample file {}", file);
+                    File opencgaFile = catalogManager.getFileManager().get(study, file, QueryOptions.empty(), token).first();
+                    if (opencgaFile.getType() != File.Type.FILE) {
+                        throw new ToolException("Clinical pipeline sample file '" + file + "' for sample ID '" + sample.getId()
+                                + "' is not a file.");
+                    }
+                    // Add the real path to the updated files
+                    updatedFiles.add(Paths.get(opencgaFile.getUri()).toAbsolutePath().toString());
                 }
-                // Add the real path to the updated files
-                updatedFiles.add(Paths.get(opencgaFile.getUri()).toAbsolutePath().toString());
+                // Set updated files in the sample
+                sample.setFiles(updatedFiles);
             }
-            // Set updated files in the sample
-            sample.setFiles(updatedFiles);
         }
 
         // Update data dir (by getting the real path) in the pipeline configuration
@@ -267,6 +285,95 @@ public class ClinicalPipelineUtils {
         }
 
         return pipelineSample;
+    }
+
+    public static void validateTool(String step, PipelineTool pipelineTool) throws ToolException {
+        if (pipelineTool == null) {
+            throw new ToolException("Missing tool for clinical pipeline step: " + step);
+        }
+        if (StringUtils.isEmpty(pipelineTool.getId())) {
+            throw new ToolException("Missing tool ID for clinical pipeline step: " + step);
+        }
+    }
+
+    public static String buildPipelineFilename(List<String> pipelineSteps) {
+        StringBuilder pipelineFilename = new StringBuilder(PIPELINE_PARAMS_FILENAME_PREFIX);
+        for (String pipelineStep : pipelineSteps) {
+            pipelineFilename.append("_").append(pipelineStep.replace("-", "_"));
+        }
+        pipelineFilename.append(".json");
+
+        return pipelineFilename.toString();
+    }
+
+    public static String buildStepsParam(List<String> pipelineSteps) {
+        StringBuilder steps = new StringBuilder();
+        for (String pipelineStep : pipelineSteps) {
+            if (steps.length() > 0) {
+                steps.append(",");
+            }
+            steps.append(pipelineStep);
+        }
+        return steps.toString();
+    }
+
+
+    public static void setInputBindings(PipelineInput pipelineInput, Path pipelineConfigPath, List<String> pipelineSteps, Path scriptPath,
+                                        List<AbstractMap.SimpleEntry<String, String>> inputBindings, Set<String> readOnlyInputBindings)
+            throws IOException {
+
+        // Script binding
+        Path virtualScriptPath = Paths.get(SCRIPT_VIRTUAL_PATH);
+        inputBindings.add(new AbstractMap.SimpleEntry<>(scriptPath.toAbsolutePath().toString(), virtualScriptPath.toString()));
+        readOnlyInputBindings.add(virtualScriptPath.toString());
+
+        // Input binding, and update samples with virtual paths
+        if (!CollectionUtils.isEmpty(pipelineInput.getSamples())) {
+            for (PipelineSample pipelineSample : pipelineInput.getSamples()) {
+                List<String> virtualPaths = new ArrayList<>(pipelineSample.getFiles().size());
+                for (int i = 0; i < pipelineSample.getFiles().size(); i++) {
+                    Path path = Paths.get(pipelineSample.getFiles().get(i));
+                    Path virtualInputPath = Paths.get(INPUT_VIRTUAL_PATH + "_" + i).resolve(path.getFileName());
+                    inputBindings.add(new AbstractMap.SimpleEntry<>(path.toAbsolutePath().toString(), virtualInputPath.toString()));
+                    readOnlyInputBindings.add(virtualInputPath.toString());
+
+                    // Add to the list of virtual files
+                    virtualPaths.add(virtualInputPath.toString());
+                }
+                pipelineSample.setFiles(virtualPaths);
+            }
+        }
+
+        // Data dir binding
+        if (!StringUtils.isEmpty(pipelineInput.getDataDir())) {
+            Path virtualPath = Paths.get(DATA_VIRTUAL_PATH);
+            inputBindings.add(new AbstractMap.SimpleEntry<>(pipelineInput.getDataDir(), virtualPath.toString()));
+            readOnlyInputBindings.add(virtualPath.toString());
+            pipelineInput.setDataDir(virtualPath.toAbsolutePath().toString());
+        }
+
+        // Index dir binding
+        if (!StringUtils.isEmpty(pipelineInput.getIndexDir())) {
+            Path virtualPath = Paths.get(INDEX_VIRTUAL_PATH);
+            inputBindings.add(new AbstractMap.SimpleEntry<>(pipelineInput.getIndexDir(), virtualPath.toString()));
+            readOnlyInputBindings.add(virtualPath.toString());
+            pipelineInput.setIndexDir(virtualPath.toAbsolutePath().toString());
+        }
+
+        // Pipeline config binding
+        Path virtualPipelineParamsPath = Paths.get(INPUT_VIRTUAL_PATH).resolve(pipelineConfigPath.getFileName());
+        inputBindings.add(new AbstractMap.SimpleEntry<>(pipelineConfigPath.toAbsolutePath().toString(),
+                virtualPipelineParamsPath.toString()));
+        readOnlyInputBindings.add(virtualPipelineParamsPath.toString());
+    }
+
+    public static String getVirtualPath(Path path, List<AbstractMap.SimpleEntry<String, String>> inputBindings) throws ToolException {
+        for (AbstractMap.SimpleEntry<String, String> inputBinding : inputBindings) {
+            if (inputBinding.getKey().equals(path.toString())) {
+                return inputBinding.getValue();
+            }
+        }
+        throw new ToolException("Could not find virtual path for input path: " + path);
     }
 
 }
