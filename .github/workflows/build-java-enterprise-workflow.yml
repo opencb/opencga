@@ -77,12 +77,6 @@ jobs:
           key: ${{ runner.os }}-maven-${{ inputs.storage_hadoop }}-${{ steps.clone_dependencies.outputs.dependencies_sha }}
           restore-keys: |
             ${{ runner.os }}-maven-${{ inputs.storage_hadoop }}-
-      - name: Compile dependencies
-        run: |
-          if [ -f "./.github/workflows/scripts/compile_same_branch.sh" ]; then
-            chmod +x ./.github/workflows/scripts/compile_same_branch.sh
-            ./.github/workflows/scripts/compile_same_branch.sh
-          fi
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: OpenCGA Enterprise Maven Build (skip tests)
