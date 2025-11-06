@@ -110,5 +110,6 @@ jobs:
         name: Get project version
         run: |
           echo "version=`mvn help:evaluate -q -Dexpression=project.version -DforceStdout`" >> $GITHUB_OUTPUT
+
       - name: test-version-from-check
         run: echo "Project version is " ${{ steps.get_project_version.outputs.version }}
