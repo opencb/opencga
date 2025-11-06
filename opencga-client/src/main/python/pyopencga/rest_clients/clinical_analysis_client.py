@@ -530,9 +530,9 @@ class ClinicalAnalysis(_ParentRestClient):
 
     def run_pipeline_affy(self, data=None, **options):
         """
-        Execute the clinical genomics pipeline that performs QC (e.g.:
-            FastQC), mapping (e.g.: BWA), variant calling (e.g., GATK) and
-            variant indexing in OpenCGA storage.
+        Execute the clinical genomics pipeline that performs QC (FastQC,...),
+            mapping (BWA, Bowtie,...) , variant calling (GATK,...) and variant
+            indexing in OpenCGA storage.
         PATH: /{apiVersion}/analysis/clinical/pipeline/affy/run
 
         :param dict data: JSON with parameters to execute the command
@@ -557,9 +557,9 @@ class ClinicalAnalysis(_ParentRestClient):
 
     def run_pipeline_genomics(self, data=None, **options):
         """
-        Execute the clinical genomics pipeline that performs QC (e.g.:
-            FastQC), mapping (e.g.: BWA), variant calling (e.g., GATK) and
-            variant indexing in OpenCGA storage.
+        Execute the clinical genomics pipeline that performs QC (FastQC,...),
+            mapping (BWA, Bowtie,...) , variant calling (GATK,...) and variant
+            indexing in OpenCGA storage.
         PATH: /{apiVersion}/analysis/clinical/pipeline/genomics/run
 
         :param dict data: JSON with parameters to execute the command

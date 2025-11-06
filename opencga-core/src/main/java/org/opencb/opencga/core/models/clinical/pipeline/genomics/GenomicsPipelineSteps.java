@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.models.clinical.pipeline;
+package org.opencb.opencga.core.models.clinical.pipeline.genomics;
 
 import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.models.clinical.pipeline.QualityControlPipelineStep;
 
 public class GenomicsPipelineSteps {
 
@@ -41,7 +42,7 @@ public class GenomicsPipelineSteps {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("PipelineSteps{");
+        final StringBuilder sb = new StringBuilder("GenomicsPipelineSteps{");
         sb.append("qualityControl=").append(qualityControl);
         sb.append(", alignment=").append(alignment);
         sb.append(", variantCalling=").append(variantCalling);

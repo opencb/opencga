@@ -17,6 +17,7 @@
 package org.opencb.opencga.core.models.clinical.pipeline;
 
 import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.models.clinical.pipeline.genomics.GenomicsAlignmentPipelineTool;
 
 import java.util.Map;
 
@@ -39,7 +40,7 @@ public class QualityControlPipelineStep extends PipelineStep {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("PipelineQualityControlStep{");
+        final StringBuilder sb = new StringBuilder("QualityControlPipelineStep{");
         sb.append("tool=").append(tool);
         sb.append(", options=").append(options);
         sb.append('}');

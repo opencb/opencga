@@ -14,35 +14,34 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.models.clinical.pipeline;
+package org.opencb.opencga.core.models.clinical.pipeline.prepare;
 
 import org.opencb.commons.annotations.DataField;
-import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
-public class ClinicalPipelinePrepareParams extends ToolParams {
+public class PrepareClinicalPipelineParams extends ToolParams {
 
-    @DataField(id = "referenceGenome", description = FieldConstants.CLINICAL_PIPELINE_REF_GENOME_DESCRIPTION)
+    @DataField(id = "referenceGenome", description = "Reference genome to be used in the clinical pipeline.")
     private String referenceGenome;
 
-    @DataField(id = "alignerIndexes", description = FieldConstants.CLINICAL_PIPELINE_ALIGNER_INDEXES_DESCRIPTION)
-    private List<String> alignerIndexes;
+    @DataField(id = "indexes", description = "List of indexes to be prepared for the clinical pipeline, e.g., bwa, bowtie, affy,...")
+    private List<String> indexes;
 
-    public ClinicalPipelinePrepareParams() {
+    public PrepareClinicalPipelineParams() {
     }
 
-    public ClinicalPipelinePrepareParams(String referenceGenome, List<String> alignerIndexes) {
+    public PrepareClinicalPipelineParams(String referenceGenome, List<String> indexes) {
         this.referenceGenome = referenceGenome;
-        this.alignerIndexes = alignerIndexes;
+        this.indexes = indexes;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("ClinicalPipelinePrepareWrapperParams{");
+        final StringBuilder sb = new StringBuilder("PrepareClinicalPipelineParams{");
         sb.append("referenceGenome='").append(referenceGenome).append('\'');
-        sb.append(", alignerIndexes=").append(alignerIndexes);
+        sb.append(", indexes=").append(indexes);
         sb.append('}');
         return sb.toString();
     }
@@ -51,17 +50,17 @@ public class ClinicalPipelinePrepareParams extends ToolParams {
         return referenceGenome;
     }
 
-    public ClinicalPipelinePrepareParams setReferenceGenome(String referenceGenome) {
+    public PrepareClinicalPipelineParams setReferenceGenome(String referenceGenome) {
         this.referenceGenome = referenceGenome;
         return this;
     }
 
-    public List<String> getAlignerIndexes() {
-        return alignerIndexes;
+    public List<String> getIndexes() {
+        return indexes;
     }
 
-    public ClinicalPipelinePrepareParams setAlignerIndexes(List<String> alignerIndexes) {
-        this.alignerIndexes = alignerIndexes;
+    public PrepareClinicalPipelineParams setIndexes(List<String> indexes) {
+        this.indexes = indexes;
         return this;
     }
 }

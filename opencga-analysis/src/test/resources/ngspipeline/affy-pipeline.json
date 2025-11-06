@@ -4,36 +4,9 @@
   "description": "A sample bioinformatics pipeline configuration.",
   "type": "affy",
   "input": {
-    "indexDir": "/home/imedina/soft/index-dir",
-    "samples": [
-      {
-        "id": "s1",
-        "files": [
-          "fastq1",
-          "fastq2"
-        ],
-        "somatic": false,
-        "role": "father"
-      },
-      {
-        "id": "s2",
-        "files": [
-          "fastq1",
-          "fastq2"
-        ],
-        "somatic": true,
-        "role": "mother"
-      },
-      {
-        "id": "son",
-        "files": [
-          "fastq1",
-          "fastq2"
-        ],
-        "somatic": false,
-        "role": "child"
-      }
-    ]
+    "dataDir": "",
+    "indexDir": "",
+    "samples": []
   },
   "steps": {
     "qualityControl": {

@@ -17,8 +17,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.GroupPrincipal;
+import java.nio.file.attribute.PosixFileAttributes;
+import java.nio.file.attribute.UserPrincipalLookupService;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -31,9 +36,9 @@ public abstract class DockerWrapperAnalysisExecutor extends OpenCgaToolExecutor 
     public static final String DOCKER_INPUT_PATH = "/data/input";
     public static final String DOCKER_OUTPUT_PATH = "/data/output";
 
-    protected static final String SCRIPT_VIRTUAL_PATH = "/script";
-    protected static final String INPUT_VIRTUAL_PATH = "/input";
-    protected static final String OUTPUT_VIRTUAL_PATH = "/output";
+    public static final String SCRIPT_VIRTUAL_PATH = "/script";
+    public static final String INPUT_VIRTUAL_PATH = "/input";
+    public static final String OUTPUT_VIRTUAL_PATH = "/output";
     protected static final String RESOURCES_VIRTUAL_PATH = "/" + RESOURCES_DIRNAME;
 
     protected static final String RESOURCES_ATTR_KEY = "resources";
@@ -218,7 +223,7 @@ public abstract class DockerWrapperAnalysisExecutor extends OpenCgaToolExecutor 
                 setUser = false;
             }
             for (String key : dockerParams.keySet()) {
-                commandLine.append("--").append(key).append(" ").append(dockerParams.get(key)).append(" ");
+                commandLine.append(key).append(" ").append(dockerParams.get(key)).append(" ");
             }
         }
 
@@ -340,5 +345,36 @@ public abstract class DockerWrapperAnalysisExecutor extends OpenCgaToolExecutor 
 
         // Append command
         sb.append(" ").append(command);
+    }
+
+    protected Map<String, String> getDefaultDockerParams() throws IOException {
+        Map<String, String> dockerParams = new HashMap<>();
+        dockerParams.put("--volume", "/var/run/docker.sock:/var/run/docker.sock");
+        dockerParams.put("--network", "host");
+
+        // Get default docker params, and get docker group id to avoid permission issues when writing to output directory
+        String dockerGid = getDockerGid();
+        if (!StringUtils.isEmpty(dockerGid)) {
+            dockerParams.put("--group-add", dockerGid);
+        } else {
+            logger.warn("Could not get docker group id to avoid permission issues when writing to output directory");
+        }
+
+        return dockerParams;
+    }
+
+    protected String getDockerGid() throws IOException {
+        Path dockerSocket = Paths.get("/var/run/docker.sock");
+        if (Files.exists(dockerSocket)) {
+            PosixFileAttributes attrs = Files.readAttributes(dockerSocket, PosixFileAttributes.class);
+            return String.valueOf(attrs.group().hashCode());
+        } else {
+            // Extract GID from group name
+            UserPrincipalLookupService lookupService =
+                    FileSystems.getDefault().getUserPrincipalLookupService();
+            GroupPrincipal dockerGroup = lookupService.lookupPrincipalByGroupName("docker");
+
+            return dockerGroup.getName().split(":")[1];
+        }
     }
 }

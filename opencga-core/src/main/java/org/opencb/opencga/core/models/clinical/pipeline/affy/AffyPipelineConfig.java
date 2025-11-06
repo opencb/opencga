@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.models.clinical.pipeline;
+package org.opencb.opencga.core.models.clinical.pipeline.affy;
 
 import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.models.clinical.pipeline.PipelineConfig;
+import org.opencb.opencga.core.models.clinical.pipeline.PipelineInput;
 
 public class AffyPipelineConfig extends PipelineConfig {
 
-    @DataField(id = "steps", description = "Pipeline steps (quality control, variant calling)")
+    @DataField(id = "steps", description = "Affy pipeline steps (quality control and genotype)")
     private AffyPipelineSteps steps;
 
     public AffyPipelineConfig() {

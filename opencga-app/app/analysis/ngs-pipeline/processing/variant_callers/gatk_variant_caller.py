@@ -10,6 +10,7 @@ class GatkVariantCaller(VariantCaller):
     def __init__(self, output: Path, logger=None):
         super().__init__(output, logger)
         self.tool_name = "gatk"
+        self.docker_image = "broadinstitute/gatk:4.6.2.0"
 
 
     """ Run GATK variant calling """
@@ -27,10 +28,14 @@ class GatkVariantCaller(VariantCaller):
                 dedup_bam_file = self._apply_best_practices(bam_file_path, input_config, tool_config)
                 dedup_bam_file_path = Path(dedup_bam_file)
                 vcf_file = self._build_vcf_file_name(dedup_bam_file_path, ".gatk.vcf")
-                cmd = (["gatk", "HaplotypeCaller", "-R", str(reference_path)]
-                       + ["-I", str(dedup_bam_file_path)]
-                       + ["-O", str(self.output / vcf_file)])
-                self.run_command(cmd)
+
+                # Use Docker to run GATK HaplotypeCaller
+                self._run_gatk_haplotype_caller(reference_path, dedup_bam_file_path, vcf_file)
+
+                # cmd = (["gatk", "HaplotypeCaller", "-R", str(reference_path)]
+                #        + ["-I", str(dedup_bam_file_path)]
+                #        + ["-O", str(self.output / vcf_file)])
+                # self.run_command(cmd)
 
                 ## Post-process SAM to sorted BAM and index
                 vcf_processed = self._vcf_post_processing(vcf_file)
@@ -40,6 +45,39 @@ class GatkVariantCaller(VariantCaller):
                 self.logger.error("BAM file %s does not exist for GATK variant calling", str(bam_file))
 
         return vcf_files
+
+    def _run_gatk_haplotype_caller(self, reference_path: Path, bam_file_path: Path, vcf_file: str):
+        """Run GATK HaplotypeCaller using Docker"""
+
+        # Set up volume bindings
+        bindings = []
+
+        # Reference directory binding
+        ref_parent = reference_path.parent
+        bindings.extend(["-v", f"{ref_parent}:/reference:ro"])
+
+        # BAM file directory binding
+        bam_parent = bam_file_path.parent
+        bindings.extend(["-v", f"{bam_parent}:/input:ro"])
+
+        # Output directory binding
+        bindings.extend(["-v", f"{self.output}:/output"])
+
+        # Get relative paths for Docker
+        ref_name = reference_path.name
+        bam_name = bam_file_path.name
+
+        # Build Docker command
+        docker_cmd = (["docker", "run", "--rm"]
+                      + bindings
+                      + [self.docker_image]
+                      + ["gatk", "HaplotypeCaller"]
+                      + ["-R", f"/reference/{ref_name}"]
+                      + ["-I", f"/input/{bam_name}"]
+                      + ["-O", f"/output/{vcf_file}"])
+
+        self.logger.info("Running GATK HaplotypeCaller with Docker command: %s", ' '.join(docker_cmd))
+        self.run_command(docker_cmd)
 
     def _apply_best_practices(self, bam_file_path: Path, input_config: dict, tool_config: dict) -> str:
         ## GATK best practices can be implemented here
@@ -56,10 +94,11 @@ class GatkVariantCaller(VariantCaller):
         ## 1. MarkDuplicates: Create a deduplicated BAM file
         dedup_bam_file = str(self.output / (bam_file_path.stem + ".dedup.bam"))
         dedup_bam_file_metrics = str(self.output / (bam_file_path.stem + ".dedup.metrics"))
-        cmd_dedup = (["gatk", "MarkDuplicates", "-I", str(bam_file_path)]
-                     + ["-O", str(dedup_bam_file)]
-                     + ["-M", str(dedup_bam_file_metrics)])
-        self.run_command(cmd_dedup)
+        self._run_gatk_mark_duplicates(bam_file_path, dedup_bam_file, dedup_bam_file_metrics)
+        # cmd_dedup = (["gatk", "MarkDuplicates", "-I", str(bam_file_path)]
+        #              + ["-O", str(dedup_bam_file)]
+        #              + ["-M", str(dedup_bam_file_metrics)])
+        # self.run_command(cmd_dedup)
 
         dedup_bai_file = dedup_bam_file + ".bai"
         cmd = ["samtools"] + ["index", "-b"] + ["-@", "2"] + [dedup_bam_file]
@@ -85,3 +124,33 @@ class GatkVariantCaller(VariantCaller):
         # self.run_command(cmd_recal)
 
         return dedup_bam_file
+
+    def _run_gatk_mark_duplicates(self, input_bam: Path, output_bam: str, metrics_file: str):
+        """Run GATK MarkDuplicates using Docker"""
+
+        # Set up volume bindings
+        bindings = []
+
+        # Input BAM directory binding
+        input_parent = input_bam.parent
+        bindings.extend(["-v", f"{input_parent}:/input:ro"])
+
+        # Output directory binding
+        bindings.extend(["-v", f"{self.output}:/output"])
+
+        # Get relative paths
+        input_bam_name = input_bam.name
+        output_bam_name = Path(output_bam).name
+        metrics_name = Path(metrics_file).name
+
+        # Build Docker command
+        docker_cmd = (["docker", "run", "--rm"]
+                      + bindings
+                      + [self.docker_image]
+                      + ["gatk", "MarkDuplicates"]
+                      + ["-I", f"/input/{input_bam_name}"]
+                      + ["-O", f"/output/{output_bam_name}"]
+                      + ["-M", f"/output/{metrics_name}"])
+
+        self.logger.info("Running GATK MarkDuplicates with Docker command: %s", ' '.join(docker_cmd))
+        self.run_command(docker_cmd)

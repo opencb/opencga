@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.models.clinical.pipeline;
+package org.opencb.opencga.core.models.clinical.pipeline.affy;
 
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
@@ -22,7 +22,7 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 public class AffyClinicalPipelineWrapperParams extends ToolParams {
 
-    @DataField(id = "pipelineParams", description = FieldConstants.CLINICAL_PIPELINE_GENOMICS_PARAMS_DESCRIPTION)
+    @DataField(id = "pipelineParams", description = "Parameters to execute the affy pipeline")
     private AffyClinicalPipelineParams pipelineParams;
 
     @DataField(id = "outdir", description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)

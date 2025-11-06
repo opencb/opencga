@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.wrappers.clinicalpipeline;
+package org.opencb.opencga.analysis.wrappers.clinicalpipeline.prepare;
 
 
 import org.apache.commons.collections4.CollectionUtils;
@@ -22,8 +22,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelinePrepareParams;
-import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelinePrepareWrapperParams;
+import org.opencb.opencga.core.models.clinical.pipeline.prepare.PrepareClinicalPipelineParams;
+import org.opencb.opencga.core.models.clinical.pipeline.prepare.PrepareClinicalPipelineWrapperParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.tools.annotations.Tool;
@@ -38,17 +38,17 @@ import static org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipe
 import static org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelineUtils.isURL;
 import static org.opencb.opencga.catalog.utils.ResourceManager.ANALYSIS_DIRNAME;
 
-@Tool(id = ClinicalPipelinePrepareWrapperAnalysis.ID, resource = Enums.Resource.VARIANT,
-        description = ClinicalPipelinePrepareWrapperAnalysis.DESCRIPTION)
-public class ClinicalPipelinePrepareWrapperAnalysis extends OpenCgaToolScopeStudy {
+@Tool(id = PrepareClinicalPipelineWrapperAnalysis.ID, resource = Enums.Resource.VARIANT,
+        description = PrepareClinicalPipelineWrapperAnalysis.DESCRIPTION)
+public class PrepareClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
 
     public static final String ID = "ngs-pipeline-prepare";
     public static final String DESCRIPTION = "Prepare the clinical pipeline.";
 
-    ClinicalPipelinePrepareParams updatedParams = new ClinicalPipelinePrepareParams();
+    PrepareClinicalPipelineParams updatedParams = new PrepareClinicalPipelineParams();
 
     @ToolParams
-    protected final ClinicalPipelinePrepareWrapperParams analysisParams = new ClinicalPipelinePrepareWrapperParams();
+    protected final PrepareClinicalPipelineWrapperParams analysisParams = new PrepareClinicalPipelineWrapperParams();
 
     @Override
     protected void check() throws Exception {
@@ -70,8 +70,8 @@ public class ClinicalPipelinePrepareWrapperAnalysis extends OpenCgaToolScopeStud
         updatedParams.setReferenceGenome(referenceGenome);
 
         // Add the aligner indexes if provided
-        if (CollectionUtils.isNotEmpty(analysisParams.getPipelineParams().getAlignerIndexes())) {
-            updatedParams.setAlignerIndexes(analysisParams.getPipelineParams().getAlignerIndexes());
+        if (CollectionUtils.isNotEmpty(analysisParams.getPipelineParams().getIndexes())) {
+            updatedParams.setIndexes(analysisParams.getPipelineParams().getIndexes());
         }
     }
 
@@ -87,7 +87,7 @@ public class ClinicalPipelinePrepareWrapperAnalysis extends OpenCgaToolScopeStud
 
     protected void runPipelinePrepareExecutor() throws  ToolException {
         // Get executor
-        ClinicalPipelinePrepareWrapperAnalysisExecutor executor = getToolExecutor(ClinicalPipelinePrepareWrapperAnalysisExecutor.class);
+        PrepareClinicalPipelineWrapperAnalysisExecutor executor = getToolExecutor(PrepareClinicalPipelineWrapperAnalysisExecutor.class);
 
         // Set parameters and execute (depending on the updated params, it will prepare or execute the pipeline)
         executor.setStudy(study)

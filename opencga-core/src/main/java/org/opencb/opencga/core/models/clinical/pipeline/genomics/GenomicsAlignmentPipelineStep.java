@@ -14,44 +14,44 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.models.clinical.pipeline;
+package org.opencb.opencga.core.models.clinical.pipeline.genomics;
 
 import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.models.clinical.pipeline.PipelineStep;
 
 import java.util.Map;
 
-public class AffyGenotypePipelineStep extends PipelineStep {
+public class GenomicsAlignmentPipelineStep extends PipelineStep {
 
-    @DataField(id = "tool", description = "Affy genotype tool")
-    private PipelineTool tool;
+    @DataField(id = "tool", description = "Alignment tool")
+    private GenomicsAlignmentPipelineTool tool;
 
-    public AffyGenotypePipelineStep() {
-        super();
+    public GenomicsAlignmentPipelineStep() {
     }
 
-    public AffyGenotypePipelineStep(PipelineTool tool) {
+    public GenomicsAlignmentPipelineStep(GenomicsAlignmentPipelineTool tool) {
         this.tool = tool;
     }
 
-    public AffyGenotypePipelineStep(Map<String, Object> options, PipelineTool tool) {
+    public GenomicsAlignmentPipelineStep(Map<String, Object> options, GenomicsAlignmentPipelineTool tool) {
         super(options);
         this.tool = tool;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("PipelineQualityControlStep{");
+        final StringBuilder sb = new StringBuilder("GenomicsAlignmentPipelineStep{");
         sb.append("tool=").append(tool);
         sb.append(", options=").append(options);
         sb.append('}');
         return sb.toString();
     }
 
-    public PipelineTool getTool() {
+    public GenomicsAlignmentPipelineTool getTool() {
         return tool;
     }
 
-    public AffyGenotypePipelineStep setTool(PipelineTool tool) {
+    public GenomicsAlignmentPipelineStep setTool(GenomicsAlignmentPipelineTool tool) {
         this.tool = tool;
         return this;
     }

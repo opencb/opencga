@@ -22,7 +22,7 @@ import java.util.List;
 
 public class PipelineInput {
 
-    @DataField(id = "dataDir", description = "Directory containing data pipeline (e.g., CEL files in affy-pipeline,...)")
+    @DataField(id = "dataDir", description = "Directory containing data pipeline (e.g., CEL files in affy pipelines,...)")
     private String dataDir;
 
     @DataField(id = "indexDir", description = "Directory containing pipeline indexes")

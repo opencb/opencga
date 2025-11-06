@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.models.clinical.pipeline;
+package org.opencb.opencga.core.models.clinical.pipeline.genomics;
 
 import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.models.clinical.pipeline.PipelineConfig;
+import org.opencb.opencga.core.models.clinical.pipeline.PipelineInput;
 
 public class GenomicsPipelineConfig extends PipelineConfig {
 
-    @DataField(id = "steps", description = "Pipeline steps (quality control, alignment, variant calling)")
+    @DataField(id = "steps", description = "Pipeline steps: quality control, alignment and variant calling")
     private GenomicsPipelineSteps steps;
 
     public GenomicsPipelineConfig() {

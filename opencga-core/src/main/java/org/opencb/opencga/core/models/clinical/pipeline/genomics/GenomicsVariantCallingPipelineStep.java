@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.models.clinical.pipeline;
+package org.opencb.opencga.core.models.clinical.pipeline.genomics;
 
 import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.models.clinical.pipeline.PipelineStep;
 
 import java.util.List;
 import java.util.Map;
@@ -40,7 +41,7 @@ public class GenomicsVariantCallingPipelineStep extends PipelineStep {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("PipelineVariantCallingStep{");
+        final StringBuilder sb = new StringBuilder("GenomicsVariantCallingPipelineStep{");
         sb.append("tools=").append(tools);
         sb.append(", options=").append(options);
         sb.append('}');

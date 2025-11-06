@@ -46,9 +46,9 @@ import org.opencb.opencga.core.models.clinical.RgaAnalysisParams;
 import org.opencb.opencga.core.models.clinical.TeamInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.clinical.TieringInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.clinical.ZettaInterpretationAnalysisParams;
-import org.opencb.opencga.core.models.clinical.pipeline.AffyClinicalPipelineWrapperParams;
-import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelinePrepareWrapperParams;
-import org.opencb.opencga.core.models.clinical.pipeline.GenomicsClinicalPipelineWrapperParams;
+import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyClinicalPipelineWrapperParams;
+import org.opencb.opencga.core.models.clinical.pipeline.genomics.GenomicsClinicalPipelineWrapperParams;
+import org.opencb.opencga.core.models.clinical.pipeline.prepare.PrepareClinicalPipelineWrapperParams;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -507,7 +507,7 @@ public class ClinicalAnalysisClient extends ParentClient {
     }
 
     /**
-     * Execute the clinical genomics pipeline that performs QC (e.g.: FastQC), mapping (e.g.: BWA), variant calling (e.g., GATK) and
+     * Execute the clinical genomics pipeline that performs QC (FastQC,...), mapping (BWA, Bowtie,...) , variant calling (GATK,...) and
      *     variant indexing in OpenCGA storage.
      * @param data JSON with parameters to execute the command affy-pipeline.
      * @param params Map containing any of the following optional parameters.
@@ -530,7 +530,7 @@ public class ClinicalAnalysisClient extends ParentClient {
     }
 
     /**
-     * Execute the clinical genomics pipeline that performs QC (e.g.: FastQC), mapping (e.g.: BWA), variant calling (e.g., GATK) and
+     * Execute the clinical genomics pipeline that performs QC (FastQC,...), mapping (BWA, Bowtie,...) , variant calling (GATK,...) and
      *     variant indexing in OpenCGA storage.
      * @param data JSON with parameters to execute the command ngs-pipeline-genomics.
      * @param params Map containing any of the following optional parameters.
@@ -568,7 +568,7 @@ public class ClinicalAnalysisClient extends ParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Job> runPipelinePrepare(ClinicalPipelinePrepareWrapperParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Job> runPipelinePrepare(PrepareClinicalPipelineWrapperParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("analysis", null, "clinical/pipeline/prepare", null, "run", params, POST, Job.class);

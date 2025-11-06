@@ -17,52 +17,47 @@
 package org.opencb.opencga.core.models.clinical.pipeline;
 
 import org.opencb.commons.annotations.DataField;
-import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.models.operations.variant.VariantIndexParams;
+import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class GenomicsClinicalPipelineParams {
+public class ClinicalPipelineParams<T extends PipelineConfig> extends ToolParams {
 
-    @DataField(id = "samples", description = FieldConstants.CLINICAL_PIPELINE_SAMPLES_DESCRIPTION)
-    private List<String> samples;
+    @DataField(id = "samples", description = "List of samples following the format: sample_id:file_id1;file_id2[:rol[:somatic]]; 'rol'"
+            + " can be 'mother', 'father' or 'child'. If the sample is somatic, then add ':somatic' at")
+    protected List<String> samples;
 
-    @DataField(id = "indexDir", description = FieldConstants.CLINICAL_PIPELINE_INDEX_DIR_DESCRIPTION)
-    private String indexDir;
+    @DataField(id = "dataDir", description = "Directory where the data files are located, e.g. CEL files in affy pipelines")
+    protected String dataDir;
 
-    @DataField(id = "steps", description = FieldConstants.CLINICAL_PIPELINE_STEPS_DESCRIPTION)
-    private List<String> steps;
+    @DataField(id = "indexDir", description = "Directory where the reference genome, aligner indexes are located, and in affy pipelines,"
+            + " Affymetrix files too")
+    protected String indexDir;
 
-    @DataField(id = "variantIndexParams", description = FieldConstants.CLINICAL_PIPELINE_VARIANT_INDEX_DESCRIPTION)
-    private VariantIndexParams variantIndexParams;
+    @DataField(id = "steps", description = "Pipeline steps: quality-control, alignment, variant-calling, genotype,...")
+    protected List<String> steps;
 
-    @DataField(id = "pipelineFile", description = FieldConstants.CLINICAL_PIPELINE_FILE_DESCRIPTION)
-    private String pipelineFile;
+    @DataField(id = "variantIndexParams", description = "Parameters to index the resulting variants in OpenCGA storage")
+    protected VariantIndexParams variantIndexParams;
 
-    @DataField(id = "pipeline", description = FieldConstants.CLINICAL_PIPELINE_PIPELINE_DESCRIPTION)
-    private GenomicsPipelineConfig pipeline;
+    @DataField(id = "pipelineFile", description = "Clinical pipeline configuration file")
+    protected String pipelineFile;
 
-    public GenomicsClinicalPipelineParams() {
+    @DataField(id = "pipeline", description = "Clinical pipeline configuration")
+    protected T pipeline;
+
+    public ClinicalPipelineParams() {
         this.samples = new ArrayList<>();
         this.steps = new ArrayList<>();
-        pipeline = new GenomicsPipelineConfig();
-    }
-
-    public GenomicsClinicalPipelineParams(List<String> samples, String indexDir, List<String> steps, VariantIndexParams variantIndexParams,
-                                          String pipelineFile, GenomicsPipelineConfig pipeline) {
-        this.samples = samples;
-        this.indexDir = indexDir;
-        this.steps = steps;
-        this.variantIndexParams = variantIndexParams;
-        this.pipelineFile = pipelineFile;
-        this.pipeline = pipeline;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("ClinicalPipelineExecuteParams{");
+        final StringBuilder sb = new StringBuilder("ClinicalPipelineParams{");
         sb.append("samples=").append(samples);
+        sb.append(", dataDir='").append(dataDir).append('\'');
         sb.append(", indexDir='").append(indexDir).append('\'');
         sb.append(", steps=").append(steps);
         sb.append(", variantIndexParams=").append(variantIndexParams);
@@ -76,8 +71,17 @@ public class GenomicsClinicalPipelineParams {
         return samples;
     }
 
-    public GenomicsClinicalPipelineParams setSamples(List<String> samples) {
+    public ClinicalPipelineParams<T> setSamples(List<String> samples) {
         this.samples = samples;
+        return this;
+    }
+
+    public String getDataDir() {
+        return dataDir;
+    }
+
+    public ClinicalPipelineParams<T> setDataDir(String dataDir) {
+        this.dataDir = dataDir;
         return this;
     }
 
@@ -85,7 +89,7 @@ public class GenomicsClinicalPipelineParams {
         return indexDir;
     }
 
-    public GenomicsClinicalPipelineParams setIndexDir(String indexDir) {
+    public ClinicalPipelineParams<T> setIndexDir(String indexDir) {
         this.indexDir = indexDir;
         return this;
     }
@@ -94,7 +98,7 @@ public class GenomicsClinicalPipelineParams {
         return steps;
     }
 
-    public GenomicsClinicalPipelineParams setSteps(List<String> steps) {
+    public ClinicalPipelineParams<T> setSteps(List<String> steps) {
         this.steps = steps;
         return this;
     }
@@ -103,7 +107,7 @@ public class GenomicsClinicalPipelineParams {
         return variantIndexParams;
     }
 
-    public GenomicsClinicalPipelineParams setVariantIndexParams(VariantIndexParams variantIndexParams) {
+    public ClinicalPipelineParams<T> setVariantIndexParams(VariantIndexParams variantIndexParams) {
         this.variantIndexParams = variantIndexParams;
         return this;
     }
@@ -112,16 +116,16 @@ public class GenomicsClinicalPipelineParams {
         return pipelineFile;
     }
 
-    public GenomicsClinicalPipelineParams setPipelineFile(String pipelineFile) {
+    public ClinicalPipelineParams<T> setPipelineFile(String pipelineFile) {
         this.pipelineFile = pipelineFile;
         return this;
     }
 
-    public GenomicsPipelineConfig getPipeline() {
+    public T getPipeline() {
         return pipeline;
     }
 
-    public GenomicsClinicalPipelineParams setPipeline(GenomicsPipelineConfig pipeline) {
+    public ClinicalPipelineParams<T> setPipeline(T pipeline) {
         this.pipeline = pipeline;
         return this;
     }

@@ -36,7 +36,6 @@ import java.util.Map;
 public abstract class ToolParams {
     private Map<String, Class<?>> internalPropertiesMap = null;
 
-
     public String toJson() {
         ObjectMapper objectMapper = getObjectMapper();
         try {
@@ -186,8 +185,6 @@ public abstract class ToolParams {
                     Logger logger = org.slf4j.LoggerFactory.getLogger(aClass);
                     logger.warn("The param '{}' from ToolParams {}: multiple level nesting params are not allowed and might lead to"
                             + " unexpected behaviour.", property.getName(), aClass);
-//                    throw new IllegalStateException("Invalid param '" + property.getName() + "' from ToolParams " + aClass + ". "
-//                            + "Invalid multiple level nesting params");
                 }
             }
         }
