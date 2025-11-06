@@ -690,17 +690,6 @@ public class FieldConstants {
     @Deprecated
     public static final String VARIANT_CALLER_PIPELINE_PARAMS_DESCRIPTION = "Map of parameters to run the pipeline";
 
-    // Clinical pipeline
-    //    Prepare pipeline
-    public static final String CLINICAL_PIPELINE_PREPARE_PARAMS_DESCRIPTION = "Parameters to prepare the clinical pipeline";
-    public static final String CLINICAL_PIPELINE_REF_GENOME_DESCRIPTION = "Reference genome (file, or URL to download it)";
-    public static final String CLINICAL_PIPELINE_ALIGNER_INDEXES_DESCRIPTION = "Aligner indexes to generate, e.g.: bwa, bwa-mem2";
-    //    Genomics pipeline
-    public static final String CLINICAL_PIPELINE_GENOMICS_PARAMS_DESCRIPTION = "Parameters to execute the genomics pipeline";
-    public static final String CLINICAL_PIPELINE_GENOMICS_PIPELINE_DESCRIPTION = "JSON containing the configuration for genomics pipelines";
-    //    Affy pipeline
-    public static final String CLINICAL_PIPELINE_AFFY_STEPS_DESCRIPTION = "Affy pipeline steps: quality control, genotype)";
-
     // Fetch resources
     public static final String FETCH_RESOURCES_DESCRIPTION = "List of resource IDs, separated by commas, to fetch (available resources are"
             + " specified in the configuration file). The wildcard '*' can be used: for example, use '*' to fetch all resources, or"

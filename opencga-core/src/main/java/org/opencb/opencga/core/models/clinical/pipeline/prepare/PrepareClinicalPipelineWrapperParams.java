@@ -22,7 +22,7 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 public class PrepareClinicalPipelineWrapperParams extends ToolParams {
 
-    @DataField(id = "pipelineParams", description = FieldConstants.CLINICAL_PIPELINE_PREPARE_PARAMS_DESCRIPTION)
+    @DataField(id = "pipelineParams", description = "Parameters to execute the pipeline preparation (i.e., creating the indexes,...)")
     private PrepareClinicalPipelineParams pipelineParams;
 
     @DataField(id = "outdir", description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)

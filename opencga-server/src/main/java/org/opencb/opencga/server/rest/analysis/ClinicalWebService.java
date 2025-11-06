@@ -33,8 +33,8 @@ import org.opencb.opencga.analysis.rga.RgaManager;
 import org.opencb.opencga.analysis.rga.RgaQueryParams;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.wrappers.clinicalpipeline.affy.AffyClinicalPipelineWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.clinicalpipeline.genomics.ClinicalPipelineGenomicsWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.clinicalpipeline.prepare.ClinicalPipelinePrepareWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.clinicalpipeline.genomics.GenomicsClinicalPipelineWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.clinicalpipeline.prepare.PrepareClinicalPipelineWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserAnalysisUtils;
 import org.opencb.opencga.analysis.wrappers.ngspipeline.NgsPipelineWrapperAnalysis;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
@@ -1491,7 +1491,7 @@ public class ClinicalWebService extends AnalysisWebService {
     @POST
     @Path("/pipeline/prepare/run")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = ClinicalPipelinePrepareWrapperAnalysis.DESCRIPTION, response = Job.class)
+    @ApiOperation(value = PrepareClinicalPipelineWrapperAnalysis.DESCRIPTION, response = Job.class)
     public Response pipelinePrepareRun(
             @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
@@ -1501,15 +1501,15 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
-            @ApiParam(name = "body", value = "JSON with parameters to execute the command " + ClinicalPipelinePrepareWrapperAnalysis.ID, required = true) PrepareClinicalPipelineWrapperParams params) {
-        return submitJob(study, JobType.NATIVE, ClinicalPipelinePrepareWrapperAnalysis.ID, params, jobName, jobDescription, dependsOn,
+            @ApiParam(name = "body", value = "JSON with parameters to execute the command " + PrepareClinicalPipelineWrapperAnalysis.ID, required = true) PrepareClinicalPipelineWrapperParams params) {
+        return submitJob(study, JobType.NATIVE, PrepareClinicalPipelineWrapperAnalysis.ID, params, jobName, jobDescription, dependsOn,
                 jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @POST
     @Path("/pipeline/genomics/run")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = ClinicalPipelineGenomicsWrapperAnalysis.DESCRIPTION, response = Job.class)
+    @ApiOperation(value = GenomicsClinicalPipelineWrapperAnalysis.DESCRIPTION, response = Job.class)
     public Response pipelineGenomicsRun(
             @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
@@ -1519,14 +1519,14 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
-            @ApiParam(name = "body", value = "JSON with parameters to execute the command " + ClinicalPipelineGenomicsWrapperAnalysis.ID, required = true) GenomicsClinicalPipelineWrapperParams params) {
-        return submitJob(study, JobType.NATIVE, ClinicalPipelineGenomicsWrapperAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+            @ApiParam(name = "body", value = "JSON with parameters to execute the command " + GenomicsClinicalPipelineWrapperAnalysis.ID, required = true) GenomicsClinicalPipelineWrapperParams params) {
+        return submitJob(study, JobType.NATIVE, GenomicsClinicalPipelineWrapperAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @POST
     @Path("/pipeline/affy/run")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = ClinicalPipelineGenomicsWrapperAnalysis.DESCRIPTION, response = Job.class)
+    @ApiOperation(value = GenomicsClinicalPipelineWrapperAnalysis.DESCRIPTION, response = Job.class)
     public Response pipelineAffyRun(
             @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,

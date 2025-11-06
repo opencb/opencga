@@ -39,13 +39,13 @@ import java.util.*;
 
 import static org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelineUtils.*;
 
-@ToolExecutor(id = ClinicalPipelineGenomicsWrapperAnalysisExecutor.ID,
-        tool = ClinicalPipelineGenomicsWrapperAnalysis.ID,
+@ToolExecutor(id = GenomicsClinicalPipelineWrapperAnalysisExecutor.ID,
+        tool = GenomicsClinicalPipelineWrapperAnalysis.ID,
         source = ToolExecutor.Source.STORAGE,
         framework = ToolExecutor.Framework.LOCAL)
-public class ClinicalPipelineGenomicsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor {
+public class GenomicsClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor {
 
-    public static final String ID = ClinicalPipelineGenomicsWrapperAnalysis.ID + "-local";
+    public static final String ID = GenomicsClinicalPipelineWrapperAnalysis.ID + "-local";
 
     private String study;
 
@@ -120,7 +120,8 @@ public class ClinicalPipelineGenomicsWrapperAnalysisExecutor extends DockerWrapp
             // Execute Python script in docker
             String dockerImage = getDockerImageName() + ":" + getDockerImageVersion();
 
-            String dockerCli = buildCommandLine(dockerImage, inputBindings, readOnlyInputBindings, outputBindings.get(0), scriptCli, null);
+            String dockerCli = buildCommandLine(dockerImage, inputBindings, readOnlyInputBindings, outputBindings.get(0), scriptCli,
+                    getDefaultDockerParams());
             addEvent(Event.Type.INFO, "Docker command line: " + dockerCli);
             logger.info("Docker command line: {}", dockerCli);
 
@@ -166,9 +167,10 @@ public class ClinicalPipelineGenomicsWrapperAnalysisExecutor extends DockerWrapp
                     readOnlyInputBindings, outputBindings);
 
             // Execute Python script in GATK docker
-            String dockerImage =  "broadinstitute/gatk:4.6.2.0";
+            String dockerImage = "broadinstitute/gatk:4.6.2.0";
 
-            String dockerCli = buildCommandLine(dockerImage, inputBindings, readOnlyInputBindings, outputBindings.get(0), scriptCli, null);
+            String dockerCli = buildCommandLine(dockerImage, inputBindings, readOnlyInputBindings, outputBindings.get(0), scriptCli,
+                    getDefaultDockerParams());
             addEvent(Event.Type.INFO, "Docker command line: " + dockerCli);
             logger.info("Docker command line: {}", dockerCli);
 
@@ -258,7 +260,7 @@ public class ClinicalPipelineGenomicsWrapperAnalysisExecutor extends DockerWrapp
         return study;
     }
 
-    public ClinicalPipelineGenomicsWrapperAnalysisExecutor setStudy(String study) {
+    public GenomicsClinicalPipelineWrapperAnalysisExecutor setStudy(String study) {
         this.study = study;
         return this;
     }
@@ -267,7 +269,7 @@ public class ClinicalPipelineGenomicsWrapperAnalysisExecutor extends DockerWrapp
         return scriptPath;
     }
 
-    public ClinicalPipelineGenomicsWrapperAnalysisExecutor setScriptPath(Path scriptPath) {
+    public GenomicsClinicalPipelineWrapperAnalysisExecutor setScriptPath(Path scriptPath) {
         this.scriptPath = scriptPath;
         return this;
     }
@@ -276,7 +278,7 @@ public class ClinicalPipelineGenomicsWrapperAnalysisExecutor extends DockerWrapp
         return pipelineConfig;
     }
 
-    public ClinicalPipelineGenomicsWrapperAnalysisExecutor setPipelineConfig(GenomicsPipelineConfig pipelineConfig) {
+    public GenomicsClinicalPipelineWrapperAnalysisExecutor setPipelineConfig(GenomicsPipelineConfig pipelineConfig) {
         this.pipelineConfig = pipelineConfig;
         return this;
     }
@@ -285,7 +287,7 @@ public class ClinicalPipelineGenomicsWrapperAnalysisExecutor extends DockerWrapp
         return pipelineSteps;
     }
 
-    public ClinicalPipelineGenomicsWrapperAnalysisExecutor setPipelineSteps(List<String> pipelineSteps) {
+    public GenomicsClinicalPipelineWrapperAnalysisExecutor setPipelineSteps(List<String> pipelineSteps) {
         this.pipelineSteps = pipelineSteps;
         return this;
     }

@@ -42,7 +42,7 @@ public class GenomicsPipelineSteps {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("PipelineSteps{");
+        final StringBuilder sb = new StringBuilder("GenomicsPipelineSteps{");
         sb.append("qualityControl=").append(qualityControl);
         sb.append(", alignment=").append(alignment);
         sb.append(", variantCalling=").append(variantCalling);

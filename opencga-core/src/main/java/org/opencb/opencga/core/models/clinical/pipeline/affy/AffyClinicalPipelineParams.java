@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.models.clinical.pipeline.affy;
 
+import org.checkerframework.checker.units.qual.A;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelineParams;
@@ -25,13 +26,11 @@ import org.opencb.opencga.core.tools.ToolParams;
 import java.util.ArrayList;
 import java.util.List;
 
-public class AffyClinicalPipelineParams extends ClinicalPipelineParams {
-
-    @DataField(id = "pipeline", description = "JSON containing the configuration for affy pipelines")
-    private AffyPipelineConfig pipeline;
+public class AffyClinicalPipelineParams extends ClinicalPipelineParams<AffyPipelineConfig> {
 
     public AffyClinicalPipelineParams() {
         super();
+        this.pipeline = new AffyPipelineConfig();
     }
 
     @Override
@@ -46,15 +45,6 @@ public class AffyClinicalPipelineParams extends ClinicalPipelineParams {
         sb.append(", pipeline=").append(pipeline);
         sb.append('}');
         return sb.toString();
-    }
-
-    public AffyPipelineConfig getPipeline() {
-        return pipeline;
-    }
-
-    public AffyClinicalPipelineParams setPipeline(AffyPipelineConfig pipeline) {
-        this.pipeline = pipeline;
-        return this;
     }
 }
 

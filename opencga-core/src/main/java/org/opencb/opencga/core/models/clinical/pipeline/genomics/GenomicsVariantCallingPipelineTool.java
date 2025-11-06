@@ -40,7 +40,7 @@ public class GenomicsVariantCallingPipelineTool extends PipelineTool {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("PipelineVariantCallingTool{");
+        final StringBuilder sb = new StringBuilder("GenomicsVariantCallingPipelineTool{");
         sb.append("reference='").append(reference).append('\'');
         sb.append(", id='").append(id).append('\'');
         sb.append(", parameters=").append(parameters);

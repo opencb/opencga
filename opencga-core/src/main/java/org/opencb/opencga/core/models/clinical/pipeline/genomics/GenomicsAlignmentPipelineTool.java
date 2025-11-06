@@ -40,7 +40,7 @@ public class GenomicsAlignmentPipelineTool extends PipelineTool {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("PipelineAlignmentTool{");
+        final StringBuilder sb = new StringBuilder("GenomicsAlignmentPipelineTool{");
         sb.append("index='").append(index).append('\'');
         sb.append(", id='").append(id).append('\'');
         sb.append(", parameters=").append(parameters);

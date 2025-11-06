@@ -17,13 +17,13 @@ import java.util.*;
 
 import static org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelineUtils.*;
 
-@ToolExecutor(id = ClinicalPipelinePrepareWrapperAnalysisExecutor.ID,
+@ToolExecutor(id = PrepareClinicalPipelineWrapperAnalysisExecutor.ID,
         tool = NgsPipelineWrapperAnalysis.ID,
         source = ToolExecutor.Source.STORAGE,
         framework = ToolExecutor.Framework.LOCAL)
-public class ClinicalPipelinePrepareWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor {
+public class PrepareClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor {
 
-    public static final String ID = ClinicalPipelinePrepareWrapperAnalysis.ID + "-local";
+    public static final String ID = PrepareClinicalPipelineWrapperAnalysis.ID + "-local";
 
     private String study;
 
@@ -65,8 +65,8 @@ public class ClinicalPipelinePrepareWrapperAnalysisExecutor extends DockerWrappe
                     + " -r " + (virtualRefPath != null ? virtualRefPath : reference)
                     + " -o " + OUTPUT_VIRTUAL_PATH;
             params += (" -i " + REFERENCE_GENOME_INDEX);
-            if (CollectionUtils.isNotEmpty(prepareParams.getAlignerIndexes())) {
-                params += ("," + StringUtils.join(prepareParams.getAlignerIndexes(), ","));
+            if (CollectionUtils.isNotEmpty(prepareParams.getIndexes())) {
+                params += ("," + StringUtils.join(prepareParams.getIndexes(), ","));
             }
 
             // Execute Python script in docker
@@ -87,7 +87,7 @@ public class ClinicalPipelinePrepareWrapperAnalysisExecutor extends DockerWrappe
         return study;
     }
 
-    public ClinicalPipelinePrepareWrapperAnalysisExecutor setStudy(String study) {
+    public PrepareClinicalPipelineWrapperAnalysisExecutor setStudy(String study) {
         this.study = study;
         return this;
     }
@@ -96,7 +96,7 @@ public class ClinicalPipelinePrepareWrapperAnalysisExecutor extends DockerWrappe
         return scriptPath;
     }
 
-    public ClinicalPipelinePrepareWrapperAnalysisExecutor setScriptPath(Path scriptPath) {
+    public PrepareClinicalPipelineWrapperAnalysisExecutor setScriptPath(Path scriptPath) {
         this.scriptPath = scriptPath;
         return this;
     }
@@ -105,7 +105,7 @@ public class ClinicalPipelinePrepareWrapperAnalysisExecutor extends DockerWrappe
         return prepareParams;
     }
 
-    public ClinicalPipelinePrepareWrapperAnalysisExecutor setPrepareParams(PrepareClinicalPipelineParams prepareParams) {
+    public PrepareClinicalPipelineWrapperAnalysisExecutor setPrepareParams(PrepareClinicalPipelineParams prepareParams) {
         this.prepareParams = prepareParams;
         return this;
     }

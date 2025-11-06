@@ -41,7 +41,7 @@ public class GenomicsVariantCallingPipelineStep extends PipelineStep {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("PipelineVariantCallingStep{");
+        final StringBuilder sb = new StringBuilder("GenomicsVariantCallingPipelineStep{");
         sb.append("tools=").append(tools);
         sb.append(", options=").append(options);
         sb.append('}');

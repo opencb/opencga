@@ -9,11 +9,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.clinical.pipeline.PipelineConfig;
-import org.opencb.opencga.core.models.clinical.pipeline.PipelineInput;
-import org.opencb.opencga.core.models.clinical.pipeline.PipelineSample;
-import org.opencb.opencga.core.models.clinical.pipeline.PipelineTool;
-import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyPipelineConfig;
+import org.opencb.opencga.core.models.clinical.pipeline.*;
 import org.opencb.opencga.core.models.file.File;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -140,15 +136,37 @@ public class ClinicalPipelineUtils {
         return first.substring(0, prefixLength);
     }
 
-    public static <T extends PipelineConfig> T copyPipelineConfig(T input) throws JsonProcessingException {
-        ObjectMapper mapper = new ObjectMapper();
-        String pipeline = mapper.writeValueAsString(input);
-        @SuppressWarnings("unchecked")
-        T copy = (T) mapper.readValue(pipeline, input.getClass());
-        return copy;
+    public static <P extends ClinicalPipelineParams, C extends PipelineConfig> C checkCommons(P params, CatalogManager catalogManager,
+                                                                                              String study, String token)
+            throws CatalogException, ToolException, IOException {
+        // Check pipeline configuration
+        C updatedPipelineConfig = checkPipelineConfig(params.getPipelineFile(), (C) params.getPipeline(), catalogManager, study, token);
+
+        // Update from params: samples, data dir and index dir
+        updatePipelineConfigFromParams(updatedPipelineConfig, params.getSamples(), params.getDataDir(), params.getIndexDir());
+
+        // Update physical paths
+        updatePipelineConfigWithPhysicalPaths(updatedPipelineConfig, study, catalogManager, token);
+
+        return updatedPipelineConfig;
     }
 
-    public static <T extends PipelineConfig> T checkPipelineConfig(String pipelineFile, T pipelineConfig, CatalogManager catalogManager,
+//    public static <T extends PipelineConfig> T checkCommons(ClinicalPipelineParams params, T pipelineConfig, CatalogManager catalogManager,
+//                                                            String study, String token)
+//            throws CatalogException, ToolException, IOException {
+//        // Check pipeline configuration
+//        T updatedPipelineConfig = checkPipelineConfig(params.getPipelineFile(), pipelineConfig, catalogManager, study, token);
+//
+//        // Update from params: samples, data dir and index dir
+//        updatePipelineConfigFromParams(updatedPipelineConfig, params.getSamples(), params.getDataDir(), params.getIndexDir());
+//
+//        // Update physical paths
+//        updatePipelineConfigWithPhysicalPaths(updatedPipelineConfig, study, catalogManager, token);
+//
+//        return updatedPipelineConfig;
+//    }
+
+    private static <C extends PipelineConfig> C checkPipelineConfig(String pipelineFile, C pipelineConfig, CatalogManager catalogManager,
                                                                    String study, String token)
             throws ToolException, CatalogException, IOException {
         // Check pipeline configuration, if a pipeline file is provided, check the file exists and then read the file content
@@ -158,7 +176,7 @@ public class ClinicalPipelineUtils {
                     + " directly the pipeline configuration.");
         }
 
-        T updatedPipelineConfig;
+        C updatedPipelineConfig;
 
         // Get pipeline config
         if (!StringUtils.isEmpty(pipelineFile)) {
@@ -178,7 +196,7 @@ public class ClinicalPipelineUtils {
         return updatedPipelineConfig;
     }
 
-    public static  <T extends PipelineConfig> void updatePipelineConfigFromParams(T pipelineConfig, List<String> samples, String dataDir,
+    private static  <C extends PipelineConfig> void updatePipelineConfigFromParams(C pipelineConfig, List<String> samples, String dataDir,
                                                                                   String indexDir) throws ToolException {
         // If samples are provided in the pipeline params, set them in the pipeline config and get the real file paths
         if (CollectionUtils.isNotEmpty(samples)) {
@@ -200,7 +218,7 @@ public class ClinicalPipelineUtils {
         }
     }
 
-    public static <T extends PipelineConfig> void updatePipelineConfigWithPhysicalPaths(T pipelineConfig, String study,
+    private static <C extends PipelineConfig> void updatePipelineConfigWithPhysicalPaths(C pipelineConfig, String study,
                                                                                         CatalogManager catalogManager, String token)
             throws CatalogException, ToolException {
         if (pipelineConfig.getInput() == null) {
@@ -249,6 +267,14 @@ public class ClinicalPipelineUtils {
             // Update the data dir in the pipeline config
             pipelineConfig.getInput().setIndexDir(Paths.get(opencgaFile.getUri()).toAbsolutePath().toString());
         }
+    }
+
+    public static <C extends PipelineConfig> C copyPipelineConfig(C input) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        String pipeline = mapper.writeValueAsString(input);
+        @SuppressWarnings("unchecked")
+        C copy = (C) mapper.readValue(pipeline, input.getClass());
+        return copy;
     }
 
     private static PipelineSample createPipelineSampleFromString(String sampleString) throws ToolException {

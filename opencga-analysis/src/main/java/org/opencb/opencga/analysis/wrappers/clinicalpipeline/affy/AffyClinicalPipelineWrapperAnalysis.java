@@ -49,16 +49,8 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
 
         setUpStorageEngineExecutor(study);
 
-        // Check pipeline configuration
-        updatedPipelineConfig = checkPipelineConfig(analysisParams.getPipelineParams().getPipelineFile(),
-                analysisParams.getPipelineParams().getPipeline(), catalogManager, study, token);
-
-        // Update from params: samples, data dir and index dir
-        updatePipelineConfigFromParams(updatedPipelineConfig, analysisParams.getPipelineParams().getSamples(),
-                analysisParams.getPipelineParams().getDataDir(), analysisParams.getPipelineParams().getIndexDir());
-
-        // Update physical paths
-        updatePipelineConfigWithPhysicalPaths(updatedPipelineConfig, study, catalogManager, token);
+        // Check commons
+        updatedPipelineConfig = checkCommons(analysisParams.getPipelineParams(), catalogManager, study, token);
 
         // Check pipeline steps
         checkPipelineSteps();

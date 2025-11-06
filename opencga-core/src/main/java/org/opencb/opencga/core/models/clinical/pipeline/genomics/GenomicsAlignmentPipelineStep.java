@@ -40,7 +40,7 @@ public class GenomicsAlignmentPipelineStep extends PipelineStep {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("PipelineAlignmentStep{");
+        final StringBuilder sb = new StringBuilder("GenomicsAlignmentPipelineStep{");
         sb.append("tool=").append(tool);
         sb.append(", options=").append(options);
         sb.append('}');

@@ -17,15 +17,13 @@
 package org.opencb.opencga.core.models.clinical.pipeline;
 
 import org.opencb.commons.annotations.DataField;
-import org.opencb.opencga.core.api.FieldConstants;
-import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyPipelineConfig;
 import org.opencb.opencga.core.models.operations.variant.VariantIndexParams;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class ClinicalPipelineParams extends ToolParams {
+public class ClinicalPipelineParams<T extends PipelineConfig> extends ToolParams {
 
     @DataField(id = "samples", description = "List of samples following the format: sample_id:file_id1;file_id2[:rol[:somatic]]; 'rol'"
             + " can be 'mother', 'father' or 'child'. If the sample is somatic, then add ':somatic' at")
@@ -47,6 +45,9 @@ public class ClinicalPipelineParams extends ToolParams {
     @DataField(id = "pipelineFile", description = "Clinical pipeline configuration file")
     protected String pipelineFile;
 
+    @DataField(id = "pipeline", description = "Clinical pipeline configuration")
+    protected T pipeline;
+
     public ClinicalPipelineParams() {
         this.samples = new ArrayList<>();
         this.steps = new ArrayList<>();
@@ -54,13 +55,14 @@ public class ClinicalPipelineParams extends ToolParams {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("AffyClinicalPipelineParams{");
+        final StringBuilder sb = new StringBuilder("ClinicalPipelineParams{");
         sb.append("samples=").append(samples);
         sb.append(", dataDir='").append(dataDir).append('\'');
         sb.append(", indexDir='").append(indexDir).append('\'');
         sb.append(", steps=").append(steps);
         sb.append(", variantIndexParams=").append(variantIndexParams);
         sb.append(", pipelineFile='").append(pipelineFile).append('\'');
+        sb.append(", pipeline=").append(pipeline);
         sb.append('}');
         return sb.toString();
     }
@@ -69,7 +71,7 @@ public class ClinicalPipelineParams extends ToolParams {
         return samples;
     }
 
-    public ClinicalPipelineParams setSamples(List<String> samples) {
+    public ClinicalPipelineParams<T> setSamples(List<String> samples) {
         this.samples = samples;
         return this;
     }
@@ -78,7 +80,7 @@ public class ClinicalPipelineParams extends ToolParams {
         return dataDir;
     }
 
-    public ClinicalPipelineParams setDataDir(String dataDir) {
+    public ClinicalPipelineParams<T> setDataDir(String dataDir) {
         this.dataDir = dataDir;
         return this;
     }
@@ -87,7 +89,7 @@ public class ClinicalPipelineParams extends ToolParams {
         return indexDir;
     }
 
-    public ClinicalPipelineParams setIndexDir(String indexDir) {
+    public ClinicalPipelineParams<T> setIndexDir(String indexDir) {
         this.indexDir = indexDir;
         return this;
     }
@@ -96,7 +98,7 @@ public class ClinicalPipelineParams extends ToolParams {
         return steps;
     }
 
-    public ClinicalPipelineParams setSteps(List<String> steps) {
+    public ClinicalPipelineParams<T> setSteps(List<String> steps) {
         this.steps = steps;
         return this;
     }
@@ -105,7 +107,7 @@ public class ClinicalPipelineParams extends ToolParams {
         return variantIndexParams;
     }
 
-    public ClinicalPipelineParams setVariantIndexParams(VariantIndexParams variantIndexParams) {
+    public ClinicalPipelineParams<T> setVariantIndexParams(VariantIndexParams variantIndexParams) {
         this.variantIndexParams = variantIndexParams;
         return this;
     }
@@ -114,8 +116,17 @@ public class ClinicalPipelineParams extends ToolParams {
         return pipelineFile;
     }
 
-    public ClinicalPipelineParams setPipelineFile(String pipelineFile) {
+    public ClinicalPipelineParams<T> setPipelineFile(String pipelineFile) {
         this.pipelineFile = pipelineFile;
+        return this;
+    }
+
+    public T getPipeline() {
+        return pipeline;
+    }
+
+    public ClinicalPipelineParams<T> setPipeline(T pipeline) {
+        this.pipeline = pipeline;
         return this;
     }
 }
