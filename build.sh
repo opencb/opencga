@@ -99,8 +99,7 @@ function manage_dependency() {
     CLONE_URL="git@github.com:${REPO_ORG}/${REPO}.git"
   fi
 
-  # Shallow clone at the requested ref
-  git clone --depth 1 -b "$GIT_REF" "$CLONE_URL"
+  git clone "$CLONE_URL"
 
   if [ -d "./$REPO" ]; then
       cd "$REPO" || exit 2
