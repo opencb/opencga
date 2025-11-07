@@ -74,7 +74,7 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> toolsList = asList( "acl-update","aggregationstats","custom-builder-run","custom-create","custom-docker-run","custom-run","custom-update","distinct","search","walker-create","workflow-create","workflow-import","workflow-run","workflow-update","acl","delete","info")
+    private List<Candidate> toolsList = asList( "acl-update","aggregationstats","custom-builder-run","custom-create","custom-docker-run","custom-run","custom-update","distinct","search","walker-create","walker-run","workflow-create","workflow-import","workflow-run","workflow-update","acl","delete","info")
             .stream()
             .map(Candidate::new)
             .collect(toList());

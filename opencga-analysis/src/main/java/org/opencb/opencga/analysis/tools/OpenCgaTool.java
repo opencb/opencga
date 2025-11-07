@@ -24,7 +24,7 @@ import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.ConfigurationUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
-import org.opencb.opencga.analysis.workflow.NextFlowExecutor;
+import org.opencb.opencga.analysis.workflow.NextFlowToolExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.ProjectManager;
@@ -312,7 +312,9 @@ public abstract class OpenCgaTool {
     }
 
     private void deleteScratchDirectory() throws ToolException {
-        if (NextFlowExecutor.ID.equals(getId())) {
+        // FIXME: Why not delete scratch directory for NextFlowExecutor?
+        //        Risk of filling up the disk with junk files.
+        if (NextFlowToolExecutor.ID.equals(getId())) {
             privateLogger.info("Skip deleting scratch directory for tool '{}'.", getId());
             return;
         }

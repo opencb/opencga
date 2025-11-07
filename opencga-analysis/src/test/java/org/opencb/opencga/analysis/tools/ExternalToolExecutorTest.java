@@ -7,7 +7,7 @@ import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.StorageManager;
-import org.opencb.opencga.analysis.workflow.NextFlowExecutor;
+import org.opencb.opencga.analysis.workflow.NextFlowToolExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManagerTest;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -43,8 +43,8 @@ public class ExternalToolExecutorTest extends AbstractManagerTest {
         Path outDir = Paths.get(catalogManagerResource.createTmpOutdir("_nextflow"));
 
         StopWatch stopWatch = StopWatch.createStarted();
-        NextFlowExecutor nextFlowExecutorTest = new NextFlowExecutor();
-        ExternalToolRunParams runParams = new ExternalToolRunParams(workflow.getId(), 1, Collections.emptyMap());
+        NextFlowToolExecutor nextFlowExecutorTest = new NextFlowToolExecutor();
+        WorkflowToolParams runParams = new WorkflowToolParams(workflow.getId(), 1, new WorkflowParams());
         ObjectMap params = runParams.toObjectMap();
         params.put(ParamConstants.STUDY_PARAM, studyFqn);
         nextFlowExecutorTest.setUp(catalogManagerResource.getOpencgaHome().toString(), catalogManager,
@@ -68,10 +68,10 @@ public class ExternalToolExecutorTest extends AbstractManagerTest {
         Path outDir = Paths.get(catalogManagerResource.createTmpOutdir("_nextflow"));
 
         StopWatch stopWatch = StopWatch.createStarted();
-        NextFlowExecutor nextFlowExecutorTest = new NextFlowExecutor();
+        NextFlowToolExecutor nextFlowExecutorTest = new NextFlowToolExecutor();
         Map<String, String> workflowParams = new HashMap<>();
         workflowParams.put("in", "ocga://myfile.txt");
-        ExternalToolRunParams runParams = new ExternalToolRunParams(workflow.getId(), 1, workflowParams);
+        WorkflowToolParams runParams = new WorkflowToolParams(workflow.getId(), 1, new WorkflowParams(workflowParams));
         ObjectMap params = runParams.toObjectMap();
         params.put(ParamConstants.STUDY_PARAM, studyFqn);
         nextFlowExecutorTest.setUp(catalogManagerResource.getOpencgaHome().toString(), catalogManager,
@@ -123,14 +123,14 @@ public class ExternalToolExecutorTest extends AbstractManagerTest {
         Path outDir = Paths.get(catalogManagerResource.createTmpOutdir("_nextflow"));
 
         StopWatch stopWatch = StopWatch.createStarted();
-        NextFlowExecutor nextFlowExecutorTest = new NextFlowExecutor();
+        NextFlowToolExecutor nextFlowExecutorTest = new NextFlowToolExecutor();
         Map<String, String> cliParams = new HashMap<>();
         cliParams.put("input", "file://samplesheet.csv");
 //        cliParams.put("--flag", "$FLAG");
 //        cliParams.put("outdir", "$OUTPUT");
 //        cliParams.put("genome", "GRCh37");
 //        cliParams.put("-profile", "docker");
-        ExternalToolRunParams runParams = new ExternalToolRunParams(workflow.getId(), 1, cliParams);
+        WorkflowToolParams runParams = new WorkflowToolParams(workflow.getId(), 1, new WorkflowParams(cliParams));
         ObjectMap params = runParams.toObjectMap();
         params.put(ParamConstants.STUDY_PARAM, studyFqn);
         nextFlowExecutorTest.setUp(catalogManagerResource.getOpencgaHome().toString(), catalogManager,

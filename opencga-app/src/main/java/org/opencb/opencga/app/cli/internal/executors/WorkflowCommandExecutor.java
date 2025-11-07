@@ -1,10 +1,10 @@
 package org.opencb.opencga.app.cli.internal.executors;
 
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.workflow.NextFlowExecutor;
+import org.opencb.opencga.analysis.workflow.NextFlowToolExecutor;
 import org.opencb.opencga.app.cli.internal.options.WorkflowCommandOptions;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.externalTool.ExternalToolRunParams;
+import org.opencb.opencga.core.models.externalTool.WorkflowToolParams;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -46,9 +46,9 @@ public class WorkflowCommandExecutor extends InternalCommandExecutor {
 
         Path outDir = Paths.get(options.outDir);
 
-        ExternalToolRunParams nextFlowRunParams = new ExternalToolRunParams();
+        WorkflowToolParams nextFlowRunParams = new WorkflowToolParams();
         nextFlowRunParams.setId(options.workflowId);
 
-        toolRunner.execute(NextFlowExecutor.class, nextFlowRunParams, QueryOptions.empty(), outDir, jobId, dryRun, token);
+        toolRunner.execute(NextFlowToolExecutor.class, nextFlowRunParams, QueryOptions.empty(), outDir, jobId, dryRun, token);
     }
 }

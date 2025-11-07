@@ -145,18 +145,30 @@ public abstract class ToolParams {
         loadPropertiesMap();
         for (String key : params.keySet()) {
             Class<?> fieldClass = internalPropertiesMap.get(key);
-            String value = params.getString(key);
-            if (StringUtils.isNotEmpty(value)) {
+            Object value = params.get(key); // Get the actual object, not as String
+
+            if (value != null) {
                 // native boolean fields are "flags"
                 if (fieldClass == boolean.class) {
-                    if (value.equals("true")) {
+                    String stringValue = params.getString(key);
+                    if (stringValue.equals("true")) {
                         map.put(key, "");
                     }
                 } else if (fieldClass != null
                         && (Map.class.isAssignableFrom(fieldClass) || ToolParams.class.isAssignableFrom(fieldClass))) {
                     map.put(key, params.getMap(key));
-                } else {
+                } else if (value instanceof String && StringUtils.isNotEmpty((String) value)) {
+                    // Only convert to string if it's already a string and not empty
                     map.put(key, value);
+                } else if (!(value instanceof String)) {
+                    // For complex objects that are not strings, preserve them as objects
+                    map.put(key, value);
+                } else {
+                    // For non-empty strings
+                    String stringValue = params.getString(key);
+                    if (StringUtils.isNotEmpty(stringValue)) {
+                        map.put(key, stringValue);
+                    }
                 }
             }
         }

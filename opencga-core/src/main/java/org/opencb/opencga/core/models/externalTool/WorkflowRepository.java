@@ -32,8 +32,8 @@ public class WorkflowRepository {
         sb.append(", tag='").append(tag).append('\'');
         sb.append(", author='").append(author).append('\'');
         sb.append(", description='").append(description).append('\'');
-        sb.append(", user='").append(user).append('\'');
-        sb.append(", password='").append(password).append('\'');
+        sb.append(", user='").append("xxxxxxxx").append('\'');
+        sb.append(", password='").append("xxxxxxxx").append('\'');
         sb.append('}');
         return sb.toString();
     }
