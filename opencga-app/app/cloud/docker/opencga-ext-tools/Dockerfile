@@ -9,13 +9,20 @@ LABEL org.label-schema.vendor="OpenCB" \
 
 ## Run update and install necessary packages
 RUN apt-get update -y && \
-    ## 1. Install system dependencies
+    ## 0. Install system dependencies
     DEBIAN_FRONTEND="noninteractive" TZ="Europe/London" apt-get install -y curl libcurl4 git libgmp-dev libcurl4-openssl-dev libgit2-dev build-essential \
     libssl-dev libssh-dev libxml2-dev libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev \
     gnuplot pandoc samtools bcftools tabix fastqc plink1.9 plink2 bwa r-base wget libopenblas0-openmp libcholmod5 libsuitesparse-dev python3 python3-pip && \
     apt-get remove libopenblas0-pthread && \
     pip3 install --no-cache-dir --user multiqc --break-system-packages && \
     pip3 install --no-cache-dir pydantic --break-system-packages && \
+
+    ## 1. Install Docker repository
+    install -m 0755 -d /etc/apt/keyrings && \
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
+    chmod a+r /etc/apt/keyrings/docker.gpg && \
+    echo "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu "$(. /etc/os-release && echo "noble")" stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
+    apt-get update && apt-get install -y docker-ce docker-ce-cli containerd.io && \
 
     ## 2. Install samtools
     wget https://github.com/samtools/samtools/releases/download/1.22.1/samtools-1.22.1.tar.bz2 && \
@@ -43,8 +50,11 @@ RUN apt-get update -y && \
     cd .. && \
 
     ## 4. Install bwa-mem2
-    curl -L https://github.com/bwa-mem2/bwa-mem2/releases/download/v2.2.1/bwa-mem2-2.2.1_x64-linux.tar.bz2 | tar jxf - && \
-    mv bwa-mem2-2.2.1_x64-linux/bwa-mem2* /usr/local/bin/ && \
+    git clone --recursive https://github.com/bwa-mem2/bwa-mem2 && \
+    cd bwa-mem2 && \
+    make && \
+    cp bwa-mem2* /usr/local/bin/ && \
+    cd .. && \
 
     ## 5. Install Thermofisher APT tools
     mkdir affy && \
@@ -73,21 +83,8 @@ RUN apt-get update -y && \
     cd .. && \
 
     ## 8. Clean up
-    rm -rf samtools-1.22.1 bcftools-1.22 bwa-mem2-2.2.1_x64-linux affy /var/lib/apt/lists/* /tmp/* /opt/opencga/signature.tools.lib/.git && \
+    rm -rf samtools-1.22.1 bcftools-1.22 bwa-mem2 affy /var/lib/apt/lists/* /tmp/* /opt/opencga/signature.tools.lib/.git && \
     strip --remove-section=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so.5
-
-# Install prerequisites
-#RUN apt-get install -y \
-#        apt-transport-https \
-#        ca-certificates
-#
-## Download and install Docker manually
-#RUN curl -fsSL https://get.docker.com -o get-docker.sh && \
-#    sh get-docker.sh
-#
-## Install Docker Compose manually
-#RUN curl -L "https://github.com/docker/compose/releases/download/v2.24.5/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && \
-#    chmod +x /usr/local/bin/docker-compose
 
 
 ENV BCFTOOLS_PLUGINS="/usr/local/bin"

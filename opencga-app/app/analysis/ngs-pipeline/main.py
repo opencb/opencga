@@ -25,7 +25,7 @@ def parse_args(argv=None):
     ## --- index command ---
     prepare_parser = subparsers.add_parser("prepare", help="Index the reference genome")
     prepare_parser.add_argument("-r", "--reference-genome", required=True, help="Path or URL to the reference genome in FASTA format")
-    prepare_parser.add_argument("-i", "--aligner-indexes", default="bwa,bwa-mem2,minimap2,bowtie2,hisat2", help="Comma-separated list of aligner indexes to prepare (reference-genome,bwa,bwa-mem2,minimap2). Reference-genome is always executed.")
+    prepare_parser.add_argument("-i", "--aligner-indexes", default="bwa,bwa-mem2,minimap2,bowtie2,hisat2,affy", help="Comma-separated list of aligner indexes to prepare (reference-genome,bwa,bwa-mem2,minimap2). Reference-genome is always executed.")
     prepare_parser.add_argument("-c", "--clean", action="store_true", help="Clean existing directory before running")
     prepare_parser.add_argument("-l", "--log-level", default="info", choices=["debug", "info", "warning", "error"],
                                 help="Set console logging level")
