@@ -52,7 +52,7 @@ jobs:
     uses: opencb/java-common-libs/.github/workflows/deploy-python-workflow.yml@develop
     with:
       cli: ./clients/python/python-build.sh push
-      artifact: build-folder
+      artifact: build-folder-hdi
     secrets: inherit
 
   # Add the deploy-maven and deploy-python jobs they depend on the build-hdi job
@@ -69,7 +69,7 @@ jobs:
     uses: opencb/java-common-libs/.github/workflows/release-github-workflow.yml@develop
     needs: [ build-hdi, deploy-docker-hdi, deploy-maven, deploy-python, deploy-docker-python-notebook]
     with:
-      artifact: build-folder
+      artifact: build-folder-hdi
       file: |
         opencga-client-${{ needs.build-hdi.outputs.version }}.tar.gz
         clients/R/opencgaR_${{ needs.build-hdi.outputs.version }}.tar.gz
@@ -78,6 +78,7 @@ jobs:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
     needs: [ build-hdi, deploy-python ]
     with:
+      artifact: build-folder-hdi
       cli: python3 ./build/cloud/docker/docker-build.py push --images python-notebook --tag ${{ needs.build-hdi.outputs.version }} --docker-build-args "--build-arg VERSION=${{ needs.build-hdi.outputs.version }}"
     secrets: inherit
 
@@ -90,7 +91,7 @@ jobs:
       needs_hadoop_preparation: true
       hadoop_flavour: emr6.1
       maven_opts: -Pemr6.1 -Dopencga.war.name=opencga -Dcheckstyle.skip
-      build_folder: build-folder-emr
+      build_folder: build-folder-emr61
       dependency_repos: "java-common-libs,biodata"
     secrets: inherit
 
@@ -99,7 +100,7 @@ jobs:
     needs: build-emr
     with:
       cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag "${{ needs.build-emr.outputs.version }}-emr6.1" --org zettagenomics
-      build_folder: build-folder-emr
+      build_folder: build-folder-emr61
     secrets: inherit
 
   # Add the build-emr613 and deploy-docker-emr613 jobs

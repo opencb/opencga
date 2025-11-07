@@ -10,14 +10,24 @@ on:
         description: "The tag for the new docker."
         type: string
         required: true
-
+      hadoop:
+        type: choice
+        description: 'Hadoop flavour. Any of: [hbase2.0, hdi5.1, emr6.1, emr6.13, emr7.5]'
+        required: false
+        default: hdi5.1
+        options:
+          - hbase2.0
+          - hdi5.1
+          - emr6.1
+          - emr6.13
+          - emr7.5
 jobs:
   build:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
       needs_hadoop_preparation: true
-      hadoop_flavour: ${{ vars.HADOOP_FLAVOUR }}
-      maven_opts: -P${{ vars.HADOOP_FLAVOUR }} -Dopencga.war.name=opencga -Dcheckstyle.skip
+      hadoop_flavour: ${{ inputs.hadoop }}
+      maven_opts: -P${{ inputs.hadoop }} -Dopencga.war.name=opencga -Dcheckstyle.skip
       dependency_repos: "java-common-libs,biodata"
     secrets: inherit
 
