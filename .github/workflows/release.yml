@@ -15,6 +15,7 @@ jobs:
       hadoop_flavour: hdi5.1
       maven_opts: -Phdi5.1 -Dopencga.war.name=opencga -Dcheckstyle.skip
       build_folder: build-folder-hdi
+      dependency_repos: "java-common-libs,biodata"
     secrets: inherit
 
   deploy-docker-hdi:
@@ -60,6 +61,7 @@ jobs:
     needs: build-hdi
     with:
       maven_opts: -P hdi5.1 -Dopencga.war.name=opencga
+      cache_key: ${{ needs.build.outputs.cache_key }}
     secrets: inherit
 
   # Add the release job that depends on all the previous jobs
@@ -89,6 +91,7 @@ jobs:
       hadoop_flavour: emr6.1
       maven_opts: -Pemr6.1 -Dopencga.war.name=opencga -Dcheckstyle.skip
       build_folder: build-folder-emr
+      dependency_repos: "java-common-libs,biodata"
     secrets: inherit
 
   deploy-docker-emr:
@@ -107,6 +110,7 @@ jobs:
       hadoop_flavour: emr6.13
       maven_opts: -Pemr6.13 -Dopencga.war.name=opencga -Dcheckstyle.skip
       build_folder: build-folder-emr613
+      dependency_repos: "java-common-libs,biodata"
     secrets: inherit
 
   deploy-docker-emr613:
@@ -125,6 +129,7 @@ jobs:
       hadoop_flavour: emr7.5
       maven_opts: -Pemr7.5 -Dopencga.war.name=opencga -Dcheckstyle.skip
       build_folder: build-folder-emr75
+      dependency_repos: "java-common-libs,biodata"
     secrets: inherit
 
   deploy-docker-emr75:

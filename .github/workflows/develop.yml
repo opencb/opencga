@@ -14,6 +14,7 @@ jobs:
       needs_hadoop_preparation: true
       hadoop_flavour: ${{ vars.HADOOP_FLAVOUR }}
       maven_opts: -P${{ vars.HADOOP_FLAVOUR }} -Dopencga.war.name=opencga -Dcheckstyle.skip
+      dependency_repos: "java-common-libs,biodata"
     secrets: inherit
 
   deploy-maven:
@@ -21,6 +22,7 @@ jobs:
     needs: build
     with:
       maven_opts: -P${{ vars.HADOOP_FLAVOUR }} -Dopencga.war.name=opencga
+      cache_key: ${{ needs.build.outputs.cache_key }}
     secrets: inherit
 
   deploy-docker-workflow:
