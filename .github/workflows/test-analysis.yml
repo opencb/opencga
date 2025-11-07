@@ -25,7 +25,7 @@ on:
         description: "Maven modules to test. Empty means all. Only top-level modules. Example: 'opencga-storage'"
         required: false
         default: ""
-      upload-artifact:
+      upload_artifact:
         type: boolean
         description: "Whether to upload the build artifact or not"
         required: false
@@ -42,7 +42,7 @@ jobs:
       needs_hadoop_preparation: true
       hadoop_flavour: ${{ inputs.hadoop }}
       maven_opts: -P${{ inputs.hadoop }} -Dopencga.war.name=opencga -Dcheckstyle.skip
-      upload-artifact: ${{ inputs.upload-artifact }}
+      upload_artifact: ${{ inputs.upload_artifact }}
       dependency_repos: "java-common-libs,biodata"
     secrets: inherit
 

@@ -17,5 +17,5 @@ jobs:
     with:
       test_profile: runShortTests,runMediumTests,runLongTests
       hadoop: ${{ matrix.hadoop }}
-      upload-artifact: false
+      upload_artifact: false
     secrets: inherit
