@@ -57,7 +57,7 @@
 
 \item{operationId}{Audit operation UUID.}
 
-\item{resource}{Resource involved. Allowed values: \link{'AUDIT NOTE ORGANIZATION USER PROJECT STUDY FILE SAMPLE JOB INDIVIDUAL COHORT DISEASE_PANEL FAMILY CLINICAL_ANALYSIS INTERPRETATION VARIANT ALIGNMENT CLINICAL EXPRESSION RGA FUNCTIONAL'}}
+\item{resource}{Resource involved. Allowed values: \link{'AUDIT NOTE ORGANIZATION USER PROJECT STUDY FILE SAMPLE JOB INDIVIDUAL COHORT DISEASE_PANEL FAMILY CLINICAL_ANALYSIS INTERPRETATION VARIANT ALIGNMENT CLINICAL EXPRESSION RGA FUNCTIONAL WORKFLOW RESOURCE'}}
 
 \item{resourceId}{Resource ID.}
 
@@ -72,6 +72,8 @@
 \item{creationDate}{Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.}
 
 \item{modificationDate}{Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.}
+
+\item{type}{Note type.}
 
 \item{uuid}{Unique 32-character identifier assigned automatically by OpenCGA.}
 
@@ -127,7 +129,7 @@ The following table summarises the available \emph{actions} for this client:\tab
    updateGroups \tab /{apiVersion}/studies/{study}/groups/update \tab study\link{*}, action, body\link{*} \cr
    updateGroupsUsers \tab /{apiVersion}/studies/{study}/groups/{group}/users/update \tab study\link{*}, group\link{*}, action, body\link{*} \cr
    createNotes \tab /{apiVersion}/studies/{study}/notes/create \tab include, exclude, study\link{*}, includeResult, body\link{*} \cr
-   searchNotes \tab /{apiVersion}/studies/{study}/notes/search \tab include, exclude, study\link{*}, creationDate, modificationDate, id, uuid, userId, tags, visibility, version \cr
+   searchNotes \tab /{apiVersion}/studies/{study}/notes/search \tab include, exclude, study\link{*}, creationDate, modificationDate, id, type, uuid, userId, tags, visibility, version \cr
    deleteNotes \tab /{apiVersion}/studies/{study}/notes/{id}/delete \tab study\link{*}, id\link{*}, includeResult \cr
    updateNotes \tab /{apiVersion}/studies/{study}/notes/{id}/update \tab include, exclude, study\link{*}, id\link{*}, tagsAction, includeResult, body\link{*} \cr
    permissionRules \tab /{apiVersion}/studies/{study}/permissionRules \tab study\link{*}, entity\link{*} \cr

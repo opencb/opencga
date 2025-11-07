@@ -28,6 +28,7 @@
 
     <artifactId>opencga-app</artifactId>
     <packaging>jar</packaging>
+    <name>OpenCGA App</name>
 
     <properties>
         <build.dir>${project.basedir}/../build</build.dir>
@@ -402,7 +403,6 @@
                                 <exec executable="mkdir" failonerror="true">
                                     <arg value="-p"/>
                                     <arg value="${build.dir}/bin/utils"/>
-                                    <arg value="${build.dir}/clients"/>
                                     <arg value="${build.dir}/conf"/>
                                     <arg value="${build.dir}/test"/>
                                     <!--
@@ -467,35 +467,6 @@
                                     <arg value="${project.basedir}/../opencga-core/target/generated-resources/org/opencb/opencga/core/git.properties"/>
                                     <arg value="${build.dir}/misc/git"/>
                                 </exec>
-
-                                <echo>Copying Python and R to ${build.dir}/clients</echo>
-                                <exec executable="cp" failonerror="true">
-                                    <arg value="-r"/>
-                                    <arg value="${project.basedir}/../opencga-client/src/main/python"/>
-                                    <arg value="${build.dir}/clients"/>
-                                </exec>
-
-                                <exec executable="sed" failonerror="true">
-                                    <arg value="-i"/>
-                                    <arg value="s/PYOPENCGA_VERSION/${pyopencga.version}/"/>
-                                    <arg value="${build.dir}/clients/python/setup.py"/>
-                                </exec>
-                                <exec executable="cp" failonerror="true">
-                                    <arg value="-r"/>
-                                    <arg value="${project.basedir}/../opencga-client/src/main/R"/>
-                                    <arg value="${build.dir}/clients"/>
-                                </exec>
-                                <!-- We need to read DESCRIPTION from target folder because we have renamed the version -->
-                                <exec executable="cp" failonerror="true">
-                                    <arg value="${project.basedir}/../opencga-client/target/classes/DESCRIPTION"/>
-                                    <arg value="${build.dir}/clients/R/"/>
-                                </exec>
-                                <exec executable="cp" failonerror="true">
-                                    <arg value="-r"/>
-                                    <arg value="${project.basedir}/../opencga-client/src/main/javascript"/>
-                                    <arg value="${build.dir}/clients"/>
-                                </exec>
-
                                 <echo>Copying configuration files</echo>
                                 <exec executable="cp" failonerror="true">
                                     <arg value="${project.basedir}/../opencga-core/target/classes/configuration.yml"/>
@@ -584,9 +555,6 @@
                                 <exec executable="cp" failonerror="true">
                                     <arg value="-r"/>
                                     <arg value="${build.dir}/libs"/>
-                                    <arg value="${build.dir}/clients/python"/>
-                                    <arg value="${build.dir}/clients/R"/>
-                                    <arg value="${build.dir}/clients/javascript"/>
                                     <arg value="${build.dir}/LICENSE"/>
                                     <arg value="${build.dir}/README.md"/>
                                     <arg value="${build.dir}/${opencga.client.dir}"/>
@@ -632,6 +600,30 @@
                         <goals>
                             <goal>run</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>run-client-builder</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${skipClients}</skip>
+                            <executable>bash</executable>
+                            <workingDirectory>${project.basedir}/..</workingDirectory>
+                            <arguments>
+                                <argument>client-builder.sh</argument>
+                                <argument>--skip-build-opencga</argument>
+                                <argument>--skip-r</argument>
+                            </arguments>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -847,52 +839,6 @@
                                         <exec executable="cp" failonerror="true">
                                             <arg value="${project.basedir}/target/appassembler/bin/opencga-test.sh"/>
                                             <arg value="${build.dir}/bin"/>
-                                        </exec>
-                                    </target>
-                                </configuration>
-                                <goals>
-                                    <goal>run</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>RClient</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-                <property>
-                    <name>RClient</name>
-                </property>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>org.opencb.opencga</groupId>
-                    <artifactId>opencga-client</artifactId>
-                </dependency>
-            </dependencies>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-antrun-plugin</artifactId>
-                        <version>1.8</version>
-                        <executions>
-                            <execution>
-                                <id>R-client-compile</id>
-                                <phase>install</phase>
-                                <configuration>
-                                    <target>
-                                        <echo>Compiling R client</echo>
-                                        <!-- FIXME : This is not working -->
-                                        <exec executable="${build.dir}/clients/R/build.sh" failonerror="false">
-                                            <arg value="${build.dir}/clients/R"/>
-                                        </exec>
-                                        <echo>Moving R client to ${build.dir}/clients/R/</echo>
-                                        <exec executable="cp" failonerror="false">
-                                            <arg value="/tmp/opencgaR_${opencgar.version}.tar.gz"/>
-                                            <arg value="${build.dir}/clients/R/opencgaR_${project.parent.version}.tar.gz"/>
                                         </exec>
                                     </target>
                                 </configuration>

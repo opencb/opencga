@@ -24,11 +24,13 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
+import org.opencb.opencga.client.rest.OpenCGAClient;
+import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.client.ClientConfiguration;
 import org.opencb.opencga.core.config.client.HostConfig;
 import org.opencb.opencga.core.exceptions.ClientException;
-import org.opencb.opencga.client.rest.OpenCGAClient;
-import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
@@ -51,7 +53,7 @@ public class SessionManager {
     private static final String ANONYMOUS = "anonymous";
     private final ClientConfiguration clientConfiguration;
 //    private OpenCGAClient openCGAClient;
-    private final String host;
+    private final HostConfig hostConfig;
     private Path sessionFolder;
     private ObjectWriter objectWriter;
     private ObjectReader objectReader;
@@ -59,12 +61,12 @@ public class SessionManager {
 
 
     public SessionManager(ClientConfiguration clientConfiguration) throws ClientException {
-        this(clientConfiguration, clientConfiguration.getCurrentHost().getName());
+        this(clientConfiguration, clientConfiguration.getCurrentHost());
     }
 
-    public SessionManager(ClientConfiguration clientConfiguration, String host) {
+    public SessionManager(ClientConfiguration clientConfiguration, HostConfig hostConfig) {
         this.clientConfiguration = clientConfiguration;
-        this.host = host;
+        this.hostConfig = hostConfig;
 
         this.init();
     }
@@ -77,7 +79,7 @@ public class SessionManager {
         boolean validHost = false;
         if (clientConfiguration != null) {
             for (HostConfig hostConfig : clientConfiguration.getRest().getHosts()) {
-                if (Objects.equals(hostConfig.getName(), host)) {
+                if (Objects.equals(hostConfig.getName(), this.hostConfig.getName())) {
                     validHost = true;
                     break;
                 }
@@ -110,7 +112,7 @@ public class SessionManager {
 
     private Session createEmptySession() {
         Session session = new Session();
-        session.setHost(host);
+        session.setHost(this.hostConfig.getUrl());
         session.setVersion(GitRepositoryState.getInstance().getBuildVersion());
         session.setTimestamp(System.currentTimeMillis());
         session.setStudies(new ArrayList());
@@ -122,19 +124,19 @@ public class SessionManager {
     }
 
     public Path getSessionPath() {
-        return getSessionPath(this.host);
+        return getSessionPath(this.hostConfig.getName());
     }
 
-    public Path getSessionPath(String host) {
-        return sessionFolder.resolve(host + SESSION_FILENAME_SUFFIX);
+    public Path getSessionPath(String hostName) {
+        return sessionFolder.resolve(hostName + SESSION_FILENAME_SUFFIX);
     }
 
     public Session getSession() {
-        return getSession(this.host);
+        return getSession(this.hostConfig);
     }
 
-    public Session getSession(String host) {
-        Path sessionPath = sessionFolder.resolve(host + SESSION_FILENAME_SUFFIX);
+    public Session getSession(HostConfig hostConfig) {
+        Path sessionPath = getSessionPath(hostConfig.getName());
         if (Files.exists(sessionPath)) {
             try {
                 logger.debug("Retrieving session from file " + sessionPath);
@@ -154,13 +156,13 @@ public class SessionManager {
     }
 
 
-    public void updateSessionToken(String token, String host) throws IOException {
-        updateSessionToken(token, host, Collections.emptyMap());
+    public void updateSessionToken(String token, HostConfig hostConfig) throws IOException {
+        updateSessionToken(token, hostConfig, Collections.emptyMap());
     }
 
-    public void updateSessionToken(String token, String host, Map<String, Object> attributes) throws IOException {
+    public void updateSessionToken(String token, HostConfig hostConfig, Map<String, Object> attributes) throws IOException {
         // Get current Session and update token
-        Session session = getSession(host);
+        Session session = getSession(hostConfig);
         session.setToken(token);
         session.setAttributes(attributes);
 
@@ -168,34 +170,32 @@ public class SessionManager {
         saveSession(session);
     }
 
-    public void saveSession(String user, String token, String refreshToken, List<String> studies, String host) throws IOException {
-        saveSession(user, token, refreshToken, studies, host, Collections.emptyMap());
-    }
+    public void saveSession(String user, String token, String refreshToken, List<String> studies, Map<String, Object> attributes)
+            throws IOException {
+        JwtPayload jwtPayload = new JwtPayload(token);
+        String issuedAt = TimeUtils.getTime(jwtPayload.getIssuedAt(), "yyyy-MM-dd HH:mm:ss");
+        String expiration = TimeUtils.getTime(jwtPayload.getExpirationTime(), "yyyy-MM-dd HH:mm:ss");
 
-    public void saveSession(String user, String token, String refreshToken, List<String> studies, String host,
-                            Map<String, Object> attributes) throws IOException {
-        Session session = new Session(host, user, token, refreshToken, studies, attributes);
+        Session session = new Session(this.hostConfig.getUrl(), user, token, refreshToken, issuedAt, expiration, studies, attributes);
         if (CollectionUtils.isNotEmpty(studies)) {
             session.setCurrentStudy(studies.get(0));
         } else {
             session.setCurrentStudy(NO_STUDY);
         }
-        saveSession(session, host);
+        saveSession(session, this.hostConfig.getName());
     }
 
-    public void refreshSession(String refreshToken, String host)
-            throws IOException {
+    public void refreshSession(String refreshToken, String hostname) throws IOException {
         Session session = getSession().setRefreshToken(refreshToken);
-
-        saveSession(session, host);
+        saveSession(session, hostname);
     }
 
     public void saveSession() throws IOException {
-        saveSession(getSession(), host);
+        saveSession(getSession(), this.hostConfig.getName());
     }
 
     public void saveSession(Session session) throws IOException {
-        saveSession(session, host);
+        saveSession(session, this.hostConfig.getName());
     }
 
     public RestResponse<AuthenticationResponse> saveSession(String user, AuthenticationResponse response, OpenCGAClient openCGAClient,
@@ -217,7 +217,7 @@ public class SessionManager {
                     studies.add(study.getFqn());
                 }
             }
-            this.saveSession(user, response.getToken(), response.getRefreshToken(), studies, this.host, attributes);
+            this.saveSession(user, response.getToken(), response.getRefreshToken(), studies, attributes);
             res.setType(QueryType.VOID);
         }
         return res;
@@ -228,22 +228,22 @@ public class SessionManager {
         return saveSession(user, response, openCGAClient, Collections.emptyMap());
     }
 
-    public void saveSession(Session session, String host) throws IOException {
+    public void saveSession(Session session, String hostName) throws IOException {
         // Check if ~/.opencga folder exists
         if (!Files.exists(sessionFolder)) {
             Files.createDirectory(sessionFolder);
         }
         logger.debug("Saving '{}'", session);
-        logger.debug("Session file '{}'", host + SESSION_FILENAME_SUFFIX);
+        logger.debug("Session file '{}'", hostName + SESSION_FILENAME_SUFFIX);
 
-        Path sessionPath = sessionFolder.resolve(host + SESSION_FILENAME_SUFFIX);
+        Path sessionPath = sessionFolder.resolve(hostName + SESSION_FILENAME_SUFFIX);
         objectWriter.writeValue(sessionPath.toFile(), session);
     }
 
     public void logoutSessionFile() throws IOException {
         // We just need to save an empty session, this will delete user and token for this host
-        logger.debug("Session logout for host '{}'", host);
-        saveSession(createEmptySession(), host);
+        logger.debug("Session logout for host '{}'", hostConfig.getUrl());
+        saveSession(createEmptySession(), hostConfig.getUrl());
     }
 
 
@@ -251,7 +251,7 @@ public class SessionManager {
     public String toString() {
         final StringBuffer sb = new StringBuffer("SessionManager{");
         sb.append("clientConfiguration=").append(clientConfiguration);
-        sb.append(", host='").append(host).append('\'');
+        sb.append(", hostConfig='").append(hostConfig).append('\'');
         sb.append(", Session='").append(getSession().toString()).append('\'');
         sb.append('}');
         return sb.toString();

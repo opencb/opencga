@@ -2,6 +2,10 @@ name: Build opencga r-client
 
 on:
   workflow_call:
+    inputs:
+      branch:
+        type: string
+        required: true
 
 jobs:
   build-r-client:
@@ -11,11 +15,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: '10'
+          ref: ${{ inputs.branch }}
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Build R client
         run: |
-          ./build_clients.sh --skip-python --skip-javascript
+          ./client-builder.sh --skip-python --skip-javascript
       - name: Extract version from DESCRIPTION
         id: version
         run: |
@@ -26,4 +31,3 @@ jobs:
         with:
           name: opencga-R-client-${{ steps.version.outputs.version }}.tar.gz
           path: build/dist/opencgaR_${{ steps.version.outputs.version }}.tar.gz
-

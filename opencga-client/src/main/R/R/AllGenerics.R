@@ -84,12 +84,12 @@ setGeneric("metaClient", function(OpencgaR, endpointName, params=NULL, ...)
     standardGeneric("metaClient"))
 
 # ##############################################################################
-## GA4GHClient
-setGeneric("ga4ghClient", function(OpencgaR, file, study, endpointName, params=NULL, ...)
-    standardGeneric("ga4ghClient"))
-
-# ##############################################################################
 ## AdminClient
 setGeneric("adminClient", function(OpencgaR, user, endpointName, params=NULL, ...)
     standardGeneric("adminClient"))
+
+# ##############################################################################
+## GA4GHClient
+setGeneric("ga4ghClient", function(OpencgaR, file, study, endpointName, params=NULL, ...)
+    standardGeneric("ga4ghClient"))
 

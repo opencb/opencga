@@ -72,7 +72,7 @@ public class VariantAnnotationRebuilderDriver extends AbstractVariantsTableDrive
         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.ALLELES.bytes());
         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.FULL_ANNOTATION.bytes());
 
-        VariantMapReduceUtil.configureMapReduceScan(scan, getConf());
+        VariantMapReduceUtil.configureMapReduceScan(scan, job);
         VariantMapReduceUtil.initTableMapperJob(job, variantTable, variantTable, scan, getMapperClass());
         VariantMapReduceUtil.setNoneReduce(job);
 

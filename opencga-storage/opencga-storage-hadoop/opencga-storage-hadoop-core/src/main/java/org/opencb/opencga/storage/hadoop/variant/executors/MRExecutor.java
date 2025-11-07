@@ -21,6 +21,8 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.util.Tool;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.exec.Command;
+import org.opencb.commons.exec.RunnableProcess;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -28,12 +30,15 @@ import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -47,12 +52,13 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOpti
 public abstract class MRExecutor {
 
     public static final String HADOOP_LIB_VERSION_PROPERTIES = "org/opencb/opencga/storage/hadoop/lib/version.properties";
+    protected static final int MAX_COMMAND_LINE_ARGS_LENGTH = 16000;
     protected String dbName;
     protected Configuration conf;
     private ObjectMap options;
     private List<String> env;
     private static Logger logger = LoggerFactory.getLogger(MRExecutor.class);
-    private static final Pattern STDOUT_KEY_VALUE_PATTERN = Pattern.compile("^[a-zA-Z0-9_]+=[^=]+$");
+    private static final Pattern STDOUT_KEY_VALUE_PATTERN = Pattern.compile("^[a-zA-Z0-9_\\-.]+=[^=]+$");
     private static final Pattern EXCEPTION = Pattern.compile("^Exception in thread \"main\" ([^:]+: .+)$");
 
     public static class Result {
@@ -147,7 +153,7 @@ public abstract class MRExecutor {
         try {
             return run(executable, args);
         } catch (Exception e) {
-            if (e.getMessage().contains("Argument list too long")) {
+            if (e.getMessage() != null && e.getMessage().contains("Argument list too long")) {
                 logger.error("Error executing: " + executable + ' ' + Arrays.toString(args));
             }
             throw e;
@@ -195,4 +201,41 @@ public abstract class MRExecutor {
         }
         return result;
     }
+
+    static void runWithArgsToStdin(Command command, String[] args) {
+        // Start command asynchronously
+        Future<RunnableProcess.Status> future = command.async();
+
+        // Write args to stdin
+        DataOutputStream stdin = command.getStdin();
+        try {
+            AbstractHBaseDriver.writeArgsToStream(args, stdin);
+            // Close stdin
+            stdin.close();
+        } catch (IOException e) {
+            // Close command
+            terminate(command, e);
+            throw new UncheckedIOException(e);
+        }
+
+        // Wait for command to finish
+        try {
+            future.get();
+        } catch (Exception e) {
+            terminate(command, e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static void terminate(Command command, Exception e) {
+        try {
+            if (command.getStatus() == RunnableProcess.Status.RUNNING && command.getProc().isAlive()) {
+                command.getProc().destroy();
+                command.destroy();
+            }
+        } catch (Exception e1) {
+            e1.addSuppressed(e);
+        }
+    }
+
 }
