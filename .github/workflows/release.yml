@@ -61,7 +61,7 @@ jobs:
     needs: build-hdi
     with:
       maven_opts: -P hdi5.1 -Dopencga.war.name=opencga
-      cache_key: ${{ needs.build.outputs.cache_key }}
+      cache_key: ${{ needs.build-hdi.outputs.cache_key }}
     secrets: inherit
 
   # Add the release job that depends on all the previous jobs
