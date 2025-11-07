@@ -7,6 +7,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.exec.Command;
+import org.opencb.commons.utils.DockerUtils;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.ConfigurationUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
@@ -270,7 +271,7 @@ public abstract class DockerWrapperAnalysisExecutor extends OpenCgaToolExecutor 
     }
 
     protected final void checkDockerDaemonAlive() throws ToolException {
-        int maxAttempts = 6;
+        int maxAttempts = 20;
         for (int i = 0; i < maxAttempts; i++) {
             Command command = new Command("docker stats --no-stream");
             command.run();
