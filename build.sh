@@ -96,7 +96,7 @@ function manage_dependency() {
   if [ "$REPO" == "opencga-hadoop-thirdparty" ]; then
     CLONE_URL="https://x-access-token:${THIRDPARTY_READ_TOKEN}@github.com/${REPO_ORG}/${REPO}.git"
   else
-    CLONE_URL="https://github.com/opencb/"$REPO".git"
+    CLONE_URL="https://github.com/${REPO_ORG}/"${REPO}".git"
   fi
   echo "Cloning repository $REPO from $CLONE_URL"
   git clone "$CLONE_URL"
