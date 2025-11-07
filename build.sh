@@ -47,6 +47,11 @@ function error() {
 function calculate_branch() {
   local REPO_VERSION="$1"
   local EXISTS=""
+  if [[ ! "$REPO_VERSION" =~ SNAPSHOT$ ]]; then
+    echo "v${REPO_VERSION}"
+    return
+  fi
+
   if [[ -n $TASK_REFERENCE ]]; then
     local EXISTS=$(git ls-remote origin "$TASK_REFERENCE")
   fi
