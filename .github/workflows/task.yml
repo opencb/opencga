@@ -12,7 +12,7 @@ jobs:
   build:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      maven_opts: -Phdp3.1 -Dopencga.war.name=opencga -Dcheckstyle.skip
+      maven_opts: -P${{ vars.HADOOP_FLAVOUR }} -Dopencga.war.name=opencga -Dcheckstyle.skip
 
   test:
     uses: ./.github/workflows/test-analysis.yml

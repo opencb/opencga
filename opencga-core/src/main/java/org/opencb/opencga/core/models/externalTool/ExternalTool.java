@@ -9,7 +9,7 @@ import org.opencb.opencga.core.models.job.MinimumRequirements;
 import java.util.List;
 import java.util.Map;
 
-@DataClass(id = "ExternalTool", since = "3.3.0", description = "External Tool.")
+@DataClass(id = "UserTool", since = "3.3.0", description = "User Tool.")
 public class ExternalTool extends PrivateStudyUid {
 
     @DataField(id = "id", required = true, indexed = true, unique = true, immutable = true,
@@ -35,8 +35,8 @@ public class ExternalTool extends PrivateStudyUid {
     @DataField(id = "workflow", description = FieldConstants.EXTERNAL_TOOL_WORKFLOW_DESCRIPTION)
     private Workflow workflow;
 
-    @DataField(id = "docker", description = FieldConstants.EXTERNAL_TOOL_DOCKER_DESCRIPTION)
-    private Docker docker;
+    @DataField(id = "container", description = FieldConstants.EXTERNAL_TOOL_CONTAINER_DESCRIPTION)
+    private Container container;
 
     @DataField(id = "tags", description = FieldConstants.EXTERNAL_TOOL_TAGS_DESCRIPTION)
     private List<String> tags;
@@ -72,7 +72,7 @@ public class ExternalTool extends PrivateStudyUid {
     }
 
     public ExternalTool(String id, String name, String description, ExternalToolType type, ExternalToolScope scope,
-                        Workflow workflow, Docker docker, List<String> tags, List<ExternalToolVariable> variables,
+                        Workflow workflow, Container container, List<String> tags, List<ExternalToolVariable> variables,
                         MinimumRequirements minimumRequirements, boolean draft, ExternalToolInternal internal, String creationDate,
                         String modificationDate, Map<String, Object> attributes) {
         this.id = id;
@@ -81,7 +81,7 @@ public class ExternalTool extends PrivateStudyUid {
         this.type = type;
         this.scope = scope;
         this.workflow = workflow;
-        this.docker = docker;
+        this.container = container;
         this.tags = tags;
         this.variables = variables;
         this.minimumRequirements = minimumRequirements;
@@ -102,7 +102,7 @@ public class ExternalTool extends PrivateStudyUid {
         sb.append(", type=").append(type);
         sb.append(", scope=").append(scope);
         sb.append(", workflow=").append(workflow);
-        sb.append(", docker=").append(docker);
+        sb.append(", container=").append(container);
         sb.append(", tags=").append(tags);
         sb.append(", variables=").append(variables);
         sb.append(", minimumRequirements=").append(minimumRequirements);
@@ -187,12 +187,12 @@ public class ExternalTool extends PrivateStudyUid {
         return this;
     }
 
-    public Docker getDocker() {
-        return docker;
+    public Container getContainer() {
+        return container;
     }
 
-    public ExternalTool setDocker(Docker docker) {
-        this.docker = docker;
+    public ExternalTool setContainer(Container container) {
+        this.container = container;
         return this;
     }
 

@@ -336,11 +336,15 @@ public class FieldConstants {
             + " is being executed.";
 
     // Docker
-    public static final String DOCKER_NAME_DESCRIPTION = "Docker name.";
-    public static final String DOCKER_TAG_DESCRIPTION = "Docker tag.";
-    public static final String DOCKER_COMMANDLINE_DESCRIPTION = "Docker CLI.";
-    public static final String DOCKER_USER_DESCRIPTION = "User that can access the private Docker repository.";
-    public static final String DOCKER_PASSWORD_DESCRIPTION = "Password corresponding to the user that can access the Docker repository.";
+    public static final String CONTAINER_NAME_DESCRIPTION = "Container name. It should contain the repository and the image name."
+            + " Optionally, it can also contain the registry. If not provided, Docker Hub will be used as default registry. Examples: "
+            + "'repository/image', 'registry/repository/image' ";
+    public static final String CONTAINER_TAG_DESCRIPTION = "Container tag. It refers to a specific version of an image.";
+    public static final String CONTAINER_DIGEST_DESCRIPTION = "Digest of the Container image. It is a sha256 hash that uniquely identifies a"
+            + " specific Container image.";
+    public static final String CONTAINER_COMMANDLINE_DESCRIPTION = "Container command line which may contain additional parameters.";
+    public static final String CONTAINER_USER_DESCRIPTION = "User that can access the private Container repository.";
+    public static final String CONTAINER_PASSWORD_DESCRIPTION = "Password corresponding to the user that can access the Container repository.";
 
     // External tool
     public static final String EXTERNAL_TOOL_ID_DESCRIPTION = "External tool ID.";
@@ -354,8 +358,8 @@ public class FieldConstants {
     public static final String MINIMUM_REQUIREMENTS_DESCRIPTION = "Minimum requirements to execute the process.";
     public static final String EXTERNAL_TOOL_INTERNAL_DESCRIPTION = "External tool internal information.";
     public static final String EXTERNAL_TOOL_WORKFLOW_DESCRIPTION = "Workflow information if the external tool type is a workflow.";
-    public static final String EXTERNAL_TOOL_DOCKER_DESCRIPTION = "Docker information if the external tool type is of type TOOL or"
-            + " VARIANT_WALKER.";
+    public static final String EXTERNAL_TOOL_CONTAINER_DESCRIPTION = "Container information if the external tool type is of type CUSTOM or"
+            + " WALKER.";
 
     public static final String MIN_REQUIREMENTS_CPU_DESCRIPTION = "Minimum number of cpu cores required to execute the process.";
     public static final String MIN_REQUIREMENTS_MEMORY_DESCRIPTION = "Minimum memory required to execute the process.";

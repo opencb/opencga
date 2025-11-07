@@ -2,7 +2,7 @@ package org.opencb.opencga.core.models.externalTool.custom;
 
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
-import org.opencb.opencga.core.models.externalTool.Docker;
+import org.opencb.opencga.core.models.externalTool.Container;
 import org.opencb.opencga.core.models.externalTool.ExternalToolInternal;
 import org.opencb.opencga.core.models.externalTool.ExternalToolScope;
 import org.opencb.opencga.core.models.externalTool.ExternalToolVariable;
@@ -26,8 +26,8 @@ public class CustomToolCreateParams {
     @DataField(id = "scope", description = FieldConstants.EXTERNAL_TOOL_SCOPE_DESCRIPTION)
     private ExternalToolScope scope;
 
-    @DataField(id = "docker", description = FieldConstants.EXTERNAL_TOOL_DOCKER_DESCRIPTION)
-    private Docker docker;
+    @DataField(id = "container", description = FieldConstants.EXTERNAL_TOOL_CONTAINER_DESCRIPTION)
+    private Container container;
 
     @DataField(id = "tags", description = FieldConstants.EXTERNAL_TOOL_TAGS_DESCRIPTION)
     private List<String> tags;
@@ -56,7 +56,7 @@ public class CustomToolCreateParams {
     public CustomToolCreateParams() {
     }
 
-    public CustomToolCreateParams(String id, String name, String description, ExternalToolScope scope, Docker docker, List<String> tags,
+    public CustomToolCreateParams(String id, String name, String description, ExternalToolScope scope, Container container, List<String> tags,
                                   List<ExternalToolVariable> variables, MinimumRequirements minimumRequirements, boolean draft,
                                   ExternalToolInternal internal, String creationDate, String modificationDate,
                                   Map<String, Object> attributes) {
@@ -64,7 +64,7 @@ public class CustomToolCreateParams {
         this.name = name;
         this.description = description;
         this.scope = scope;
-        this.docker = docker;
+        this.container = container;
         this.tags = tags;
         this.variables = variables;
         this.minimumRequirements = minimumRequirements;
@@ -82,7 +82,7 @@ public class CustomToolCreateParams {
         sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", scope=").append(scope);
-        sb.append(", docker=").append(docker);
+        sb.append(", container=").append(container);
         sb.append(", tags=").append(tags);
         sb.append(", variables=").append(variables);
         sb.append(", minimumRequirements=").append(minimumRequirements);
@@ -131,12 +131,12 @@ public class CustomToolCreateParams {
         return this;
     }
 
-    public Docker getDocker() {
-        return docker;
+    public Container getContainer() {
+        return container;
     }
 
-    public CustomToolCreateParams setDocker(Docker docker) {
-        this.docker = docker;
+    public CustomToolCreateParams setContainer(Container container) {
+        this.container = container;
         return this;
     }
 

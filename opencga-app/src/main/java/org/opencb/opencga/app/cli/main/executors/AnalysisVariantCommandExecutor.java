@@ -33,6 +33,7 @@ import org.opencb.opencga.core.models.operations.variant.VariantStatsExportParam
 import org.opencb.opencga.core.models.variant.AnnotationVariantQueryParams;
 import org.opencb.opencga.core.models.variant.CircosAnalysisParams;
 import org.opencb.opencga.core.models.variant.CohortVariantStatsAnalysisParams;
+import org.opencb.opencga.core.models.variant.DeprecatedVariantWalkerParams;
 import org.opencb.opencga.core.models.variant.FamilyQcAnalysisParams;
 import org.opencb.opencga.core.models.variant.GatkWrapperParams;
 import org.opencb.opencga.core.models.variant.GenomePlotAnalysisParams;
@@ -53,7 +54,6 @@ import org.opencb.opencga.core.models.variant.SampleVariantFilterParams;
 import org.opencb.opencga.core.models.variant.SampleVariantStatsAnalysisParams;
 import org.opencb.opencga.core.models.variant.VariantExportParams;
 import org.opencb.opencga.core.models.variant.VariantStatsAnalysisParams;
-import org.opencb.opencga.core.models.variant.VariantWalkerParams;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
@@ -1948,15 +1948,15 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        VariantWalkerParams variantWalkerParams = null;
+        DeprecatedVariantWalkerParams deprecatedVariantWalkerParams = null;
         if (commandOptions.jsonDataModel) {
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/variant/walker/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            variantWalkerParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), VariantWalkerParams.class);
+            deprecatedVariantWalkerParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), DeprecatedVariantWalkerParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
@@ -2045,10 +2045,10 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "include", commandOptions.bodyInclude, true);
             putNestedIfNotEmpty(beanParams, "exclude", commandOptions.bodyExclude, true);
 
-            variantWalkerParams = JacksonUtils.getDefaultObjectMapper().copy()
+            deprecatedVariantWalkerParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), VariantWalkerParams.class);
+                    .readValue(beanParams.toJson(), DeprecatedVariantWalkerParams.class);
         }
-        return openCGAClient.getVariantClient().runWalker(variantWalkerParams, queryParams);
+        return openCGAClient.getVariantClient().runWalker(deprecatedVariantWalkerParams, queryParams);
     }
 }

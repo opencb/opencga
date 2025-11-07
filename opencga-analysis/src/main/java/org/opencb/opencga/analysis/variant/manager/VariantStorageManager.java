@@ -37,7 +37,7 @@ import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.opencga.analysis.StorageManager;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
-import org.opencb.opencga.analysis.variant.VariantWalkerTool;
+import org.opencb.opencga.analysis.variant.VariantWalkerToolExecutor;
 import org.opencb.opencga.analysis.variant.manager.operations.*;
 import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchronizer;
 import org.opencb.opencga.analysis.variant.metadata.CatalogVariantMetadataFactory;
@@ -210,7 +210,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                               Query query, QueryOptions queryOptions, String dockerImage, String commandLine, String token)
             throws CatalogException, StorageEngineException {
         String anyStudy = catalogUtils.getAnyStudy(query, token);
-        return secureAnalysis(VariantWalkerTool.ID, anyStudy, queryOptions, token, engine -> {
+        return secureAnalysis(VariantWalkerToolExecutor.ID, anyStudy, queryOptions, token, engine -> {
             Query finalQuery = catalogUtils.parseQuery(query, queryOptions, engine.getCellBaseUtils(), token);
             checkSamplesPermissions(finalQuery, queryOptions, token);
             URI outputUri;

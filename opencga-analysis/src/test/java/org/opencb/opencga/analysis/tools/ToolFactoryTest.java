@@ -18,16 +18,20 @@ package org.opencb.opencga.analysis.tools;
 
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.opencb.opencga.core.testclassification.duration.ShortTests;
-import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.analysis.customTool.CustomToolExecutor;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.testclassification.duration.ShortTests;
+import org.opencb.opencga.core.tools.ToolParams;
+import org.opencb.opencga.core.tools.annotations.Tool;
 
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 @Category(ShortTests.class)
 public class ToolFactoryTest {
@@ -53,6 +57,37 @@ public class ToolFactoryTest {
         @Override
         protected void run() throws Exception {
         }
+    }
+
+    @Test
+    public void test() throws ToolException {
+//        ObjectMap params = new ObjectMap("params", new ObjectMap("commandLine", "blablabla"));
+        ObjectMap params2 = new ObjectMap("params", new ObjectMap("params", new ObjectMap("key", "value")).append("commandLine", "blablabla"));
+
+        CustomToolExecutor customToolExecutor = new CustomToolExecutor();
+
+        ToolParams toolParams = null;
+        for (Field field : CustomToolExecutor.class.getDeclaredFields()) {
+            if (field.isAnnotationPresent(org.opencb.opencga.core.tools.annotations.ToolParams.class)
+                    && ToolParams.class.isAssignableFrom(field.getType())) {
+                try {
+                    field.setAccessible(true);
+                    toolParams = (ToolParams) field.get(customToolExecutor);
+                    if (toolParams == null) {
+                        toolParams = (ToolParams) field.getType().newInstance();
+                        field.set(customToolExecutor, toolParams);
+                    }
+                    break;
+                } catch (IllegalAccessException | InstantiationException e) {
+                    throw new ToolException("Unexpected error reading ToolParams");
+                }
+            }
+        }
+        System.out.println("toolParams.toJson() = " + toolParams.toJson());
+//        toolParams.updateParams(params);
+        System.out.println("toolParams.toJson() = " + toolParams.toJson());
+        toolParams.updateParams(params2);
+        System.out.println("toolParams.toJson() = " + toolParams.toJson());
     }
 
     @Test
