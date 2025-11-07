@@ -4,7 +4,6 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
-import org.opencb.opencga.analysis.wrappers.ngspipeline.NgsPipelineWrapperAnalysis;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.models.clinical.pipeline.prepare.PrepareClinicalPipelineParams;
@@ -18,7 +17,7 @@ import java.util.*;
 import static org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelineUtils.*;
 
 @ToolExecutor(id = PrepareClinicalPipelineWrapperAnalysisExecutor.ID,
-        tool = NgsPipelineWrapperAnalysis.ID,
+        tool = PrepareClinicalPipelineWrapperAnalysis.ID,
         source = ToolExecutor.Source.STORAGE,
         framework = ToolExecutor.Framework.LOCAL)
 public class PrepareClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor {

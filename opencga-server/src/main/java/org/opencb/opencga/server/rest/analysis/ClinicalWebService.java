@@ -36,7 +36,6 @@ import org.opencb.opencga.analysis.wrappers.clinicalpipeline.affy.AffyClinicalPi
 import org.opencb.opencga.analysis.wrappers.clinicalpipeline.genomics.GenomicsClinicalPipelineWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.clinicalpipeline.prepare.PrepareClinicalPipelineWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.exomiser.ExomiserAnalysisUtils;
-import org.opencb.opencga.analysis.wrappers.ngspipeline.NgsPipelineWrapperAnalysis;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
@@ -1469,24 +1468,8 @@ public class ClinicalWebService extends AnalysisWebService {
     }
 
     //-------------------------------------------------------------------------
-    // N G S     P I P E L I N E
+    // P I P E L I N E : prepare, genomics and affy
     //-------------------------------------------------------------------------
-
-    @POST
-    @Path("/ngsPipeline/run")
-    @ApiOperation(value = NgsPipelineWrapperAnalysis.DESCRIPTION, response = Job.class)
-    public Response ngsPipelineRun(
-            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
-            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
-            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
-            @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
-            @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
-            @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
-            @ApiParam(value = NgsPipelineWrapperParams.DESCRIPTION, required = true) NgsPipelineWrapperParams params) {
-        return submitJob(study, JobType.NATIVE, NgsPipelineWrapperAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
-    }
 
     @POST
     @Path("/pipeline/prepare/run")
