@@ -49,21 +49,20 @@ import org.opencb.opencga.core.models.clinical.FamilyParam;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.clinical.InterpretationCreateParams;
 import org.opencb.opencga.core.models.clinical.InterpretationUpdateParams;
-import org.opencb.opencga.core.models.clinical.NgsPipelineWrapperParams;
 import org.opencb.opencga.core.models.clinical.PriorityParam;
 import org.opencb.opencga.core.models.clinical.ProbandParam;
 import org.opencb.opencga.core.models.clinical.RgaAnalysisParams;
 import org.opencb.opencga.core.models.clinical.TeamInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.clinical.TieringInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.clinical.ZettaInterpretationAnalysisParams;
-import org.opencb.opencga.core.models.clinical.pipeline.AffyClinicalPipelineParams;
-import org.opencb.opencga.core.models.clinical.pipeline.AffyClinicalPipelineWrapperParams;
-import org.opencb.opencga.core.models.clinical.pipeline.AffyPipelineConfig;
-import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelinePrepareParams;
-import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelinePrepareWrapperParams;
-import org.opencb.opencga.core.models.clinical.pipeline.GenomicsClinicalPipelineParams;
-import org.opencb.opencga.core.models.clinical.pipeline.GenomicsClinicalPipelineWrapperParams;
-import org.opencb.opencga.core.models.clinical.pipeline.GenomicsPipelineConfig;
+import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyClinicalPipelineParams;
+import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyClinicalPipelineWrapperParams;
+import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyPipelineConfig;
+import org.opencb.opencga.core.models.clinical.pipeline.genomics.GenomicsClinicalPipelineParams;
+import org.opencb.opencga.core.models.clinical.pipeline.genomics.GenomicsClinicalPipelineWrapperParams;
+import org.opencb.opencga.core.models.clinical.pipeline.genomics.GenomicsPipelineConfig;
+import org.opencb.opencga.core.models.clinical.pipeline.prepare.PrepareClinicalPipelineParams;
+import org.opencb.opencga.core.models.clinical.pipeline.prepare.PrepareClinicalPipelineWrapperParams;
 import org.opencb.opencga.core.models.common.StatusParam;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.job.Job;
@@ -158,9 +157,6 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
                 break;
             case "load":
                 queryResponse = load();
-                break;
-            case "ngs-pipeline-run":
-                queryResponse = runNgsPipeline();
                 break;
             case "pipeline-affy-run":
                 queryResponse = runPipelineAffy();
@@ -908,50 +904,6 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().load(clinicalAnalysisLoadParams, queryParams);
     }
 
-    private RestResponse<Job> runNgsPipeline() throws Exception {
-        logger.debug("Executing runNgsPipeline in Analysis - Clinical command line");
-
-        AnalysisClinicalCommandOptions.RunNgsPipelineCommandOptions commandOptions = analysisClinicalCommandOptions.runNgsPipelineCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
-        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
-        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
-        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
-        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
-        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
-
-
-        NgsPipelineWrapperParams ngsPipelineWrapperParams = null;
-        if (commandOptions.jsonDataModel) {
-            RestResponse<Job> res = new RestResponse<>();
-            res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/ngsPipeline/run"));
-            return res;
-        } else if (commandOptions.jsonFile != null) {
-            ngsPipelineWrapperParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), NgsPipelineWrapperParams.class);
-        } else {
-            ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "command", commandOptions.command, true);
-            putNestedIfNotNull(beanParams, "input", commandOptions.input, true);
-            putNestedIfNotEmpty(beanParams, "indexDir", commandOptions.indexDir, true);
-            putNestedIfNotNull(beanParams, "prepareIndices", commandOptions.prepareIndices, true);
-            putNestedMapIfNotEmpty(beanParams, "pipelineParams", commandOptions.pipelineParams, true);
-            putNestedIfNotEmpty(beanParams, "outDir", commandOptions.outDir, true);
-
-            ngsPipelineWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
-                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), NgsPipelineWrapperParams.class);
-        }
-        return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().runNgsPipeline(ngsPipelineWrapperParams, queryParams);
-    }
-
     private RestResponse<Job> runPipelineAffy() throws Exception {
         logger.debug("Executing runPipelineAffy in Analysis - Clinical command line");
 
@@ -983,6 +935,7 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotNull(beanParams, "pipelineParams.samples", commandOptions.pipelineParamsSamples, true);
+            putNestedIfNotEmpty(beanParams, "pipelineParams.dataDir", commandOptions.pipelineParamsDataDir, true);
             putNestedIfNotEmpty(beanParams, "pipelineParams.indexDir", commandOptions.pipelineParamsIndexDir, true);
             putNestedIfNotNull(beanParams, "pipelineParams.steps", commandOptions.pipelineParamsSteps, true);
             putNestedIfNotEmpty(beanParams, "pipelineParams.pipelineFile", commandOptions.pipelineParamsPipelineFile, true);
@@ -1026,6 +979,7 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotNull(beanParams, "pipelineParams.samples", commandOptions.pipelineParamsSamples, true);
+            putNestedIfNotEmpty(beanParams, "pipelineParams.dataDir", commandOptions.pipelineParamsDataDir, true);
             putNestedIfNotEmpty(beanParams, "pipelineParams.indexDir", commandOptions.pipelineParamsIndexDir, true);
             putNestedIfNotNull(beanParams, "pipelineParams.steps", commandOptions.pipelineParamsSteps, true);
             putNestedIfNotEmpty(beanParams, "pipelineParams.pipelineFile", commandOptions.pipelineParamsPipelineFile, true);
@@ -1057,26 +1011,26 @@ public class AnalysisClinicalCommandExecutor extends com.zettagenomics.opencga.e
         }
 
 
-        ClinicalPipelinePrepareWrapperParams clinicalPipelinePrepareWrapperParams = null;
+        PrepareClinicalPipelineWrapperParams prepareClinicalPipelineWrapperParams = null;
         if (commandOptions.jsonDataModel) {
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/pipeline/prepare/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            clinicalPipelinePrepareWrapperParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), ClinicalPipelinePrepareWrapperParams.class);
+            prepareClinicalPipelineWrapperParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), PrepareClinicalPipelineWrapperParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "pipelineParams.referenceGenome", commandOptions.pipelineParamsReferenceGenome, true);
-            putNestedIfNotNull(beanParams, "pipelineParams.alignerIndexes", commandOptions.pipelineParamsAlignerIndexes, true);
+            putNestedIfNotNull(beanParams, "pipelineParams.indexes", commandOptions.pipelineParamsIndexes, true);
             putNestedIfNotEmpty(beanParams, "outdir", commandOptions.outdir, true);
 
-            clinicalPipelinePrepareWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
+            prepareClinicalPipelineWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), ClinicalPipelinePrepareWrapperParams.class);
+                    .readValue(beanParams.toJson(), PrepareClinicalPipelineWrapperParams.class);
         }
-        return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().runPipelinePrepare(clinicalPipelinePrepareWrapperParams, queryParams);
+        return enterpriseOpenCGAClient.getEnterpriseClinicalAnalysisClient().runPipelinePrepare(prepareClinicalPipelineWrapperParams, queryParams);
     }
 
     private RestResponse<FacetField> aggregationStatsRga() throws Exception {
