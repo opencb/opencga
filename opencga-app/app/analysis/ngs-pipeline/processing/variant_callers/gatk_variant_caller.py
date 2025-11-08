@@ -54,14 +54,14 @@ class GatkVariantCaller(VariantCaller):
 
         # Reference directory binding
         ref_parent = reference_path.parent
-        bindings.extend(["-v", f"{ref_parent}:/reference:ro"])
+        bindings.extend(["--mount", f"type=bind,source={ref_parent},target=/reference,readonly"])
 
         # BAM file directory binding
         bam_parent = bam_file_path.parent
-        bindings.extend(["-v", f"{bam_parent}:/input:ro"])
+        bindings.extend(["--mount", f"type=bind,source={bam_parent},target=/input,readonly"])
 
         # Output directory binding
-        bindings.extend(["-v", f"{self.output}:/output"])
+        bindings.extend(["--mount", f"type=bind,source={self.output},target=/output"])
 
         # Get relative paths for Docker
         ref_name = reference_path.name
@@ -133,10 +133,10 @@ class GatkVariantCaller(VariantCaller):
 
         # Input BAM directory binding
         input_parent = input_bam.parent
-        bindings.extend(["-v", f"{input_parent}:/input:ro"])
+        bindings.extend(["--mount", f"type=bind,source={input_parent},target=/input,readonly"])
 
         # Output directory binding
-        bindings.extend(["-v", f"{self.output}:/output"])
+        bindings.extend(["--mount", f"type=bind,source={self.output},target=/output"])
 
         # Get relative paths
         input_bam_name = input_bam.name

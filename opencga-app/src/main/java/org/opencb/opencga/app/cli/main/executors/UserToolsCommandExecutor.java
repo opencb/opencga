@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.PrintUtils;
@@ -16,17 +15,19 @@ import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.common.InternalStatus;
-import org.opencb.opencga.core.models.externalTool.Docker;
+import org.opencb.opencga.core.models.externalTool.Container;
 import org.opencb.opencga.core.models.externalTool.ExternalTool;
 import org.opencb.opencga.core.models.externalTool.ExternalToolAclEntryList;
 import org.opencb.opencga.core.models.externalTool.ExternalToolAclUpdateParams;
 import org.opencb.opencga.core.models.externalTool.ExternalToolInternal;
 import org.opencb.opencga.core.models.externalTool.ExternalToolScope;
 import org.opencb.opencga.core.models.externalTool.Workflow;
+import org.opencb.opencga.core.models.externalTool.WorkflowParams;
 import org.opencb.opencga.core.models.externalTool.WorkflowRepository;
 import org.opencb.opencga.core.models.externalTool.WorkflowRepositoryParams;
 import org.opencb.opencga.core.models.externalTool.WorkflowSystem;
 import org.opencb.opencga.core.models.externalTool.custom.CustomToolCreateParams;
+import org.opencb.opencga.core.models.externalTool.custom.CustomToolInlineParams;
 import org.opencb.opencga.core.models.externalTool.custom.CustomToolRunParams;
 import org.opencb.opencga.core.models.externalTool.custom.CustomToolUpdateParams;
 import org.opencb.opencga.core.models.externalTool.workflow.WorkflowCreateParams;
@@ -35,6 +36,7 @@ import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobToolBuildDockerParams;
 import org.opencb.opencga.core.models.job.JobToolBuildParams;
 import org.opencb.opencga.core.models.job.MinimumRequirements;
+import org.opencb.opencga.core.models.variant.VariantWalkerParams;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.opencga.core.response.RestResponse;
 
@@ -101,6 +103,9 @@ public class UserToolsCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "walker-create":
                 queryResponse = createWalker();
+                break;
+            case "walker-run":
+                queryResponse = runWalker();
                 break;
             case "workflow-create":
                 queryResponse = createWorkflow();
@@ -272,11 +277,12 @@ public class UserToolsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
             putNestedIfNotEmpty(beanParams, "description", commandOptions.description, true);
             putNestedIfNotNull(beanParams, "scope", commandOptions.scope, true);
-            putNestedIfNotEmpty(beanParams, "docker.name", commandOptions.dockerName, true);
-            putNestedIfNotEmpty(beanParams, "docker.tag", commandOptions.dockerTag, true);
-            putNestedIfNotEmpty(beanParams, "docker.commandLine", commandOptions.dockerCommandLine, true);
-            putNestedIfNotEmpty(beanParams, "docker.user", commandOptions.dockerUser, true);
-            putNestedIfNotEmpty(beanParams, "docker.password", commandOptions.dockerPassword, true);
+            putNestedIfNotEmpty(beanParams, "container.name", commandOptions.containerName, true);
+            putNestedIfNotEmpty(beanParams, "container.tag", commandOptions.containerTag, true);
+            putNestedIfNotEmpty(beanParams, "container.digest", commandOptions.containerDigest, true);
+            putNestedIfNotEmpty(beanParams, "container.commandLine", commandOptions.containerCommandLine, true);
+            putNestedIfNotEmpty(beanParams, "container.user", commandOptions.containerUser, true);
+            putNestedIfNotEmpty(beanParams, "container.password", commandOptions.containerPassword, true);
             putNestedIfNotNull(beanParams, "tags", commandOptions.tags, true);
             putNestedIfNotEmpty(beanParams, "minimumRequirements.cpu", commandOptions.minimumRequirementsCpu, true);
             putNestedIfNotEmpty(beanParams, "minimumRequirements.memory", commandOptions.minimumRequirementsMemory, true);
@@ -315,28 +321,32 @@ public class UserToolsCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        Docker docker = null;
+        CustomToolInlineParams customToolInlineParams = null;
         if (commandOptions.jsonDataModel) {
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/tools/custom/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            docker = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), Docker.class);
+            customToolInlineParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), CustomToolInlineParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
-            putNestedIfNotEmpty(beanParams, "tag", commandOptions.tag, true);
-            putNestedIfNotEmpty(beanParams, "commandLine", commandOptions.commandLine, true);
-            putNestedIfNotEmpty(beanParams, "user", commandOptions.user, true);
-            putNestedIfNotEmpty(beanParams, "password", commandOptions.password, true);
+            putNestedIfNotEmpty(beanParams, "container.name", commandOptions.containerName, true);
+            putNestedIfNotEmpty(beanParams, "container.tag", commandOptions.containerTag, true);
+            putNestedIfNotEmpty(beanParams, "container.digest", commandOptions.containerDigest, true);
+            putNestedIfNotEmpty(beanParams, "container.commandLine", commandOptions.containerCommandLine, true);
+            putNestedIfNotEmpty(beanParams, "container.user", commandOptions.containerUser, true);
+            putNestedIfNotEmpty(beanParams, "container.password", commandOptions.containerPassword, true);
+            putNestedIfNotEmpty(beanParams, "minimumRequirements.cpu", commandOptions.minimumRequirementsCpu, true);
+            putNestedIfNotEmpty(beanParams, "minimumRequirements.memory", commandOptions.minimumRequirementsMemory, true);
+            putNestedIfNotEmpty(beanParams, "minimumRequirements.disk", commandOptions.minimumRequirementsDisk, true);
 
-            docker = JacksonUtils.getDefaultObjectMapper().copy()
+            customToolInlineParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), Docker.class);
+                    .readValue(beanParams.toJson(), CustomToolInlineParams.class);
         }
-        return openCGAClient.getUserToolClient().runCustomDocker(docker, queryParams);
+        return openCGAClient.getUserToolClient().runCustomDocker(customToolInlineParams, queryParams);
     }
 
     private RestResponse<Job> runCustom() throws Exception {
@@ -417,11 +427,12 @@ public class UserToolsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "creationDate", commandOptions.creationDate, true);
             putNestedIfNotEmpty(beanParams, "modificationDate", commandOptions.modificationDate, true);
             putNestedMapIfNotEmpty(beanParams, "attributes", commandOptions.attributes, true);
-            putNestedIfNotEmpty(beanParams, "docker.name", commandOptions.dockerName, true);
-            putNestedIfNotEmpty(beanParams, "docker.tag", commandOptions.dockerTag, true);
-            putNestedIfNotEmpty(beanParams, "docker.commandLine", commandOptions.dockerCommandLine, true);
-            putNestedIfNotEmpty(beanParams, "docker.user", commandOptions.dockerUser, true);
-            putNestedIfNotEmpty(beanParams, "docker.password", commandOptions.dockerPassword, true);
+            putNestedIfNotEmpty(beanParams, "container.name", commandOptions.containerName, true);
+            putNestedIfNotEmpty(beanParams, "container.tag", commandOptions.containerTag, true);
+            putNestedIfNotEmpty(beanParams, "container.digest", commandOptions.containerDigest, true);
+            putNestedIfNotEmpty(beanParams, "container.commandLine", commandOptions.containerCommandLine, true);
+            putNestedIfNotEmpty(beanParams, "container.user", commandOptions.containerUser, true);
+            putNestedIfNotEmpty(beanParams, "container.password", commandOptions.containerPassword, true);
 
             customToolUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
@@ -525,11 +536,12 @@ public class UserToolsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
             putNestedIfNotEmpty(beanParams, "description", commandOptions.description, true);
             putNestedIfNotNull(beanParams, "scope", commandOptions.scope, true);
-            putNestedIfNotEmpty(beanParams, "docker.name", commandOptions.dockerName, true);
-            putNestedIfNotEmpty(beanParams, "docker.tag", commandOptions.dockerTag, true);
-            putNestedIfNotEmpty(beanParams, "docker.commandLine", commandOptions.dockerCommandLine, true);
-            putNestedIfNotEmpty(beanParams, "docker.user", commandOptions.dockerUser, true);
-            putNestedIfNotEmpty(beanParams, "docker.password", commandOptions.dockerPassword, true);
+            putNestedIfNotEmpty(beanParams, "container.name", commandOptions.containerName, true);
+            putNestedIfNotEmpty(beanParams, "container.tag", commandOptions.containerTag, true);
+            putNestedIfNotEmpty(beanParams, "container.digest", commandOptions.containerDigest, true);
+            putNestedIfNotEmpty(beanParams, "container.commandLine", commandOptions.containerCommandLine, true);
+            putNestedIfNotEmpty(beanParams, "container.user", commandOptions.containerUser, true);
+            putNestedIfNotEmpty(beanParams, "container.password", commandOptions.containerPassword, true);
             putNestedIfNotNull(beanParams, "tags", commandOptions.tags, true);
             putNestedIfNotEmpty(beanParams, "minimumRequirements.cpu", commandOptions.minimumRequirementsCpu, true);
             putNestedIfNotEmpty(beanParams, "minimumRequirements.memory", commandOptions.minimumRequirementsMemory, true);
@@ -547,6 +559,130 @@ public class UserToolsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), CustomToolCreateParams.class);
         }
         return openCGAClient.getUserToolClient().createWalker(customToolCreateParams, queryParams);
+    }
+
+    private RestResponse<Job> runWalker() throws Exception {
+        logger.debug("Executing runWalker in User Tools command line");
+
+        UserToolsCommandOptions.RunWalkerCommandOptions commandOptions = userToolsCommandOptions.runWalkerCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotNull("version", commandOptions.version);
+        queryParams.putIfNotEmpty("project", commandOptions.project);
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
+        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
+        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
+        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        VariantWalkerParams variantWalkerParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/tools/walker/{toolId}/run"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            variantWalkerParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), VariantWalkerParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
+            putNestedIfNotEmpty(beanParams, "region", commandOptions.region, true);
+            putNestedIfNotEmpty(beanParams, "gene", commandOptions.gene, true);
+            putNestedIfNotEmpty(beanParams, "type", commandOptions.type, true);
+            putNestedIfNotEmpty(beanParams, "panel", commandOptions.panel, true);
+            putNestedIfNotEmpty(beanParams, "panelModeOfInheritance", commandOptions.panelModeOfInheritance, true);
+            putNestedIfNotEmpty(beanParams, "panelConfidence", commandOptions.panelConfidence, true);
+            putNestedIfNotEmpty(beanParams, "panelRoleInCancer", commandOptions.panelRoleInCancer, true);
+            putNestedIfNotNull(beanParams, "panelIntersection", commandOptions.panelIntersection, true);
+            putNestedIfNotEmpty(beanParams, "panelFeatureType", commandOptions.panelFeatureType, true);
+            putNestedIfNotEmpty(beanParams, "cohortStatsRef", commandOptions.cohortStatsRef, true);
+            putNestedIfNotEmpty(beanParams, "cohortStatsAlt", commandOptions.cohortStatsAlt, true);
+            putNestedIfNotEmpty(beanParams, "cohortStatsMaf", commandOptions.cohortStatsMaf, true);
+            putNestedIfNotEmpty(beanParams, "ct", commandOptions.ct, true);
+            putNestedIfNotEmpty(beanParams, "xref", commandOptions.xref, true);
+            putNestedIfNotEmpty(beanParams, "biotype", commandOptions.biotype, true);
+            putNestedIfNotEmpty(beanParams, "proteinSubstitution", commandOptions.proteinSubstitution, true);
+            putNestedIfNotEmpty(beanParams, "conservation", commandOptions.conservation, true);
+            putNestedIfNotEmpty(beanParams, "populationFrequencyMaf", commandOptions.populationFrequencyMaf, true);
+            putNestedIfNotEmpty(beanParams, "populationFrequencyAlt", commandOptions.populationFrequencyAlt, true);
+            putNestedIfNotEmpty(beanParams, "populationFrequencyRef", commandOptions.populationFrequencyRef, true);
+            putNestedIfNotEmpty(beanParams, "transcriptFlag", commandOptions.transcriptFlag, true);
+            putNestedIfNotEmpty(beanParams, "functionalScore", commandOptions.functionalScore, true);
+            putNestedIfNotEmpty(beanParams, "clinical", commandOptions.clinical, true);
+            putNestedIfNotEmpty(beanParams, "clinicalSignificance", commandOptions.clinicalSignificance, true);
+            putNestedIfNotNull(beanParams, "clinicalConfirmedStatus", commandOptions.clinicalConfirmedStatus, true);
+            putNestedIfNotEmpty(beanParams, "project", commandOptions.bodyProject, true);
+            putNestedIfNotEmpty(beanParams, "study", commandOptions.bodyStudy, true);
+            putNestedIfNotEmpty(beanParams, "savedFilter", commandOptions.savedFilter, true);
+            putNestedIfNotEmpty(beanParams, "chromosome", commandOptions.chromosome, true);
+            putNestedIfNotEmpty(beanParams, "reference", commandOptions.reference, true);
+            putNestedIfNotEmpty(beanParams, "alternate", commandOptions.alternate, true);
+            putNestedIfNotEmpty(beanParams, "release", commandOptions.release, true);
+            putNestedIfNotEmpty(beanParams, "includeStudy", commandOptions.includeStudy, true);
+            putNestedIfNotEmpty(beanParams, "includeSample", commandOptions.includeSample, true);
+            putNestedIfNotEmpty(beanParams, "includeFile", commandOptions.includeFile, true);
+            putNestedIfNotEmpty(beanParams, "includeSampleData", commandOptions.includeSampleData, true);
+            putNestedIfNotNull(beanParams, "includeSampleId", commandOptions.includeSampleId, true);
+            putNestedIfNotNull(beanParams, "includeGenotype", commandOptions.includeGenotype, true);
+            putNestedIfNotEmpty(beanParams, "file", commandOptions.file, true);
+            putNestedIfNotEmpty(beanParams, "qual", commandOptions.qual, true);
+            putNestedIfNotEmpty(beanParams, "filter", commandOptions.filter, true);
+            putNestedIfNotEmpty(beanParams, "fileData", commandOptions.fileData, true);
+            putNestedIfNotEmpty(beanParams, "genotype", commandOptions.genotype, true);
+            putNestedIfNotEmpty(beanParams, "sample", commandOptions.sample, true);
+            putNestedIfNotNull(beanParams, "sampleLimit", commandOptions.sampleLimit, true);
+            putNestedIfNotNull(beanParams, "sampleSkip", commandOptions.sampleSkip, true);
+            putNestedIfNotEmpty(beanParams, "sampleData", commandOptions.sampleData, true);
+            putNestedIfNotEmpty(beanParams, "sampleAnnotation", commandOptions.sampleAnnotation, true);
+            putNestedIfNotEmpty(beanParams, "family", commandOptions.family, true);
+            putNestedIfNotEmpty(beanParams, "familyMembers", commandOptions.familyMembers, true);
+            putNestedIfNotEmpty(beanParams, "familyDisorder", commandOptions.familyDisorder, true);
+            putNestedIfNotEmpty(beanParams, "familyProband", commandOptions.familyProband, true);
+            putNestedIfNotEmpty(beanParams, "familySegregation", commandOptions.familySegregation, true);
+            putNestedIfNotEmpty(beanParams, "cohort", commandOptions.cohort, true);
+            putNestedIfNotEmpty(beanParams, "cohortStatsPass", commandOptions.cohortStatsPass, true);
+            putNestedIfNotEmpty(beanParams, "cohortStatsMgf", commandOptions.cohortStatsMgf, true);
+            putNestedIfNotEmpty(beanParams, "missingAlleles", commandOptions.missingAlleles, true);
+            putNestedIfNotEmpty(beanParams, "missingGenotypes", commandOptions.missingGenotypes, true);
+            putNestedIfNotNull(beanParams, "annotationExists", commandOptions.annotationExists, true);
+            putNestedIfNotEmpty(beanParams, "score", commandOptions.score, true);
+            putNestedIfNotEmpty(beanParams, "polyphen", commandOptions.polyphen, true);
+            putNestedIfNotEmpty(beanParams, "sift", commandOptions.sift, true);
+            putNestedIfNotEmpty(beanParams, "geneRoleInCancer", commandOptions.geneRoleInCancer, true);
+            putNestedIfNotEmpty(beanParams, "geneTraitId", commandOptions.geneTraitId, true);
+            putNestedIfNotEmpty(beanParams, "geneTraitName", commandOptions.geneTraitName, true);
+            putNestedIfNotEmpty(beanParams, "trait", commandOptions.trait, true);
+            putNestedIfNotEmpty(beanParams, "cosmic", commandOptions.cosmic, true);
+            putNestedIfNotEmpty(beanParams, "clinvar", commandOptions.clinvar, true);
+            putNestedIfNotEmpty(beanParams, "hpo", commandOptions.hpo, true);
+            putNestedIfNotEmpty(beanParams, "go", commandOptions.go, true);
+            putNestedIfNotEmpty(beanParams, "expression", commandOptions.expression, true);
+            putNestedIfNotEmpty(beanParams, "proteinKeyword", commandOptions.proteinKeyword, true);
+            putNestedIfNotEmpty(beanParams, "drug", commandOptions.drug, true);
+            putNestedIfNotEmpty(beanParams, "customAnnotation", commandOptions.customAnnotation, true);
+            putNestedIfNotEmpty(beanParams, "source", commandOptions.source, true);
+            putNestedIfNotEmpty(beanParams, "unknownGenotype", commandOptions.unknownGenotype, true);
+            putNestedIfNotNull(beanParams, "sampleMetadata", commandOptions.sampleMetadata, true);
+            putNestedIfNotNull(beanParams, "sort", commandOptions.sort, true);
+            putNestedIfNotEmpty(beanParams, "outputFileName", commandOptions.outputFileName, true);
+            putNestedIfNotEmpty(beanParams, "inputFormat", commandOptions.inputFormat, true);
+            putNestedIfNotEmpty(beanParams, "include", commandOptions.include, true);
+            putNestedIfNotEmpty(beanParams, "exclude", commandOptions.exclude, true);
+            putNestedIfNotEmpty(beanParams, "commandLine", commandOptions.commandLine, true);
+
+            variantWalkerParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), VariantWalkerParams.class);
+        }
+        return openCGAClient.getUserToolClient().runWalker(commandOptions.toolId, variantWalkerParams, queryParams);
     }
 
     private RestResponse<ExternalTool> createWorkflow() throws Exception {
@@ -653,17 +789,24 @@ public class UserToolsCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        ObjectMap objectMap = null;
+        WorkflowParams workflowParams = null;
         if (commandOptions.jsonDataModel) {
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/tools/workflow/{toolId}/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            objectMap = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), ObjectMap.class);
+            workflowParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), WorkflowParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedMapIfNotEmpty(beanParams, "params", commandOptions.params, true);
+
+            workflowParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), WorkflowParams.class);
         }
-        return openCGAClient.getUserToolClient().runWorkflow(commandOptions.toolId, objectMap, queryParams);
+        return openCGAClient.getUserToolClient().runWorkflow(commandOptions.toolId, workflowParams, queryParams);
     }
 
     private RestResponse<ExternalTool> updateWorkflow() throws Exception {

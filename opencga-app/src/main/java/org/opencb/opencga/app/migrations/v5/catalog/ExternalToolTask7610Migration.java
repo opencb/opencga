@@ -2,6 +2,7 @@ package org.opencb.opencga.app.migrations.v5.catalog;
 
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.UpdateOneModel;
+import org.apache.commons.collections4.CollectionUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor;
@@ -10,6 +11,7 @@ import org.opencb.opencga.catalog.migration.Migration;
 import org.opencb.opencga.catalog.migration.MigrationTool;
 
 import java.util.Arrays;
+import java.util.List;
 
 @Migration(id = "external_tool__task_7610",
         description = "Extend Workflow data model for new ExternalTool, #TASK-7610", version = "5.0.0",
@@ -36,15 +38,23 @@ public class ExternalToolTask7610Migration extends MigrationTool {
                 repository.remove("id");
                 repository.remove("version");
             }
+            List<Document> scripts = document.getList("scripts", Document.class);
+            if (CollectionUtils.isNotEmpty(scripts)) {
+                for (Document script : scripts) {
+                    script.put("name", script.get("fileName"));
+                    script.remove("fileName");
+                }
+            }
+
             updateDocument.getSet().put("workflow", new Document()
                     .append("manager", document.get("manager"))
                     .append("repository", repository)
-                    .append("scripts", document.get("scripts"))
+                    .append("scripts", scripts)
             );
             updateDocument.getUnset().add("manager");
             updateDocument.getUnset().add("repository");
             updateDocument.getUnset().add("scripts");
-            updateDocument.getSet().put("docker", null);
+            updateDocument.getSet().put("container", null);
 
             bulk.add(new UpdateOneModel<>(Filters.eq("_id", document.get("_id")), updateDocument.toFinalUpdateDocument()));
         });

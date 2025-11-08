@@ -1,10 +1,7 @@
 package org.opencb.opencga.storage.core.variant.dummy;
 
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
-import org.opencb.biodata.models.variant.avro.ConsequenceType;
-import org.opencb.biodata.models.variant.avro.VariantAnnotation;
-import org.opencb.biodata.models.variant.avro.Xref;
+import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.cellbase.core.models.DataRelease;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
@@ -59,6 +56,8 @@ public class DummyVariantAnnotator extends VariantAnnotator {
         return "rs" + variant.toString().hashCode();
     }
 
+    private static ArrayList<String> SOURCES = new ArrayList<>(Arrays.asList("cosmic", "hgmd", "clinvar", "civic"));
+
     @Override
     public List<VariantAnnotation> annotate(List<Variant> variants) throws VariantAnnotatorException {
         if (fail) {
@@ -90,6 +89,10 @@ public class DummyVariantAnnotator extends VariantAnnotator {
             ct.setTranscriptFlags(Collections.emptyList());
             a.setConsequenceTypes(Collections.singletonList(ct));
             a.setXrefs(Collections.singletonList(new Xref(getRs(v), "dbSNP")));
+            EvidenceEntry evidenceEntry = new EvidenceEntry();
+            int i = Math.abs(v.toString().hashCode() % SOURCES.size());
+            evidenceEntry.setSource(new EvidenceSource(SOURCES.get(i), "v1", ""));
+            a.setTraitAssociation(Collections.singletonList(evidenceEntry));
             a.setAdditionalAttributes(
                     Collections.singletonMap(GROUP_NAME.key(),
                             new AdditionalAttribute(Collections.singletonMap(VARIANT_ID.key(), v.toString()))));

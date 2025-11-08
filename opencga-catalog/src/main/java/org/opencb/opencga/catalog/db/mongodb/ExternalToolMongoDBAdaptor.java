@@ -340,7 +340,7 @@ public class ExternalToolMongoDBAdaptor extends CatalogMongoDBAdaptor implements
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        final String[] acceptedListParams = {QueryParams.DOCKER.key(), QueryParams.WORKFLOW_MANAGER.key(),
+        final String[] acceptedListParams = {QueryParams.CONTAINER.key(), QueryParams.WORKFLOW_MANAGER.key(),
                 QueryParams.WORKFLOW_SCRIPTS.key(), QueryParams.WORKFLOW_REPOSITORY.key(), QueryParams.TAGS.key(),
                 QueryParams.VARIABLES.key(), QueryParams.MINIMUM_REQUIREMENTS.key()};
         filterObjectParams(parameters, document.getSet(), acceptedListParams);
@@ -536,7 +536,7 @@ public class ExternalToolMongoDBAdaptor extends CatalogMongoDBAdaptor implements
                     case UUID:
                     case NAME:
                     case WORKFLOW_REPOSITORY_NAME:
-                    case DOCKER_NAME:
+                    case CONTAINER_NAME:
                     case TAGS:
                     case RELEASE:
                     case VERSION:
