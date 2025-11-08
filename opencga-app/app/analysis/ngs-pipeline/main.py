@@ -25,51 +25,46 @@ def parse_args(argv=None):
     ## --- index command ---
     prepare_parser = subparsers.add_parser("prepare", help="Index the reference genome")
     prepare_parser.add_argument("-r", "--reference-genome", required=True, help="Path or URL to the reference genome in FASTA format")
-    prepare_parser.add_argument("-i", "--aligner-indexes", default="bwa,bwa-mem2,minimap2,bowtie2,hisat2,affy", help="Comma-separated list of aligner indexes to prepare (reference-genome,bwa,bwa-mem2,minimap2). Reference-genome is always executed.")
+    prepare_parser.add_argument("-i", "--indexes", default="bwa,bwa-mem2,minimap2,bowtie2,hisat2,affy", help="Comma-separated list of indexes to prepare (reference-genome,bwa,bwa-mem2,minimap2). Reference-genome is always executed.")
     prepare_parser.add_argument("-c", "--clean", action="store_true", help="Clean existing directory before running")
-    prepare_parser.add_argument("-l", "--log-level", default="info", choices=["debug", "info", "warning", "error"],
-                                help="Set console logging level")
+    prepare_parser.add_argument("-l", "--log-level", default="info", choices=["debug", "info", "warning", "error"], help="Set console logging level")
     prepare_parser.add_argument("-o", "--outdir", required=True, help="Base output directory, index subfolders will be created")
 
     ## --- genomics command ---
-    run_parser = subparsers.add_parser("genomics", help="Align reads to reference genome")
-    run_parser.add_argument("-p", "--pipeline", help="Pipeline step to execute")
-    run_parser.add_argument("-s", "--samples", help="Input data file or directory")
-    run_parser.add_argument("-i", "--index-dir", help="Input data file or directory")
+    run_parser = subparsers.add_parser("genomics", help="Align reads to reference genome and call variants")
+    run_parser.add_argument("-p", "--pipeline", required=True, help="Pipeline JSON file to execute")
+    run_parser.add_argument("-s", "--samples", help="Samples to be processed. Accepted format: sample_id::file1,file2::somatic(0/1)::role(F/M/C/U)")
+    run_parser.add_argument("-d", "--data-dir", help="Input directory for data files. Accepted formats: FASTQ, BAM")
+    run_parser.add_argument("-i", "--index-dir", help="Directory containing reference and aligner indexes")
     run_parser.add_argument("--steps", default="quality-control,alignment,variant-calling", help="Pipeline step to execute")
     run_parser.add_argument("--overwrite", action="store_true", help="Force re-run even if step previously completed")
     run_parser.add_argument("-c", "--clean", action="store_true", help="Clean existing directory before running")
-    run_parser.add_argument("-l", "--log-level", default="INFO", choices=["debug", "info", "warning", "error"],
-                            help="Set console logging level")
+    run_parser.add_argument("-l", "--log-level", default="INFO", choices=["debug", "info", "warning", "error"], help="Set console logging level")
     run_parser.add_argument("-o", "--outdir", required=True, help="Base output directory, step subfolders will be created")
 
     ## --- rna-seq command ---
-    run_parser = subparsers.add_parser("rna-seq", help="Align reads to reference genome")
-    run_parser.add_argument("-p", "--pipeline", help="Pipeline step to execute")
-    run_parser.add_argument("-s", "--samples", help="Input data file or directory")
-    run_parser.add_argument("-i", "--index-dir", help="Input data file or directory")
-    run_parser.add_argument("--steps", default="quality-control,alignment,variant-calling",
-                            help="Pipeline step to execute")
-    run_parser.add_argument("--overwrite", action="store_true", help="Force re-run even if step previously completed")
-    run_parser.add_argument("-c", "--clean", action="store_true", help="Clean existing directory before running")
-    run_parser.add_argument("-l", "--log-level", default="INFO", choices=["debug", "info", "warning", "error"],
-                            help="Set console logging level")
-    run_parser.add_argument("-o", "--outdir", required=True, help="Base output directory, step subfolders will be created")
+    # run_parser = subparsers.add_parser("rna-seq", help="Align reads to reference genome")
+    # run_parser.add_argument("-p", "--pipeline", help="Pipeline step to execute")
+    # run_parser.add_argument("-s", "--samples", help="Input data file or directory")
+    # run_parser.add_argument("-i", "--index-dir", help="Input data file or directory")
+    # run_parser.add_argument("--steps", default="quality-control,alignment,variant-calling", help="Pipeline step to execute")
+    # run_parser.add_argument("--overwrite", action="store_true", help="Force re-run even if step previously completed")
+    # run_parser.add_argument("-c", "--clean", action="store_true", help="Clean existing directory before running")
+    # run_parser.add_argument("-l", "--log-level", default="INFO", choices=["debug", "info", "warning", "error"], help="Set console logging level")
+    # run_parser.add_argument("-o", "--outdir", required=True, help="Base output directory, step subfolders will be created")
 
     ## --- affy command ---
-    run_parser = subparsers.add_parser("affy", help="Align reads to reference genome")
-    run_parser.add_argument("-p", "--pipeline", help="Pipeline step to execute")
-    run_parser.add_argument("-s", "--samples", help="Input data file or directory")
-    run_parser.add_argument("-d", "--data-dir", help="Input data file or directory")
-    run_parser.add_argument("--chip-type", help="Input data file or directory")
-    run_parser.add_argument("-i", "--index-dir", help="Input data file or directory")
+    run_parser = subparsers.add_parser("affy", help="Process Affymetrix microarray data")
+    run_parser.add_argument("-p", "--pipeline", help="Pipeline JSON file to execute")
+    run_parser.add_argument("-s", "--samples", help="Samples to be processed. Accepted format: sample_id::file1,file2::somatic(0/1)::role(F/M/C/U)")
+    run_parser.add_argument("-d", "--data-dir", help="Input directory for data files. Accepted format: CEL")
+    run_parser.add_argument("--chip-type", help="Affymetrix chip type (e.g., 'Axiom_KU8', 'HG-U133_Plus_2')")
+    run_parser.add_argument("-i", "--index-dir", help="Directory containing reference index and APT configuration files")
     run_parser.add_argument("--steps", default="quality-control,genotype", help="Pipeline step to execute")
     run_parser.add_argument("--overwrite", action="store_true", help="Force re-run even if step previously completed")
     run_parser.add_argument("-c", "--clean", action="store_true", help="Clean existing directory before running")
-    run_parser.add_argument("-l", "--log-level", default="INFO", choices=["debug", "info", "warning", "error"],
-                            help="Set console logging level")
-    run_parser.add_argument("-o", "--outdir", required=True,
-                            help="Base output directory, step subfolders will be created")
+    run_parser.add_argument("-l", "--log-level", default="INFO", choices=["debug", "info", "warning", "error"], help="Set console logging level")
+    run_parser.add_argument("-o", "--outdir", required=True, help="Base output directory, step subfolders will be created")
 
     return parser.parse_args(argv)
 
