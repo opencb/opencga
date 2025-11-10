@@ -21,14 +21,18 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.tools.variant.converters.proto.VariantAvroToVariantProtoConverter;
 import org.opencb.commons.datastore.core.Event;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.core.common.ExceptionUtils;
+import org.opencb.opencga.server.grpc.VariantServiceGrpc.VariantServiceImplBase;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.opencb.opencga.server.grpc.GenericServiceModel.Request;
 import static org.opencb.opencga.server.grpc.GenericServiceModel.VariantResponse;
@@ -37,7 +41,7 @@ import static org.opencb.opencga.server.grpc.VariantServiceGrpc.getQueryMethod;
 /**
  * Created by imedina on 29/12/15.
  */
-public class VariantGrpcService extends org.opencb.opencga.server.grpc.VariantServiceGrpc.VariantServiceImplBase {
+public class VariantGrpcService extends VariantServiceImplBase {
 
     private final GenericGrpcService genericGrpcService;
 
@@ -51,7 +55,19 @@ public class VariantGrpcService extends org.opencb.opencga.server.grpc.VariantSe
 
     @Override
     public void query(Request request, StreamObserver<VariantResponse> responseObserver) {
-        genericGrpcService.run(getQueryMethod(), request, (query, queryOptions) -> {
+        genericGrpcService.run(getQueryMethod(), request, responseObserver, (query, queryOptions) -> {
+            Query variantQuery = VariantStorageManager.getVariantQuery(queryOptions);
+            query.putAll(variantQuery);
+//            Map<String, String> queryMap = new HashMap<>();
+//            Map<String, String> queryOptionsMap = new HashMap<>();
+//            for (String key : queryOptions.keySet()) {
+//                if (query.containsKey(key)) {
+//                    queryMap.put(key, query.getString(key));
+//                } else {
+//                    queryOptionsMap.put(key, queryOptions.getString(key));
+//                }
+//            }
+
             VariantAvroToVariantProtoConverter converter = new VariantAvroToVariantProtoConverter();
             int i = 0;
             List<org.opencb.opencga.server.grpc.GenericServiceModel.Event> events = null;

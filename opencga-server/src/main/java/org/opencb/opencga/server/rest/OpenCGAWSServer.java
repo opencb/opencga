@@ -35,7 +35,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.migration.MigrationSummary;
-import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.GitRepositoryState;
@@ -530,71 +529,15 @@ public class OpenCGAWSServer {
         queryOptions.put("metadata", multivaluedMap.get("metadata") == null || multivaluedMap.get("metadata").get(0).equals("true"));
 
         // Add all the others QueryParams from the URL
-        for (Map.Entry<String, List<String>> entry : multivaluedMap.entrySet()) {
-            String value = entry.getValue().get(0);
-            switch (entry.getKey()) {
-                case QueryOptions.INCLUDE:
-                case QueryOptions.EXCLUDE:
-                    queryOptions.put(entry.getKey(), new LinkedList<>(Splitter.on(",").splitToList(value)));
-                    break;
-                case QueryOptions.LIMIT:
-                    limit = Integer.parseInt(value);
-                    break;
-                case QueryOptions.TIMEOUT:
-                    queryOptions.put(entry.getKey(), Integer.parseInt(value));
-                    break;
-                case QueryOptions.SKIP:
-                    skip = Integer.parseInt(value);
-                    queryOptions.put(entry.getKey(), (skip >= 0) ? skip : -1);
-                    break;
-                case QueryOptions.SORT:
-                case QueryOptions.ORDER:
-                    queryOptions.put(entry.getKey(), value);
-                    break;
-                case QueryOptions.COUNT:
-                    count = Boolean.parseBoolean(value);
-                    queryOptions.put(entry.getKey(), count);
-                    break;
-                case Constants.SILENT:
-                    queryOptions.put(entry.getKey(), Boolean.parseBoolean(value));
-                    break;
-                case Constants.FORCE:
-                    queryOptions.put(entry.getKey(), Boolean.parseBoolean(value));
-                    break;
-                case ParamConstants.FLATTEN_ANNOTATIONS:
-                    queryOptions.put(ParamConstants.FLATTEN_ANNOTATIONS, Boolean.parseBoolean(value));
-                    break;
-                case ParamConstants.FAMILY_UPDATE_ROLES_PARAM:
-                    queryOptions.put(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, Boolean.parseBoolean(value));
-                    break;
-                case ParamConstants.FAMILY_UPDATE_PEDIGREEE_GRAPH_PARAM:
-                    queryOptions.put(ParamConstants.FAMILY_UPDATE_PEDIGREEE_GRAPH_PARAM, Boolean.parseBoolean(value));
-                    break;
-                case ParamConstants.OTHER_STUDIES_FLAG:
-                    queryOptions.put(ParamConstants.OTHER_STUDIES_FLAG, Boolean.parseBoolean(value));
-                    break;
-                case ParamConstants.SAMPLE_INCLUDE_INDIVIDUAL_PARAM: // SampleWS
-                    queryOptions.put(ParamConstants.SAMPLE_INCLUDE_INDIVIDUAL_PARAM, Boolean.parseBoolean(value));
-                    break;
-                case ParamConstants.INCLUDE_RESULT_PARAM:
-                    queryOptions.put(ParamConstants.INCLUDE_RESULT_PARAM, Boolean.parseBoolean(value));
-                    break;
-                case "lazy":
-                    lazy = Boolean.parseBoolean(value);
-                    queryOptions.put(entry.getKey(), lazy);
-                    break;
-                case QueryOptions.FACET:
-                    queryOptions.put(entry.getKey(), value);
-                    break;
-                default:
-                    // Query
-                    query.put(entry.getKey(), value);
-                    break;
-            }
-        }
+        OpenCGAServerUtils.parseParams(multivaluedMap, query, queryOptions);
+        limit = queryOptions.getInt(QueryOptions.LIMIT, limit);
+        skip = queryOptions.getLong(QueryOptions.SKIP, skip);
+        count = queryOptions.getBoolean(QueryOptions.COUNT, count);
+        lazy = queryOptions.getBoolean("lazy", lazy);
 
         if (!multivaluedMap.containsKey(QueryOptions.LIMIT)) {
             limit = DEFAULT_LIMIT;
+            queryOptions.put(QueryOptions.LIMIT, limit);
         } else if (limit > MAX_LIMIT) {
             throw new ParamException.QueryParamException(new Throwable("'limit' value cannot be higher than '" + MAX_LIMIT + "'."),
                     "limit", "0");
@@ -602,7 +545,6 @@ public class OpenCGAWSServer {
             throw new ParamException.QueryParamException(new Throwable("'limit' must be a positive value lower or equal to '"
                     + MAX_LIMIT + "'."), "limit", "0");
         }
-        queryOptions.put(QueryOptions.LIMIT, limit);
         query.remove("sid");
 
         // Remove deprecated fields

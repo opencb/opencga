@@ -54,7 +54,7 @@ public class GrpcServerTest {
 
     @Test
     public void testIsAlive() throws Exception {
-        adminServiceBlockingStub.ping(Request.newBuilder().setUser("me").build());
+        adminServiceBlockingStub.ping(Request.newBuilder().build());
     }
 
     @Test(expected = RuntimeException.class)
@@ -64,7 +64,7 @@ public class GrpcServerTest {
                 .usePlaintext()
                 .build();
 
-        org.opencb.opencga.server.grpc.AdminServiceGrpc.newBlockingStub(channel).ping(Request.newBuilder().setUser("me").build());
+        AdminServiceGrpc.newBlockingStub(channel).ping(GenericServiceModel.Request.newBuilder().build());
     }
 
     @Test
@@ -128,7 +128,12 @@ public class GrpcServerTest {
         Assert.assertEquals(5, count);
     }
 
-    public static class TestAdminGrpcService extends org.opencb.opencga.server.grpc.AdminServiceGrpc.AdminServiceImplBase {
+//    @Test
+//    public void testGrpcClient() throws Exception {
+//        new org.opencb.opencga.client.grpc.OpenCGAGrpcClient("localhost", port).admin().ping();
+//    }
+
+    public static class TestAdminGrpcService extends AdminServiceGrpc.AdminServiceImplBase {
 
         @Override
         public void ping(Request request, StreamObserver<MapResponse> responseObserver) {

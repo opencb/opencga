@@ -22,14 +22,16 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.server.OpenCGAHealthCheckMonitor;
+import org.opencb.opencga.server.grpc.AdminServiceGrpc.AdminServiceImplBase;
 import org.slf4j.Logger;
 
-import static org.opencb.opencga.server.grpc.GenericServiceModel.*;
+import static org.opencb.opencga.server.grpc.GenericServiceModel.MapResponse;
+import static org.opencb.opencga.server.grpc.GenericServiceModel.Request;
 
 /**
  * Created by imedina on 02/01/16.
  */
-public class AdminGrpcService extends org.opencb.opencga.server.grpc.AdminServiceGrpc.AdminServiceImplBase {
+public class AdminGrpcService extends AdminServiceImplBase {
 
     private final GenericGrpcService grpcService;
     private final GrpcServer grpcServer;
@@ -42,38 +44,39 @@ public class AdminGrpcService extends org.opencb.opencga.server.grpc.AdminServic
 
     @Override
     public void ping(Request request, StreamObserver<MapResponse> responseObserver) {
-        responseObserver.onNext(MapResponse.newBuilder().putValues("ping", "pong").build());
-        responseObserver.onCompleted();
+        grpcService.run(AdminServiceGrpc.getPingMethod(), request, responseObserver, (query, queryOptions) -> {
+            responseObserver.onNext(MapResponse.newBuilder().putValues("ping", "pong").build());
+        });
     }
 
     @Override
     public void status(Request request, StreamObserver<MapResponse> responseObserver) {
-        OpenCGAResult<OpenCGAHealthCheckMonitor.HealthCheckStatus> result = grpcService.getHealthCheckMonitor().getStatus();
-        OpenCGAHealthCheckMonitor.HealthCheckStatus status = result.first();
-        if (status.isHealthy()) {
-            logger.debug("HealthCheck : " + status);
-            MapResponse.Builder builder = MapResponse.newBuilder();
-            ObjectMap statusMap = new ObjectMap();
-            try {
-                JacksonUtils.getDefaultObjectMapper().updateValue(statusMap, status);
-                for (String key : statusMap.keySet()) {
-                    Object value = statusMap.get(key);
-                    if (value != null) {
-                        builder.putValues(key, value.toString());
-                    } else {
-                        builder.putValues(key, "null");
+        grpcService.run(AdminServiceGrpc.getStatusMethod(), request, responseObserver, (query, queryOptions) -> {
+            OpenCGAResult<OpenCGAHealthCheckMonitor.HealthCheckStatus> result = grpcService.getHealthCheckMonitor().getStatus();
+            OpenCGAHealthCheckMonitor.HealthCheckStatus status = result.first();
+            if (status.isHealthy()) {
+                logger.debug("HealthCheck : " + status);
+                MapResponse.Builder builder = MapResponse.newBuilder();
+                ObjectMap statusMap = new ObjectMap();
+                try {
+                    JacksonUtils.getDefaultObjectMapper().updateValue(statusMap, status);
+                    for (String key : statusMap.keySet()) {
+                        Object value = statusMap.get(key);
+                        if (value != null) {
+                            builder.putValues(key, value.toString());
+                        } else {
+                            builder.putValues(key, "null");
+                        }
                     }
+                } catch (JsonMappingException e) {
+                    throw new RuntimeException(e);
                 }
-            } catch (JsonMappingException e) {
-                throw new RuntimeException(e);
+                responseObserver.onNext(builder.build());
+            } else {
+                logger.error("HealthCheck : " + status);
+                throw new Exception("Some services are not healthy: " + status);
             }
-            responseObserver.onNext(builder.build());
-            responseObserver.onCompleted();
-        } else {
-            logger.error("HealthCheck : " + status);
-            responseObserver.onError(new Exception("Some services are not healthy: " + status));
-        }
-
+        });
     }
 
 //    @Override

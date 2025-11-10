@@ -8,11 +8,9 @@ option java_outer_classname = "GenericServiceModel";
 import "protobuf/opencb/variant.proto";
 
 message Request {
-    string user = 3;
     string token = 4;
     string ip = 5;
     map<string, string> query = 6;
-    map<string, string> options = 7;
 }
 
 message Event {

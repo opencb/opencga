@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import io.grpc.MethodDescriptor;
+import io.grpc.stub.StreamObserver;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -47,9 +48,8 @@ import static org.opencb.opencga.core.common.JacksonUtils.getExternalOpencgaObje
 public class GenericGrpcService {
 
     private final ObjectWriter jsonObjectWriter;
-    private Configuration configuration;
-    private StorageConfiguration storageConfiguration;
-    private String defaultStorageEngine;
+    private final Configuration configuration;
+    private final StorageConfiguration storageConfiguration;
 
     private CatalogManager catalogManager;
     private VariantStorageManager variantStorageManager;
@@ -71,7 +71,6 @@ public class GenericGrpcService {
 
         this.configuration = configuration;
         this.storageConfiguration = storageConfiguration;
-        this.defaultStorageEngine = storageConfiguration.getVariant().getDefaultEngine();
 
         logger.info("========================================================================");
         logger.info("| Starting OpenCGA GRPC server, initializing GenericGrpcService");
@@ -111,41 +110,16 @@ public class GenericGrpcService {
 //        }
 //    }
 
-    protected Query createQuery(Request request) {
-        Query query = new Query();
-        for (String key : request.getQueryMap().keySet()) {
-            if (request.getQueryMap().get(key) != null) {
-                query.put(key, request.getQueryMap().get(key));
-            }
-        }
-        return query;
-    }
-
-    protected QueryOptions createQueryOptions(Request request) {
-        QueryOptions queryOptions = new QueryOptions();
-        for (String key : request.getOptionsMap().keySet()) {
-            if (request.getOptionsMap().get(key) != null) {
-                queryOptions.put(key, request.getOptionsMap().get(key));
-            }
-        }
-        return queryOptions;
-    }
-
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("GenericGrpcServer{");
         sb.append("storageConfiguration=").append(storageConfiguration);
-        sb.append(", defaultStorageEngine='").append(defaultStorageEngine).append('\'');
         sb.append('}');
         return sb.toString();
     }
 
     public StorageConfiguration getStorageConfiguration() {
         return storageConfiguration;
-    }
-
-    public String getDefaultStorageEngine() {
-        return defaultStorageEngine;
     }
 
     public CatalogManager getCatalogManager() {
@@ -175,10 +149,29 @@ public class GenericGrpcService {
 
     }
 
-    public void run(MethodDescriptor<Request, ?> method, Request request, RequestRunner requestRunner) {
+    @FunctionalInterface
+    public interface RequestRunnerReturnless {
+
+        void run(Query query, QueryOptions options) throws Exception;
+
+    }
+
+    public void run(MethodDescriptor<Request, ?> method, Request request, StreamObserver<?> streamObserver,
+                    RequestRunnerReturnless requestRunner) {
+        run(method, request, streamObserver, (query, queryOptions) -> {
+            requestRunner.run(query, queryOptions);
+            return 1;
+        });
+    }
+    public void run(MethodDescriptor<Request, ?> method, Request request, StreamObserver<?> streamObserver,
+                    RequestRunner requestRunner) {
         StopWatch stopWatch = StopWatch.createStarted();
-        Query query = createQuery(request);
-        QueryOptions queryOptions = createQueryOptions(request);
+//        Query query = createQuery(request);
+//        QueryOptions queryOptions = createQueryOptions(request);
+        Query query = new Query();
+        QueryOptions queryOptions = new QueryOptions();
+        OpenCGAServerUtils.parseParams(request.getQueryMap(), query, queryOptions);
+
         String requestDescription;
         try {
             requestDescription = method.getFullMethodName() + " : q: " + jsonObjectWriter.writeValueAsString(query)
@@ -192,9 +185,11 @@ public class GenericGrpcService {
         int numResults = -1;
         try {
             numResults = requestRunner.run(query, queryOptions);
+            streamObserver.onCompleted();
         } catch (Exception ex) {
             e = ex;
             logger.error("Catch error: " + e.getMessage(), e);
+            streamObserver.onError(ex);
         } finally {
             stopWatch.stop();
         }
