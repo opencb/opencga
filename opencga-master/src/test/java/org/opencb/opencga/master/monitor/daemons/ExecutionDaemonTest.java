@@ -106,6 +106,8 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         params.put("paramWithSingleQuotes", "This could 'be' a description");
         params.put("paramWithDoubleQuotes", "This could \"be\" a description");
         params.put("nullShouldBeIgnored", null);
+        params.put("list", Collections.singletonList("value"));
+        params.put("list2", Arrays.asList("value1", "value2"));
 
         Map<String, Object> dynamic1 = new LinkedHashMap<>();
         dynamic1.put("dynamic", "It's true");
@@ -127,6 +129,8 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
                 + "--param-with-spaces 'This could be a description' "
                 + "--param-with-single-quotes 'This could '\"'\"'be'\"'\"' a description' "
                 + "--param-with-double-quotes 'This could \"be\" a description' "
+                + "--list value "
+                + "--list2 'value1,value2' "
                 + "--dynamic-param1 dynamic='It'\"'\"'s true' "
                 + "--dynamic-param1 'param with spaces'='Fuc*!' "
                 + "--dynamic-param1 boolean=false "
