@@ -17,7 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
-public abstract class OpenCgaDockerToolScopeStudy extends OpenCgaToolScopeStudy {
+public abstract class OpenCgaDockerToolScopeStudy extends OpenCgaTool {
 
     // Build list of inputfiles in case we need to specifically mount them in read only mode
     protected List<AbstractMap.SimpleEntry<String, String>> dockerInputBindings;

@@ -227,7 +227,7 @@ public class MonitorService {
             params.setResources(resourceConfig.getFetchOnInit());
 
             catalogManager.getJobManager()
-                    .submit(ParamConstants.ADMIN_STUDY_FQN, JobType.NATIVE, ResourceFetcherTool.ID, Enums.Priority.URGENT,
+                    .submit(ParamConstants.ADMIN_STUDY_FQN, JobType.NATIVE_TOOL, ResourceFetcherTool.ID, Enums.Priority.URGENT,
                             params.toParams(), null, null, null, null, null, null, false, token);
         } catch (CatalogException e) {
             logger.error("Error submitting job '" + ResourceFetcherTool.ID + "'", e);

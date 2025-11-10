@@ -245,7 +245,6 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         userToolsSubCommands.addCommand("custom-builder-run", userToolsCommandOptions.runCustomBuilderCommandOptions);
         userToolsSubCommands.addCommand("custom-create", userToolsCommandOptions.createCustomCommandOptions);
         userToolsSubCommands.addCommand("custom-docker-run", userToolsCommandOptions.runCustomDockerCommandOptions);
-        userToolsSubCommands.addCommand("custom-run", userToolsCommandOptions.runCustomCommandOptions);
         userToolsSubCommands.addCommand("custom-update", userToolsCommandOptions.updateCustomCommandOptions);
         userToolsSubCommands.addCommand("distinct", userToolsCommandOptions.distinctCommandOptions);
         userToolsSubCommands.addCommand("search", userToolsCommandOptions.searchCommandOptions);

@@ -22,7 +22,7 @@ import org.opencb.biodata.formats.alignment.samtools.SamtoolsFlagstats;
 import org.opencb.biodata.formats.alignment.samtools.io.SamtoolsFlagstatsParser;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
 import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
@@ -46,7 +46,7 @@ import static org.opencb.opencga.core.api.ParamConstants.ALIGNMENT_FLAG_STATS_DE
 import static org.opencb.opencga.core.tools.OpenCgaToolExecutor.EXECUTOR_ID;
 
 @Tool(id = AlignmentFlagStatsAnalysis.ID, resource = Enums.Resource.ALIGNMENT)
-public class AlignmentFlagStatsAnalysis extends OpenCgaToolScopeStudy {
+public class AlignmentFlagStatsAnalysis extends OpenCgaTool {
 
     public static final String ID = "alignment-flagstats";
     public static final String DESCRIPTION = ALIGNMENT_FLAG_STATS_DESCRIPTION;

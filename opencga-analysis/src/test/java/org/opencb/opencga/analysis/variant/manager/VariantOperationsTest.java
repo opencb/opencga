@@ -569,7 +569,7 @@ public class VariantOperationsTest {
         }
         // Run reconfiguration jobs
         for (Job job : jobs.getResults()) {
-            toolRunner.execute(job, Paths.get(opencga.createTmpOutdir()), token);
+            toolRunner.execute(study.getFqn(), job, Paths.get(opencga.createTmpOutdir()), token);
         }
 
         // Everything should look the same, but with newer version
@@ -589,7 +589,7 @@ public class VariantOperationsTest {
         // Same. Rerun configuration and change version.
         jobs = variantStorageManager.configureSampleIndex(STUDY, SampleIndexConfiguration.defaultConfiguration(), false, token);
         for (Job job : jobs.getResults()) {
-            toolRunner.execute(job, Paths.get(opencga.createTmpOutdir()), token);
+            toolRunner.execute(study.getFqn(), job, Paths.get(opencga.createTmpOutdir()), token);
         }
         for (String sample : samples) {
             SampleInternalVariantSecondarySampleIndex sampleIndex = catalogManager.getSampleManager().get(STUDY, sample, new QueryOptions(), token).first().getInternal().getVariant().getSecondarySampleIndex();
@@ -780,7 +780,7 @@ public class VariantOperationsTest {
         GwasAnalysis analysis = new GwasAnalysis();
         Path outDir = Paths.get(opencga.createTmpOutdir("_gwas_index"));
         System.out.println("output = " + outDir.toAbsolutePath());
-        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", false, token);
+        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", "", false, token);
 
         List<Sample> samples = catalogManager.getSampleManager().get(STUDY, file.getSampleIds().subList(0, 2), QueryOptions.empty(), token).getResults();
         catalogManager.getCohortManager().create(STUDY, new Cohort().setId("CASE").setSamples(samples), new QueryOptions(), token);

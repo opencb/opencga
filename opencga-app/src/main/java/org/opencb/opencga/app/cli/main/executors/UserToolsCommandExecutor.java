@@ -26,8 +26,9 @@ import org.opencb.opencga.core.models.externalTool.WorkflowParams;
 import org.opencb.opencga.core.models.externalTool.WorkflowRepository;
 import org.opencb.opencga.core.models.externalTool.WorkflowRepositoryParams;
 import org.opencb.opencga.core.models.externalTool.WorkflowSystem;
+import org.opencb.opencga.core.models.externalTool.WorkflowToolParams;
+import org.opencb.opencga.core.models.externalTool.custom.CustomExternalToolParams;
 import org.opencb.opencga.core.models.externalTool.custom.CustomToolCreateParams;
-import org.opencb.opencga.core.models.externalTool.custom.CustomToolInlineParams;
 import org.opencb.opencga.core.models.externalTool.custom.CustomToolRunParams;
 import org.opencb.opencga.core.models.externalTool.custom.CustomToolUpdateParams;
 import org.opencb.opencga.core.models.externalTool.workflow.WorkflowCreateParams;
@@ -37,6 +38,7 @@ import org.opencb.opencga.core.models.job.JobToolBuildDockerParams;
 import org.opencb.opencga.core.models.job.JobToolBuildParams;
 import org.opencb.opencga.core.models.job.MinimumRequirements;
 import org.opencb.opencga.core.models.variant.VariantWalkerParams;
+import org.opencb.opencga.core.models.variant.VariantWalkerToolParams;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.opencga.core.response.RestResponse;
 
@@ -88,9 +90,6 @@ public class UserToolsCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "custom-docker-run":
                 queryResponse = runCustomDocker();
-                break;
-            case "custom-run":
-                queryResponse = runCustom();
                 break;
             case "custom-update":
                 queryResponse = updateCustom();
@@ -321,73 +320,27 @@ public class UserToolsCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        CustomToolInlineParams customToolInlineParams = null;
+        CustomExternalToolParams customExternalToolParams = null;
         if (commandOptions.jsonDataModel) {
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/tools/custom/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            customToolInlineParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), CustomToolInlineParams.class);
+            customExternalToolParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), CustomExternalToolParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "container.name", commandOptions.containerName, true);
-            putNestedIfNotEmpty(beanParams, "container.tag", commandOptions.containerTag, true);
-            putNestedIfNotEmpty(beanParams, "container.digest", commandOptions.containerDigest, true);
-            putNestedIfNotEmpty(beanParams, "container.commandLine", commandOptions.containerCommandLine, true);
-            putNestedIfNotEmpty(beanParams, "container.user", commandOptions.containerUser, true);
-            putNestedIfNotEmpty(beanParams, "container.password", commandOptions.containerPassword, true);
-            putNestedIfNotEmpty(beanParams, "minimumRequirements.cpu", commandOptions.minimumRequirementsCpu, true);
-            putNestedIfNotEmpty(beanParams, "minimumRequirements.memory", commandOptions.minimumRequirementsMemory, true);
-            putNestedIfNotEmpty(beanParams, "minimumRequirements.disk", commandOptions.minimumRequirementsDisk, true);
+            putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
+            putNestedIfNotNull(beanParams, "version", commandOptions.version, true);
+            putNestedIfNotEmpty(beanParams, "params.commandLine", commandOptions.paramsCommandLine, true);
+            putNestedMapIfNotEmpty(beanParams, "params.params", commandOptions.paramsParams, true);
 
-            customToolInlineParams = JacksonUtils.getDefaultObjectMapper().copy()
+            customExternalToolParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), CustomToolInlineParams.class);
+                    .readValue(beanParams.toJson(), CustomExternalToolParams.class);
         }
-        return openCGAClient.getUserToolClient().runCustomDocker(customToolInlineParams, queryParams);
-    }
-
-    private RestResponse<Job> runCustom() throws Exception {
-        logger.debug("Executing runCustom in User Tools command line");
-
-        UserToolsCommandOptions.RunCustomCommandOptions commandOptions = userToolsCommandOptions.runCustomCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotNull("version", commandOptions.version);
-        queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
-        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
-        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
-        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
-        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
-        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
-
-
-        CustomToolRunParams customToolRunParams = null;
-        if (commandOptions.jsonDataModel) {
-            RestResponse<Job> res = new RestResponse<>();
-            res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/tools/custom/{toolId}/run"));
-            return res;
-        } else if (commandOptions.jsonFile != null) {
-            customToolRunParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), CustomToolRunParams.class);
-        } else {
-            ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "commandLine", commandOptions.commandLine, true);
-            putNestedMapIfNotEmpty(beanParams, "params", commandOptions.params, true);
-
-            customToolRunParams = JacksonUtils.getDefaultObjectMapper().copy()
-                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), CustomToolRunParams.class);
-        }
-        return openCGAClient.getUserToolClient().runCustom(commandOptions.toolId, customToolRunParams, queryParams);
+        return openCGAClient.getUserToolClient().runCustomDocker(customExternalToolParams, queryParams);
     }
 
     private RestResponse<ExternalTool> updateCustom() throws Exception {
@@ -567,7 +520,6 @@ public class UserToolsCommandExecutor extends OpencgaCommandExecutor {
         UserToolsCommandOptions.RunWalkerCommandOptions commandOptions = userToolsCommandOptions.runWalkerCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotNull("version", commandOptions.version);
         queryParams.putIfNotEmpty("project", commandOptions.project);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
@@ -582,107 +534,109 @@ public class UserToolsCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        VariantWalkerParams variantWalkerParams = null;
+        VariantWalkerToolParams variantWalkerToolParams = null;
         if (commandOptions.jsonDataModel) {
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/tools/walker/{toolId}/run"));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/tools/walker/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            variantWalkerParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), VariantWalkerParams.class);
+            variantWalkerToolParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), VariantWalkerToolParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
-            putNestedIfNotEmpty(beanParams, "region", commandOptions.region, true);
-            putNestedIfNotEmpty(beanParams, "gene", commandOptions.gene, true);
-            putNestedIfNotEmpty(beanParams, "type", commandOptions.type, true);
-            putNestedIfNotEmpty(beanParams, "panel", commandOptions.panel, true);
-            putNestedIfNotEmpty(beanParams, "panelModeOfInheritance", commandOptions.panelModeOfInheritance, true);
-            putNestedIfNotEmpty(beanParams, "panelConfidence", commandOptions.panelConfidence, true);
-            putNestedIfNotEmpty(beanParams, "panelRoleInCancer", commandOptions.panelRoleInCancer, true);
-            putNestedIfNotNull(beanParams, "panelIntersection", commandOptions.panelIntersection, true);
-            putNestedIfNotEmpty(beanParams, "panelFeatureType", commandOptions.panelFeatureType, true);
-            putNestedIfNotEmpty(beanParams, "cohortStatsRef", commandOptions.cohortStatsRef, true);
-            putNestedIfNotEmpty(beanParams, "cohortStatsAlt", commandOptions.cohortStatsAlt, true);
-            putNestedIfNotEmpty(beanParams, "cohortStatsMaf", commandOptions.cohortStatsMaf, true);
-            putNestedIfNotEmpty(beanParams, "ct", commandOptions.ct, true);
-            putNestedIfNotEmpty(beanParams, "xref", commandOptions.xref, true);
-            putNestedIfNotEmpty(beanParams, "biotype", commandOptions.biotype, true);
-            putNestedIfNotEmpty(beanParams, "proteinSubstitution", commandOptions.proteinSubstitution, true);
-            putNestedIfNotEmpty(beanParams, "conservation", commandOptions.conservation, true);
-            putNestedIfNotEmpty(beanParams, "populationFrequencyMaf", commandOptions.populationFrequencyMaf, true);
-            putNestedIfNotEmpty(beanParams, "populationFrequencyAlt", commandOptions.populationFrequencyAlt, true);
-            putNestedIfNotEmpty(beanParams, "populationFrequencyRef", commandOptions.populationFrequencyRef, true);
-            putNestedIfNotEmpty(beanParams, "transcriptFlag", commandOptions.transcriptFlag, true);
-            putNestedIfNotEmpty(beanParams, "functionalScore", commandOptions.functionalScore, true);
-            putNestedIfNotEmpty(beanParams, "clinical", commandOptions.clinical, true);
-            putNestedIfNotEmpty(beanParams, "clinicalSignificance", commandOptions.clinicalSignificance, true);
-            putNestedIfNotNull(beanParams, "clinicalConfirmedStatus", commandOptions.clinicalConfirmedStatus, true);
-            putNestedIfNotEmpty(beanParams, "project", commandOptions.bodyProject, true);
-            putNestedIfNotEmpty(beanParams, "study", commandOptions.bodyStudy, true);
-            putNestedIfNotEmpty(beanParams, "savedFilter", commandOptions.savedFilter, true);
-            putNestedIfNotEmpty(beanParams, "chromosome", commandOptions.chromosome, true);
-            putNestedIfNotEmpty(beanParams, "reference", commandOptions.reference, true);
-            putNestedIfNotEmpty(beanParams, "alternate", commandOptions.alternate, true);
-            putNestedIfNotEmpty(beanParams, "release", commandOptions.release, true);
-            putNestedIfNotEmpty(beanParams, "includeStudy", commandOptions.includeStudy, true);
-            putNestedIfNotEmpty(beanParams, "includeSample", commandOptions.includeSample, true);
-            putNestedIfNotEmpty(beanParams, "includeFile", commandOptions.includeFile, true);
-            putNestedIfNotEmpty(beanParams, "includeSampleData", commandOptions.includeSampleData, true);
-            putNestedIfNotNull(beanParams, "includeSampleId", commandOptions.includeSampleId, true);
-            putNestedIfNotNull(beanParams, "includeGenotype", commandOptions.includeGenotype, true);
-            putNestedIfNotEmpty(beanParams, "file", commandOptions.file, true);
-            putNestedIfNotEmpty(beanParams, "qual", commandOptions.qual, true);
-            putNestedIfNotEmpty(beanParams, "filter", commandOptions.filter, true);
-            putNestedIfNotEmpty(beanParams, "fileData", commandOptions.fileData, true);
-            putNestedIfNotEmpty(beanParams, "genotype", commandOptions.genotype, true);
-            putNestedIfNotEmpty(beanParams, "sample", commandOptions.sample, true);
-            putNestedIfNotNull(beanParams, "sampleLimit", commandOptions.sampleLimit, true);
-            putNestedIfNotNull(beanParams, "sampleSkip", commandOptions.sampleSkip, true);
-            putNestedIfNotEmpty(beanParams, "sampleData", commandOptions.sampleData, true);
-            putNestedIfNotEmpty(beanParams, "sampleAnnotation", commandOptions.sampleAnnotation, true);
-            putNestedIfNotEmpty(beanParams, "family", commandOptions.family, true);
-            putNestedIfNotEmpty(beanParams, "familyMembers", commandOptions.familyMembers, true);
-            putNestedIfNotEmpty(beanParams, "familyDisorder", commandOptions.familyDisorder, true);
-            putNestedIfNotEmpty(beanParams, "familyProband", commandOptions.familyProband, true);
-            putNestedIfNotEmpty(beanParams, "familySegregation", commandOptions.familySegregation, true);
-            putNestedIfNotEmpty(beanParams, "cohort", commandOptions.cohort, true);
-            putNestedIfNotEmpty(beanParams, "cohortStatsPass", commandOptions.cohortStatsPass, true);
-            putNestedIfNotEmpty(beanParams, "cohortStatsMgf", commandOptions.cohortStatsMgf, true);
-            putNestedIfNotEmpty(beanParams, "missingAlleles", commandOptions.missingAlleles, true);
-            putNestedIfNotEmpty(beanParams, "missingGenotypes", commandOptions.missingGenotypes, true);
-            putNestedIfNotNull(beanParams, "annotationExists", commandOptions.annotationExists, true);
-            putNestedIfNotEmpty(beanParams, "score", commandOptions.score, true);
-            putNestedIfNotEmpty(beanParams, "polyphen", commandOptions.polyphen, true);
-            putNestedIfNotEmpty(beanParams, "sift", commandOptions.sift, true);
-            putNestedIfNotEmpty(beanParams, "geneRoleInCancer", commandOptions.geneRoleInCancer, true);
-            putNestedIfNotEmpty(beanParams, "geneTraitId", commandOptions.geneTraitId, true);
-            putNestedIfNotEmpty(beanParams, "geneTraitName", commandOptions.geneTraitName, true);
-            putNestedIfNotEmpty(beanParams, "trait", commandOptions.trait, true);
-            putNestedIfNotEmpty(beanParams, "cosmic", commandOptions.cosmic, true);
-            putNestedIfNotEmpty(beanParams, "clinvar", commandOptions.clinvar, true);
-            putNestedIfNotEmpty(beanParams, "hpo", commandOptions.hpo, true);
-            putNestedIfNotEmpty(beanParams, "go", commandOptions.go, true);
-            putNestedIfNotEmpty(beanParams, "expression", commandOptions.expression, true);
-            putNestedIfNotEmpty(beanParams, "proteinKeyword", commandOptions.proteinKeyword, true);
-            putNestedIfNotEmpty(beanParams, "drug", commandOptions.drug, true);
-            putNestedIfNotEmpty(beanParams, "customAnnotation", commandOptions.customAnnotation, true);
-            putNestedIfNotEmpty(beanParams, "source", commandOptions.source, true);
-            putNestedIfNotEmpty(beanParams, "unknownGenotype", commandOptions.unknownGenotype, true);
-            putNestedIfNotNull(beanParams, "sampleMetadata", commandOptions.sampleMetadata, true);
-            putNestedIfNotNull(beanParams, "sort", commandOptions.sort, true);
-            putNestedIfNotEmpty(beanParams, "outputFileName", commandOptions.outputFileName, true);
-            putNestedIfNotEmpty(beanParams, "inputFormat", commandOptions.inputFormat, true);
-            putNestedIfNotEmpty(beanParams, "include", commandOptions.include, true);
-            putNestedIfNotEmpty(beanParams, "exclude", commandOptions.exclude, true);
-            putNestedIfNotEmpty(beanParams, "commandLine", commandOptions.commandLine, true);
+            putNestedIfNotNull(beanParams, "version", commandOptions.version, true);
+            putNestedIfNotEmpty(beanParams, "params.id", commandOptions.paramsId, true);
+            putNestedIfNotEmpty(beanParams, "params.region", commandOptions.paramsRegion, true);
+            putNestedIfNotEmpty(beanParams, "params.gene", commandOptions.paramsGene, true);
+            putNestedIfNotEmpty(beanParams, "params.type", commandOptions.paramsType, true);
+            putNestedIfNotEmpty(beanParams, "params.panel", commandOptions.paramsPanel, true);
+            putNestedIfNotEmpty(beanParams, "params.panelModeOfInheritance", commandOptions.paramsPanelModeOfInheritance, true);
+            putNestedIfNotEmpty(beanParams, "params.panelConfidence", commandOptions.paramsPanelConfidence, true);
+            putNestedIfNotEmpty(beanParams, "params.panelRoleInCancer", commandOptions.paramsPanelRoleInCancer, true);
+            putNestedIfNotNull(beanParams, "params.panelIntersection", commandOptions.paramsPanelIntersection, true);
+            putNestedIfNotEmpty(beanParams, "params.panelFeatureType", commandOptions.paramsPanelFeatureType, true);
+            putNestedIfNotEmpty(beanParams, "params.cohortStatsRef", commandOptions.paramsCohortStatsRef, true);
+            putNestedIfNotEmpty(beanParams, "params.cohortStatsAlt", commandOptions.paramsCohortStatsAlt, true);
+            putNestedIfNotEmpty(beanParams, "params.cohortStatsMaf", commandOptions.paramsCohortStatsMaf, true);
+            putNestedIfNotEmpty(beanParams, "params.ct", commandOptions.paramsCt, true);
+            putNestedIfNotEmpty(beanParams, "params.xref", commandOptions.paramsXref, true);
+            putNestedIfNotEmpty(beanParams, "params.biotype", commandOptions.paramsBiotype, true);
+            putNestedIfNotEmpty(beanParams, "params.proteinSubstitution", commandOptions.paramsProteinSubstitution, true);
+            putNestedIfNotEmpty(beanParams, "params.conservation", commandOptions.paramsConservation, true);
+            putNestedIfNotEmpty(beanParams, "params.populationFrequencyMaf", commandOptions.paramsPopulationFrequencyMaf, true);
+            putNestedIfNotEmpty(beanParams, "params.populationFrequencyAlt", commandOptions.paramsPopulationFrequencyAlt, true);
+            putNestedIfNotEmpty(beanParams, "params.populationFrequencyRef", commandOptions.paramsPopulationFrequencyRef, true);
+            putNestedIfNotEmpty(beanParams, "params.transcriptFlag", commandOptions.paramsTranscriptFlag, true);
+            putNestedIfNotEmpty(beanParams, "params.functionalScore", commandOptions.paramsFunctionalScore, true);
+            putNestedIfNotEmpty(beanParams, "params.clinical", commandOptions.paramsClinical, true);
+            putNestedIfNotEmpty(beanParams, "params.clinicalSignificance", commandOptions.paramsClinicalSignificance, true);
+            putNestedIfNotNull(beanParams, "params.clinicalConfirmedStatus", commandOptions.paramsClinicalConfirmedStatus, true);
+            putNestedIfNotEmpty(beanParams, "params.project", commandOptions.paramsProject, true);
+            putNestedIfNotEmpty(beanParams, "params.study", commandOptions.paramsStudy, true);
+            putNestedIfNotEmpty(beanParams, "params.savedFilter", commandOptions.paramsSavedFilter, true);
+            putNestedIfNotEmpty(beanParams, "params.chromosome", commandOptions.paramsChromosome, true);
+            putNestedIfNotEmpty(beanParams, "params.reference", commandOptions.paramsReference, true);
+            putNestedIfNotEmpty(beanParams, "params.alternate", commandOptions.paramsAlternate, true);
+            putNestedIfNotEmpty(beanParams, "params.release", commandOptions.paramsRelease, true);
+            putNestedIfNotEmpty(beanParams, "params.includeStudy", commandOptions.paramsIncludeStudy, true);
+            putNestedIfNotEmpty(beanParams, "params.includeSample", commandOptions.paramsIncludeSample, true);
+            putNestedIfNotEmpty(beanParams, "params.includeFile", commandOptions.paramsIncludeFile, true);
+            putNestedIfNotEmpty(beanParams, "params.includeSampleData", commandOptions.paramsIncludeSampleData, true);
+            putNestedIfNotNull(beanParams, "params.includeSampleId", commandOptions.paramsIncludeSampleId, true);
+            putNestedIfNotNull(beanParams, "params.includeGenotype", commandOptions.paramsIncludeGenotype, true);
+            putNestedIfNotEmpty(beanParams, "params.file", commandOptions.paramsFile, true);
+            putNestedIfNotEmpty(beanParams, "params.qual", commandOptions.paramsQual, true);
+            putNestedIfNotEmpty(beanParams, "params.filter", commandOptions.paramsFilter, true);
+            putNestedIfNotEmpty(beanParams, "params.fileData", commandOptions.paramsFileData, true);
+            putNestedIfNotEmpty(beanParams, "params.genotype", commandOptions.paramsGenotype, true);
+            putNestedIfNotEmpty(beanParams, "params.sample", commandOptions.paramsSample, true);
+            putNestedIfNotNull(beanParams, "params.sampleLimit", commandOptions.paramsSampleLimit, true);
+            putNestedIfNotNull(beanParams, "params.sampleSkip", commandOptions.paramsSampleSkip, true);
+            putNestedIfNotEmpty(beanParams, "params.sampleData", commandOptions.paramsSampleData, true);
+            putNestedIfNotEmpty(beanParams, "params.sampleAnnotation", commandOptions.paramsSampleAnnotation, true);
+            putNestedIfNotEmpty(beanParams, "params.family", commandOptions.paramsFamily, true);
+            putNestedIfNotEmpty(beanParams, "params.familyMembers", commandOptions.paramsFamilyMembers, true);
+            putNestedIfNotEmpty(beanParams, "params.familyDisorder", commandOptions.paramsFamilyDisorder, true);
+            putNestedIfNotEmpty(beanParams, "params.familyProband", commandOptions.paramsFamilyProband, true);
+            putNestedIfNotEmpty(beanParams, "params.familySegregation", commandOptions.paramsFamilySegregation, true);
+            putNestedIfNotEmpty(beanParams, "params.cohort", commandOptions.paramsCohort, true);
+            putNestedIfNotEmpty(beanParams, "params.cohortStatsPass", commandOptions.paramsCohortStatsPass, true);
+            putNestedIfNotEmpty(beanParams, "params.cohortStatsMgf", commandOptions.paramsCohortStatsMgf, true);
+            putNestedIfNotEmpty(beanParams, "params.missingAlleles", commandOptions.paramsMissingAlleles, true);
+            putNestedIfNotEmpty(beanParams, "params.missingGenotypes", commandOptions.paramsMissingGenotypes, true);
+            putNestedIfNotNull(beanParams, "params.annotationExists", commandOptions.paramsAnnotationExists, true);
+            putNestedIfNotEmpty(beanParams, "params.score", commandOptions.paramsScore, true);
+            putNestedIfNotEmpty(beanParams, "params.polyphen", commandOptions.paramsPolyphen, true);
+            putNestedIfNotEmpty(beanParams, "params.sift", commandOptions.paramsSift, true);
+            putNestedIfNotEmpty(beanParams, "params.geneRoleInCancer", commandOptions.paramsGeneRoleInCancer, true);
+            putNestedIfNotEmpty(beanParams, "params.geneTraitId", commandOptions.paramsGeneTraitId, true);
+            putNestedIfNotEmpty(beanParams, "params.geneTraitName", commandOptions.paramsGeneTraitName, true);
+            putNestedIfNotEmpty(beanParams, "params.trait", commandOptions.paramsTrait, true);
+            putNestedIfNotEmpty(beanParams, "params.cosmic", commandOptions.paramsCosmic, true);
+            putNestedIfNotEmpty(beanParams, "params.clinvar", commandOptions.paramsClinvar, true);
+            putNestedIfNotEmpty(beanParams, "params.hpo", commandOptions.paramsHpo, true);
+            putNestedIfNotEmpty(beanParams, "params.go", commandOptions.paramsGo, true);
+            putNestedIfNotEmpty(beanParams, "params.expression", commandOptions.paramsExpression, true);
+            putNestedIfNotEmpty(beanParams, "params.proteinKeyword", commandOptions.paramsProteinKeyword, true);
+            putNestedIfNotEmpty(beanParams, "params.drug", commandOptions.paramsDrug, true);
+            putNestedIfNotEmpty(beanParams, "params.customAnnotation", commandOptions.paramsCustomAnnotation, true);
+            putNestedIfNotEmpty(beanParams, "params.source", commandOptions.paramsSource, true);
+            putNestedIfNotEmpty(beanParams, "params.unknownGenotype", commandOptions.paramsUnknownGenotype, true);
+            putNestedIfNotNull(beanParams, "params.sampleMetadata", commandOptions.paramsSampleMetadata, true);
+            putNestedIfNotNull(beanParams, "params.sort", commandOptions.paramsSort, true);
+            putNestedIfNotEmpty(beanParams, "params.outputFileName", commandOptions.paramsOutputFileName, true);
+            putNestedIfNotEmpty(beanParams, "params.inputFormat", commandOptions.paramsInputFormat, true);
+            putNestedIfNotEmpty(beanParams, "params.include", commandOptions.paramsInclude, true);
+            putNestedIfNotEmpty(beanParams, "params.exclude", commandOptions.paramsExclude, true);
+            putNestedIfNotEmpty(beanParams, "params.commandLine", commandOptions.paramsCommandLine, true);
 
-            variantWalkerParams = JacksonUtils.getDefaultObjectMapper().copy()
+            variantWalkerToolParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), VariantWalkerParams.class);
+                    .readValue(beanParams.toJson(), VariantWalkerToolParams.class);
         }
-        return openCGAClient.getUserToolClient().runWalker(commandOptions.toolId, variantWalkerParams, queryParams);
+        return openCGAClient.getUserToolClient().runWalker(variantWalkerToolParams, queryParams);
     }
 
     private RestResponse<ExternalTool> createWorkflow() throws Exception {
@@ -775,7 +729,6 @@ public class UserToolsCommandExecutor extends OpencgaCommandExecutor {
         UserToolsCommandOptions.RunWorkflowCommandOptions commandOptions = userToolsCommandOptions.runWorkflowCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotNull("version", commandOptions.version);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
@@ -789,24 +742,26 @@ public class UserToolsCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        WorkflowParams workflowParams = null;
+        WorkflowToolParams workflowToolParams = null;
         if (commandOptions.jsonDataModel) {
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/tools/workflow/{toolId}/run"));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/tools/workflow/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            workflowParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), WorkflowParams.class);
+            workflowToolParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), WorkflowToolParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedMapIfNotEmpty(beanParams, "params", commandOptions.params, true);
+            putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
+            putNestedIfNotNull(beanParams, "version", commandOptions.version, true);
+            putNestedMapIfNotEmpty(beanParams, "params.params", commandOptions.paramsParams, true);
 
-            workflowParams = JacksonUtils.getDefaultObjectMapper().copy()
+            workflowToolParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), WorkflowParams.class);
+                    .readValue(beanParams.toJson(), WorkflowToolParams.class);
         }
-        return openCGAClient.getUserToolClient().runWorkflow(commandOptions.toolId, workflowParams, queryParams);
+        return openCGAClient.getUserToolClient().runWorkflow(workflowToolParams, queryParams);
     }
 
     private RestResponse<ExternalTool> updateWorkflow() throws Exception {

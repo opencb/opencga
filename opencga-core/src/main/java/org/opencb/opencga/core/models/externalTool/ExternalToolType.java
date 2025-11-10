@@ -1,7 +1,7 @@
 package org.opencb.opencga.core.models.externalTool;
 
 public enum ExternalToolType {
-    CUSTOM,
-    WALKER,
+    CUSTOM_TOOL,
+    VARIANT_WALKER,
     WORKFLOW
 }

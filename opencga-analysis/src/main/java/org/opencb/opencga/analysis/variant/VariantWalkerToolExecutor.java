@@ -81,11 +81,10 @@ public class VariantWalkerToolExecutor extends OpenCgaTool {
         OpenCGAResult<ExternalTool> result;
         if (runParams.getVersion() != null) {
             Query query = new Query(ExternalToolDBAdaptor.QueryParams.VERSION.key(), runParams.getVersion());
-            result = catalogManager.getExternalToolManager().get(externalToolParams.getStudy(),
-                    Collections.singletonList(runParams.getId()), query, QueryOptions.empty(), false, token);
+            result = catalogManager.getExternalToolManager().get(getStudy(), Collections.singletonList(runParams.getId()), query,
+                    QueryOptions.empty(), false, token);
         } else {
-            result = catalogManager.getExternalToolManager().get(externalToolParams.getStudy(), runParams.getId(), QueryOptions.empty(),
-                    token);
+            result = catalogManager.getExternalToolManager().get(getStudy(), runParams.getId(), QueryOptions.empty(), token);
         }
         if (result.getNumResults() == 0) {
             throw new ToolException("Variant walker tool '" + runParams.getId() + "' not found");
@@ -95,8 +94,8 @@ public class VariantWalkerToolExecutor extends OpenCgaTool {
         if (externalTool == null) {
             throw new ToolException("Variant walker tool '" + runParams.getId() + "' is null");
         }
-        if (externalTool.getType() != ExternalToolType.WALKER) {
-            throw new ToolException("User tool '" + runParams.getId() + "' is not of type " + ExternalToolType.WALKER);
+        if (externalTool.getType() != ExternalToolType.VARIANT_WALKER) {
+            throw new ToolException("User tool '" + runParams.getId() + "' is not of type " + ExternalToolType.VARIANT_WALKER);
         }
         if (externalTool.getContainer() == null) {
             throw new ToolException("User tool '" + runParams.getId() + "' does not have a docker object");

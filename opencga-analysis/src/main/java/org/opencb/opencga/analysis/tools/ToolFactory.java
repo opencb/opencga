@@ -181,13 +181,13 @@ public class ToolFactory {
 
     public static String getToolId(JobType type, ToolInfo toolInfo) {
         switch (type) {
-            case NATIVE:
+            case NATIVE_TOOL:
                 return toolInfo.getId();
             case WORKFLOW:
                 return NextFlowToolExecutor.ID;
-            case CUSTOM:
+            case CUSTOM_TOOL:
                 return CustomToolExecutor.ID;
-            case WALKER:
+            case VARIANT_WALKER:
                 return VariantWalkerToolExecutor.ID;
             default:
                 throw new IllegalStateException("Unexpected job type value: " + type);

@@ -19,7 +19,7 @@ package org.opencb.opencga.analysis.wrappers.rvtests;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.analysis.AnalysisUtils;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
@@ -33,7 +33,7 @@ import static org.opencb.opencga.core.api.ParamConstants.RVTESTS_COMMANDS_SUPPOR
 import static org.opencb.opencga.core.api.ParamConstants.RVTESTS_COMMAND_DESCRIPTION;
 
 @Tool(id = RvtestsWrapperAnalysis.ID, resource = Enums.Resource.VARIANT, description = RvtestsWrapperAnalysis.DESCRIPTION)
-public class RvtestsWrapperAnalysis extends OpenCgaToolScopeStudy {
+public class RvtestsWrapperAnalysis extends OpenCgaTool {
 
     public final static String ID = "rvtests";
     public final static String DESCRIPTION = "Rvtests is a flexible software package for genetic association studies. "

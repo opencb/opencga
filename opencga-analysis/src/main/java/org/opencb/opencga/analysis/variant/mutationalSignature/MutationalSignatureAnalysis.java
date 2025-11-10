@@ -27,7 +27,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.ConfigurationUtils;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.ResourceManager;
@@ -55,7 +55,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @Tool(id = MutationalSignatureAnalysis.ID, resource = Enums.Resource.VARIANT)
-public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
+public class MutationalSignatureAnalysis extends OpenCgaTool {
 
     public static final String ID = "mutational-signature";
     public static final String DESCRIPTION = "Run mutational signature analysis for a given sample.";
@@ -476,4 +476,3 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
         return this;
     }
 }
-
