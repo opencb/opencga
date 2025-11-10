@@ -77,7 +77,6 @@ public class FillGapsFromArchiveMapper extends AbstractArchiveTableMapper {
 //            task = new FillMissingFromArchiveTask(getStudyMetadata(), getMetadataManager(), getHelper(), overwrite);
         }
         task.setTimestamp(timestamp);
-        task.setQuiet(true);
         task.pre();
 
         variantsTable = new ImmutableBytesWritable(getHelper().getVariantsTable());

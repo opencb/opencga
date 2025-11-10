@@ -38,6 +38,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
@@ -56,7 +57,6 @@ import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTest;
 
 import java.io.IOException;
@@ -93,8 +93,6 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
     public void setUp() throws Exception {
         HadoopVariantStorageEngine variantStorageManager = getVariantStorageEngine();
         clearDB(variantStorageManager.getDBName());
-        //Force HBaseConverter to fail if something goes wrong
-        HBaseToVariantConverter.setFailOnWrongVariants(true);
     }
 
     @After
@@ -144,7 +142,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
     @Test
     public void testTwoFilesBasicFillMissing() throws Exception {
         ObjectMap params = new ObjectMap();
-        params.put(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
+        params.put(VariantStorageOptions.LOAD_ARCHIVE.key(), YesNoAuto.YES);
         params.put(VariantStorageOptions.TRANSFORM_FORMAT.key(), "avro");
 
         StudyMetadata studyMetadata = VariantStorageBaseTest.newStudyMetadata();
@@ -187,7 +185,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         printVariants(studyMetadata, dbAdaptor, newOutputUri());
         checkArchiveTableTimeStamp(dbAdaptor);
 
-        ((VariantStorageEngine) getVariantStorageEngine()).aggregateFamily(studyMetadata.getName(), new VariantAggregateFamilyParams(Arrays.asList("s1", "s2"), false), new ObjectMap("local", true));
+        getVariantStorageEngine().aggregateFamily(studyMetadata.getName(), new VariantAggregateFamilyParams(Arrays.asList("s1", "s2"), false), new ObjectMap("local", true), newOutputUri());
         studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getId());
         printVariants(studyMetadata, dbAdaptor, newOutputUri());
 
@@ -228,7 +226,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         printVariants(studyMetadata, dbAdaptor, newOutputUri());
         checkArchiveTableTimeStamp(dbAdaptor);
 
-        ((VariantStorageEngine) getVariantStorageEngine()).aggregateFamily(studyMetadata.getName(), new VariantAggregateFamilyParams(Arrays.asList("s1", "s2"), false), new ObjectMap("local", true));
+        getVariantStorageEngine().aggregateFamily(studyMetadata.getName(), new VariantAggregateFamilyParams(Arrays.asList("s1", "s2"), false), new ObjectMap("local", true), newOutputUri());
         studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getId());
         printVariants(studyMetadata, dbAdaptor, newOutputUri());
 
@@ -402,7 +400,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
             assertThat(loadedFiles, hasItem(fileId));
         }
         for (Integer loadedFile : loadedFiles) {
-            VariantFileMetadata variantFileMetadata = dbAdaptor.getMetadataManager().getVariantFileMetadata(studyMetadata.getId(), loadedFile, null).first();
+            VariantFileMetadata variantFileMetadata = dbAdaptor.getMetadataManager().getVariantFileMetadata(studyMetadata.getId(), loadedFile);
             assertNotNull(variantFileMetadata);
         }
 

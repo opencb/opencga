@@ -158,7 +158,7 @@ public class VariantStatsDriver extends AbstractVariantsTableDriver {
             logger.info("Query : " + query.toJson());
             // input
             VariantMapReduceUtil.initVariantMapperJob(
-                    job, VariantStatsMapper.class, variantTableName, getMetadataManager(), query, queryOptions, true);
+                    job, VariantStatsMapper.class, variantTableName, getMetadataManager(), query, queryOptions, true, false);
             VariantMapReduceUtil.setNoneTimestamp(job);
 
             // output
@@ -183,7 +183,7 @@ public class VariantStatsDriver extends AbstractVariantsTableDriver {
             // Remove STUDY filter
             scan.setFilter(null);
 
-            VariantMapReduceUtil.configureMapReduceScan(scan, getConf());
+            VariantMapReduceUtil.configureMapReduceScan(scan, job);
             logger.info(scan.toString());
 
             // Allow partial results if files are not required

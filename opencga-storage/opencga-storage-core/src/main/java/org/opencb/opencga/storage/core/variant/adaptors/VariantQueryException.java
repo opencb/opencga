@@ -223,6 +223,10 @@ public class VariantQueryException extends IllegalArgumentException {
                 + "Please use the filePath instead of the file name.");
     }
 
+    public static VariantQueryException variantFileMetadataNotFound(Object file, Object study) {
+        return new VariantQueryException("VariantFileMetadata for file " + quote(file) + " not found in study '" + study + "'");
+    }
+
     public static VariantQueryException fileNotIndexed(Object file, Object study) {
         return new VariantQueryException("File " + quote(file) + " not indexed in study '" + study + "'");
     }

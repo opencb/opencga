@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.core.variant.annotation;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.cellbase.core.models.DataRelease;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -153,7 +154,7 @@ public abstract class VariantAnnotationManager {
             if (current.getDataRelease() == null) {
                 // Missing current dataRelease. Continue.
             } else {
-                if (!current.getDataRelease().equals(newVariantAnnotationMetadata.getDataRelease())) {
+                if (!dataReleaseEquals(current.getDataRelease(), newVariantAnnotationMetadata.getDataRelease())) {
                     String msg = "DataRelease has changed. "
                             + "Existing annotation calculated with dataRelease " + current.getDataRelease().getRelease()
                             + ", attempting to annotate with " + newVariantAnnotationMetadata.getDataRelease().getRelease();
@@ -169,6 +170,11 @@ public abstract class VariantAnnotationManager {
             // Check sources for old cellbase versions
             List<ObjectMap> currentSourceVersion = current.getSourceVersion();
             List<ObjectMap> newSourceVersion = newVariantAnnotationMetadata.getSourceVersion();
+
+            if (newSourceVersion.isEmpty()) {
+                throw new IllegalArgumentException("Missing annotator source version!");
+            }
+
             if (CollectionUtils.isNotEmpty(currentSourceVersion) && !sameSourceVersion(newSourceVersion, currentSourceVersion)) {
                 String msg = "Source version of the annotator has changed. "
                         + "Existing annotation calculated with "
@@ -191,7 +197,52 @@ public abstract class VariantAnnotationManager {
             }
         }
 
+        // Check extensions
+        Map<String, ObjectMap> currentExtensions = current.getExtensions();
+        Map<String, ObjectMap> newExtensions = newVariantAnnotationMetadata.getExtensions();
+        if (currentExtensions == null) {
+            currentExtensions = Collections.emptyMap();
+        }
+        if (newExtensions == null) {
+            newExtensions = Collections.emptyMap();
+        }
+        if (!currentExtensions.equals(newExtensions)) {
+            String msg = "Annotator extensions has changed. "
+                    + "Existing annotation calculated with extensions " + currentExtensions
+                    + ", attempting to annotate with " + newExtensions;
+
+            if (overwrite) {
+                logger.info(msg);
+            } else {
+                throw new VariantAnnotatorException(msg);
+            }
+        }
+
         return current;
+    }
+
+    /**
+     * Check if two DataRelease are equal.
+     *
+     * Fields to compare:
+     * - release
+     * - date
+     * - collections
+     * - sources
+     *
+     * Ignored fields:
+     * - active
+     * - activeByDefaultIn
+     *
+     * @param current Current DataRelease
+     * @param other Other DataRelease
+     * @return true if both DataRelease are equal
+     */
+    public static boolean dataReleaseEquals(DataRelease current, DataRelease other) {
+        return current.getRelease() == other.getRelease()
+                && Objects.equals(current.getDate(), other.getDate())
+                && Objects.equals(current.getCollections(), other.getCollections())
+                && Objects.equals(current.getSources(), other.getSources());
     }
 
     private static String removePatchFromVersion(String version) {
@@ -227,9 +278,7 @@ public abstract class VariantAnnotationManager {
         if (newAnnotator == null) {
             throw new IllegalArgumentException("Missing annotator information for VariantAnnotator: " + annotator.getClass());
         }
-        if (newSourceVersion.isEmpty()) {
-            throw new IllegalArgumentException("Missing annotator source version for VariantAnnotator: " + annotator.getClass());
-        }
+
         checkCurrentAnnotation(projectMetadata, overwrite, newAnnotationMetadata);
 
         VariantAnnotationMetadata current = projectMetadata.getAnnotation().getCurrent();
@@ -237,10 +286,11 @@ public abstract class VariantAnnotationManager {
         current.setSourceVersion(newSourceVersion);
         current.setDataRelease(newAnnotationMetadata.getDataRelease());
         current.setPrivateSources(newAnnotationMetadata.getPrivateSources());
+        current.setExtensions(newAnnotationMetadata.getExtensions());
     }
 
     protected final VariantAnnotationMetadata registerNewAnnotationSnapshot(String name, VariantAnnotator annotator,
-                                                                                            ProjectMetadata projectMetadata)
+                                                                            ProjectMetadata projectMetadata)
             throws VariantAnnotatorException {
         VariantAnnotationMetadata current = projectMetadata.getAnnotation().getCurrent();
         if (current == null) {
@@ -263,6 +313,7 @@ public abstract class VariantAnnotationManager {
                 name,
                 Date.from(Instant.now()),
                 current.getAnnotator(),
+                current.getExtensions(),
                 current.getSourceVersion(),
                 current.getDataRelease(),
                 current.getPrivateSources());

@@ -191,12 +191,26 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
     protected void securePreLoad(StudyMetadata studyMetadata, VariantFileMetadata fileMetadata) throws StorageEngineException {
         super.securePreLoad(studyMetadata, fileMetadata);
 
-        if (fileMetadata.getSampleIds().isEmpty()) {
-            YesNoAuto loadArchive = YesNoAuto.parse(getOptions(), LOAD_ARCHIVE.key());
-            if (loadArchive == YesNoAuto.AUTO) {
-                logger.info("Loading aggregated file with no samples. Skip Archive Table.");
-                getOptions().put(LOAD_ARCHIVE.key(), YesNoAuto.NO);
-            }
+        YesNoAuto loadArchive = YesNoAuto.parse(getOptions(), LOAD_ARCHIVE.key());
+        switch (loadArchive) {
+            case AUTO:
+                if (fileMetadata.getSampleIds().isEmpty()) {
+                    logger.info("Loading aggregated file with no samples. Skip Archive Table.");
+                    getOptions().put(LOAD_ARCHIVE.key(), YesNoAuto.NO);
+                } else {
+                    getOptions().put(LOAD_ARCHIVE.key(), YesNoAuto.NO);
+                    logger.info(LOAD_ARCHIVE.key() + " set to " + YesNoAuto.AUTO + ". Defaulting to "
+                            + YesNoAuto.NO + ". Archive Table will not be loaded.");
+                }
+                break;
+            case YES:
+                logger.info(LOAD_ARCHIVE.key() + " set to " + YesNoAuto.YES + ". Archive Table will be loaded.");
+                break;
+            case NO:
+                logger.info(LOAD_ARCHIVE.key() + " set to " + YesNoAuto.NO + ". Archive Table will not be loaded.");
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown option " + loadArchive);
         }
 
         YesNoAuto loadHomRef = YesNoAuto.parse(getOptions(), LOAD_HOM_REF.key());
@@ -264,10 +278,6 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
         metadataManager.updateVariantFileMetadata(studyId, fileMetadata);
 
         registerLoadedFiles(Collections.singletonList(getFileId()));
-        metadataManager.updateProjectMetadata(projectMetadata -> {
-            projectMetadata.getAttributes().put(LAST_LOADED_FILE_TS, System.currentTimeMillis());
-            return projectMetadata;
-        });
 
         // This method checks the loaded variants (if possible) and adds the loaded files to the metadata
         super.postLoad(input, output);

@@ -47,11 +47,11 @@ public final class SampleIndexSchema {
     public static final Comparator<Variant> INTRA_CHROMOSOME_VARIANT_COMPARATOR =  (o1, o2) -> {
         VariantAvro v1 = o1.getImpl();
         VariantAvro v2 = o2.getImpl();
-        int c = v1.getStart().compareTo(v2.getStart());
+        int c = Integer.compare(v1.getStart(), v2.getStart());
         if (c != 0) {
             return c;
         }
-        c = v1.getEnd().compareTo(v2.getEnd());
+        c = Integer.compare(v1.getEnd(), v2.getEnd());
         if (c != 0) {
             return c;
         }
@@ -75,6 +75,9 @@ public final class SampleIndexSchema {
                     .thenComparing(Variant::getReference)
                     .thenComparing(Variant::getAlternate)
                     .thenComparing(Variant::toString);
+    public static final Comparator<Variant> VARIANT_COMPARATOR = Comparator.comparing(Variant::getChromosome, (chr1, chr2) -> {
+        return chr1.equals(chr2) ? 0 : -1;
+    }).thenComparing(INTRA_CHROMOSOME_VARIANT_COMPARATOR);
 
     public static final Set<String> CUSTOM_LOF = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             VariantAnnotationConstants.FRAMESHIFT_VARIANT,

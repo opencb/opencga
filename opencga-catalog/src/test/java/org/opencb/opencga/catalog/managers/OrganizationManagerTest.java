@@ -113,7 +113,8 @@ public class OrganizationManagerTest extends AbstractManagerTest {
 
         // Set authOrigin
         List<AuthenticationOrigin> authenticationOriginList = new ArrayList<>();
-        authenticationOriginList.add(new AuthenticationOrigin("myId", AuthenticationOrigin.AuthenticationType.SSO, null, null));
+        authenticationOriginList.add(new AuthenticationOrigin("myId", AuthenticationOrigin.AuthenticationType.SSO, null, null
+        ));
         authenticationOriginList.add(configurationResult.getAuthenticationOrigins().get(0));
         actionMap.put(OrganizationDBAdaptor.AUTH_ORIGINS_FIELD, ParamUtils.UpdateAction.SET);
         options.put(Constants.ACTIONS, actionMap);
@@ -140,7 +141,8 @@ public class OrganizationManagerTest extends AbstractManagerTest {
         actionMap.put(OrganizationDBAdaptor.AUTH_ORIGINS_FIELD, ParamUtils.UpdateAction.REPLACE);
         options.put(Constants.ACTIONS, actionMap);
         configuration.setAuthenticationOrigins(Collections.singletonList(
-                new AuthenticationOrigin(CatalogAuthenticationManager.OPENCGA, AuthenticationOrigin.AuthenticationType.OPENCGA, null, new ObjectMap("key", "value"))));
+                new AuthenticationOrigin(CatalogAuthenticationManager.OPENCGA, AuthenticationOrigin.AuthenticationType.OPENCGA, null,
+                        new ObjectMap("key", "value"))));
         configurationResult = catalogManager.getOrganizationManager().updateConfiguration(organizationId, configuration, options, ownerToken).first();
         assertEquals(2, configurationResult.getAuthenticationOrigins().size());
         for (AuthenticationOrigin authenticationOrigin : configurationResult.getAuthenticationOrigins()) {

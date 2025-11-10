@@ -293,7 +293,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--format"}, description = "Enum param allowed values: VCF, BCF, GVCF, TBI, BIGWIG, SAM, BAM, BAI, CRAM, CRAI, FASTQ, FASTA, PED, TAB_SEPARATED_VALUES, COMMA_SEPARATED_VALUES, XML, PROTOCOL_BUFFER, JSON, AVRO, PARQUET, PDF, IMAGE, PLAIN, BINARY, NONE, UNKNOWN", required = false, arity = 1)
         public String format;
     
-        @Parameter(names = {"--bioformat"}, description = "Enum param allowed values: MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT, MICROARRAY_EXPRESSION_ONECHANNEL_AFFYMETRIX, MICROARRAY_EXPRESSION_ONECHANNEL_GENEPIX, MICROARRAY_EXPRESSION_TWOCHANNELS_AGILENT, MICROARRAY_EXPRESSION_TWOCHANNELS_GENEPIX, DATAMATRIX_EXPRESSION, IDLIST, IDLIST_RANKED, ANNOTATION_GENEVSANNOTATION, OTHER_NEWICK, OTHER_BLAST, OTHER_INTERACTION, OTHER_GENOTYPE, OTHER_PLINK, OTHER_VCF, OTHER_PED, VCF4, VARIANT, ALIGNMENT, COVERAGE, SEQUENCE, PEDIGREE, REFERENCE_GENOME, NONE, UNKNOWN", required = false, arity = 1)
+        @Parameter(names = {"--bioformat"}, description = "Enum param allowed values: MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT, MICROARRAY_EXPRESSION_ONECHANNEL_AFFYMETRIX, MICROARRAY_EXPRESSION_ONECHANNEL_GENEPIX, MICROARRAY_EXPRESSION_TWOCHANNELS_AGILENT, MICROARRAY_EXPRESSION_TWOCHANNELS_GENEPIX, DATAMATRIX_EXPRESSION, IDLIST, IDLIST_RANKED, ANNOTATION_GENEVSANNOTATION, OTHER_NEWICK, OTHER_BLAST, OTHER_INTERACTION, OTHER_GENOTYPE, OTHER_PLINK, OTHER_VCF, OTHER_PED, VCF4, CVDB, VARIANT, ALIGNMENT, COVERAGE, SEQUENCE, PEDIGREE, REFERENCE_GENOME, NONE, UNKNOWN", required = false, arity = 1)
         public String bioformat;
     
         @Parameter(names = {"--sample-ids"}, description = "The body web service sampleIds parameter", required = false, arity = 1)
@@ -886,7 +886,7 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
         @Parameter(names = {"--format"}, description = "Enum param allowed values: VCF, BCF, GVCF, TBI, BIGWIG, SAM, BAM, BAI, CRAM, CRAI, FASTQ, FASTA, PED, TAB_SEPARATED_VALUES, COMMA_SEPARATED_VALUES, XML, PROTOCOL_BUFFER, JSON, AVRO, PARQUET, PDF, IMAGE, PLAIN, BINARY, NONE, UNKNOWN", required = false, arity = 1)
         public String format;
     
-        @Parameter(names = {"--bioformat"}, description = "Enum param allowed values: MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT, MICROARRAY_EXPRESSION_ONECHANNEL_AFFYMETRIX, MICROARRAY_EXPRESSION_ONECHANNEL_GENEPIX, MICROARRAY_EXPRESSION_TWOCHANNELS_AGILENT, MICROARRAY_EXPRESSION_TWOCHANNELS_GENEPIX, DATAMATRIX_EXPRESSION, IDLIST, IDLIST_RANKED, ANNOTATION_GENEVSANNOTATION, OTHER_NEWICK, OTHER_BLAST, OTHER_INTERACTION, OTHER_GENOTYPE, OTHER_PLINK, OTHER_VCF, OTHER_PED, VCF4, VARIANT, ALIGNMENT, COVERAGE, SEQUENCE, PEDIGREE, REFERENCE_GENOME, NONE, UNKNOWN", required = false, arity = 1)
+        @Parameter(names = {"--bioformat"}, description = "Enum param allowed values: MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT, MICROARRAY_EXPRESSION_ONECHANNEL_AFFYMETRIX, MICROARRAY_EXPRESSION_ONECHANNEL_GENEPIX, MICROARRAY_EXPRESSION_TWOCHANNELS_AGILENT, MICROARRAY_EXPRESSION_TWOCHANNELS_GENEPIX, DATAMATRIX_EXPRESSION, IDLIST, IDLIST_RANKED, ANNOTATION_GENEVSANNOTATION, OTHER_NEWICK, OTHER_BLAST, OTHER_INTERACTION, OTHER_GENOTYPE, OTHER_PLINK, OTHER_VCF, OTHER_PED, VCF4, CVDB, VARIANT, ALIGNMENT, COVERAGE, SEQUENCE, PEDIGREE, REFERENCE_GENOME, NONE, UNKNOWN", required = false, arity = 1)
         public String bioformat;
     
         @Parameter(names = {"--software-name"}, description = "Software name", required = false, arity = 1)
@@ -989,20 +989,6 @@ public class FilesCommandOptions extends CustomFilesCommandOptions {
     
         @Parameter(names = {"--action"}, description = "Action to be performed: ADD to add new annotations; REPLACE to replace the value of an already existing annotation; SET to set the new list of annotations removing any possible old annotations; REMOVE to remove some annotations; RESET to set some annotations to the default value configured in the corresponding variables of the VariableSet if any.", required = false, arity = 1)
         public String action = "ADD"; 
-    
-    }
-
-    @Parameters(commandNames = {"download"}, commandDescription ="Download file")
-    public class DownloadCommandOptions {
-    
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
-    
-        @Parameter(names = {"--file"}, description = "File id, name or path. Paths must be separated by : instead of /", required = true, arity = 1)
-        public String file; 
-    
-        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
-        public String study; 
     
     }
 

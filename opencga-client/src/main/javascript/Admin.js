@@ -142,7 +142,7 @@ export default class Admin extends OpenCGAParentClass {
         return this._get("admin", null, "users", null, "search", params);
     }
 
-    /** Synchronise a group of users from an authentication origin with a group in a study from catalog
+    /** [DEPRECATED] Moved to /users/sync
     * @param {Object} data - JSON containing the parameters.
     * @param {Object} [params] - The Object containing the following optional parameters:
     * @param {String} [params.organization] - Organization id.

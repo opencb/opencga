@@ -116,6 +116,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
         dbAdaptor = getVariantStorageEngine().getDBAdaptor();
         VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
+        variantStorageEngine.getOptions().put(VariantStorageOptions.ASSEMBLY.key(), "GRCH38");
         if (!fileIndexed) {
             studyMetadata = newStudyMetadata();
 //            variantSource = new VariantSource(smallInputUri.getPath(), "testAlias", "testStudy", "Study for testing purposes");

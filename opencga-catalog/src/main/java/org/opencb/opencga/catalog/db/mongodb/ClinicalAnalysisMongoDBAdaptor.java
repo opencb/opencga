@@ -475,7 +475,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
 
         Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
 
-        if (parameters.containsKey(REPORT_UPDATE.key())) {
+        if (parameters.containsKey(REPORT_UPDATE.key()))  {
             ObjectMap reportParameters = parameters.getNestedMap(REPORT_UPDATE.key());
             reportParameters.put(ReportQueryParams.DATE.key(), TimeUtils.getTime());
             String[] stringParams = {ReportQueryParams.TITLE.key(), ReportQueryParams.OVERVIEW.key(), ReportQueryParams.LOGO.key(),

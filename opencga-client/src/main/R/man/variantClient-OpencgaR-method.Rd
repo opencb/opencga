@@ -25,10 +25,6 @@
 
 \item{msDescription}{Signature description.}
 
-\item{include}{Fields included in the response, whole JSON path must be provided.}
-
-\item{exclude}{Fields excluded in the response, whole JSON path must be provided.}
-
 \item{count}{Get the total number of results matching the query. Deactivated by default.}
 
 \item{sort}{Sort the results.}
@@ -127,6 +123,8 @@
 
 \item{panelIntersection}{Intersect panel genes and regions with given genes and regions from que input query. This will prevent returning variants from regions out of the panel.}
 
+\item{source}{Select the variant data source from where to fetch the data. Accepted values are 'variant_index' (default) and 'secondary_sample_index'. When selecting a secondary_index, the data will be retrieved exclusively from that secondary index, and the 'include/exclude' parameters will be ignored. If the given query can not be fully resolved using the secondary index, an exception will be raised. As the returned variants will only contain data from the secondary_index, some data might be missing or be partial.}
+
 \item{trait}{List of traits, based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...}
 
 \item{savedFilter}{Use a saved filter at User level.}
@@ -181,6 +179,10 @@
 
 \item{sample}{Sample ID.}
 
+\item{include}{Fields included in the response, whole JSON path must be provided.}
+
+\item{exclude}{Fields excluded in the response, whole JSON path must be provided.}
+
 \item{project}{Project \link{organization@}project where project can be either the ID or the alias.}
 
 \item{study}{Study [\link{organization@}project:]study where study and project can be either the ID or UUID.}
@@ -199,7 +201,7 @@
 
 \item{jobDryRun}{Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.}
 
-\item{data}{Variant stats params.}
+\item{data}{Variant walker params.}
 }
 \description{
 This function implements the OpenCGA calls for managing Analysis - Variant.
@@ -227,12 +229,13 @@ The following table summarises the available \emph{actions} for this client:\tab
    queryKnockoutGene \tab /{apiVersion}/analysis/variant/knockout/gene/query \tab limit, skip, study, job \cr
    queryKnockoutIndividual \tab /{apiVersion}/analysis/variant/knockout/individual/query \tab limit, skip, study, job \cr
    runKnockout \tab /{apiVersion}/analysis/variant/knockout/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
+   runLiftover \tab /{apiVersion}/analysis/variant/liftover/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
    runMendelianError \tab /{apiVersion}/analysis/variant/mendelianError/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
    metadata \tab /{apiVersion}/analysis/variant/metadata \tab project, study, file, sample, includeStudy, includeFile, includeSample, include, exclude \cr
    queryMutationalSignature \tab /{apiVersion}/analysis/variant/mutationalSignature/query \tab study, sample, type, ct, biotype, fileData, filter, qual, region, gene, panel, panelModeOfInheritance, panelConfidence, panelFeatureType, panelRoleInCancer, panelIntersection, msId, msDescription \cr
    runMutationalSignature \tab /{apiVersion}/analysis/variant/mutationalSignature/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
    runPlink \tab /{apiVersion}/analysis/variant/plink/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
-   query \tab /{apiVersion}/analysis/variant/query \tab include, exclude, limit, skip, count, sort, summary, approximateCount, approximateCountSamplingSize, savedFilter, id, region, type, reference, alternate, project, study, file, filter, qual, fileData, sample, genotype, sampleData, sampleAnnotation, sampleMetadata, unknownGenotype, sampleLimit, sampleSkip, cohort, cohortStatsRef, cohortStatsAlt, cohortStatsMaf, cohortStatsMgf, cohortStatsPass, missingAlleles, missingGenotypes, score, family, familyDisorder, familySegregation, familyMembers, familyProband, includeStudy, includeFile, includeSample, includeSampleData, includeGenotype, includeSampleId, annotationExists, gene, ct, xref, biotype, proteinSubstitution, conservation, populationFrequencyAlt, populationFrequencyRef, populationFrequencyMaf, transcriptFlag, geneTraitId, go, expression, proteinKeyword, drug, functionalScore, clinical, clinicalSignificance, clinicalConfirmedStatus, customAnnotation, panel, panelModeOfInheritance, panelConfidence, panelRoleInCancer, panelFeatureType, panelIntersection, trait \cr
+   query \tab /{apiVersion}/analysis/variant/query \tab include, exclude, limit, skip, count, sort, summary, approximateCount, approximateCountSamplingSize, savedFilter, id, region, type, reference, alternate, project, study, file, filter, qual, fileData, sample, genotype, sampleData, sampleAnnotation, sampleMetadata, unknownGenotype, sampleLimit, sampleSkip, cohort, cohortStatsRef, cohortStatsAlt, cohortStatsMaf, cohortStatsMgf, cohortStatsPass, missingAlleles, missingGenotypes, score, family, familyDisorder, familySegregation, familyMembers, familyProband, includeStudy, includeFile, includeSample, includeSampleData, includeGenotype, includeSampleId, annotationExists, gene, ct, xref, biotype, proteinSubstitution, conservation, populationFrequencyAlt, populationFrequencyRef, populationFrequencyMaf, transcriptFlag, geneTraitId, go, expression, proteinKeyword, drug, functionalScore, clinical, clinicalSignificance, clinicalConfirmedStatus, customAnnotation, panel, panelModeOfInheritance, panelConfidence, panelRoleInCancer, panelFeatureType, panelIntersection, source, trait \cr
    runRelatedness \tab /{apiVersion}/analysis/variant/relatedness/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
    runRvtests \tab /{apiVersion}/analysis/variant/rvtests/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
    aggregationStatsSample \tab /{apiVersion}/analysis/variant/sample/aggregationStats \tab savedFilter, region, type, project, study, file, filter, sample, genotype, sampleAnnotation, family, familyDisorder, familySegregation, familyMembers, familyProband, ct, biotype, populationFrequencyAlt, clinical, clinicalSignificance, clinicalConfirmedStatus, field \cr
@@ -244,6 +247,7 @@ The following table summarises the available \emph{actions} for this client:\tab
    runSampleStats \tab /{apiVersion}/analysis/variant/sample/stats/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
    runStatsExport \tab /{apiVersion}/analysis/variant/stats/export/run \tab project, study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
    runStats \tab /{apiVersion}/analysis/variant/stats/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
+   runWalker \tab /{apiVersion}/analysis/variant/walker/run \tab include, exclude, project, study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body\link{*} \cr
 }
 }
 \section{Endpoint /{apiVersion}/analysis/variant/aggregationStats}{
@@ -356,6 +360,11 @@ Fetch values from KnockoutAnalysis result, by individuals.
 Obtains the list of knocked out genes for each sample.
 }
 
+\section{Endpoint /{apiVersion}/analysis/variant/liftover/run}{
+
+BCFtools liftover plugin maps coordinates from assembly 37 to 38.
+}
+
 \section{Endpoint /{apiVersion}/analysis/variant/mendelianError/run}{
 
 Run mendelian error analysis to infer uniparental disomy regions.
@@ -439,6 +448,11 @@ Export calculated variant stats and frequencies.
 \section{Endpoint /{apiVersion}/analysis/variant/stats/run}{
 
 Compute variant stats for any cohort and any set of variants.
+}
+
+\section{Endpoint /{apiVersion}/analysis/variant/walker/run}{
+
+Filter and walk variants from the variant storage to produce a file.
 }
 
 \seealso{

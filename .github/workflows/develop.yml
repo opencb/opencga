@@ -11,18 +11,30 @@ jobs:
   build:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      maven_opts: -Phdp3.1,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
+      needs_hadoop_preparation: true
+      hadoop_flavour: ${{ vars.HADOOP_FLAVOUR }}
+      maven_opts: -P${{ vars.HADOOP_FLAVOUR }} -Dopencga.war.name=opencga -Dcheckstyle.skip
+      dependency_repos: "java-common-libs,biodata"
+    secrets: inherit
 
   deploy-maven:
     uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
     needs: build
     with:
-      maven_opts: -P hdp3.1 -Dopencga.war.name=opencga
+      maven_opts: -P${{ vars.HADOOP_FLAVOUR }} -Dopencga.war.name=opencga
+      cache_key: ${{ needs.build.outputs.cache_key }}
     secrets: inherit
 
-  deploy-docker:
+  deploy-docker-workflow:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
     needs: build
     with:
-      cli: python3 ./build/cloud/docker/docker-build.py push --images base,workflow,init
+      cli: python3 ./build/cloud/docker/docker-build.py push --images workflow --tag "${{ needs.build.outputs.version }}"
+    secrets: inherit
+
+  deploy-zetta-docker:
+    uses: opencb/java-common-libs/.github/workflows/deploy-zetta-docker-hub-workflow.yml@develop
+    needs: build
+    with:
+      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag "${{ needs.build.outputs.version }}-${{ vars.HADOOP_FLAVOUR }}"
     secrets: inherit

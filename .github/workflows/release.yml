@@ -7,117 +7,137 @@ on:
   workflow_dispatch:
 
 jobs:
-  # Add the build-hdp job
-  build-hdp:
+  # Add the build-hdi and deploy-docker-hdi jobs
+  build-hdi:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      maven_opts: -P hdp3.1,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
-      build_folder: build-folder
-
-  # Add the deploy-docker-hdp job that depends on the build-hdp job
-  deploy-docker-hdp:
-    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
-    needs: build-hdp
-    with:
-      cli: python3 ./build/cloud/docker/docker-build.py push --images base,workflow,init --tag "${{ needs.build-hdp.outputs.version }}-hdp3.1"
-      build_folder: build-folder
+      needs_hadoop_preparation: true
+      hadoop_flavour: hdi5.1
+      maven_opts: -Phdi5.1 -Dopencga.war.name=opencga -Dcheckstyle.skip
+      build_folder: build-folder-hdi
+      dependency_repos: "java-common-libs,biodata"
     secrets: inherit
 
-  # Add the deploy-maven and deploy-python jobs they depend on the build-hdp job
-  deploy-maven:
-    uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
-    needs: build-hdp
+  deploy-docker-hdi:
+    uses: opencb/java-common-libs/.github/workflows/deploy-zetta-docker-hub-workflow.yml@develop
+    needs: build-hdi
     with:
-      maven_opts: -P hdp3.1 -Dopencga.war.name=opencga
+      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag "${{ needs.build-hdi.outputs.version }}-hdi5.1" --org zettagenomics
+      build_folder: build-folder-hdi
     secrets: inherit
+
 
   check-pypi-version:
     runs-on: ubuntu-latest
-    needs: build-hdp
+    needs: build-hdi
     outputs:
       exists: ${{ steps.check.outputs.exists }}
     steps:
       - name: Check if python package exists on PyPI
         id: check
         run: |
-          if curl --silent --fail "https://pypi.org/pypi/pyopencga/${{ needs.build-hdp.outputs.version }}/json" > /dev/null; then
+          if curl --silent --fail "https://pypi.org/pypi/pyopencga/${{ needs.build-hdi.outputs.version }}/json" > /dev/null; then
             echo "exists=true" >> $GITHUB_OUTPUT
-            echo "The python package with version ${{ needs.build-hdp.outputs.version }} already exists on pypi" >> $GITHUB_STEP_SUMMARY
+            echo "The python package with version ${{ needs.build-hdi.outputs.version }} already exists on pypi" >> $GITHUB_STEP_SUMMARY
           else
             echo "exists=false" >> $GITHUB_OUTPUT
-            echo "The python package with version ${{ needs.build-hdp.outputs.version }} does not exist in pypi and must be pushed" >> $GITHUB_STEP_SUMMARY
+            echo "The python package with version ${{ needs.build-hdi.outputs.version }} does not exist in pypi and must be pushed" >> $GITHUB_STEP_SUMMARY
           fi
 
   deploy-python:
     needs:
-      - build-hdp
+      - build-hdi
       - check-pypi-version
     if: needs.check-pypi-version.outputs.exists == 'false'
     uses: opencb/java-common-libs/.github/workflows/deploy-python-workflow.yml@develop
     with:
       cli: ./clients/python/python-build.sh push
-      artifact: build-folder
+      artifact: build-folder-hdi
+    secrets: inherit
+
+  # Add the deploy-maven and deploy-python jobs they depend on the build-hdi job
+  deploy-maven:
+    uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
+    needs: build-hdi
+    with:
+      maven_opts: -P hdi5.1 -Dopencga.war.name=opencga
+      cache_key: ${{ needs.build-hdi.outputs.cache_key }}
     secrets: inherit
 
   # Add the release job that depends on all the previous jobs
   release:
     uses: opencb/java-common-libs/.github/workflows/release-github-workflow.yml@develop
-    needs: [ build-hdp, deploy-docker-hdp, deploy-maven, deploy-python, deploy-docker-python-notebook]
+    needs: [ build-hdi, deploy-docker-hdi, deploy-maven, deploy-python, deploy-docker-python-notebook]
     with:
-      artifact: build-folder
+      artifact: build-folder-hdi
       file: |
-        opencga-client-${{ needs.build-hdp.outputs.version }}.tar.gz
-        clients/R/opencgaR_${{ needs.build-hdp.outputs.version }}.tar.gz
+        opencga-client-${{ needs.build-hdi.outputs.version }}.tar.gz
+        clients/R/opencgaR_${{ needs.build-hdi.outputs.version }}.tar.gz
 
   deploy-docker-python-notebook:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
-    needs: [ build-hdp, deploy-python ]
+    needs: [ build-hdi, deploy-python ]
     with:
-      cli: python3 ./build/cloud/docker/docker-build.py push --images python-notebook --tag ${{ needs.build-hdp.outputs.version }} --docker-build-args "--build-arg VERSION=${{ needs.build-hdp.outputs.version }}"
+      artifact: build-folder-hdi
+      cli: python3 ./build/cloud/docker/docker-build.py push --images python-notebook --tag ${{ needs.build-hdi.outputs.version }} --docker-build-args "--build-arg VERSION=${{ needs.build-hdi.outputs.version }}"
     secrets: inherit
+
 
   # Compile and deploy other hadoop flavours
-  # Add the build-hdi and deploy-docker-hdi jobs
-  build-hdi:
-    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
-    with:
-      maven_opts: -P hdi5.1,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
-      build_folder: build-folder-hdi
-
-  deploy-docker-hdi:
-    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
-    needs: build-hdi
-    with:
-      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag "${{ needs.build-hdi.outputs.version }}-hdi5.1"
-      build_folder: build-folder-hdi
-    secrets: inherit
-
   # Add the build-emr and deploy-docker-emr jobs
   build-emr:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      maven_opts: -P emr6.1,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
-      build_folder: build-folder-emr
+      needs_hadoop_preparation: true
+      hadoop_flavour: emr6.1
+      maven_opts: -Pemr6.1 -Dopencga.war.name=opencga -Dcheckstyle.skip
+      build_folder: build-folder-emr61
+      dependency_repos: "java-common-libs,biodata"
+    secrets: inherit
 
   deploy-docker-emr:
-    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/deploy-zetta-docker-hub-workflow.yml@develop
     needs: build-emr
     with:
-      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag "${{ needs.build-emr.outputs.version }}-emr6.1"
-      build_folder: build-folder-emr
+      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag "${{ needs.build-emr.outputs.version }}-emr6.1" --org zettagenomics
+      build_folder: build-folder-emr61
     secrets: inherit
 
   # Add the build-emr613 and deploy-docker-emr613 jobs
   build-emr613:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      maven_opts: -P emr6.13,RClient -Dopencga.war.name=opencga -Dcheckstyle.skip
+      needs_hadoop_preparation: true
+      hadoop_flavour: emr6.13
+      maven_opts: -Pemr6.13 -Dopencga.war.name=opencga -Dcheckstyle.skip
       build_folder: build-folder-emr613
+      dependency_repos: "java-common-libs,biodata"
+    secrets: inherit
 
   deploy-docker-emr613:
-    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/deploy-zetta-docker-hub-workflow.yml@develop
     needs: build-emr613
     with:
-      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag "${{ needs.build-emr613.outputs.version }}-emr6.13"
+      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag "${{ needs.build-emr613.outputs.version }}-emr6.13" --org zettagenomics
       build_folder: build-folder-emr613
     secrets: inherit
+
+# Add more flavours if needed following the same pattern emr7.5
+  build-emr75:
+    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
+    with:
+      needs_hadoop_preparation: true
+      hadoop_flavour: emr7.5
+      maven_opts: -Pemr7.5 -Dopencga.war.name=opencga -Dcheckstyle.skip
+      build_folder: build-folder-emr75
+      dependency_repos: "java-common-libs,biodata"
+    secrets: inherit
+
+  deploy-docker-emr75:
+    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+    needs: build-emr75
+    with:
+      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init --tag "${{ needs.build-emr613.outputs.version }}-emr7.5"
+      build_folder: build-folder-emr75
+    secrets: inherit
+
