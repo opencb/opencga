@@ -54,7 +54,7 @@
         <jackson.version>2.14.3</jackson.version>
         <jersey.version>2.30.1</jersey.version>
         <collections.version>4.4</collections.version>
-        <avro.version>1.7.7</avro.version>
+        <avro.version>1.11.4</avro.version>
         <protobuf.version>3.11.4</protobuf.version>
         <grpc.version>1.28.1</grpc.version>
         <slf4j.version>1.7.36</slf4j.version>
@@ -118,9 +118,9 @@
         <opencga.war.name>opencga</opencga.war.name>
         <opencga.env.file>opencga-env.sh</opencga.env.file>
 
-        <opencga.hadoop.thirdparty.version>1.0.0-SNAPSHOT</opencga.hadoop.thirdparty.version>
+        <opencga.hadoop.thirdparty.version>1.1.0</opencga.hadoop.thirdparty.version>
 
-        <opencga-hadoop-shaded.id.default>hdp3.1</opencga-hadoop-shaded.id.default>
+        <opencga-hadoop-shaded.id.default>hbase2.0</opencga-hadoop-shaded.id.default>
         <opencga-hadoop-shaded.id>${opencga-hadoop-shaded.id.default}</opencga-hadoop-shaded.id>
         <opencga-hadoop-lib.artifactId>opencga-storage-hadoop-lib-${opencga-hadoop-shaded.id}</opencga-hadoop-lib.artifactId>
         <opencga-hadoop-shaded.artifactId>opencga-hadoop-shaded-${opencga-hadoop-shaded.id}</opencga-hadoop-shaded.artifactId>
@@ -291,6 +291,11 @@
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-storage-hadoop-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-storage-hadoop-compat-api</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -830,7 +835,6 @@
                 <groupId>org.apache.avro</groupId>
                 <artifactId>avro-mapred</artifactId>
                 <version>${avro.version}</version>
-                <classifier>hadoop2</classifier>
                 <exclusions>
                     <exclusion>
                         <groupId>org.apache.avro</groupId>
@@ -1634,6 +1638,20 @@
         </profile>
 
         <profile>
+            <id>hbase2.0</id>
+            <activation>
+                <property>
+                    <name>hadoop</name>
+                    <value>hbase2.0</value>
+                </property>
+            </activation>
+            <properties>
+                <opencga-hadoop-shaded.id>hbase2.0</opencga-hadoop-shaded.id>
+                <opencga-storage-hadoop-compat.id>hbase2.0</opencga-storage-hadoop-compat.id>
+                <jetty-for-hadoop-test.version>9.3.25.v20180904</jetty-for-hadoop-test.version>
+            </properties>
+        </profile>
+        <profile>
             <id>hdp3.1</id>
             <activation>
                 <property>
@@ -1686,6 +1704,19 @@
             <properties>
                 <opencga-hadoop-shaded.id>emr6.13</opencga-hadoop-shaded.id>
                 <opencga-storage-hadoop-compat.id>hbase2.4</opencga-storage-hadoop-compat.id>
+            </properties>
+        </profile>
+        <profile>
+            <id>emr7.5</id>
+            <activation>
+                <property>
+                    <name>hadoop</name>
+                    <value>emr7.5</value>
+                </property>
+            </activation>
+            <properties>
+                <opencga-hadoop-shaded.id>emr7.5</opencga-hadoop-shaded.id>
+                <opencga-storage-hadoop-compat.id>hbase2.5</opencga-storage-hadoop-compat.id>
             </properties>
         </profile>
         <profile>

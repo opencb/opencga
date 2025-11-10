@@ -715,6 +715,10 @@
                 </dependency>
                 <dependency>
                     <groupId>org.opencb.opencga</groupId>
+                    <artifactId>opencga-storage-hadoop-compat-api</artifactId>
+                </dependency>
+                <dependency>
+                    <groupId>org.opencb.opencga</groupId>
                     <artifactId>${opencga-hadoop-lib.artifactId}</artifactId>
                     <version>${project.parent.version}</version>
                     <optional>true</optional>

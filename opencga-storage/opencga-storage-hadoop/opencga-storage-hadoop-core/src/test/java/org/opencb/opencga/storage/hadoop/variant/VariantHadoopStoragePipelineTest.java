@@ -197,7 +197,7 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
                 });
         System.out.println("End query from Archive table");
         fileMetadata.getStats().getTypeCount().forEach((s, l) -> assertEquals(l, variantCounts.getOrDefault(s, 0L)));
-        assertEquals(fileMetadata.getStats().getVariantCount().intValue(), numVariants[0]);
+        assertEquals((int) fileMetadata.getStats().getVariantCount(), numVariants[0]);
     }
 
     @Test

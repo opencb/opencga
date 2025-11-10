@@ -11,11 +11,6 @@ on:
         description: "The tag for the new docker."
         type: string
         required: true
-      hadoop:
-        type: string
-        description: 'Hadoop flavour. Any of: [hdp3.1, hdi5.1, emr6.1, emr6.13]'
-        required: false
-        default: "hdp3.1"
       pyopencga_version:
         type: string
         description: 'PyOpenCGA version.'
@@ -23,33 +18,13 @@ on:
 
 jobs:
   build:
-    name: Build Java app
-    runs-on: ${{ vars.UBUNTU_VERSION }}
-    outputs:
-      version: ${{ steps.get_project_version.outputs.version }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: '10'
-          ref: "${{ inputs.branch }}"
-      - name: Set up JDK 8
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '8'
-          cache: 'maven'
-      - name: Install dependencies branches
-        run: |
-          if [ -f "./.github/workflows/scripts/get_same_branch.sh" ]; then
-            chmod +x ./.github/workflows/scripts/get_same_branch.sh
-            ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }} ${{ inputs.hadoop }}
-          fi
-      - name: Maven Build (skip tests)
-        run: mvn -T 2 clean install -DskipTests
-      - uses: actions/upload-artifact@v4
-        with:
-          name: build-folder
-          path: build
+    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
+    with:
+      needs_hadoop_preparation: true
+      hadoop_flavour: ${{ vars.HADOOP_FLAVOUR }}
+      maven_opts: -P${{ vars.HADOOP_FLAVOUR }} -Dopencga.war.name=opencga -Dcheckstyle.skip
+      dependency_repos: "java-common-libs,biodata"
+    secrets: inherit
 
   deploy-docker-python-notebook:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop

@@ -308,8 +308,8 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
         Score outScore = getScore(outScores, source);
 
         if (inScore != null && outScore != null) {
-            double inValue = inScore.getScore() == null ? 0 : inScore.getScore();
-            double outValue = outScore.getScore() == null ? 0 : outScore.getScore();
+            double inValue = inScore.getScore();
+            double outValue = outScore.getScore();
             String inDescription = inScore.getDescription() == null ? "" : inScore.getDescription();
             String outDescription = outScore.getDescription() == null ? "" : outScore.getDescription();
             System.out.println(source + ": " + inValue + " vs " + outValue
