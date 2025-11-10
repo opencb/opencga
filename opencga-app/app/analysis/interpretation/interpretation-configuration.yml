@@ -141,12 +141,6 @@ queries:
   MITOCHONDRIAL:
     <<: *dominant_query
     familySegregation: mitochondrial
-    region:
-      - M
-      - Mt
-      - mt
-      - m
-      - MT
 
   DE_NOVO:
     <<: *dominant_query
@@ -173,10 +167,6 @@ tierConfiguration:
       label: TIER1
       description: "Highest priority variants"
       scenarios:
-        - conditions:
-            in_panel: variant
-            moi_match: true
-
         - conditions:
             in_panel: gene
             moi_match: true

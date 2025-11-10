@@ -62,8 +62,7 @@ import java.util.stream.Collectors;
 import static org.opencb.biodata.models.clinical.ClinicalProperty.Penetrance.COMPLETE;
 import static org.opencb.biodata.models.clinical.ClinicalProperty.Penetrance.valueOf;
 import static org.opencb.biodata.models.clinical.interpretation.VariantClassification.calculateAcmgClassification;
-import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.FAMILY;
-import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.FAMILY_SEGREGATION;
+import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.*;
 import static org.opencb.opencga.core.tools.ResourceManager.ANALYSIS_DIRNAME;
 
 @Tool(id = ClinicalInterpretationAnalysis.ID, resource = Enums.Resource.CLINICAL)
@@ -538,6 +537,7 @@ public class ClinicalInterpretationAnalysis extends InterpretationAnalysis {
         ModeOfInheritance moi = getModeOfInheritanceFromQuery(query);
         if (moi != ModeOfInheritance.UNKNOWN) {
             query.put(FAMILY.key(), clinicalAnalysis.getFamily().getId());
+            query.put(FAMILY_PROBAND.key(), clinicalAnalysis.getProband().getId());
         }
         logger.info("Query label: {} (moi = {})", entry.getKey(), moi);
 

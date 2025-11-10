@@ -53,6 +53,8 @@ import org.opencb.opencga.core.models.clinical.ProbandParam;
 import org.opencb.opencga.core.models.clinical.RgaAnalysisParams;
 import org.opencb.opencga.core.models.clinical.TeamInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.clinical.ZettaInterpretationAnalysisParams;
+import org.opencb.opencga.core.models.clinical.interpretation.ClinicalInterpretationAnalysisParams;
+import org.opencb.opencga.core.models.clinical.interpretation.ClinicalInterpretationParams;
 import org.opencb.opencga.core.models.clinical.tiering.TieringInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.clinical.tiering.TieringParams;
 import org.opencb.opencga.core.models.common.StatusParam;
@@ -132,6 +134,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "interpreter-cancer-tiering-run":
                 queryResponse = runInterpreterCancerTiering();
+                break;
+            case "interpreter-custom-tiering-run":
+                queryResponse = runInterpreterCustomTiering();
                 break;
             case "interpreter-exomiser-run":
                 queryResponse = runInterpreterExomiser();
@@ -627,6 +632,51 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), CancerTieringInterpretationAnalysisParams.class);
         }
         return openCGAClient.getClinicalAnalysisClient().runInterpreterCancerTiering(cancerTieringInterpretationAnalysisParams, queryParams);
+    }
+
+    private RestResponse<Job> runInterpreterCustomTiering() throws Exception {
+        logger.debug("Executing runInterpreterCustomTiering in Analysis - Clinical command line");
+
+        AnalysisClinicalCommandOptions.RunInterpreterCustomTieringCommandOptions commandOptions = analysisClinicalCommandOptions.runInterpreterCustomTieringCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
+        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
+        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
+        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        ClinicalInterpretationAnalysisParams clinicalInterpretationAnalysisParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/interpreter/customTiering/run"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            clinicalInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), ClinicalInterpretationAnalysisParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "clinicalAnalysisId", commandOptions.clinicalAnalysisId, true);
+            putNestedIfNotNull(beanParams, "primary", commandOptions.primary, true);
+            putNestedIfNotEmpty(beanParams, "clinicalInterpretationParams.penetrance", commandOptions.clinicalInterpretationParamsPenetrance, true);
+            putNestedIfNotNull(beanParams, "clinicalInterpretationParams.discardUntieredEvidences", commandOptions.clinicalInterpretationParamsDiscardUntieredEvidences, true);
+            putNestedIfNotNull(beanParams, "clinicalInterpretationParams.oneConsequencePerEvidence", commandOptions.clinicalInterpretationParamsOneConsequencePerEvidence, true);
+            putNestedIfNotEmpty(beanParams, "configFile", commandOptions.configFile, true);
+            putNestedIfNotEmpty(beanParams, "outdir", commandOptions.outdir, true);
+
+            clinicalInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), ClinicalInterpretationAnalysisParams.class);
+        }
+        return openCGAClient.getClinicalAnalysisClient().runInterpreterCustomTiering(clinicalInterpretationAnalysisParams, queryParams);
     }
 
     private RestResponse<Job> runInterpreterExomiser() throws Exception {

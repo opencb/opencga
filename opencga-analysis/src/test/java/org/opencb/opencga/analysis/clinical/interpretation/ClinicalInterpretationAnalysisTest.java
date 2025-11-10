@@ -2,7 +2,10 @@ package org.opencb.opencga.analysis.clinical.interpretation;
 
 import org.junit.*;
 import org.junit.experimental.categories.Category;
+import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.ClinicalAnalysisUtilsTest;
 import org.opencb.opencga.analysis.clinical.ClinicalInterpretationAnalysis;
@@ -21,6 +24,8 @@ import org.opencb.opencga.core.models.clinical.interpretation.ClinicalInterpreta
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.IOException;
@@ -101,8 +106,34 @@ public class ClinicalInterpretationAnalysisTest {
     }
 
     @Test
-    public void testClinicalInterpretationWithCustomConfig() throws IOException, CatalogException, ToolException {
+    public void testClinicalInterpretationWithCustomConfig() throws IOException, CatalogException, ToolException, StorageEngineException {
         checkClinicalAnalysis();
+
+//        Query query = new Query();
+//        query.append("study", "test@CASES:OPA");
+//        query.append("filter", "PASS");
+//        query.append("unknownGenotype", "./.");
+//        query.append("biotype", Arrays.asList("protein_coding","IG_C_gene","IG_D_gene","IG_J_gene","IG_V_gene","nonsense_mediated_decay",
+//                "non_stop_decay","TR_C_gene","TR_D_gene","TR_J_gene","TR_V_gene"));
+//        query.append("populationFrequencyAlt", Arrays.asList("1000G:AFR<0.002","1000G:AMR<0.002","1000G:EAS<0.002","1000G:EUR<0.002",
+//                "1000G:SAS<0.002","GNOMAD_EXOMES:AFR<0.001","GNOMAD_EXOMES:AMR<0.001","GNOMAD_EXOMES:EAS<0.001","GNOMAD_EXOMES:FIN<0.001",
+//                "GNOMAD_EXOMES:NFE<0.001","GNOMAD_EXOMES:ASJ<0.001","GNOMAD_EXOMES:OTH<0.002"));
+//        query.append("ct", Arrays.asList("transcript_ablation","splice_acceptor_variant","splice_donor_variant","stop_gained",
+//                "frameshift_variant","stop_lost","start_lost","transcript_amplification","inframe_insertion","inframe_deletion",
+//                "initiator_codon_variant","missense_variant","splice_region_variant","incomplete_terminal_codon_variant"));
+////        query.append("familySegregation", "mitochondrial");
+////        query.append("family", "111002516");
+////        query.append("familyProband", "111002516");
+////        query.append("includeSample", Arrays.asList("LP3000474-DNA_A02","LP3000468-DNA_A01","LP3000469-DNA_A06"));
+////        query.append("region", new Region("MT", 0, 2147483647));
+//        query.append("genotype", "LP3000468-DNA_A01:1,0/1,1/1,0|1,1|0,1|1;LP3000469-DNA_A06:0,0/0,0|0");
+//        VariantQueryResult<Variant> variantResult = opencga.getVariantStorageManager().get(query, QueryOptions.empty(), clinicalTest.token);
+//        System.out.println("variantResult.getNumResults() = " + variantResult.getNumResults());
+//        for (Variant variant : variantResult.getResults()) {
+//            System.out.println(variant.toString());
+//        }
+//        System.exit(-1);
+
 
         outDir = Paths.get(opencga.createTmpOutdir("_interpretation_custom_config"));
         System.out.println("opencga.getOpencgaHome() = " + opencga.getOpencgaHome().toAbsolutePath());
