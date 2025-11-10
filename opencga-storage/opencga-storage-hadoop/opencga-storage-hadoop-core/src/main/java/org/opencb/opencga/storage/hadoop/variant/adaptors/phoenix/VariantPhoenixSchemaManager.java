@@ -5,6 +5,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.NamespaceExistException;
 import org.apache.hadoop.util.StopWatch;
 import org.apache.phoenix.schema.PTableType;
+import org.apache.phoenix.schema.TableNotFoundException;
 import org.apache.phoenix.schema.types.PDataType;
 import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -278,6 +279,24 @@ public class VariantPhoenixSchemaManager implements AutoCloseable {
                 msg = "Columns already in phoenix. Nothing to do! Had to wait "
                         + TimeUtils.durationToString(stopWatch.now(TimeUnit.MILLISECONDS));
             } else {
+                int maxAttempts = 3;
+                for (int i = 0; i < maxAttempts; i++) {
+                    try {
+                        // Try to add missing columns
+                        phoenixHelper
+                                .addMissingColumns(con, variantsTableName, pendingColumns, DEFAULT_TABLE_TYPE, Collections.emptySet());
+                        // If success, break the loop
+                        break;
+                    } catch (TableNotFoundException e) {
+                        logger.warn("Could not add missing columns to Phoenix. Attempt {}/{}. Pending columns: {}",
+                                i + 1, maxAttempts, StringUtils.join(pendingColumns, ", "), e);
+                        if (i == 2) {
+                            throw e;
+                        }
+                    } catch (SQLException e) {
+                        throw e;
+                    }
+                }
                 phoenixHelper
                         .addMissingColumns(con, variantsTableName, pendingColumns, DEFAULT_TABLE_TYPE, Collections.emptySet());
                 // Final update to remove new added columns
@@ -291,8 +310,8 @@ public class VariantPhoenixSchemaManager implements AutoCloseable {
                 logger.warn(msg);
             }
 
-        } catch (SQLException | StorageEngineException e) {
-            throw new StorageEngineException("Error locking table to modify Phoenix columns!", e);
+        } catch (SQLException e) {
+            throw new StorageEngineException("Error creating columns", e);
         } finally {
             try {
                 if (lock != null) {

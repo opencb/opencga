@@ -177,9 +177,6 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
                 }
             }
         }
-        if (objectMaps.isEmpty()) {
-            throw new VariantAnnotatorException("Error fetching CellBase source information from " + getDebugInfo("/meta/versions"));
-        }
         return objectMaps;
     }
 

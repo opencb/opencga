@@ -94,7 +94,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
         assertEquals(500, getDefaultCohort(studyId).getSamples().size());
         assertEquals(CohortStatus.NONE, getDefaultCohort(studyId).getInternal().getStatus().getId());
         VariantSetStats stats = getVariantSetMetrics(getFile(0).getId());
-        assertNotEquals(0, stats.getVariantCount().intValue());
+        assertNotEquals(0, stats.getVariantCount());
 
         variantManager.index(studyId, getFile(1).getId(), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(1000, getDefaultCohort(studyId).getSamples().size());
