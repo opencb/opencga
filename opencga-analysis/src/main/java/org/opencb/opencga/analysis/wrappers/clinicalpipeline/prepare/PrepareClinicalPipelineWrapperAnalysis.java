@@ -20,7 +20,7 @@ package org.opencb.opencga.analysis.wrappers.clinicalpipeline.prepare;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.pipeline.prepare.PrepareClinicalPipelineParams;
 import org.opencb.opencga.core.models.clinical.pipeline.prepare.PrepareClinicalPipelineWrapperParams;
@@ -40,7 +40,7 @@ import static org.opencb.opencga.catalog.utils.ResourceManager.ANALYSIS_DIRNAME;
 
 @Tool(id = PrepareClinicalPipelineWrapperAnalysis.ID, resource = Enums.Resource.VARIANT,
         description = PrepareClinicalPipelineWrapperAnalysis.DESCRIPTION)
-public class PrepareClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
+public class PrepareClinicalPipelineWrapperAnalysis extends OpenCgaTool {
 
     public static final String ID = "ngs-pipeline-prepare";
     public static final String DESCRIPTION = "Prepare the clinical pipeline.";

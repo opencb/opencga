@@ -1485,7 +1485,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(name = "body", value = "JSON with parameters to execute the command " + PrepareClinicalPipelineWrapperAnalysis.ID, required = true) PrepareClinicalPipelineWrapperParams params) {
-        return submitJob(study, JobType.NATIVE, PrepareClinicalPipelineWrapperAnalysis.ID, params, jobName, jobDescription, dependsOn,
+        return submitJob(study, JobType.NATIVE_TOOL, PrepareClinicalPipelineWrapperAnalysis.ID, params, jobName, jobDescription, dependsOn,
                 jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
@@ -1503,7 +1503,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(name = "body", value = "JSON with parameters to execute the command " + GenomicsClinicalPipelineWrapperAnalysis.ID, required = true) GenomicsClinicalPipelineWrapperParams params) {
-        return submitJob(study, JobType.NATIVE, GenomicsClinicalPipelineWrapperAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE_TOOL, GenomicsClinicalPipelineWrapperAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @POST
@@ -1520,6 +1520,6 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(name = "body", value = "JSON with parameters to execute the command " + AffyClinicalPipelineWrapperAnalysis.ID, required = true) AffyClinicalPipelineWrapperParams params) {
-        return submitJob(study, JobType.NATIVE, AffyClinicalPipelineWrapperAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE_TOOL, AffyClinicalPipelineWrapperAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 }

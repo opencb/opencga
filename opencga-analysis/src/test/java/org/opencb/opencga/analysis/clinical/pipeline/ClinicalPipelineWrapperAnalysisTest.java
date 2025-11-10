@@ -433,11 +433,11 @@ public class ClinicalPipelineWrapperAnalysisTest {
     }
 
     private void execute(String toolId, String inputJobId, Map<String, Object> params, Path outDir) throws CatalogException, ToolException {
-        String jobId = opencga.getCatalogManager().getJobManager().submit(studyId, JobType.NATIVE, toolId,
+        String jobId = opencga.getCatalogManager().getJobManager().submit(studyId, JobType.NATIVE_TOOL, toolId,
                 Enums.Priority.MEDIUM, params, inputJobId, "", null, null, null, null, false, token).first().getId();
         Assert.assertEquals(inputJobId, jobId);
         Job job = opencga.getCatalogManager().getJobManager().get(studyId, jobId, null, token).first();
-        toolRunner.execute(job, outDir, token);
+        toolRunner.execute(studyId, job, outDir, token);
     }
 
     private boolean isDataAvailable() {

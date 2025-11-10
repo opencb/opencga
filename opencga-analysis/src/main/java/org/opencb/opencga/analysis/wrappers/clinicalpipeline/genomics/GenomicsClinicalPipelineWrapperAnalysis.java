@@ -4,7 +4,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.pipeline.genomics.GenomicsAlignmentPipelineTool;
@@ -30,7 +30,7 @@ import static org.opencb.opencga.catalog.utils.ResourceManager.ANALYSIS_DIRNAME;
 
 @Tool(id = GenomicsClinicalPipelineWrapperAnalysis.ID, resource = Enums.Resource.VARIANT,
         description = GenomicsClinicalPipelineWrapperAnalysis.DESCRIPTION)
-public class GenomicsClinicalPipelineWrapperAnalysis extends OpenCgaToolScopeStudy {
+public class GenomicsClinicalPipelineWrapperAnalysis extends OpenCgaTool {
 
     public static final String ID = "ngs-pipeline-genomics";
     public static final String DESCRIPTION = "Execute the clinical genomics pipeline that performs QC (FastQC,...), mapping (BWA,"
