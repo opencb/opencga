@@ -373,6 +373,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--report-limitations"}, description = "Limitations of the report", required = false, arity = 1)
         public String reportLimitations;
     
+        @Parameter(names = {"--report-experimental-procedure"}, description = "Experimental procedure of the report", required = false, arity = 1)
+        public String reportExperimentalProcedure;
+    
         @Parameter(names = {"--report-date"}, description = "Report date.", required = false, arity = 1)
         public String reportDate;
     
@@ -2407,6 +2410,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--report-limitations"}, description = "Limitations of the report", required = false, arity = 1)
         public String reportLimitations;
     
+        @Parameter(names = {"--report-experimental-procedure"}, description = "Experimental procedure of the report", required = false, arity = 1)
+        public String reportExperimentalProcedure;
+    
         @Parameter(names = {"--report-date"}, description = "Report date.", required = false, arity = 1)
         public String reportDate;
     
@@ -2785,6 +2791,18 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--limitations"}, description = "Limitations of the report", required = false, arity = 1)
         public String limitations;
+    
+        @Parameter(names = {"--experimental-procedure"}, description = "Experimental procedure of the report", required = false, arity = 1)
+        public String experimentalProcedure;
+    
+        @Parameter(names = {"--conclusion-author"}, description = "The body web service author parameter", required = false, arity = 1)
+        public String conclusionAuthor;
+    
+        @Parameter(names = {"--conclusion-date"}, description = "The body web service date parameter", required = false, arity = 1)
+        public String conclusionDate;
+    
+        @Parameter(names = {"--conclusion-text"}, description = "The body web service text parameter", required = false, arity = 1)
+        public String conclusionText;
     
         @Parameter(names = {"--date"}, description = "Report date.", required = false, arity = 1)
         public String date;

@@ -423,6 +423,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "report.recommendation", commandOptions.reportRecommendation, true);
             putNestedIfNotEmpty(beanParams, "report.methodology", commandOptions.reportMethodology, true);
             putNestedIfNotEmpty(beanParams, "report.limitations", commandOptions.reportLimitations, true);
+            putNestedIfNotEmpty(beanParams, "report.experimentalProcedure", commandOptions.reportExperimentalProcedure, true);
             putNestedIfNotEmpty(beanParams, "report.date", commandOptions.reportDate, true);
             putNestedIfNotNull(beanParams, "report.images", commandOptions.reportImages, true);
             putNestedMapIfNotEmpty(beanParams, "report.attributes", commandOptions.reportAttributes, true);
@@ -1538,6 +1539,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "report.recommendation", commandOptions.reportRecommendation, true);
             putNestedIfNotEmpty(beanParams, "report.methodology", commandOptions.reportMethodology, true);
             putNestedIfNotEmpty(beanParams, "report.limitations", commandOptions.reportLimitations, true);
+            putNestedIfNotEmpty(beanParams, "report.experimentalProcedure", commandOptions.reportExperimentalProcedure, true);
             putNestedIfNotEmpty(beanParams, "report.date", commandOptions.reportDate, true);
             putNestedIfNotNull(beanParams, "report.images", commandOptions.reportImages, true);
             putNestedMapIfNotEmpty(beanParams, "report.attributes", commandOptions.reportAttributes, true);
@@ -1787,6 +1789,10 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "recommendation", commandOptions.recommendation, true);
             putNestedIfNotEmpty(beanParams, "methodology", commandOptions.methodology, true);
             putNestedIfNotEmpty(beanParams, "limitations", commandOptions.limitations, true);
+            putNestedIfNotEmpty(beanParams, "experimentalProcedure", commandOptions.experimentalProcedure, true);
+            putNestedIfNotEmpty(beanParams, "conclusion.author", commandOptions.conclusionAuthor, true);
+            putNestedIfNotEmpty(beanParams, "conclusion.date", commandOptions.conclusionDate, true);
+            putNestedIfNotEmpty(beanParams, "conclusion.text", commandOptions.conclusionText, true);
             putNestedIfNotEmpty(beanParams, "date", commandOptions.date, true);
             putNestedIfNotNull(beanParams, "images", commandOptions.images, true);
             putNestedMapIfNotEmpty(beanParams, "attributes", commandOptions.attributes, true);
