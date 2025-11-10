@@ -517,10 +517,12 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
             ObjectMap reportParameters = parameters.getNestedMap(REPORT_UPDATE.key());
             reportParameters.put(ReportQueryParams.DATE.key(), TimeUtils.getTime());
             String[] stringParams = {ReportQueryParams.OVERVIEW.key(), ReportQueryParams.RECOMMENDATION.key(),
-                    ReportQueryParams.METHODOLOGY.key(), ReportQueryParams.LIMITATIONS.key(), ReportQueryParams.DATE.key(), };
+                    ReportQueryParams.EXPERIMENTAL_PROCEDURE.key(), ReportQueryParams.METHODOLOGY.key(),
+                    ReportQueryParams.LIMITATIONS.key(), ReportQueryParams.DATE.key(), };
             filterStringParams(reportParameters, document.getSet(), stringParams, REPORT.key() + ".");
 
-            String[] objectParams = {ReportQueryParams.DISCUSSION.key(), ReportQueryParams.ATTRIBUTES.key()};
+            String[] objectParams = {ReportQueryParams.DISCUSSION.key(), ReportQueryParams.CONCLUSION.key(),
+                    ReportQueryParams.ATTRIBUTES.key()};
             filterObjectParams(reportParameters, document.getSet(), objectParams, REPORT.key() + ".");
 
             String[] commentParams = {ReportQueryParams.COMMENTS.key()};

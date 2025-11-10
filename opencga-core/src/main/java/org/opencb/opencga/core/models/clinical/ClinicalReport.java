@@ -30,6 +30,12 @@ public class ClinicalReport {
     @DataField(id = "limitations", description = "Limitations of the report")
     private String limitations;
 
+    @DataField(id = "experimentalProcedure", description = "Experimental procedure of the report", since = "5.0.0")
+    private String experimentalProcedure;
+
+    @DataField(id = "conclusion", description = "Conclusion of the report", since = "5.0.0")
+    private ClinicalDiscussion conclusion;
+
     @DataField(id = "signatures", description = "Signatures of the report")
     private List<Signature> signatures;
 
@@ -84,13 +90,16 @@ public class ClinicalReport {
     }
 
     public ClinicalReport(String overview, ClinicalDiscussion discussion, String recommendation, String methodology, String limitations,
-                          List<Signature> signatures, String date, List<ClinicalComment> comments, List<MiniPubmed> references,
-                          List<String> images, Map<String, Object> attributes) {
+                          String experimentalProcedure, ClinicalDiscussion conclusion, List<Signature> signatures, String date,
+                          List<ClinicalComment> comments, List<MiniPubmed> references, List<String> images,
+                          Map<String, Object> attributes) {
         this.overview = overview;
         this.discussion = discussion;
         this.recommendation = recommendation;
         this.methodology = methodology;
         this.limitations = limitations;
+        this.experimentalProcedure = experimentalProcedure;
+        this.conclusion = conclusion;
         this.signatures = signatures;
         this.date = date;
         this.comments = comments;
@@ -107,6 +116,8 @@ public class ClinicalReport {
         sb.append(", recommendation='").append(recommendation).append('\'');
         sb.append(", methodology='").append(methodology).append('\'');
         sb.append(", limitations='").append(limitations).append('\'');
+        sb.append(", experimentalProcedure='").append(experimentalProcedure).append('\'');
+        sb.append(", conclusion=").append(conclusion);
         sb.append(", signatures=").append(signatures);
         sb.append(", date='").append(date).append('\'');
         sb.append(", comments=").append(comments);
@@ -165,6 +176,24 @@ public class ClinicalReport {
 
     public ClinicalReport setLimitations(String limitations) {
         this.limitations = limitations;
+        return this;
+    }
+
+    public String getExperimentalProcedure() {
+        return experimentalProcedure;
+    }
+
+    public ClinicalReport setExperimentalProcedure(String experimentalProcedure) {
+        this.experimentalProcedure = experimentalProcedure;
+        return this;
+    }
+
+    public ClinicalDiscussion getConclusion() {
+        return conclusion;
+    }
+
+    public ClinicalReport setConclusion(ClinicalDiscussion conclusion) {
+        this.conclusion = conclusion;
         return this;
     }
 

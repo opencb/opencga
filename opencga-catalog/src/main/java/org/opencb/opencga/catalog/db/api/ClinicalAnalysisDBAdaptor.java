@@ -172,6 +172,8 @@ public interface ClinicalAnalysisDBAdaptor extends AnnotationSetDBAdaptor<Clinic
         RECOMMENDATION("recommendation", STRING, ""),
         METHODOLOGY("methodology", STRING, ""),
         LIMITATIONS("limitations", STRING, ""),
+        EXPERIMENTAL_PROCEDURE("experimentalProcedure", STRING, ""),
+        CONCLUSION("conclusion", OBJECT, ""),
         SIGNATURES("signatures", OBJECT, ""),
         SIGNATURES_SIGNED_BY("signatures.signedBy", STRING, ""),
         DATE("date", STRING, ""),

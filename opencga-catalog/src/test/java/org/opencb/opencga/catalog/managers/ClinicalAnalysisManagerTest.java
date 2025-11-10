@@ -451,7 +451,8 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
                 true, ownerToken);
 
         ClinicalReport report = new ClinicalReport("overview", new ClinicalDiscussion("me", TimeUtils.getTime(), "text"), "recommendation",
-                "methodology", "limitations", Collections.singletonList(new Signature("signature", "", "", "")), "",
+                "methodology", "limitations", "Experimental procedure", new ClinicalDiscussion("me", TimeUtils.getTime(), "text"),
+                Collections.singletonList(new Signature("signature", "", "", "")), "",
                 Arrays.asList(
                         new ClinicalComment().setMessage("comment1"),
                         new ClinicalComment().setMessage("comment2")
@@ -466,6 +467,8 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         assertEquals(report.getRecommendation(), result.first().getReport().getRecommendation());
         assertEquals(report.getMethodology(), result.first().getReport().getMethodology());
         assertEquals(report.getLimitations(), result.first().getReport().getLimitations());
+        assertEquals(report.getExperimentalProcedure(), result.first().getReport().getExperimentalProcedure());
+        assertEquals(report.getConclusion().getText(), result.first().getReport().getConclusion().getText());
         assertEquals(1, result.first().getReport().getSignatures().size());
         assertEquals(report.getSignatures().get(0).getSignature(), result.first().getReport().getSignatures().get(0).getSignature());
         assertTrue(StringUtils.isNotEmpty(result.first().getReport().getSignatures().get(0).getSignature()));
