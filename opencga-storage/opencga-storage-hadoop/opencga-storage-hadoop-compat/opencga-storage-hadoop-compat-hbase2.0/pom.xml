@@ -35,6 +35,8 @@
         <hadoop.version>2.7.7</hadoop.version>
         <phoenix.version>5.0.0-HBase-2.0</phoenix.version>
         <guava.version>19.0</guava.version>
+        <disruptor.version>3.3.6</disruptor.version>
+        <tephra.version>0.14.0-incubating</tephra.version>
     </properties>
 
     <dependencies>
@@ -77,6 +79,18 @@
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>${guava.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId> com.lmax</groupId>
+            <artifactId>disruptor</artifactId>
+            <version>${disruptor.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tephra</groupId>
+            <artifactId>tephra-core</artifactId>
+            <version>${tephra.version}</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
