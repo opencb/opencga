@@ -1,11 +1,16 @@
 package org.opencb.opencga.core.models.externalTool.custom;
 
+import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.models.externalTool.Container;
 import org.opencb.opencga.core.models.job.MinimumRequirements;
+import org.opencb.opencga.core.tools.ToolParams;
 
-public class CustomToolInlineParams {
+public class  CustomToolInlineParams extends ToolParams {
 
+    @DataField(id = "container", description = "Docker container to be used.")
     private Container container;
+
+    @DataField(id = "minimumRequirements", description = "Minimum requirements for the tool execution.")
     private MinimumRequirements minimumRequirements;
 
     public CustomToolInlineParams() {

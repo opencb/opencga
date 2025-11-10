@@ -13,7 +13,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.externalTool.*;
-import org.opencb.opencga.core.models.externalTool.custom.CustomToolParams;
+import org.opencb.opencga.core.models.externalTool.custom.CustomExternalToolParams;
 import org.opencb.opencga.core.models.externalTool.custom.CustomToolRunParams;
 import org.opencb.opencga.core.models.job.ToolInfoExecutor;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -32,7 +32,7 @@ public class CustomToolExecutor extends OpenCgaDockerToolScopeStudy {
     public static final String DESCRIPTION = "Execute an analysis from a custom binary.";
 
     @ToolParams
-    protected CustomToolParams runParams = new CustomToolParams();
+    protected CustomExternalToolParams runParams = new CustomExternalToolParams();
 
     private String cliParams;
     private String dockerImage;
@@ -49,16 +49,12 @@ public class CustomToolExecutor extends OpenCgaDockerToolScopeStudy {
 
         // Check any condition
         if (runParams == null) {
-            throw new ToolException("Missing ExternalToolRunParams object.");
-        } else if (StringUtils.isNotEmpty(runParams.getId()) && runParams.getContainer() == null) {
-            Container container = generateDockerObject(runParams);
-            checkDockerObject(container);
-        } else if (runParams.getContainer() != null && StringUtils.isEmpty(runParams.getId())) {
-            checkDockerObject(runParams.getContainer());
-        } else {
-            throw new ToolException("Unexpected ExternalToolRunParams object. "
-                    + "Either 'id' and 'params/commandLine' or 'docker' should be set.");
+            throw new ToolException("Missing CustomExternalToolParams object.");
+        } else if (StringUtils.isEmpty(runParams.getId())) {
+            throw new ToolException("Missing external tool id.");
         }
+        Container container = generateDockerObject(runParams);
+        checkDockerObject(container);
     }
 
     private Container generateDockerObject(ExternalToolParams<CustomToolRunParams> runParams) throws CatalogException, ToolException {
