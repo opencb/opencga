@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-@Tool(id = CustomToolExecutor.ID, resource = Enums.Resource.JOB, description = CustomToolExecutor.DESCRIPTION)
+@Tool(id = CustomToolInlineExecutor.ID, resource = Enums.Resource.JOB, description = CustomToolInlineExecutor.DESCRIPTION)
 public class CustomToolInlineExecutor extends OpenCgaDockerToolScopeStudy {
 
     public final static String ID = "custom-inline-tool";

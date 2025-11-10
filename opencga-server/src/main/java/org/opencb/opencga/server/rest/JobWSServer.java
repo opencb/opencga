@@ -135,8 +135,11 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = "Container image to be executed and its requirements", required = true) CustomToolInlineParams params) {
-        return submitJob(study, JobType.NATIVE_TOOL, CustomToolInlineExecutor.ID, params, jobName, jobDescription, dependsOn, jobTags,
-                scheduledStartTime, jobPriority, dryRun);
+        ToolInfo toolInfo = new ToolInfo()
+                .setId(CustomToolInlineExecutor.ID)
+                .setMinimumRequirements(params.getMinimumRequirements());
+        return submitJob(study, JobType.NATIVE_TOOL, toolInfo, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime,
+                jobPriority, dryRun);
     }
 
     @POST
