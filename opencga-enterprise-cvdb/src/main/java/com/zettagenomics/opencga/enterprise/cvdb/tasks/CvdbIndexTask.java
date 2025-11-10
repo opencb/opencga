@@ -8,7 +8,7 @@ import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbIndexTaskParam
 import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
 import org.opencb.opencga.core.models.JwtPayload;
@@ -19,7 +19,7 @@ import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
 @Tool(id = CvdbIndexTask.ID, resource = Enums.Resource.CLINICAL_ANALYSIS, description = CvdbIndexTask.DESCRIPTION)
-public class CvdbIndexTask extends OpenCgaToolScopeStudy {
+public class CvdbIndexTask extends OpenCgaTool {
     public static final String ID = "cvdb-index-run";
     public static final String DESCRIPTION = "Index clinical analyses of a OpenCGA project, a study or a list of clinical analyses"
             + " into CVDB";

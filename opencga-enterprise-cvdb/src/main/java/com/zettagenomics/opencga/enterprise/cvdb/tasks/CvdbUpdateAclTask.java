@@ -9,7 +9,7 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
 import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
 
 @Tool(id = CvdbUpdateAclTask.ID, resource = Enums.Resource.CLINICAL_ANALYSIS, description = CvdbUpdateAclTask.DESCRIPTION)
-public class CvdbUpdateAclTask extends OpenCgaToolScopeStudy {
+public class CvdbUpdateAclTask extends OpenCgaTool {
     public static final String ID = "cvdb-acl-update";
     public static final String DESCRIPTION = "Update the set of permissions granted in CVDB for the OpenCGA users that have access" +
             " to the clinical analyses.";
