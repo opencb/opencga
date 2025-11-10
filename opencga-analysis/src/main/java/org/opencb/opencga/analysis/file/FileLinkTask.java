@@ -2,7 +2,7 @@ package org.opencb.opencga.analysis.file;
 
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -21,7 +21,7 @@ import java.util.Map;
 
 @Tool(id = FileLinkTask.ID, resource = Enums.Resource.FILE, type = Tool.Type.OPERATION, description = FileLinkTask.DESCRIPTION,
         priority = Enums.Priority.HIGH)
-public class FileLinkTask extends OpenCgaToolScopeStudy {
+public class FileLinkTask extends OpenCgaTool {
 
     public static final String ID = "file-link";
     public static final String DESCRIPTION = "Link an external file into catalog";

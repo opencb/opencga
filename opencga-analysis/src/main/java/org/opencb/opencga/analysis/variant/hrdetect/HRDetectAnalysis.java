@@ -27,7 +27,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -53,7 +53,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Tool(id = HRDetectAnalysis.ID, resource = Enums.Resource.VARIANT)
-public class HRDetectAnalysis extends OpenCgaToolScopeStudy {
+public class HRDetectAnalysis extends OpenCgaTool {
 
     public static final String ID = "hr-detect";
     public static final String DESCRIPTION = "Run HRDetect analysis for a given somatic sample.";
@@ -332,4 +332,3 @@ public class HRDetectAnalysis extends OpenCgaToolScopeStudy {
         return null;
     }
 }
-

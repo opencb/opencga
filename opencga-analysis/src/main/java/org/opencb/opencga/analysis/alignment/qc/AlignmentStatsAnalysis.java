@@ -21,7 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.alignment.samtools.SamtoolsStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
 import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysisExecutor;
@@ -46,7 +46,7 @@ import static org.opencb.opencga.core.api.ParamConstants.ALIGNMENT_STATS_DESCRIP
 import static org.opencb.opencga.core.tools.OpenCgaToolExecutor.EXECUTOR_ID;
 
 @Tool(id = AlignmentStatsAnalysis.ID, resource = Enums.Resource.ALIGNMENT)
-public class AlignmentStatsAnalysis extends OpenCgaToolScopeStudy {
+public class AlignmentStatsAnalysis extends OpenCgaTool {
 
     public static final String ID = "alignment-stats";
     public static final String DESCRIPTION = ALIGNMENT_STATS_DESCRIPTION;

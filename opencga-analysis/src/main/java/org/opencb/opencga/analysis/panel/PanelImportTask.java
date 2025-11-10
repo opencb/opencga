@@ -1,7 +1,7 @@
 package org.opencb.opencga.analysis.panel;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.panel.PanelImportParams;
@@ -9,7 +9,7 @@ import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
 @Tool(id = PanelImportTask.ID, resource = Enums.Resource.DISEASE_PANEL, description = PanelImportTask.DESCRIPTION)
-public class PanelImportTask extends OpenCgaToolScopeStudy {
+public class PanelImportTask extends OpenCgaTool {
     public final static String ID = "panel-import";
     public static final String DESCRIPTION = "Import panels from other sources.";
 

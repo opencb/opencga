@@ -5,7 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
@@ -33,7 +33,7 @@ import static org.opencb.opencga.catalog.db.api.FileDBAdaptor.QueryParams.*;
 
 @Tool(id = VariantFileIndexJobLauncherTool.ID, description = VariantFileIndexJobLauncherTool.DESCRIPTION,
         type = Tool.Type.OPERATION, resource = Enums.Resource.VARIANT, priority = Enums.Priority.HIGH)
-public class VariantFileIndexJobLauncherTool extends OpenCgaToolScopeStudy {
+public class VariantFileIndexJobLauncherTool extends OpenCgaTool {
 
     public static final String ID = "variant-index-job-launcher";
     public static final String DESCRIPTION = "Detect non-indexed VCF files in the study, and submit a job for indexing them.";

@@ -48,7 +48,7 @@ public class ExternalToolExecutorTest extends AbstractManagerTest {
         ObjectMap params = runParams.toObjectMap();
         params.put(ParamConstants.STUDY_PARAM, studyFqn);
         nextFlowExecutorTest.setUp(catalogManagerResource.getOpencgaHome().toString(), catalogManager,
-                StorageEngineFactory.get(storageConfiguration), params, outDir, "", false, ownerToken);
+                StorageEngineFactory.get(storageConfiguration), params, outDir, "", "", false, ownerToken);
 //        nextFlowExecutorTest.setUp(catalogManagerResource.getOpencgaHome().toString(), runParams.toObjectMap(), outDir, ownerToken);
         nextFlowExecutorTest.start();
         System.out.println(stopWatch.getTime(TimeUnit.MILLISECONDS));
@@ -75,7 +75,7 @@ public class ExternalToolExecutorTest extends AbstractManagerTest {
         ObjectMap params = runParams.toObjectMap();
         params.put(ParamConstants.STUDY_PARAM, studyFqn);
         nextFlowExecutorTest.setUp(catalogManagerResource.getOpencgaHome().toString(), catalogManager,
-                StorageEngineFactory.get(storageConfiguration), params, outDir, "", false, ownerToken);
+                StorageEngineFactory.get(storageConfiguration), params, outDir, "", "", false, ownerToken);
 //        nextFlowExecutorTest.setUp(catalogManagerResource.getOpencgaHome().toString(), runParams.toObjectMap(), outDir, ownerToken);
         nextFlowExecutorTest.start();
         System.out.println(stopWatch.getTime(TimeUnit.MILLISECONDS));
@@ -134,7 +134,7 @@ public class ExternalToolExecutorTest extends AbstractManagerTest {
         ObjectMap params = runParams.toObjectMap();
         params.put(ParamConstants.STUDY_PARAM, studyFqn);
         nextFlowExecutorTest.setUp(catalogManagerResource.getOpencgaHome().toString(), catalogManager,
-                StorageEngineFactory.get(storageConfiguration), params, outDir, "", false, ownerToken);
+                StorageEngineFactory.get(storageConfiguration), params, outDir, "", "", false, ownerToken);
         nextFlowExecutorTest.start();
         System.out.println(stopWatch.getTime(TimeUnit.MILLISECONDS));
     }

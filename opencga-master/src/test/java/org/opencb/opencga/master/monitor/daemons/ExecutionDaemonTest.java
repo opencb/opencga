@@ -226,7 +226,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         storageConfiguration.getVariant().setDefaultEngine("mongodb");
         ToolRunner toolRunner = new ToolRunner(catalogManagerResource.getOpencgaHome().toString(), catalogManager,
                 StorageEngineFactory.get(storageConfiguration));
-        toolRunner.execute(job, ownerToken);
+        toolRunner.execute(studyFqn, job, ownerToken);
         daemon.checkJobs();
 
         job = catalogManager.getJobManager().get(studyFqn, jobId1, null, ownerToken).first();

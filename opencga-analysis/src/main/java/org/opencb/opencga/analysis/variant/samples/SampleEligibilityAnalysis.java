@@ -31,7 +31,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
@@ -71,7 +71,7 @@ import java.util.stream.Collectors;
 import static org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis.DESCRIPTION;
 
 @Tool(id = SampleEligibilityAnalysis.ID, resource = Enums.Resource.VARIANT, description = DESCRIPTION)
-public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
+public class SampleEligibilityAnalysis extends OpenCgaTool {
 
     public static final String ID = "sample-eligibility";
     public static final String DESCRIPTION = "Filter samples by a complex query involving metadata and variants data";

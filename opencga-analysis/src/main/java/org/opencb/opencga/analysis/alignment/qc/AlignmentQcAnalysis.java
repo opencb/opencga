@@ -25,7 +25,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.AnalysisUtils;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -47,7 +47,7 @@ import java.util.*;
 import static org.opencb.opencga.core.api.ParamConstants.ALIGNMENT_QC_DESCRIPTION;
 
 @Tool(id = AlignmentQcAnalysis.ID, resource = Enums.Resource.ALIGNMENT)
-public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
+public class AlignmentQcAnalysis extends OpenCgaTool {
 
     public static final String ID = "alignment-qc";
     public static final String DESCRIPTION = ALIGNMENT_QC_DESCRIPTION;

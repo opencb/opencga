@@ -19,7 +19,7 @@ package org.opencb.opencga.analysis.wrappers.gatk;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.analysis.AnalysisUtils;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.variant.GatkWrapperParams;
@@ -32,7 +32,7 @@ import java.util.*;
 import static org.opencb.opencga.core.api.ParamConstants.*;
 
 @Tool(id = GatkWrapperAnalysis.ID, resource = Enums.Resource.VARIANT, description = GatkWrapperAnalysis.DESCRIPTION)
-public class GatkWrapperAnalysis extends OpenCgaToolScopeStudy {
+public class GatkWrapperAnalysis extends OpenCgaTool {
 
     public final static String ID = "gatk";
     public final static String DESCRIPTION = "GATK is a Genome Analysis Toolkit for variant discovery in high-throughput sequencing data. "
