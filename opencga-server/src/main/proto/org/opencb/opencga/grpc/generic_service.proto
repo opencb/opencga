@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package protobuf.opencb.service;
+package org.opencb.opencga.grpc;
 
 option java_package = "org.opencb.opencga.server.grpc";
 option java_outer_classname = "GenericServiceModel";
@@ -24,10 +24,19 @@ message Event {
 }
 
 message VariantResponse {
-    Variant variant = 1;
+    protobuf.opencb.Variant variant = 1;
     repeated Event event = 2;
     int32 count = 4;
     string error = 5;
     string errorFull = 6;
     string stackTrace = 7;
+}
+
+message MapResponse {
+  map<string, string> values = 1;
+  repeated Event event = 2;
+  int32 count = 4;
+  string error = 5;
+  string errorFull = 6;
+  string stackTrace = 7;
 }

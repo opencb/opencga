@@ -18,17 +18,18 @@ package org.opencb.opencga.server.grpc;
 
 import com.fasterxml.jackson.databind.JsonMappingException;
 import io.grpc.stub.StreamObserver;
-import org.opencb.biodata.models.common.protobuf.service.ServiceTypesModel;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.server.OpenCGAHealthCheckMonitor;
 import org.slf4j.Logger;
 
+import static org.opencb.opencga.server.grpc.GenericServiceModel.*;
+
 /**
  * Created by imedina on 02/01/16.
  */
-public class AdminGrpcService extends AdminServiceGrpc.AdminServiceImplBase {
+public class AdminGrpcService extends org.opencb.opencga.server.grpc.AdminServiceGrpc.AdminServiceImplBase {
 
     private final GenericGrpcService grpcService;
     private final GrpcServer grpcServer;
@@ -40,18 +41,18 @@ public class AdminGrpcService extends AdminServiceGrpc.AdminServiceImplBase {
     }
 
     @Override
-    public void ping(GenericServiceModel.Request request, StreamObserver<ServiceTypesModel.MapResponse> responseObserver) {
-        responseObserver.onNext(ServiceTypesModel.MapResponse.newBuilder().putValues("ping", "pong").build());
+    public void ping(Request request, StreamObserver<MapResponse> responseObserver) {
+        responseObserver.onNext(MapResponse.newBuilder().putValues("ping", "pong").build());
         responseObserver.onCompleted();
     }
 
     @Override
-    public void status(GenericServiceModel.Request request, StreamObserver<ServiceTypesModel.MapResponse> responseObserver) {
+    public void status(Request request, StreamObserver<MapResponse> responseObserver) {
         OpenCGAResult<OpenCGAHealthCheckMonitor.HealthCheckStatus> result = grpcService.getHealthCheckMonitor().getStatus();
         OpenCGAHealthCheckMonitor.HealthCheckStatus status = result.first();
         if (status.isHealthy()) {
             logger.debug("HealthCheck : " + status);
-            ServiceTypesModel.MapResponse.Builder builder = ServiceTypesModel.MapResponse.newBuilder();
+            MapResponse.Builder builder = MapResponse.newBuilder();
             ObjectMap statusMap = new ObjectMap();
             try {
                 JacksonUtils.getDefaultObjectMapper().updateValue(statusMap, status);

@@ -7,7 +7,6 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.opencb.biodata.models.common.protobuf.service.ServiceTypesModel;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.opencga.core.common.ExceptionUtils;
 
@@ -15,11 +14,13 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import static org.opencb.opencga.server.grpc.GenericServiceModel.*;
+
 public class GrpcServerTest {
 
     private Server server;
-    private VariantServiceGrpc.VariantServiceBlockingStub variantServiceBlockingStub;
-    private AdminServiceGrpc.AdminServiceBlockingStub adminServiceBlockingStub;
+    private org.opencb.opencga.server.grpc.VariantServiceGrpc.VariantServiceBlockingStub variantServiceBlockingStub;
+    private org.opencb.opencga.server.grpc.AdminServiceGrpc.AdminServiceBlockingStub adminServiceBlockingStub;
     private int port;
 
     @Before
@@ -38,8 +39,8 @@ public class GrpcServerTest {
                 .build();
 
         // We use a blocking stub to execute the query to gRPC
-        variantServiceBlockingStub = VariantServiceGrpc.newBlockingStub(channel);
-        adminServiceBlockingStub = AdminServiceGrpc.newBlockingStub(channel);
+        variantServiceBlockingStub = org.opencb.opencga.server.grpc.VariantServiceGrpc.newBlockingStub(channel);
+        adminServiceBlockingStub = org.opencb.opencga.server.grpc.AdminServiceGrpc.newBlockingStub(channel);
 
     }
 
@@ -53,7 +54,7 @@ public class GrpcServerTest {
 
     @Test
     public void testIsAlive() throws Exception {
-        adminServiceBlockingStub.ping(GenericServiceModel.Request.newBuilder().setUser("me").build());
+        adminServiceBlockingStub.ping(Request.newBuilder().setUser("me").build());
     }
 
     @Test(expected = RuntimeException.class)
@@ -63,7 +64,7 @@ public class GrpcServerTest {
                 .usePlaintext()
                 .build();
 
-        AdminServiceGrpc.newBlockingStub(channel).ping(GenericServiceModel.Request.newBuilder().setUser("me").build());
+        org.opencb.opencga.server.grpc.AdminServiceGrpc.newBlockingStub(channel).ping(Request.newBuilder().setUser("me").build());
     }
 
     @Test
@@ -74,14 +75,14 @@ public class GrpcServerTest {
         queryMap.put("n", "10");
 
         // We create the OpenCGA gRPC request object with the query, queryOptions and sessionId
-        GenericServiceModel.Request request = GenericServiceModel.Request.newBuilder()
+        Request request = Request.newBuilder()
                 .putAllQuery(queryMap)
                 .build();
 
-        Iterator<GenericServiceModel.VariantResponse> variantIterator = variantServiceBlockingStub.query(request);
+        Iterator<VariantResponse> variantIterator = variantServiceBlockingStub.query(request);
         int count = 0;
         while (variantIterator.hasNext()) {
-            GenericServiceModel.VariantResponse next = variantIterator.next();
+            VariantResponse next = variantIterator.next();
             VariantProto.Variant variant = next.getVariant();
             System.out.println("Received variant: " + variant.getId());
             count++;
@@ -98,16 +99,16 @@ public class GrpcServerTest {
         queryMap.put("nFail", "5");
 
         // We create the OpenCGA gRPC request object with the query, queryOptions and sessionId
-        GenericServiceModel.Request request = GenericServiceModel.Request.newBuilder()
+        Request request = Request.newBuilder()
                 .putAllQuery(queryMap)
                 .build();
 
-        Iterator<GenericServiceModel.VariantResponse> variantIterator = variantServiceBlockingStub.query(request);
+        Iterator<VariantResponse> variantIterator = variantServiceBlockingStub.query(request);
         int count = 0;
         boolean failed = false;
         try {
             while (variantIterator.hasNext()) {
-                GenericServiceModel.VariantResponse next = variantIterator.next();
+                VariantResponse next = variantIterator.next();
                 if (StringUtils.isNotEmpty(next.getError())) {
                     failed = true;
                     Assert.assertEquals("Simulated failure at variant 5", next.getError());
@@ -127,17 +128,17 @@ public class GrpcServerTest {
         Assert.assertEquals(5, count);
     }
 
-    public static class TestAdminGrpcService extends AdminServiceGrpc.AdminServiceImplBase {
+    public static class TestAdminGrpcService extends org.opencb.opencga.server.grpc.AdminServiceGrpc.AdminServiceImplBase {
 
         @Override
-        public void ping(GenericServiceModel.Request request, StreamObserver<ServiceTypesModel.MapResponse> responseObserver) {
-            responseObserver.onNext(ServiceTypesModel.MapResponse.newBuilder().putValues("ping", "pong").build());
+        public void ping(Request request, StreamObserver<MapResponse> responseObserver) {
+            responseObserver.onNext(MapResponse.newBuilder().putValues("ping", "pong").build());
             responseObserver.onCompleted();
         }
 
         @Override
-        public void status(GenericServiceModel.Request request, StreamObserver<ServiceTypesModel.MapResponse> responseObserver) {
-            ServiceTypesModel.MapResponse response = ServiceTypesModel.MapResponse.newBuilder()
+        public void status(Request request, StreamObserver<MapResponse> responseObserver) {
+            MapResponse response = MapResponse.newBuilder()
                     .putValues("status", "running")
                     .build();
             responseObserver.onNext(response);
@@ -145,15 +146,15 @@ public class GrpcServerTest {
         }
     }
 
-    public static class TestVariantGrpcService extends VariantServiceGrpc.VariantServiceImplBase {
+    public static class TestVariantGrpcService extends org.opencb.opencga.server.grpc.VariantServiceGrpc.VariantServiceImplBase {
         @Override
-        public void query(GenericServiceModel.Request request, StreamObserver<GenericServiceModel.VariantResponse> responseObserver) {
+        public void query(Request request, StreamObserver<VariantResponse> responseObserver) {
             int n = Integer.parseInt(request.getQueryMap().get("n"));
             int nFail = Integer.parseInt(request.getQueryMap().getOrDefault("nFail", "-1"));
             for (int i = 0; i < n; i++) {
                 if (i == nFail) {
                     RuntimeException e = new RuntimeException("Simulated failure at variant " + i);
-                    GenericServiceModel.VariantResponse response = GenericServiceModel.VariantResponse.newBuilder()
+                    VariantResponse response = VariantResponse.newBuilder()
                             .setCount(i)
                             .setError(e.getMessage())
                             .setErrorFull(ExceptionUtils.prettyExceptionMessage(e))
@@ -166,7 +167,7 @@ public class GrpcServerTest {
                 VariantProto.Variant variant = VariantProto.Variant.newBuilder()
                         .setId("var" + i)
                         .build();
-                GenericServiceModel.VariantResponse response = GenericServiceModel.VariantResponse.newBuilder()
+                VariantResponse response = VariantResponse.newBuilder()
                         .setVariant(variant)
                         .setCount(i)
                         .build();

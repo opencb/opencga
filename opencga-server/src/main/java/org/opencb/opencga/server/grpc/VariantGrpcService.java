@@ -30,12 +30,14 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.opencb.opencga.server.grpc.GenericServiceModel.Request;
+import static org.opencb.opencga.server.grpc.GenericServiceModel.VariantResponse;
 import static org.opencb.opencga.server.grpc.VariantServiceGrpc.getQueryMethod;
 
 /**
  * Created by imedina on 29/12/15.
  */
-public class VariantGrpcService extends VariantServiceGrpc.VariantServiceImplBase {
+public class VariantGrpcService extends org.opencb.opencga.server.grpc.VariantServiceGrpc.VariantServiceImplBase {
 
     private final GenericGrpcService genericGrpcService;
 
@@ -48,16 +50,17 @@ public class VariantGrpcService extends VariantServiceGrpc.VariantServiceImplBas
     }
 
     @Override
-    public void query(GenericServiceModel.Request request, StreamObserver<GenericServiceModel.VariantResponse> responseObserver) {
+    public void query(Request request, StreamObserver<VariantResponse> responseObserver) {
         genericGrpcService.run(getQueryMethod(), request, (query, queryOptions) -> {
             VariantAvroToVariantProtoConverter converter = new VariantAvroToVariantProtoConverter();
             int i = 0;
-            List<GenericServiceModel.Event> events = null;
+            List<org.opencb.opencga.server.grpc.GenericServiceModel.Event> events = null;
             try (VariantDBIterator iterator = variantStorageManager.iterator(query, queryOptions, request.getToken())) {
                 if (iterator.getEvents() != null) {
                     events = new ArrayList<>(iterator.getEvents().size());
                     for (Event event : iterator.getEvents()) {
-                        GenericServiceModel.Event.Builder eventB = GenericServiceModel.Event.newBuilder();
+                        org.opencb.opencga.server.grpc.GenericServiceModel.Event.Builder eventB =
+                                org.opencb.opencga.server.grpc.GenericServiceModel.Event.newBuilder();
                         if (event.getMessage() != null) {
                             eventB.setMessage(event.getMessage());
                         }
@@ -77,23 +80,23 @@ public class VariantGrpcService extends VariantServiceGrpc.VariantServiceImplBas
                 while (iterator.hasNext()) {
                     Variant variant = iterator.next();
                     VariantProto.Variant variantProto = converter.convert(variant);
-                    GenericServiceModel.VariantResponse.Builder responseBuilder = GenericServiceModel.VariantResponse.newBuilder();
+                    VariantResponse.Builder responseBuilder = VariantResponse.newBuilder();
                     if (events != null) {
                         responseBuilder.addAllEvent(events);
                         events = null;
                     }
-                    GenericServiceModel.VariantResponse response = responseBuilder
+                    VariantResponse response = responseBuilder
                             .setVariant(variantProto)
                             .setCount(i++)
                             .build();
                     responseObserver.onNext(response);
                 }
             } catch (Exception e) {
-                GenericServiceModel.VariantResponse.Builder responseBuilder = GenericServiceModel.VariantResponse.newBuilder();
+                VariantResponse.Builder responseBuilder = VariantResponse.newBuilder();
                 if (events != null) {
                     responseBuilder.addAllEvent(events);
                 }
-                GenericServiceModel.VariantResponse response = responseBuilder
+                VariantResponse response = responseBuilder
                         .setError(e.getMessage())
                         .setErrorFull(ExceptionUtils.prettyExceptionMessage(e))
                         .setStackTrace(ExceptionUtils.prettyExceptionStackTrace(e))
