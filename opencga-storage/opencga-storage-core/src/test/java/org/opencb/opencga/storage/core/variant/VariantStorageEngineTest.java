@@ -649,7 +649,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         );
 
         VariantFileMetadata fileMetadata = variantStorageEngine.getVariantReaderUtils().readVariantFileMetadata(etlResult.getTransformResult());
-        checkTransformedVariants(etlResult.getTransformResult(), studyMetadata, fileMetadata.getStats().getVariantCount().intValue());
+        checkTransformedVariants(etlResult.getTransformResult(), studyMetadata, ((int) fileMetadata.getStats().getVariantCount()));
         VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
         checkLoadedVariants(dbAdaptor, studyMetadata, true, false, false, getExpectedNumLoadedVariants(fileMetadata));
 
@@ -740,9 +740,9 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         variantReader.close();
 
         if (expectedNumVariants < 0) {
-            expectedNumVariants = source.getStats().getVariantCount().intValue();
+            expectedNumVariants = (int) source.getStats().getVariantCount();
         } else {
-            assertEquals(expectedNumVariants, source.getStats().getVariantCount().intValue()); //9792
+            assertEquals(expectedNumVariants, (int) source.getStats().getVariantCount()); //9792
         }
         assertEquals(expectedNumVariants, numVariants); //9792
         logger.info("checkTransformedVariants time : " + (System.currentTimeMillis() - start) / 1000.0 + "s");
