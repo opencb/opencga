@@ -16,7 +16,7 @@ public class ExternalToolTypeTest extends TestCase {
             JobType.valueOf(toolType.name());
         }
         for (JobType value : JobType.values()) {
-            if (value != JobType.NATIVE) {
+            if (value != JobType.NATIVE_TOOL) {
                 ExternalToolType.valueOf(value.name());
             }
         }

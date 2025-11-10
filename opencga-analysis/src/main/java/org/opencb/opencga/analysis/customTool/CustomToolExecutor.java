@@ -78,8 +78,8 @@ public class CustomToolExecutor extends OpenCgaDockerToolScopeStudy {
         if (externalTool == null) {
             throw new ToolException("Custom tool '" + runParams.getId() + "' is null");
         }
-        if (externalTool.getType() != ExternalToolType.CUSTOM) {
-            throw new ToolException("User tool '" + runParams.getId() + "' is not of type " + ExternalToolType.CUSTOM);
+        if (externalTool.getType() != ExternalToolType.CUSTOM_TOOL) {
+            throw new ToolException("User tool '" + runParams.getId() + "' is not of type " + ExternalToolType.CUSTOM_TOOL);
         }
         if (externalTool.getContainer() == null) {
             throw new ToolException("User tool '" + runParams.getId() + "' does not have a docker object");

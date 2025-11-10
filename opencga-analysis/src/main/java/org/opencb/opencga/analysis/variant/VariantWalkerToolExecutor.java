@@ -95,8 +95,8 @@ public class VariantWalkerToolExecutor extends OpenCgaTool {
         if (externalTool == null) {
             throw new ToolException("Variant walker tool '" + runParams.getId() + "' is null");
         }
-        if (externalTool.getType() != ExternalToolType.WALKER) {
-            throw new ToolException("User tool '" + runParams.getId() + "' is not of type " + ExternalToolType.WALKER);
+        if (externalTool.getType() != ExternalToolType.VARIANT_WALKER) {
+            throw new ToolException("User tool '" + runParams.getId() + "' is not of type " + ExternalToolType.VARIANT_WALKER);
         }
         if (externalTool.getContainer() == null) {
             throw new ToolException("User tool '" + runParams.getId() + "' does not have a docker object");

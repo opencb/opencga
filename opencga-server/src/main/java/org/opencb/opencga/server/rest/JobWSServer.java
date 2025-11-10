@@ -136,7 +136,7 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = DeprecatedWorkflowRunParams.DESCRIPTION, required = true) JobRunParams params) {
         ToolInfo toolInfo = new ToolInfo()
                 .setId(params.getDocker().getId());
-        return submitJob(study, JobType.CUSTOM, toolInfo, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime,
+        return submitJob(study, JobType.CUSTOM_TOOL, toolInfo, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime,
                 jobPriority, dryRun);
     }
 
@@ -154,7 +154,7 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = "body", required = true) JobToolBuildParams params) {
-        return submitJob(study, JobType.NATIVE, CustomToolBuilder.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE_TOOL, CustomToolBuilder.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @GET

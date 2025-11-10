@@ -181,12 +181,12 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
 
     public OpenCGAResult<ExternalTool> createCustomTool(String studyStr, CustomToolCreateParams toolCreateParams, QueryOptions options,
                                                         String token) throws CatalogException {
-        return createGenericTool(studyStr, toolCreateParams, ExternalToolType.CUSTOM, options, token);
+        return createGenericTool(studyStr, toolCreateParams, ExternalToolType.CUSTOM_TOOL, options, token);
     }
 
     public OpenCGAResult<ExternalTool> createVariantWalkerTool(String studyStr, CustomToolCreateParams toolCreateParams,
                                                                QueryOptions options, String token) throws CatalogException {
-        return createGenericTool(studyStr, toolCreateParams, ExternalToolType.WALKER, options, token);
+        return createGenericTool(studyStr, toolCreateParams, ExternalToolType.VARIANT_WALKER, options, token);
     }
 
     private OpenCGAResult<ExternalTool> createGenericTool(String studyStr, CustomToolCreateParams toolCreateParams,
@@ -354,11 +354,11 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
     private static JobType toJobType(ExternalToolType type) throws CatalogException {
         JobType jobType;
         switch (type) {
-            case CUSTOM:
-                jobType = JobType.CUSTOM;
+            case CUSTOM_TOOL:
+                jobType = JobType.CUSTOM_TOOL;
                 break;
-            case WALKER:
-                jobType = JobType.WALKER;
+            case VARIANT_WALKER:
+                jobType = JobType.VARIANT_WALKER;
                 break;
             case WORKFLOW:
                 jobType = JobType.WORKFLOW;

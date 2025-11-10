@@ -1,5 +1,6 @@
 package org.opencb.opencga.app.migrations.v5.catalog;
 
+import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.UpdateOneModel;
 import org.apache.commons.collections4.CollectionUtils;
@@ -58,6 +59,15 @@ public class ExternalToolTask7610Migration extends MigrationTool {
 
             bulk.add(new UpdateOneModel<>(Filters.eq("_id", document.get("_id")), updateDocument.toFinalUpdateDocument()));
         });
+
+        // Update job type values
+        for (String col : Arrays.asList(OrganizationMongoDBAdaptorFactory.JOB_COLLECTION, OrganizationMongoDBAdaptorFactory.DELETED_JOB_COLLECTION)) {
+            MongoCollection<Document> mongoCollection = getMongoCollection(col);
+            mongoCollection.updateMany(Filters.eq("type", "NATIVE"), new Document("$set", new Document("type", "NATIVE_TOOL")));
+            mongoCollection.updateMany(Filters.eq("type", "CUSTOM"), new Document("$set", new Document("type", "CUSTOM_TOOL")));
+            mongoCollection.updateMany(Filters.eq("type", "WALKER"), new Document("$set", new Document("type", "VARIANT_WALKER")));
+        }
+
     }
 
 }

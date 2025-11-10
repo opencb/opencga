@@ -213,7 +213,7 @@ public class ExternalToolWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = "body", required = true) JobToolBuildParams params) {
-        return submitJob(study, JobType.NATIVE, CustomToolBuilder.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+        return submitJob(study, JobType.NATIVE_TOOL, CustomToolBuilder.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 
     @POST
@@ -269,7 +269,7 @@ public class ExternalToolWSServer extends OpenCGAWSServer {
             ToolInfo toolInfo = new ToolInfo()
                     .setId(params.getContainer().getName())
                     .setMinimumRequirements(params.getMinimumRequirements());
-            return submitJob(study, JobType.CUSTOM, toolInfo, runParams, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime,
+            return submitJob(study, JobType.CUSTOM_TOOL, toolInfo, runParams, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime,
                     jobPriority, dryRun);
         } catch (Exception e) {
             return createErrorResponse(e);
