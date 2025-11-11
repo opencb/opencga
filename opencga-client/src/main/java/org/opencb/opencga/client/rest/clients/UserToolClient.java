@@ -92,7 +92,7 @@ public class UserToolClient extends ParentClient {
      *       type: External tool type. Allowed types: [CUSTOM_TOOL, VARIANT_WALKER or WORKFLOW].
      *       scope: External tool scope. Allowed types: [CLINICAL_INTERPRETATION, SECONDARY_ANALYSIS, RESEARCH or OTHER].
      *       workflowRepositoryName: Workflow repository name.
-     *       dockerName: Docker name.
+     *       containerName: Container name.
      *       creationDate: Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
      *       modificationDate: Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
      *       acl: Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example:
@@ -207,7 +207,7 @@ public class UserToolClient extends ParentClient {
      *       type: External tool type. Allowed types: [CUSTOM_TOOL, VARIANT_WALKER or WORKFLOW].
      *       scope: External tool scope. Allowed types: [CLINICAL_INTERPRETATION, SECONDARY_ANALYSIS, RESEARCH or OTHER].
      *       workflowRepositoryName: Workflow repository name.
-     *       dockerName: Docker name.
+     *       containerName: Container name.
      *       creationDate: Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
      *       modificationDate: Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
      *       acl: Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example:
@@ -245,7 +245,7 @@ public class UserToolClient extends ParentClient {
      *       type: External tool type. Allowed types: [CUSTOM_TOOL, VARIANT_WALKER or WORKFLOW].
      *       scope: External tool scope. Allowed types: [CLINICAL_INTERPRETATION, SECONDARY_ANALYSIS, RESEARCH or OTHER].
      *       workflowRepositoryName: Workflow repository name.
-     *       dockerName: Docker name.
+     *       containerName: Container name.
      *       creationDate: Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
      *       modificationDate: Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
      *       acl: Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example:
@@ -334,7 +334,7 @@ public class UserToolClient extends ParentClient {
     }
 
     /**
-     * Execute a user tool of type WORKFLOW.
+     * Run a user tool of type WORKFLOW.
      * @param data Workflow tool run parameters.
      * @param params Map containing any of the following optional parameters.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.

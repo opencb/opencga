@@ -185,7 +185,7 @@ public class UserToolsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("type", commandOptions.type);
         queryParams.putIfNotEmpty("scope", commandOptions.scope);
         queryParams.putIfNotEmpty("workflowRepositoryName", commandOptions.workflowRepositoryName);
-        queryParams.putIfNotEmpty("dockerName", commandOptions.dockerName);
+        queryParams.putIfNotEmpty("containerName", commandOptions.containerName);
         queryParams.putIfNotEmpty("creationDate", commandOptions.creationDate);
         queryParams.putIfNotEmpty("modificationDate", commandOptions.modificationDate);
         queryParams.putIfNotEmpty("acl", commandOptions.acl);
@@ -410,7 +410,7 @@ public class UserToolsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("type", commandOptions.type);
         queryParams.putIfNotEmpty("scope", commandOptions.scope);
         queryParams.putIfNotEmpty("workflowRepositoryName", commandOptions.workflowRepositoryName);
-        queryParams.putIfNotEmpty("dockerName", commandOptions.dockerName);
+        queryParams.putIfNotEmpty("containerName", commandOptions.containerName);
         queryParams.putIfNotEmpty("creationDate", commandOptions.creationDate);
         queryParams.putIfNotEmpty("modificationDate", commandOptions.modificationDate);
         queryParams.putIfNotEmpty("acl", commandOptions.acl);
@@ -445,7 +445,7 @@ public class UserToolsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("type", commandOptions.type);
         queryParams.putIfNotEmpty("scope", commandOptions.scope);
         queryParams.putIfNotEmpty("workflowRepositoryName", commandOptions.workflowRepositoryName);
-        queryParams.putIfNotEmpty("dockerName", commandOptions.dockerName);
+        queryParams.putIfNotEmpty("containerName", commandOptions.containerName);
         queryParams.putIfNotEmpty("creationDate", commandOptions.creationDate);
         queryParams.putIfNotEmpty("modificationDate", commandOptions.modificationDate);
         queryParams.putIfNotEmpty("acl", commandOptions.acl);
