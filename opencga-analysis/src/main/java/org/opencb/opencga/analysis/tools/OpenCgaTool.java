@@ -358,7 +358,9 @@ public abstract class OpenCgaTool {
      * @throws Exception if the parameters are not correct
      */
     protected void check() throws Exception {
-        study = getStudyFqn();
+        if (getTool().scope() == Tool.Scope.STUDY) {
+            study = getStudyFqn();
+        }
     }
 
     /**
@@ -384,6 +386,10 @@ public abstract class OpenCgaTool {
      */
     public final String getId() {
         return this.getClass().getAnnotation(Tool.class).id();
+    }
+
+    protected final Tool getTool() {
+        return this.getClass().getAnnotation(Tool.class);
     }
 
     /**
