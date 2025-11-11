@@ -935,6 +935,18 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
         return null;
     }
 
+    protected void fixQueryObject(Query query) {
+        super.fixQueryObject(query);
+        if (query.containsKey(ParamConstants.EXTERNAL_TOOL_CONTAINER_NAME_PARAM)) {
+            query.put(ExternalToolDBAdaptor.QueryParams.CONTAINER_NAME.key(), query.get(ParamConstants.EXTERNAL_TOOL_CONTAINER_NAME_PARAM));
+            query.remove(ParamConstants.EXTERNAL_TOOL_CONTAINER_NAME_PARAM);
+        }
+        if (query.containsKey(ParamConstants.EXTERNAL_TOOL_WORKFLOW_REPOSITORY_NAME_PARAM)) {
+            query.put(WORKFLOW_REPOSITORY_NAME.key(), query.get(ParamConstants.EXTERNAL_TOOL_WORKFLOW_REPOSITORY_NAME_PARAM));
+            query.remove(ParamConstants.EXTERNAL_TOOL_WORKFLOW_REPOSITORY_NAME_PARAM);
+        }
+    }
+
     private ExternalToolDBAdaptor.QueryParams getFieldFilter(List<String> idList) throws CatalogException {
         ExternalToolDBAdaptor.QueryParams idQueryParam = null;
         for (String entry : idList) {

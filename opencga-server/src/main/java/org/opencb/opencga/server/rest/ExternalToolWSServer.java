@@ -90,7 +90,7 @@ public class ExternalToolWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.EXTERNAL_TOOL_TYPE_DESCRIPTION) @QueryParam(ParamConstants.EXTERNAL_TOOL_TYPE_PARAM) String type,
             @ApiParam(value = ParamConstants.EXTERNAL_TOOL_SCOPE_DESCRIPTION) @QueryParam(ParamConstants.EXTERNAL_TOOL_SCOPE_PARAM) String scope,
             @ApiParam(value = ParamConstants.EXTERNAL_TOOL_WORKFLOW_REPOSITORY_NAME_DESCRIPTION) @QueryParam(ParamConstants.EXTERNAL_TOOL_WORKFLOW_REPOSITORY_NAME_PARAM) String repositoryName,
-            @ApiParam(value = ParamConstants.EXTERNAL_TOOL_DOCKER_NAME_DESCRIPTION) @QueryParam(ParamConstants.EXTERNAL_TOOL_DOCKER_NAME_PARAM) String dockerName,
+            @ApiParam(value = ParamConstants.EXTERNAL_TOOL_CONTAINER_NAME_DESCRIPTION) @QueryParam(ParamConstants.EXTERNAL_TOOL_CONTAINER_NAME_PARAM) String containerName,
             @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.CREATION_DATE_PARAM) String creationDate,
             @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.MODIFICATION_DATE_PARAM) String modificationDate,
             @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
@@ -118,7 +118,7 @@ public class ExternalToolWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.EXTERNAL_TOOL_TYPE_DESCRIPTION) @QueryParam(ParamConstants.EXTERNAL_TOOL_TYPE_PARAM) String type,
             @ApiParam(value = ParamConstants.EXTERNAL_TOOL_SCOPE_DESCRIPTION) @QueryParam(ParamConstants.EXTERNAL_TOOL_SCOPE_PARAM) String scope,
             @ApiParam(value = ParamConstants.EXTERNAL_TOOL_WORKFLOW_REPOSITORY_NAME_DESCRIPTION) @QueryParam(ParamConstants.EXTERNAL_TOOL_WORKFLOW_REPOSITORY_NAME_PARAM) String repositoryName,
-            @ApiParam(value = ParamConstants.EXTERNAL_TOOL_DOCKER_NAME_DESCRIPTION) @QueryParam(ParamConstants.EXTERNAL_TOOL_DOCKER_NAME_PARAM) String dockerName,
+            @ApiParam(value = ParamConstants.EXTERNAL_TOOL_CONTAINER_NAME_DESCRIPTION) @QueryParam(ParamConstants.EXTERNAL_TOOL_CONTAINER_NAME_PARAM) String dockerName,
             @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.CREATION_DATE_PARAM) String creationDate,
             @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.MODIFICATION_DATE_PARAM) String modificationDate,
             @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
@@ -149,7 +149,7 @@ public class ExternalToolWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.EXTERNAL_TOOL_TYPE_DESCRIPTION) @QueryParam(ParamConstants.EXTERNAL_TOOL_TYPE_PARAM) String type,
             @ApiParam(value = ParamConstants.EXTERNAL_TOOL_SCOPE_DESCRIPTION) @QueryParam(ParamConstants.EXTERNAL_TOOL_SCOPE_PARAM) String scope,
             @ApiParam(value = ParamConstants.EXTERNAL_TOOL_WORKFLOW_REPOSITORY_NAME_DESCRIPTION) @QueryParam(ParamConstants.EXTERNAL_TOOL_WORKFLOW_REPOSITORY_NAME_PARAM) String repositoryName,
-            @ApiParam(value = ParamConstants.EXTERNAL_TOOL_DOCKER_NAME_DESCRIPTION) @QueryParam(ParamConstants.EXTERNAL_TOOL_DOCKER_NAME_PARAM) String dockerName,
+            @ApiParam(value = ParamConstants.EXTERNAL_TOOL_CONTAINER_NAME_DESCRIPTION) @QueryParam(ParamConstants.EXTERNAL_TOOL_CONTAINER_NAME_PARAM) String dockerName,
             @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.CREATION_DATE_PARAM) String creationDate,
             @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.MODIFICATION_DATE_PARAM) String modificationDate,
             @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
@@ -304,11 +304,7 @@ public class ExternalToolWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(value = "body") WorkflowUpdateParams parameters) {
-        try {
-            return createOkResponse(externalToolManager.updateWorkflow(studyStr, toolId, parameters, queryOptions, token), "Workflow update success");
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+        return run(() -> externalToolManager.updateWorkflow(studyStr, toolId, parameters, queryOptions, token));
     }
 
     @POST
@@ -324,8 +320,8 @@ public class ExternalToolWSServer extends OpenCGAWSServer {
     @POST
     @Path("/workflow/run")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Execute a user tool of type WORKFLOW", response = Job.class)
-    public Response executeWorkflow(
+    @ApiOperation(value = "Run a user tool of type WORKFLOW", response = Job.class)
+    public Response runWorkflow(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,

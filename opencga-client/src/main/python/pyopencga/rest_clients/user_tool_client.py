@@ -64,7 +64,7 @@ class UserTool(_ParentRestClient):
         :param str scope: External tool scope. Allowed types:
             [CLINICAL_INTERPRETATION, SECONDARY_ANALYSIS, RESEARCH or OTHER].
         :param str workflow_repository_name: Workflow repository name.
-        :param str docker_name: Docker name.
+        :param str container_name: Container name.
         :param str creation_date: Creation date. Format: yyyyMMddHHmmss.
             Examples: >2018, 2017-2018, <201805.
         :param str modification_date: Modification date. Format:
@@ -204,7 +204,7 @@ class UserTool(_ParentRestClient):
         :param str scope: External tool scope. Allowed types:
             [CLINICAL_INTERPRETATION, SECONDARY_ANALYSIS, RESEARCH or OTHER].
         :param str workflow_repository_name: Workflow repository name.
-        :param str docker_name: Docker name.
+        :param str container_name: Container name.
         :param str creation_date: Creation date. Format: yyyyMMddHHmmss.
             Examples: >2018, 2017-2018, <201805.
         :param str modification_date: Modification date. Format:
@@ -258,7 +258,7 @@ class UserTool(_ParentRestClient):
         :param str scope: External tool scope. Allowed types:
             [CLINICAL_INTERPRETATION, SECONDARY_ANALYSIS, RESEARCH or OTHER].
         :param str workflow_repository_name: Workflow repository name.
-        :param str docker_name: Docker name.
+        :param str container_name: Container name.
         :param str creation_date: Creation date. Format: yyyyMMddHHmmss.
             Examples: >2018, 2017-2018, <201805.
         :param str modification_date: Modification date. Format:
@@ -353,7 +353,7 @@ class UserTool(_ParentRestClient):
 
     def run_workflow(self, data=None, **options):
         """
-        Execute a user tool of type WORKFLOW.
+        Run a user tool of type WORKFLOW.
         PATH: /{apiVersion}/tools/workflow/run
 
         :param dict data: Workflow tool run parameters. (REQUIRED)

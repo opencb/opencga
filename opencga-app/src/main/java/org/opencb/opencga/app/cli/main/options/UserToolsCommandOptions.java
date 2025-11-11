@@ -141,8 +141,8 @@ public class UserToolsCommandOptions {
         @Parameter(names = {"--workflow-repository-name"}, description = "Workflow repository name", required = false, arity = 1)
         public String workflowRepositoryName; 
     
-        @Parameter(names = {"--docker-name"}, description = "Docker name", required = false, arity = 1)
-        public String dockerName; 
+        @Parameter(names = {"--container-name"}, description = "Container name", required = false, arity = 1)
+        public String containerName; 
     
         @Parameter(names = {"--creation-date", "--cd"}, description = "Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
         public String creationDate; 
@@ -484,8 +484,8 @@ public class UserToolsCommandOptions {
         @Parameter(names = {"--workflow-repository-name"}, description = "Workflow repository name", required = false, arity = 1)
         public String workflowRepositoryName; 
     
-        @Parameter(names = {"--docker-name"}, description = "Docker name", required = false, arity = 1)
-        public String dockerName; 
+        @Parameter(names = {"--container-name"}, description = "Container name", required = false, arity = 1)
+        public String containerName; 
     
         @Parameter(names = {"--creation-date", "--cd"}, description = "Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
         public String creationDate; 
@@ -561,8 +561,8 @@ public class UserToolsCommandOptions {
         @Parameter(names = {"--workflow-repository-name"}, description = "Workflow repository name", required = false, arity = 1)
         public String workflowRepositoryName; 
     
-        @Parameter(names = {"--docker-name"}, description = "Docker name", required = false, arity = 1)
-        public String dockerName; 
+        @Parameter(names = {"--container-name"}, description = "Container name", required = false, arity = 1)
+        public String containerName; 
     
         @Parameter(names = {"--creation-date", "--cd"}, description = "Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
         public String creationDate; 
@@ -1072,7 +1072,7 @@ public class UserToolsCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"workflow-run"}, commandDescription ="Execute a user tool of type WORKFLOW")
+    @Parameters(commandNames = {"workflow-run"}, commandDescription ="Run a user tool of type WORKFLOW")
     public class RunWorkflowCommandOptions {
     
         @ParametersDelegate

@@ -20,13 +20,13 @@
 #' | endpointName | Endpoint WS | parameters accepted |
 #' | -- | :-- | --: |
 #' | updateAcl | /{apiVersion}/tools/acl/{members}/update | study, members[*], action[*], body[*] |
-#' | aggregationStats | /{apiVersion}/tools/aggregationStats | study, id, name, uuid, tags, draft, internal.registrationUserId, type, scope, workflowRepositoryName, dockerName, creationDate, modificationDate, acl, release, snapshot, deleted, field |
+#' | aggregationStats | /{apiVersion}/tools/aggregationStats | study, id, name, uuid, tags, draft, internal.registrationUserId, type, scope, workflowRepositoryName, containerName, creationDate, modificationDate, acl, release, snapshot, deleted, field |
 #' | runCustomBuilder | /{apiVersion}/tools/custom/builder/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | createCustom | /{apiVersion}/tools/custom/create | include, exclude, study, includeResult, body[*] |
 #' | runCustomDocker | /{apiVersion}/tools/custom/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | updateCustom | /{apiVersion}/tools/custom/{toolId}/update | include, exclude, toolId[*], study, includeResult, body |
-#' | distinct | /{apiVersion}/tools/distinct | study, id, name, uuid, tags, draft, internal.registrationUserId, type, scope, workflowRepositoryName, dockerName, creationDate, modificationDate, acl, release, snapshot, deleted, field[*] |
-#' | search | /{apiVersion}/tools/search | include, exclude, limit, skip, count, study, id, name, uuid, tags, draft, internal.registrationUserId, type, scope, workflowRepositoryName, dockerName, creationDate, modificationDate, acl, release, snapshot, deleted |
+#' | distinct | /{apiVersion}/tools/distinct | study, id, name, uuid, tags, draft, internal.registrationUserId, type, scope, workflowRepositoryName, containerName, creationDate, modificationDate, acl, release, snapshot, deleted, field[*] |
+#' | search | /{apiVersion}/tools/search | include, exclude, limit, skip, count, study, id, name, uuid, tags, draft, internal.registrationUserId, type, scope, workflowRepositoryName, containerName, creationDate, modificationDate, acl, release, snapshot, deleted |
 #' | createWalker | /{apiVersion}/tools/walker/create | include, exclude, study, includeResult, body[*] |
 #' | runWalker | /{apiVersion}/tools/walker/run | project, study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | createWorkflow | /{apiVersion}/tools/workflow/create | include, exclude, study, includeResult, body[*] |
@@ -68,7 +68,7 @@ setMethod("usertoolClient", "OpencgaR", function(OpencgaR, members, toolId, tool
         #' @param type External tool type. Allowed types: [CUSTOM_TOOL, VARIANT_WALKER or WORKFLOW].
         #' @param scope External tool scope. Allowed types: [CLINICAL_INTERPRETATION, SECONDARY_ANALYSIS, RESEARCH or OTHER].
         #' @param workflowRepositoryName Workflow repository name.
-        #' @param dockerName Docker name.
+        #' @param containerName Container name.
         #' @param creationDate Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         #' @param modificationDate Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         #' @param acl Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators can query by this field. .
@@ -141,7 +141,7 @@ setMethod("usertoolClient", "OpencgaR", function(OpencgaR, members, toolId, tool
         #' @param type External tool type. Allowed types: [CUSTOM_TOOL, VARIANT_WALKER or WORKFLOW].
         #' @param scope External tool scope. Allowed types: [CLINICAL_INTERPRETATION, SECONDARY_ANALYSIS, RESEARCH or OTHER].
         #' @param workflowRepositoryName Workflow repository name.
-        #' @param dockerName Docker name.
+        #' @param containerName Container name.
         #' @param creationDate Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         #' @param modificationDate Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         #' @param acl Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators can query by this field. .
@@ -169,7 +169,7 @@ setMethod("usertoolClient", "OpencgaR", function(OpencgaR, members, toolId, tool
         #' @param type External tool type. Allowed types: [CUSTOM_TOOL, VARIANT_WALKER or WORKFLOW].
         #' @param scope External tool scope. Allowed types: [CLINICAL_INTERPRETATION, SECONDARY_ANALYSIS, RESEARCH or OTHER].
         #' @param workflowRepositoryName Workflow repository name.
-        #' @param dockerName Docker name.
+        #' @param containerName Container name.
         #' @param creationDate Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         #' @param modificationDate Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         #' @param acl Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators can query by this field. .
@@ -222,7 +222,7 @@ setMethod("usertoolClient", "OpencgaR", function(OpencgaR, members, toolId, tool
                 subcategoryId=NULL, action="import", params=params, httpMethod="POST", as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/tools/workflow/run:
-        #' Execute a user tool of type WORKFLOW.
+        #' Run a user tool of type WORKFLOW.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
         #' @param jobId Job ID. It must be a unique string within the study. An ID will be autogenerated automatically if not provided.
         #' @param jobDescription Job description.
