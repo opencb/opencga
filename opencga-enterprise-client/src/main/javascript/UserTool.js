@@ -60,7 +60,7 @@ export default class UserTool extends OpenCGAParentClass {
     * @param {String} [params.type] - External tool type. Allowed types: [CUSTOM_TOOL, VARIANT_WALKER or WORKFLOW].
     * @param {String} [params.scope] - External tool scope. Allowed types: [CLINICAL_INTERPRETATION, SECONDARY_ANALYSIS, RESEARCH or OTHER].
     * @param {String} [params.workflowRepositoryName] - Workflow repository name.
-    * @param {String} [params.dockerName] - Docker name.
+    * @param {String} [params.containerName] - Container name.
     * @param {String} [params.creationDate] - Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
     * @param {String} [params.modificationDate] - Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
     * @param {String} [params.acl] - Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}.
@@ -160,7 +160,7 @@ export default class UserTool extends OpenCGAParentClass {
     * @param {String} [params.type] - External tool type. Allowed types: [CUSTOM_TOOL, VARIANT_WALKER or WORKFLOW].
     * @param {String} [params.scope] - External tool scope. Allowed types: [CLINICAL_INTERPRETATION, SECONDARY_ANALYSIS, RESEARCH or OTHER].
     * @param {String} [params.workflowRepositoryName] - Workflow repository name.
-    * @param {String} [params.dockerName] - Docker name.
+    * @param {String} [params.containerName] - Container name.
     * @param {String} [params.creationDate] - Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
     * @param {String} [params.modificationDate] - Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
     * @param {String} [params.acl] - Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}.
@@ -195,7 +195,7 @@ export default class UserTool extends OpenCGAParentClass {
     * @param {String} [params.type] - External tool type. Allowed types: [CUSTOM_TOOL, VARIANT_WALKER or WORKFLOW].
     * @param {String} [params.scope] - External tool scope. Allowed types: [CLINICAL_INTERPRETATION, SECONDARY_ANALYSIS, RESEARCH or OTHER].
     * @param {String} [params.workflowRepositoryName] - Workflow repository name.
-    * @param {String} [params.dockerName] - Docker name.
+    * @param {String} [params.containerName] - Container name.
     * @param {String} [params.creationDate] - Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
     * @param {String} [params.modificationDate] - Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
     * @param {String} [params.acl] - Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}.
@@ -268,7 +268,7 @@ export default class UserTool extends OpenCGAParentClass {
         return this._post("tools", null, "workflow", null, "import", data, params);
     }
 
-    /** Execute a user tool of type WORKFLOW
+    /** Run a user tool of type WORKFLOW
     * @param {Object} data - Workflow tool run parameters.
     * @param {Object} [params] - The Object containing the following optional parameters:
     * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
