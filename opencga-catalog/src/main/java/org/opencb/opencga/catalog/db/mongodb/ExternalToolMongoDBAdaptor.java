@@ -334,9 +334,6 @@ public class ExternalToolMongoDBAdaptor extends CatalogMongoDBAdaptor implements
         final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.DESCRIPTION.key(), QueryParams.SCOPE.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
-        final String[] acceptedStringListParams = {QueryParams.TAGS.key()};
-        filterStringListParams(parameters, document.getSet(), acceptedStringListParams);
-
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
