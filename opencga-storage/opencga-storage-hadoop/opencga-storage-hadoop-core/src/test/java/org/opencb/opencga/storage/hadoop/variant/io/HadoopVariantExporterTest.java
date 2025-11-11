@@ -92,27 +92,29 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
         URI inputUri = VariantStorageBaseTest.getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz");
 
         VariantStorageBaseTest.runDefaultETL(inputUri, variantStorageEngine, new StudyMetadata(0, study1),
-                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true)
+                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false)
                         .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
         );
 
         inputUri = VariantStorageBaseTest.getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz");
         VariantStorageBaseTest.runDefaultETL(inputUri, variantStorageEngine, new StudyMetadata(0, study1),
-                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true)
+                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false)
                         .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
         );
 
         inputUri = VariantStorageBaseTest.getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz");
         VariantStorageBaseTest.runDefaultETL(inputUri, variantStorageEngine, new StudyMetadata(0, study2),
-                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true)
+                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false)
                         .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
         );
 
         inputUri = VariantStorageBaseTest.getResourceUri("variant-test-unusual-contigs.vcf");
         VariantStorageBaseTest.runDefaultETL(inputUri, variantStorageEngine, new StudyMetadata(0, study3),
-                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true)
+                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false)
                         .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
         );
+
+        variantStorageEngine.annotate(newOutputUri(), new ObjectMap());
 
         if (HBaseCompat.getInstance().isSolrTestingAvailable()) {
             variantStorageEngine.secondaryIndex();
@@ -296,6 +298,17 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
         URI uri = getOutputUri(fileName);
         variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.AVRO,
                 null, new Query(STUDY.key(), study1).append(GENOTYPE.key(), "NA12877:0/1;NA12878:1/1"),
+                new QueryOptions(HadoopVariantExporter.SKIP_SMALL_QUERY, true));
+
+        copyToLocal(fileName, uri);
+    }
+
+    @Test
+    public void exportIndexMultiSampleFile() throws Exception {
+        String fileName = "some_variants.sample_index.vcf";
+        URI uri = getOutputUri(fileName);
+        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.VCF,
+                null, new Query(STUDY.key(), study3).append(SAMPLE.key(), "SAMPLE_1").append(REGION.key(), "13C.DOT"),
                 new QueryOptions(HadoopVariantExporter.SKIP_SMALL_QUERY, true));
 
         copyToLocal(fileName, uri);

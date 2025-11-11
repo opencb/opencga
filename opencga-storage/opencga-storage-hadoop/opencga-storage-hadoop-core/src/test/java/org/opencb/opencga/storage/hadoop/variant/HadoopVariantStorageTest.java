@@ -87,6 +87,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageTest;
 import org.opencb.opencga.storage.hadoop.HBaseCompat;
+import org.opencb.opencga.storage.hadoop.HBaseCompatApi;
 import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDriver;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchemaManager;
@@ -260,6 +261,8 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
 //                conf.setBoolean(QueryServices.IS_NAMESPACE_MAPPING_ENABLED, true);
                 conf.setBoolean("phoenix.schema.isNamespaceMappingEnabled", true);
+                conf.setBoolean("phoenix.table.ttl.enabled", false);
+                conf.setInt("phoenix.client.maxMetaDataCacheSize", 268435456);
 
                 // Zookeeper always with the same clientPort.
 //                conf.setInt("test.hbase.zookeeper.property.clientPort", 55419);
@@ -288,6 +291,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
 //                checkHBaseMiniCluster();
             }
+            Assert.assertTrue(HBaseCompatApi.getInstance().isTestingAvailable());
         }
 
         @Override

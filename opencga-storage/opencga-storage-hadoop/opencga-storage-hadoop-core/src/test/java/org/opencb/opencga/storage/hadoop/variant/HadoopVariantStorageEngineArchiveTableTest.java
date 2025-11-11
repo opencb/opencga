@@ -89,7 +89,7 @@ public class HadoopVariantStorageEngineArchiveTableTest extends VariantStorageBa
             VariantSetStats stats = mm.getVariantFileMetadata(studyId, fileMetadata.getId()).getStats();
             stats.getChromosomeCount().forEach((s, l) -> assertEquals("chromosome : " + s, l, variantChromosomeCounts.getOrDefault(s, 0L)));
             stats.getTypeCount().forEach((s, l) -> assertEquals("variant type : " + s, l, variantCounts.getOrDefault(VariantType.valueOf(s), 0L)));
-            assertEquals(stats.getVariantCount().intValue(), numVariants[0]);
+            assertEquals((int) stats.getVariantCount(), numVariants[0]);
             assertTrue(fileMetadata.getAttributes().getBoolean(VariantStorageOptions.LOAD_ARCHIVE.key()));
         }
     }
