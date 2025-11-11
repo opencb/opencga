@@ -1829,7 +1829,7 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
                         .from(actionMap, ClinicalAnalysisDBAdaptor.ReportQueryParams.SIGNATURES.key(),
                                 ParamUtils.AddRemoveReplaceAction.ADD);
                 if (basicOperation != ParamUtils.AddRemoveReplaceAction.ADD) {
-                    for (Signature signature : report.getSignatures()) {
+                    for (ReportSignature signature : report.getSignatures()) {
                         signature.setDate(TimeUtils.getTime());
                         signature.setSignedBy(userId);
                     }

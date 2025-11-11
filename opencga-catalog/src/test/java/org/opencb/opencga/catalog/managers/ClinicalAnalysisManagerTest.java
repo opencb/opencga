@@ -452,7 +452,7 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
 
         ClinicalReport report = new ClinicalReport("overview", new ClinicalDiscussion("me", TimeUtils.getTime(), "text"), "recommendation",
                 "methodology", "limitations", "Experimental procedure", new ClinicalDiscussion("me", TimeUtils.getTime(), "text"),
-                Collections.singletonList(new Signature("signature", "", "", "")), "",
+                Collections.singletonList(new ReportSignature("signature", "", "", "")), "",
                 Arrays.asList(
                         new ClinicalComment().setMessage("comment1"),
                         new ClinicalComment().setMessage("comment2")

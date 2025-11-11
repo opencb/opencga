@@ -37,7 +37,7 @@ public class ClinicalReport {
     private ClinicalDiscussion conclusion;
 
     @DataField(id = "signatures", description = "Signatures of the report")
-    private List<Signature> signatures;
+    private List<ReportSignature> signatures;
 
     @DataField(id = "date", description = FieldConstants.CLINICAL_REPORT_DATE)
     private String date;
@@ -90,7 +90,7 @@ public class ClinicalReport {
     }
 
     public ClinicalReport(String overview, ClinicalDiscussion discussion, String recommendation, String methodology, String limitations,
-                          String experimentalProcedure, ClinicalDiscussion conclusion, List<Signature> signatures, String date,
+                          String experimentalProcedure, ClinicalDiscussion conclusion, List<ReportSignature> signatures, String date,
                           List<ClinicalComment> comments, List<MiniPubmed> references, List<String> images,
                           Map<String, Object> attributes) {
         this.overview = overview;
@@ -197,11 +197,11 @@ public class ClinicalReport {
         return this;
     }
 
-    public List<Signature> getSignatures() {
+    public List<ReportSignature> getSignatures() {
         return signatures;
     }
 
-    public ClinicalReport setSignatures(List<Signature> signatures) {
+    public ClinicalReport setSignatures(List<ReportSignature> signatures) {
         this.signatures = signatures;
         return this;
     }

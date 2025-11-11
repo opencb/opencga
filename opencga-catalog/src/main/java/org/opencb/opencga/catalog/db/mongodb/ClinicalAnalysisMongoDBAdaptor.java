@@ -163,8 +163,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
         List<Document> signaturesParamList = new LinkedList<>();
         String signedByKey = ReportQueryParams.SIGNATURES_SIGNED_BY.key().replace(ReportQueryParams.SIGNATURES.key() + ".", "");
         for (Object signature : parameters.getAsList(ReportQueryParams.SIGNATURES.key())) {
-            if (signature instanceof Signature) {
-                signaturesParamList.add(new Document(signedByKey, ((Signature) signature).getSignedBy()));
+            if (signature instanceof ReportSignature) {
+                signaturesParamList.add(new Document(signedByKey, ((ReportSignature) signature).getSignedBy()));
             } else if (signature instanceof Document) {
                 signaturesParamList.add(new Document(signedByKey, ((Document) signature).get(signedByKey)));
             } else {
