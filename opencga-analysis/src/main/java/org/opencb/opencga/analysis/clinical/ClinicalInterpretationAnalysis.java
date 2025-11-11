@@ -68,8 +68,8 @@ import static org.opencb.opencga.core.tools.ResourceManager.ANALYSIS_DIRNAME;
 @Tool(id = ClinicalInterpretationAnalysis.ID, resource = Enums.Resource.CLINICAL)
 public class ClinicalInterpretationAnalysis extends InterpretationAnalysis {
 
-    public static final String ID = "clinical-interpretation";
-    public static final String DESCRIPTION = "Run clinical interpretation analysis";
+    public static final String ID = "interpretation-custom-tiering";
+    public static final String DESCRIPTION = "Run clinical interpretation analysis based on tiering";
 
     public static final String PANEL_REGION_QUERY_KEY = "PANEL_REGION";
     public static final String REGION = "REGION";

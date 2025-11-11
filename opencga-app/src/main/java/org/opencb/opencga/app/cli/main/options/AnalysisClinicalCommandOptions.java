@@ -800,7 +800,7 @@ public class AnalysisClinicalCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"interpreter-custom-tiering-run"}, commandDescription ="Run clinical interpretation analysis")
+    @Parameters(commandNames = {"interpreter-custom-tiering-run"}, commandDescription ="Run clinical interpretation analysis based on tiering")
     public class RunInterpreterCustomTieringCommandOptions {
     
         @ParametersDelegate

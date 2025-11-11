@@ -378,11 +378,11 @@ class ClinicalAnalysis(_ParentRestClient):
 
     def run_interpreter_custom_tiering(self, data=None, **options):
         """
-        Run clinical interpretation analysis.
+        Run clinical interpretation analysis based on tiering.
         PATH: /{apiVersion}/analysis/clinical/interpreter/customTiering/run
 
         :param dict data: Parameters to execute the clinical interpretation
-            analysis. (REQUIRED)
+            analysis based on tiering. (REQUIRED)
         :param str study: Study [[organization@]project:]study where study and
             project can be either the ID or UUID.
         :param str job_id: Job ID. It must be a unique string within the
