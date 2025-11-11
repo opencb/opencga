@@ -53,11 +53,11 @@ public abstract class VariantDBIterator extends CloseableIterator<Variant> {
         if (c != 0) {
             return c;
         }
-        c = v1.getStart().compareTo(v2.getStart());
+        c = Integer.compare(v1.getStart(), v2.getStart());
         if (c != 0) {
             return c;
         }
-        c = v1.getEnd().compareTo(v2.getEnd());
+        c = Integer.compare(v1.getEnd(), v2.getEnd());
         if (c != 0) {
             return c;
         }

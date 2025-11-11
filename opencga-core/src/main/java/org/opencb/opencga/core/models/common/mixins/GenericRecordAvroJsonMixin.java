@@ -23,6 +23,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-@JsonIgnoreProperties({"schema"})
+@JsonIgnoreProperties({"schema", "specificData"})
 public abstract class GenericRecordAvroJsonMixin {
 }

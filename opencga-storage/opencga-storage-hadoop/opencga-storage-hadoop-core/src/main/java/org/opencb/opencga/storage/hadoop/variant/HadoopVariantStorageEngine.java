@@ -71,6 +71,7 @@ import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantAggregat
 import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
+import org.opencb.opencga.storage.hadoop.HBaseCompatApi;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.io.HDFSIOConnector;
 import org.opencb.opencga.storage.hadoop.utils.DeleteHBaseColumnDriver;
@@ -1463,6 +1464,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     public void testConnection() throws StorageEngineException {
         try {
             Configuration conf = getHadoopConfiguration();
+            // Ensure current configuration is valid
+            HBaseCompatApi.getInstance().validateConfiguration(conf);
             HBaseAdmin.available(conf);
 //            new PhoenixHelper(conf).newJdbcConnection().getMetaData().getTables(null, null, null, null);
         } catch (Exception e) {

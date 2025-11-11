@@ -3,7 +3,6 @@ package org.opencb.opencga.storage.hadoop.variant.mr;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.lmax.disruptor.EventFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -25,7 +24,6 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.TaskType;
 import org.apache.hadoop.mapreduce.lib.db.DBWritable;
 import org.apache.phoenix.mapreduce.util.PhoenixMapReduceUtil;
-import org.apache.tephra.TransactionSystemClient;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -40,6 +38,7 @@ import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
+import org.opencb.opencga.storage.hadoop.HBaseCompatApi;
 import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDriver;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -401,8 +400,7 @@ public class VariantMapReduceUtil {
         if (addDependencyJar) {
             TableMapReduceUtil.addDependencyJars(job);
             TableMapReduceUtil.addDependencyJarsForClasses(job.getConfiguration(),
-                    TransactionSystemClient.class,
-                    EventFactory.class);
+                    HBaseCompatApi.getInstance().getClassesForDependencyJars());
         }
 
         LOGGER.info(sqlQuery);
