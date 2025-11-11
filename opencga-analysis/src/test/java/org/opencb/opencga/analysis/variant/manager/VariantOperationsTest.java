@@ -66,6 +66,7 @@ import org.opencb.opencga.core.models.variant.VariantSetupParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
+import org.opencb.opencga.core.tools.result.Status;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
@@ -849,13 +850,32 @@ public class VariantOperationsTest {
         assertNotEquals(newCellbaseVersion, cellBaseUtils.getVersion());
         assertNotEquals(newCellbaseDataRelease, cellBaseUtils.getDataRelease());
 
-        variantStorageManager.setCellbaseConfiguration(project, new CellBaseConfiguration(newCellbase, newCellbaseVersion, newCellbaseDataRelease, ""), false, null, token);
+        variantStorageManager.setCellbaseConfiguration(project, new CellBaseConfiguration(newCellbase,  newCellbaseVersion, newCellbaseDataRelease, ""), false, null, token);
         CellBaseConfiguration cellbaseConfiguration = catalogManager.getProjectManager().get(project, new QueryOptions(), token).first().getCellbase();
 
         assertEquals(newCellbase, cellbaseConfiguration.getUrl());
         assertEquals(newCellbaseVersion, cellbaseConfiguration.getVersion());
         assertEquals(newCellbaseDataRelease, cellbaseConfiguration.getDataRelease());
 
+    }
+
+    @Test
+    public void testVariantAnnotationIndexScopeProject() throws Exception {
+        Assume.assumeThat(storageEngine, CoreMatchers.is(DummyVariantStorageEngine.STORAGE_ENGINE_ID));
+
+        // Ensure there are multiple projects and studies in catalog
+        String project2 = catalogManager.getProjectManager().create("project2", "Project about some genomes", "", "Homo sapiens",
+                null, "GRCh38", new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token).first().getId();
+        catalogManager.getStudyManager().create(project2, "study2", null, "Phase 1", "Done", null, null, null, null, null, token);
+
+
+        // Ensure that the test would work with scope-project tools
+        ExecutionResult result = toolRunner.execute(VariantAnnotationIndexOperationTool.class,
+                new VariantAnnotationIndexParams(),
+                new ObjectMap(ParamConstants.PROJECT_PARAM, PROJECT_FQN),
+                Paths.get(opencga.createTmpOutdir("_annotation-index-project")), "index", false, token);
+
+        assertEquals(Status.Type.DONE, result.getStatus().getName());
     }
 
     @Test
