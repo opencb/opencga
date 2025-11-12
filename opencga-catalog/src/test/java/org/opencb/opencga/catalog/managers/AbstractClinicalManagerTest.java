@@ -55,6 +55,7 @@ import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -82,7 +83,7 @@ public class AbstractClinicalManagerTest extends GenericTest {
     public final static String PROBAND_ID4 = "HG105";
 
     public final static String CA_OPA = "opa-case";
-    public final static String PROBAND_OPA = "111002516";
+    public final static String CA_OPA_15914 = "opa-case";
 
     private static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
 
@@ -120,7 +121,7 @@ public class AbstractClinicalManagerTest extends GenericTest {
         token = catalogManager.getUserManager().login(organizationId, "user", PASSWORD).first().getToken();
 
         if (TIERING_MODE.equalsIgnoreCase(mode) || INTERPRETATION_MODE.equalsIgnoreCase(mode)) {
-            prepareOpaCase();
+            prepareOpaCases();
         } else {
             ProjectCreateParams projectCreateParams = new ProjectCreateParams()
                     .setId("1000G")
@@ -133,17 +134,17 @@ public class AbstractClinicalManagerTest extends GenericTest {
 
             family = catalogManager.getFamilyManager().create(studyFqn, getFamily(), QueryOptions.empty(), token).first();
 //
-        // Clinical analysis
-        auxClinicalAnalysis = new ClinicalAnalysis()
-                .setId(CA_ID1).setDescription("My description").setType(ClinicalAnalysis.Type.FAMILY)
-                .setDueDate("20180510100000")
-                .setDisorder(getDisorder())
-                .setProband(getChild())
-                .setFamily(getFamily());
+            // Clinical analysis
+            auxClinicalAnalysis = new ClinicalAnalysis()
+                    .setId(CA_ID1).setDescription("My description").setType(ClinicalAnalysis.Type.FAMILY)
+                    .setDueDate("20180510100000")
+                    .setDisorder(getDisorder())
+                    .setProband(getChild())
+                    .setFamily(getFamily());
 //
-        clinicalAnalysis = catalogManager.getClinicalAnalysisManager().create(studyFqn, auxClinicalAnalysis,
-                        new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token)
-                .first();
+            clinicalAnalysis = catalogManager.getClinicalAnalysisManager().create(studyFqn, auxClinicalAnalysis,
+                            new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), token)
+                    .first();
 //
             catalogUploadFile("/biofiles/family.vcf");
 
@@ -325,10 +326,7 @@ public class AbstractClinicalManagerTest extends GenericTest {
         return phenotypes;
     }
 
-    private void prepareOpaCase() throws CatalogException, IOException {
-        //---------------------------------------------------------------------
-        // OPA (clinicalAnalysis5)
-        //---------------------------------------------------------------------
+    private void prepareOpaCases() throws CatalogException, IOException {
         ProjectCreateParams projectCreateParams = new ProjectCreateParams()
                 .setId("CASES")
                 .setOrganism(new ProjectOrganism("hsapiens", "grch38"));
@@ -338,11 +336,33 @@ public class AbstractClinicalManagerTest extends GenericTest {
         Study study = catalogManager.getStudyManager().create("CASES", new Study().setId("OPA"), INCLUDE_RESULT, token).first();
         studyFqn = study.getFqn();
 
-        Path path = Paths.get("/opt/tiering-data/opa-case.json");
+        Map<Path, Path> files = new HashMap<>();
+//        files.put(Paths.get("/opt/tiering-data/opa-case.json"), Paths.get("/opt/tiering-data/opa.vcf.gz"));
+        files.put(Paths.get("/opt/tiering-data/OPA-15914-1.json"), Paths.get("/opt/tiering-data/OPA-15914-1.vcf"));
+
+        for (Map.Entry<Path, Path> entry : files.entrySet()) {
+            if (!Files.exists(entry.getKey())) {
+                System.err.println("File not found: " + entry.getKey().toString());
+                continue;
+            }
+            if (!Files.exists(entry.getValue())) {
+                System.err.println("File not found: " + entry.getValue().toString());
+                continue;
+            }
+            prepareOpaCase(entry.getKey(), entry.getValue());
+        }
+    }
+
+    private void prepareOpaCase(Path casePath, Path vcfPath) throws CatalogException, IOException {
+        //---------------------------------------------------------------------
+        // OPA (clinicalAnalysis5)
+        //---------------------------------------------------------------------
+
+//        Path path = Paths.get("/opt/tiering-data/opa-case.json");
 
         // Read the clinical analysis from file and save into a ClinicalAnalysis object
-        ClinicalAnalysis ca = JacksonUtils.getDefaultObjectMapper().readerFor(ClinicalAnalysis.class).readValue(path.toFile());
-        ca.setId(CA_OPA);
+        ClinicalAnalysis ca = JacksonUtils.getDefaultObjectMapper().readerFor(ClinicalAnalysis.class).readValue(casePath.toFile());
+//        ca.setId(CA_OPA);
         ca.setInterpretation(null);
         ca.setSecondaryInterpretations(null);
         Map<String, List<String>> individualSamples = new HashMap<>();
@@ -393,9 +413,11 @@ public class AbstractClinicalManagerTest extends GenericTest {
             }
         }
 
-        clinicalAnalysis = catalogManager.getClinicalAnalysisManager().create(studyFqn, ca, INCLUDE_RESULT, token).first();
+        catalogManager.getClinicalAnalysisManager().create(studyFqn, ca, INCLUDE_RESULT, token).first();
 
-        catalogUploadFile("/biofiles/opa/opa.vcf.gz");
+        try (InputStream inputStream = Files.newInputStream(vcfPath)) {
+            catalogManager.getFileManager().upload(studyFqn, inputStream, new File().setPath(vcfPath.getFileName().toString()),
+                    false, true, false, token);
+        }
     }
-
 }

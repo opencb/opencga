@@ -83,31 +83,34 @@ public class ClinicalInterpretationAnalysisTest {
 
     @Test
     public void testClinicalInterpretationWithDefaultConfig() throws IOException, CatalogException, ToolException {
-        checkClinicalAnalysis();
+        String caId = clinicalTest.CA_OPA;
+
+        checkClinicalAnalysis(caId);
 
         outDir = Paths.get(opencga.createTmpOutdir("_interpretation_default_config"));
         System.out.println("opencga.getOpencgaHome() = " + opencga.getOpencgaHome().toAbsolutePath());
         System.out.println("outDir = " + outDir);
 
         ClinicalInterpretationAnalysisParams params = new ClinicalInterpretationAnalysisParams();
-        params.setClinicalAnalysisId(ca.getId());
+        params.setClinicalAnalysisId(caId);
 
         toolRunner.execute(ClinicalInterpretationAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, clinicalTest.studyFqn),
                 outDir, null, false, clinicalTest.token);
 
-        ca = clinicalTest.catalogManager.getClinicalAnalysisManager().get(clinicalTest.studyFqn,
-                clinicalTest.CA_OPA, QueryOptions.empty(), clinicalTest.token).first();
+        ca = clinicalTest.catalogManager.getClinicalAnalysisManager().get(clinicalTest.studyFqn, caId, QueryOptions.empty(),
+                clinicalTest.token).first();
 
         assertEquals(1, ca.getSecondaryInterpretations().size());
         assertEquals(0, ca.getSecondaryInterpretations().get(0).getPrimaryFindings().size());
 
         // Clean up interpretations
-        deleteInterpretations();
+        deleteInterpretations(ca);
     }
 
     @Test
     public void testClinicalInterpretationWithCustomConfig() throws IOException, CatalogException, ToolException, StorageEngineException {
-        checkClinicalAnalysis();
+        String caId = clinicalTest.CA_OPA_15914;
+        checkClinicalAnalysis(caId);
 
 //        Query query = new Query();
 //        query.append("study", "test@CASES:OPA");
@@ -153,33 +156,33 @@ public class ClinicalInterpretationAnalysisTest {
                 new File().setPath("data/" + updatedConfigPath.getFileName()), false, true, false, clinicalTest.token).first();
 
         ClinicalInterpretationAnalysisParams params = new ClinicalInterpretationAnalysisParams();
-        params.setClinicalAnalysisId(ca.getId());
+        params.setClinicalAnalysisId(caId);
         params.setConfigFile(opencgaFile.getId());
 
         toolRunner.execute(ClinicalInterpretationAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, clinicalTest.studyFqn),
                 outDir, null, false, clinicalTest.token);
 
-        ca = clinicalTest.catalogManager.getClinicalAnalysisManager().get(clinicalTest.studyFqn,
-                clinicalTest.CA_OPA, QueryOptions.empty(), clinicalTest.token).first();
+        ca = clinicalTest.catalogManager.getClinicalAnalysisManager().get(clinicalTest.studyFqn, caId, QueryOptions.empty(),
+                clinicalTest.token).first();
 
         assertEquals(1, ca.getSecondaryInterpretations().size());
         assertEquals(13, ca.getSecondaryInterpretations().get(0).getPrimaryFindings().size());
 
         // Clean up interpretations
-        deleteInterpretations();
+        deleteInterpretations(ca);
     }
 
 
-    private void checkClinicalAnalysis() throws CatalogException {
+    private void checkClinicalAnalysis(String caId) throws CatalogException {
         OpenCGAResult<ClinicalAnalysis> caResult = clinicalTest.catalogManager.getClinicalAnalysisManager()
-                .get(clinicalTest.studyFqn, clinicalTest.CA_OPA, QueryOptions.empty(), clinicalTest.token);
+                .get(clinicalTest.studyFqn, caId, QueryOptions.empty(), clinicalTest.token);
         assertEquals(1, caResult.getNumResults());
         assertEquals(0, caResult.first().getSecondaryInterpretations().size());
 
         ca = caResult.first();
     }
 
-    private void deleteInterpretations() throws CatalogException {
+    private void deleteInterpretations(ClinicalAnalysis ca) throws CatalogException {
         // Delete all interpretations
         clinicalTest.catalogManager.getInterpretationManager().delete(clinicalTest.studyFqn, ca.getId(),
                 Arrays.asList(ca.getInterpretation().getId(), ca.getSecondaryInterpretations().get(0).getId()), false, clinicalTest.token);
