@@ -61,6 +61,22 @@ jobs:
           distribution: 'temurin'
           java-version: '8'
           cache: 'maven'
+      - name: Clone dependencies
+        id: clone_dependencies
+        run: |
+          if [ -f "./.github/workflows/scripts/get_same_branch.sh" ]; then
+            chmod +x ./.github/workflows/scripts/get_same_branch.sh
+            export DEPENDENCIES_SHA=${{ github.sha }}
+            ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }}
+          fi
+      - name: Cache local Maven repository
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ inputs.storage_hadoop }}-${{ steps.clone_dependencies.outputs.dependencies_sha }}
+          restore-keys: |
+            ${{ runner.os }}-maven-${{ inputs.storage_hadoop }}-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: OpenCGA Enterprise Maven Build (skip tests)
@@ -79,18 +95,17 @@ jobs:
               CLIENTS="$CLIENTS --javascript-client"
           fi
           branch_name=$(git rev-parse --abbrev-ref HEAD)
-          ./build.sh --storage-hadoop ${{ inputs.storage_hadoop }} -b -T "$branch_name" $CLIENTS
+          ./build.sh --storage-hadoop ${{ inputs.storage_hadoop }} --prepare-branches --prepare-hadoop --task "$branch_name" $CLIENTS
+        env:
+          THIRDPARTY_READ_TOKEN: ${{ secrets.THIRDPARTY_READ_TOKEN }}
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.artifact_name }}
           path: build
       - id: get_project_version
-        name: Extract version using Maven
-        run: |
-          version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
-          echo "version=$version" >> $GITHUB_OUTPUT
         name: Get project version
         run: |
           echo "version=`mvn help:evaluate -q -Dexpression=project.version -DforceStdout`" >> $GITHUB_OUTPUT
+
       - name: test-version-from-check
         run: echo "Project version is " ${{ steps.get_project_version.outputs.version }}

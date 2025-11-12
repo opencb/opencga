@@ -45,7 +45,13 @@ function error() {
 
 # Function to calculate the branch for dependencies
 function calculate_branch() {
+  local REPO_VERSION="$1"
   local EXISTS=""
+  if [[ ! "$REPO_VERSION" =~ SNAPSHOT$ ]]; then
+    echo "v${REPO_VERSION}"
+    return
+  fi
+
   if [[ -n $TASK_REFERENCE ]]; then
     local EXISTS=$(git ls-remote origin "$TASK_REFERENCE")
   fi
@@ -60,7 +66,7 @@ function calculate_branch() {
     ## If opencga-enterprise branch name is main, develop then we return the same name.
     ## Otherwise, we calculate the dependency branch from the dependency version.
     if [[ "$ENTERPRISE_BRANCH" == "TASK"* || "$ENTERPRISE_BRANCH" == "release"* ]]; then
-      local VERSION=$(echo "$1" | cut -d "-" -f 1)
+      local VERSION=$(echo "$REPO_VERSION" | cut -d "-" -f 1)
       local MAJOR=$(echo "$VERSION" | cut -d "." -f 1)
       local MINOR=$(echo "$VERSION" | cut -d "." -f 2)
       local PATCH=$(echo "$VERSION" | cut -d "." -f 3)
@@ -81,9 +87,25 @@ function calculate_branch() {
 function manage_dependency() {
   local REPO=$1
   local REPO_VERSION=$2
-  local TEMP_DIR="$(mktemp -d "--suffix=opencga-enterprise-$(date +%Y%m%d%H%M%S)-$REPO")"
+  ## Get the organization from the repo. If REPO does not have /, then org is opencb
+  local REPO_ORG="opencb"
+  if [[ "$REPO" == *"/"* ]]; then
+    REPO_ORG=$(echo "$REPO" | cut -d "/" -f 1)
+    REPO=$(echo "$REPO" | cut -d "/" -f 2)
+  fi
+
+  local TMP_DIR_HOME="${OPENCGA_ENTERPRISE_HOME_DIR}/report/dependency-checkouts/"
+  mkdir -p "$TMP_DIR_HOME"
+  local TEMP_DIR="$(mktemp -d --tmpdir="$TMP_DIR_HOME" --suffix="opencga-enterprise-$(date +%Y%m%d%H%M%S)-$REPO")"
   cd "$TEMP_DIR" || exit 2
-  git clone https://github.com/opencb/"$REPO".git
+  if [ "$REPO" == "opencga-hadoop-thirdparty" ]; then
+    CLONE_URL="https://x-access-token:${THIRDPARTY_READ_TOKEN}@github.com/${REPO_ORG}/${REPO}.git"
+  else
+    CLONE_URL="https://github.com/${REPO_ORG}/"${REPO}".git"
+  fi
+  echo "Cloning repository $REPO from $CLONE_URL"
+  git clone "$CLONE_URL"
+
   if [ -d "./$REPO" ]; then
       cd "$REPO" || exit 2
       local BRANCH_NAME="$(calculate_branch "$REPO_VERSION")"
@@ -99,7 +121,12 @@ function manage_dependency() {
     log_version_summary "$REPO,$VERSION,$BRANCH_NAME"
     if [ "$COMMAND" == "build" ];then
       log "Building $REPO branch $BRANCH_NAME."
-      mvn clean install -B -T 2 -DskipTests --no-transfer-progress $MVN_OPTS
+      if [ "$REPO" == "opencga-hadoop-thirdparty" ]; then
+        ./dev/build.sh -a build "$STORAGE_HADOOP_DEPS"
+      else
+        mvn clean install -B -T 2 -DskipTests --no-transfer-progress $MVN_OPTS
+      fi
+
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND $REPO with $REPO_VERSION in $BRANCH_NAME FAILED!!!!!"
       else
@@ -109,7 +136,12 @@ function manage_dependency() {
       log "Testing $REPO branch $BRANCH_NAME."
       local pwd=$(pwd)
       echo "${pwd} $REPO" >> "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
-      mvn install -B surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip --no-transfer-progress $MVN_OPTS
+      if [ "$REPO" == "opencga-hadoop-thirdparty" ]; then
+        ./dev/build.sh -a build-test "$STORAGE_HADOOP_DEPS"
+      else
+        mvn install -B surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip --no-transfer-progress  $MVN_OPTS
+      fi
+
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND $REPO with $VERSION in $BRANCH_NAME FAILED!!!!!"
       else
@@ -145,12 +177,13 @@ function print_usage() {
   echo ""
   echo "  Options:"
   echo "     -o     --opencga-home        STRING         OpenCGA project repo directory [./opencga-home]"
-  echo "     -H     --storage-hadoop      STRING         Hadoop flavour. hdp3.1, hdi5.1, emr6.1, emr6.13 ... [hdp3.1]"
+  echo "     -H     --storage-hadoop      STRING         Hadoop flavour  hdi5.1, emr6.1, emr6.13, emr7.5  ... [hdi5.1]"
   echo "     -T     --task                STRING         Task ID used for building and testing dependencies, this will serve as a reference for checkouts"
   echo "     -l     --test-level          STRING         Level of test we must to execute(runShortTests,runMediumTests,runLongTests)"
   echo "     -t     --test                FLAG           Execute the XetaBase tests by default only build"
   echo "     -f     --test-fail-never     FLAG           The process executes all tests even if some fail."
   echo "     -b     --prepare-branches    FLAG           Previous to run, it will download and compile all branches of the dependencies."
+  echo "            --prepare-hadoop      FLAG           Download and compile opencga-hadoop-thirdparty dependency. Flag used with --prepare-branches."
   echo "     -s     --test-save-reports   FLAG           Save OpenCGA JUnit test reports to XetaBase Report server (Quality Team)."
   echo "     -d     --docker              FLAG           Publish docker of OpenCGA-enterprise."
   echo "     -p     --docker-tag          FLAG           Tag for docker of OpenCGA-enterprise."
@@ -239,7 +272,13 @@ function prepare_branches() {
   ## Only if you pass the parameter: --prepare-branch -b
 
   if [ "$PREPARE_BRANCHES" == "true" ]; then
+    if [ "${PREPARE_BRANCHES_HADOOP:-false}" == "true" ]; then
+      OPENCGA_HADOOP_THIRD_PARTY_VERSION="$(mvn help:evaluate -Dexpression=opencga.hadoop.thirdparty.version -q -DforceStdout)"
+      echo "Downloading and compiling opencga-hadoop-thirdparty $OPENCGA_HADOOP_THIRD_PARTY_VERSION"
+      manage_dependency "opencga-hadoop-thirdparty" "$OPENCGA_HADOOP_THIRD_PARTY_VERSION"
+    fi
     JCL_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=java-common-libs.version -q -DforceStdout $MVN_OPTS)"
+
     echo "Downloading and compiling java-common-libs $JCL_DEPENDENCY_VERSION"
     manage_dependency "java-common-libs" "$JCL_DEPENDENCY_VERSION"
 
@@ -550,6 +589,7 @@ function log_initial_state() {
     log_param_summary "SAVE_REPORTS,$(yes_no "$SAVE_REPORTS")"
     log_param_summary "FAIL_NEVER,$(yes_no "$FAIL_NEVER")"
     log_param_summary "PREPARE_BRANCHES,$(yes_no "$PREPARE_BRANCHES")"
+    log_param_summary "PREPARE_BRANCHES_HADOOP,$(yes_no "${PREPARE_BRANCHES_HADOOP}")"
     log_param_summary "DEBUG,$(yes_no "$DEBUG")"
     log_param_summary "DOCKER,$(yes_no "$DOCKER")"
 }
@@ -680,11 +720,12 @@ function print_log() {
 # Initialize the global variable LOG_SUMMARY
 LOG_SUMMARY=""
 OPENCGA_HOME_DIR="$PWD/opencga-home/"
-STORAGE_HADOOP_DEPS="hdp3.1"
+STORAGE_HADOOP_DEPS="hdi5.1"
 TEST_TAG="runShortTests"
 FAIL_NEVER=""
 DOCKER_TAG=""
 PREPARE_BRANCHES=""
+PREPARE_BRANCHES_HADOOP=""
 DEBUG=""
 SKIP_TESTS=false
 TESTS_DIR="$PWD/reports/test"
@@ -780,6 +821,11 @@ while [[ $# -gt 0 ]]; do
     ;;
   -b | --prepare-branches)
     PREPARE_BRANCHES="true"
+    shift # past argument
+    ;;
+  --prepare-hadoop)
+    PREPARE_BRANCHES="true"
+    PREPARE_BRANCHES_HADOOP="true"
     shift # past argument
     ;;
   -f | --test-fail-never)
