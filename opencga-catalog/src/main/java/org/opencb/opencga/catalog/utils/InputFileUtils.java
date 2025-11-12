@@ -157,7 +157,7 @@ public class InputFileUtils {
         StringBuffer sb = new StringBuffer();
         while (matcher.find()) {
             String variableName = matcher.group(1);
-            if (params.containsKey(variableName)) {
+            if (!params.containsKey(variableName)) {
                 throw new CatalogException("Variable '" + variableName + "' not found in the params object");
             }
             String replacement = params.get(variableName);

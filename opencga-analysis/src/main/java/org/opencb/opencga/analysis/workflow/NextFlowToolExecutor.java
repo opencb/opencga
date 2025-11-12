@@ -8,7 +8,6 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.tools.OpenCgaDockerToolScopeStudy;
 import org.opencb.opencga.catalog.db.api.ExternalToolDBAdaptor;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.GitRepositoryState;
@@ -16,7 +15,9 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.externalTool.*;
+import org.opencb.opencga.core.models.externalTool.ExternalTool;
+import org.opencb.opencga.core.models.externalTool.WorkflowScript;
+import org.opencb.opencga.core.models.externalTool.WorkflowToolParams;
 import org.opencb.opencga.core.models.job.ToolInfoExecutor;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.ToolDependency;
@@ -40,7 +41,7 @@ import java.util.*;
 import java.util.stream.Stream;
 
 @Tool(id = NextFlowToolExecutor.ID, resource = Enums.Resource.EXTERNAL_TOOL, description = NextFlowToolExecutor.DESCRIPTION)
-public class NextFlowToolExecutor extends OpenCgaDockerToolScopeStudy {
+public class NextFlowToolExecutor extends ExternalToolDockerScopeStudy {
 
     public final static String ID = "nextflow";
     public static final String DESCRIPTION = "Execute a Nextflow analysis.";
@@ -87,18 +88,6 @@ public class NextFlowToolExecutor extends OpenCgaDockerToolScopeStudy {
         outDirPath = getOutDir().toAbsolutePath().toString();
         ephimeralDirPath = getScratchDir().toAbsolutePath().toString();
 
-        Set<String> mandatoryParams = new HashSet<>();
-        Map<String, ExternalToolVariable> variableMap = new HashMap<>();
-        if (CollectionUtils.isNotEmpty(externalTool.getVariables())) {
-            for (ExternalToolVariable variable : externalTool.getVariables()) {
-                String variableId = removePrefix(variable.getId());
-                variableMap.put(variableId, variable);
-                if (variable.isRequired()) {
-                    mandatoryParams.add(variableId);
-                }
-            }
-        }
-
         if (StringUtils.isEmpty(externalTool.getWorkflow().getManager().getVersion())) {
             externalTool.getWorkflow().getManager().setVersion(ParamConstants.DEFAULT_MIN_NEXTFLOW_VERSION);
         }
@@ -125,63 +114,8 @@ public class NextFlowToolExecutor extends OpenCgaDockerToolScopeStudy {
         addDependencies(dependencyList);
         updateJobInformation(new ArrayList<>(tags), toolInfoExecutor);
 
-        StringBuilder cliParamsBuilder = new StringBuilder();
-        if (runParams.getParams() != null) {
-            for (Map.Entry<String, Object> entry : runParams.getParams().toParams().entrySet()) {
-                String variableId = removePrefix(entry.getKey());
-                String value = entry.getValue().toString();
-                // Remove from the mandatoryParams set
-                mandatoryParams.remove(variableId);
-
-                ExternalToolVariable externalToolVariable = variableMap.get(variableId);
-
-                if (entry.getKey().startsWith("-")) {
-                    cliParamsBuilder.append(entry.getKey()).append(" ");
-                } else {
-                    cliParamsBuilder.append("--").append(entry.getKey()).append(" ");
-                }
-                if (StringUtils.isNotEmpty(value)) {
-                    if ((externalToolVariable != null && externalToolVariable.isOutput()) || inputFileUtils.isDynamicOutputFolder(value)) {
-                        processOutputCli(value, inputFileUtils, cliParamsBuilder);
-                    } else if (!inputFileUtils.isFlag(value)) {
-                        processInputCli(value, inputFileUtils, cliParamsBuilder);
-                    }
-                } else if (externalToolVariable != null) {
-                    if (StringUtils.isNotEmpty(externalToolVariable.getDefaultValue())) {
-                        cliParamsBuilder.append(externalToolVariable.getDefaultValue()).append(" ");
-                    } else if (externalToolVariable.isOutput()) {
-                        processOutputCli("", inputFileUtils, cliParamsBuilder);
-                    } else if (externalToolVariable.isRequired() && externalToolVariable.getType() != ExternalToolVariable.WorkflowVariableType.FLAG) {
-                        throw new ToolException("Missing value for mandatory parameter: '" + variableId + "'.");
-                    }
-                }
-            }
-        }
-
-        for (String mandatoryParam : mandatoryParams) {
-            logger.info("Processing missing mandatory param: '{}'", mandatoryParam);
-            ExternalToolVariable externalToolVariable = variableMap.get(mandatoryParam);
-
-            if (externalToolVariable.getId().startsWith("-")) {
-                cliParamsBuilder.append(externalToolVariable.getId()).append(" ");
-            } else {
-                cliParamsBuilder.append("--").append(externalToolVariable.getId()).append(" ");
-            }
-
-            if (StringUtils.isNotEmpty(externalToolVariable.getDefaultValue())) {
-                if (externalToolVariable.isOutput()) {
-                    processOutputCli(externalToolVariable.getDefaultValue(), inputFileUtils, cliParamsBuilder);
-                } else {
-                    processInputCli(externalToolVariable.getDefaultValue(), inputFileUtils, cliParamsBuilder);
-                }
-            } else if (externalToolVariable.isOutput()) {
-                processOutputCli("", inputFileUtils, cliParamsBuilder);
-            } else if (externalToolVariable.getType() != ExternalToolVariable.WorkflowVariableType.FLAG) {
-                throw new ToolException("Missing mandatory parameter: '" + mandatoryParam + "'.");
-            }
-        }
-
-        this.cliParams = cliParamsBuilder.toString();
+        Map<String, String> sanitisedParams = sanitiseParams(runParams.getParams().getParams(), externalTool.getVariables());
+        this.cliParams = buildCommandLine(sanitisedParams);
     }
 
     @Override
