@@ -95,7 +95,7 @@ public class CustomToolExecutor extends OpenCgaDockerToolScopeStudy {
         }
         if (CollectionUtils.isNotEmpty(externalTool.getVariables())) {
             for (ExternalToolVariable variable : externalTool.getVariables()) {
-                String variableId = removePrefix(variable.getId());
+                String variableId = removePrefix(variable.getName());
                 if (!params.containsKey(variableId) && StringUtils.isNotEmpty(variable.getDefaultValue())) {
                     params.put(variableId, variable.getDefaultValue());
                 }

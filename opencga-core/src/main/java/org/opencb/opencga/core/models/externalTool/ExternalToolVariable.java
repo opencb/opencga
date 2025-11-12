@@ -1,13 +1,28 @@
 package org.opencb.opencga.core.models.externalTool;
 
+import org.opencb.commons.annotations.DataField;
+
 public class ExternalToolVariable {
 
+    @DataField(id = "id", description = "Variable identifier.")
     private String id;
+
+    @DataField(id = "name", description = "Variable name as it is used in the command line. Examples: --input, -o, etc.")
     private String name;
+
+    @DataField(id = "description", description = "Variable description.")
     private String description;
+
+    @DataField(id = "type", description = "Variable type. May be: FLAG, BOOLEAN, INTEGER, DOUBLE, STRING, FILE.")
     private WorkflowVariableType type;
+
+    @DataField(id = "required", description = "Whether the variable is required or not.")
     private boolean required;
+
+    @DataField(id = "defaultValue", description = "Default value for the variable (if any).")
     private String defaultValue;
+
+    @DataField(id = "output", description = "Whether the variable is an output variable.")
     private boolean output;
 
     public enum WorkflowVariableType {

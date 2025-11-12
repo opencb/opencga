@@ -91,7 +91,7 @@ public class NextFlowToolExecutor extends OpenCgaDockerToolScopeStudy {
         Map<String, ExternalToolVariable> variableMap = new HashMap<>();
         if (CollectionUtils.isNotEmpty(externalTool.getVariables())) {
             for (ExternalToolVariable variable : externalTool.getVariables()) {
-                String variableId = removePrefix(variable.getId());
+                String variableId = removePrefix(variable.getName());
                 variableMap.put(variableId, variable);
                 if (variable.isRequired()) {
                     mandatoryParams.add(variableId);
@@ -162,10 +162,10 @@ public class NextFlowToolExecutor extends OpenCgaDockerToolScopeStudy {
             logger.info("Processing missing mandatory param: '{}'", mandatoryParam);
             ExternalToolVariable externalToolVariable = variableMap.get(mandatoryParam);
 
-            if (externalToolVariable.getId().startsWith("-")) {
-                cliParamsBuilder.append(externalToolVariable.getId()).append(" ");
+            if (externalToolVariable.getName().startsWith("-")) {
+                cliParamsBuilder.append(externalToolVariable.getName()).append(" ");
             } else {
-                cliParamsBuilder.append("--").append(externalToolVariable.getId()).append(" ");
+                cliParamsBuilder.append("--").append(externalToolVariable.getName()).append(" ");
             }
 
             if (StringUtils.isNotEmpty(externalToolVariable.getDefaultValue())) {
