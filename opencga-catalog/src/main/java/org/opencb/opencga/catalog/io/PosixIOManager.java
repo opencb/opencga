@@ -287,24 +287,17 @@ public class PosixIOManager extends IOManager {
                     + ". Attempting to fail " + lines + " lines");
         }
 
-        int averageBytesPerLine = 250;
-
         try {
             long length = Files.size(file);
 
-            // First attempt: read from end of file using charset-aware methods
+            // Read from end of file using charset-aware methods
             try (RandomAccessFile randomAccessFile = new RandomAccessFile(file.toFile(), "r")) {
-                long offset = length - (averageBytesPerLine * (lines + 10));
-                if (offset < 0) {
-                    offset = 0;
-                }
-                if (length - offset > MAXIMUM_BYTES) {
-                    offset = length - MAXIMUM_BYTES;
-                }
+                // Calculate how much to read - we need to read enough to get all requested lines
+                // We'll read up to MAXIMUM_BYTES or the entire file if smaller
+                long bytesToRead = Math.min(length, MAXIMUM_BYTES);
+                long offset = length - bytesToRead;
 
-                // Instead of using RandomAccessFile.readLine(), read raw bytes
-                // and convert them using proper encoding
-                byte[] buffer = new byte[(int)(length - offset)];
+                byte[] buffer = new byte[(int) bytesToRead];
                 randomAccessFile.seek(offset);
                 randomAccessFile.readFully(buffer, 0, buffer.length);
 
@@ -312,19 +305,23 @@ public class PosixIOManager extends IOManager {
                 String content = new String(buffer, java.nio.charset.StandardCharsets.UTF_8);
 
                 // Split the content into lines
-                String[] allLines = content.split("\r?\n");
+                String[] allLines = content.split("\r?\n", -1);
                 List<String> contentList = new LinkedList<>();
 
                 // Skip first line if offset isn't at the beginning (might be incomplete)
                 int startIdx = offset != 0 ? 1 : 0;
 
+                // Skip the last element if it's empty (happens when file ends with newline)
+                int endIdx = allLines.length;
+                if (endIdx > 0 && allLines[endIdx - 1].isEmpty()) {
+                    endIdx--;
+                }
+
                 // Add all remaining lines to our content list
-                for (int i = startIdx; i < allLines.length; i++) {
+                for (int i = startIdx; i < endIdx; i++) {
                     contentList.add(allLines[i]);
                 }
 
-                // If we don't have enough lines and can read more, we would implement
-                // the same logic as before, but using charset-aware reading
 
                 // Take only the last 'lines' number of lines
                 if (contentList.size() > lines) {
