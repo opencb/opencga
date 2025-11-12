@@ -108,6 +108,15 @@ export default class Organization extends OpenCGAParentClass {
         return this._post("organizations", null, "notes", id, "update", data, params);
     }
 
+    /** Reset user's password
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.userId] - User whose password needs to be reset.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    resetUserPassword(params) {
+        return this._post("organizations", null, "user/password", null, "reset", null, params);
+    }
+
     /** Update the user status
     * @param {String} user - User ID.
     * @param {Object} data - JSON containing the User fields to be updated.
@@ -152,37 +161,6 @@ export default class Organization extends OpenCGAParentClass {
     */
     updateConfiguration(organization, data, params) {
         return this._post("organizations", organization, "configuration", null, "update", data, params);
-    }
-
-    /** Search events
-    * @param {String} organization - Organization id.
-    * @param {Object} [params] - The Object containing the following optional parameters:
-    * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
-    * @param {String} [params.creationDate] - Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
-    * @param {String} [params.modificationDate] - Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
-    * @param {Boolean} [params.successful] - Boolean indicating if the event was successful or not.
-    * @returns {Promise} Promise object in the form of RestResponse instance.
-    */
-    queryEvents(organization, params) {
-        return this._get("organizations", organization, "events", null, "query", params);
-    }
-
-    /** Archive an event
-    * @param {String} organization - Organization id.
-    * @param {String} eventId - Event id.
-    * @returns {Promise} Promise object in the form of RestResponse instance.
-    */
-    archiveEvents(organization, eventId) {
-        return this._post("organizations", organization, "events", eventId, "archive", null);
-    }
-
-    /** Retry unsuccessful event
-    * @param {String} organization - Organization id.
-    * @param {String} eventId - Event id.
-    * @returns {Promise} Promise object in the form of RestResponse instance.
-    */
-    retryEvents(organization, eventId) {
-        return this._post("organizations", organization, "events", eventId, "retry", null);
     }
 
     /** Return the organization information

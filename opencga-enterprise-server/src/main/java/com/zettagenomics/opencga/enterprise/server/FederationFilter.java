@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Enumeration;
@@ -20,7 +21,7 @@ import java.util.regex.Pattern;
 public class FederationFilter implements Filter {
 
     private static Logger logger = LoggerFactory.getLogger(FederationFilter.class);
-    private static final Pattern REST_PATTERN = Pattern.compile("^(https?://.*/opencga/webservices/rest/[^/]+/)(.+)$");
+    private static final Pattern REST_PATTERN = Pattern.compile("^(/opencga/webservices/rest/[^/]+/)(.+)$");
 
     private static final Pattern[] LOCAL_REST_PATTERNS = new Pattern[]{
             Pattern.compile("/opencga/webservices/rest/[^/]+/federations/.+")
@@ -39,45 +40,44 @@ public class FederationFilter implements Filter {
 
         // Check the conditions for redirection
         if (requestFederatedData(request)) {
-            // Construct the new URL
-            String newUrl = constructRedirectUrl(request);
-            logger.info("Requesting federated data. Redirecting to {}", newUrl);
-
-            // Perform the redirection based on the request method
-            String method = request.getMethod();
-            if ("GET".equalsIgnoreCase(method)) {
-                response.sendRedirect(newUrl);
-            } else if ("POST".equalsIgnoreCase(method) || "DELETE".equalsIgnoreCase(method)) {
-                response.setStatus(HttpServletResponse.SC_TEMPORARY_REDIRECT);
-                response.setHeader("Location", newUrl);
-                response.setHeader("Allow", method);
-            }
-            return;
+            request = rewriteRequestUrl(request);
         }
 
         // Continue with the filter chain if no redirection is needed
         chain.doFilter(request, response);
     }
 
-    private String constructRedirectUrl(HttpServletRequest request) {
-//        request.getRequestURI(); // /opencga/webservices/rest/v2/sample/search
-//        request.getRequestURL(); // http://localhost:8080/opencga/webservices/rest/v2/sample/search
+    HttpServletRequest rewriteRequestUrl(HttpServletRequest request) {
+        // request.getRequestURI(); // /opencga/webservices/rest/v2/sample/search
+        // request.getRequestURL(); // http://localhost:8080/opencga/webservices/rest/v2/sample/search
 
-        String queryString = request.getQueryString();
-        queryString = StringUtils.isNotEmpty(queryString)
-                ? queryString + "&url=" + request.getRequestURI() + "&method=" + request.getMethod()
+        String queryString = StringUtils.isNotEmpty(request.getQueryString())
+                ? request.getQueryString() + "&url=" + request.getRequestURI() + "&method=" + request.getMethod()
                 : "url=" + request.getRequestURI() + "&method=" + request.getMethod();
+        logger.info("Query string: {}\nRewritten query string: {}", request.getQueryString(), queryString);
 
-        String url = request.getRequestURL().toString(); // http://localhost:8080/opencga/webservices/rest/v2/sample/search
-        String urlPrefix = "http://test.app.zettagenomics.com/opencga/webservices/rest";
-        String urlPrefixReplacement = "https://test.app.zettagenomics.com/TASK-7400/opencga/webservices/rest";
-        logger.info("Requested URL: {}", url);
-        if (url.contains(urlPrefix)) {
-            logger.info("Replacing URL prefix: {} -> {}", urlPrefix, urlPrefixReplacement);
-            url = StringUtils.replaceOnce(url, urlPrefix, urlPrefixReplacement);
-            logger.info("URL replaced: {}", url);
-        }
-        return REST_PATTERN.matcher(url).replaceAll("$1federations/redirect") + "?" + queryString;
+        String rewrittenUri = REST_PATTERN.matcher(request.getRequestURI()).replaceAll("$1federations/redirect");
+        logger.info("Requested URI: {}\nRewritten URI: {}", request.getRequestURI(), rewrittenUri);
+
+        String rewrittenUrl = request.getRequestURL().toString().replace(request.getRequestURI(), rewrittenUri);
+        logger.info("Requested URL: {}\nRewritten URL: {}", request.getRequestURL(), rewrittenUrl);
+
+        return new HttpServletRequestWrapper(request) {
+            @Override
+            public String getRequestURI() {
+                return rewrittenUri;
+            }
+
+            @Override
+            public String getQueryString() {
+                return queryString;
+            }
+
+            @Override
+            public StringBuffer getRequestURL() {
+                return new StringBuffer(rewrittenUrl);
+            }
+        };
     }
 
     private boolean requestFederatedData(HttpServletRequest request) {

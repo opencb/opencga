@@ -21,16 +21,18 @@ on:
         type: boolean
         required: false
         default: false
-      hadoop:
+      storage_hadoop:
         type: choice
-        description: 'Hadoop flavour. Any of: [hdp3.1, hdi5.1, emr6.1, emr6.13]'
+        description: 'Hadoop flavour.'
         required: false
-        default: hdp3.1
+        default: "hdi5.1"
         options:
-          - hdp3.1
-          - hdi5.1
-          - emr6.1
-          - emr6.13
+          - "all"
+          - "hbase2.0"
+          - "hdi5.1"
+          - "emr6.1"
+          - "emr6.13"
+          - "emr7.5"
 
 jobs:
   build:
@@ -78,6 +80,28 @@ jobs:
           distribution: 'temurin'
           java-version: '8'
           cache: 'maven'
+      - name: Clone dependencies
+        id: clone_dependencies
+        run: |
+          if [ -f "./.github/workflows/scripts/get_same_branch.sh" ]; then
+            chmod +x ./.github/workflows/scripts/get_same_branch.sh
+            export DEPENDENCIES_SHA=${{ github.sha }}
+            ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }}
+          fi
+      - name: Cache local Maven repository
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ inputs.storage_hadoop }}-${{ steps.clone_dependencies.outputs.dependencies_sha }}
+          restore-keys: |
+            ${{ runner.os }}-maven-${{ inputs.storage_hadoop }}-
+      - name: Compile dependencies
+        run: |
+          if [ -f "./.github/workflows/scripts/compile_same_branch.sh" ]; then
+            chmod +x ./.github/workflows/scripts/compile_same_branch.sh
+            ./.github/workflows/scripts/compile_same_branch.sh
+          fi
       - name: Docker Login
         uses: docker/login-action@v2
         with:
@@ -86,14 +110,14 @@ jobs:
       - name: OpenCGA Enterprise Maven Build (skip tests)
         run: |
           if [[ -n "${{ inputs.task }}" ]]; then
-            echo "Building OpenCGA Enterprise for task '${{ inputs.task }}' with Hadoop flavour '${{ inputs.hadoop }}'"
-            ./build.sh --prepare-branches --task "${{ inputs.task }}" --storage-hadoop ${{ inputs.hadoop }} --docker --docker-tag "${{ inputs.tag }}"
+            echo "Building OpenCGA Enterprise for task '${{ inputs.task }}' with Hadoop flavour '${{ inputs.storage_hadoop }}'"
+            ./build.sh --prepare-branches --task "${{ inputs.task }}" --storage-hadoop ${{ inputs.storage_hadoop }} --docker --docker-tag "${{ inputs.tag }}"
           else
             if [[ "${{ inputs.branch }}" == v* || "${{ inputs.branch }}" == "main" ]]; then
-              echo "Building OpenCGA Enterprise for tag '${{ inputs.branch }}' with Hadoop flavour '${{ inputs.hadoop }}'"
-              ./build.sh --storage-hadoop ${{ inputs.hadoop }} --docker --docker-tag "${{ inputs.tag }}"
+              echo "Building OpenCGA Enterprise for tag '${{ inputs.branch }}' with Hadoop flavour '${{ inputs.storage_hadoop }}'"
+              ./build.sh --storage-hadoop ${{ inputs.storage_hadoop }} --docker --docker-tag "${{ inputs.tag }}"
             else
-              echo "Building OpenCGA Enterprise for branch '${{ inputs.branch }}' with Hadoop flavour '${{ inputs.hadoop }}'"
-              ./build.sh --prepare-branches --storage-hadoop ${{ inputs.hadoop }} --docker --docker-tag "${{ inputs.tag }}" 
+              echo "Building OpenCGA Enterprise for branch '${{ inputs.branch }}' with Hadoop flavour '${{ inputs.storage_hadoop }}'"
+              ./build.sh --prepare-branches --storage-hadoop ${{ inputs.storage_hadoop }} --docker --docker-tag "${{ inputs.tag }}" 
             fi
           fi

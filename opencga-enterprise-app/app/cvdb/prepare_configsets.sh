@@ -20,7 +20,7 @@ sed "s/REPLACEME_ENTERPRISE_VERSION/${VERSION}/g" "${OPENCGA_HOME}/opencga-enter
 sed "s/REPLACEME_ENTERPRISE_VERSION/${VERSION}/g" "${OPENCGA_HOME}/opencga-enterprise-app/app/cvdb/install.sh" >> "${SOLR_DIR}/install.sh"
 
 # Iterate over the different CVDB config sets
-for name in ca ci cv cve; do
+for name in ca ci cv cve viewers; do
   CONFIG_SET_NAME="opencga-$name-configset-$VERSION"
   CONFIG_SET_DIR="$SOLR_DIR/$CONFIG_SET_NAME"
 

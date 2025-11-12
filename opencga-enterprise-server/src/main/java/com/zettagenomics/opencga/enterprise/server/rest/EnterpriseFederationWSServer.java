@@ -5,6 +5,7 @@ import com.zettagenomics.opencga.enterprise.core.models.federation.FederationCli
 import com.zettagenomics.opencga.enterprise.core.models.federation.FederationServerCreateParams;
 import com.zettagenomics.opencga.enterprise.core.models.federation.FederationServerUpdateParams;
 import com.zettagenomics.opencga.enterprise.core.models.federation.FederationUserParams;
+import com.zettagenomics.opencga.enterprise.server.commons.EnterpriseParamConstants;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.federation.FederationClientParams;
@@ -35,7 +36,7 @@ public class EnterpriseFederationWSServer extends OpenCGAWSServer {
     @Path("/server/create")
     @ApiOperation(value = "Share a resource with another XetaBase instance.")
     public Response create(
-            @ApiParam(name = "body", value = "JSON containing the new Federation object", required = true) FederationServerCreateParams createParams) {
+            @ApiParam(name = "body", value = EnterpriseParamConstants.FEDERATION_CREATE_DESCRIPTION, required = true) FederationServerCreateParams createParams) {
         return run(() -> {
             String url = httpServletRequest.getRequestURL().toString();
             url = url.substring(0, url.indexOf("/webservices"));
@@ -47,7 +48,7 @@ public class EnterpriseFederationWSServer extends OpenCGAWSServer {
     @Path("/server/{id}/reset")
     @ApiOperation(value = "Reset the credentials of a federation server.")
     public Response reset(
-            @ApiParam(value = "Federation server id to reset", required = true) @PathParam("id") String federationServerId) {
+            @ApiParam(value = EnterpriseParamConstants.FEDERATION_RESET_DESCRIPTION, required = true) @PathParam("id") String federationServerId) {
         return run(() -> {
             String url = httpServletRequest.getRequestURL().toString();
             url = url.substring(0, url.indexOf("/webservices"));
@@ -59,8 +60,8 @@ public class EnterpriseFederationWSServer extends OpenCGAWSServer {
     @Path("/server/{id}/update")
     @ApiOperation(value = "Update some fields from a Federation server.")
     public Response updateServer(
-            @ApiParam(value = "Federation server id") @PathParam("id") String id,
-            @ApiParam(name = "body", value = "JSON containing the Federation server parameters to be updated", required = true) FederationServerUpdateParams params
+            @ApiParam(value = EnterpriseParamConstants.FEDERATION_SERVER_ID_DESCRIPTION) @PathParam("id") String id,
+            @ApiParam(name = "body", value = EnterpriseParamConstants.FEDERATION_UPDATE_SERVER_DESCRIPTION, required = true) FederationServerUpdateParams params
     ) {
         return run(() -> EnterpriseFactory.getEnterpriseFederationManager().update(id, params, token));
     }
@@ -69,7 +70,7 @@ public class EnterpriseFederationWSServer extends OpenCGAWSServer {
     @Path("/server/{id}/delete")
     @ApiOperation(value = "Delete a federation server.")
     public Response deleteServer(
-            @ApiParam(value = "Federation server id", required = true) @PathParam("id") String id
+            @ApiParam(value = EnterpriseParamConstants.FEDERATION_SERVER_ID_DESCRIPTION, required = true) @PathParam("id") String id
     ) {
         return run(() -> EnterpriseFactory.getEnterpriseFederationManager().deleteFederationServer(id, token));
     }
@@ -78,7 +79,7 @@ public class EnterpriseFederationWSServer extends OpenCGAWSServer {
     @Path("/client/connect")
     @ApiOperation(value = "Connect to a shared XetaBase instance.")
     public Response connect(
-            @ApiParam(name = "body", value = "JSON containing the Federation server configuration", required = true) FederationClientParams createParams) {
+            @ApiParam(name = "body", value = EnterpriseParamConstants.FEDERATION_CONNECT_DESCRIPTION, required = true) FederationClientParams createParams) {
         return run(() -> EnterpriseFactory.getEnterpriseFederationManager().connect(createParams, token));
     }
 
@@ -86,7 +87,7 @@ public class EnterpriseFederationWSServer extends OpenCGAWSServer {
     @Path("/client/{id}/synchronize")
     @ApiOperation(value = "Synchronize data from a known Federation server")
     public Response synchronize(
-            @ApiParam(name = "body", value = "Federation client id to be synchronized", required = true) @PathParam("id") String federationClientId) {
+            @ApiParam(value = EnterpriseParamConstants.FEDERATION_CLIENT_ID_SYNC, required = true) @PathParam("id") String federationClientId) {
         return run(() -> EnterpriseFactory.getEnterpriseFederationManager().sync(federationClientId, token));
     }
 
@@ -94,8 +95,8 @@ public class EnterpriseFederationWSServer extends OpenCGAWSServer {
     @Path("/client/{id}/update")
     @ApiOperation(value = "Update some fields from a Federation client.")
     public Response updateClient(
-            @ApiParam(value = "Federation client id") @PathParam("id") String id,
-            @ApiParam(name = "body", value = "JSON containing the Federation client parameters to be updated", required = true) FederationClientUpdateParams params
+            @ApiParam(value = EnterpriseParamConstants.FEDERATION_CLIENT_ID_DESCRIPTION) @PathParam("id") String id,
+            @ApiParam(name = "body", value = EnterpriseParamConstants.FEDERATION_UPDATE_CLIENT_DESCRIPTION, required = true) FederationClientUpdateParams params
     ) {
         return run(() -> EnterpriseFactory.getEnterpriseFederationManager().update(id, params, token));
     }
@@ -105,9 +106,9 @@ public class EnterpriseFederationWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Grant/Deny access to federated studies to users.")
     public Response shareFederatedStudy(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Action to be performed: ADD access or REMOVE access.", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
+            @ApiParam(value = EnterpriseParamConstants.FEDERATION_SHARE_ACTION_DESCRIPTION, allowableValues = "ADD,REMOVE", defaultValue = "ADD")
                 @QueryParam("action") String action,
-            @ApiParam(name = "body", value = "JSON containing the list of users to which this action will be applied.", required = true) FederationUserParams params
+            @ApiParam(name = "body", value = EnterpriseParamConstants.FEDERATION_SHARE_USERS_DESCRIPTION, required = true) FederationUserParams params
     ) {
         return run(() -> EnterpriseFactory.getEnterpriseFederationManager().shareStudy(studyStr, action, params, token));
     }
@@ -125,7 +126,7 @@ public class EnterpriseFederationWSServer extends OpenCGAWSServer {
     @Path("/client/{id}/delete")
     @ApiOperation(value = "Delete a federation client.")
     public Response deleteClient(
-            @ApiParam(value = "Federation client id", required = true) @PathParam("id") String id
+            @ApiParam(value = EnterpriseParamConstants.FEDERATION_CLIENT_ID_DESCRIPTION, required = true) @PathParam("id") String id
     ) {
         return run(() -> EnterpriseFactory.getEnterpriseFederationManager().deleteFederationClient(id, token));
     }
@@ -145,8 +146,8 @@ public class EnterpriseFederationWSServer extends OpenCGAWSServer {
     @Path("/redirect")
     @ApiOperation(value = "Redirect a POST call", hidden = true)
     public Response redirectPost(
-            @ApiParam(value = "Original URL") @QueryParam("url") String url,
-            @ApiParam(value = "JSON containing the POST object") Object body) {
+            @ApiParam(value = EnterpriseParamConstants.FEDERATION_REDIRECT_URL_DESCRIPTION) @QueryParam("url") String url,
+            @ApiParam(value = EnterpriseParamConstants.FEDERATION_REDIRECT_BODY_DESCRIPTION) Object body) {
         Map<String, Object> queryParams = uriInfo.getQueryParameters().entrySet().stream()
                 .filter(e -> !e.getKey().equals("url"))
                 .filter(e -> !e.getKey().equals("method"))
@@ -162,7 +163,7 @@ public class EnterpriseFederationWSServer extends OpenCGAWSServer {
     @Path("/redirect")
     @ApiOperation(value = "Redirect a GET call", hidden = true)
     public Response redirectGet(
-            @ApiParam(value = "Original URL") @QueryParam("url") String url) {
+            @ApiParam(value = EnterpriseParamConstants.FEDERATION_REDIRECT_URL_DESCRIPTION) @QueryParam("url") String url) {
         Map<String, Object> queryParams = uriInfo.getQueryParameters().entrySet().stream()
                 .filter(e -> !e.getKey().equals("url"))
                 .filter(e -> !e.getKey().equals("method"))
@@ -178,7 +179,7 @@ public class EnterpriseFederationWSServer extends OpenCGAWSServer {
     @Path("/redirect")
     @ApiOperation(value = "Redirect a DELETE call", hidden = true)
     public Response redirectDelete(
-            @ApiParam(value = "Original URL") @QueryParam("url") String url) {
+            @ApiParam(value = EnterpriseParamConstants.FEDERATION_REDIRECT_URL_DESCRIPTION) @QueryParam("url") String url) {
         Map<String, Object> queryParams = uriInfo.getQueryParameters().entrySet().stream()
                 .filter(e -> !e.getKey().equals("url"))
                 .filter(e -> !e.getKey().equals("method"))

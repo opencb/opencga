@@ -11,20 +11,35 @@ on:
         description: "The tag for the new docker."
         type: string
         required: false
-      hadoop:
+      storage_hadoop:
         type: choice
-        description: 'Hadoop flavour. Any of: [hdp3.1, hdi5.1, emr6.1, emr6.13]'
+        description: 'Hadoop flavour.'
         required: false
-        default: hdp3.1
+        default: "hdi5.1"
         options:
-          - hdp3.1
-          - hdi5.1
-          - emr6.1
-          - emr6.13
+          - "all"
+          - "hbase2.0"
+          - "hdi5.1"
+          - "emr6.1"
+          - "emr6.13"
+          - "emr7.5"
       release:
         type: boolean
         required: false
         default: ""
+      python_client:
+        type: boolean
+        required: false
+        default: "false"
+      r_client:
+        type: boolean
+        required: false
+        default: "false"
+      javascript_client:
+        type: boolean
+        required: false
+        default: "false"
+
 
 jobs:
   build:
@@ -45,7 +60,7 @@ jobs:
           echo "opencga_branch=${opencga_branch}" >> $GITHUB_OUTPUT
           echo "OpenCGA ref: __\"${opencga_branch}\"__" | tee -a ${GITHUB_STEP_SUMMARY}
           echo "Is release: __\"${{ inputs.release }}\"__" | tee -a ${GITHUB_STEP_SUMMARY}         
-          echo "Hadoop: __\"${{ inputs.hadoop }}\"__" | tee -a ${GITHUB_STEP_SUMMARY}
+          echo "Hadoop: __\"${{ inputs.storage_hadoop }}\"__" | tee -a ${GITHUB_STEP_SUMMARY}
           echo "Tag: __\"${{ inputs.tag }}\"__" | tee -a ${GITHUB_STEP_SUMMARY}
       - uses: actions/checkout@v4
         with:
@@ -59,14 +74,44 @@ jobs:
           distribution: 'temurin'
           java-version: '8'
           cache: 'maven'
-      - name: Install dependencies branches
+      - name: Clone dependencies
+        id: clone_dependencies
         run: |
           if [ -f "./.github/workflows/scripts/get_same_branch.sh" ]; then
             chmod +x ./.github/workflows/scripts/get_same_branch.sh
-            ./.github/workflows/scripts/get_same_branch.sh ${{ steps.get_opencga_branch.outputs.opencga_branch }}
+            export DEPENDENCIES_SHA=${{ github.sha }}
+            ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }}
+          fi
+      - name: Cache local Maven repository
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ inputs.storage_hadoop }}-${{ steps.clone_dependencies.outputs.dependencies_sha }}
+          restore-keys: |
+            ${{ runner.os }}-maven-${{ inputs.storage_hadoop }}-
+      - name: Compile dependencies
+        run: |
+          if [ -f "./.github/workflows/scripts/compile_same_branch.sh" ]; then
+            chmod +x ./.github/workflows/scripts/compile_same_branch.sh
+            ./.github/workflows/scripts/compile_same_branch.sh
           fi
       - name: OpenCGA Enterprise Maven Build (skip tests)
-        run: ./build.sh --storage-hadoop ${{ inputs.hadoop }}
+        run: |
+          CLIENTS=""
+          if [ "${{ inputs.python_client }}" == "true" ]; then
+            echo "Building Python client"
+            CLIENTS="$CLIENTS --python-client"
+          fi
+          if [ "${{ inputs.r_client }}" == "true" ]; then
+            echo "Building R client"
+            CLIENTS="$CLIENTS --R-client"
+          fi
+          if [ "${{ inputs.javascript_client }}" == "true" ]; then
+            echo "Building JavaScript client"
+            CLIENTS="$CLIENTS --javascript-client"
+          fi          
+          ./build.sh --storage-hadoop ${{ inputs.storage_hadoop }} $CLIENTS
       - id: get_project_version
         uses: avides/actions-project-version-check@v1.3.0
         with:
