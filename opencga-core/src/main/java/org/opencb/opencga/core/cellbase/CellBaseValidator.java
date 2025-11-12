@@ -357,7 +357,14 @@ public class CellBaseValidator {
     }
 
     private ObjectMap retryMetaAbout() throws IOException {
-        return retry("meta/about", () -> cellBaseClient.getMetaClient().about().firstResult());
+        return retry("meta/about", () -> {
+            CellBaseDataResponse<ObjectMap> about = cellBaseClient.getMetaClient().about();
+            ObjectMap aboutMap = about.firstResult();
+            if (aboutMap == null || aboutMap.isEmpty()) {
+                throw new NullPointerException("meta/about information is null or empty");
+            }
+            return aboutMap;
+        });
     }
 
     private SpeciesProperties retryMetaSpecies() throws IOException {
