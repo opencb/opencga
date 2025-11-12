@@ -5,7 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.tools.OpenCgaDockerToolScopeStudy;
+import org.opencb.opencga.analysis.workflow.ExternalToolDockerScopeStudy;
 import org.opencb.opencga.catalog.db.api.ExternalToolDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.GitRepositoryState;
@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 @Tool(id = CustomToolExecutor.ID, resource = Enums.Resource.JOB, description = CustomToolExecutor.DESCRIPTION)
-public class CustomToolExecutor extends OpenCgaDockerToolScopeStudy {
+public class CustomToolExecutor extends ExternalToolDockerScopeStudy {
 
     public final static String ID = "custom-tool";
     public static final String DESCRIPTION = "Execute an analysis from a custom binary.";
@@ -57,7 +57,7 @@ public class CustomToolExecutor extends OpenCgaDockerToolScopeStudy {
         checkDockerObject(container);
     }
 
-    private Container generateDockerObject(ExternalToolParams<CustomToolRunParams> runParams) throws CatalogException, ToolException {
+    private Container generateDockerObject(ExternalToolParams<CustomToolRunParams> runParams) throws Exception {
         OpenCGAResult<ExternalTool> result;
         if (runParams.getVersion() != null) {
             Query query = new Query(ExternalToolDBAdaptor.QueryParams.VERSION.key(), runParams.getVersion());
@@ -88,10 +88,8 @@ public class CustomToolExecutor extends OpenCgaDockerToolScopeStudy {
 
         // Process docker command line to replace variables
         Map<String, String> params = new HashMap<>();
-        if (runParams.getParams() != null) {
-            for (Map.Entry<String, Object> entry : runParams.getParams().toParams().entrySet()) {
-                params.put(entry.getKey(),  entry.getValue().toString());
-            }
+        if (runParams.getParams() != null && runParams.getParams().getParams() != null) {
+            params.putAll(runParams.getParams().getParams());
         }
         if (CollectionUtils.isNotEmpty(externalTool.getVariables())) {
             for (ExternalToolVariable variable : externalTool.getVariables()) {
@@ -101,7 +99,9 @@ public class CustomToolExecutor extends OpenCgaDockerToolScopeStudy {
                 }
             }
         }
-        String processedCli = inputFileUtils.processCommandLine(study, commandLine, params, temporalInputDir, dockerInputBindings,
+
+        Map<String, String> sanitisedParams = sanitiseParams(params, externalTool.getVariables());
+        String processedCli = inputFileUtils.processCommandLine(study, commandLine, sanitisedParams, temporalInputDir, dockerInputBindings,
                 getOutDir().toString(), token);
         container.setCommandLine(processedCli);
 

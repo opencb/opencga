@@ -491,11 +491,11 @@ public abstract class OpenCgaTool {
     }
 
     protected String getStudyFqn() throws CatalogException {
-        if (StringUtils.isEmpty(getParams().getString(ParamConstants.STUDY_PARAM))) {
+        String study = StringUtils.isNotEmpty(this.study) ? this.study : getParams().getString(ParamConstants.STUDY_PARAM);
+        if (StringUtils.isEmpty(study)) {
             return "";
         }
-        return getCatalogManager().getStudyManager().get(getParams().getString(ParamConstants.STUDY_PARAM), StudyManager.INCLUDE_STUDY_IDS,
-                getToken()).first().getFqn();
+        return getCatalogManager().getStudyManager().get(study, StudyManager.INCLUDE_STUDY_IDS, getToken()).first().getFqn();
     }
 
     public final String getJobId() {

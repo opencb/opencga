@@ -39,14 +39,7 @@ public abstract class OpenCgaDockerToolScopeStudy extends OpenCgaTool {
         super.close();
     }
 
-    /**
-     * Process the input parameters of the command line.
-     * @param value
-     * @param inputFileUtils
-     * @param cliParamsBuilder
-     * @throws CatalogException
-     */
-    protected void processInputCli(String value, InputFileUtils inputFileUtils, StringBuilder cliParamsBuilder) throws CatalogException {
+    protected String processInputValue(String value, InputFileUtils inputFileUtils) throws CatalogException {
         if (inputFileUtils.isValidOpenCGAFile(value)) {
             File file = inputFileUtils.findOpenCGAFileFromPattern(study, value, token);
             if (inputFileUtils.fileMayContainReferencesToOtherFiles(file)) {
@@ -56,26 +49,40 @@ public abstract class OpenCgaDockerToolScopeStudy extends OpenCgaTool {
                 // Write outputFile as inputBinding
                 dockerInputBindings.add(new AbstractMap.SimpleEntry<>(outputFile.toString(), outputFile.toString()));
                 logger.info("Params: OpenCGA input file: '{}'", outputFile);
-                cliParamsBuilder.append(outputFile).append(" ");
 
                 // Add files to inputBindings to ensure they are also mounted (if any)
                 for (File tmpFile : files) {
                     dockerInputBindings.add(new AbstractMap.SimpleEntry<>(tmpFile.getUri().getPath(), tmpFile.getUri().getPath()));
                     logger.info("Inner files from '{}': OpenCGA input file: '{}'", outputFile, tmpFile.getUri().getPath());
                 }
+
+                return outputFile.toString();
             } else {
                 String path = file.getUri().getPath();
                 dockerInputBindings.add(new AbstractMap.SimpleEntry<>(path, path));
                 logger.info("Params: OpenCGA input file: '{}'", path);
-                cliParamsBuilder.append(path).append(" ");
+
+                return path;
             }
         } else {
-            cliParamsBuilder.append(value).append(" ");
+            return value;
         }
 
     }
 
-    protected void processOutputCli(String value, InputFileUtils inputFileUtils, StringBuilder cliParamsBuilder) throws CatalogException {
+    /**
+     * Process the input parameters of the command line.
+     * @param value
+     * @param inputFileUtils
+     * @param cliParamsBuilder
+     * @throws CatalogException
+     */
+    protected void processInputCli(String value, InputFileUtils inputFileUtils, StringBuilder cliParamsBuilder) throws CatalogException {
+        String paramValue = processInputValue(value, inputFileUtils);
+        cliParamsBuilder.append(paramValue).append(" ");
+    }
+
+    protected String processOutputValue(String value, InputFileUtils inputFileUtils) throws CatalogException {
         String dynamicOutputFolder;
         if (inputFileUtils.isDynamicOutputFolder(value)) {
             // If it starts with $OUTPUT/...
@@ -85,6 +92,11 @@ public abstract class OpenCgaDockerToolScopeStudy extends OpenCgaTool {
             dynamicOutputFolder = inputFileUtils.appendSubpath(getOutDir().toAbsolutePath().toString(), value);
         }
         logger.info("Params: Dynamic output folder: '{}'", dynamicOutputFolder);
+        return dynamicOutputFolder;
+    }
+
+    protected void processOutputCli(String value, InputFileUtils inputFileUtils, StringBuilder cliParamsBuilder) throws CatalogException {
+        String dynamicOutputFolder = processOutputValue(value, inputFileUtils);
         cliParamsBuilder.append(dynamicOutputFolder).append(" ");
     }
 
@@ -117,40 +129,6 @@ public abstract class OpenCgaDockerToolScopeStudy extends OpenCgaTool {
         QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
 
         catalogManager.getJobManager().update(getStudyFqn(), getJobId(), params, options, token);
-    }
-
-    protected void processInputParams(String commandLineParams, StringBuilder builder) throws CatalogException {
-        String[] params = commandLineParams.split(" ");
-        for (String param : params) {
-            if (inputFileUtils.isDynamicOutputFolder(param)) {
-                processOutputCli(param, inputFileUtils, builder);
-            } else {
-                processInputCli(param, inputFileUtils, builder);
-            }
-        }
-    }
-
-    protected String runDocker(String image, String cli) throws IOException {
-        return runDocker(image, Collections.emptyList(), cli, null);
-    }
-
-    protected String runDocker(String image, AbstractMap.SimpleEntry<String, String> userOutputBinding, String cmdParams,
-                               Map<String, String> userDockerParams) throws IOException {
-        AbstractMap.SimpleEntry<String, String> outputBinding = userOutputBinding != null
-                ? userOutputBinding
-                : new AbstractMap.SimpleEntry<>(getOutDir().toAbsolutePath().toString(), getOutDir().toAbsolutePath().toString());
-
-        Map<String, String> dockerParams = new HashMap<>();
-        // Establish working directory
-        dockerParams.put("-w", getOutDir().toAbsolutePath().toString());
-        dockerParams.put("--volume", "/var/run/docker.sock:/var/run/docker.sock");
-        dockerParams.put("--env", "DOCKER_HOST='tcp://localhost:2375'");
-        dockerParams.put("--network", "host");
-        if (userDockerParams != null) {
-            dockerParams.putAll(userDockerParams);
-        }
-
-        return DockerUtils.run(image, dockerInputBindings, outputBinding, cmdParams, dockerParams);
     }
 
     protected String runDocker(String image, List<AbstractMap.SimpleEntry<String, String>> userOutputBindings, String cmdParams,
