@@ -123,6 +123,7 @@ jobs:
       - name: Run all OpenCB Junit tests, ie. java-common-libs, biodata, opencga and opencga-enterprise
         run: |
           ./build.sh --test --test-level runShortTests --docker --prepare-branches --prepare-hadoop --test-save-reports --task ${{ github.event.pull_request.head.ref }} --storage-hadoop ${{ vars.HADOOP_FLAVOUR }}
+          docker system prune -a -f --volumes
         env:
           THIRDPARTY_READ_TOKEN: ${{ secrets.THIRDPARTY_READ_TOKEN }}
       - name: Upload reports results to Github
