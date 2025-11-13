@@ -109,3 +109,14 @@ jobs:
 
       - name: test-version-from-check
         run: echo "Project version is " ${{ steps.get_project_version.outputs.version }}
+      - name: Upload log
+        uses: actions/upload-artifact@v4
+        ## Skip cancelled()
+        ## https://docs.github.com/en/actions/learn-github-actions/expressions#cancelled
+        if: success() || failure()
+        with:
+          name: build-log
+          path: |
+            ./build.log
+            ./reports/*.log.gz
+          if-no-files-found: error
