@@ -1,4 +1,5 @@
 name: Pull request approve workflow
+run-name: 'Pull request approve workflow ${{ github.event.pull_request.head.ref }} -> ${{ github.event.pull_request.base.ref }} by @${{ github.actor }}'
 
 on:
   pull_request_review:

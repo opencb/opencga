@@ -323,7 +323,7 @@ function mvn_exec_clean() {
 ## The output is saved in a compressed file and only INFO, WARNING and ERROR lines are printed to the console
 function exec_clean() {
   STEP_NAME="$1"
-  if [ -z "$GROUP_NAME:-" ]; then
+  if [ -z "${GROUP_NAME:-}" ]; then
     echo ""
   else
     echo "::group::${GROUP_NAME} - ${STEP_NAME}"
@@ -340,7 +340,7 @@ function exec_clean() {
   local STATUS=${PIPESTATUS[0]}
   END_TIME=$(date +%s)
   local DURATION=$((END_TIME - START_TIME))
-  if [ -z "$GROUP_NAME:-" ]; then
+  if [ -z "${GROUP_NAME:-}" ]; then
     echo ""
   else
     echo "::endgroup::"
