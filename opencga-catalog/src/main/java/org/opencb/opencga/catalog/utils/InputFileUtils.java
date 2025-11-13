@@ -56,7 +56,37 @@ public class InputFileUtils {
 
     public boolean fileMayContainReferencesToOtherFiles(File file) {
         // Check file size is smaller than 10MB
-        return file.getSize() < 10 * 1024 * 1024;
+        if (file.getSize() >= 10 * 1024 * 1024) {
+            return false;
+        }
+
+        // Check if file is compressed or binary by extension
+        if (isCompressedOrBinaryFile(file)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private boolean isCompressedOrBinaryFile(File file) {
+        String fileName = file.getName().toLowerCase();
+        // Compressed files
+        String[] compressedExtensions = {".gz", ".zip", ".tar", ".bz2", ".xz", ".7z", ".rar"};
+        for (String ext : compressedExtensions) {
+            if (fileName.endsWith(ext)) {
+                return true;
+            }
+        }
+
+        // Binary files common in bioinformatics
+        String[] binaryExtensions = {".bam", ".cram", ".bcf", ".pdf", ".png", ".jpg", ".jpeg", ".tiff"};
+        for (String ext : binaryExtensions) {
+            if (fileName.endsWith(ext)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public List<File> findAndReplaceFilePathToUrisFromFile(String study, File file, Path outFile, String token) throws CatalogException {
