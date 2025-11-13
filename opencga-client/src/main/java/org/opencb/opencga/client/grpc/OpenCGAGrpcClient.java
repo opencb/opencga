@@ -56,6 +56,9 @@ public class OpenCGAGrpcClient implements Closeable {
             return channel.get();
         }
         String grpcServerHost = clientConfiguration.getGrpc().getHost();
+        if (StringUtils.isEmpty(grpcServerHost)) {
+            throw new IllegalArgumentException("gRPC server host is not defined");
+        }
         URI uri = UriUtils.createUriSafe(grpcServerHost);
         boolean plainText = false;
         if (StringUtils.isNotEmpty(uri.getScheme())) {
@@ -64,6 +67,14 @@ public class OpenCGAGrpcClient implements Closeable {
                 int port = uri.getPort();
                 if (port <= 0) {
                     port = 80;
+                }
+                grpcServerHost = uri.getHost() + ":" + port;
+            }
+            if (uri.getScheme().equals("grpc+https") || uri.getScheme().equals("https")) {
+                plainText = true;
+                int port = uri.getPort();
+                if (port <= 0) {
+                    port = 443;
                 }
                 grpcServerHost = uri.getHost() + ":" + port;
             }
