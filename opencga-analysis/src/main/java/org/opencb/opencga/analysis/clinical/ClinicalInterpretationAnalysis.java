@@ -32,6 +32,7 @@ import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.GeneCancerAssociation;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -59,6 +60,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.biodata.models.clinical.ClinicalProperty.ModeOfInheritance.*;
 import static org.opencb.biodata.models.clinical.ClinicalProperty.Penetrance.COMPLETE;
 import static org.opencb.biodata.models.clinical.ClinicalProperty.Penetrance.valueOf;
 import static org.opencb.biodata.models.clinical.interpretation.VariantClassification.calculateAcmgClassification;
@@ -80,6 +82,23 @@ public class ClinicalInterpretationAnalysis extends InterpretationAnalysis {
     private ClinicalInterpretationConfiguration interpretationConfiguration;
 
     private String assembly;
+
+    private static Map<ModeOfInheritance, List<ModeOfInheritance>> moiCompatibility;
+
+    static {
+        moiCompatibility = new EnumMap<>(ModeOfInheritance.class);
+
+        moiCompatibility.put(AUTOSOMAL_DOMINANT, Arrays.asList(AUTOSOMAL_DOMINANT, DE_NOVO));
+        moiCompatibility.put(AUTOSOMAL_RECESSIVE, Collections.singletonList(AUTOSOMAL_RECESSIVE));
+        moiCompatibility.put(X_LINKED_DOMINANT, Arrays.asList(X_LINKED_DOMINANT, DE_NOVO));
+        moiCompatibility.put(X_LINKED_RECESSIVE, Collections.singletonList(X_LINKED_RECESSIVE));
+        moiCompatibility.put(Y_LINKED, Collections.singletonList(Y_LINKED));
+        moiCompatibility.put(MITOCHONDRIAL, Collections.singletonList(MITOCHONDRIAL));
+        moiCompatibility.put(DE_NOVO, Arrays.asList(DE_NOVO, AUTOSOMAL_DOMINANT, X_LINKED_DOMINANT, X_LINKED_RECESSIVE));
+        moiCompatibility.put(MENDELIAN_ERROR, Collections.singletonList(MENDELIAN_ERROR));
+        moiCompatibility.put(COMPOUND_HETEROZYGOUS, Arrays.asList(COMPOUND_HETEROZYGOUS, AUTOSOMAL_RECESSIVE));
+        moiCompatibility.put(UNKNOWN, Collections.emptyList());
+    }
 
     @ToolParams
     protected final ClinicalInterpretationAnalysisParams analysisParams = new ClinicalInterpretationAnalysisParams();
@@ -231,7 +250,9 @@ public class ClinicalInterpretationAnalysis extends InterpretationAnalysis {
         logger.info("{} clinical variants written to {}", clinicalVariants.size(), getOutDir().resolve(PRIMARY_FINDINGS_FILENAME));
 
         // Add interpretation in the clinical analysis and then save in catalog
-        saveInterpretation(study, clinicalAnalysis, null);
+        ObjectMap additionalAttributes = new ObjectMap();
+        additionalAttributes.put("configuration", interpretationConfiguration);
+        saveInterpretation(study, clinicalAnalysis, null, additionalAttributes);
     }
 
     private List<ClinicalVariant> setTierInClinicalVariants(List<ClinicalVariant> inputClinicalVariants) {
@@ -364,7 +385,7 @@ public class ClinicalInterpretationAnalysis extends InterpretationAnalysis {
                     DiseasePanel.VariantPanel variantPanel = getVariantPanel(panel, variant);
                     if (variantPanel != null && CollectionUtils.isNotEmpty(variantPanel.getCoordinates())) {
                         for (ModeOfInheritance panelMoi : variantPanel.getModesOfInheritance()) {
-                            if (moi == panelMoi) {
+                            if (isMoICompatible(moi, panelMoi)) {
                                 return true;
                             }
                         }
@@ -375,7 +396,7 @@ public class ClinicalInterpretationAnalysis extends InterpretationAnalysis {
                     DiseasePanel.GenePanel genePanel = getGenePanel(panel, evidence.getGenomicFeature().getGeneName());
                     if (genePanel != null && CollectionUtils.isNotEmpty(genePanel.getCoordinates())) {
                         for (ModeOfInheritance panelMoi : genePanel.getModesOfInheritance()) {
-                            if (moi == panelMoi) {
+                            if (isMoICompatible(moi, panelMoi)) {
                                 return true;
                             }
                         }
@@ -387,7 +408,7 @@ public class ClinicalInterpretationAnalysis extends InterpretationAnalysis {
                     if (CollectionUtils.isNotEmpty(regionPanels)) {
                         for (DiseasePanel.RegionPanel regionPanel : regionPanels) {
                             for (ModeOfInheritance panelMoi : regionPanel.getModesOfInheritance()) {
-                                if (moi == panelMoi) {
+                                if (isMoICompatible(moi, panelMoi)) {
                                     return true;
                                 }
                             }
@@ -402,6 +423,10 @@ public class ClinicalInterpretationAnalysis extends InterpretationAnalysis {
             }
         }
         return false;
+    }
+
+    private static boolean isMoICompatible(ModeOfInheritance evidenceMoi, ModeOfInheritance panelMoi) {
+        return moiCompatibility.get(evidenceMoi).contains(panelMoi);
     }
 
     private boolean evaluateConsequenceImpact(List<String> soTerms, ClinicalVariantEvidence evidence) {
@@ -878,7 +903,7 @@ public class ClinicalInterpretationAnalysis extends InterpretationAnalysis {
             String familySegregation = query.getString(FAMILY_SEGREGATION.key());
             switch (familySegregation) {
                 case "autosomalDominant":
-                    return ModeOfInheritance.AUTOSOMAL_DOMINANT;
+                    return AUTOSOMAL_DOMINANT;
                 case "autosomalRecessive":
                     return ModeOfInheritance.AUTOSOMAL_RECESSIVE;
                 case "XLinkedDominant":

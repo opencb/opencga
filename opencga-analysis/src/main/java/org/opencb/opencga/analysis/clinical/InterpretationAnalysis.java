@@ -17,10 +17,12 @@
 package org.opencb.opencga.analysis.clinical;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.biodata.models.clinical.interpretation.Software;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.ConfigurationUtils;
@@ -111,6 +113,11 @@ public abstract class InterpretationAnalysis extends OpenCgaToolScopeStudy {
     }
 
     protected void saveInterpretation(String studyId, ClinicalAnalysis clinicalAnalysis, Query query) throws ToolException {
+        saveInterpretation(studyId, clinicalAnalysis, query, new ObjectMap());
+    }
+
+    protected void saveInterpretation(String studyId, ClinicalAnalysis clinicalAnalysis, Query query, ObjectMap additionalAttributes)
+            throws ToolException {
 
         // Interpretation method
         InterpretationMethod method = new InterpretationMethod(getId(), null, null,
@@ -139,6 +146,13 @@ public abstract class InterpretationAnalysis extends OpenCgaToolScopeStudy {
                 .setClinicalAnalysisId(clinicalAnalysis.getId())
                 .setCreationDate(TimeUtils.getTime())
                 .setMethod(method);
+
+        if (MapUtils.isNotEmpty(additionalAttributes)) {
+            if (interpretation.getAttributes() == null) {
+                interpretation.setAttributes(new ObjectMap());
+            }
+            interpretation.getAttributes().putAll(additionalAttributes);
+        }
 
         // Store interpretation analysis in DB
         try {

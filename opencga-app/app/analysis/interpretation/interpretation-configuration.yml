@@ -182,9 +182,6 @@ tierConfiguration:
       description: "Medium priority variants"
       scenarios:
         - conditions:
-            in_panel: variant
-
-        - conditions:
             in_panel: gene
             moi_match: true
             consequence_impact: *moderate_impact

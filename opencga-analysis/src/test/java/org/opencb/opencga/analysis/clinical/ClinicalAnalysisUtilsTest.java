@@ -23,6 +23,7 @@ import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
 import org.opencb.opencga.analysis.variant.manager.VariantOperationsTest;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
@@ -71,7 +72,13 @@ public class ClinicalAnalysisUtilsTest {
 
         VariantOperationsTest.dummyVariantSetup(variantStorageManager, clinicalTest.studyFqn, clinicalTest.token);
         if (TIERING_MODE.equalsIgnoreCase(mode)) {
-            variantStorageManager.index(clinicalTest.studyFqn, "opa.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);
+            String filename = "OPA-15914-1.vcf";
+            try {
+                opencga.getCatalogManager().getFileManager().get(clinicalTest.studyFqn, filename, QueryOptions.empty(), clinicalTest.token);
+                variantStorageManager.index(clinicalTest.studyFqn, filename, outDir.toString(), storageOptions, clinicalTest.token);
+            } catch (CatalogException e) {
+                System.out.println("File '" + filename + "' not found in the catalog. Skipping indexing.");
+            }
         } else {
             variantStorageManager.index(clinicalTest.studyFqn, "family.vcf", outDir.toString(), storageOptions, clinicalTest.token);
             variantStorageManager.index(clinicalTest.studyFqn, "exomiser.vcf.gz", outDir.toString(), storageOptions, clinicalTest.token);

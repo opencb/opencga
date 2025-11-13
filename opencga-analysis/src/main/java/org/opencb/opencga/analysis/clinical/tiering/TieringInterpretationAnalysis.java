@@ -44,6 +44,7 @@ import java.nio.file.Paths;
 
 import static org.opencb.opencga.core.tools.ResourceManager.ANALYSIS_DIRNAME;
 
+@Deprecated
 @Tool(id = TieringInterpretationAnalysis.ID, resource = Enums.Resource.CLINICAL)
 public class TieringInterpretationAnalysis extends InterpretationAnalysis {
 

@@ -29,7 +29,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.ClinicalAnalysisLoadResult;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
@@ -48,7 +47,6 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleCreateParams;
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.study.StudyCreateParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
@@ -83,7 +81,7 @@ public class AbstractClinicalManagerTest extends GenericTest {
     public final static String PROBAND_ID4 = "HG105";
 
     public final static String CA_OPA = "opa-case";
-    public final static String CA_OPA_15914 = "opa-case";
+    public final static String CA_OPA_15914_1 = "OPA-15914-1";
 
     private static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
 
@@ -337,9 +335,7 @@ public class AbstractClinicalManagerTest extends GenericTest {
         studyFqn = study.getFqn();
 
         Map<Path, Path> files = new HashMap<>();
-//        files.put(Paths.get("/opt/tiering-data/opa-case.json"), Paths.get("/opt/tiering-data/opa.vcf.gz"));
         files.put(Paths.get("/opt/tiering-data/OPA-15914-1.json"), Paths.get("/opt/tiering-data/OPA-15914-1.vcf"));
-
         for (Map.Entry<Path, Path> entry : files.entrySet()) {
             if (!Files.exists(entry.getKey())) {
                 System.err.println("File not found: " + entry.getKey().toString());
@@ -358,10 +354,14 @@ public class AbstractClinicalManagerTest extends GenericTest {
         // OPA (clinicalAnalysis5)
         //---------------------------------------------------------------------
 
-//        Path path = Paths.get("/opt/tiering-data/opa-case.json");
-
         // Read the clinical analysis from file and save into a ClinicalAnalysis object
         ClinicalAnalysis ca = JacksonUtils.getDefaultObjectMapper().readerFor(ClinicalAnalysis.class).readValue(casePath.toFile());
+        for (Individual member : ca.getFamily().getMembers()) {
+            if (member.getId().equalsIgnoreCase(ca.getProband().getMother().getId())) {
+                member.setDisorders(ca.getProband().getDisorders());
+                break;
+            }
+        }
 //        ca.setId(CA_OPA);
         ca.setInterpretation(null);
         ca.setSecondaryInterpretations(null);

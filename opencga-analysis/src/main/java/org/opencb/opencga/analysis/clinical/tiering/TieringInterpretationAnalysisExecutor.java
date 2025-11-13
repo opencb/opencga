@@ -54,6 +54,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.biodata.models.clinical.ClinicalProperty.ModeOfInheritance.*;
 
+@Deprecated
 @ToolExecutor(id = "opencga-local",
         tool = TieringInterpretationAnalysis.ID,
         source = ToolExecutor.Source.STORAGE,
