@@ -94,15 +94,29 @@ function manage_dependency() {
     REPO=$(echo "$REPO" | cut -d "/" -f 2)
   fi
 
-  local TMP_DIR_HOME="${OPENCGA_ENTERPRISE_HOME_DIR}/report/dependency-checkouts/"
-  mkdir -p "$TMP_DIR_HOME"
-  local TEMP_DIR="$(mktemp -d --tmpdir="$TMP_DIR_HOME" --suffix="opencga-enterprise-$(date +%Y%m%d%H%M%S)-$REPO")"
+  # Validate REPO REPO_ORG and REPO_VERSION
+  if [ -z "$REPO" ] || [ -z "$REPO_ORG" ] || [ -z "$REPO_VERSION" ]; then
+    log "ERROR: REPO, REPO_ORG and REPO_VERSION must be provided"
+    log "REPO: '$REPO'"
+    log "REPO_ORG: '$REPO_ORG'"
+    log "REPO_VERSION: '$REPO_VERSION'"
+    exit 1
+  fi
+
+  local TEMP_DIR="$(mktemp -d --tmpdir="${TMP_DIR_HOME:?}" --suffix="opencga-enterprise-$(date +%Y%m%d%H%M%S)-$REPO")"
   cd "$TEMP_DIR" || exit 2
+
   if [ "$REPO" == "opencga-hadoop-thirdparty" ]; then
-    CLONE_URL="https://x-access-token:${THIRDPARTY_READ_TOKEN}@github.com/${REPO_ORG}/${REPO}.git"
+    if [ -n "${THIRDPARTY_READ_TOKEN:-}" ]; then
+      CLONE_URL="https://x-access-token:${THIRDPARTY_READ_TOKEN}@github.com/${REPO_ORG}/${REPO}.git"
+    else
+      CLONE_URL="git@github.com:${REPO_ORG}/${REPO}.git"
+    fi
   else
     CLONE_URL="https://github.com/${REPO_ORG}/"${REPO}".git"
   fi
+  ## Clean previous clone
+  rm -rf "${REPO:?}"
   echo "Cloning repository $REPO from $CLONE_URL"
   git clone "$CLONE_URL"
 
@@ -122,9 +136,9 @@ function manage_dependency() {
     if [ "$COMMAND" == "build" ];then
       log "Building $REPO branch $BRANCH_NAME."
       if [ "$REPO" == "opencga-hadoop-thirdparty" ]; then
-        ./dev/build.sh -a build "$STORAGE_HADOOP_DEPS"
+        exec_clean "${REPO}-${COMMAND}" ./dev/build.sh -a build "$STORAGE_HADOOP_DEPS"
       else
-        mvn clean install -B -T 2 -DskipTests --no-transfer-progress $MVN_OPTS
+        mvn_exec_clean "${REPO}-${COMMAND}" clean install -B -T 2 -DskipTests --no-transfer-progress $MVN_OPTS
       fi
 
       if [[ "$?" -ne 0 ]] ; then
@@ -137,9 +151,9 @@ function manage_dependency() {
       local pwd=$(pwd)
       echo "${pwd} $REPO" >> "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
       if [ "$REPO" == "opencga-hadoop-thirdparty" ]; then
-        ./dev/build.sh -a build-test "$STORAGE_HADOOP_DEPS"
+        exec_clean "${REPO}-${COMMAND}" ./dev/build.sh -a build-test "$STORAGE_HADOOP_DEPS"
       else
-        mvn install -B surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip --no-transfer-progress  $MVN_OPTS
+        mvn_exec_clean "${REPO}-${COMMAND}" install -B surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip --no-transfer-progress $MVN_OPTS
       fi
 
       if [[ "$?" -ne 0 ]] ; then
@@ -273,6 +287,10 @@ function validate() {
 function prepare_branches() {
   ## Only if you pass the parameter: --prepare-branch -b
 
+  export TMP_DIR_HOME="${OPENCGA_ENTERPRISE_HOME_DIR:?}/tmp/dependency-checkouts/"
+  mkdir -p "$TMP_DIR_HOME"
+  rm -rf "${TMP_DIR_HOME:?}"/*
+
   if [ "$PREPARE_BRANCHES" == "true" ]; then
     if [ "${PREPARE_BRANCHES_HADOOP:-false}" == "true" ]; then
       OPENCGA_HADOOP_THIRD_PARTY_VERSION="$(mvn help:evaluate -Dexpression=opencga.hadoop.thirdparty.version -q -DforceStdout)"
@@ -292,6 +310,36 @@ function prepare_branches() {
   fi
 }
 
+## Function to execute maven commands and log output
+## The output is saved in a compressed file and only INFO, WARNING and ERROR lines are printed to the console
+function mvn_exec_clean() {
+  STEP_NAME="$1"
+  shift
+  echo "::group::Maven Step: $STEP_NAME"
+  exec_clean "$STEP_NAME" mvn "$@"
+  echo "::endgroup::"
+}
+
+## Function to execute commands and log output
+## The output is saved in a compressed file and only INFO, WARNING and ERROR lines are printed to the console
+function exec_clean() {
+  STEP_NAME="$1"
+  shift
+  echo "=== $STEP_NAME ==="
+  echo "Executing: $*"
+  STEP_LOG_FILE="$OPENCGA_ENTERPRISE_HOME_DIR/reports/${STEP_NAME}.log.gz"
+  if [ -f "$STEP_LOG_FILE" ]; then
+      rm "$STEP_LOG_FILE"
+  fi
+  START_TIME=$(date +%s)
+  "$@" |& tee >(gzip > "$STEP_LOG_FILE" ) |& grep -a -P '^\[[^\]]*(INFO|WARNING|ERROR)|::group::|::endgroup::|^\+' --colour=never --line-buffered
+  local STATUS=${PIPESTATUS[0]}
+  END_TIME=$(date +%s)
+  local DURATION=$((END_TIME - START_TIME))
+  echo "Step: ${STEP_NAME} Duration: ${DURATION} seconds"
+  return $STATUS
+}
+
 # Function to build or/and test the opencga
 function build_opencga() {
   cd "$OPENCGA_HOME_DIR" || exit 2
@@ -301,7 +349,7 @@ function build_opencga() {
         return
       fi
       log "Compiling opencga... $(pwd)"
-      mvn clean install -DskipTests -P"$STORAGE_HADOOP_DEPS" -T 2 --no-transfer-progress $MVN_OPTS
+      mvn_exec_clean "opencga-build" clean install -DskipTests -P"$STORAGE_HADOOP_DEPS" -T 2 --no-transfer-progress $MVN_OPTS
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND opencga build FAILED!!!!!"
         print_log_summary
@@ -315,7 +363,7 @@ function build_opencga() {
   elif [ "$COMMAND" == "test" ];then
       local pwd=$(pwd -P)
       echo "${pwd} opencga" >> "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
-      mvn clean install -B surefire-report:report ${FAIL_NEVER} -P "$STORAGE_HADOOP_DEPS","${TEST_TAG}" -Dcheckstyle.skip --no-transfer-progress $MVN_OPTS
+      mvn_exec_clean "opencga-test" clean install -B surefire-report:report ${FAIL_NEVER} -P "$STORAGE_HADOOP_DEPS","${TEST_TAG}" -Dcheckstyle.skip --no-transfer-progress $MVN_OPTS
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND opencga test FAILED!!!!!"
         print_log_summary
@@ -355,8 +403,8 @@ function build_opencga_enterprise() {
 
   if [ "$COMMAND" == "build" ];then
     # The opencga.war.name is include in the MVN_OPTS, so we do not need to pass it
-    mvn clean install -DskipTests -T 2 -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
-    -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" --no-transfer-progress $MVN_OPTS
+    mvn_exec_clean "opencga-enterprise-build" clean install -DskipTests -T 2 -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
+        -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" --no-transfer-progress $MVN_OPTS
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND opencga-enterprise build FAILED!!!!!"
         print_log_summary
@@ -371,8 +419,8 @@ function build_opencga_enterprise() {
       local pwd=$(pwd)
       echo "${pwd} opencga-enterprise" >> "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
     # The opencga.war.name is include in the MVN_OPTS, so we do not need to pass it
-      mvn clean install -B surefire-report:report -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
-      -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" ${FAIL_NEVER} --no-transfer-progress $MVN_OPTS
+      mvn_exec_clean "opencga-enterprise-test" clean install -B surefire-report:report -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
+          -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" ${FAIL_NEVER} --no-transfer-progress $MVN_OPTS
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND opencga-enterprise test FAILED!!!!!"
         print_log_summary
