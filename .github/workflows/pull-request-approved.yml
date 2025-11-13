@@ -7,7 +7,7 @@ on:
 jobs:
   test:
     if: github.event.review.state == 'approved'
-    name: Execute JUnit and Jacoco tests
+    name: "Run all tests before merging"
     runs-on: ${{ vars.UBUNTU_VERSION }}
     steps:
       - name: Retrieve secrets from Keeper
