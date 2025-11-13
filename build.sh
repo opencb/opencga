@@ -285,7 +285,7 @@ function prepare_branches() {
             .github/workflows/scripts/prepare_hadoop.sh \
             --hadoop-flavour "$STORAGE_HADOOP_DEPS" \
             --hadoop-thirdparty-version "$OPENCGA_HADOOP_THIRD_PARTY_VERSION"
-      cd -
+      cd - || exit 2
     fi
     JCL_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=java-common-libs.version -q -DforceStdout $MVN_OPTS)"
 
@@ -325,8 +325,9 @@ function exec_step() {
   if [ -f "$STEP_LOG_FILE" ]; then
       rm "$STEP_LOG_FILE"
   fi
+  echo "STEP_LOG_FILE = $STEP_LOG_FILE"
   START_TIME=$(date +%s)
-  "$@" |& tee >(gzip > "$STEP_LOG_FILE" ) |& grep -a -P '^\[[^\]]*(INFO|WARNING|ERROR)|::group::|::endgroup::|^\+' --colour=never --line-buffered
+  "$@" |& tee >(gzip > "$STEP_LOG_FILE" ) |& { grep -a -P '^\[[^\]]*(INFO|WARNING|ERROR)|::group::|::endgroup::|^\+' --colour=never --line-buffered || true; }
   local STATUS=${PIPESTATUS[0]}
   END_TIME=$(date +%s)
   local DURATION=$((END_TIME - START_TIME))
