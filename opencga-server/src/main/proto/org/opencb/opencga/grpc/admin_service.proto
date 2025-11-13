@@ -1,17 +1,18 @@
 syntax = "proto3";
 
-package protobuf.opencb.service;
+package org.opencb.opencga.grpc;
 
 option java_package = "org.opencb.opencga.server.grpc";
 option java_outer_classname = "AdminServiceModel";
 
-import "protobuf/opencb/service/generic_service.proto";
-import "protobuf/opencb/service_types.proto";
+import "org/opencb/opencga/grpc/generic_service.proto";
 
 service AdminService {
 
     rpc status(Request) returns (MapResponse) {}
 
-    rpc stop(Request) returns (MapResponse) {}
+    rpc ping(Request) returns (MapResponse) {}
+
+//    rpc stop(Request) returns (MapResponse) {}
 
 }
