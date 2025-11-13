@@ -172,6 +172,7 @@ public abstract class SolrQueryParser {
                 solrQuery.setStart(queryOptions.getInt(QueryOptions.SKIP));
             }
 
+            // Sort always by id to ensure stable pagination
             solrQuery.addSort(new SolrQuery.SortClause("id", SolrQuery.ORDER.asc));
         }
 

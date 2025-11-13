@@ -18,7 +18,8 @@ package org.opencb.opencga.server.grpc;
 
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
-import org.opencb.opencga.server.AbstractStorageServer;
+import org.opencb.opencga.server.AbstractServer;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
@@ -26,31 +27,26 @@ import java.nio.file.Path;
 /**
  * Created by imedina on 02/01/16.
  */
-public class GrpcServer extends AbstractStorageServer {
+public class GrpcServer extends AbstractServer {
 
     private Server server;
+    protected Logger logger;
 
-    public GrpcServer(Path configDir) {
-        super(configDir);
-        init();
-    }
-
-    private void init() {
+    public GrpcServer(Path opencgaHome, int port) {
+        super(opencgaHome, port);
         logger = LoggerFactory.getLogger(this.getClass());
-        if (configuration != null) {
-            this.port = configuration.getServer().getGrpc().getPort();
-        }
     }
 
     @Override
     public void start() throws Exception {
+        GenericGrpcService grpcService = new GenericGrpcService(opencgaHome, configuration, storageConfiguration);
         server = ServerBuilder.forPort(port)
 //                .addService(AdminServiceGrpc.bindService(new AdminGrpcService(catalogConfiguration, storageConfiguration, this)))
 //                .addService(VariantServiceGrpc.bindService(new VariantGrpcService(catalogConfiguration, storageConfiguration)))
 //                .addService(AlignmentServiceGrpc.bindService(new AlignmentGrpcService(catalogConfiguration, storageConfiguration)))
-                .addService(new AdminGrpcService(configuration, storageConfiguration, this))
-                .addService(new VariantGrpcService(configuration, storageConfiguration))
-                .addService(new AlignmentGrpcService(configuration, storageConfiguration))
+                .addService(new AdminGrpcService(grpcService, this))
+                .addService(new VariantGrpcService(grpcService))
+//                .addService(new AlignmentGrpcService(configuration, storageConfiguration))
                 .build()
                 .start();
         logger.info("gRPC server started, listening on {}", port);

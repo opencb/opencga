@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package org.opencb.opencga.grpc;
+
+option java_package = "org.opencb.opencga.server.grpc";
+option java_outer_classname = "VariantServiceModel";
+
+import "org/opencb/opencga/grpc/generic_service.proto";
+
+service VariantService {
+
+//    rpc count(Request) returns (LongResponse) {}
+
+//    rpc distinct(Request) returns (StringArrayResponse) {}
+
+    rpc query(Request) returns (stream VariantResponse);
+
+//    rpc groupBy(Request) returns (GroupResponse) {}
+
+}
