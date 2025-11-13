@@ -31,6 +31,16 @@ public class SearchIndexMetadata {
      */
     private Status status;
 
+    /**
+     * Status of the data contained in the index.
+     * <ul>
+     * <li>NONE: No data present in the index.</li>
+     * <li>OUT_OF_DATE: Some data exists, but it is out of date.</li>
+     * <li>READY: Data is fully loaded and ready to be used.</li>
+     * </ul>
+     */
+    private DataStatus dataStatus;
+
     private String configSetId;
     /**
      * Suffix to be added to the collection name.
@@ -55,15 +65,22 @@ public class SearchIndexMetadata {
         REMOVED // Index no longer exists.
     }
 
+    public enum DataStatus {
+        EMPTY, // No data present in the index.
+        OUT_OF_DATE, // Data is out of date.
+        READY // Data is fully loaded and ready to be used.
+    }
+
     protected SearchIndexMetadata() {
     }
 
-    public SearchIndexMetadata(int version, Date creationDate, Date lastUpdateDate, Status status, String configSetId,
-                               String collectionNameSuffix, ObjectMap attributes) {
+    public SearchIndexMetadata(int version, Date creationDate, Date lastUpdateDate, Status status, DataStatus dataStatus,
+                               String configSetId, String collectionNameSuffix, ObjectMap attributes) {
         this.version = version;
         this.creationDate = creationDate;
         this.lastUpdateDate = lastUpdateDate;
         this.status = status;
+        this.dataStatus = dataStatus;
         this.configSetId = configSetId;
         this.collectionNameSuffix = collectionNameSuffix;
         this.attributes = attributes;
@@ -110,6 +127,15 @@ public class SearchIndexMetadata {
 
     public SearchIndexMetadata setStatus(Status status) {
         this.status = status;
+        return this;
+    }
+
+    public DataStatus getDataStatus() {
+        return dataStatus;
+    }
+
+    public SearchIndexMetadata setDataStatus(DataStatus dataStatus) {
+        this.dataStatus = dataStatus;
         return this;
     }
 

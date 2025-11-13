@@ -56,6 +56,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.*;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -181,25 +182,37 @@ public class CatalogStorageMetadataSynchronizer {
 
     private void synchronizeProjectSecondaryAnnotationIndexStatus(String projectFqn, String token, Project project, ProjectMetadata projectMetadata)
             throws CatalogException {
-        String secondaryAnnotationIndexStatus = secureGet(() -> project.getInternal().getVariant().getSecondaryAnnotationIndex().getStatus().getId(), null);
-        TaskMetadata.Status storageSecondaryAnnotationIndexStatus = projectMetadata.getSecondaryAnnotationIndexStatus();
-
+        String secondaryAnnotationIndexStatus = secureGet(() -> project.getInternal().getVariant()
+                .getSecondaryAnnotationIndex().getStatus().getId(), null);
+        SearchIndexMetadata searchIndexMetadata = projectMetadata.getSecondaryAnnotationIndex().getSearchIndexMetadataForQueries();
         OperationIndexStatus operationIndexStatus;
-        switch (storageSecondaryAnnotationIndexStatus) {
-            case NONE:
-                operationIndexStatus = new OperationIndexStatus(OperationIndexStatus.PENDING,
-                        "Variant secondary annotation index operation pending. "
-                                + " variantIndexTs = " + projectMetadata.getVariantIndexLastTimestamp()
-                                + ", variantSecondaryAnnotationIndexTs = " + projectMetadata.getSecondaryAnnotationIndexLastTimestamp()
-                                + ", variantAnnotationIndexTs = " + projectMetadata.getAnnotationIndexLastTimestamp()
-                                + ", variantIndexStatsTs = " + projectMetadata.getStatsLastTimestamp()
-                );
-                break;
-            case READY:
-                operationIndexStatus = new OperationIndexStatus(storageSecondaryAnnotationIndexStatus.name(), "");
-                break;
-            default:
-                throw new IllegalStateException("Unexpected value: " + storageSecondaryAnnotationIndexStatus);
+        if (searchIndexMetadata == null) {
+            operationIndexStatus = new OperationIndexStatus(OperationIndexStatus.PENDING,
+                    "Variant secondary annotation index operation pending. "
+                            + " variantIndexTs = " + projectMetadata.getVariantIndexLastTimestamp()
+                            + ", variantAnnotationIndexTs = " + projectMetadata.getAnnotationIndexLastUpdateTimestamp()
+                            + ", variantIndexStatsTs = " + projectMetadata.getStatsLastTimestamp()
+            );
+        } else {
+            SearchIndexMetadata.DataStatus dataStatus = searchIndexMetadata.getDataStatus();
+
+            switch (dataStatus) {
+                case OUT_OF_DATE:
+                case EMPTY:
+                    operationIndexStatus = new OperationIndexStatus(OperationIndexStatus.PENDING,
+                            "Variant secondary annotation index operation pending. "
+                                    + " variantIndexTs = " + projectMetadata.getVariantIndexLastTimestamp()
+                                    + ", variantSecondaryAnnotationIndexTs = " + searchIndexMetadata.getLastUpdateDate()
+                                    + ", variantAnnotationIndexTs = " + projectMetadata.getAnnotationIndexLastUpdateTimestamp()
+                                    + ", variantIndexStatsTs = " + projectMetadata.getStatsLastTimestamp()
+                    );
+                    break;
+                case READY:
+                    operationIndexStatus = new OperationIndexStatus(OperationIndexStatus.READY, "");
+                    break;
+                default:
+                    throw new IllegalStateException("Unexpected value: " + dataStatus);
+            }
         }
 
         if (!operationIndexStatus.getName().equals(secondaryAnnotationIndexStatus)) {
@@ -263,7 +276,7 @@ public class CatalogStorageMetadataSynchronizer {
                     operationIndexStatus = new OperationIndexStatus(OperationIndexStatus.PENDING,
                             "Variant annotation index operation pending. "
                                     + " variantIndexTs = " + projectMetadata.getVariantIndexLastTimestamp()
-                                    + ", variantAnnotationIndexTs = " + projectMetadata.getAnnotationIndexLastTimestamp()
+                                    + ", variantAnnotationIndexTs = " + projectMetadata.getAnnotationIndexLastUpdateTimestamp()
                     );
                 }
                 break;

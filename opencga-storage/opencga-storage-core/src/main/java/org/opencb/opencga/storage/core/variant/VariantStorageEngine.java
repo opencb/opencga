@@ -906,7 +906,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             }
             VariantSearchManager variantSearchManager = getVariantSearchManager();
             ProjectMetadata projectMetadata = variantSearchManager.setActiveIndex(indexMetadata, updateStartTimestamp);
-            mm.updateSecondaryAnnotationIndexTimestamp(updateStartTimestamp);
 
             for (SearchIndexMetadata deprecatedIndex : projectMetadata.getSecondaryAnnotationIndex().getDeprecatedIndexes()) {
                 variantSearchManager.delete(deprecatedIndex);

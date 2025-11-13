@@ -23,8 +23,8 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
     // This value was used by opencga-storage-hadoop internally for the same purpose. It is not used anymore.
     private static final String LAST_LOADED_FILE_TS = "lastLoadedFileTs";
     private static final String STATS_INDEX_LAST_TIMESTAMP = "stats.index.last.timestamp";
-    private static final String ANNOTATION_INDEX_LAST_TIMESTAMP = "annotation.index.last.timestamp";
-    private static final String SEARCH_INDEX_LAST_TIMESTAMP = "search.index.last.timestamp";
+    private static final String ANNOTATION_INDEX_LAST_UPDATE_TIMESTAMP = "annotation.index.last.timestamp";
+    private static final String ANNOTATION_INDEX_LAST_FULL_UPDATE_TIMESTAMP = "annotation.index.last.full.timestamp";
 
     private String species;
     private String assembly;
@@ -437,16 +437,6 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
     }
 
     @JsonIgnore
-    public TaskMetadata.Status getSecondaryAnnotationIndexStatus() {
-        return getStatus("secondaryAnnotationIndex");
-    }
-
-    @JsonIgnore
-    public ProjectMetadata setSecondaryAnnotationIndexStatus(TaskMetadata.Status annotationStatus) {
-        return setStatus("secondaryAnnotationIndex", annotationStatus);
-    }
-
-    @JsonIgnore
     public ProjectMetadata setVariantIndexLastTimestamp() {
         getAttributes().put(FILE_INDEX_LAST_TIMESTAMP, System.currentTimeMillis());
         return this;
@@ -462,27 +452,43 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
         return ts;
     }
 
+    /**
+     *
+     * @param annotationStartTimestamp The timestamp when the annotation index update started. Includes full or partial update.
+     * @return this
+     */
     @JsonIgnore
-    public ProjectMetadata setAnnotationIndexLastTimestamp(long annotationStartTimestamp) {
-        getAttributes().put(ANNOTATION_INDEX_LAST_TIMESTAMP, annotationStartTimestamp);
+    public ProjectMetadata setAnnotationIndexLastUpdateTimestamp(long annotationStartTimestamp) {
+        getAttributes().put(ANNOTATION_INDEX_LAST_UPDATE_TIMESTAMP, annotationStartTimestamp);
         return this;
     }
 
+    /**
+     * @return The timestamp when the annotation index was last updated. Includes full or partial update.
+     */
     @JsonIgnore
-    public long getAnnotationIndexLastTimestamp() {
-        return getAttributes().getLong(ANNOTATION_INDEX_LAST_TIMESTAMP, 0);
+    public long getAnnotationIndexLastUpdateTimestamp() {
+        return getAttributes().getLong(ANNOTATION_INDEX_LAST_UPDATE_TIMESTAMP, 0);
     }
 
+    /**
+     * @param annotationFullUpdateTimestamp The timestamp when the annotation index full update finished.
+     * @return this
+     */
     @JsonIgnore
-    public ProjectMetadata setSecondaryAnnotationIndexLastTimestamp(long timestamp) {
-        getAttributes().put(SEARCH_INDEX_LAST_TIMESTAMP, timestamp);
+    public ProjectMetadata setAnnotationIndexLastFullUpdateTimestamp(long annotationFullUpdateTimestamp) {
+        getAttributes().put(ANNOTATION_INDEX_LAST_FULL_UPDATE_TIMESTAMP, annotationFullUpdateTimestamp);
         return this;
     }
 
+    /**
+     * @return The timestamp when the annotation index was last fully updated.
+     */
     @JsonIgnore
-    public long getSecondaryAnnotationIndexLastTimestamp() {
-        return getAttributes().getLong(SEARCH_INDEX_LAST_TIMESTAMP, 0);
+    public long getAnnotationIndexLastFullUpdateTimestamp() {
+        return getAttributes().getLong(ANNOTATION_INDEX_LAST_FULL_UPDATE_TIMESTAMP, 0);
     }
+
 
     @JsonIgnore
     public ProjectMetadata setStatsIndexLastTimestamp(long timeMillis) {

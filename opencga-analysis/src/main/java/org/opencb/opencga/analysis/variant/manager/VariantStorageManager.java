@@ -658,7 +658,6 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
             if (engine.getMetadataManager().exists()) {
                 engine.getMetadataManager().invalidateCurrentVariantAnnotationIndex();
-                logger.info("Invalidating current variant annotation index on project '{}'", projectFqn);
                 getSynchronizer(engine).synchronizeCatalogProjectFromStorage(projectFqn, token);
                 List<String> jobDependsOn = new ArrayList<>(1);
                 if (StringUtils.isNotEmpty(annotationSaveId)) {

@@ -1028,20 +1028,14 @@ public class VariantSearchManager {
                     .append(SEARCH_STATS_FUNCTIONAL_QUERIES_ENABLED.key(), false)
                     .append(SEARCH_STATS_VARIANT_ID_VERSION.key(), "v1")
             );
+            // If the project metadata has a "search.index.last.timestamp" attribute (old SEARCH_INDEX_LAST_TIMESTAMP),
+            // it means that the index was created before the introduction of the SearchIndexMetadata,
+            // so we set the last update date to the value of that attribute
+            long timestamp = metadataManager.getProjectMetadata().getAttributes().getLong("search.index.last.timestamp", 0);
+
             // Assume this legacy search index is the active one.
-            setActiveIndex(indexMetadata, 1);
-            if (metadataManager.getProjectMetadata().getAttributes().containsKey("search.index.last.timestamp")) {
-                // If the project metadata has a "search.index.last.timestamp" attribute (old SEARCH_INDEX_LAST_TIMESTAMP),
-                // it means that the index was created before the introduction of the SearchIndexMetadata,
-                // so we set the last update date to the value of that attribute
-                indexMetadata = metadataManager.updateProjectMetadata(projectMetadata -> {
-                    projectMetadata.getSecondaryAnnotationIndex().getLastStagingOrActiveIndex().setLastUpdateDate(
-                            Date.from(Instant.ofEpochMilli(projectMetadata
-                                    .getAttributes().getLong("search.index.last.timestamp"))));
-                    projectMetadata.getAttributes().remove("search.index.last.timestamp");
-                }).getSecondaryAnnotationIndex().getIndexMetadata(indexMetadata.getVersion());
-            }
-            return indexMetadata;
+            return setActiveIndex(indexMetadata, timestamp)
+                    .getSecondaryAnnotationIndex().getIndexMetadata(indexMetadata.getVersion());
         }
         return null;
     }
@@ -1108,6 +1102,7 @@ public class VariantSearchManager {
                 Date.from(Instant.now()),
                 null,
                 SearchIndexMetadata.Status.STAGING,
+                SearchIndexMetadata.DataStatus.EMPTY,
                 configSetId,
                 collectionNameSuffix,
                 attributes
@@ -1123,21 +1118,8 @@ public class VariantSearchManager {
         return metadataManager.getProjectMetadata().getSecondaryAnnotationIndex().getSearchIndexMetadataForQueries();
     }
 
-    public ProjectMetadata setActiveIndex(SearchIndexMetadata indexMetadata, long newTimestamp) throws StorageEngineException {
-        return metadataManager.updateProjectMetadata(projectMetadata -> {
-            for (SearchIndexMetadata value : projectMetadata.getSecondaryAnnotationIndex().getValues()) {
-                if (value.getVersion() == indexMetadata.getVersion()) {
-                    value.setStatus(SearchIndexMetadata.Status.ACTIVE);
-                    value.setLastUpdateDate(Date.from(Instant.ofEpochMilli(newTimestamp)));
-                } else {
-                    if (value.getStatus() == SearchIndexMetadata.Status.ACTIVE || value.getStatus() == SearchIndexMetadata.Status.STAGING) {
-                        // If there is an older active or staging index, update its status to DEPRECATED
-                        value.setStatus(SearchIndexMetadata.Status.DEPRECATED);
-                    }
-                }
-            }
-            return projectMetadata;
-        });
+    public ProjectMetadata setActiveIndex(SearchIndexMetadata indexMetadata, long updateStartTimestamp) throws StorageEngineException {
+        return metadataManager.setActiveSearchIndexMetadata(indexMetadata, updateStartTimestamp);
     }
 
     private class Postprocessing implements SolrCollection.FacetPostprocessing {

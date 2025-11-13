@@ -7,7 +7,9 @@ import java.util.concurrent.TimeUnit;
 public class VariantSecondaryAnnotationIndexSets {
 
     private List<SearchIndexMetadata> values;
+    // Last time the Solr index was updated (i.e. documents were sent to Solr)
     private long lastSolrUpdateTimestamp;
+    // Timeout in milliseconds after which we consider that the Solr update has expired
     private long solrUpdateTimeoutMillis;
 
     public VariantSecondaryAnnotationIndexSets() {
