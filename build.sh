@@ -315,15 +315,19 @@ function prepare_branches() {
 function mvn_exec_clean() {
   STEP_NAME="$1"
   shift
-  echo "::group::Maven Step: $STEP_NAME"
+  export GROUP_NAME="Maven Step"
   exec_clean "$STEP_NAME" mvn "$@"
-  echo "::endgroup::"
 }
 
 ## Function to execute commands and log output
 ## The output is saved in a compressed file and only INFO, WARNING and ERROR lines are printed to the console
 function exec_clean() {
   STEP_NAME="$1"
+  if [ -z "$GROUP_NAME" ]; then
+    echo ""
+  else
+    echo "::group::${GROUP_NAME} - ${STEP_NAME}"
+  fi
   shift
   echo "=== $STEP_NAME ==="
   echo "Executing: $*"
@@ -336,7 +340,13 @@ function exec_clean() {
   local STATUS=${PIPESTATUS[0]}
   END_TIME=$(date +%s)
   local DURATION=$((END_TIME - START_TIME))
-  echo "Step: ${STEP_NAME} Duration: ${DURATION} seconds"
+  if [ -z "$GROUP_NAME" ]; then
+    echo ""
+  else
+    echo "::endgroup::"
+  fi
+  echo "== $STEP_NAME Completed =="
+  echo " - Duration: $(date -u -d @"$DURATION" +%H:%M:%S) ($DURATION seconds)"
   return $STATUS
 }
 

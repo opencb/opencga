@@ -124,3 +124,20 @@ jobs:
           ./build.sh --test --test-level runShortTests --docker --prepare-branches --prepare-hadoop --test-save-reports --task ${{ github.event.pull_request.head.ref }} --R-client --python-client --javascript-client --storage-hadoop ${{ vars.HADOOP_FLAVOUR }}
         env:
           THIRDPARTY_READ_TOKEN: ${{ secrets.THIRDPARTY_READ_TOKEN }}
+      - name: Upload reports results to Github
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-test
+          path: ./reports/
+          if-no-files-found: error
+      - name: Upload log
+        uses: actions/upload-artifact@v4
+        ## Skip cancelled()
+        ## https://docs.github.com/en/actions/learn-github-actions/expressions#cancelled
+        if: success() || failure()
+        with:
+          name: build-log
+          path: |
+            ./build.log
+            ./reports/*.log.gz
+          if-no-files-found: error
