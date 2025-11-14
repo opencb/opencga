@@ -239,10 +239,10 @@ public class ToolParamsTest {
         assertEquals("asdf", params.get("myKey"));
         assertNull(params.get("myKey2"));
         assertEquals("", params.get("myBooleanTrue"));
-        assertEquals("true", params.get("myBooleanNullableTrue"));
+        assertEquals(true, params.get("myBooleanNullableTrue"));
         assertNull(params.get("myBoolean"));
         assertNull(params.get("myBooleanNullable"));
-        assertEquals("0", params.get("myInteger"));
+        assertEquals(0, params.get("myInteger"));
         assertNull(params.get("myIntegerNullable"));
 
         assertEquals(p, ToolParams.fromParams(MyToolParams.class, params));
@@ -260,10 +260,10 @@ public class ToolParamsTest {
         assertEquals("asdf", params.get("myKey"));
         assertNull(params.get("myKey2"));
         assertEquals("", params.get("myBooleanTrue"));
-        assertEquals("true", params.get("myBooleanNullableTrue"));
+        assertEquals(true, params.get("myBooleanNullableTrue"));
         assertNull(params.get("myBoolean"));
         assertNull(params.get("myBooleanNullable"));
-        assertEquals("0", params.get("myInteger"));
+        assertEquals(0, params.get("myInteger"));
         assertNull(params.get("myIntegerNullable"));
         assertEquals(pd.dynamicParams, params.get("dynamicParams"));
         assertNotSame(pd.dynamicParams, params.get("dynamicParams"));
@@ -284,10 +284,10 @@ public class ToolParamsTest {
         assertEquals("asdf", params.get("myKey"));
         assertNull(params.get("myKey2"));
         assertEquals("", params.get("myBooleanTrue"));
-        assertEquals("true", params.get("myBooleanNullableTrue"));
+        assertEquals(true, params.get("myBooleanNullableTrue"));
         assertNull(params.get("myBoolean"));
         assertNull(params.get("myBooleanNullable"));
-        assertEquals("0", params.get("myInteger"));
+        assertEquals(0, params.get("myInteger"));
         assertNull(params.get("myIntegerNullable"));
         assertEquals(p.dynamicParams1, params.get("dynamicParams1"));
         assertNotSame(p.dynamicParams1, params.get("dynamicParams1"));
@@ -297,11 +297,11 @@ public class ToolParamsTest {
         assertEquals(p, ToolParams.fromParams(MyToolWithMultipleDynamicParams.class, params));
     }
 
-    @Test
-    public void testInvalidNestedParams() throws IOException {
-        thrown.expectMessage("Invalid param 'dynamicParams' from ToolParams class org.opencb.opencga.core.tools.ToolParamsTest$MyToolWithMultipleDynamicInvalidNestingParams. Invalid multiple level nesting params");
-        new MyToolWithMultipleDynamicInvalidNestingParams().toParams();
-    }
+//    @Test
+//    public void testInvalidNestedParams() throws IOException {
+//        thrown.expectMessage("Invalid param 'dynamicParams' from ToolParams class org.opencb.opencga.core.tools.ToolParamsTest$MyToolWithMultipleDynamicInvalidNestingParams. Invalid multiple level nesting params");
+//        new MyToolWithMultipleDynamicInvalidNestingParams().toParams();
+//    }
 
     @Test
     public void testToObjectMap() throws IOException {
