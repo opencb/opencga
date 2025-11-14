@@ -16,8 +16,8 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.externalTool.ExternalTool;
+import org.opencb.opencga.core.models.externalTool.WorkflowParams;
 import org.opencb.opencga.core.models.externalTool.WorkflowScript;
-import org.opencb.opencga.core.models.externalTool.WorkflowToolParams;
 import org.opencb.opencga.core.models.job.ToolInfoExecutor;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.ToolDependency;
@@ -47,7 +47,7 @@ public class NextFlowToolExecutor extends ExternalToolDockerScopeStudy {
     public static final String DESCRIPTION = "Execute a Nextflow analysis.";
 
     @ToolParams
-    protected WorkflowToolParams runParams = new WorkflowToolParams();
+    protected WorkflowParams runParams = new WorkflowParams();
 
     private ExternalTool externalTool;
     private String cliParams;
@@ -114,7 +114,7 @@ public class NextFlowToolExecutor extends ExternalToolDockerScopeStudy {
         addDependencies(dependencyList);
         updateJobInformation(new ArrayList<>(tags), toolInfoExecutor);
 
-        Map<String, String> sanitisedParams = sanitiseParams(runParams.getParams().getParams(), externalTool.getVariables());
+        Map<String, String> sanitisedParams = sanitiseParams(runParams.getParams(), externalTool.getVariables());
         this.cliParams = buildCommandLine(sanitisedParams);
     }
 
@@ -174,15 +174,14 @@ public class NextFlowToolExecutor extends ExternalToolDockerScopeStudy {
 
         startTraceFileMonitor();
 
-        Map<String, String> dockerParams = new HashMap<>();
+        Map<String, List<String>> dockerParams = new HashMap<>();
         // Set HOME environment variable to the temporal input directory. This is because nextflow creates a hidden folder there and,
         // when nextflow runs on other dockers, we need to store those files in a path shared between the parent docker and the host
-        // TODO: Temporal solution. We should be able to add multiple "-e" parameters
-        dockerParams.put("-e", "HOME=" + ephimeralDirPath + " -e OPENCGA_TOKEN=" + getExpiringToken());
-        dockerParams.put("-w", ephimeralDirPath);
+        addDockerParam(dockerParams, "--env", "HOME=" + ephimeralDirPath);
+        addDockerParam(dockerParams, "-w", ephimeralDirPath);
 
         // Set user uid and guid to 1001
-        dockerParams.put("user", "1001:1001");
+        addDockerParam(dockerParams, "--user", "1001:1001");
 
         // Grant all permissions to the scratch dir to avoid permission issues from Nextflow binary
         Files.setPosixFilePermissions(getScratchDir(), PosixFilePermissions.fromString("rwxrwxrwx"));

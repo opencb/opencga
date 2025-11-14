@@ -10,7 +10,6 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.externalTool.*;
-import org.opencb.opencga.core.models.externalTool.custom.CustomExternalToolParams;
 import org.opencb.opencga.core.models.externalTool.custom.CustomToolCreateParams;
 import org.opencb.opencga.core.models.externalTool.custom.CustomToolRunParams;
 import org.opencb.opencga.core.models.externalTool.custom.CustomToolUpdateParams;
@@ -266,7 +265,7 @@ public class ExternalToolWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
-            @ApiParam(value = CustomToolRunParams.DESCRIPTION, required = true) CustomExternalToolParams params) {
+            @ApiParam(value = CustomToolRunParams.DESCRIPTION, required = true) CustomToolRunParams params) {
         return run(() -> catalogManager.getExternalToolManager().submitCustomTool(study, params, jobName, jobDescription, dependsOn,
                 jobTags, scheduledStartTime, jobPriority, dryRun, token));
     }
@@ -330,7 +329,7 @@ public class ExternalToolWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
-            @ApiParam(value = WorkflowParams.DESCRIPTION, required = true) WorkflowToolParams params) {
+            @ApiParam(value = WorkflowParams.DESCRIPTION, required = true) WorkflowParams params) {
         return run(() -> catalogManager.getExternalToolManager().submitWorkflow(study, params, jobName, jobDescription,
                 dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun, token));
     }

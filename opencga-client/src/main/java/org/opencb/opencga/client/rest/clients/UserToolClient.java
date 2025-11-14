@@ -26,10 +26,10 @@ import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.externalTool.ExternalTool;
 import org.opencb.opencga.core.models.externalTool.ExternalToolAclEntryList;
 import org.opencb.opencga.core.models.externalTool.ExternalToolAclUpdateParams;
+import org.opencb.opencga.core.models.externalTool.WorkflowParams;
 import org.opencb.opencga.core.models.externalTool.WorkflowRepositoryParams;
-import org.opencb.opencga.core.models.externalTool.WorkflowToolParams;
-import org.opencb.opencga.core.models.externalTool.custom.CustomExternalToolParams;
 import org.opencb.opencga.core.models.externalTool.custom.CustomToolCreateParams;
+import org.opencb.opencga.core.models.externalTool.custom.CustomToolRunParams;
 import org.opencb.opencga.core.models.externalTool.custom.CustomToolUpdateParams;
 import org.opencb.opencga.core.models.externalTool.workflow.WorkflowCreateParams;
 import org.opencb.opencga.core.models.externalTool.workflow.WorkflowUpdateParams;
@@ -166,7 +166,7 @@ public class UserToolClient extends ParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Job> runCustomDocker(CustomExternalToolParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Job> runCustomDocker(CustomToolRunParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("tools", null, "custom", null, "run", params, POST, Job.class);
@@ -349,7 +349,7 @@ public class UserToolClient extends ParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Job> runWorkflow(WorkflowToolParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Job> runWorkflow(WorkflowParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("tools", null, "workflow", null, "run", params, POST, Job.class);

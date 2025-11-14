@@ -10,7 +10,6 @@ import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.externalTool.Container;
 import org.opencb.opencga.core.models.externalTool.ExternalTool;
-import org.opencb.opencga.core.models.externalTool.ExternalToolParams;
 import org.opencb.opencga.core.models.externalTool.ExternalToolType;
 import org.opencb.opencga.core.models.variant.VariantWalkerParams;
 import org.opencb.opencga.core.models.variant.VariantWalkerToolParams;
@@ -58,7 +57,7 @@ public class VariantWalkerToolExecutor extends OpenCgaTool {
             toolParams.setOutputFileName(toolParams.getOutputFileName() + ".gz");
         }
 
-        Container container = generateDockerObject(externalToolParams);
+        Container container = generateDockerObject();
         checkDockerObject(container);
     }
 
@@ -77,28 +76,28 @@ public class VariantWalkerToolExecutor extends OpenCgaTool {
 
     }
 
-    private Container generateDockerObject(ExternalToolParams<VariantWalkerParams> runParams) throws CatalogException, ToolException {
+    private Container generateDockerObject() throws CatalogException, ToolException {
         OpenCGAResult<ExternalTool> result;
-        if (runParams.getVersion() != null) {
-            Query query = new Query(ExternalToolDBAdaptor.QueryParams.VERSION.key(), runParams.getVersion());
-            result = catalogManager.getExternalToolManager().get(getStudy(), Collections.singletonList(runParams.getId()), query,
+        if (externalToolParams.getVersion() != null) {
+            Query query = new Query(ExternalToolDBAdaptor.QueryParams.VERSION.key(), externalToolParams.getVersion());
+            result = catalogManager.getExternalToolManager().get(getStudy(), Collections.singletonList(externalToolParams.getId()), query,
                     QueryOptions.empty(), false, token);
         } else {
-            result = catalogManager.getExternalToolManager().get(getStudy(), runParams.getId(), QueryOptions.empty(), token);
+            result = catalogManager.getExternalToolManager().get(getStudy(), externalToolParams.getId(), QueryOptions.empty(), token);
         }
         if (result.getNumResults() == 0) {
-            throw new ToolException("Variant walker tool '" + runParams.getId() + "' not found");
+            throw new ToolException("Variant walker tool '" + externalToolParams.getId() + "' not found");
         }
         ExternalTool externalTool = result.first();
 
         if (externalTool == null) {
-            throw new ToolException("Variant walker tool '" + runParams.getId() + "' is null");
+            throw new ToolException("Variant walker tool '" + externalToolParams.getId() + "' is null");
         }
         if (externalTool.getType() != ExternalToolType.VARIANT_WALKER) {
-            throw new ToolException("User tool '" + runParams.getId() + "' is not of type " + ExternalToolType.VARIANT_WALKER);
+            throw new ToolException("User tool '" + externalToolParams.getId() + "' is not of type " + ExternalToolType.VARIANT_WALKER);
         }
         if (externalTool.getContainer() == null) {
-            throw new ToolException("User tool '" + runParams.getId() + "' does not have a docker object");
+            throw new ToolException("User tool '" + externalToolParams.getId() + "' does not have a docker object");
         }
 
         return externalTool.getContainer();

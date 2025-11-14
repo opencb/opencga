@@ -1,6 +1,5 @@
 package org.opencb.opencga.analysis.customTool;
 
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.Query;
@@ -12,8 +11,9 @@ import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.externalTool.*;
-import org.opencb.opencga.core.models.externalTool.custom.CustomExternalToolParams;
+import org.opencb.opencga.core.models.externalTool.Container;
+import org.opencb.opencga.core.models.externalTool.ExternalTool;
+import org.opencb.opencga.core.models.externalTool.ExternalToolType;
 import org.opencb.opencga.core.models.externalTool.custom.CustomToolRunParams;
 import org.opencb.opencga.core.models.job.ToolInfoExecutor;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -32,7 +32,7 @@ public class CustomToolExecutor extends ExternalToolDockerScopeStudy {
     public static final String DESCRIPTION = "Execute an analysis from a custom binary.";
 
     @ToolParams
-    protected CustomExternalToolParams runParams = new CustomExternalToolParams();
+    protected CustomToolRunParams runParams = new CustomToolRunParams();
 
     private String cliParams;
     private String dockerImage;
@@ -53,11 +53,11 @@ public class CustomToolExecutor extends ExternalToolDockerScopeStudy {
         } else if (StringUtils.isEmpty(runParams.getId())) {
             throw new ToolException("Missing external tool id.");
         }
-        Container container = generateDockerObject(runParams);
+        Container container = generateDockerObject();
         checkDockerObject(container);
     }
 
-    private Container generateDockerObject(ExternalToolParams<CustomToolRunParams> runParams) throws Exception {
+    private Container generateDockerObject() throws Exception {
         OpenCGAResult<ExternalTool> result;
         if (runParams.getVersion() != null) {
             Query query = new Query(ExternalToolDBAdaptor.QueryParams.VERSION.key(), runParams.getVersion());
@@ -82,27 +82,13 @@ public class CustomToolExecutor extends ExternalToolDockerScopeStudy {
         }
 
         Container container = externalTool.getContainer();
-        String commandLine = runParams.getParams() != null && StringUtils.isNotEmpty(runParams.getParams().getCommandLine())
-                ? runParams.getParams().getCommandLine()
+        String commandLine = StringUtils.isNotEmpty(runParams.getCommandLine())
+                ? runParams.getCommandLine()
                 : container.getCommandLine();
 
-        // Process docker command line to replace variables
-        Map<String, String> params = new HashMap<>();
-        if (runParams.getParams() != null && runParams.getParams().getParams() != null) {
-            params.putAll(runParams.getParams().getParams());
-        }
-        if (CollectionUtils.isNotEmpty(externalTool.getVariables())) {
-            for (ExternalToolVariable variable : externalTool.getVariables()) {
-                String variableId = removePrefix(variable.getName());
-                if (!params.containsKey(variableId) && StringUtils.isNotEmpty(variable.getDefaultValue())) {
-                    params.put(variableId, variable.getDefaultValue());
-                }
-            }
-        }
-
-        Map<String, String> sanitisedParams = sanitiseParams(params, externalTool.getVariables());
-        String processedCli = inputFileUtils.processCommandLine(study, commandLine, sanitisedParams, temporalInputDir, dockerInputBindings,
-                getOutDir().toString(), token);
+        Map<String, String> sanitisedParams = sanitiseParams(runParams.getParams(), externalTool.getVariables());
+        String processedCli = inputFileUtils.processCommandLine(study, commandLine, sanitisedParams, externalTool.getVariables(),
+                temporalInputDir, dockerInputBindings, getOutDir().toString(), token);
         container.setCommandLine(processedCli);
 
         return container;
@@ -149,9 +135,7 @@ public class CustomToolExecutor extends ExternalToolDockerScopeStudy {
         String outDirPath = getOutDir().toAbsolutePath().toString();
         outputBindings.add(new AbstractMap.SimpleEntry<>(outDirPath, outDirPath));
 
-        Map<String, String> dockerParams = new HashMap<>();
-        dockerParams.put("-e", "OPENCGA_TOKEN=" + getExpiringToken());
-        String cmdline = runDocker(dockerImage, outputBindings, cliParams, dockerParams, null, username, password);
+        String cmdline = runDocker(dockerImage, outputBindings, cliParams, null, null, username, password);
 
         logger.info("Docker command line: {}", cmdline);
         logger.info("Execution time: {}", TimeUtils.durationToString(stopWatch));
