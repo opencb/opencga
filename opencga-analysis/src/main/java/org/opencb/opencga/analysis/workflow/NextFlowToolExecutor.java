@@ -174,15 +174,14 @@ public class NextFlowToolExecutor extends ExternalToolDockerScopeStudy {
 
         startTraceFileMonitor();
 
-        Map<String, String> dockerParams = new HashMap<>();
+        Map<String, List<String>> dockerParams = new HashMap<>();
         // Set HOME environment variable to the temporal input directory. This is because nextflow creates a hidden folder there and,
         // when nextflow runs on other dockers, we need to store those files in a path shared between the parent docker and the host
-        // TODO: Temporal solution. We should be able to add multiple "-e" parameters
-        dockerParams.put("-e", "HOME=" + ephimeralDirPath + " -e OPENCGA_TOKEN=" + getExpiringToken());
-        dockerParams.put("-w", ephimeralDirPath);
+        addDockerParam(dockerParams, "--env", "HOME=" + ephimeralDirPath);
+        addDockerParam(dockerParams, "-w", ephimeralDirPath);
 
         // Set user uid and guid to 1001
-        dockerParams.put("user", "1001:1001");
+        addDockerParam(dockerParams, "--user", "1001:1001");
 
         // Grant all permissions to the scratch dir to avoid permission issues from Nextflow binary
         Files.setPosixFilePermissions(getScratchDir(), PosixFilePermissions.fromString("rwxrwxrwx"));

@@ -115,27 +115,39 @@ public abstract class OpenCgaDockerToolScopeStudy extends OpenCgaTool {
     }
 
     protected String runDocker(String image, List<AbstractMap.SimpleEntry<String, String>> userOutputBindings, String cmdParams,
-                               Map<String, String> userDockerParams) throws IOException {
+                               Map<String, List<String>> userDockerParams) throws IOException, CatalogException {
         return runDocker(image, userOutputBindings, cmdParams, userDockerParams, null, null, null);
     }
 
     protected String runDocker(String image, List<AbstractMap.SimpleEntry<String, String>> userOutputBindings, String cmdParams,
-                               Map<String, String> userDockerParams, String registry, String username, String password) throws IOException {
+                               Map<String, List<String>> userDockerParams, String registry, String username, String password)
+            throws IOException, CatalogException {
         List<AbstractMap.SimpleEntry<String, String>> outputBindings = CollectionUtils.isNotEmpty(userOutputBindings)
                 ? userOutputBindings
                 : Collections.singletonList(new AbstractMap.SimpleEntry<>(getOutDir().toAbsolutePath().toString(), getOutDir().toAbsolutePath().toString()));
 
-        Map<String, String> dockerParams = new HashMap<>();
+        Map<String, List<String>> dockerParams = new HashMap<>();
         // Establish working directory
-        dockerParams.put("-w", getOutDir().toAbsolutePath().toString());
-        dockerParams.put("--volume", "/var/run/docker.sock:/var/run/docker.sock");
-        dockerParams.put("--env", "DOCKER_HOST='tcp://localhost:2375'");
-        dockerParams.put("--network", "host");
+        addDockerParam(dockerParams, "-w", getOutDir().toAbsolutePath().toString());
+        addDockerParam(dockerParams, "--volume", "/var/run/docker.sock:/var/run/docker.sock");
+        addDockerParam(dockerParams, "--env", "DOCKER_HOST='tcp://localhost:2375'");
+        addDockerParam(dockerParams, "--env", "OPENCGA_TOKEN=" + getExpiringToken());
+        addDockerParam(dockerParams, "--env", "OPENCGA_STUDY=" + getStudyFqn());
+        addDockerParam(dockerParams, "--env", "OPENCGA_JOB=" + getJobId());
+        addDockerParam(dockerParams, "--network", "host");
         if (userDockerParams != null) {
-            dockerParams.putAll(userDockerParams);
+            userDockerParams.forEach((key, values) -> {
+                for (String value : values) {
+                    addDockerParam(dockerParams, key, value);
+                }
+            });
         }
 
         return DockerUtils.run(image, dockerInputBindings, outputBindings, cmdParams, dockerParams, registry, username, password);
+    }
+
+    protected void addDockerParam(Map<String, List<String>> dockerParams, String key, String value) {
+        dockerParams.computeIfAbsent(key, k -> new ArrayList<>()).add(value);
     }
 
 }

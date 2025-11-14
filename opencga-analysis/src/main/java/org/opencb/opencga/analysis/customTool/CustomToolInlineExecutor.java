@@ -93,9 +93,7 @@ public class CustomToolInlineExecutor extends OpenCgaDockerToolScopeStudy {
         String outDirPath = getOutDir().toAbsolutePath().toString();
         outputBindings.add(new AbstractMap.SimpleEntry<>(outDirPath, outDirPath));
 
-        Map<String, String> dockerParams = new HashMap<>();
-        dockerParams.put("-e", "OPENCGA_TOKEN=" + getExpiringToken());
-        String cmdline = runDocker(dockerImage, outputBindings, cliParams, dockerParams, null, username, password);
+        String cmdline = runDocker(dockerImage, outputBindings, cliParams, null, null, username, password);
 
         logger.info("Docker command line: {}", cmdline);
         logger.info("Execution time: {}", TimeUtils.durationToString(stopWatch));
