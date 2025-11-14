@@ -89,24 +89,17 @@ public class EnterpriseServerCommandExecutor extends CommandExecutor {
     }
 
     private void grpc() throws Exception {
-        if (serverCommandOptions.grpcServerCommandOptions.start) {
-            logger.info("Starting down OpenCGA Enterprise gRPC server");
-            GrpcServer server = new GrpcServer(Paths.get(this.conf));
-            server.start();
-            if (!serverCommandOptions.grpcServerCommandOptions.background) {
-                server.blockUntilShutdown();
-            }
-        }
+        int port = (serverCommandOptions.grpcServerCommandOptions.port == 0)
+                ? configuration.getServer().getGrpc().getPort()
+                : serverCommandOptions.grpcServerCommandOptions.port;
 
-        if (serverCommandOptions.grpcServerCommandOptions.stop) {
-            logger.info("Shutting down OpenCGA Enterprise gRPC server");
-            ManagedChannel channel = ManagedChannelBuilder.forTarget("localhost:" + configuration.getServer().getGrpc().getPort())
-                    .usePlaintext()
-                    .build();
-            AdminServiceGrpc.AdminServiceBlockingStub stub = AdminServiceGrpc.newBlockingStub(channel);
-            ServiceTypesModel.MapResponse stopResponse = stub.stop(null);
-            System.out.println(stopResponse.toString());
+
+        GrpcServer server = new GrpcServer(Paths.get(this.appHome), port);
+        server.start();
+        if (!serverCommandOptions.grpcServerCommandOptions.background) {
+            server.blockUntilShutdown();
         }
+        logger.info("Shutting down OpenCGA Storage gRPC server");
     }
 
 }
