@@ -54,8 +54,6 @@ import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsReader;
 import java.io.IOException;
 import java.util.*;
 
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.LAST_VARIANT_ANNOTATION_TS;
-
 /**
  * Created on 23/11/16.
  *
@@ -219,10 +217,6 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
         super.postAnnotate(query, doCreate, doLoad, params);
         updateSampleIndexAnnotation(params);
 
-        dbAdaptor.getMetadataManager().updateProjectMetadata(projectMetadata -> {
-            projectMetadata.getAttributes().put(LAST_VARIANT_ANNOTATION_TS, System.currentTimeMillis());
-            return projectMetadata;
-        });
     }
 
     protected void updateSampleIndexAnnotation(ObjectMap params) throws IOException, StorageEngineException {

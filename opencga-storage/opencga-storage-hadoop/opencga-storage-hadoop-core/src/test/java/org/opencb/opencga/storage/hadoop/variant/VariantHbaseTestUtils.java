@@ -43,7 +43,9 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
+import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
@@ -453,12 +455,24 @@ public class VariantHbaseTestUtils {
             SampleIndexDBAdaptor sampleIndexDBAdaptor = new SampleIndexDBAdaptor(dbAdaptor.getHBaseManager(), dbAdaptor.getTableNameGenerator(), dbAdaptor.getMetadataManager());
             SampleIndexSchema schema = sampleIndexDBAdaptor.getSchemaLatest(studyId);
             for (Integer sampleId : dbAdaptor.getMetadataManager().getIndexedSamples(studyId)) {
-                String sampleName = dbAdaptor.getMetadataManager().getSampleName(studyId, sampleId);
+                SampleMetadata sampleMetadata = dbAdaptor.getMetadataManager().getSampleMetadata(studyId, sampleId);
+                boolean sampleIndexReady = false;
+                for (Integer sampleIndexVersion : sampleMetadata.getSampleIndexVersions()) {
+                    if (sampleMetadata.getSampleIndexStatus(sampleIndexVersion) == TaskMetadata.Status.READY) {
+                        sampleIndexReady = true;
+                        break;
+                    }
+                }
+                String sampleName = sampleMetadata.getName();
+                out.println("");
+                out.println("");
+                out.println("");
+                out.println("SAMPLE: " + sampleName + " (id=" + sampleId + ")");
+                if (!sampleIndexReady) {
+                    out.println("MISSING SAMPLE INDEX");
+                    continue;
+                }
                 try (RawSingleSampleIndexVariantDBIterator it = sampleIndexDBAdaptor.rawIterator(studyName, sampleName)) {
-                    out.println("");
-                    out.println("");
-                    out.println("");
-                    out.println("SAMPLE: " + sampleName + " (id=" + sampleId + ")");
                     while (it.hasNext()) {
                         SampleIndexVariant entry = it.next();
                         out.println("_______________________");

@@ -190,8 +190,8 @@ public class CatalogStorageMetadataSynchronizer {
             operationIndexStatus = new OperationIndexStatus(OperationIndexStatus.PENDING,
                     "Variant secondary annotation index operation pending. "
                             + " variantIndexTs = " + projectMetadata.getVariantIndexLastTimestamp()
-                            + ", variantAnnotationIndexTs = " + projectMetadata.getAnnotationIndexLastUpdateTimestamp()
-                            + ", variantIndexStatsTs = " + projectMetadata.getStatsLastTimestamp()
+                            + ", variantAnnotationIndexTs = " + projectMetadata.getAnnotationIndexLastUpdateStartTimestamp()
+                            + ", variantIndexStatsTs = " + projectMetadata.getStatsLastEndTimestamp()
             );
         } else {
             SearchIndexMetadata.DataStatus dataStatus = searchIndexMetadata.getDataStatus();
@@ -203,8 +203,8 @@ public class CatalogStorageMetadataSynchronizer {
                             "Variant secondary annotation index operation pending. "
                                     + " variantIndexTs = " + projectMetadata.getVariantIndexLastTimestamp()
                                     + ", variantSecondaryAnnotationIndexTs = " + searchIndexMetadata.getLastUpdateDate()
-                                    + ", variantAnnotationIndexTs = " + projectMetadata.getAnnotationIndexLastUpdateTimestamp()
-                                    + ", variantIndexStatsTs = " + projectMetadata.getStatsLastTimestamp()
+                                    + ", variantAnnotationIndexTs = " + projectMetadata.getAnnotationIndexLastUpdateStartTimestamp()
+                                    + ", variantIndexStatsTs = " + projectMetadata.getStatsLastEndTimestamp()
                     );
                     break;
                 case READY:
@@ -276,7 +276,7 @@ public class CatalogStorageMetadataSynchronizer {
                     operationIndexStatus = new OperationIndexStatus(OperationIndexStatus.PENDING,
                             "Variant annotation index operation pending. "
                                     + " variantIndexTs = " + projectMetadata.getVariantIndexLastTimestamp()
-                                    + ", variantAnnotationIndexTs = " + projectMetadata.getAnnotationIndexLastUpdateTimestamp()
+                                    + ", variantAnnotationIndexTs = " + projectMetadata.getAnnotationIndexLastUpdateStartTimestamp()
                     );
                 }
                 break;

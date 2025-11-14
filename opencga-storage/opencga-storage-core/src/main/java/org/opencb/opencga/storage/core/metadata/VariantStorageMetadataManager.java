@@ -616,8 +616,8 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     public void invalidateCurrentVariantAnnotationIndex() throws StorageEngineException {
         updateProjectMetadata(pm -> {
             logger.info("Invalidating current variant annotation index on project '{}'", pm.getName());
-            pm.setAnnotationIndexLastUpdateTimestamp(0);
-            pm.setAnnotationIndexLastFullUpdateTimestamp(0);
+            pm.setAnnotationIndexLastUpdateStartTimestamp(0);
+            pm.setAnnotationIndexLastFullUpdateStartTimestamp(0);
 
             for (SearchIndexMetadata indexMetadata : pm.getSecondaryAnnotationIndex().getValues()) {
                 indexMetadata.setLastUpdateDate(Date.from(Instant.EPOCH));
@@ -639,10 +639,10 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         updateProjectMetadata(projectMetadata -> {
             // Update annotation timestamp.
             // This includes full and partial annotations
-            projectMetadata.setAnnotationIndexLastUpdateTimestamp(annotationStartTimestamp);
+            projectMetadata.setAnnotationIndexLastUpdateStartTimestamp(annotationStartTimestamp);
             if (annotateAll) {
                 // If all variants are being annotated, update the full annotation timestamp
-                projectMetadata.setAnnotationIndexLastFullUpdateTimestamp(annotationStartTimestamp);
+                projectMetadata.setAnnotationIndexLastFullUpdateStartTimestamp(annotationStartTimestamp);
             }
 
             // Any time a new annotation is loaded, the secondary annotation index status would be reset.
@@ -654,7 +654,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
         // Update annotation status
         TaskMetadata.Status annotationIndexStatus = projectMetadata.getAnnotationIndexStatus();
-        if (projectMetadata.getAnnotationIndexLastFullUpdateTimestamp() > projectMetadata.getVariantIndexLastTimestamp()) {
+        if (projectMetadata.getAnnotationIndexLastFullUpdateStartTimestamp() > projectMetadata.getVariantIndexLastTimestamp()) {
             // The annotation would be marked as "READY" if all the variants from the database are annotated.
             // This requires that no other variants where loaded while annotating,
             // and for this process to be annotating all variants.
@@ -676,8 +676,8 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             Date lastUpdateDate = indexMetadata.getLastUpdateDate();
             SearchIndexMetadata.DataStatus dataStatus = indexMetadata.getDataStatus();
             if (lastUpdateDate != null) {
-                if (lastUpdateDate.getTime() > projectMetadata.getAnnotationIndexLastUpdateTimestamp()
-                        && lastUpdateDate.getTime() > projectMetadata.getStatsLastTimestamp()
+                if (lastUpdateDate.getTime() > projectMetadata.getAnnotationIndexLastUpdateStartTimestamp()
+                        && lastUpdateDate.getTime() > projectMetadata.getStatsLastEndTimestamp()
                         && lastUpdateDate.getTime() > projectMetadata.getVariantIndexLastTimestamp()) {
                     indexMetadata.setDataStatus(SearchIndexMetadata.DataStatus.READY);
                 } else {
@@ -699,7 +699,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
      */
     public void updateStatsIndexTimestamp() throws StorageEngineException {
         updateProjectMetadata(project -> {
-            project.setStatsIndexLastTimestamp(System.currentTimeMillis());
+            project.setStatsIndexLastEndTimestamp(System.currentTimeMillis());
             // As new variant stats have been added, the secondary-annotation-index is outdated.
             updateProjectStatus(project);
         });

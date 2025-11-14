@@ -37,8 +37,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.LAST_VARIANT_STATS_INDEX_TS;
-
 /**
  * Created on 07/12/16.
  *
@@ -125,12 +123,6 @@ public class HadoopDefaultVariantStatisticsManager extends DefaultVariantStatist
     public void postCalculateStats(VariantStorageMetadataManager metadataManager, StudyMetadata sm,
                                    Collection<String> cohorts, long startTime, boolean error) throws StorageEngineException {
         super.postCalculateStats(metadataManager, sm, cohorts, startTime, error);
-
-        dbAdaptor.getMetadataManager().updateProjectMetadata(projectMetadata -> {
-            projectMetadata.getAttributes().put(LAST_VARIANT_STATS_INDEX_TS, System.currentTimeMillis());
-            return projectMetadata;
-        });
-
     }
 
 }

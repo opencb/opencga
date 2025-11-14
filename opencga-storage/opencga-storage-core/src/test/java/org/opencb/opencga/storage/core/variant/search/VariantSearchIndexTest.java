@@ -122,7 +122,7 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
 
             //////////////////////
             // Only "new variants" expected to be annotated
-            expected = variantStorageEngine.annotate(outputUri, new ObjectMap());
+            expected = variantStorageEngine.annotate(outputUri, new ObjectMap(VariantStorageOptions.ANNOTATION_SAMPLE_INDEX.key(), YesNoAuto.NO));
             loadResult = searchIndex(false);
             System.out.println("Load result after annotate: = " + loadResult + " , at study : " + studyId);
             checkLoadResult(expected, expected, 0, loadResult);

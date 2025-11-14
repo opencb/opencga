@@ -147,12 +147,6 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     public static final String STUDY_ID = "studyId";
 
     // Project attributes
-    // Last time (in millis from epoch) that a file was loaded. Timestamp at operation end!
-    public static final String LAST_LOADED_FILE_TS = "lastLoadedFileTs";
-    // Last time (in millis from epoch) that a variant annotation was executed. Timestamp at operation end!
-    public static final String LAST_VARIANT_ANNOTATION_TS = "lastVariantAnnotationTs";
-    // Last time (in millis from epoch) that a variant stats index was executed. Timestamp at operation end!
-    public static final String LAST_VARIANT_STATS_INDEX_TS = "lastVariantStatsIndexTs";
     // Last time (in millis from epoch) that the list of "pendingVariantsToAnnotate" was updated. Timestamp at operation start!
     public static final String LAST_PENDING_VARIANTS_TO_ANNOTATE_UPDATE_TS = "lastVariantsToAnnotateUpdateTs";
     // Last time (in millis from epoch) that the list of "pendingVariantsToSearchIndex" was updated. Timestamp at operation start!
@@ -514,7 +508,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             SecondaryIndexPendingVariantsFileBasedManager pendingVariantsFileBasedManager =
                     new SecondaryIndexPendingVariantsFileBasedManager(getVariantTableName(), getConf());
             try {
-                if (!pendingVariantsFileBasedManager.checkFilesIntegrity()) {
+                int filesCount = pendingVariantsFileBasedManager.checkFilesIntegrity();
+                if (filesCount < 0) {
                     logger.warn("Pending variants files integrity check failed. Running discover pending variants to secondary index. "
                             + "Remove old '" + HadoopVariantStorageEngine.LAST_PENDING_VARIANTS_TO_SEARCH_INDEX_UPDATE_TS + "'");
                     shouldRunDiscover = true;
@@ -524,6 +519,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                         pm.getSecondaryAnnotationIndex().getIndexMetadata(indexMetadataVersion)
                                 .getAttributes().remove(LAST_PENDING_VARIANTS_TO_SEARCH_INDEX_UPDATE_TS);
                     });
+                } else {
+                    logger.info("Pending variants files integrity check passed. {} pending variants files found.", filesCount);
                 }
             } catch (IOException e) {
                 throw new StorageEngineException("Error checking pending variants files integrity", e);
@@ -533,9 +530,9 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         if (!shouldRunDiscover) {
             long lastUpdateTimestamp = indexMetadata.getAttributes().getLong(LAST_PENDING_VARIANTS_TO_SEARCH_INDEX_UPDATE_TS);
             ProjectMetadata projectMetadata = getMetadataManager().getProjectMetadata();
-            long lastVariantIndexTs = projectMetadata.getAttributes().getLong(LAST_LOADED_FILE_TS);
-            long lastAnnotationTs = projectMetadata.getAttributes().getLong(LAST_VARIANT_ANNOTATION_TS);
-            long lastStatsTs = projectMetadata.getAttributes().getLong(LAST_VARIANT_STATS_INDEX_TS);
+            long lastVariantIndexTs = projectMetadata.getVariantIndexLastTimestamp();
+            long lastAnnotationTs = projectMetadata.getAnnotationIndexLastUpdateEndTimestamp();
+            long lastStatsTs = projectMetadata.getStatsLastEndTimestamp();
 
             if (lastUpdateTimestamp == 0
                     || lastUpdateTimestamp < lastVariantIndexTs

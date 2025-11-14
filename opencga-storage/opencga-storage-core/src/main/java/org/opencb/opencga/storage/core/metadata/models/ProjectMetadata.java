@@ -18,13 +18,20 @@ import java.util.*;
  */
 public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
 
+    // Last time (in millis from epoch) that a file was loaded. Timestamp at operation end!
     private static final String FILE_INDEX_LAST_TIMESTAMP = "file.index.last.timestamp";
     @Deprecated
     // This value was used by opencga-storage-hadoop internally for the same purpose. It is not used anymore.
     private static final String LAST_LOADED_FILE_TS = "lastLoadedFileTs";
-    private static final String STATS_INDEX_LAST_TIMESTAMP = "stats.index.last.timestamp";
-    private static final String ANNOTATION_INDEX_LAST_UPDATE_TIMESTAMP = "annotation.index.last.timestamp";
-    private static final String ANNOTATION_INDEX_LAST_FULL_UPDATE_TIMESTAMP = "annotation.index.last.full.timestamp";
+
+    // Last time (in millis from epoch) that a variant stats index was executed for any cohort. Timestamp at operation end!
+    private static final String STATS_INDEX_LAST_END_TIMESTAMP = "stats.index.last.timestamp";
+    // Last time (in millis from epoch) that a variant annotation was executed. Timestamp at operation start!
+    private static final String ANNOTATION_INDEX_LAST_UPDATE_START_TIMESTAMP = "annotation.index.last.timestamp";
+    // Last time (in millis from epoch) that a variant annotation was executed. Timestamp at operation end!
+    private static final String ANNOTATION_INDEX_LAST_UPDATE_END_TIMESTAMP = "annotation.index.last.end.timestamp";
+    // Last time (in millis from epoch) that a full variant annotation was executed. Timestamp at operation start!
+    private static final String ANNOTATION_INDEX_LAST_FULL_UPDATE_START_TIMESTAMP = "annotation.index.last.full.start.timestamp";
 
     private String species;
     private String assembly;
@@ -436,12 +443,19 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
         return setStatus("annotation", annotationStatus);
     }
 
+    /**
+     * Last time (in millis from epoch) that a file was loaded. Timestamp at operation end!
+     * @return this
+     */
     @JsonIgnore
     public ProjectMetadata setVariantIndexLastTimestamp() {
         getAttributes().put(FILE_INDEX_LAST_TIMESTAMP, System.currentTimeMillis());
         return this;
     }
 
+    /**
+     * @return Last time (in millis from epoch) that a file was loaded. Timestamp at operation end!
+     */
     @JsonIgnore
     public long getVariantIndexLastTimestamp() {
         long ts = getAttributes().getLong(FILE_INDEX_LAST_TIMESTAMP, 0);
@@ -458,8 +472,8 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
      * @return this
      */
     @JsonIgnore
-    public ProjectMetadata setAnnotationIndexLastUpdateTimestamp(long annotationStartTimestamp) {
-        getAttributes().put(ANNOTATION_INDEX_LAST_UPDATE_TIMESTAMP, annotationStartTimestamp);
+    public ProjectMetadata setAnnotationIndexLastUpdateStartTimestamp(long annotationStartTimestamp) {
+        getAttributes().put(ANNOTATION_INDEX_LAST_UPDATE_START_TIMESTAMP, annotationStartTimestamp);
         return this;
     }
 
@@ -467,17 +481,28 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
      * @return The timestamp when the annotation index was last updated. Includes full or partial update.
      */
     @JsonIgnore
-    public long getAnnotationIndexLastUpdateTimestamp() {
-        return getAttributes().getLong(ANNOTATION_INDEX_LAST_UPDATE_TIMESTAMP, 0);
+    public long getAnnotationIndexLastUpdateStartTimestamp() {
+        return getAttributes().getLong(ANNOTATION_INDEX_LAST_UPDATE_START_TIMESTAMP, 0);
+    }
+
+    @JsonIgnore
+    public ProjectMetadata setAnnotationIndexLastUpdateEndTimestamp(long annotationEndTimestamp) {
+        getAttributes().put(ANNOTATION_INDEX_LAST_UPDATE_END_TIMESTAMP, annotationEndTimestamp);
+        return this;
+    }
+
+    @JsonIgnore
+    public long getAnnotationIndexLastUpdateEndTimestamp() {
+        return getAttributes().getLong(ANNOTATION_INDEX_LAST_UPDATE_END_TIMESTAMP, 0);
     }
 
     /**
-     * @param annotationFullUpdateTimestamp The timestamp when the annotation index full update finished.
+     * @param annotationStartTimestamp The timestamp when the annotation index full update finished.
      * @return this
      */
     @JsonIgnore
-    public ProjectMetadata setAnnotationIndexLastFullUpdateTimestamp(long annotationFullUpdateTimestamp) {
-        getAttributes().put(ANNOTATION_INDEX_LAST_FULL_UPDATE_TIMESTAMP, annotationFullUpdateTimestamp);
+    public ProjectMetadata setAnnotationIndexLastFullUpdateStartTimestamp(long annotationStartTimestamp) {
+        getAttributes().put(ANNOTATION_INDEX_LAST_FULL_UPDATE_START_TIMESTAMP, annotationStartTimestamp);
         return this;
     }
 
@@ -485,20 +510,20 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
      * @return The timestamp when the annotation index was last fully updated.
      */
     @JsonIgnore
-    public long getAnnotationIndexLastFullUpdateTimestamp() {
-        return getAttributes().getLong(ANNOTATION_INDEX_LAST_FULL_UPDATE_TIMESTAMP, 0);
+    public long getAnnotationIndexLastFullUpdateStartTimestamp() {
+        return getAttributes().getLong(ANNOTATION_INDEX_LAST_FULL_UPDATE_START_TIMESTAMP, 0);
     }
 
 
     @JsonIgnore
-    public ProjectMetadata setStatsIndexLastTimestamp(long timeMillis) {
-        getAttributes().put(STATS_INDEX_LAST_TIMESTAMP, timeMillis);
+    public ProjectMetadata setStatsIndexLastEndTimestamp(long timeMillis) {
+        getAttributes().put(STATS_INDEX_LAST_END_TIMESTAMP, timeMillis);
         return this;
     }
 
     @JsonIgnore
-    public long getStatsLastTimestamp() {
-        return getAttributes().getLong(STATS_INDEX_LAST_TIMESTAMP, 0);
+    public long getStatsLastEndTimestamp() {
+        return getAttributes().getLong(STATS_INDEX_LAST_END_TIMESTAMP, 0);
     }
 
     @Override

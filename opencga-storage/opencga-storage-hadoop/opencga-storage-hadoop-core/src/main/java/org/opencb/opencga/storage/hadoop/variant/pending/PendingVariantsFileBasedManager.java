@@ -137,13 +137,14 @@ public abstract class PendingVariantsFileBasedManager {
         }
     }
 
-    public boolean checkFilesIntegrity() throws IOException {
+    public int checkFilesIntegrity() throws IOException {
         // Ensure that all pending files are valid
         Path pendingPath = new Path(pendingVariantsDir);
         if (!fs.exists(pendingPath)) {
             logger.warn("Pending variants directory does not exist: " + pendingPath);
-            return false;
+            return -1;
         }
+        int filesCount = 0;
         FileStatus[] fileStatuses = fs.listStatus(pendingPath);
         for (FileStatus fileStatus : fileStatuses) {
             if (!descriptor.isPendingVariantsFile(fileStatus)) {
@@ -155,10 +156,11 @@ public abstract class PendingVariantsFileBasedManager {
                 fs.open(fileStatus.getPath()).close();
             } catch (IOException e) {
                 logger.error("Error reading pending variants file: " + fileStatus.getPath(), e);
-                return false;
+                return -1;
             }
+            filesCount++;
         }
-        return true;
+        return filesCount;
     }
 
     public URI getPendingVariantsDir() {
