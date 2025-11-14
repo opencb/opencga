@@ -16,6 +16,7 @@
 
 package com.zettagenomics.opencga.enterprise.cvdb.parsers;
 
+import com.zettagenomics.opencga.enterprise.cvdb.CollectionNameGenerator;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -43,10 +44,6 @@ import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryPar
 
 public class ClinicalQueryParser {
 
-    protected String collectionPrefix;
-
-    private SolrQueryParser solrParser;
-
     public static final String CA_FACET_FIELDS = "studyId, type, disorderId, fileNames, probandId, probandDisorderIds,"
         + " probandPhenotypeNames, familyId, familyPhenotypeNames, familyMemberIds, panelIds, status";
 
@@ -63,11 +60,26 @@ public class ClinicalQueryParser {
         + " soTermNames, xrefIds, panelId, mois, penetrance, acmgs, tier, clinicalSignificance, drugResponse, traitAssociation,"
         + " functionalEffect, tumorigenesis, otherClassifications, rolesInCancer, reviewAcmgs, reviewTier, reviewClinicalSignificance";
 
+    private SolrQueryParser solrParser;
+
+    protected String collectionPrefix;
+    protected String caCollectionName;
+    protected String ciCollectionName;
+    protected String cvCollectionName;
+    protected String cveCollectionName;
+    protected String viewerCollectionName;
+
     protected static Logger logger = LoggerFactory.getLogger(ClinicalQueryParser.class);
 
     protected ClinicalQueryParser(String collectionPrefix, SearchIndexMetadata searchIndexMetadata) {
         this.solrParser = new ClinicalSolrQueryParser(searchIndexMetadata);
+
         this.collectionPrefix = collectionPrefix;
+        this.caCollectionName = CollectionNameGenerator.getClinicalAnalysisCollectionName(collectionPrefix);
+        this.ciCollectionName = CollectionNameGenerator.getClinicalInterpretationCollectionName(collectionPrefix);
+        this.cvCollectionName = CollectionNameGenerator.getClinicalVariantCollectionName(collectionPrefix);
+        this.cveCollectionName = CollectionNameGenerator.getClinicalVariantEvidenceCollectionName(collectionPrefix);
+        this.viewerCollectionName = CollectionNameGenerator.getClinicalViewerCollectionName(collectionPrefix);
     }
 
     public SolrQuery parse(Query query, QueryOptions queryOptions) throws CvdbException {
@@ -548,7 +560,7 @@ public class ClinicalQueryParser {
     }
 
     protected void logQueries(Query query, QueryOptions queryOptions, SolrQuery solrQuery, String title) {
-        logger.info("{} query: {}", title, query.toJson());
+        logger.info("{} query: {}", title, query != null ? query.toJson() : null);
         logger.info("{} query options: {}", title, queryOptions.toJson());
         logger.info("Solr query: {}", solrQuery.toQueryString());
     }
@@ -583,7 +595,7 @@ public class ClinicalQueryParser {
                 solrQuery.setStart(0);
                 solrQuery.setFields();
 
-                logger.debug(">>>>>> Solr Facet: " + solrQuery.toString());
+                logger.debug(">>>>>> Solr Facet: {}", solrQuery);
             } catch (Exception e) {
                 throw new CvdbException("Error parsing facet query", e);
             }
@@ -776,111 +788,18 @@ public class ClinicalQueryParser {
             default:
                 return filterName;
         }
-//        if (facet.contains(CHROM_DENSITY)) {
-//            return parseChromDensity(facet);
-//        } else if (facet.contains(ANNOT_FUNCTIONAL_SCORE.key())) {
-//            return parseFacet(facet, ANNOT_FUNCTIONAL_SCORE.key());
-//        } else if (facet.contains(ANNOT_CONSERVATION.key())) {
-//            return parseFacet(facet, ANNOT_CONSERVATION.key());
-//        } else if (facet.contains(ANNOT_PROTEIN_SUBSTITUTION.key())) {
-//            return parseFacet(facet, ANNOT_PROTEIN_SUBSTITUTION.key());
-//        } else if (facet.contains(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key())) {
-//            return parseFacetWithStudy(facet, "popFreq");
-//        } else if (facet.contains(STATS_ALT.key())) {
-//            return parseFacetWithStudy(facet, "altStats");
-//        } else if (facet.contains(SCORE.key())) {
-//            return parseFacetWithStudy(facet, SCORE.key());
-//        } else {
-//            return facet;
-//        }
     }
 
-//    private String parseFacet(String facet, String categoryName) {
-//        if (facet.contains("(")) {
-//            // Aggregation function
-//            return facet.replace(categoryName, "").replace("[", "").replace("]", "");
-//        } else if (facet.contains("..")) {
-//            // Range
-//            Matcher matcher = FACET_RANGE_PATTERN.matcher(facet);
-//            if (matcher.find()) {
-//                return matcher.group(2) + "[" + matcher.group(3) + "]:" + matcher.group(4);
-//            } else {
-//                throw VariantQueryException.malformedParam(categoryName, facet, "Invalid syntax for facet range.");
-//            }
-//        }
-//        // Nothing to do
-//        return facet;
-//    }
-//
-//    private String parseFacetWithStudy(String facet, String categoryName) {
-//        if (facet.contains("(")) {
-//            // Aggregation function
-//            Matcher matcher = FACET_FUNCTION_STUDY_PATTERN.matcher(facet);
-//            if (matcher.find()) {
-//                return matcher.group(1) + "(" + categoryName + FIELD_SEPARATOR + matcher.group(3) + FIELD_SEPARATOR + matcher.group(4)
-//                        + ")";
-//            } else {
-//                throw VariantQueryException.malformedParam(categoryName, facet, "Invalid syntax for facet function.");
-//            }
-//        } else if (facet.contains("..")) {
-//            // Range
-//            Matcher matcher = FACET_RANGE_STUDY_PATTERN.matcher(facet);
-//            if (matcher.find()) {
-//                return categoryName + FIELD_SEPARATOR + matcher.group(2) + FIELD_SEPARATOR + matcher.group(3) + "[" + matcher.group(4)
-//                        + "]:" + matcher.group(5);
-//            } else {
-//                throw VariantQueryException.malformedParam(categoryName, facet, "Invalid syntax for facet range.");
-//            }
-//        }
-//        // Nothing to do
-//        return facet;
-//    }
-//
-//    private String parseChromDensity(String facet) {
-//        // Categorical...
-//        Matcher matcher = FacetQueryParser.CATEGORICAL_PATTERN.matcher(facet);
-//        if (matcher.find()) {
-//            if (matcher.group(1).equals(CHROM_DENSITY)) {
-//                // Step management
-//                int step = 1000000;
-//                if (StringUtils.isNotEmpty(matcher.group(3))) {
-//                    step = Integer.parseInt(matcher.group(3).substring(1));
-//                }
-//                int maxLength = 0;
-//                // Include management
-//                List<String> chromList;
-//                String include = matcher.group(2);
-//                if (StringUtils.isNotEmpty(include)) {
-//                    chromList = new ArrayList<>();
-//                    include = include.replace("]", "").replace("[", "");
-//                    for (String value : include.split(FacetQueryParser.INCLUDE_SEPARATOR)) {
-//                        chromList.add(value);
-//                    }
-//                } else {
-//                    chromList = new ArrayList<>(chromosomeMap.keySet());
-//                }
-//
-//                List<String> chromQueryList = new ArrayList<>();
-//                for (String chrom : chromList) {
-//                    if (chromosomeMap.get(chrom) > maxLength) {
-//                        maxLength = chromosomeMap.get(chrom);
-//                    }
-//                    chromQueryList.add("chromosome:" + chrom);
-//                }
-//                return "start[1.." + maxLength + "]:" + step + ":chromDensity" + FacetQueryParser.LABEL_SEPARATOR + "chromosome:"
-//                        + StringUtils.join(chromQueryList, " OR ");
-//            } else {
-//                throw VariantQueryException.malformedParam(CHROM_DENSITY, facet, "Invalid syntax.");
-//            }
-//        } else {
-//            throw VariantQueryException.malformedParam(CHROM_DENSITY, facet, "Invalid syntax.");
-//        }
-//    }
+    protected void addViewerFilter(Query query, String toValue, SolrQuery solrQuery) {
+        List<String> filters = new ArrayList<>();
+        addStringFilters("viewers", query.getString(ClinicalQueryParam.VIEWER_NAME), filters);
+        addStringFilters("studyId", query.getString(ClinicalQueryParam.STUDY_ID.key()), filters);
+        String join = "{!join from=id to=" + toValue + " fromIndex=" + viewerCollectionName + "}";
+        addStringFilters(filters, join, solrQuery);
+    }
 
     protected void addCommonFilters(Query query, List<String> filters) {
         // <field name="studyId" type="text_en" indexed="true" stored="true" multiValued="false"/>
         addStringFilters("studyId", query.getString(ClinicalQueryParam.STUDY_ID.key()), filters);
-        // <field name="viewers" type="string" indexed="true" stored="true" multiValued="true"/>
-        addStringFilters("viewers", query.getString(ClinicalQueryParam.VIEWER_NAME), filters);
     }
 }

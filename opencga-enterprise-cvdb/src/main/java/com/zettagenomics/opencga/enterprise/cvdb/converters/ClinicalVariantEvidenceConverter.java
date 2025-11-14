@@ -30,7 +30,7 @@ public class ClinicalVariantEvidenceConverter extends SearchConverter<ClinicalVa
     public ClinicalVariantEvidenceSearch toClinicalVariantEvidenceSearch(ClinicalVariantEvidence cve, int evidenceIndex, String variantId,
                                                                          boolean isPrimaryFinding, String interpretationId,
                                                                          boolean isPrimaryInterpretation, String clinicalAnalysisId,
-                                                                         String studyId, List<String> viewers)
+                                                                         String studyId)
             throws CvdbException {
         ClinicalVariantEvidenceSearch cves = new ClinicalVariantEvidenceSearch()
                 .setId((evidenceIndex) + "-" + variantId + "-" + interpretationId)
@@ -40,8 +40,7 @@ public class ClinicalVariantEvidenceConverter extends SearchConverter<ClinicalVa
                 .setCiId(interpretationId)
                 .setPrimaryInterpretation(isPrimaryInterpretation)
                 .setCaId(clinicalAnalysisId)
-                .setStudyId(studyId)
-                .setViewers(viewers);
+                .setStudyId(studyId);
 
         // Phenotypes (including IDs and names)
         if (CollectionUtils.isNotEmpty(cve.getPhenotypes())) {

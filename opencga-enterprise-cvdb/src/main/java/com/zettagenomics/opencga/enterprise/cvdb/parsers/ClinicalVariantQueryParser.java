@@ -16,8 +16,6 @@
 
 package com.zettagenomics.opencga.enterprise.cvdb.parsers;
 
-import com.zettagenomics.opencga.enterprise.core.api.ParamConstants;
-import com.zettagenomics.opencga.enterprise.cvdb.CvdbUtils;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -30,7 +28,6 @@ import org.opencb.opencga.storage.core.variant.search.solr.SolrQueryParser;
 
 import java.util.*;
 
-import static com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine.*;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.CV_TYPE_NAME;
 
 public class ClinicalVariantQueryParser extends ClinicalQueryParser {
@@ -46,8 +43,6 @@ public class ClinicalVariantQueryParser extends ClinicalQueryParser {
 
     @Override
     public SolrQuery parse(Query query, QueryOptions queryOptions) throws CvdbException {
-        String projectId = query.getString(ParamConstants.PROJECT_PARAM_NAME);
-
         SolrQuery solrQuery = new SolrQuery("*:*");
 
         // Process query options, if necessary
@@ -66,14 +61,12 @@ public class ClinicalVariantQueryParser extends ClinicalQueryParser {
 
         // Clinical analysis filters
         filters = clinicalAnalysisFilters(query);
-        join = "{!join from=id to=caId fromIndex=" + CvdbUtils.getCollectionName(collectionPrefix, projectId,
-                CLINICAL_ANALYSES_COLLECTION_SUFFIX) + "}";
+        join = "{!join from=id to=caId fromIndex=" + caCollectionName + "}";
         addStringFilters(filters, join, solrQuery);
 
         // Clinical interpretation filters
         filters = clinicalInterpretationFilters(query);
-        join = "{!join from=id to=ciId fromIndex=" + CvdbUtils.getCollectionName(collectionPrefix, projectId,
-                INTERPRETATIONS_COLLECTION_SUFFIX) + "}";
+        join = "{!join from=id to=ciId fromIndex=" + ciCollectionName + "}";
         addStringFilters(filters, join, solrQuery);
 
         // Clinical variant filters
@@ -83,9 +76,11 @@ public class ClinicalVariantQueryParser extends ClinicalQueryParser {
 
         // Clinical variant evidences filters
         filters = clinicalVariantEvidenceFilters(query);
-        join = "{!join from=cvId to=id fromIndex=" + CvdbUtils.getCollectionName(collectionPrefix, projectId,
-                CLINICAL_VARIANT_EVIDENCES_COLLECTION_SUFFIX) + "}";
+        join = "{!join from=cvId to=id fromIndex=" + cveCollectionName + "}";
         addStringFilters(filters, join, solrQuery);
+
+        // Viewers
+        addViewerFilter(query, "caId", solrQuery);
 
         // Log queries
         logQueries(query, queryOptions, solrQuery, "Clinical variant");

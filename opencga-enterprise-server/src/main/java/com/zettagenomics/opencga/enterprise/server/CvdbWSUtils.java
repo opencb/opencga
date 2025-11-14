@@ -3,7 +3,6 @@ package com.zettagenomics.opencga.enterprise.server;
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,7 +13,7 @@ public class CvdbWSUtils {
 
     protected static Logger logger = LoggerFactory.getLogger(CvdbWSUtils.class);
 
-    public static CvdbSolrEngine getCvdbSolrEngine(CatalogManager catalogManager, Path opencgaHome) {
+    public static CvdbSolrEngine getCvdbSolrEngine(CatalogManager catalogManager, Path opencgaHome) throws IOException {
         logger.info("Initializing CVDB Solr Engine");
 
         EnterpriseConfiguration enterpriseConfiguration = EnterpriseConfiguration.load(opencgaHome);

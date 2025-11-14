@@ -101,6 +101,9 @@ apiConfig:
       executorExtended: True
       optionExtended: True
       commands:
+        - name: download
+          executorExtended: True
+          optionExtended: True
         - name: upload
           executorExtended: True
           optionExtended: True
@@ -219,7 +222,7 @@ apiConfig:
       commandName: meta
       ignore: False
       key: Meta
-    - name: cvdb
+    - name: analysisCvdb  # This is The path of api in camel case @Path("/{apiVersion}/analysis/cvdb")
       commandName: cvdb
       ignore: False
       key: CVDB

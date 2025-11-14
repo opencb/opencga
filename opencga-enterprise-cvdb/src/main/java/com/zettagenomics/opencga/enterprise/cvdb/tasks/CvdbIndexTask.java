@@ -58,8 +58,9 @@ public class CvdbIndexTask extends OpenCgaToolScopeStudy {
         EnterpriseConfiguration enterpriseConfiguration = EnterpriseConfiguration.load(getOpencgaHome());
         cvdbEngine = new CvdbSolrEngine(enterpriseConfiguration.getCvdb(), catalogManager);
         try {
-            if (!cvdbEngine.existCollections(organizationId, project.getId())) {
-                cvdbEngine.createCollections(organizationId, project.getId());
+            String collectionPrefix = cvdbEngine.getCollectionNameGenerator().getCollectionPrefix(organizationId, project.getId(), token);
+            if (!cvdbEngine.existCollections(collectionPrefix)) {
+                cvdbEngine.createCollections(project.getFqn(), collectionPrefix, token);
             }
         } catch (CvdbException e) {
             String msg = "Could not perform CVDB index for organization '" + organizationId + "' and project '" + project.getId() + "'";
@@ -74,14 +75,13 @@ public class CvdbIndexTask extends OpenCgaToolScopeStudy {
             CvdbIndexResult result;
             if (params.isAllProject()) {
                 // All clinical analyses for the given project
-                result = cvdbEngine.indexProject(project.getId(), getCatalogManager(), params.isOverwrite(), token);
+                result = cvdbEngine.indexProject(project.getId(), params.isOverwrite(), token);
             } else if (CollectionUtils.isNotEmpty(params.getClinicalAnalysisIds())) {
                 // All clinical analyses for the input list
-                result = cvdbEngine.indexClinicalAnalyses(params.getClinicalAnalysisIds(), getStudyFqn(), getCatalogManager(),
-                        params.isOverwrite(), token);
+                result = cvdbEngine.indexClinicalAnalyses(params.getClinicalAnalysisIds(), getStudyFqn(), params.isOverwrite(), token);
             } else {
                 // All clinical analyses for the given study
-                result = cvdbEngine.indexStudy(getStudyFqn(), getCatalogManager(), params.isOverwrite(), token);
+                result = cvdbEngine.indexStudy(getStudyFqn(), params.isOverwrite(), token);
             }
 
             // Add results as attributes

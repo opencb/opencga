@@ -58,6 +58,7 @@ import static org.opencb.commons.datastore.core.QueryOptions.*;
 public class CvdbSolrEngineQueryTest {
 
     protected static CvdbSolrEngine cvdbEngine;
+    protected static CollectionNameGenerator collectionNameGenerator;
     protected static String organizationId = "test";
     protected static String projectId = "project1";
     protected static Study study;
@@ -80,8 +81,6 @@ public class CvdbSolrEngineQueryTest {
 
     @BeforeClass
     public static void before() throws Throwable {
-        cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, organizationId, projectId);
-        cvdbSolrExternalResource.before();
 
         catalogManagerResource = new OpenCGAEnterpriseCatalogManagerExternalResource();
         catalogManagerResource.before();
@@ -92,27 +91,33 @@ public class CvdbSolrEngineQueryTest {
         setUpCatalogManager(catalogManager);
 
         // CVDB
+        collectionNameGenerator = new CollectionNameGenerator(catalogManager);
+        String collectionPrefix = collectionNameGenerator.getCollectionPrefix(organizationId, projectId, userToken);
+        cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, organizationId, projectId, collectionPrefix);
+        cvdbSolrExternalResource.before();
+
         cvdbEngine = cvdbSolrExternalResource.configure();
         cvdbEngine.setCatalogManager(catalogManager);
+        cvdbEngine.setCollectionNameGenerator(collectionNameGenerator);
 
-        if (!cvdbEngine.existCollections(organizationId, projectId)) {
-            cvdbEngine.createCollections(organizationId, projectId);
+        if (!cvdbEngine.existCollections(collectionPrefix)) {
+            cvdbEngine.createCollections(projectId, collectionPrefix, userToken);
         }
 
         // Load and index
-        TestUtilities.loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca3.json.gz"), study, userToken, opencgaToken, catalogManager);
+        TestUtilities.loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca3.json.gz"), study, userToken, opencgaToken,
+                catalogManager);
 
         // CVDB index from catalog
-        CvdbIndexResult indexResult = cvdbEngine.indexProject(projectId, catalogManager, true, userToken);
+        CvdbIndexResult indexResult = cvdbEngine.indexProject(projectId, true, userToken);
         System.out.println(indexResult.getFailures());
         assertEquals(2, indexResult.getNumIndexed());
         assertEquals(0, indexResult.getFailures().size());
 
-        String prefix = CvdbUtils.getCollectionPrefix(cvdbEngine.getCatalogManager().getConfiguration().getDatabasePrefix(), organizationId);
-        caParser = new ClinicalAnalysisQueryParser(prefix, cvdbEngine.getSearchIndexMetadata());
-        ciParser = new ClinicalInterpretationQueryParser(prefix, cvdbEngine.getSearchIndexMetadata());
-        cvParser = new ClinicalVariantQueryParser(prefix, cvdbEngine.getSearchIndexMetadata());
-        cveParser = new ClinicalVariantEvidenceQueryParser(prefix, cvdbEngine.getSearchIndexMetadata());
+        caParser = new ClinicalAnalysisQueryParser(collectionPrefix, cvdbEngine.getSearchIndexMetadata());
+        ciParser = new ClinicalInterpretationQueryParser(collectionPrefix, cvdbEngine.getSearchIndexMetadata());
+        cvParser = new ClinicalVariantQueryParser(collectionPrefix, cvdbEngine.getSearchIndexMetadata());
+        cveParser = new ClinicalVariantEvidenceQueryParser(collectionPrefix, cvdbEngine.getSearchIndexMetadata());
     }
 
     public static void setUpCatalogManager(CatalogManager catalogManager) throws CatalogException {
@@ -1923,10 +1928,6 @@ public class CvdbSolrEngineQueryTest {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(EXCLUDE, "panels,interpretation.panels");
 
-        SolrQuery solrQuery = caParser.parse(query, queryOptions);
-        assertEquals("maxJson", solrQuery.getFields());
-
-
 //        // Check boolean (true)
 //        query = new Query(PROJECT_PARAM_NAME, projectId);
 //        query.put(CI_PRIMARY_NAME, Boolean.TRUE);
@@ -1956,6 +1957,9 @@ public class CvdbSolrEngineQueryTest {
                 assertTrue(secondaryInterpretation.getPanels() != null);
             }
         }
+
+        SolrQuery solrQuery = caParser.parse(query, queryOptions);
+        assertEquals("maxJson", solrQuery.getFields());
     }
 
     @Test
@@ -1971,9 +1975,6 @@ public class CvdbSolrEngineQueryTest {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(EXCLUDE, "panels");
 
-        SolrQuery solrQuery = caParser.parse(query, queryOptions);
-        assertEquals("maxJson", solrQuery.getFields());
-
         DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
         for (ClinicalAnalysis ca : results.getResults()) {
             assertTrue(ca.getDisorder() != null);
@@ -1983,6 +1984,9 @@ public class CvdbSolrEngineQueryTest {
                 assertTrue(secondaryInterpretation.getPanels() != null);
             }
         }
+
+        SolrQuery solrQuery = caParser.parse(query, queryOptions);
+        assertEquals("maxJson", solrQuery.getFields());
     }
 
     //-----------------------------------------------------------------------
@@ -2026,9 +2030,6 @@ public class CvdbSolrEngineQueryTest {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, "id,family.members.sex");
 
-        SolrQuery solrQuery = caParser.parse(query, queryOptions);
-        assertEquals("minJson", solrQuery.getFields());
-
         DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
         for (ClinicalAnalysis ca : results.getResults()) {
             assertTrue(StringUtils.isNotEmpty(ca.getId()));
@@ -2043,6 +2044,9 @@ public class CvdbSolrEngineQueryTest {
             assertTrue(ca.getInterpretation() == null);
             assertTrue(ca.getSecondaryInterpretations() == null);
         }
+
+        SolrQuery solrQuery = caParser.parse(query, queryOptions);
+        assertEquals("minJson", solrQuery.getFields());
     }
 
     @Test
@@ -2053,9 +2057,6 @@ public class CvdbSolrEngineQueryTest {
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, "id,type,proband.id,proband.samples.id,family.id,family.members.id,disorder.id,interpretation.id,interpretation.stats,panels.id,panels.name,panels.source,panels.stats");
-
-        SolrQuery solrQuery = caParser.parse(query, queryOptions);
-        assertEquals("minJson", solrQuery.getFields());
 
         DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
         for (ClinicalAnalysis ca : results.getResults()) {
@@ -2079,6 +2080,9 @@ public class CvdbSolrEngineQueryTest {
                 assertTrue(panel.getStats() != null);
             }
         }
+
+        SolrQuery solrQuery = caParser.parse(query, queryOptions);
+        assertEquals("minJson", solrQuery.getFields());
     }
 
 
@@ -2120,9 +2124,6 @@ public class CvdbSolrEngineQueryTest {
 
         QueryOptions queryOptions = new QueryOptions();
 
-        SolrQuery solrQuery = caParser.parse(query, queryOptions);
-        assertEquals("maxJson", solrQuery.getFields());
-
         DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
         for (ClinicalAnalysis ca : results.getResults()) {
             assertTrue(StringUtils.isNotEmpty(ca.getId()));
@@ -2144,6 +2145,9 @@ public class CvdbSolrEngineQueryTest {
             assertTrue(ca.getInterpretation().getStats() != null);
             assertTrue(ca.getSecondaryInterpretations() != null);
         }
+
+        SolrQuery solrQuery = caParser.parse(query, queryOptions);
+        assertEquals("maxJson", solrQuery.getFields());
     }
 
     @Test
@@ -2154,9 +2158,6 @@ public class CvdbSolrEngineQueryTest {
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, "panels");
-
-        SolrQuery solrQuery = caParser.parse(query, queryOptions);
-        assertEquals("maxJson", solrQuery.getFields());
 
         DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
         for (ClinicalAnalysis ca : results.getResults()) {
@@ -2172,6 +2173,9 @@ public class CvdbSolrEngineQueryTest {
             assertTrue(ca.getInterpretation() == null);
             assertTrue(ca.getSecondaryInterpretations() == null);
         }
+
+        SolrQuery solrQuery = caParser.parse(query, queryOptions);
+        assertEquals("maxJson", solrQuery.getFields());
     }
 
     @Test
@@ -2183,9 +2187,6 @@ public class CvdbSolrEngineQueryTest {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, "interpretation.primaryFindings.id");
 
-        SolrQuery solrQuery = caParser.parse(query, queryOptions);
-        assertEquals("minJson", solrQuery.getFields());
-
         DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
         for (ClinicalAnalysis ca : results.getResults()) {
             assertTrue(StringUtils.isEmpty(ca.getId()));
@@ -2194,6 +2195,9 @@ public class CvdbSolrEngineQueryTest {
             assertTrue(ca.getInterpretation() != null);
             assertTrue(ca.getSecondaryInterpretations() == null);
         }
+
+        SolrQuery solrQuery = caParser.parse(query, queryOptions);
+        assertEquals("minJson", solrQuery.getFields());
     }
 
     @Test
@@ -2311,14 +2315,14 @@ public class CvdbSolrEngineQueryTest {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, ClinicalIncludeHandler.INTERNAL_INCLUDE_MINIMUM_JSON);
 
-        SolrQuery solrQuery = caParser.parse(query, queryOptions);
-        assertEquals("minJson", solrQuery.getFields());
-
         DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
         assertTrue(results.getNumResults() > 0);
         for (ClinicalAnalysis ca : results.getResults()) {
             assertTrue(ca.getReport().getDiscussion().getText().contains(query.getString(CA_REPORT_NAME)));
         }
+
+        SolrQuery solrQuery = caParser.parse(query, queryOptions);
+        assertEquals("minJson", solrQuery.getFields());
     }
 
     @Test
@@ -2329,9 +2333,6 @@ public class CvdbSolrEngineQueryTest {
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(INCLUDE, "interpretation.description");
-
-        SolrQuery solrQuery = caParser.parse(query, queryOptions);
-        assertEquals("minJson", solrQuery.getFields());
 
         DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
         assertTrue(results.getNumResults() > 0);
@@ -2344,6 +2345,9 @@ public class CvdbSolrEngineQueryTest {
             }
             assertTrue(found);
         }
+
+        SolrQuery solrQuery = caParser.parse(query, queryOptions);
+        assertEquals("minJson", solrQuery.getFields());
     }
 
     @Test
@@ -2353,9 +2357,6 @@ public class CvdbSolrEngineQueryTest {
         query.put(CV_ANNOT_CONSEQUENCE_TYPE_NAME, "missense_variant");
 
         QueryOptions queryOptions = new QueryOptions();
-
-        SolrQuery solrQuery = caParser.parse(query, queryOptions);
-        assertEquals("maxJson", solrQuery.getFields());
 
         DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
         assertTrue(results.getNumResults() > 0);
@@ -2372,6 +2373,9 @@ public class CvdbSolrEngineQueryTest {
             }
             assertTrue(found);
         }
+
+        SolrQuery solrQuery = caParser.parse(query, queryOptions);
+        assertEquals("maxJson", solrQuery.getFields());
     }
 
     @Test
@@ -2383,9 +2387,6 @@ public class CvdbSolrEngineQueryTest {
         query.put(CV_ANNOT_CONSEQUENCE_TYPE_NAME, StringUtils.join(soTerms, ";"));
 
         QueryOptions queryOptions = new QueryOptions();
-
-        SolrQuery solrQuery = caParser.parse(query, queryOptions);
-        assertEquals("maxJson", solrQuery.getFields());
 
         DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
         assertTrue(results.getNumResults() > 0);
@@ -2401,6 +2402,9 @@ public class CvdbSolrEngineQueryTest {
             }
             assertTrue(found);
         }
+
+        SolrQuery solrQuery = caParser.parse(query, queryOptions);
+        assertEquals("maxJson", solrQuery.getFields());
     }
 
     @Test
@@ -2415,6 +2419,8 @@ public class CvdbSolrEngineQueryTest {
 
         SolrQuery solrQuery = caParser.parse(query, queryOptions);
         assertEquals("maxJson", solrQuery.getFields());
+
+
 
         DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
         assertTrue(results.getNumResults() > 0);
@@ -2442,9 +2448,6 @@ public class CvdbSolrEngineQueryTest {
 
         QueryOptions queryOptions = new QueryOptions();
 
-        SolrQuery solrQuery = caParser.parse(query, queryOptions);
-        assertEquals("maxJson", solrQuery.getFields());
-
         DataResult<ClinicalAnalysis> results = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
         assertTrue(results.getNumResults() > 0);
         for (ClinicalAnalysis ca : results.getResults()) {
@@ -2458,6 +2461,9 @@ public class CvdbSolrEngineQueryTest {
             }
             assertTrue(found);
         }
+
+        SolrQuery solrQuery = caParser.parse(query, queryOptions);
+        assertEquals("maxJson", solrQuery.getFields());
     }
 
     /* Code to update clinical analysis for testing:

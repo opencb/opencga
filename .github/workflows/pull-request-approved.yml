@@ -50,6 +50,28 @@ jobs:
           distribution: 'temurin'
           java-version: '8'
           cache: 'maven'
+      - name: Clone dependencies
+        id: clone_dependencies
+        run: |
+          if [ -f "./.github/workflows/scripts/get_same_branch.sh" ]; then
+            chmod +x ./.github/workflows/scripts/get_same_branch.sh
+            export DEPENDENCIES_SHA=${{ github.sha }}
+            ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }}
+          fi
+      - name: Cache local Maven repository
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ ${{ vars.HADOOP_FLAVOUR }} }}-${{ steps.clone_dependencies.outputs.dependencies_sha }}
+          restore-keys: |
+            ${{ runner.os }}-maven-${{ ${{ vars.HADOOP_FLAVOUR }} }}-
+      - name: Compile dependencies
+        run: |
+          if [ -f "./.github/workflows/scripts/compile_same_branch.sh" ]; then
+            chmod +x ./.github/workflows/scripts/compile_same_branch.sh
+            ./.github/workflows/scripts/compile_same_branch.sh
+          fi
       - name: Install Samtools
         run: sudo apt-get install samtools python3-deeptools
       - name: Start MongoDB v6.0
@@ -62,21 +84,43 @@ jobs:
         with:
           username: ${{ env.DOCKER_HUB_USER }}
           password: ${{ env.DOCKER_HUB_PASSWORD }}
-      - name: K8s Tunnel MongoDB
-        run: |
-          wget https://dl.k8s.io/release/v1.28.2/bin/linux/amd64/kubectl
-          chmod +x ./kubectl
-          echo "${{ env.AZURE_KUBE_CONFIG }}" > admin.conf
-          ./kubectl -n cellbase-db port-forward services/cellbase-rs0-svc 27018:27017 --kubeconfig ./admin.conf &
       - name: Install sshpass
         run: sudo apt-get install sshpass
-      - name: Add SSH Host to known_hosts
+      - name: Prepare SSH and scan host
+        continue-on-error: true
         run: |
+          set +e  # temporarily disable exit-on-error to capture failures without aborting
+
+          echo "Creating ~/.ssh directory and setting permissions"
           mkdir -p ~/.ssh
-          ssh-keyscan -p ${{ env.SSH_PORT }} ${{ env.SSH_HOST }} >> ~/.ssh/known_hosts
+          chmod 700 ~/.ssh
+
+          echo "Scanning SSH host $SSH_HOST on port $SSH_PORT"
+          ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> ~/.ssh/known_hosts 2>&1
+          scan_status=$?
+          if [ $scan_status -ne 0 ]; then
+            echo "ssh-keyscan exited with status $scan_status"
+          fi
+
+          echo "Setting permissions on known_hosts"
+          chmod 644 ~/.ssh/known_hosts
+
+          echo " Showing contents of ~/.ssh/known_hosts:"
+          cat ~/.ssh/known_hosts || echo "(known_hosts is empty or unreadable)"
+
+          set -e  # re-enable exit-on-error for subsequent steps
+
+          echo "SSH keyscan step completed (errors ignored here)"
+        #
+        #      - name: Add SSH Host to known_hosts
+        #        run: |
+        #          mkdir -p ~/.ssh
+        #          ssh-keyscan -p ${{ env.SSH_PORT }} ${{ env.SSH_HOST }} >> ~/.ssh/known_hosts
         env:
           SSH_HOST: ${{ env.SSH_HOST }}
           SSH_PORT: ${{ env.SSH_PORT }}
-      - name: Run all OpenCB Junit tests, ie. java-common-libs, biodata, cellbase, opencga and opencga-enterprise
+      - name: Run all OpenCB Junit tests, ie. java-common-libs, biodata, opencga and opencga-enterprise
         run: |
-          ./build.sh -t -l runShortTests -d -b -s -T ${{ github.event.pull_request.head.ref }} -c localhost:27018 -H hdp3.1
+          ./build.sh --test --test-level runShortTests --docker --prepare-branches --prepare-hadoop --test-save-reports --task ${{ github.event.pull_request.head.ref }} --R-client --python-client --javascript-client --storage-hadoop ${{ vars.HADOOP_FLAVOUR }}
+        env:
+          THIRDPARTY_READ_TOKEN: ${{ secrets.THIRDPARTY_READ_TOKEN }}

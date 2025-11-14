@@ -571,7 +571,6 @@
 	<!-- Catalog -->
 
     <field name="studyId" type="text_en" indexed="true" stored="true" multiValued="false"/>
-    <field name="viewers" type="string" indexed="true" stored="true" multiValued="true"/>
 
 	<!-- Clinical analysis -->
 

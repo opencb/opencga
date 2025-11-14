@@ -4,6 +4,7 @@ import com.zettagenomics.opencga.enterprise.catalog.managers.EnterpriseFactory;
 import com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine;
 import com.zettagenomics.opencga.enterprise.cvdb.CvdbUtils;
 import com.zettagenomics.opencga.enterprise.server.CvdbWSUtils;
+import com.zettagenomics.opencga.enterprise.server.commons.EnterpriseParamConstants;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.commons.datastore.core.Query;
@@ -45,7 +46,7 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
         EnterpriseFactory.init(catalogManager, opencgaHome);
     }
 
-    private CvdbSolrEngine getCvdbEngine() {
+    private CvdbSolrEngine getCvdbEngine() throws IOException {
         CvdbSolrEngine cvdbEngine = cvdbEngineAtomicRef.get();
         if (cvdbEngine == null) {
             synchronized(cvdbEngineAtomicRef) {
@@ -92,9 +93,8 @@ public class EnterpriseClinicalWebService extends ClinicalWebService {
             @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, dataType = "boolean", paramType = "query"),
-            @ApiImplicitParam(name = "approximateCount", value = "Get an approximate count, instead of an exact total count. Reduces execution time", dataType = "boolean", paramType = "query"),
-            @ApiImplicitParam(name = "approximateCountSamplingSize", value = "Sampling size to get the approximate count. "
-                    + "Larger values increase accuracy but also increase execution time", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "approximateCount", value = EnterpriseParamConstants.APPROXIMATE_COUNT_DESCRIPTION, dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = "approximateCountSamplingSize", value = EnterpriseParamConstants.APPROXIMATE_COUNT_SAMPLING_SIZE_DESCRIPTION, dataType = "integer", paramType = "query"),
 
             @ApiImplicitParam(name = "savedFilter", value = SAVED_FILTER_DESCR, dataType = "string", paramType = "query"),
 
