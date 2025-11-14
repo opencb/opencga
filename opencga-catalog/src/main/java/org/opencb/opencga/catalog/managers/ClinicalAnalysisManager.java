@@ -579,6 +579,7 @@ public class ClinicalAnalysisManager extends AnnotationSetManager<ClinicalAnalys
                         throw new CatalogException("Could not find any somatic sample for proband '" + proband.getId() + "'.");
                     }
                 }
+                validateDisorder(clinicalAnalysis);
             }
             if (CollectionUtils.isNotEmpty(clinicalAnalysis.getFiles())) {
                 validateFiles(organizationId, study, clinicalAnalysis, userId);
