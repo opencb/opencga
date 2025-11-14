@@ -144,7 +144,7 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
 
             // 1. Check permissions
             authorizationManager.checkStudyPermission(organizationId, study.getUid(), tokenPayload,
-                    StudyPermissions.Permissions.WRITE_WORKFLOWS);
+                    StudyPermissions.Permissions.WRITE_USER_TOOLS);
 
             // Convert WorkflowCreateParams to ExternalTool
             ExternalTool externalTool = new ExternalTool(workflow.getId(), workflow.getName(), workflow.getDescription(),
@@ -211,7 +211,7 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
 
             // 1. Check permissions
             authorizationManager.checkStudyPermission(organizationId, study.getUid(), tokenPayload,
-                    StudyPermissions.Permissions.WRITE_WORKFLOWS);
+                    StudyPermissions.Permissions.WRITE_USER_TOOLS);
 
             // Convert CustomToolCreateParams to ExternalTool
             ExternalTool externalTool = new ExternalTool(toolCreateParams.getId(), toolCreateParams.getName(),
@@ -388,7 +388,7 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
 
             // 1. Check permissions
             authorizationManager.checkStudyPermission(organizationId, study.getUid(), tokenPayload,
-                    StudyPermissions.Permissions.WRITE_WORKFLOWS);
+                    StudyPermissions.Permissions.WRITE_USER_TOOLS);
 
             // 2. Download workflow
             ExternalTool externalTool = NextflowUtils.importRepository(repository);
