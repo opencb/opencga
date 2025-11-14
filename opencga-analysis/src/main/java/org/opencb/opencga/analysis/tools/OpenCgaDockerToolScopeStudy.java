@@ -70,18 +70,6 @@ public abstract class OpenCgaDockerToolScopeStudy extends OpenCgaTool {
 
     }
 
-    /**
-     * Process the input parameters of the command line.
-     * @param value
-     * @param inputFileUtils
-     * @param cliParamsBuilder
-     * @throws CatalogException
-     */
-    protected void processInputCli(String value, InputFileUtils inputFileUtils, StringBuilder cliParamsBuilder) throws CatalogException {
-        String paramValue = processInputValue(value, inputFileUtils);
-        cliParamsBuilder.append(paramValue).append(" ");
-    }
-
     protected String processOutputValue(String value, InputFileUtils inputFileUtils) throws CatalogException {
         String dynamicOutputFolder;
         if (inputFileUtils.isDynamicOutputFolder(value)) {
@@ -93,11 +81,6 @@ public abstract class OpenCgaDockerToolScopeStudy extends OpenCgaTool {
         }
         logger.info("Params: Dynamic output folder: '{}'", dynamicOutputFolder);
         return dynamicOutputFolder;
-    }
-
-    protected void processOutputCli(String value, InputFileUtils inputFileUtils, StringBuilder cliParamsBuilder) throws CatalogException {
-        String dynamicOutputFolder = processOutputValue(value, inputFileUtils);
-        cliParamsBuilder.append(dynamicOutputFolder).append(" ");
     }
 
     /**

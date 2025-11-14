@@ -91,18 +91,18 @@ public class ExternalToolExecutorTest extends AbstractManagerTest {
                 .setScope(ExternalToolScope.OTHER)
                 .setVariables(Arrays.asList(
                         new ExternalToolVariable()
-                                .setName("input")
+                                .setId("input")
                                 .setRequired(true),
                         new ExternalToolVariable()
-                                .setName("outdir")
+                                .setId("outdir")
                                 .setOutput(true)
                                 .setRequired(true),
                         new ExternalToolVariable()
-                                .setName("genome")
+                                .setId("genome")
                                 .setRequired(true)
                                 .setDefaultValue("GRCh37"),
                         new ExternalToolVariable()
-                                .setName("-profile")
+                                .setId("-profile")
                                 .setRequired(true)
                                 .setDefaultValue("docker")
 //                        new WorkflowVariable()

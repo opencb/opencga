@@ -24,7 +24,7 @@ public abstract class ExternalToolDockerScopeStudy extends OpenCgaDockerToolScop
         Map<String, ExternalToolVariable> variableMap = new HashMap<>();
         if (CollectionUtils.isNotEmpty(variables)) {
             for (ExternalToolVariable variable : variables) {
-                String variableId = removePrefix(variable.getName());
+                String variableId = removePrefix(variable.getId());
                 variableMap.put(variableId, variable);
                 if (variable.isRequired()) {
                     mandatoryParams.add(variableId);
@@ -78,7 +78,7 @@ public abstract class ExternalToolDockerScopeStudy extends OpenCgaDockerToolScop
             } else if (externalToolVariable.getType() != ExternalToolVariable.WorkflowVariableType.FLAG) {
                 throw new ToolException("Missing mandatory parameter: '" + mandatoryParam + "'.");
             }
-            sanitisedParams.put(externalToolVariable.getName(), paramValue);
+            sanitisedParams.put(externalToolVariable.getId(), paramValue);
         }
 
         return sanitisedParams;
@@ -95,7 +95,11 @@ public abstract class ExternalToolDockerScopeStudy extends OpenCgaDockerToolScop
         if (params != null) {
             for (Map.Entry<String, String> entry : params.entrySet()) {
                 if (!entry.getKey().startsWith("-")) {
-                    cliParamsBuilder.append("--");
+                    if (entry.getKey().length() == 1) {
+                        cliParamsBuilder.append("-"); // Single dash for single character parameters
+                    } else {
+                        cliParamsBuilder.append("--");
+                    }
                 }
                 cliParamsBuilder.append(entry.getKey()).append(" ");
                 if (StringUtils.isNotEmpty(entry.getValue())) {
