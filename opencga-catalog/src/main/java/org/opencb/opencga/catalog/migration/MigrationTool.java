@@ -12,6 +12,7 @@ import org.bson.conversions.Bson;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
+import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -295,6 +296,22 @@ public abstract class MigrationTool {
             documentList.add(convertToDocument(value));
         }
         return documentList;
+    }
+
+    protected void renameCollection(String oldCollection, String newCollection) {
+        String database = "";
+        if (!oldCollection.contains(".") && !newCollection.contains(".")) {
+            database = dbAdaptorFactory.getCatalogDatabase(configuration.getDatabasePrefix(), organizationId);
+        }
+
+        // Rename collection
+        MongoDataStore adminDatastore = dbAdaptorFactory.getMongoManager().get("admin", dbAdaptorFactory.getMongoDbConfiguration());
+        logger.info("Renaming collection {} to {}", database + "." + oldCollection, database + "." + newCollection);
+        adminDatastore.getDb().runCommand(new Document()
+                .append("renameCollection", database + "." + oldCollection)
+                .append("to", database + "." + newCollection)
+                .append("dropTarget", true)
+        );
     }
 
     public MigrationTool setBatchSize(int batchSize) {

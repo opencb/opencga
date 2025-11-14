@@ -43,7 +43,7 @@ public class OrganizationMongoDBAdaptorFactory {
     public static final String PANEL_COLLECTION = "panel";
     public static final String CLINICAL_ANALYSIS_COLLECTION = "clinical";
     public static final String INTERPRETATION_COLLECTION = "interpretation";
-    public static final String EXTERNAL_TOOL_COLLECTION = "workflow";
+    public static final String EXTERNAL_TOOL_COLLECTION = "tools";
     @Deprecated
     public static final String DEPRECATED_WORKFLOW_COLLECTION = "workflow";
 
@@ -54,7 +54,7 @@ public class OrganizationMongoDBAdaptorFactory {
     public static final String PANEL_ARCHIVE_COLLECTION = "panel_archive";
     public static final String CLINICAL_ANALYSIS_ARCHIVE_COLLECTION = "clinical_archive";
     public static final String INTERPRETATION_ARCHIVE_COLLECTION = "interpretation_archive";
-    public static final String EXTERNAL_TOOL_ARCHIVE_COLLECTION = "workflow_archive";
+    public static final String EXTERNAL_TOOL_ARCHIVE_COLLECTION = "tools_archive";
     @Deprecated
     public static final String DEPRECATED_WORKFLOW_ARCHIVE_COLLECTION = "workflow_archive";
 
@@ -71,7 +71,7 @@ public class OrganizationMongoDBAdaptorFactory {
     public static final String DELETED_PANEL_COLLECTION = "panel_deleted";
     public static final String DELETED_CLINICAL_ANALYSIS_COLLECTION = "clinical_deleted";
     public static final String DELETED_INTERPRETATION_COLLECTION = "interpretation_deleted";
-    public static final String DELETED_EXTERNAL_TOOL_COLLECTION = "workflow_deleted";
+    public static final String DELETED_EXTERNAL_TOOL_COLLECTION = "tools_deleted";
     @Deprecated
     public static final String DEPRECATED_DELETED_WORKFLOW_COLLECTION = "workflow_deleted";
 

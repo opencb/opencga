@@ -62,6 +62,10 @@ public class ExternalToolTask7610Migration extends MigrationTool {
             bulk.add(new UpdateOneModel<>(Filters.eq("_id", document.get("_id")), updateDocument.toFinalUpdateDocument()));
         });
 
+        renameCollection(OrganizationMongoDBAdaptorFactory.DEPRECATED_WORKFLOW_COLLECTION, OrganizationMongoDBAdaptorFactory.EXTERNAL_TOOL_COLLECTION);
+        renameCollection(OrganizationMongoDBAdaptorFactory.DEPRECATED_WORKFLOW_ARCHIVE_COLLECTION, OrganizationMongoDBAdaptorFactory.EXTERNAL_TOOL_ARCHIVE_COLLECTION);
+        renameCollection(OrganizationMongoDBAdaptorFactory.DEPRECATED_DELETED_WORKFLOW_COLLECTION, OrganizationMongoDBAdaptorFactory.DELETED_EXTERNAL_TOOL_COLLECTION);
+
         // Migrate Study permissions from WORKFLOW_* to USER_TOOL_*
         Bson studyQuery = Filters.or(Filters.exists("_acl"), Filters.exists("_userAcls"));
         Bson studyProjection = Projections.include("_id", "_acl", "_userAcls");
@@ -102,7 +106,6 @@ public class ExternalToolTask7610Migration extends MigrationTool {
             mongoCollection.updateMany(Filters.eq("type", "CUSTOM"), new Document("$set", new Document("type", "CUSTOM_TOOL")));
             mongoCollection.updateMany(Filters.eq("type", "WALKER"), new Document("$set", new Document("type", "VARIANT_WALKER")));
         }
-
     }
 
     /**

@@ -285,3 +285,17 @@
 {"collections": ["workflow", "workflow_archive"], "fields": {"internal.registrationUserId": 1, "studyUid": 1}, "options": {}}
 {"collections": ["workflow", "workflow_archive"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {}}
 {"collections": ["workflow", "workflow_archive"], "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {}}
+
+{"collections": ["tools", "tools_archive"], "fields": {"uid": 1, "version": 1}, "options": {"unique": true}}
+{"collections": ["tools", "tools_archive"], "fields": {"id": 1, "studyUid": 1, "version": 1}, "options": {"unique": true}}
+{"collections": ["tools", "tools_archive"], "fields": {"uuid": 1, "version": 1}, "options": {"unique": true}}
+{"collections": ["tools", "tools_archive"], "fields": {"name": 1, "studyUid": 1}, "options": {"unique": true}}
+{"collections": ["tools", "tools_archive"], "fields": {"type": 1, "studyUid": 1}, "options": {}}
+{"collections": ["tools", "tools_archive"], "fields": {"scope": 1, "studyUid": 1}, "options": {}}
+{"collections": ["tools", "tools_archive"], "fields": {"workflow.repository.name": 1, "studyUid": 1}, "options": {}}
+{"collections": ["tools", "tools_archive"], "fields": {"container.name": 1, "studyUid": 1}, "options": {}}
+{"collections": ["tools", "tools_archive"], "fields": {"tags": 1, "studyUid": 1}, "options": {}}
+{"collections": ["tools", "tools_archive"], "fields": {"draft": 1, "studyUid": 1}, "options": {}}
+{"collections": ["tools", "tools_archive"], "fields": {"internal.registrationUserId": 1, "studyUid": 1}, "options": {}}
+{"collections": ["tools", "tools_archive"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {}}
+{"collections": ["tools", "tools_archive"], "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {}}
