@@ -78,7 +78,9 @@ public class CustomToolInlineExecutor extends OpenCgaDockerToolScopeStudy {
         addDependencies(dependencyList);
         updateJobInformation(tags, toolInfoExecutor);
 
-        this.cliParams = container.getCommandLine();
+        // Process CLI
+        this.cliParams = inputFileUtils.processCommandLine(study, container.getCommandLine(), Collections.emptyMap(), null,
+                temporalInputDir, dockerInputBindings, getOutDir().toString(), token);
         this.username = container.getUser();
         this.password = container.getPassword();
     }
