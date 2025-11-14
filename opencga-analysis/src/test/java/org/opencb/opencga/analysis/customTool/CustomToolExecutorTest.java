@@ -12,7 +12,6 @@ import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.externalTool.Container;
 import org.opencb.opencga.core.models.externalTool.ExternalToolScope;
 import org.opencb.opencga.core.models.externalTool.ExternalToolVariable;
-import org.opencb.opencga.core.models.externalTool.custom.CustomExternalToolParams;
 import org.opencb.opencga.core.models.externalTool.custom.CustomToolCreateParams;
 import org.opencb.opencga.core.models.externalTool.custom.CustomToolRunParams;
 import org.opencb.opencga.core.models.file.File;
@@ -61,9 +60,6 @@ public class CustomToolExecutorTest extends AbstractManagerTest {
         // Register the custom tool
         catalogManager.getExternalToolManager().createCustomTool(studyFqn, externalTool, QueryOptions.empty(), ownerToken);
 
-        // Create run parameters
-        CustomExternalToolParams runParams = new CustomExternalToolParams(toolId, null, null);
-
         // Execute the tool
         CustomToolExecutor executor = new CustomToolExecutor();
         ObjectMap params = new ObjectMap();
@@ -109,9 +105,8 @@ public class CustomToolExecutorTest extends AbstractManagerTest {
         Map<String, String> paramsMap = new HashMap<>();
         paramsMap.put("message", "This is a test message");
         paramsMap.put("prefix", "DEBUG");
-        
-        CustomToolRunParams toolRunParams = new CustomToolRunParams(null, paramsMap);
-        CustomExternalToolParams runParams = new CustomExternalToolParams(toolId, null, toolRunParams);
+
+        CustomToolRunParams runParams = new CustomToolRunParams(toolId, null, null, paramsMap);
 
         // Execute the tool
         CustomToolExecutor executor = new CustomToolExecutor();
@@ -148,8 +143,7 @@ public class CustomToolExecutorTest extends AbstractManagerTest {
         catalogManager.getExternalToolManager().createCustomTool(studyFqn, externalTool, QueryOptions.empty(), ownerToken);
 
         // Create run parameters without custom message (should use default)
-        CustomToolRunParams toolRunParams = new CustomToolRunParams(null, new HashMap<>());
-        CustomExternalToolParams runParams = new CustomExternalToolParams(toolId, null, toolRunParams);
+        CustomToolRunParams runParams = new CustomToolRunParams(toolId, null, null, new HashMap<>());
 
         // Execute the tool
         CustomToolExecutor executor = new CustomToolExecutor();
@@ -178,9 +172,7 @@ public class CustomToolExecutorTest extends AbstractManagerTest {
         catalogManager.getExternalToolManager().createCustomTool(studyFqn, externalTool, QueryOptions.empty(), ownerToken);
 
         // Create run parameters with custom command line
-        CustomToolRunParams toolRunParams = new CustomToolRunParams()
-                .setCommandLine("echo 'Custom command line override'");
-        CustomExternalToolParams runParams = new CustomExternalToolParams(toolId, null, toolRunParams);
+        CustomToolRunParams runParams = new CustomToolRunParams(toolId, null, "echo 'Custom command line override'", null);
 
         // Execute the tool
         CustomToolExecutor executor = new CustomToolExecutor();
@@ -229,9 +221,8 @@ public class CustomToolExecutorTest extends AbstractManagerTest {
         paramsMap.put("param1", "value1");
         paramsMap.put("param2", "value2");
         // param3 should use default value
-        
-        CustomToolRunParams toolRunParams = new CustomToolRunParams(null, paramsMap);
-        CustomExternalToolParams runParams = new CustomExternalToolParams(toolId, null, toolRunParams);
+
+        CustomToolRunParams runParams = new CustomToolRunParams(toolId, null, null, paramsMap);
 
         // Execute the tool
         CustomToolExecutor executor = new CustomToolExecutor();
@@ -247,7 +238,7 @@ public class CustomToolExecutorTest extends AbstractManagerTest {
     @Test(expected = ToolException.class)
     public void testMissingToolId() throws Exception {
         // Try to execute without tool id
-        CustomExternalToolParams runParams = new CustomExternalToolParams(null, null, null);
+        CustomToolRunParams runParams = new CustomToolRunParams(null, null, null, null);
 
         CustomToolExecutor executor = new CustomToolExecutor();
         ObjectMap params = runParams.toObjectMap();
@@ -263,7 +254,7 @@ public class CustomToolExecutorTest extends AbstractManagerTest {
     @Test(expected = ToolException.class)
     public void testNonExistentTool() throws Exception {
         // Try to execute a tool that doesn't exist
-        CustomExternalToolParams runParams = new CustomExternalToolParams("non-existent-tool", null, null);
+        CustomToolRunParams runParams = new CustomToolRunParams("non-existent-tool", null, null, null);
 
         CustomToolExecutor executor = new CustomToolExecutor();
         ObjectMap params = runParams.toObjectMap();
@@ -292,7 +283,7 @@ public class CustomToolExecutorTest extends AbstractManagerTest {
         catalogManager.getExternalToolManager().createCustomTool(studyFqn, externalTool, QueryOptions.empty(), ownerToken);
 
         // Create run parameters
-        CustomExternalToolParams runParams = new CustomExternalToolParams(toolId, null, null);
+        CustomToolRunParams runParams = new CustomToolRunParams(toolId, null, null, null);
 
         // Execute the tool
         CustomToolExecutor executor = new CustomToolExecutor();
@@ -325,9 +316,7 @@ public class CustomToolExecutorTest extends AbstractManagerTest {
         // Create run parameters
         Map<String, String> paramMap = new HashMap<>();
         paramMap.put("JOB_DIR", "$OUTPUT");
-        CustomToolRunParams runToolParams = new CustomToolRunParams();
-        runToolParams.setParams(paramMap);
-        CustomExternalToolParams runParams = new CustomExternalToolParams(toolId, null, runToolParams);
+        CustomToolRunParams runParams = new CustomToolRunParams(toolId, null, null, paramMap);
 
         // Execute the tool
         CustomToolExecutor executor = new CustomToolExecutor();
@@ -406,8 +395,7 @@ public class CustomToolExecutorTest extends AbstractManagerTest {
         // threads should use default "1"
         // format should use default "json"
 
-        CustomToolRunParams toolRunParams = new CustomToolRunParams(null, paramsMap);
-        CustomExternalToolParams runParams = new CustomExternalToolParams(toolId, null, toolRunParams);
+        CustomToolRunParams runParams = new CustomToolRunParams(toolId, null, null, paramsMap);
 
         // Execute the tool
         CustomToolExecutor executor = new CustomToolExecutor();
@@ -484,8 +472,7 @@ public class CustomToolExecutorTest extends AbstractManagerTest {
         paramsMap.put("inputFile", "file://data/input.txtt");
         paramsMap.put("outputFile", "$OUTPUT/output.txt");
 
-        CustomToolRunParams toolRunParams = new CustomToolRunParams(null, paramsMap);
-        CustomExternalToolParams runParams = new CustomExternalToolParams(toolId, null, toolRunParams);
+        CustomToolRunParams runParams = new CustomToolRunParams(toolId, null, null, paramsMap);
 
         // Execute the tool
         CustomToolExecutor executor = new CustomToolExecutor();
@@ -546,8 +533,7 @@ public class CustomToolExecutorTest extends AbstractManagerTest {
         paramsMap.put("threads", "4");   // Should append as: --threads 4
         paramsMap.put("memory", "8G");   // Should append as: --memory 8G
 
-        CustomToolRunParams toolRunParams = new CustomToolRunParams(null, paramsMap);
-        CustomExternalToolParams runParams = new CustomExternalToolParams(toolId, null, toolRunParams);
+        CustomToolRunParams runParams = new CustomToolRunParams(toolId, null, null, paramsMap);
 
         // Execute the tool
         CustomToolExecutor executor = new CustomToolExecutor();
@@ -608,8 +594,7 @@ public class CustomToolExecutorTest extends AbstractManagerTest {
         paramsMap.put("--custom-flag", "value2");      // No match, append as: --custom-flag value2
         paramsMap.put("--another-flag", "value3");     // No match, append as: --another-flag value3
 
-        CustomToolRunParams toolRunParams = new CustomToolRunParams(null, paramsMap);
-        CustomExternalToolParams runParams = new CustomExternalToolParams(toolId, null, toolRunParams);
+        CustomToolRunParams runParams = new CustomToolRunParams(toolId, null, null, paramsMap);
 
         // Execute the tool
         CustomToolExecutor executor = new CustomToolExecutor();
@@ -685,8 +670,7 @@ public class CustomToolExecutorTest extends AbstractManagerTest {
         paramsMap.put("threads", "8");                   // Appended as: --threads 8
         paramsMap.put("verbose", "true");                // Appended as: --verbose true
 
-        CustomToolRunParams toolRunParams = new CustomToolRunParams(null, paramsMap);
-        CustomExternalToolParams runParams = new CustomExternalToolParams(toolId, null, toolRunParams);
+        CustomToolRunParams runParams = new CustomToolRunParams(toolId, null, null, paramsMap);
 
         // Execute the tool
         CustomToolExecutor executor = new CustomToolExecutor();
@@ -767,8 +751,7 @@ public class CustomToolExecutorTest extends AbstractManagerTest {
         // threads should use default "1"
         // format should use default "json"
 
-        CustomToolRunParams toolRunParams = new CustomToolRunParams(null, paramsMap);
-        CustomExternalToolParams runParams = new CustomExternalToolParams(toolId, null, toolRunParams);
+        CustomToolRunParams runParams = new CustomToolRunParams(toolId, null, null, paramsMap);
 
         // Execute the tool
         CustomToolExecutor executor = new CustomToolExecutor();
@@ -837,8 +820,7 @@ public class CustomToolExecutorTest extends AbstractManagerTest {
         paramsMap.put("threads", "16");   // Override default 1
         paramsMap.put("memory", "32G");   // Override default 4G
 
-        CustomToolRunParams toolRunParams = new CustomToolRunParams(null, paramsMap);
-        CustomExternalToolParams runParams = new CustomExternalToolParams(toolId, null, toolRunParams);
+        CustomToolRunParams runParams = new CustomToolRunParams(toolId, null, null, paramsMap);
 
         // Execute the tool
         CustomToolExecutor executor = new CustomToolExecutor();
@@ -911,8 +893,7 @@ public class CustomToolExecutorTest extends AbstractManagerTest {
         // optional-no-default not provided - should not appear in command
         // another-optional not provided - should not appear in command
 
-        CustomToolRunParams toolRunParams = new CustomToolRunParams(null, paramsMap);
-        CustomExternalToolParams runParams = new CustomExternalToolParams(toolId, null, toolRunParams);
+        CustomToolRunParams runParams = new CustomToolRunParams(toolId, null, null, paramsMap);
 
         // Execute the tool
         CustomToolExecutor executor = new CustomToolExecutor();
@@ -1006,8 +987,7 @@ public class CustomToolExecutorTest extends AbstractManagerTest {
         paramsMap.put("F", "1024");                          // Optional provided, append as: -F 1024
         // "-b" should use default "true"
 
-        CustomToolRunParams toolRunParams = new CustomToolRunParams(null, paramsMap);
-        CustomExternalToolParams runParams = new CustomExternalToolParams(toolId, null, toolRunParams);
+        CustomToolRunParams runParams = new CustomToolRunParams(toolId, null, null, paramsMap);
 
         // Execute the tool
         CustomToolExecutor executor = new CustomToolExecutor();
@@ -1095,8 +1075,7 @@ public class CustomToolExecutorTest extends AbstractManagerTest {
         paramsMap.put("output", "/data/output.txt");      // Matches output
         paramsMap.put("t", "4");                          // Matches -t
 
-        CustomToolRunParams toolRunParams = new CustomToolRunParams(null, paramsMap);
-        CustomExternalToolParams runParams = new CustomExternalToolParams(toolId, null, toolRunParams);
+        CustomToolRunParams runParams = new CustomToolRunParams(toolId, null, null, paramsMap);
 
         // Execute the tool
         CustomToolExecutor executor = new CustomToolExecutor();

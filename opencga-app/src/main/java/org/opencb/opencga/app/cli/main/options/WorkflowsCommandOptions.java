@@ -283,13 +283,13 @@ public class WorkflowsCommandOptions {
         @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean jobDryRun; 
     
-        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "User tool identifier.", required = false, arity = 1)
         public String id;
     
-        @Parameter(names = {"--version"}, description = "The body web service version parameter", required = false, arity = 1)
+        @Parameter(names = {"--version"}, description = "User tool version. If not provided, the latest version will be used.", required = false, arity = 1)
         public Integer version;
     
-        @DynamicParameter(names = {"--params"}, description = "The body web service params parameter. Use: --params key=value", required = false)
+        @DynamicParameter(names = {"--params"}, description = "Key-value pairs of parameters to be used inside the workflow.. Use: --params key=value", required = false)
         public java.util.Map<java.lang.String,java.lang.String> params = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }

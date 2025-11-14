@@ -243,22 +243,14 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
         }
     }
 
-    public OpenCGAResult<Job> submitWorkflow(String studyStr, WorkflowToolParams params, String jobId, String jobDescription,
+    public OpenCGAResult<Job> submitWorkflow(String studyStr, WorkflowParams params, String jobId, String jobDescription,
                                              String jobDependsOnStr, String jobTagsStr, String jobScheduledStartTime, String jobPriority,
                                              Boolean dryRun, String token) throws CatalogException {
         return submit(studyStr, params, jobId, jobDescription, jobDependsOnStr, jobTagsStr, jobScheduledStartTime, jobPriority, dryRun,
                 token);
     }
 
-    public OpenCGAResult<Job> submitWorkflow(String studyStr, String externalToolId, Integer version, WorkflowParams params,
-                                             String jobId, String jobDescription, String jobDependsOnStr, String jobTagsStr,
-                                             String jobScheduledStartTime, String jobPriority, Boolean dryRun, String token)
-            throws CatalogException {
-        return submit(studyStr, new WorkflowToolParams(externalToolId, version, params), jobId, jobDescription, jobDependsOnStr,
-                jobTagsStr, jobScheduledStartTime, jobPriority, dryRun, token);
-    }
-
-    public OpenCGAResult<Job> submitCustomTool(String studyStr, CustomExternalToolParams params, String jobId, String jobDescription,
+    public OpenCGAResult<Job> submitCustomTool(String studyStr, CustomToolRunParams params, String jobId, String jobDescription,
                                                String jobDependsOnStr, String jobTagsStr, String jobScheduledStartTime, String jobPriority,
                                                Boolean dryRun, String token) throws CatalogException {
         return submit(studyStr, params, jobId, jobDescription, jobDependsOnStr, jobTagsStr, jobScheduledStartTime, jobPriority, dryRun,
@@ -293,7 +285,7 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
         return studyStr;
     }
 
-    public OpenCGAResult<Job> submit(String studyStr, ExternalToolParams<?> params, String jobId, String jobDescription,
+    public OpenCGAResult<Job> submit(String studyStr, ExternalToolParams params, String jobId, String jobDescription,
                                      String jobDependsOnStr, String jobTagsStr, String jobScheduledStartTime, String jobPriority,
                                      Boolean dryRun, String token)
             throws CatalogException {

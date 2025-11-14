@@ -360,11 +360,11 @@ public class UserToolsCommandOptions {
         @Parameter(names = {"--version"}, description = "User tool version. If not provided, the latest version will be used.", required = false, arity = 1)
         public Integer version;
     
-        @Parameter(names = {"--params-command-line"}, description = "Command line to be executed inside the container.", required = false, arity = 1)
-        public String paramsCommandLine;
+        @Parameter(names = {"--command-line"}, description = "Command line to be executed inside the container.", required = false, arity = 1)
+        public String commandLine;
     
-        @DynamicParameter(names = {"--params-params"}, description = "Key-value pairs of parameters to be used inside the command line.. Use: --params-params key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.String> paramsParams = new HashMap<>(); //Dynamic parameters must be initialized;
+        @DynamicParameter(names = {"--params"}, description = "Key-value pairs of parameters to be used inside the command line.. Use: --params key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.String> params = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 
@@ -1114,8 +1114,8 @@ public class UserToolsCommandOptions {
         @Parameter(names = {"--version"}, description = "User tool version. If not provided, the latest version will be used.", required = false, arity = 1)
         public Integer version;
     
-        @DynamicParameter(names = {"--params-params"}, description = "Key-value pairs of parameters to be used inside the workflow.. Use: --params-params key=value", required = false)
-        public java.util.Map<java.lang.String,java.lang.String> paramsParams = new HashMap<>(); //Dynamic parameters must be initialized;
+        @DynamicParameter(names = {"--params"}, description = "Key-value pairs of parameters to be used inside the workflow.. Use: --params key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.String> params = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 

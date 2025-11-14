@@ -13,9 +13,7 @@ import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.externalTool.Container;
 import org.opencb.opencga.core.models.externalTool.ExternalTool;
-import org.opencb.opencga.core.models.externalTool.ExternalToolParams;
 import org.opencb.opencga.core.models.externalTool.ExternalToolType;
-import org.opencb.opencga.core.models.externalTool.custom.CustomExternalToolParams;
 import org.opencb.opencga.core.models.externalTool.custom.CustomToolRunParams;
 import org.opencb.opencga.core.models.job.ToolInfoExecutor;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -34,7 +32,7 @@ public class CustomToolExecutor extends ExternalToolDockerScopeStudy {
     public static final String DESCRIPTION = "Execute an analysis from a custom binary.";
 
     @ToolParams
-    protected CustomExternalToolParams runParams = new CustomExternalToolParams();
+    protected CustomToolRunParams runParams = new CustomToolRunParams();
 
     private String cliParams;
     private String dockerImage;
@@ -55,11 +53,11 @@ public class CustomToolExecutor extends ExternalToolDockerScopeStudy {
         } else if (StringUtils.isEmpty(runParams.getId())) {
             throw new ToolException("Missing external tool id.");
         }
-        Container container = generateDockerObject(runParams);
+        Container container = generateDockerObject();
         checkDockerObject(container);
     }
 
-    private Container generateDockerObject(ExternalToolParams<CustomToolRunParams> runParams) throws Exception {
+    private Container generateDockerObject() throws Exception {
         OpenCGAResult<ExternalTool> result;
         if (runParams.getVersion() != null) {
             Query query = new Query(ExternalToolDBAdaptor.QueryParams.VERSION.key(), runParams.getVersion());
@@ -84,12 +82,11 @@ public class CustomToolExecutor extends ExternalToolDockerScopeStudy {
         }
 
         Container container = externalTool.getContainer();
-        String commandLine = runParams.getParams() != null && StringUtils.isNotEmpty(runParams.getParams().getCommandLine())
-                ? runParams.getParams().getCommandLine()
+        String commandLine = StringUtils.isNotEmpty(runParams.getCommandLine())
+                ? runParams.getCommandLine()
                 : container.getCommandLine();
 
-        Map<String, String> executionParams = runParams.getParams() != null ? runParams.getParams().getParams() : null;
-        Map<String, String> sanitisedParams = sanitiseParams(executionParams, externalTool.getVariables());
+        Map<String, String> sanitisedParams = sanitiseParams(runParams.getParams(), externalTool.getVariables());
         String processedCli = inputFileUtils.processCommandLine(study, commandLine, sanitisedParams, externalTool.getVariables(),
                 temporalInputDir, dockerInputBindings, getOutDir().toString(), token);
         container.setCommandLine(processedCli);

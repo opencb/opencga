@@ -4,10 +4,10 @@ import org.opencb.commons.annotations.DataField;
 
 public class ExternalToolVariable {
 
-    @DataField(id = "id", description = "Variable identifier.")
+    @DataField(id = "id", description = "Variable identifier (e.g., 'inputFile', '--threads', '-q').")
     private String id;
 
-    @DataField(id = "name", description = "Variable name as it is used in the command line. Examples: --input, -o, etc.")
+    @DataField(id = "name", description = "Pretty name of the variable.")
     private String name;
 
     @DataField(id = "description", description = "Variable description.")

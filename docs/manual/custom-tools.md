@@ -30,10 +30,11 @@ The container definition specifies:
 Variables define the parameters that can be passed to the tool. Each variable has:
 
 - **id**: Variable identifier (e.g., `inputFile`, `--threads`, `-q`)
-- **required**: Whether the parameter is mandatory (`true`/`false`)
-- **defaultValue**: Default value if not provided by the user
+- **name**: Pretty name of the variable. Used by interactive browsers such as IVA
 - **description**: Human-readable description
 - **type**: Variable type (e.g., `STRING`, `FLAG`, `FILE`)
+- **required**: Whether the parameter is mandatory (`true`/`false`)
+- **defaultValue**: Default value if not provided by the user
 - **output**: Whether this is an output parameter
 
 ## Command Line Processing

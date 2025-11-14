@@ -16,8 +16,8 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.externalTool.ExternalTool;
+import org.opencb.opencga.core.models.externalTool.WorkflowParams;
 import org.opencb.opencga.core.models.externalTool.WorkflowScript;
-import org.opencb.opencga.core.models.externalTool.WorkflowToolParams;
 import org.opencb.opencga.core.models.job.ToolInfoExecutor;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.ToolDependency;
@@ -47,7 +47,7 @@ public class NextFlowToolExecutor extends ExternalToolDockerScopeStudy {
     public static final String DESCRIPTION = "Execute a Nextflow analysis.";
 
     @ToolParams
-    protected WorkflowToolParams runParams = new WorkflowToolParams();
+    protected WorkflowParams runParams = new WorkflowParams();
 
     private ExternalTool externalTool;
     private String cliParams;
@@ -114,7 +114,7 @@ public class NextFlowToolExecutor extends ExternalToolDockerScopeStudy {
         addDependencies(dependencyList);
         updateJobInformation(new ArrayList<>(tags), toolInfoExecutor);
 
-        Map<String, String> sanitisedParams = sanitiseParams(runParams.getParams().getParams(), externalTool.getVariables());
+        Map<String, String> sanitisedParams = sanitiseParams(runParams.getParams(), externalTool.getVariables());
         this.cliParams = buildCommandLine(sanitisedParams);
     }
 
