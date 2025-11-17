@@ -174,7 +174,8 @@ public class CvdbSolrEngine {
 
     static SearchIndexMetadata getDefaultSearchIndexMetadata() {
         return new SearchIndexMetadata(
-                0, Date.from(Instant.now()), Date.from(Instant.now()), SearchIndexMetadata.Status.ACTIVE, CLINICAL_VARIANT_CONFIGSET, "",
+                0, Date.from(Instant.now()), Date.from(Instant.now()), SearchIndexMetadata.Status.ACTIVE,
+                SearchIndexMetadata.DataStatus.READY, CLINICAL_VARIANT_CONFIGSET, "",
                 new ObjectMap()
                         .append(VariantStorageOptions.SEARCH_STATS_FUNCTIONAL_QUERIES_ENABLED.key(), false)
                         .append(VariantStorageOptions.SEARCH_STATS_VARIANT_ID_VERSION.key(), "v1")
