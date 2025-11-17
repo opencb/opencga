@@ -36,6 +36,7 @@ import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.BatchUtils;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.cohort.Cohort;
@@ -69,6 +70,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.api.FileDBAdaptor.QueryParams.ID;
 import static org.opencb.opencga.catalog.db.api.FileDBAdaptor.QueryParams.URI;
+import static org.opencb.opencga.core.common.TimeUtils.*;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -189,9 +191,9 @@ public class CatalogStorageMetadataSynchronizer {
         if (searchIndexMetadata == null) {
             operationIndexStatus = new OperationIndexStatus(OperationIndexStatus.PENDING,
                     "Variant secondary annotation index operation pending. "
-                            + " variantIndexTs = " + projectMetadata.getVariantIndexLastTimestamp()
-                            + ", variantAnnotationIndexTs = " + projectMetadata.getAnnotationIndexLastUpdateStartTimestamp()
-                            + ", variantIndexStatsTs = " + projectMetadata.getStatsLastEndTimestamp()
+                            + " variantIndexTs = " + toDate(projectMetadata.getVariantIndexLastTimestamp())
+                            + ", variantAnnotationIndexTs = " + toDate(projectMetadata.getAnnotationIndexLastUpdateStartTimestamp())
+                            + ", variantIndexStatsTs = " + toDate(projectMetadata.getStatsLastEndTimestamp())
             );
         } else {
             SearchIndexMetadata.DataStatus dataStatus = searchIndexMetadata.getDataStatus();
@@ -201,10 +203,10 @@ public class CatalogStorageMetadataSynchronizer {
                 case EMPTY:
                     operationIndexStatus = new OperationIndexStatus(OperationIndexStatus.PENDING,
                             "Variant secondary annotation index operation pending. "
-                                    + " variantIndexTs = " + projectMetadata.getVariantIndexLastTimestamp()
+                                    + " variantIndexTs = " + toDate(projectMetadata.getVariantIndexLastTimestamp())
                                     + ", variantSecondaryAnnotationIndexTs = " + searchIndexMetadata.getLastUpdateDate()
-                                    + ", variantAnnotationIndexTs = " + projectMetadata.getAnnotationIndexLastUpdateStartTimestamp()
-                                    + ", variantIndexStatsTs = " + projectMetadata.getStatsLastEndTimestamp()
+                                    + ", variantAnnotationIndexTs = " + toDate(projectMetadata.getAnnotationIndexLastUpdateStartTimestamp())
+                                    + ", variantIndexStatsTs = " + toDate(projectMetadata.getStatsLastEndTimestamp())
                     );
                     break;
                 case READY:
@@ -275,8 +277,9 @@ public class CatalogStorageMetadataSynchronizer {
                 } else {
                     operationIndexStatus = new OperationIndexStatus(OperationIndexStatus.PENDING,
                             "Variant annotation index operation pending. "
-                                    + " variantIndexTs = " + projectMetadata.getVariantIndexLastTimestamp()
-                                    + ", variantAnnotationIndexTs = " + projectMetadata.getAnnotationIndexLastUpdateStartTimestamp()
+                                    + " variantIndexTs = " + toDate(projectMetadata.getVariantIndexLastTimestamp())
+                                    + ", variantAnnotationIndexTs = "
+                                    + toDate(projectMetadata.getAnnotationIndexLastFullUpdateStartTimestamp())
                     );
                 }
                 break;

@@ -75,6 +75,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -498,12 +499,14 @@ public class VariantSearchManager {
      * @param indexMetadata     solr collection metadata
      * @param variantReader     Variant DataReader to retrieve the variants to load
      * @param writer Data Writer
+     * @param callableTotalCount Callable to get the total count of variants to load
      * @return VariantSearchLoadResult
      * @throws VariantSearchException VariantSearchException
      */
     public VariantSearchLoadResult load(SearchIndexMetadata indexMetadata,
                                         DataReader<Variant> variantReader,
-                                        VariantSolrInputDocumentDataWriter writer)
+                                        VariantSolrInputDocumentDataWriter writer,
+                                        Callable<Long> callableTotalCount)
             throws VariantSearchException {
         if (variantReader == null) {
             throw new VariantSearchException("Missing variant DB iterator when loading Solr variant collection");
@@ -519,8 +522,14 @@ public class VariantSearchManager {
 //                VariantStorageOptions.SEARCH_LOAD_THREADS.key(),
 //                VariantStorageOptions.SEARCH_LOAD_THREADS.defaultValue());
 
-        ProgressLogger progressLogger = new ProgressLogger("Variants loaded in Solr:")
-                .setProgressRateAtMillionsPerHours();
+        ProgressLogger progressLogger;
+        if (callableTotalCount == null) {
+            progressLogger = new ProgressLogger("Variants loaded in Solr:")
+                    .setProgressRateAtMillionsPerHours();
+        } else {
+            progressLogger = new ProgressLogger("Variants loaded in Solr:", callableTotalCount, 200)
+                    .setProgressRateAtMillionsPerHours();
+        }
 
         VariantToSolrBeanConverterTask converterTask = new VariantToSolrBeanConverterTask(solrManager.getSolrClient().getBinder(),
                 indexMetadata, metadataManager);

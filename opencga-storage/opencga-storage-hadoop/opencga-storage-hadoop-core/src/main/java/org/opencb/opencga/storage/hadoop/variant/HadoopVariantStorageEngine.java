@@ -34,11 +34,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataReader;
-import org.opencb.opencga.core.common.IOUtils;
-import org.opencb.opencga.core.common.ShutdownHookUtils;
-import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.core.common.*;
 import org.opencb.opencga.core.config.DatabaseCredentials;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.config.storage.StorageEngineConfiguration;
@@ -60,6 +56,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleDataManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
@@ -639,7 +636,17 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
 
         return ShutdownHookUtils.run(() -> {
             try {
-                VariantSearchLoadResult load = variantSearchManager.load(indexMetadata, reader, writer);
+                Callable<Long> totalCount = () -> {
+                    try (VariantDBIterator iterator = pendingVariantsManager.iterator(query, 1000)) {
+                        long count = 0;
+                        while (iterator.hasNext()) {
+                            iterator.next();
+                            count++;
+                        }
+                        return count;
+                    }
+                };
+                VariantSearchLoadResult load = variantSearchManager.load(indexMetadata, reader, writer, totalCount);
                 cleaner.success();
                 return load;
             } catch (Exception e) {

@@ -946,7 +946,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 getVariantSearchManager(), indexMetadata);
 
         try (VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions)) {
-            return variantSearchManager.load(indexMetadata, new VariantDBReader(iterator), writer);
+            return variantSearchManager.load(indexMetadata, new VariantDBReader(iterator), writer, null);
         } catch (StorageEngineException e) {
             throw e;
         } catch (Exception e) {
