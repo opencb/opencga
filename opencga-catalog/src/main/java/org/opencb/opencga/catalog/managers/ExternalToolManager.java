@@ -1031,6 +1031,87 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
         externalTool.setAttributes(ParamUtils.defaultObject(externalTool.getAttributes(), Collections.emptyMap()));
         externalTool.setInternal(new ExternalToolInternal(new InternalStatus(InternalStatus.READY), TimeUtils.getTime(),
                 TimeUtils.getTime(), userId));
+
+        if (externalTool.getMinimumRequirements() != null) {
+            ParamUtils.checkParameter(externalTool.getMinimumRequirements().getCpu(), "minimumRequirements.cpu");
+            ParamUtils.checkParameter(externalTool.getMinimumRequirements().getMemory(), "minimumRequirements.memory");
+            // CPU should be a positive number and should be able to cast to Number
+            try {
+                double cpu = Double.parseDouble(externalTool.getMinimumRequirements().getCpu());
+                if (cpu <= 0) {
+                    throw new CatalogParameterException("Minimum requirements CPU should be a positive number.");
+                }
+            } catch (NumberFormatException e) {
+                throw new CatalogParameterException("Minimum requirements CPU should be a positive number.", e);
+            }
+            // Memory should be a positive number optionally followed by a unit (MB or GB)
+            // Supported formats: "16", "16GB", "16 GB", "16.GB", "16.5", "16.5GB", "16.5 GB"
+            // If memory is only a positive number, we will add GB as the unit
+            String memory = externalTool.getMinimumRequirements().getMemory().trim();
+            List<String> validUnits = Arrays.asList("MB", "GB");
+
+            String numericPart = null;
+            String unit = null;
+
+            // First, try to find unit at the end (without separator)
+            String upperMemory = memory.toUpperCase();
+            for (String validUnit : validUnits) {
+                if (upperMemory.endsWith(validUnit)) {
+                    numericPart = memory.substring(0, memory.length() - validUnit.length());
+                    unit = validUnit;
+                    // Check if there's a space or dot separator before the unit
+                    if (numericPart.endsWith(" ") || numericPart.endsWith(".")) {
+                        numericPart = numericPart.substring(0, numericPart.length() - 1).trim();
+                    }
+                    break;
+                }
+            }
+
+            if (numericPart == null) {
+                // No valid unit found. Check if there's an invalid unit suffix.
+                // Look for a pattern where the string ends with letters
+                String potentialNumeric = memory;
+                String potentialUnit = null;
+
+                // Find where the numeric part ends and letters start
+                int i = memory.length() - 1;
+                while (i >= 0 && Character.isLetter(memory.charAt(i))) {
+                    i--;
+                }
+
+                if (i < memory.length() - 1) {
+                    // Found letters at the end
+                    potentialNumeric = memory.substring(0, i + 1).trim();
+                    potentialUnit = memory.substring(i + 1).trim();
+
+                    // Remove trailing space or dot from numeric part
+                    if (potentialNumeric.endsWith(" ") || potentialNumeric.endsWith(".")) {
+                        potentialNumeric = potentialNumeric.substring(0, potentialNumeric.length() - 1).trim();
+                    }
+
+                    // Check if the unit part is invalid
+                    if (!potentialUnit.isEmpty() && !validUnits.contains(potentialUnit.toUpperCase())) {
+                        throw new CatalogParameterException("Minimum requirements memory unit '" + potentialUnit + "' is not valid. "
+                                + "Supported units are: " + String.join(", ", validUnits) + ".");
+                    }
+                }
+
+                numericPart = potentialNumeric;
+            }
+
+            try {
+                double memoryValue = Double.parseDouble(numericPart);
+                if (memoryValue <= 0) {
+                    throw new CatalogParameterException("Minimum requirements memory should be a positive number.");
+                }
+                if (unit == null) {
+                    // No unit provided, we will add GB
+                    externalTool.getMinimumRequirements().setMemory(memoryValue + "GB");
+                }
+            } catch (NumberFormatException e) {
+                throw new CatalogParameterException("Minimum requirements memory should be a positive number.", e);
+            }
+        }
     }
 
     // **************************   ACLs  ******************************** //
