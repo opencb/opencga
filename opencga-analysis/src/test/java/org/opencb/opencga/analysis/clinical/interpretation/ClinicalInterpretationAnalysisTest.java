@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.junit.*;
 import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
+import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
@@ -24,6 +25,7 @@ import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.interpretation.ClinicalInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.operations.variant.VariantSecondarySampleIndexParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
@@ -44,6 +46,7 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.*;
 import static org.opencb.biodata.models.clinical.ClinicalProperty.ModeOfInheritance.COMPOUND_HETEROZYGOUS;
 import static org.opencb.biodata.models.clinical.ClinicalProperty.ModeOfInheritance.DE_NOVO;
+import static org.opencb.opencga.catalog.managers.AbstractClinicalManagerTest.INCLUDE_RESULT;
 import static org.opencb.opencga.catalog.managers.AbstractClinicalManagerTest.TIERING_MODE;
 import static org.opencb.opencga.catalog.utils.ResourceManager.ANALYSIS_DIRNAME;
 
@@ -186,7 +189,7 @@ public class ClinicalInterpretationAnalysisTest {
                 COMPOUND_HETEROZYGOUS, "missense_variant", ca.getSecondaryInterpretations().get(0).getPrimaryFindings());
         checkEvidence("15:93020173:C:T", "TIER1", "CHD2", "ENST00000626874.2", "Epileptic_encephalopathy-PanelAppId-67",
                 DE_NOVO, "stop_gained", ca.getSecondaryInterpretations().get(0).getPrimaryFindings());
-        assertEquals(41, numEvidences);
+        assertEquals(34, numEvidences);
 
         assertTrue(ca.getSecondaryInterpretations().get(0).getAttributes().containsKey("configuration"));
         ClinicalInterpretationConfiguration config = JacksonUtils.getDefaultObjectMapper().convertValue(ca.getSecondaryInterpretations()

@@ -83,7 +83,7 @@ public class AbstractClinicalManagerTest extends GenericTest {
     public final static String CA_OPA = "opa-case";
     public final static String CA_OPA_15914_1 = "OPA-15914-1";
 
-    private static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
+    public static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -354,15 +354,7 @@ public class AbstractClinicalManagerTest extends GenericTest {
         // OPA (clinicalAnalysis5)
         //---------------------------------------------------------------------
 
-        // Read the clinical analysis from file and save into a ClinicalAnalysis object
         ClinicalAnalysis ca = JacksonUtils.getDefaultObjectMapper().readerFor(ClinicalAnalysis.class).readValue(casePath.toFile());
-        for (Individual member : ca.getFamily().getMembers()) {
-            if (member.getId().equalsIgnoreCase(ca.getProband().getMother().getId())) {
-                member.setDisorders(ca.getProband().getDisorders());
-                break;
-            }
-        }
-//        ca.setId(CA_OPA);
         ca.setInterpretation(null);
         ca.setSecondaryInterpretations(null);
         Map<String, List<String>> individualSamples = new HashMap<>();
@@ -386,8 +378,18 @@ public class AbstractClinicalManagerTest extends GenericTest {
         }
 
         // Create family with individuals
+        // For testing multiples disorders in family
+        Disorder disorder = new Disorder().setId("Hemophilia C - for testing").setName("Hemophilia C - for testing");
+        for (Individual member : ca.getFamily().getMembers()) {
+            if (member.getId().equalsIgnoreCase(ca.getProband().getMother().getId())) {
+                member.setDisorders(Collections.singletonList(disorder));
+                break;
+            }
+        }
         try {
             Family family = FamilyCreateParams.of(ca.getFamily()).toFamily();
+            family.getDisorders().addAll(ca.getProband().getDisorders());
+            family.getDisorders().add(disorder);
             catalogManager.getFamilyManager().create(studyFqn, family, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             if (!e.getMessage().contains("already exists")) {
