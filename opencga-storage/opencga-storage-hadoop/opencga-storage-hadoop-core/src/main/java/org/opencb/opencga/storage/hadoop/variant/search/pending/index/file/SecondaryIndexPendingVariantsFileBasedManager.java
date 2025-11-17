@@ -14,16 +14,37 @@ import java.io.IOException;
 import java.net.URI;
 
 public class SecondaryIndexPendingVariantsFileBasedManager extends PendingVariantsFileBasedManager {
+
+    private static final String SUBFOLDER = "pending_secondary_annotation_index";
+    private final SecondaryIndexPendingVariantsFileBasedDescriptor descriptor;
+
     public SecondaryIndexPendingVariantsFileBasedManager(URI pendingVariantsDir, Configuration conf)
             throws IOException {
-        super(pendingVariantsDir, new SecondaryIndexPendingVariantsFileBasedDescriptor(), conf);
+        super(pendingVariantsDir, conf);
+        descriptor = new SecondaryIndexPendingVariantsFileBasedDescriptor();
     }
 
     public SecondaryIndexPendingVariantsFileBasedManager(String variantTableName, Configuration conf) throws IOException {
-        super(getUri(variantTableName, conf), new SecondaryIndexPendingVariantsFileBasedDescriptor(), conf);
+        super(getUri(variantTableName, conf), conf);
+        descriptor = new SecondaryIndexPendingVariantsFileBasedDescriptor();
     }
 
-    private static URI getUri(String variantTableName, Configuration conf) throws IOException {
+    @Override
+    protected SecondaryIndexPendingVariantsFileBasedDescriptor getDescriptor() {
+        return descriptor;
+    }
+
+    @Override
+    public URI getHomeUri() throws IOException {
+        return getHomeUri(conf);
+    }
+
+    @Override
+    public String getSubfolder() {
+        return SUBFOLDER;
+    }
+
+    private static URI getHomeUri(Configuration conf) throws IOException {
         Path rootPath = HDFSIOConnector.getHdfsRootPath(conf);
         FileSystem fs;
         if (rootPath == null) {
@@ -32,7 +53,11 @@ public class SecondaryIndexPendingVariantsFileBasedManager extends PendingVarian
             fs = rootPath.getFileSystem(conf);
         }
 
-        return fs.getUri().resolve(FileSystem.USER_HOME_PREFIX + "/opencga/" + variantTableName + "/pending_secondary_annotation_index/");
+        return fs.getUri().resolve(FileSystem.USER_HOME_PREFIX + "/opencga/");
+    }
+
+    private static URI getUri(String variantTableName, Configuration conf) throws IOException {
+        return getHomeUri(conf).resolve(variantTableName + "/" + SUBFOLDER + "/");
     }
 
     @Override

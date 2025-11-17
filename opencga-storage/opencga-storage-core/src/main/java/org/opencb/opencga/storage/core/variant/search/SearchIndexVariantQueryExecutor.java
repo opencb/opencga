@@ -86,16 +86,20 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
         Query query = variantQuery.getQuery();
         QueryOptions options = variantQuery.getInputOptions();
         ProjectMetadata projectMetadata = metadataManager.getProjectMetadata();
+        SearchIndexMetadata indexMetadata = projectMetadata.getSecondaryAnnotationIndex()
+                .getSearchIndexMetadataForQueries();
+        if (indexMetadata == null) {
+            throw new VariantQueryException("No search index available");
+        }
         if (projectMetadata.getSecondaryAnnotationIndex().isSolrUpdateInProgress()) {
             String message = "Secondary annotation index (solr) is being updated. "
                     + "Results may not be up to date, and some latency may be expected.";
             logger.info(message);
             variantQuery.getEvents().add(new Event(Event.Type.WARNING, message));
-        }
-        SearchIndexMetadata indexMetadata = projectMetadata.getSecondaryAnnotationIndex()
-                .getSearchIndexMetadataForQueries();
-        if (indexMetadata == null) {
-            throw new VariantQueryException("No search index available");
+        } else if (indexMetadata.getDataStatus() == SearchIndexMetadata.DataStatus.OUT_OF_DATE) {
+            String message = "Secondary annotation index (solr) is outdated.";
+            logger.warn(message);
+            variantQuery.getEvents().add(new Event(Event.Type.WARNING, message));
         }
         if (doQuerySearchManager(indexMetadata, query, options)) {
             try {

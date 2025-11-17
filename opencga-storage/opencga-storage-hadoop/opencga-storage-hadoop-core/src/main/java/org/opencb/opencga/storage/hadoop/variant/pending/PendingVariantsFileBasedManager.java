@@ -20,9 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Abstract class for managing pending variants in a file-based system.
@@ -33,21 +31,34 @@ import java.util.Set;
  */
 public abstract class PendingVariantsFileBasedManager {
 
-    private final PendingVariantsFileBasedDescriptor descriptor;
     private final URI pendingVariantsDir;
     private final FileSystem fs;
     private final Logger logger = LoggerFactory.getLogger(PendingVariantsFileBasedManager.class);
+    protected final Configuration conf;
 
-    protected PendingVariantsFileBasedManager(URI pendingVariantsDir, PendingVariantsFileBasedDescriptor descriptor, Configuration conf)
+    protected PendingVariantsFileBasedManager(URI pendingVariantsDir, Configuration conf)
             throws IOException {
-        this.pendingVariantsDir = pendingVariantsDir;
-        this.descriptor = descriptor;
+        this.pendingVariantsDir = Objects.requireNonNull(pendingVariantsDir);
+        this.conf = Objects.requireNonNull(conf);
         fs = FileSystem.get(pendingVariantsDir, conf);
     }
 
+    protected abstract PendingVariantsFileBasedDescriptor getDescriptor();
+
+    /**
+     * @return The home URI where the pending variants directories are stored.
+     * @throws IOException if an I/O error occurs.
+     */
+    public abstract URI getHomeUri() throws IOException;
+
+    /**
+     * @return The subfolder name where the pending variants are stored.
+     */
+    public abstract String getSubfolder();
+
     public PendingVariantsFileReader reader(Query query) {
         List<String> regions = query.getAsStringList(VariantQueryParam.REGION.key());
-        return new PendingVariantsFileReader(descriptor, fs, pendingVariantsDir, regions);
+        return new PendingVariantsFileReader(getDescriptor(), fs, pendingVariantsDir, regions);
     }
 
     public VariantDBIterator iterator(Query query, int batchSize) {
@@ -55,7 +66,7 @@ public abstract class PendingVariantsFileBasedManager {
     }
 
     public PendingVariantsFileCleaner cleaner() {
-        return new PendingVariantsFileCleaner(descriptor, fs, pendingVariantsDir);
+        return new PendingVariantsFileCleaner(getDescriptor(), fs, pendingVariantsDir);
     }
 
     public ObjectMap discoverPending(MRExecutor mrExecutor, String variantsTable, boolean overwrite, ObjectMap options)
@@ -68,6 +79,7 @@ public abstract class PendingVariantsFileBasedManager {
         options = new ObjectMap(options);
         URI outdir = pendingVariantsDir.resolve("scratch/" + TimeUtils.getTime() + "-" + RandomStringUtils.randomAlphanumeric(5) + "/");
         options.put(DiscoverPendingVariantsDriver.OUTPUT_PARAM, outdir.toString());
+        PendingVariantsFileBasedDescriptor descriptor = getDescriptor();
         ObjectMap result = mrExecutor.run(DiscoverPendingVariantsDriver.class,
                 DiscoverPendingVariantsDriver.buildArgs(
                         variantsTable, descriptor.getClass(), options),
@@ -147,7 +159,7 @@ public abstract class PendingVariantsFileBasedManager {
         int filesCount = 0;
         FileStatus[] fileStatuses = fs.listStatus(pendingPath);
         for (FileStatus fileStatus : fileStatuses) {
-            if (!descriptor.isPendingVariantsFile(fileStatus)) {
+            if (!getDescriptor().isPendingVariantsFile(fileStatus)) {
                 // Ignore other files
                 continue;
             }
@@ -163,7 +175,42 @@ public abstract class PendingVariantsFileBasedManager {
         return filesCount;
     }
 
+    public long getPendingVariantsSize() throws IOException {
+        long totalSize = 0;
+        Path pendingPath = new Path(pendingVariantsDir);
+        if (!fs.exists(pendingPath)) {
+            throw new IOException("Pending variants directory does not exist: " + pendingPath);
+        }
+        FileStatus[] fileStatuses = fs.listStatus(pendingPath);
+        for (FileStatus fileStatus : fileStatuses) {
+            if (!getDescriptor().isPendingVariantsFile(fileStatus)) {
+                // Ignore other files
+                continue;
+            }
+            totalSize += fileStatus.getLen();
+        }
+        return totalSize;
+    }
+
     public URI getPendingVariantsDir() {
         return pendingVariantsDir;
+    }
+
+    public List<FileStatus> files() throws IOException {
+        List<FileStatus> pendingFiles = new ArrayList<>();
+
+        Path pendingPath = new Path(pendingVariantsDir);
+        if (!fs.exists(pendingPath)) {
+            throw new IOException("Pending variants directory does not exist: " + pendingPath);
+        }
+        FileStatus[] fileStatuses = fs.listStatus(pendingPath);
+        for (FileStatus fileStatus : fileStatuses) {
+            if (!getDescriptor().isPendingVariantsFile(fileStatus)) {
+                // Ignore other files
+                continue;
+            }
+            pendingFiles.add(fileStatus);
+        }
+        return pendingFiles;
     }
 }
