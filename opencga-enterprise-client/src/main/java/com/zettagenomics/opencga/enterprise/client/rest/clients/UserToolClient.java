@@ -303,6 +303,25 @@ public class UserToolClient extends ParentClient {
     }
 
     /**
+     * Update some variant walker tool attributes.
+     * @param toolId Comma separated list of external tool IDs up to a maximum of 100. Also admits basic regular expressions using the
+     *     operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+     * @param data body.
+     * @param params Map containing any of the following optional parameters.
+     *       include: Fields included in the response, whole JSON path must be provided.
+     *       exclude: Fields excluded in the response, whole JSON path must be provided.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
+     *       includeResult: Flag indicating to include the created or updated document result in the response.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<ExternalTool> updateWalker(String toolId, CustomToolUpdateParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("tools", null, "walker", toolId, "update", params, POST, ExternalTool.class);
+    }
+
+    /**
      * Register a new user tool of type WORKFLOW.
      * @param data JSON containing workflow information.
      * @param params Map containing any of the following optional parameters.

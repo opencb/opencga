@@ -29,6 +29,7 @@
 #' | search | /{apiVersion}/tools/search | include, exclude, limit, skip, count, study, id, name, uuid, tags, draft, internal.registrationUserId, type, scope, workflowRepositoryName, containerName, creationDate, modificationDate, acl, release, snapshot, deleted |
 #' | createWalker | /{apiVersion}/tools/walker/create | include, exclude, study, includeResult, body[*] |
 #' | runWalker | /{apiVersion}/tools/walker/run | project, study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | updateWalker | /{apiVersion}/tools/walker/{toolId}/update | include, exclude, toolId[*], study, includeResult, body |
 #' | createWorkflow | /{apiVersion}/tools/workflow/create | include, exclude, study, includeResult, body[*] |
 #' | importWorkflow | /{apiVersion}/tools/workflow/import | study, body[*] |
 #' | runWorkflow | /{apiVersion}/tools/workflow/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
@@ -203,6 +204,17 @@ setMethod("usertoolClient", "OpencgaR", function(OpencgaR, members, toolId, tool
         #' @param data Variant walker params.
         runWalker=fetchOpenCGA(object=OpencgaR, category="tools", categoryId=NULL, subcategory="walker",
                 subcategoryId=NULL, action="run", params=params, httpMethod="POST", as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/tools/walker/{toolId}/update:
+        #' Update some variant walker tool attributes.
+        #' @param include Fields included in the response, whole JSON path must be provided.
+        #' @param exclude Fields excluded in the response, whole JSON path must be provided.
+        #' @param toolId Comma separated list of external tool IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param includeResult Flag indicating to include the created or updated document result in the response.
+        #' @param data body.
+        updateWalker=fetchOpenCGA(object=OpencgaR, category="tools", categoryId=NULL, subcategory="walker",
+                subcategoryId=toolId, action="update", params=params, httpMethod="POST", as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/tools/workflow/create:
         #' Register a new user tool of type WORKFLOW.
