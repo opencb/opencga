@@ -1,4 +1,4 @@
-package org.opencb.opencga.app.migrations.v5.catalog;
+package org.opencb.opencga.app.migrations.v5.v5_0_0.catalog;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;

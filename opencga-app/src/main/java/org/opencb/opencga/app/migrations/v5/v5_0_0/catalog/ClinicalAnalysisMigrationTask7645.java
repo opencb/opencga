@@ -240,6 +240,11 @@ public class ClinicalAnalysisMigrationTask7645 extends MigrationTool {
                         }
                     }
                 }
+
+                // Rename status REVIEW_REQUESTED to UNDER_CONSIDERATION
+                if ("REVIEW_REQUESTED".equals(finding.getString("status"))) {
+                    finding.put("status", "UNDER_CONSIDERATION");
+                }
             }
 
             updateDocument.getSet().put(key, findings);
