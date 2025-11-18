@@ -40,6 +40,7 @@ public class PendingVariantsByFileMain extends AbstractMain {
         private final Configuration conf;
 
         public CommandExecutor() {
+            super();
             conf = new HdfsConfiguration();
             addSubCommand(Arrays.asList("list", "ls"), "List pending variant files", args -> {
                 SecondaryIndexPendingVariantsFileBasedManager manager = getManager("dummy");

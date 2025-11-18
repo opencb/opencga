@@ -11,9 +11,9 @@ public abstract class Main {
         executor.addSubCommand(Arrays.asList("hbase", "hb"), "Run hbase utility commands",
                 new HBaseMain());
         executor.addSubCommand(Arrays.asList("variant-engine", "variants", "ve", "variant"), "General variant engine utilities",
-                new VariantEngineUtilsMain());
+                new VariantEngineUtilsMain.VariantEngineUtilsCommandExecutor());
         executor.addSubCommand(Arrays.asList("metadata", "mm", "metadatamanager"), "Interact with HBase Variant metadata manager",
-                new VariantMetadataMain());
+                new VariantMetadataMain.VariantMetadataCommandExecutor());
         executor.addSubCommand(Arrays.asList("sample-index", "si"), "Debug options for scanning the SampleIndex",
                 new SampleIndexMain());
         executor.addSubCommand(Arrays.asList("pending-variants-table", "pending-variants", "pending", "pvt"),
@@ -21,13 +21,13 @@ public abstract class Main {
                 new PendingVariantsMain());
         executor.addSubCommand(Arrays.asList("pending-variants-file", "pvf"),
                 "Debug options for scanning the PendingVariants for secondary annotation index table",
-                new PendingVariantsByFileMain());
+                new PendingVariantsByFileMain.CommandExecutor());
         executor.addSubCommand(Arrays.asList("phoenix", "ph"), "Run phoenix utility commands",
                 new PhoenixMain());
         executor.addSubCommand(Arrays.asList("convertintovirtual", "ConvertIntoVirtual"), "Migrate into virtual file",
             new ConvertIntoVirtual());
         executor.addSubCommand(Arrays.asList("hadoop", "hdfs"), "Run hadoop commands",
-                new HadoopMain());
+                new HadoopMain.HadoopCommandExecutor());
         executor.exec(mainArgs);
     }
 
