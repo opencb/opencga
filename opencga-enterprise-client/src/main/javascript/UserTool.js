@@ -244,6 +244,22 @@ export default class UserTool extends OpenCGAParentClass {
         return this._post("tools", null, "walker", null, "run", data, params);
     }
 
+    /** Update some variant walker tool attributes
+    * @param {String} toolId - Comma separated list of external tool IDs up to a maximum of 100. Also admits basic regular expressions using
+    *     the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+    * @param {Object} [data] - body.
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.include] - Fields included in the response, whole JSON path must be provided.
+    * @param {String} [params.exclude] - Fields excluded in the response, whole JSON path must be provided.
+    * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
+    * @param {Boolean} [params.includeResult = "false"] - Flag indicating to include the created or updated document result in the response.
+    *     The default value is false.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    updateWalker(toolId, data, params) {
+        return this._post("tools", null, "walker", toolId, "update", data, params);
+    }
+
     /** Register a new user tool of type WORKFLOW
     * @param {Object} data - JSON containing workflow information.
     * @param {Object} [params] - The Object containing the following optional parameters:

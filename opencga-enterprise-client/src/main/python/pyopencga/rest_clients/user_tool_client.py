@@ -321,6 +321,28 @@ class UserTool(_ParentRestClient):
 
         return self._post(category='tools', resource='run', subcategory='walker', data=data, **options)
 
+    def update_walker(self, tool_id, data=None, **options):
+        """
+        Update some variant walker tool attributes.
+        PATH: /{apiVersion}/tools/walker/{toolId}/update
+
+        :param str tool_id: Comma separated list of external tool IDs up to a
+            maximum of 100. Also admits basic regular expressions using the
+            operator '~', i.e. '~{perl-regex}' e.g. '~value' for case
+            sensitive, '~/value/i' for case insensitive search. (REQUIRED)
+        :param str include: Fields included in the response, whole JSON path
+            must be provided.
+        :param str exclude: Fields excluded in the response, whole JSON path
+            must be provided.
+        :param str study: Study [[organization@]project:]study where study and
+            project can be either the ID or UUID.
+        :param bool include_result: Flag indicating to include the created or
+            updated document result in the response.
+        :param dict data: body.
+        """
+
+        return self._post(category='tools', resource='update', subcategory='walker', second_query_id=tool_id, data=data, **options)
+
     def create_workflow(self, data=None, **options):
         """
         Register a new user tool of type WORKFLOW.
