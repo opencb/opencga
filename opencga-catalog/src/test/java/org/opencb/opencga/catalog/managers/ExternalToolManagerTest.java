@@ -618,6 +618,335 @@ public class ExternalToolManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void createWorkflowWithValidMinimumRequirementsGBTest() throws CatalogException {
+        // Test with GB unit directly attached
+        WorkflowCreateParams workflowParams = new WorkflowCreateParams()
+                .setId("workflow-req-gb")
+                .setScope(ExternalToolScope.OTHER)
+                .setMinimumRequirements(new MinimumRequirements().setCpu("4").setMemory("16GB").setDisk("100GB"))
+                .setWorkflow(new Workflow().setScripts(Collections.singletonList(
+                        new WorkflowScript("pipeline.nf", "echo 'test'", true))));
+        OpenCGAResult<ExternalTool> result = externalToolManager.createWorkflow(studyFqn, workflowParams, INCLUDE_RESULT, ownerToken);
+        assertEquals(1, result.getNumResults());
+        MinimumRequirements reqs = result.first().getMinimumRequirements();
+        assertEquals("4", reqs.getCpu());
+        assertEquals("16GB", reqs.getMemory());
+        assertEquals("100GB", reqs.getDisk());
+    }
+
+    @Test
+    public void createWorkflowWithValidMinimumRequirementsMBTest() throws CatalogException {
+        // Test with MB unit directly attached
+        WorkflowCreateParams workflowParams = new WorkflowCreateParams()
+                .setId("workflow-req-mb")
+                .setScope(ExternalToolScope.OTHER)
+                .setMinimumRequirements(new MinimumRequirements().setCpu("2").setMemory("512MB"))
+                .setWorkflow(new Workflow().setScripts(Collections.singletonList(
+                        new WorkflowScript("pipeline.nf", "echo 'test'", true))));
+        OpenCGAResult<ExternalTool> result = externalToolManager.createWorkflow(studyFqn, workflowParams, INCLUDE_RESULT, ownerToken);
+        assertEquals(1, result.getNumResults());
+        MinimumRequirements reqs = result.first().getMinimumRequirements();
+        assertEquals("2", reqs.getCpu());
+        assertEquals("512MB", reqs.getMemory());
+    }
+
+    @Test
+    public void createWorkflowWithMemoryNoUnitTest() throws CatalogException {
+        // Test memory without unit - should automatically add GB
+        WorkflowCreateParams workflowParams = new WorkflowCreateParams()
+                .setId("workflow-req-no-unit")
+                .setScope(ExternalToolScope.OTHER)
+                .setMinimumRequirements(new MinimumRequirements().setCpu("8").setMemory("32"))
+                .setWorkflow(new Workflow().setScripts(Collections.singletonList(
+                        new WorkflowScript("pipeline.nf", "echo 'test'", true))));
+        OpenCGAResult<ExternalTool> result = externalToolManager.createWorkflow(studyFqn, workflowParams, INCLUDE_RESULT, ownerToken);
+        assertEquals(1, result.getNumResults());
+        MinimumRequirements reqs = result.first().getMinimumRequirements();
+        assertEquals("8", reqs.getCpu());
+        assertEquals("32.0GB", reqs.getMemory());  // Should have GB added automatically
+    }
+
+    @Test
+    public void createWorkflowWithMemorySpaceSeparatorTest() throws CatalogException {
+        // Test memory with space separator
+        WorkflowCreateParams workflowParams = new WorkflowCreateParams()
+                .setId("workflow-req-space")
+                .setScope(ExternalToolScope.OTHER)
+                .setMinimumRequirements(new MinimumRequirements().setCpu("4").setMemory("16 GB"))
+                .setWorkflow(new Workflow().setScripts(Collections.singletonList(
+                        new WorkflowScript("pipeline.nf", "echo 'test'", true))));
+        OpenCGAResult<ExternalTool> result = externalToolManager.createWorkflow(studyFqn, workflowParams, INCLUDE_RESULT, ownerToken);
+        assertEquals(1, result.getNumResults());
+        MinimumRequirements reqs = result.first().getMinimumRequirements();
+        assertEquals("4", reqs.getCpu());
+        assertEquals("16 GB", reqs.getMemory());
+    }
+
+    @Test
+    public void createWorkflowWithMemoryDotSeparatorTest() throws CatalogException {
+        // Test memory with dot separator
+        WorkflowCreateParams workflowParams = new WorkflowCreateParams()
+                .setId("workflow-req-dot")
+                .setScope(ExternalToolScope.OTHER)
+                .setMinimumRequirements(new MinimumRequirements().setCpu("2").setMemory("8.GB"))
+                .setWorkflow(new Workflow().setScripts(Collections.singletonList(
+                        new WorkflowScript("pipeline.nf", "echo 'test'", true))));
+        OpenCGAResult<ExternalTool> result = externalToolManager.createWorkflow(studyFqn, workflowParams, INCLUDE_RESULT, ownerToken);
+        assertEquals(1, result.getNumResults());
+        MinimumRequirements reqs = result.first().getMinimumRequirements();
+        assertEquals("2", reqs.getCpu());
+        assertEquals("8.GB", reqs.getMemory());
+    }
+
+    @Test
+    public void createWorkflowWithDecimalCpuTest() throws CatalogException {
+        // Test with decimal CPU value
+        WorkflowCreateParams workflowParams = new WorkflowCreateParams()
+                .setId("workflow-req-decimal")
+                .setScope(ExternalToolScope.OTHER)
+                .setMinimumRequirements(new MinimumRequirements().setCpu("2.5").setMemory("16GB"))
+                .setWorkflow(new Workflow().setScripts(Collections.singletonList(
+                        new WorkflowScript("pipeline.nf", "echo 'test'", true))));
+        OpenCGAResult<ExternalTool> result = externalToolManager.createWorkflow(studyFqn, workflowParams, INCLUDE_RESULT, ownerToken);
+        assertEquals(1, result.getNumResults());
+        MinimumRequirements reqs = result.first().getMinimumRequirements();
+        assertEquals("2.5", reqs.getCpu());
+        assertEquals("16GB", reqs.getMemory());
+    }
+
+    @Test
+    public void createWorkflowWithDecimalMemoryValueTest() throws CatalogException {
+        // Test memory with decimal value and space separator
+        WorkflowCreateParams workflowParams = new WorkflowCreateParams()
+                .setId("workflow-req-decimal-mem")
+                .setScope(ExternalToolScope.OTHER)
+                .setMinimumRequirements(new MinimumRequirements().setCpu("4").setMemory("16.5 GB"))
+                .setWorkflow(new Workflow().setScripts(Collections.singletonList(
+                        new WorkflowScript("pipeline.nf", "echo 'test'", true))));
+        OpenCGAResult<ExternalTool> result = externalToolManager.createWorkflow(studyFqn, workflowParams, INCLUDE_RESULT, ownerToken);
+        assertEquals(1, result.getNumResults());
+        MinimumRequirements reqs = result.first().getMinimumRequirements();
+        assertEquals("4", reqs.getCpu());
+        assertEquals("16.5 GB", reqs.getMemory());
+    }
+
+    @Test
+    public void createWorkflowWithDecimalMemoryNoSeparatorTest() throws CatalogException {
+        // Test memory with decimal value directly attached to unit
+        WorkflowCreateParams workflowParams = new WorkflowCreateParams()
+                .setId("workflow-req-decimal-nosep")
+                .setScope(ExternalToolScope.OTHER)
+                .setMinimumRequirements(new MinimumRequirements().setCpu("4").setMemory("16.5GB"))
+                .setWorkflow(new Workflow().setScripts(Collections.singletonList(
+                        new WorkflowScript("pipeline.nf", "echo 'test'", true))));
+        OpenCGAResult<ExternalTool> result = externalToolManager.createWorkflow(studyFqn, workflowParams, INCLUDE_RESULT, ownerToken);
+        assertEquals(1, result.getNumResults());
+        MinimumRequirements reqs = result.first().getMinimumRequirements();
+        assertEquals("4", reqs.getCpu());
+        assertEquals("16.5GB", reqs.getMemory());
+    }
+
+    @Test
+    public void createWorkflowWithLowercaseMemoryUnitTest() throws CatalogException {
+        // Test that memory units are case-insensitive (converted to uppercase for validation)
+        WorkflowCreateParams workflowParams = new WorkflowCreateParams()
+                .setId("workflow-req-lowercase")
+                .setScope(ExternalToolScope.OTHER)
+                .setMinimumRequirements(new MinimumRequirements().setCpu("4").setMemory("16gb"))
+                .setWorkflow(new Workflow().setScripts(Collections.singletonList(
+                        new WorkflowScript("pipeline.nf", "echo 'test'", true))));
+        OpenCGAResult<ExternalTool> result = externalToolManager.createWorkflow(studyFqn, workflowParams, INCLUDE_RESULT, ownerToken);
+        assertEquals(1, result.getNumResults());
+        MinimumRequirements reqs = result.first().getMinimumRequirements();
+        assertEquals("4", reqs.getCpu());
+        assertEquals("16gb", reqs.getMemory());  // Original case is preserved
+    }
+
+    @Test
+    public void createWorkflowWithMixedCaseMemoryUnitTest() throws CatalogException {
+        // Test that memory units with mixed case work
+        WorkflowCreateParams workflowParams = new WorkflowCreateParams()
+                .setId("workflow-req-mixedcase")
+                .setScope(ExternalToolScope.OTHER)
+                .setMinimumRequirements(new MinimumRequirements().setCpu("4").setMemory("512Mb"))
+                .setWorkflow(new Workflow().setScripts(Collections.singletonList(
+                        new WorkflowScript("pipeline.nf", "echo 'test'", true))));
+        OpenCGAResult<ExternalTool> result = externalToolManager.createWorkflow(studyFqn, workflowParams, INCLUDE_RESULT, ownerToken);
+        assertEquals(1, result.getNumResults());
+        MinimumRequirements reqs = result.first().getMinimumRequirements();
+        assertEquals("4", reqs.getCpu());
+        assertEquals("512Mb", reqs.getMemory());
+    }
+
+    @Test
+    public void createWorkflowWithNegativeCpuTest() {
+        // Test with negative CPU - should fail
+        WorkflowCreateParams workflowParams = new WorkflowCreateParams()
+                .setId("workflow-req-neg-cpu")
+                .setScope(ExternalToolScope.OTHER)
+                .setMinimumRequirements(new MinimumRequirements().setCpu("-4").setMemory("16GB"))
+                .setWorkflow(new Workflow().setScripts(Collections.singletonList(
+                        new WorkflowScript("pipeline.nf", "echo 'test'", true))));
+        CatalogException exception = assertThrows(CatalogException.class,
+                () -> externalToolManager.createWorkflow(studyFqn, workflowParams, INCLUDE_RESULT, ownerToken));
+        assertTrue(exception.getMessage().contains("CPU") && exception.getMessage().contains("positive"));
+    }
+
+    @Test
+    public void createWorkflowWithZeroCpuTest() {
+        // Test with zero CPU - should fail
+        WorkflowCreateParams workflowParams = new WorkflowCreateParams()
+                .setId("workflow-req-zero-cpu")
+                .setScope(ExternalToolScope.OTHER)
+                .setMinimumRequirements(new MinimumRequirements().setCpu("0").setMemory("16GB"))
+                .setWorkflow(new Workflow().setScripts(Collections.singletonList(
+                        new WorkflowScript("pipeline.nf", "echo 'test'", true))));
+        CatalogException exception = assertThrows(CatalogException.class,
+                () -> externalToolManager.createWorkflow(studyFqn, workflowParams, INCLUDE_RESULT, ownerToken));
+        assertTrue(exception.getMessage().contains("CPU") && exception.getMessage().contains("positive"));
+    }
+
+    @Test
+    public void createWorkflowWithInvalidCpuTest() {
+        // Test with non-numeric CPU - should fail
+        WorkflowCreateParams workflowParams = new WorkflowCreateParams()
+                .setId("workflow-req-invalid-cpu")
+                .setScope(ExternalToolScope.OTHER)
+                .setMinimumRequirements(new MinimumRequirements().setCpu("invalid").setMemory("16GB"))
+                .setWorkflow(new Workflow().setScripts(Collections.singletonList(
+                        new WorkflowScript("pipeline.nf", "echo 'test'", true))));
+        CatalogException exception = assertThrows(CatalogException.class,
+                () -> externalToolManager.createWorkflow(studyFqn, workflowParams, INCLUDE_RESULT, ownerToken));
+        assertTrue(exception.getMessage().contains("CPU") && exception.getMessage().contains("positive"));
+    }
+
+    @Test
+    public void createWorkflowWithNegativeMemoryTest() {
+        // Test with negative memory - should fail
+        WorkflowCreateParams workflowParams = new WorkflowCreateParams()
+                .setId("workflow-req-neg-mem")
+                .setScope(ExternalToolScope.OTHER)
+                .setMinimumRequirements(new MinimumRequirements().setCpu("4").setMemory("-16GB"))
+                .setWorkflow(new Workflow().setScripts(Collections.singletonList(
+                        new WorkflowScript("pipeline.nf", "echo 'test'", true))));
+        CatalogException exception = assertThrows(CatalogException.class,
+                () -> externalToolManager.createWorkflow(studyFqn, workflowParams, INCLUDE_RESULT, ownerToken));
+        assertTrue(exception.getMessage().contains("memory") && exception.getMessage().contains("positive"));
+    }
+
+    @Test
+    public void createWorkflowWithZeroMemoryTest() {
+        // Test with zero memory - should fail
+        WorkflowCreateParams workflowParams = new WorkflowCreateParams()
+                .setId("workflow-req-zero-mem")
+                .setScope(ExternalToolScope.OTHER)
+                .setMinimumRequirements(new MinimumRequirements().setCpu("4").setMemory("0GB"))
+                .setWorkflow(new Workflow().setScripts(Collections.singletonList(
+                        new WorkflowScript("pipeline.nf", "echo 'test'", true))));
+        CatalogException exception = assertThrows(CatalogException.class,
+                () -> externalToolManager.createWorkflow(studyFqn, workflowParams, INCLUDE_RESULT, ownerToken));
+        assertTrue(exception.getMessage().contains("memory") && exception.getMessage().contains("positive"));
+    }
+
+    @Test
+    public void createWorkflowWithInvalidMemoryTest() {
+        // Test with non-numeric memory - should fail
+        WorkflowCreateParams workflowParams = new WorkflowCreateParams()
+                .setId("workflow-req-invalid-mem")
+                .setScope(ExternalToolScope.OTHER)
+                .setMinimumRequirements(new MinimumRequirements().setCpu("4").setMemory("invalidGB"))
+                .setWorkflow(new Workflow().setScripts(Collections.singletonList(
+                        new WorkflowScript("pipeline.nf", "echo 'test'", true))));
+        CatalogException exception = assertThrows(CatalogException.class,
+                () -> externalToolManager.createWorkflow(studyFqn, workflowParams, INCLUDE_RESULT, ownerToken));
+        assertTrue(exception.getMessage().contains("memory") && exception.getMessage().contains("positive"));
+    }
+
+    @Test
+    public void createWorkflowWithInvalidMemoryUnitTest() {
+        // Test with invalid memory unit - should fail
+        WorkflowCreateParams workflowParams = new WorkflowCreateParams()
+                .setId("workflow-req-invalid-unit")
+                .setScope(ExternalToolScope.OTHER)
+                .setMinimumRequirements(new MinimumRequirements().setCpu("4").setMemory("16TB"))
+                .setWorkflow(new Workflow().setScripts(Collections.singletonList(
+                        new WorkflowScript("pipeline.nf", "echo 'test'", true))));
+        CatalogException exception = assertThrows(CatalogException.class,
+                () -> externalToolManager.createWorkflow(studyFqn, workflowParams, INCLUDE_RESULT, ownerToken));
+        assertTrue(exception.getMessage().contains("unit") && exception.getMessage().contains("not valid"));
+    }
+
+    @Test
+    public void createWorkflowWithMissingCpuTest() {
+        // Test with missing CPU - should fail
+        WorkflowCreateParams workflowParams = new WorkflowCreateParams()
+                .setId("workflow-req-missing-cpu")
+                .setScope(ExternalToolScope.OTHER)
+                .setMinimumRequirements(new MinimumRequirements().setMemory("16GB"))
+                .setWorkflow(new Workflow().setScripts(Collections.singletonList(
+                        new WorkflowScript("pipeline.nf", "echo 'test'", true))));
+        CatalogException exception = assertThrows(CatalogException.class,
+                () -> externalToolManager.createWorkflow(studyFqn, workflowParams, INCLUDE_RESULT, ownerToken));
+        assertTrue(exception.getMessage().contains("cpu"));
+    }
+
+    @Test
+    public void createWorkflowWithMissingMemoryTest() {
+        // Test with missing memory - should fail
+        WorkflowCreateParams workflowParams = new WorkflowCreateParams()
+                .setId("workflow-req-missing-mem")
+                .setScope(ExternalToolScope.OTHER)
+                .setMinimumRequirements(new MinimumRequirements().setCpu("4"))
+                .setWorkflow(new Workflow().setScripts(Collections.singletonList(
+                        new WorkflowScript("pipeline.nf", "echo 'test'", true))));
+        CatalogException exception = assertThrows(CatalogException.class,
+                () -> externalToolManager.createWorkflow(studyFqn, workflowParams, INCLUDE_RESULT, ownerToken));
+        assertTrue(exception.getMessage().contains("memory"));
+    }
+
+    @Test
+    public void createWorkflowWithNullMinimumRequirementsTest() throws CatalogException {
+        // Test with null minimum requirements - should be allowed
+        WorkflowCreateParams workflowParams = new WorkflowCreateParams()
+                .setId("workflow-no-req")
+                .setScope(ExternalToolScope.OTHER)
+                .setWorkflow(new Workflow().setScripts(Collections.singletonList(
+                        new WorkflowScript("pipeline.nf", "echo 'test'", true))));
+        OpenCGAResult<ExternalTool> result = externalToolManager.createWorkflow(studyFqn, workflowParams, INCLUDE_RESULT, ownerToken);
+        assertEquals(1, result.getNumResults());
+        assertNull(result.first().getMinimumRequirements());
+    }
+
+    @Test
+    public void createCustomToolWithValidMinimumRequirementsTest() throws CatalogException {
+        // Test that minimum requirements work for custom tools as well
+        CustomToolCreateParams toolParams = new CustomToolCreateParams()
+                .setId("custom-with-req")
+                .setScope(ExternalToolScope.OTHER)
+                .setContainer(new Container("myimage", "1.0", "", "", "", ""))
+                .setMinimumRequirements(new MinimumRequirements().setCpu("8").setMemory("64GB").setDisk("1000GB"));
+        OpenCGAResult<ExternalTool> result = externalToolManager.createCustomTool(studyFqn, toolParams, INCLUDE_RESULT, ownerToken);
+        assertEquals(1, result.getNumResults());
+        MinimumRequirements reqs = result.first().getMinimumRequirements();
+        assertEquals("8", reqs.getCpu());
+        assertEquals("64GB", reqs.getMemory());
+        assertEquals("1000GB", reqs.getDisk());
+    }
+
+    @Test
+    public void createCustomToolWithInvalidMinimumRequirementsTest() {
+        // Test that validation works for custom tools as well
+        CustomToolCreateParams toolParams = new CustomToolCreateParams()
+                .setId("custom-invalid-req")
+                .setScope(ExternalToolScope.OTHER)
+                .setContainer(new Container("myimage", "1.0", "", "", "", ""))
+                .setMinimumRequirements(new MinimumRequirements().setCpu("invalid").setMemory("16GB"));
+        CatalogException exception = assertThrows(CatalogException.class,
+                () -> externalToolManager.createCustomTool(studyFqn, toolParams, INCLUDE_RESULT, ownerToken));
+        assertTrue(exception.getMessage().contains("CPU") && exception.getMessage().contains("positive"));
+    }
+
+    @Test
     public void searchByTypeTest() throws CatalogException {
         // Create different types of tools
         WorkflowCreateParams workflowParams = new WorkflowCreateParams()

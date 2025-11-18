@@ -104,6 +104,9 @@ public class UserToolsCommandExecutor extends OpencgaCommandExecutor {
             case "walker-run":
                 queryResponse = runWalker();
                 break;
+            case "walker-update":
+                queryResponse = updateWalker();
+                break;
             case "workflow-create":
                 queryResponse = createWorkflow();
                 break;
@@ -635,6 +638,57 @@ public class UserToolsCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), VariantWalkerToolParams.class);
         }
         return openCGAClient.getUserToolClient().runWalker(variantWalkerToolParams, queryParams);
+    }
+
+    private RestResponse<ExternalTool> updateWalker() throws Exception {
+        logger.debug("Executing updateWalker in User Tools command line");
+
+        UserToolsCommandOptions.UpdateWalkerCommandOptions commandOptions = userToolsCommandOptions.updateWalkerCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("include", commandOptions.include);
+        queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
+        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
+            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+        }
+
+
+        CustomToolUpdateParams customToolUpdateParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<ExternalTool> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/tools/walker/{toolId}/update"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            customToolUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), CustomToolUpdateParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "description", commandOptions.description, true);
+            putNestedIfNotNull(beanParams, "scope", commandOptions.scope, true);
+            putNestedIfNotNull(beanParams, "tags", commandOptions.tags, true);
+            putNestedIfNotEmpty(beanParams, "minimumRequirements.cpu", commandOptions.minimumRequirementsCpu, true);
+            putNestedIfNotEmpty(beanParams, "minimumRequirements.memory", commandOptions.minimumRequirementsMemory, true);
+            putNestedIfNotEmpty(beanParams, "minimumRequirements.disk", commandOptions.minimumRequirementsDisk, true);
+            putNestedIfNotNull(beanParams, "draft", commandOptions.draft, true);
+            putNestedIfNotEmpty(beanParams, "creationDate", commandOptions.creationDate, true);
+            putNestedIfNotEmpty(beanParams, "modificationDate", commandOptions.modificationDate, true);
+            putNestedMapIfNotEmpty(beanParams, "attributes", commandOptions.attributes, true);
+            putNestedIfNotEmpty(beanParams, "container.name", commandOptions.containerName, true);
+            putNestedIfNotEmpty(beanParams, "container.tag", commandOptions.containerTag, true);
+            putNestedIfNotEmpty(beanParams, "container.digest", commandOptions.containerDigest, true);
+            putNestedIfNotEmpty(beanParams, "container.commandLine", commandOptions.containerCommandLine, true);
+            putNestedIfNotEmpty(beanParams, "container.user", commandOptions.containerUser, true);
+            putNestedIfNotEmpty(beanParams, "container.password", commandOptions.containerPassword, true);
+
+            customToolUpdateParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), CustomToolUpdateParams.class);
+        }
+        return openCGAClient.getUserToolClient().updateWalker(commandOptions.toolId, customToolUpdateParams, queryParams);
     }
 
     private RestResponse<ExternalTool> createWorkflow() throws Exception {

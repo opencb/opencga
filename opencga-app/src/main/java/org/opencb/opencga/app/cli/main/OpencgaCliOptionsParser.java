@@ -250,6 +250,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         userToolsSubCommands.addCommand("search", userToolsCommandOptions.searchCommandOptions);
         userToolsSubCommands.addCommand("walker-create", userToolsCommandOptions.createWalkerCommandOptions);
         userToolsSubCommands.addCommand("walker-run", userToolsCommandOptions.runWalkerCommandOptions);
+        userToolsSubCommands.addCommand("walker-update", userToolsCommandOptions.updateWalkerCommandOptions);
         userToolsSubCommands.addCommand("workflow-create", userToolsCommandOptions.createWorkflowCommandOptions);
         userToolsSubCommands.addCommand("workflow-import", userToolsCommandOptions.importWorkflowCommandOptions);
         userToolsSubCommands.addCommand("workflow-run", userToolsCommandOptions.runWorkflowCommandOptions);

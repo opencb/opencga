@@ -370,8 +370,23 @@ public class ExternalToolWSServer extends OpenCGAWSServer {
         return run(() -> catalogManager.getExternalToolManager().submitVariantWalker(project, study, params, jobName, jobDescription,
                 dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun, token));
     }
-///tools/walker/{build ?? | create | update}
-///tools/walker/run x2?
 
+    @POST
+    @Path("/walker/{toolId}/update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Update some variant walker tool attributes", response = ExternalTool.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query")
+    })
+    public Response updateVariantWalkerTool(
+            @ApiParam(value = ParamConstants.EXTERNAL_TOOL_ID_DESCRIPTION, required = true) @PathParam("toolId") String toolId,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
+            @ApiParam(value = "body") CustomToolUpdateParams parameters) {
+        return run(() -> externalToolManager.updateVariantWalker(studyStr, toolId, parameters, queryOptions, token));
+    }
 
 }

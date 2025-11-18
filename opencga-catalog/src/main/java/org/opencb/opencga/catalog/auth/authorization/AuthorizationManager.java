@@ -228,8 +228,8 @@ public interface AuthorizationManager {
     void checkClinicalAnalysisPermission(String organizationId, long studyId, long analysisId, String userId,
                                          ClinicalAnalysisPermissions permission) throws CatalogException;
 
-    void checkWorkflowPermission(String organizationId, long studyUid, long workflowUid, String userId, ExternalToolPermissions permission)
-            throws CatalogException;
+    void checkExternalToolPermission(String organizationId, long studyUid, long workflowUid, String userId,
+                                     ExternalToolPermissions permission) throws CatalogException;
 
     default List<Acl> getEffectivePermissions(String organizationId, long studyUid, String resourceId, Enums.Resource resource)
             throws CatalogException {
