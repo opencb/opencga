@@ -31,6 +31,7 @@ import org.opencb.opencga.core.models.externalTool.workflow.WorkflowCreateParams
 import org.opencb.opencga.core.models.externalTool.workflow.WorkflowUpdateParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobType;
+import org.opencb.opencga.core.models.job.MinimumRequirements;
 import org.opencb.opencga.core.models.job.ToolInfo;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyPermissions;
@@ -446,6 +447,9 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
     public OpenCGAResult<ExternalTool> updateWorkflow(String studyStr, String externalToolId, WorkflowUpdateParams updateParams,
                                               QueryOptions options, String token) throws CatalogException {
         return privateUpdate(studyStr, externalToolId, updateParams, externalTool -> {
+            if (externalTool.getType() != ExternalToolType.WORKFLOW) {
+                throw new CatalogException("Only a tool of type " + ExternalToolType.WORKFLOW + " can be updated");
+            }
             Workflow workflow = updateParams.getWorkflow();
             if (workflow == null) {
                 return;
@@ -493,6 +497,21 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
     public OpenCGAResult<ExternalTool> updateCustomTool(String studyStr, String externalToolId, CustomToolUpdateParams updateParams,
                                                       QueryOptions options, String token) throws CatalogException {
         return privateUpdate(studyStr, externalToolId, updateParams, externalTool -> {
+            if (externalTool.getType() != ExternalToolType.CUSTOM_TOOL) {
+                throw new CatalogException("Only a tool of type " + ExternalToolType.CUSTOM_TOOL + " can be updated");
+            }
+            if (updateParams.getContainer() != null) {
+                validateDocker(updateParams.getContainer());
+            }
+        }, options, token);
+    }
+
+    public OpenCGAResult<ExternalTool> updateVariantWalker(String studyStr, String externalToolId, CustomToolUpdateParams updateParams,
+                                                        QueryOptions options, String token) throws CatalogException {
+        return privateUpdate(studyStr, externalToolId, updateParams, externalTool -> {
+            if (externalTool.getType() != ExternalToolType.VARIANT_WALKER) {
+                throw new CatalogException("Only a tool of type " + ExternalToolType.VARIANT_WALKER + " can be updated");
+            }
             if (updateParams.getContainer() != null) {
                 validateDocker(updateParams.getContainer());
             }
@@ -536,19 +555,23 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
             uuid = externalTool.getUuid();
 
             // Check permission
-            authorizationManager.checkWorkflowPermission(organizationId, study.getUid(), externalTool.getUid(), userId,
+            authorizationManager.checkExternalToolPermission(organizationId, study.getUid(), externalTool.getUid(), userId,
                     ExternalToolPermissions.WRITE);
 
             if (updateParams == null) {
-                throw new CatalogException("Missing parameters to update the workflow.");
+                throw new CatalogException("Missing parameters to update the tool.");
             }
             validateFunction.execute(externalTool);
+
+            if (updateParams.getMinimumRequirements() != null) {
+                 validateMinimumRequirements(updateParams.getMinimumRequirements());
+            }
 
             ObjectMap updateMap;
             try {
                 updateMap = new ObjectMap(getUpdateObjectMapper().writeValueAsString(updateParams));
             } catch (JsonProcessingException e) {
-                throw new CatalogException("Could not parse WorkflowUpdateParams object: " + e.getMessage(), e);
+                throw new CatalogException("Could not parse the UpdateParams object: " + e.getMessage(), e);
             }
 
             // 2. Update workflow object
@@ -799,7 +822,7 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
                 workflowUuid = externalTool.getUuid();
 
                 if (checkPermissions) {
-                    authorizationManager.checkWorkflowPermission(organizationId, study.getUid(), externalTool.getUid(), userId,
+                    authorizationManager.checkExternalToolPermission(organizationId, study.getUid(), externalTool.getUid(), userId,
                             ExternalToolPermissions.DELETE);
                 }
 
@@ -885,7 +908,7 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
 
             try {
                 if (checkPermissions) {
-                    authorizationManager.checkWorkflowPermission(organizationId, study.getUid(), externalTool.getUid(), userId,
+                    authorizationManager.checkExternalToolPermission(organizationId, study.getUid(), externalTool.getUid(), userId,
                             ExternalToolPermissions.DELETE);
                 }
 
@@ -1033,84 +1056,88 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
                 TimeUtils.getTime(), userId));
 
         if (externalTool.getMinimumRequirements() != null) {
-            ParamUtils.checkParameter(externalTool.getMinimumRequirements().getCpu(), "minimumRequirements.cpu");
-            ParamUtils.checkParameter(externalTool.getMinimumRequirements().getMemory(), "minimumRequirements.memory");
-            // CPU should be a positive number and should be able to cast to Number
-            try {
-                double cpu = Double.parseDouble(externalTool.getMinimumRequirements().getCpu());
-                if (cpu <= 0) {
-                    throw new CatalogParameterException("Minimum requirements CPU should be a positive number.");
-                }
-            } catch (NumberFormatException e) {
-                throw new CatalogParameterException("Minimum requirements CPU should be a positive number.", e);
+            validateMinimumRequirements(externalTool.getMinimumRequirements());
+        }
+    }
+
+    private static void validateMinimumRequirements(MinimumRequirements minimumRequirements) throws CatalogParameterException {
+        ParamUtils.checkParameter(minimumRequirements.getCpu(), "minimumRequirements.cpu");
+        ParamUtils.checkParameter(minimumRequirements.getMemory(), "minimumRequirements.memory");
+        // CPU should be a positive number and should be able to cast to Number
+        try {
+            double cpu = Double.parseDouble(minimumRequirements.getCpu());
+            if (cpu <= 0) {
+                throw new CatalogParameterException("Minimum requirements CPU should be a positive number.");
             }
-            // Memory should be a positive number optionally followed by a unit (MB or GB)
-            // Supported formats: "16", "16GB", "16 GB", "16.GB", "16.5", "16.5GB", "16.5 GB"
-            // If memory is only a positive number, we will add GB as the unit
-            String memory = externalTool.getMinimumRequirements().getMemory().trim();
-            List<String> validUnits = Arrays.asList("MB", "GB");
+        } catch (NumberFormatException e) {
+            throw new CatalogParameterException("Minimum requirements CPU should be a positive number.", e);
+        }
+        // Memory should be a positive number optionally followed by a unit (MB or GB)
+        // Supported formats: "16", "16GB", "16 GB", "16.GB", "16.5", "16.5GB", "16.5 GB"
+        // If memory is only a positive number, we will add GB as the unit
+        String memory = minimumRequirements.getMemory().trim();
+        List<String> validUnits = Arrays.asList("MB", "GB");
 
-            String numericPart = null;
-            String unit = null;
+        String numericPart = null;
+        String unit = null;
 
-            // First, try to find unit at the end (without separator)
-            String upperMemory = memory.toUpperCase();
-            for (String validUnit : validUnits) {
-                if (upperMemory.endsWith(validUnit)) {
-                    numericPart = memory.substring(0, memory.length() - validUnit.length());
-                    unit = validUnit;
-                    // Check if there's a space or dot separator before the unit
-                    if (numericPart.endsWith(" ") || numericPart.endsWith(".")) {
-                        numericPart = numericPart.substring(0, numericPart.length() - 1).trim();
-                    }
-                    break;
+        // First, try to find unit at the end (without separator)
+        String upperMemory = memory.toUpperCase();
+        for (String validUnit : validUnits) {
+            if (upperMemory.endsWith(validUnit)) {
+                numericPart = memory.substring(0, memory.length() - validUnit.length());
+                unit = validUnit;
+                // Check if there's a space or dot separator before the unit
+                if (numericPart.endsWith(" ") || numericPart.endsWith(".")) {
+                    numericPart = numericPart.substring(0, numericPart.length() - 1).trim();
                 }
+                break;
             }
+        }
 
-            if (numericPart == null) {
-                // No valid unit found. Check if there's an invalid unit suffix.
-                // Look for a pattern where the string ends with letters
-                String potentialNumeric = memory;
-                String potentialUnit = null;
+        if (numericPart == null) {
+            // No valid unit found. Check if there's an invalid unit suffix.
+            // Look for a pattern where the string ends with letters
+            String potentialNumeric = memory;
+            String potentialUnit = null;
 
-                // Find where the numeric part ends and letters start
-                int i = memory.length() - 1;
-                while (i >= 0 && Character.isLetter(memory.charAt(i))) {
-                    i--;
-                }
-
-                if (i < memory.length() - 1) {
-                    // Found letters at the end
-                    potentialNumeric = memory.substring(0, i + 1).trim();
-                    potentialUnit = memory.substring(i + 1).trim();
-
-                    // Remove trailing space or dot from numeric part
-                    if (potentialNumeric.endsWith(" ") || potentialNumeric.endsWith(".")) {
-                        potentialNumeric = potentialNumeric.substring(0, potentialNumeric.length() - 1).trim();
-                    }
-
-                    // Check if the unit part is invalid
-                    if (!potentialUnit.isEmpty() && !validUnits.contains(potentialUnit.toUpperCase())) {
-                        throw new CatalogParameterException("Minimum requirements memory unit '" + potentialUnit + "' is not valid. "
-                                + "Supported units are: " + String.join(", ", validUnits) + ".");
-                    }
-                }
-
-                numericPart = potentialNumeric;
+            // Find where the numeric part ends and letters start
+            int i = memory.length() - 1;
+            while (i >= 0 && Character.isLetter(memory.charAt(i))) {
+                i--;
             }
 
-            try {
-                double memoryValue = Double.parseDouble(numericPart);
-                if (memoryValue <= 0) {
-                    throw new CatalogParameterException("Minimum requirements memory should be a positive number.");
+            if (i < memory.length() - 1) {
+                // Found letters at the end
+                potentialNumeric = memory.substring(0, i + 1).trim();
+                potentialUnit = memory.substring(i + 1).trim();
+
+                // Remove trailing space or dot from numeric part
+                if (potentialNumeric.endsWith(" ") || potentialNumeric.endsWith(".")) {
+                    potentialNumeric = potentialNumeric.substring(0, potentialNumeric.length() - 1).trim();
                 }
-                if (unit == null) {
-                    // No unit provided, we will add GB
-                    externalTool.getMinimumRequirements().setMemory(memoryValue + "GB");
+
+                // Check if the unit part is invalid
+                if (!potentialUnit.isEmpty() && !validUnits.contains(potentialUnit.toUpperCase())) {
+                    throw new CatalogParameterException("Minimum requirements memory unit '" + potentialUnit + "' is not valid. "
+                            + "Supported units are: " + String.join(", ", validUnits) + ".");
                 }
-            } catch (NumberFormatException e) {
-                throw new CatalogParameterException("Minimum requirements memory should be a positive number.", e);
             }
+
+            numericPart = potentialNumeric;
+        }
+
+        try {
+            double memoryValue = Double.parseDouble(numericPart);
+            if (memoryValue <= 0) {
+                throw new CatalogParameterException("Minimum requirements memory should be a positive number.");
+            }
+            if (unit == null) {
+                // No unit provided, we will add GB
+                minimumRequirements.setMemory(memoryValue + "GB");
+            }
+        } catch (NumberFormatException e) {
+            throw new CatalogParameterException("Minimum requirements memory should be a positive number.", e);
         }
     }
 
