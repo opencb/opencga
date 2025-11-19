@@ -1,4 +1,5 @@
 name: Pull request approve workflow
+run-name: 'Pull request approve workflow ${{ github.event.pull_request.head.ref }} -> ${{ github.event.pull_request.base.ref }} by @${{ github.actor }}'
 
 on:
   pull_request_review:
@@ -7,7 +8,7 @@ on:
 jobs:
   test:
     if: github.event.review.state == 'approved'
-    name: Execute JUnit and Jacoco tests
+    name: "Run all tests before merging"
     runs-on: ${{ vars.UBUNTU_VERSION }}
     steps:
       - name: Retrieve secrets from Keeper
@@ -50,6 +51,28 @@ jobs:
           distribution: 'temurin'
           java-version: '8'
           cache: 'maven'
+      - name: Clone dependencies
+        id: clone_dependencies
+        run: |
+          if [ -f "./.github/workflows/scripts/get_same_branch.sh" ]; then
+            chmod +x ./.github/workflows/scripts/get_same_branch.sh
+            export DEPENDENCIES_SHA=${{ github.sha }}
+            ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }}
+          fi
+      - name: Cache local Maven repository
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ vars.HADOOP_FLAVOUR }}-${{ steps.clone_dependencies.outputs.dependencies_sha }}
+          restore-keys: |
+            ${{ runner.os }}-maven-${{ vars.HADOOP_FLAVOUR }}-
+      - name: Compile dependencies
+        run: |
+          if [ -f "./.github/workflows/scripts/compile_same_branch.sh" ]; then
+            chmod +x ./.github/workflows/scripts/compile_same_branch.sh
+            ./.github/workflows/scripts/compile_same_branch.sh
+          fi
       - name: Install Samtools
         run: sudo apt-get install samtools python3-deeptools
       - name: Start MongoDB v6.0
@@ -99,4 +122,24 @@ jobs:
           SSH_PORT: ${{ env.SSH_PORT }}
       - name: Run all OpenCB Junit tests, ie. java-common-libs, biodata, opencga and opencga-enterprise
         run: |
-          ./build.sh -t -l runShortTests -d -b -s -T ${{ github.event.pull_request.head.ref }} --R-client --python-client --javascript-client
+          ./build.sh --test --test-level runShortTests --docker --prepare-branches --prepare-hadoop --test-save-reports --task ${{ github.event.pull_request.head.ref }} --storage-hadoop ${{ vars.HADOOP_FLAVOUR }}
+          docker system prune -a -f --volumes
+        env:
+          THIRDPARTY_READ_TOKEN: ${{ secrets.THIRDPARTY_READ_TOKEN }}
+      - name: Upload reports results to Github
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-test
+          path: ./reports/
+          if-no-files-found: error
+      - name: Upload log
+        uses: actions/upload-artifact@v4
+        ## Skip cancelled()
+        ## https://docs.github.com/en/actions/learn-github-actions/expressions#cancelled
+        if: success() || failure()
+        with:
+          name: build-log
+          path: |
+            ./build.log
+            ./reports/*.log.gz
+          if-no-files-found: error

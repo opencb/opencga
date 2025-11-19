@@ -21,6 +21,7 @@ fi
 touch "$LOG_FILE"
 
 MVN_OPTS="${MVN_OPTS:-}"
+MVN_OPTS="$MVN_OPTS --no-transfer-progress"
 
 # Function to log messages
 function log() {
@@ -45,7 +46,13 @@ function error() {
 
 # Function to calculate the branch for dependencies
 function calculate_branch() {
+  local REPO_VERSION="$1"
   local EXISTS=""
+  if [[ ! "$REPO_VERSION" =~ SNAPSHOT$ ]]; then
+    echo "v${REPO_VERSION}"
+    return
+  fi
+
   if [[ -n $TASK_REFERENCE ]]; then
     local EXISTS=$(git ls-remote origin "$TASK_REFERENCE")
   fi
@@ -60,7 +67,7 @@ function calculate_branch() {
     ## If opencga-enterprise branch name is main, develop then we return the same name.
     ## Otherwise, we calculate the dependency branch from the dependency version.
     if [[ "$ENTERPRISE_BRANCH" == "TASK"* || "$ENTERPRISE_BRANCH" == "release"* ]]; then
-      local VERSION=$(echo "$1" | cut -d "-" -f 1)
+      local VERSION=$(echo "$REPO_VERSION" | cut -d "-" -f 1)
       local MAJOR=$(echo "$VERSION" | cut -d "." -f 1)
       local MINOR=$(echo "$VERSION" | cut -d "." -f 2)
       local PATCH=$(echo "$VERSION" | cut -d "." -f 3)
@@ -81,9 +88,31 @@ function calculate_branch() {
 function manage_dependency() {
   local REPO=$1
   local REPO_VERSION=$2
-  local TEMP_DIR="$(mktemp -d "--suffix=opencga-enterprise-$(date +%Y%m%d%H%M%S)-$REPO")"
+  ## Get the organization from the repo. If REPO does not have /, then org is opencb
+  local REPO_ORG="opencb"
+  if [[ "$REPO" == *"/"* ]]; then
+    REPO_ORG=$(echo "$REPO" | cut -d "/" -f 1)
+    REPO=$(echo "$REPO" | cut -d "/" -f 2)
+  fi
+
+  # Validate REPO REPO_ORG and REPO_VERSION
+  if [ -z "$REPO" ] || [ -z "$REPO_ORG" ] || [ -z "$REPO_VERSION" ]; then
+    log "ERROR: REPO, REPO_ORG and REPO_VERSION must be provided"
+    log "REPO: '$REPO'"
+    log "REPO_ORG: '$REPO_ORG'"
+    log "REPO_VERSION: '$REPO_VERSION'"
+    exit 1
+  fi
+
+  local TEMP_DIR="$(mktemp -d --tmpdir="${TMP_DIR_HOME:?}" --suffix="opencga-enterprise-$(date +%Y%m%d%H%M%S)-$REPO")"
   cd "$TEMP_DIR" || exit 2
-  git clone https://github.com/opencb/"$REPO".git
+
+  CLONE_URL="https://github.com/${REPO_ORG}/"${REPO}".git"
+  ## Clean previous clone
+  rm -rf "${REPO:?}"
+  echo "Cloning repository $REPO from $CLONE_URL"
+  git clone "$CLONE_URL"
+
   if [ -d "./$REPO" ]; then
       cd "$REPO" || exit 2
       local BRANCH_NAME="$(calculate_branch "$REPO_VERSION")"
@@ -98,8 +127,8 @@ function manage_dependency() {
     log_summary "Version of $REPO to download correct $VERSION should be in $BRANCH_NAME"
     log_version_summary "$REPO,$VERSION,$BRANCH_NAME"
     if [ "$COMMAND" == "build" ];then
-      log "Building $REPO branch $BRANCH_NAME."
-      mvn clean install -B -T 2 -DskipTests --no-transfer-progress $MVN_OPTS
+      mvn_step "${REPO}-${COMMAND}" clean install -B -T 2 -DskipTests $MVN_OPTS
+
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND $REPO with $REPO_VERSION in $BRANCH_NAME FAILED!!!!!"
       else
@@ -109,7 +138,8 @@ function manage_dependency() {
       log "Testing $REPO branch $BRANCH_NAME."
       local pwd=$(pwd)
       echo "${pwd} $REPO" >> "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
-      mvn install -B surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip --no-transfer-progress $MVN_OPTS
+      mvn_step "${REPO}-${COMMAND}" install -B surefire-report:report ${FAIL_NEVER} -Dcheckstyle.skip $MVN_OPTS
+
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND $REPO with $VERSION in $BRANCH_NAME FAILED!!!!!"
       else
@@ -145,15 +175,18 @@ function print_usage() {
   echo ""
   echo "  Options:"
   echo "     -o     --opencga-home        STRING         OpenCGA project repo directory [./opencga-home]"
-  echo "     -H     --storage-hadoop      STRING         Hadoop flavour. hdp3.1, hdi5.1, emr6.1, emr6.13 ... [hdp3.1]"
+  echo "     -H     --storage-hadoop      STRING         Hadoop flavour  hdi5.1, emr6.1, emr6.13, emr7.5  ... [hdi5.1]"
   echo "     -T     --task                STRING         Task ID used for building and testing dependencies, this will serve as a reference for checkouts"
   echo "     -l     --test-level          STRING         Level of test we must to execute(runShortTests,runMediumTests,runLongTests)"
-  echo "     -t     --test                FLAG           Execute the XetaBase tests by default only build"
+  echo "     -t     --test                FLAG           Execute the XetaBase tests (by default only build)"
   echo "     -f     --test-fail-never     FLAG           The process executes all tests even if some fail."
   echo "     -b     --prepare-branches    FLAG           Previous to run, it will download and compile all branches of the dependencies."
+  echo "            --skip-opencga-build  FLAG           Skip OpenCGA build."
   echo "     -s     --test-save-reports   FLAG           Save OpenCGA JUnit test reports to XetaBase Report server (Quality Team)."
   echo "     -d     --docker              FLAG           Publish docker of OpenCGA-enterprise."
-  echo "     -p     --docker-tag          FLAG           Tag for docker of OpenCGA-enterprise."
+  echo "            --prepare-hadoop      FLAG           Download and compile opencga-hadoop-thirdparty dependency. Flag used with --prepare-branches."
+  echo "     -p     --docker-tag          STRING         Tag for docker of OpenCGA-enterprise."
+  echo "     -c     --cellbase-db         STRING         Connection to mongodb to test cellbase (host:port)."
   echo "     -A     --activate-profiles   STRING         Comma delimited list of profiles to activate."
   echo "     -P     --python-client       STRING         Also builds opencga-enterprise python client"
   echo "     -W     --javascript-client   STRING         Also builds opencga-enterprise javascript client."
@@ -238,8 +271,24 @@ function validate() {
 function prepare_branches() {
   ## Only if you pass the parameter: --prepare-branch -b
 
+  export TMP_DIR_HOME="${OPENCGA_ENTERPRISE_HOME_DIR:?}/tmp/dependency-checkouts/"
+  mkdir -p "$TMP_DIR_HOME"
+  rm -rf "${TMP_DIR_HOME:?}"/*
+
   if [ "$PREPARE_BRANCHES" == "true" ]; then
+    if [ "${PREPARE_BRANCHES_HADOOP:-false}" == "true" ]; then
+      OPENCGA_HADOOP_THIRD_PARTY_VERSION="$(mvn help:evaluate -Dexpression=opencga.hadoop.thirdparty.version -q -DforceStdout)"
+      echo "Downloading and compiling opencga-hadoop-thirdparty $OPENCGA_HADOOP_THIRD_PARTY_VERSION"
+      cd "${OPENCGA_HOME_DIR}" || exit 2
+      chmod +x .github/workflows/scripts/prepare_hadoop.sh
+      exec_step "opencga-hadoop-thirdparty-build" \
+            .github/workflows/scripts/prepare_hadoop.sh \
+            --hadoop-flavour "$STORAGE_HADOOP_DEPS" \
+            --hadoop-thirdparty-version "$OPENCGA_HADOOP_THIRD_PARTY_VERSION"
+      cd - || exit 2
+    fi
     JCL_DEPENDENCY_VERSION="$(mvn help:evaluate -Dexpression=java-common-libs.version -q -DforceStdout $MVN_OPTS)"
+
     echo "Downloading and compiling java-common-libs $JCL_DEPENDENCY_VERSION"
     manage_dependency "java-common-libs" "$JCL_DEPENDENCY_VERSION"
 
@@ -251,12 +300,57 @@ function prepare_branches() {
   fi
 }
 
+## Function to execute maven commands and log output
+## The output is saved in a compressed file and only INFO, WARNING and ERROR lines are printed to the console
+function mvn_step() {
+  STEP_NAME="$1"
+  shift  # Remove first parameter
+  export GROUP_NAME="Maven Step"
+  exec_step "$STEP_NAME" mvn "$@"
+}
+
+## Function to execute commands and log output
+## The output is saved in a compressed file and only INFO, WARNING and ERROR lines are printed to the console
+function exec_step() {
+  STEP_NAME="$1"
+  shift  # Remove first parameter
+  if [ -z "${GROUP_NAME:-}" ]; then
+    echo ""
+  else
+    echo "::group::${GROUP_NAME} - ${STEP_NAME}"
+  fi
+  echo "=== $STEP_NAME ==="
+  echo "Executing: $*"
+  STEP_LOG_FILE="$OPENCGA_ENTERPRISE_HOME_DIR/reports/${STEP_NAME}.log.gz"
+  if [ -f "$STEP_LOG_FILE" ]; then
+      rm "$STEP_LOG_FILE"
+  fi
+  echo "STEP_LOG_FILE = $STEP_LOG_FILE"
+  START_TIME=$(date +%s)
+  "$@" |& tee >(gzip > "$STEP_LOG_FILE" ) |& { grep -a -P '^\[[^\]]*(INFO|WARNING|ERROR)|::group::|::endgroup::|^\+' --colour=never --line-buffered || true; }
+  local STATUS=${PIPESTATUS[0]}
+  END_TIME=$(date +%s)
+  local DURATION=$((END_TIME - START_TIME))
+  if [ -z "${GROUP_NAME:-}" ]; then
+    echo ""
+  else
+    echo "::endgroup::"
+  fi
+  echo "== $STEP_NAME Completed =="
+  echo " - Duration: $(date -u -d @"$DURATION" +%H:%M:%S) ($DURATION seconds)"
+  return $STATUS
+}
+
 # Function to build or/and test the opencga
 function build_opencga() {
   cd "$OPENCGA_HOME_DIR" || exit 2
-  if [ "$COMMAND" == "build" ];then
+  if [ "$COMMAND" == "build" ] ; then
+      if [[ "$SKIP_OPENCGA_BUILD" == "true" ]]; then
+        log "Skip opencga build!"
+        return
+      fi
       log "Compiling opencga... $(pwd)"
-      mvn clean install -DskipTests -P"$STORAGE_HADOOP_DEPS" -T 2 --no-transfer-progress $MVN_OPTS
+      mvn_step "opencga-build" clean install -DskipTests -P"$STORAGE_HADOOP_DEPS" -T 2  $MVN_OPTS
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND opencga build FAILED!!!!!"
         print_log_summary
@@ -267,10 +361,10 @@ function build_opencga() {
         log_version_summary "opencga,$VERSION,$BRANCH"
         log_summary "$COMMAND opencga build Success!"
       fi
-  elif [ "$COMMAND" == "test" ];then
+  elif [ "$COMMAND" == "test" ] ; then
       local pwd=$(pwd -P)
       echo "${pwd} opencga" >> "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
-      mvn clean install -B surefire-report:report ${FAIL_NEVER} -P "$STORAGE_HADOOP_DEPS","${TEST_TAG}" -Dcheckstyle.skip --no-transfer-progress $MVN_OPTS
+      mvn_step "opencga-test" clean install -B surefire-report:report ${FAIL_NEVER} -P "$STORAGE_HADOOP_DEPS","${TEST_TAG}" -Dcheckstyle.skip $MVN_OPTS
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND opencga test FAILED!!!!!"
         print_log_summary
@@ -310,8 +404,8 @@ function build_opencga_enterprise() {
 
   if [ "$COMMAND" == "build" ];then
     # The opencga.war.name is include in the MVN_OPTS, so we do not need to pass it
-    mvn clean install -DskipTests -T 2 -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
-    -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" --no-transfer-progress $MVN_OPTS
+    mvn_step "opencga-enterprise-build" clean install -DskipTests -T 2 -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
+        -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" $MVN_OPTS
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND opencga-enterprise build FAILED!!!!!"
         print_log_summary
@@ -326,8 +420,8 @@ function build_opencga_enterprise() {
       local pwd=$(pwd)
       echo "${pwd} opencga-enterprise" >> "$OPENCGA_ENTERPRISE_HOME_DIR/reports/collected_reports.txt"
     # The opencga.war.name is include in the MVN_OPTS, so we do not need to pass it
-      mvn clean install -B surefire-report:report -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
-      -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" ${FAIL_NEVER} --no-transfer-progress $MVN_OPTS
+      mvn_step "opencga-enterprise-test" clean install -B surefire-report:report -Dopencga.build.dir="${OPENCGA_HOME_DIR}/build/" \
+          -Dopencga-hadoop-shaded.id="$STORAGE_HADOOP_DEPS" ${FAIL_NEVER} $MVN_OPTS
       if [[ "$?" -ne 0 ]] ; then
         log_summary "[ERROR] $COMMAND opencga-enterprise test FAILED!!!!!"
         print_log_summary
@@ -550,6 +644,7 @@ function log_initial_state() {
     log_param_summary "SAVE_REPORTS,$(yes_no "$SAVE_REPORTS")"
     log_param_summary "FAIL_NEVER,$(yes_no "$FAIL_NEVER")"
     log_param_summary "PREPARE_BRANCHES,$(yes_no "$PREPARE_BRANCHES")"
+    log_param_summary "PREPARE_BRANCHES_HADOOP,$(yes_no "${PREPARE_BRANCHES_HADOOP}")"
     log_param_summary "DEBUG,$(yes_no "$DEBUG")"
     log_param_summary "DOCKER,$(yes_no "$DOCKER")"
 }
@@ -680,11 +775,14 @@ function print_log() {
 # Initialize the global variable LOG_SUMMARY
 LOG_SUMMARY=""
 OPENCGA_HOME_DIR="$PWD/opencga-home/"
+SKIP_OPENCGA_BUILD="false"
+STORAGE_HADOOP_DEPS="hdp3.1"
 STORAGE_HADOOP_DEPS="hdi5.1"
 TEST_TAG="runShortTests"
 FAIL_NEVER=""
 DOCKER_TAG=""
 PREPARE_BRANCHES=""
+PREPARE_BRANCHES_HADOOP=""
 DEBUG=""
 SKIP_TESTS=false
 TESTS_DIR="$PWD/reports/test"
@@ -716,6 +814,10 @@ while [[ $# -gt 0 ]]; do
   -o | --opencga-home)
     OPENCGA_HOME_DIR=$(realpath "$value")
     shift # past argument
+    shift # past value
+    ;;
+  --skip-opencga-build)
+    SKIP_OPENCGA_BUILD=true
     shift # past value
     ;;
   -c | --cellbase-db)
@@ -780,6 +882,11 @@ while [[ $# -gt 0 ]]; do
     ;;
   -b | --prepare-branches)
     PREPARE_BRANCHES="true"
+    shift # past argument
+    ;;
+  --prepare-hadoop)
+    PREPARE_BRANCHES="true"
+    PREPARE_BRANCHES_HADOOP="true"
     shift # past argument
     ;;
   -f | --test-fail-never)
