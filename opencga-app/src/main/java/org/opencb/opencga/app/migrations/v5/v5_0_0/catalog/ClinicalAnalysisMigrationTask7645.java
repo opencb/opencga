@@ -180,7 +180,7 @@ public class ClinicalAnalysisMigrationTask7645 extends MigrationTool {
 
 
         // Migrate Interpretation configuration
-        Bson interpretationProjection = Projections.include("_id", "primaryFindings", "secondaryFindings");
+        Bson interpretationProjection = Projections.include("_id", "primaryFindings", "secondaryFindings", "stats");
         // Avoid batches because interpretations may be very big
         setBatchSize(1);
         migrateCollection(Arrays.asList(OrganizationMongoDBAdaptorFactory.INTERPRETATION_COLLECTION,
@@ -197,11 +197,32 @@ public class ClinicalAnalysisMigrationTask7645 extends MigrationTool {
                     migrateFindings(primaryFindings, updateDocument, "primaryFindings");
                     migrateFindings(secondaryFindings, updateDocument, "secondaryFindings");
 
+                    Document stats = document.get("stats", Document.class);
+                    migrateStats(stats, updateDocument, "primaryFindings");
+                    migrateStats(stats, updateDocument, "secondaryFindings");
+
                     // Add migration tag to document
                     updateDocument.getAddToSet().put("_migrations", "task-7645-v1");
 
                     bulk.add(new UpdateOneModel<>(Filters.eq("_id", document.get("_id")), updateDocument.toFinalUpdateDocument()));
                 });
+    }
+
+    private void migrateStats(Document stats, MongoDBAdaptor.UpdateDocument updateDocument, String key) {
+        if (stats == null) {
+            return;
+        }
+        Document keyStats = stats.get(key, Document.class);
+        if (keyStats == null) {
+            return;
+        }
+        Document statusCount = keyStats.get("statusCount", Document.class);
+        if (statusCount != null) {
+            statusCount.put("CANDIDATE", 0);
+            statusCount.put("UNDER_CONSIDERATION", statusCount.get("REVIEW_REQUESTED"));
+            statusCount.remove("REVIEW_REQUESTED");
+            updateDocument.getSet().put("stats." + key + ".statusCount", statusCount);
+        }
     }
 
     private void createMissingDefaultReportTemplateFile(String studyFqn) throws CatalogException {
