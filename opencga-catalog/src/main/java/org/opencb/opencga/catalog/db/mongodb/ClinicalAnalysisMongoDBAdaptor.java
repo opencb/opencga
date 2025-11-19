@@ -518,7 +518,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
             reportParameters.put(ReportQueryParams.DATE.key(), TimeUtils.getTime());
             String[] stringParams = {ReportQueryParams.OVERVIEW.key(), ReportQueryParams.RECOMMENDATION.key(),
                     ReportQueryParams.EXPERIMENTAL_PROCEDURE.key(), ReportQueryParams.METHODOLOGY.key(),
-                    ReportQueryParams.LIMITATIONS.key(), ReportQueryParams.DATE.key(),};
+                    ReportQueryParams.LIMITATIONS.key(), ReportQueryParams.DATE.key(), };
             filterStringParams(reportParameters, document.getSet(), stringParams, REPORT.key() + ".");
 
             String[] objectParams = {ReportQueryParams.DISCUSSION.key(), ReportQueryParams.CONCLUSION.key(),
