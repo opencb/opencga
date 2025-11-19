@@ -42,8 +42,3 @@ jobs:
       - name: Deploy in Docker Hub
         if: steps.check.outputs.exists == 'false'
         run: python3 ./opencga-app/app/cloud/docker/docker-build.py push --images ext-tools --tag ${{ steps.check.outputs.version }} --org opencb
-
-
-
-
-

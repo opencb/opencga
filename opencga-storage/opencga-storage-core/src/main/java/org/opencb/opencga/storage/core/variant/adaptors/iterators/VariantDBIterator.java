@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.core.variant.adaptors.iterators;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.utils.iterators.CloseableIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
@@ -52,11 +53,11 @@ public abstract class VariantDBIterator extends CloseableIterator<Variant> {
         if (c != 0) {
             return c;
         }
-        c = v1.getStart().compareTo(v2.getStart());
+        c = Integer.compare(v1.getStart(), v2.getStart());
         if (c != 0) {
             return c;
         }
-        c = v1.getEnd().compareTo(v2.getEnd());
+        c = Integer.compare(v1.getEnd(), v2.getEnd());
         if (c != 0) {
             return c;
         }
@@ -77,6 +78,7 @@ public abstract class VariantDBIterator extends CloseableIterator<Variant> {
     public static final Comparator<Variant> VARIANT_COMPARATOR = VARIANT_COMPARATOR_FAST;
     protected long timeFetching = 0;
     protected long timeConverting = 0;
+    protected List<Event> events;
     private final Logger logger = LoggerFactory.getLogger(VariantDBIterator.class);
 
     @Override
@@ -117,6 +119,15 @@ public abstract class VariantDBIterator extends CloseableIterator<Variant> {
      * @return Number of returned variants
      */
     public abstract int getCount();
+
+    public List<Event> getEvents() {
+        return events;
+    }
+
+    public VariantDBIterator setEvents(List<Event> events) {
+        this.events = events;
+        return this;
+    }
 
     @Override
     public final void forEachRemaining(Consumer<? super Variant> action) {

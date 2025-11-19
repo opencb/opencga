@@ -41,7 +41,13 @@ public abstract class VariantQueryExecutor {
 
     public final VariantDBIterator iterator(ParsedVariantQuery variantQuery) {
         try {
-            return (VariantDBIterator) getOrIterator(variantQuery, true);
+            VariantDBIterator iterator = (VariantDBIterator) getOrIterator(variantQuery, true);
+            if (iterator.getEvents() == null) {
+                iterator.setEvents(variantQuery.getEvents());
+            } else {
+                iterator.getEvents().addAll(variantQuery.getEvents());
+            }
+            return iterator;
         } catch (StorageEngineException e) {
             throw VariantQueryException.internalException(e);
         }

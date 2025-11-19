@@ -176,14 +176,10 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
                 if (proteinVariantAnnotation.getSubstitutionScores() != null) {
                     for (Score score : proteinVariantAnnotation.getSubstitutionScores()) {
                         if (score.getSource().equalsIgnoreCase("sift")) {
-                            if (score.getScore() != null) {
-                                sift.add(score.getScore().floatValue());
-                            }
+                            sift.add((float) score.getScore());
                             addNotNull(siftDesc, score.getDescription());
                         } else if (score.getSource().equalsIgnoreCase("polyphen")) {
-                            if (score.getScore() != null) {
-                                polyphen.add(score.getScore().floatValue());
-                            }
+                            polyphen.add((float) score.getScore());
                             addNotNull(polyphenDesc, score.getDescription());
                         }
                     }
