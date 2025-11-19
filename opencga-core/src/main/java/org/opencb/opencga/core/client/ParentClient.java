@@ -143,8 +143,7 @@
 
                  HostnameVerifier verifier = new HostnameVerifier() {
                      private final String hostname = URI
-                             .create(clientConfiguration.getRest().getHosts()
-                                     .get(clientConfiguration.getRest().getDefaultHostIndex()).getUrl())
+                             .create(clientConfiguration.getCurrentHost().getUrl())
                              .getHost();
 
                      @Override
@@ -154,7 +153,7 @@
                      }
                  };
                  clientBuilder.sslContext(sc).hostnameVerifier(verifier);
-             } catch (NoSuchAlgorithmException | KeyManagementException e) {
+             } catch (NoSuchAlgorithmException | KeyManagementException | ClientException e) {
                  throw new RuntimeException(e);
              }
          }

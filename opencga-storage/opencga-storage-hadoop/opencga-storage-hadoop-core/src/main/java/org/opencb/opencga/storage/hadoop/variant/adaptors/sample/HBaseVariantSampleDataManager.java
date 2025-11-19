@@ -37,7 +37,6 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.SAMPLE_DATA_SUFIX;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.buildStudyColumnsPrefix;
 
 public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
@@ -93,7 +92,7 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
                         new BinaryPrefixComparator(Bytes.toBytes(buildStudyColumnsPrefix(studyId)))));
                 // Filter columns by sample sufix
                 filters.add(new QualifierFilter(CompareFilter.CompareOp.EQUAL,
-                        new RegexStringComparator(buildStudyColumnsPrefix(studyId) + "[0-9_]*" + SAMPLE_DATA_SUFIX)));
+                        new RegexStringComparator(VariantPhoenixSchema.buildSampleDataColumnRegex(studyId))));
 
                 LinkedList<Filter> genotypeFilters = new LinkedList<>();
                 for (String genotype : genotypes) {

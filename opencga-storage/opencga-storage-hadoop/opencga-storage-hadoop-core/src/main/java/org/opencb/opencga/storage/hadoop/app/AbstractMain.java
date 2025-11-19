@@ -233,6 +233,16 @@ public abstract class AbstractMain {
             };
         }
 
+        protected final NestedCommandExecutor addSubCommand(String subCommand, String description, AbstractMain main) {
+            return addSubCommand(subCommand, description, (args) -> {
+                main.run(new String[]{});
+            });
+        }
+
+        protected final NestedCommandExecutor addSubCommand(List<String> subCommands, String description, AbstractMain main) {
+            return addSubCommand(subCommands, description, main::run);
+        }
+
         protected final NestedCommandExecutor addSubCommand(String subCommand, String description, CommandExecutor executor) {
             return addSubCommand(Collections.singletonList(subCommand), description, executor);
         }

@@ -319,6 +319,9 @@ public class JobManager extends ResourceManager<Job> {
         // Auto generate id
         if (StringUtils.isEmpty(job.getId())) {
             job.setId(job.getTool().getId() + "." + TimeUtils.getTime() + "." + RandomStringUtils.randomAlphanumeric(6));
+        } else {
+            // Check if the id is valid
+            ParamUtils.checkIdentifier(job.getId(), "job id");
         }
         job.setPriority(ParamUtils.defaultObject(job.getPriority(), Enums.Priority.MEDIUM));
         job.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.JOB));
