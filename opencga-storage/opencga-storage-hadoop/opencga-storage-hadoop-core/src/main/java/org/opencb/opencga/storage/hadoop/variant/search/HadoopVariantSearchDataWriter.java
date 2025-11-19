@@ -1,24 +1,21 @@
 package org.opencb.opencga.storage.hadoop.variant.search;
 
-import org.apache.hadoop.hbase.client.BufferedMutatorParams;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.hbase.client.Mutation;
-import org.apache.hadoop.hbase.client.Put;
-import org.apache.phoenix.schema.types.PIntegerArray;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.common.SolrInputDocument;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
-import org.opencb.opencga.storage.core.variant.search.solr.SolrInputDocumentDataWriter;
+import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
+import org.opencb.opencga.storage.core.variant.search.VariantSearchUpdateDocument;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSolrInputDocumentDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseDataWriter;
-import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
-import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsDBCleaner;
+import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsFileCleaner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -26,64 +23,83 @@ import java.util.stream.Collectors;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HadoopVariantSearchDataWriter extends SolrInputDocumentDataWriter {
+public class HadoopVariantSearchDataWriter extends VariantSolrInputDocumentDataWriter {
 
     private final HBaseDataWriter<Mutation> writer;
-    private final PendingVariantsDBCleaner cleaner;
-    private final byte[] family = GenomeHelper.COLUMN_FAMILY_BYTES;
-    protected final Map<String, Integer> studiesMap;
+    private final PendingVariantsFileCleaner cleaner;
+    private final List<Variant> variantsToClean = new ArrayList<>();
+    private final List<Mutation> rowsToUpdate = new ArrayList<>();
+    private final long updateTs;
 
-    public HadoopVariantSearchDataWriter(String collection, SolrClient solrClient, int insertBatchSize,
-                                         VariantHadoopDBAdaptor dbAdaptor) {
-        super(collection, solrClient, insertBatchSize);
-        this.writer = new HBaseDataWriter<Mutation>(dbAdaptor.getHBaseManager(), dbAdaptor.getVariantTable()) {
-            @Override
-            protected BufferedMutatorParams buildBufferedMutatorParams() {
-                // Set write buffer size to 10GB to ensure that will only be triggered manually on flush
-                return super.buildBufferedMutatorParams().writeBufferSize(10L * 1024L * 1024L * 1024L);
-            }
-        };
-        this.cleaner = new SecondaryIndexPendingVariantsManager(dbAdaptor).cleaner();
-        this.studiesMap = new HashMap<>(dbAdaptor.getMetadataManager().getStudies());
-        for (String study : new ArrayList<>(studiesMap.keySet())) {
-            studiesMap.put(VariantSearchToVariantConverter.studyIdToSearchModel(study), studiesMap.get(study));
-        }
+    private long hbasePutTimeMs = 0;
+    private long cleanTimeMs = 0;
+
+    private final Logger logger = LoggerFactory.getLogger(HadoopVariantSearchDataWriter.class);
+
+
+    public HadoopVariantSearchDataWriter(VariantSearchManager variantSearchManager, SearchIndexMetadata indexMetadata,
+                                         VariantHadoopDBAdaptor dbAdaptor, PendingVariantsFileCleaner cleaner, long updateStartTimestamp) {
+        super(variantSearchManager, indexMetadata);
+        this.writer = new HBaseDataWriter<>(dbAdaptor.getHBaseManager(), dbAdaptor.getVariantTable());
+        this.cleaner = cleaner;
+        this.updateTs = updateStartTimestamp;
+    }
+
+    /**
+     * If an error occurs while writing to Solr, we reset the pending mutations and variants.
+     */
+    private void onError() {
+        // Reset the lists to avoid adding more mutations
+        logger.error("Error while writing to Solr. Resetting pending mutations and variants to clean.");
+        cleaner.abort();
+        variantsToClean.clear();
+        rowsToUpdate.clear();
     }
 
     @Override
-    protected void add(List<SolrInputDocument> batch) throws Exception {
-        super.add(batch);
+    public boolean write(List<VariantSearchUpdateDocument> batch) {
+        try {
+            super.write(batch);
+        } catch (Exception e) {
+            onError();
+            throw e;
+        }
 
         if (!batch.isEmpty()) {
             List<Mutation> mutations = new ArrayList<>(batch.size());
-            List<byte[]> variantRows = new ArrayList<>(batch.size());
-            Map<Collection<Object>, byte[]> studiesColumnMap = new HashMap<>();
+            List<Variant> variants = new ArrayList<>(batch.size());
 
-            for (SolrInputDocument document : batch) {
-                // For each variant, clear from pending and update INDEX_STUDIES
-
-                Collection<Object> studies = document.getFieldValues("studies");
-                byte[] bytes = studiesColumnMap.computeIfAbsent(studies, list -> {
-                    Set<Integer> studyIds = list.stream().map(o -> studiesMap.get(o.toString())).collect(Collectors.toSet());
-                    return PhoenixHelper.toBytes(studyIds, PIntegerArray.INSTANCE);
-                });
-
-                byte[] row = VariantPhoenixKeyFactory.generateVariantRowKey(new Variant(document.getFieldValue("attr_id").toString()));
-                variantRows.add(row);
-                mutations.add(new Put(row)
-                        .addColumn(family, VariantPhoenixSchema.VariantColumn.INDEX_STUDIES.bytes(), bytes));
+            for (VariantSearchUpdateDocument updateDocument : batch) {
+                // Save a simplified version of the variant to clean later
+                variants.add(new Variant(updateDocument.getVariant().toString()));
+                mutations.add(HadoopVariantSearchIndexUtils.updateSyncStatus(updateDocument, updateTs));
             }
-
-            writer.write(mutations);
-            cleaner.write(variantRows);
+            variantsToClean.addAll(variants);
+            rowsToUpdate.addAll(mutations);
         }
+        return true;
     }
 
     @Override
-    protected void commit() throws Exception {
-        super.commit();
+    protected void flush() {
+        try {
+            super.flush();
+        } catch (Exception e) {
+            onError();
+            throw e;
+        }
+
+        StopWatch stopWatch = StopWatch.createStarted();
+        writer.write(rowsToUpdate);
         writer.flush();
-        cleaner.flush();
+        hbasePutTimeMs += stopWatch.getTime();
+        rowsToUpdate.clear();
+
+        stopWatch.reset();
+        stopWatch.start();
+        cleaner.write(variantsToClean);
+        variantsToClean.clear();
+        cleanTimeMs += stopWatch.getTime();
     }
 
     @Override
@@ -104,17 +120,40 @@ public class HadoopVariantSearchDataWriter extends SolrInputDocumentDataWriter {
 
     @Override
     public boolean post() {
-        super.post();
+        try {
+            super.post();
+            flush();
+        } catch (Exception e) {
+            onError();
+            throw e;
+        }
+        StopWatch stopWatch = StopWatch.createStarted();
         writer.post();
+        hbasePutTimeMs += stopWatch.getTime();
+        stopWatch.reset();
+        stopWatch.start();
         cleaner.post();
+        cleanTimeMs += stopWatch.getTime();
         return true;
     }
 
     @Override
     public boolean close() {
-        super.close();
+        try {
+            super.close();
+        } catch (Exception e) {
+            onError();
+            throw e;
+        }
         writer.close();
         cleaner.close();
         return true;
+    }
+
+    @Override
+    public void printStats() {
+        super.printStats();
+        logger.info(" - HBase flags update time: {}", TimeUtils.durationToString(hbasePutTimeMs));
+        logger.info(" - Pending Variants Files Clean: {}", TimeUtils.durationToString(cleanTimeMs));
     }
 }

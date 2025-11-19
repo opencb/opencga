@@ -17,6 +17,7 @@
 package org.opencb.opencga.core.models.operations.variant;
 
 import org.opencb.biodata.models.variant.metadata.Aggregation;
+import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
@@ -24,12 +25,18 @@ import java.util.List;
 public class VariantStatsIndexParams extends ToolParams {
     public static final String DESCRIPTION = "Variant stats index params";
 
+    @DataField(description = "List of cohorts to calculate the stats.")
     private List<String> cohort;
+    @DataField(deprecated = true, description = "Deprecated. Not used anymore.")
     private String region;
+    @DataField(description = "Overwrite stats if already present.")
     private boolean overwriteStats;
+    @DataField(description = "Resume a previously failed stats calculation")
     private boolean resume;
 
+    @DataField(description = "Select the type of aggregated VCF file: NONE, BASIC, EVS or EXAC")
     private Aggregation aggregated;
+    @DataField(description = "File containing population names mapping in an aggregated VCF file")
     private String aggregationMappingFile;
 
     public VariantStatsIndexParams() {

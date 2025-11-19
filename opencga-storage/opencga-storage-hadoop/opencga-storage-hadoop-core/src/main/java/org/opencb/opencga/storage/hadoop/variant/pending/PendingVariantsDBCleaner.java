@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Clear a PendingVariants table.
@@ -30,12 +31,12 @@ import java.util.*;
 public class PendingVariantsDBCleaner extends AbstractHBaseDataWriter<byte[], Delete> {
 
     public static final int MAX_PENDING_REGIONS_TO_COMPACT = 2;
-    private final PendingVariantsDescriptor descriptor;
+    private final PendingVariantsTableBasedDescriptor descriptor;
     private final Deque<HRegionLocation> regions = new LinkedList<>();
     private RegionLocator regionLocator;
     private final Logger logger = LoggerFactory.getLogger(PendingVariantsDBCleaner.class);
 
-    public PendingVariantsDBCleaner(HBaseManager hBaseManager, String tableName, PendingVariantsDescriptor descriptor) {
+    public PendingVariantsDBCleaner(HBaseManager hBaseManager, String tableName, PendingVariantsTableBasedDescriptor descriptor) {
         super(hBaseManager, tableName);
         this.descriptor = descriptor;
         descriptor.checkValidPendingTableName(tableName);
@@ -55,7 +56,9 @@ public class PendingVariantsDBCleaner extends AbstractHBaseDataWriter<byte[], De
     @Override
     protected BufferedMutatorParams buildBufferedMutatorParams() {
         // Set write buffer size to 10GB to ensure that will only be triggered manually on flush
-        return super.buildBufferedMutatorParams().writeBufferSize(10L * 1024L * 1024L * 1024L);
+        return super.buildBufferedMutatorParams()
+                .writeBufferSize(10L * 1024L * 1024L * 1024L)
+                .setWriteBufferPeriodicFlushTimeoutMs(TimeUnit.DAYS.toMillis(365)); // 1 year
     }
 
     @Override

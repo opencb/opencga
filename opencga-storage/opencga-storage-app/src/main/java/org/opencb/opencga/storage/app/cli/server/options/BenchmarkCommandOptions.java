@@ -32,7 +32,7 @@ import java.util.Map;
 public class BenchmarkCommandOptions {
 
     public final VariantBenchmarkCommandOptions variantBenchmarkCommandOptions;
-    public final AlignmentBenchmarkCommandOptions alignmentBenchmarkCommandOptions;
+//    public final AlignmentBenchmarkCommandOptions alignmentBenchmarkCommandOptions;
     public JCommander jCommander;
     public GeneralCliOptions.CommonOptions commonCommandOptions;
 
@@ -41,7 +41,7 @@ public class BenchmarkCommandOptions {
         this.commonCommandOptions = commonOptions;
 
         variantBenchmarkCommandOptions = new VariantBenchmarkCommandOptions();
-        alignmentBenchmarkCommandOptions = new AlignmentBenchmarkCommandOptions();
+//        alignmentBenchmarkCommandOptions = new AlignmentBenchmarkCommandOptions();
     }
 
     /**
@@ -64,14 +64,14 @@ public class BenchmarkCommandOptions {
         @Parameter(names = {"--host"}, description = "Remote host.", arity = 1)
         public String host;
 
-        @Parameter(names = {"-d", "--database"}, description = "DataBase name to load the data", required = false, arity = 1)
+        @Parameter(names = {"--database", "--project"}, description = "DataBase or Project name to load the data", required = true, arity = 1)
         public String dbName;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir;
 
         @Parameter(names = {"--limit"}, description = "Limit the number of returned elements.", required = false, arity = 1)
-        public int limit;
+        public Integer limit;
 
         @Parameter(names = {"--count"}, description = "Count results. Do not return elements.", required = false, arity = 0)
         public boolean count;

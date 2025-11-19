@@ -28,7 +28,6 @@ import java.io.PrintStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -129,7 +128,7 @@ public class FillGapsFromFileTest  {
                     String column = Bytes.toString(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
                     sb.append(column)
                             .append(":");
-                    if (column.endsWith(VariantPhoenixSchema.SAMPLE_DATA_SUFIX) || column.endsWith(VariantPhoenixSchema.FILE_SUFIX)) {
+                    if (VariantPhoenixSchema.isSampleDataColumn(column) || VariantPhoenixSchema.isFileColumn(column)) {
                         sb.append(PVarcharArray.INSTANCE.toObject(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength()));
                     } else {
                         sb.append(Bytes.toString(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength()));
