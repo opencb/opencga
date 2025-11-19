@@ -18,4 +18,3 @@ jobs:
       branch_a: ${{ github.event.inputs.branch_a }}
       branch_b: ${{ github.event.inputs.branch_b }}
     secrets: inherit
-
