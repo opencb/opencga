@@ -35,7 +35,6 @@ public class AdminCommandOptions {
 
         public GroupByAuditCommandOptions groupByAuditCommandOptions;
         public InstallCatalogCommandOptions installCatalogCommandOptions;
-        public JwtCatalogCommandOptions jwtCatalogCommandOptions;
         public ListOrganizationsCommandOptions listOrganizationsCommandOptions;
         public FetchResourceCommandOptions fetchResourceCommandOptions;
         public CreateUsersCommandOptions createUsersCommandOptions;
@@ -52,7 +51,6 @@ public class AdminCommandOptions {
         this.commonCommandOptions = commonCommandOptions;
         this.groupByAuditCommandOptions = new GroupByAuditCommandOptions();
         this.installCatalogCommandOptions = new InstallCatalogCommandOptions();
-        this.jwtCatalogCommandOptions = new JwtCatalogCommandOptions();
         this.listOrganizationsCommandOptions = new ListOrganizationsCommandOptions();
         this.fetchResourceCommandOptions = new FetchResourceCommandOptions();
         this.createUsersCommandOptions = new CreateUsersCommandOptions();
@@ -116,26 +114,6 @@ public class AdminCommandOptions {
     
         @Parameter(names = {"--email"}, description = "The body web service email parameter", required = false, arity = 1)
         public String email;
-    
-    }
-
-    @Parameters(commandNames = {"catalog-jwt"}, commandDescription ="Change JWT secret key")
-    public class JwtCatalogCommandOptions {
-    
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
-    
-        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
-        public String jsonFile;
-    
-        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
-        public Boolean jsonDataModel = false;
-    
-        @Parameter(names = {"--organization"}, description = "Organization id", required = false, arity = 1)
-        public String organization; 
-    
-        @Parameter(names = {"--secret-key"}, description = "The body web service secretKey parameter", required = false, arity = 1)
-        public String secretKey;
     
     }
 

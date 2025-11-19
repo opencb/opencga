@@ -59,16 +59,6 @@ export default class Admin extends OpenCGAParentClass {
         return this._post("admin", null, "catalog", null, "install", data);
     }
 
-    /** Change JWT secret key
-    * @param {Object} data - JSON containing the parameters.
-    * @param {Object} [params] - The Object containing the following optional parameters:
-    * @param {String} [params.organization] - Organization id.
-    * @returns {Promise} Promise object in the form of RestResponse instance.
-    */
-    jwtCatalog(data, params) {
-        return this._post("admin", null, "catalog", null, "jwt", data, params);
-    }
-
     /** List current Organizations
     * 
     * @returns {Promise} Promise object in the form of RestResponse instance.
