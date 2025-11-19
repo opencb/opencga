@@ -28,6 +28,7 @@
 
     <artifactId>opencga-client</artifactId>
     <packaging>jar</packaging>
+    <name>OpenCGA Client</name>
 
     <dependencies>
         <dependency>
@@ -103,6 +104,18 @@
             <artifactId>opencga-server</artifactId>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-stub</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+        </dependency>
 <!--        &lt;!&ndash; TODO Review &ndash;&gt;-->
 <!--        <dependency>-->
 <!--            <groupId>io.jsonwebtoken</groupId>-->
@@ -123,10 +136,6 @@
 
     <build>
         <resources>
-            <resource>
-                <directory>src/main/R</directory>
-                <filtering>true</filtering>
-            </resource>
             <resource>
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>

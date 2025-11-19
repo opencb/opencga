@@ -719,6 +719,8 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
                         // The order (ascending or descending) should be in priorityArray[1]
                         fixedSortList.add(PRIVATE_PRIORITY + ":" + priorityArray[1]);
                     }
+                } else if (key.equals(QueryParams.CREATION_DATE.key())) {
+                    fixedSortList.add(PRIVATE_CREATION_DATE);
                 } else {
                     fixedSortList.add(key);
                 }
@@ -806,6 +808,15 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
     void removeFileReferences(ClientSession clientSession, long studyUid, long fileUid, Document file) {
         UpdateDocument document = new UpdateDocument();
 
+        Document fileCopy = new Document()
+                .append(FileDBAdaptor.QueryParams.ID.key(), file.get(FileDBAdaptor.QueryParams.ID.key()))
+                .append(FileDBAdaptor.QueryParams.UUID.key(), file.get(FileDBAdaptor.QueryParams.UUID.key()))
+                .append(FileDBAdaptor.QueryParams.PATH.key(), file.get(FileDBAdaptor.QueryParams.PATH.key()))
+                .append(FileDBAdaptor.QueryParams.URI.key(), file.get(FileDBAdaptor.QueryParams.URI.key()))
+                .append(FileDBAdaptor.QueryParams.TYPE.key(), file.get(FileDBAdaptor.QueryParams.TYPE.key()))
+                .append(FileDBAdaptor.QueryParams.FORMAT.key(), file.get(FileDBAdaptor.QueryParams.FORMAT.key()))
+                .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), file.get(FileDBAdaptor.QueryParams.BIOFORMAT.key()));
+
         String prefix = QueryParams.ATTRIBUTES.key() + "." + Constants.PRIVATE_OPENCGA_ATTRIBUTES + ".";
 
         // INPUT
@@ -814,7 +825,7 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
                 .append(QueryParams.INPUT_UID.key(), fileUid);
         document.getPullAll().put(QueryParams.INPUT.key(),
                 Collections.singletonList(new Document(FileDBAdaptor.QueryParams.UID.key(), fileUid)));
-        document.getPush().put(prefix + Constants.JOB_DELETED_INPUT_FILES, file);
+        document.getPush().put(prefix + Constants.JOB_DELETED_INPUT_FILES, fileCopy);
         Document updateDocument = document.toFinalUpdateDocument();
 
         logger.debug("Removing file from job '{}' field. Query: {}, Update: {}", QueryParams.INPUT.key(), query.toBsonDocument(),
@@ -829,7 +840,7 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
         document = new UpdateDocument();
         document.getPullAll().put(QueryParams.OUTPUT.key(),
                 Collections.singletonList(new Document(FileDBAdaptor.QueryParams.UID.key(), fileUid)));
-        document.getPush().put(prefix + Constants.JOB_DELETED_OUTPUT_FILES, file);
+        document.getPush().put(prefix + Constants.JOB_DELETED_OUTPUT_FILES, fileCopy);
         updateDocument = document.toFinalUpdateDocument();
 
         logger.debug("Removing file from job '{}' field. Query: {}, Update: {}", QueryParams.OUTPUT.key(), query.toBsonDocument(),
@@ -843,7 +854,7 @@ public class JobMongoDBAdaptor extends CatalogMongoDBAdaptor implements JobDBAda
                 .append(QueryParams.OUT_DIR_UID.key(), fileUid);
         document = new UpdateDocument();
         document.getSet().put(QueryParams.OUT_DIR.key(), new Document(FileDBAdaptor.QueryParams.UID.key(), -1));
-        document.getSet().put(prefix + Constants.JOB_DELETED_OUTPUT_DIRECTORY, file);
+        document.getPush().put(prefix + Constants.JOB_DELETED_OUTPUT_DIRECTORY, fileCopy);
         updateDocument = document.toFinalUpdateDocument();
 
         logger.debug("Removing file from job '{}' field. Query: {}, Update: {}", QueryParams.OUT_DIR.key(), query.toBsonDocument(),

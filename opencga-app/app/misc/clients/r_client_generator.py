@@ -25,13 +25,14 @@ class RClientGenerator(RestClientGenerator):
             'Families': 'Family',
             'Cohorts': 'Cohort',
             'Disease Panels': 'Panel',
+            'Notes': 'Note',
             'Analysis - Alignment': 'Alignment',
             'Analysis - Variant': 'Variant',
             'Analysis - Clinical': 'Clinical',
             'Operations - Variant Storage': 'Operation',
             'AI': 'AI',
             'Meta': 'Meta',
-            'CVDB': 'CVDB',
+            'Analysis - CVDB': 'CVDB',
             'GA4GH': 'GA4GH',
             'Admin': 'Admin'
         }

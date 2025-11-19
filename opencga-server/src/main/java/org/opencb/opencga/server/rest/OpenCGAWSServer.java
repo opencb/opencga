@@ -23,8 +23,6 @@ import com.google.common.base.Splitter;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.core.config.Configurator;
 import org.glassfish.jersey.server.ParamException;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
@@ -37,7 +35,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.migration.MigrationSummary;
-import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.GitRepositoryState;
@@ -57,6 +54,7 @@ import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.core.tools.annotations.ApiParam;
 import org.opencb.opencga.server.OpenCGAHealthCheckMonitor;
+import org.opencb.opencga.server.OpenCGAServerUtils;
 import org.opencb.opencga.server.WebServiceException;
 import org.opencb.opencga.server.rest.analysis.ClinicalWebService;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -65,14 +63,13 @@ import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.*;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
@@ -323,32 +320,7 @@ public class OpenCGAWSServer {
     }
 
     private static void initLogger(java.nio.file.Path configDirPath) {
-        String logDir = configuration.getLogDir();
-        boolean logFileEnabled;
-
-        if (StringUtils.isNotBlank(configuration.getLogLevel())) {
-            Level level = Level.toLevel(configuration.getLogLevel(), Level.INFO);
-            System.setProperty("opencga.log.level", level.name());
-        }
-
-        if (StringUtils.isBlank(logDir) || logDir.equalsIgnoreCase("null")) {
-            logFileEnabled = false;
-        } else {
-            logFileEnabled = true;
-            System.setProperty("opencga.log.file.name", "opencga-rest");
-            System.setProperty("opencga.log.dir", logDir);
-        }
-        System.setProperty("opencga.log.file.enabled", Boolean.toString(logFileEnabled));
-
-        URI log4jconfFile = configDirPath.resolve("log4j2.service.xml").toUri();
-        Configurator.reconfigure(log4jconfFile);
-
-        logger.info("|  * Log configuration file: '{}'", log4jconfFile.getPath());
-        if (logFileEnabled) {
-            logger.info("|  * Log dir: '{}'", logDir);
-        } else {
-            logger.info("|  * Do not write logs to file");
-        }
+        OpenCGAServerUtils.initLogger(logger, configuration, configDirPath);
     }
 
     static void shutdown() {
@@ -557,71 +529,15 @@ public class OpenCGAWSServer {
         queryOptions.put("metadata", multivaluedMap.get("metadata") == null || multivaluedMap.get("metadata").get(0).equals("true"));
 
         // Add all the others QueryParams from the URL
-        for (Map.Entry<String, List<String>> entry : multivaluedMap.entrySet()) {
-            String value = entry.getValue().get(0);
-            switch (entry.getKey()) {
-                case QueryOptions.INCLUDE:
-                case QueryOptions.EXCLUDE:
-                    queryOptions.put(entry.getKey(), new LinkedList<>(Splitter.on(",").splitToList(value)));
-                    break;
-                case QueryOptions.LIMIT:
-                    limit = Integer.parseInt(value);
-                    break;
-                case QueryOptions.TIMEOUT:
-                    queryOptions.put(entry.getKey(), Integer.parseInt(value));
-                    break;
-                case QueryOptions.SKIP:
-                    skip = Integer.parseInt(value);
-                    queryOptions.put(entry.getKey(), (skip >= 0) ? skip : -1);
-                    break;
-                case QueryOptions.SORT:
-                case QueryOptions.ORDER:
-                    queryOptions.put(entry.getKey(), value);
-                    break;
-                case QueryOptions.COUNT:
-                    count = Boolean.parseBoolean(value);
-                    queryOptions.put(entry.getKey(), count);
-                    break;
-                case Constants.SILENT:
-                    queryOptions.put(entry.getKey(), Boolean.parseBoolean(value));
-                    break;
-                case Constants.FORCE:
-                    queryOptions.put(entry.getKey(), Boolean.parseBoolean(value));
-                    break;
-                case ParamConstants.FLATTEN_ANNOTATIONS:
-                    queryOptions.put(ParamConstants.FLATTEN_ANNOTATIONS, Boolean.parseBoolean(value));
-                    break;
-                case ParamConstants.FAMILY_UPDATE_ROLES_PARAM:
-                    queryOptions.put(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, Boolean.parseBoolean(value));
-                    break;
-                case ParamConstants.FAMILY_UPDATE_PEDIGREEE_GRAPH_PARAM:
-                    queryOptions.put(ParamConstants.FAMILY_UPDATE_PEDIGREEE_GRAPH_PARAM, Boolean.parseBoolean(value));
-                    break;
-                case ParamConstants.OTHER_STUDIES_FLAG:
-                    queryOptions.put(ParamConstants.OTHER_STUDIES_FLAG, Boolean.parseBoolean(value));
-                    break;
-                case ParamConstants.SAMPLE_INCLUDE_INDIVIDUAL_PARAM: // SampleWS
-                    queryOptions.put(ParamConstants.SAMPLE_INCLUDE_INDIVIDUAL_PARAM, Boolean.parseBoolean(value));
-                    break;
-                case ParamConstants.INCLUDE_RESULT_PARAM:
-                    queryOptions.put(ParamConstants.INCLUDE_RESULT_PARAM, Boolean.parseBoolean(value));
-                    break;
-                case "lazy":
-                    lazy = Boolean.parseBoolean(value);
-                    queryOptions.put(entry.getKey(), lazy);
-                    break;
-                case QueryOptions.FACET:
-                    queryOptions.put(entry.getKey(), value);
-                    break;
-                default:
-                    // Query
-                    query.put(entry.getKey(), value);
-                    break;
-            }
-        }
+        OpenCGAServerUtils.parseParams(multivaluedMap, query, queryOptions);
+        limit = queryOptions.getInt(QueryOptions.LIMIT, limit);
+        skip = queryOptions.getLong(QueryOptions.SKIP, skip);
+        count = queryOptions.getBoolean(QueryOptions.COUNT, count);
+        lazy = queryOptions.getBoolean("lazy", lazy);
 
         if (!multivaluedMap.containsKey(QueryOptions.LIMIT)) {
             limit = DEFAULT_LIMIT;
+            queryOptions.put(QueryOptions.LIMIT, limit);
         } else if (limit > MAX_LIMIT) {
             throw new ParamException.QueryParamException(new Throwable("'limit' value cannot be higher than '" + MAX_LIMIT + "'."),
                     "limit", "0");
@@ -629,7 +545,6 @@ public class OpenCGAWSServer {
             throw new ParamException.QueryParamException(new Throwable("'limit' must be a positive value lower or equal to '"
                     + MAX_LIMIT + "'."), "limit", "0");
         }
-        queryOptions.put(QueryOptions.LIMIT, limit);
         query.remove("sid");
 
         // Remove deprecated fields

@@ -58,7 +58,7 @@ class RestClientGenerator(ABC):
             'Operations - Variant Storage': 'VariantOperation',
             'AI': 'AI',
             'Meta': 'Meta',
-            'CVDB': 'CVDB',
+            'Analysis - CVDB': 'CVDB',
             'GA4GH': 'GA4GH',
             'Admin': 'Admin'
         }

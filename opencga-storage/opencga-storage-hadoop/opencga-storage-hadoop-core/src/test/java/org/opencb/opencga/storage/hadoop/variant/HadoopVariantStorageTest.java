@@ -87,6 +87,8 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageTest;
 import org.opencb.opencga.storage.hadoop.HBaseCompat;
+import org.opencb.opencga.storage.hadoop.HBaseCompatApi;
+import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDriver;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchemaManager;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
@@ -97,11 +99,9 @@ import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGene
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintStream;
+import java.io.*;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -261,6 +261,8 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
 //                conf.setBoolean(QueryServices.IS_NAMESPACE_MAPPING_ENABLED, true);
                 conf.setBoolean("phoenix.schema.isNamespaceMappingEnabled", true);
+                conf.setBoolean("phoenix.table.ttl.enabled", false);
+                conf.setInt("phoenix.client.maxMetaDataCacheSize", 268435456);
 
                 // Zookeeper always with the same clientPort.
 //                conf.setInt("test.hbase.zookeeper.property.clientPort", 55419);
@@ -289,6 +291,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
 //                checkHBaseMiniCluster();
             }
+            Assert.assertTrue(HBaseCompatApi.getInstance().isTestingAvailable());
         }
 
         @Override
@@ -484,6 +487,10 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         }
     }
 
+    default void clearDB() throws Exception {
+        clearDB(VariantStorageBaseTest.DB_NAME);
+    }
+
     @Override
     default void clearDB(String tableName) throws Exception {
         try (Connection con = ConnectionFactory.createConnection(configuration.get()); Admin admin = con.getAdmin()) {
@@ -523,7 +530,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
     class TestSshMrExecutor extends SshMRExecutor {
         private final Configuration configuration;
-
+        private final Logger logger = LoggerFactory.getLogger(TestSshMrExecutor.class);
         public TestSshMrExecutor() {
             this.configuration = new Configuration(TestMRExecutor.staticConfiguration);
         }
@@ -531,11 +538,34 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         @Override
         protected int runRemote(String executable, String[] args, List<String> env, ByteArrayOutputStream outputStream) {
             PrintStream out = System.out;
+            InputStream in = System.in;
+            Result result;
             try {
-                return new TestMRExecutor(conf).run(executable, args).getExitValue();
+                if (buildCommand(executable, args).length() > MAX_COMMAND_LINE_ARGS_LENGTH) {
+                    logger.info("Command line is too long. Passing args from stdin'");
+                    ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                    try {
+                        AbstractHBaseDriver.writeArgsToStream(args, new DataOutputStream(stream));
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                    System.setIn(new ByteArrayInputStream(stream.toByteArray()));
+                    result = new TestMRExecutor(conf).run(executable, new String[]{AbstractHBaseDriver.ARGS_FROM_STDIN});
+                } else {
+                    result = new TestMRExecutor(conf).run(executable, args);
+                }
             } finally {
                 System.setOut(out);
+                System.setIn(in);
             }
+            for (String key : result.getResult().keySet()) {
+                try {
+                    outputStream.write((key + "=" + result.getResult().getString(key) + "\n").getBytes(StandardCharsets.UTF_8));
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            return result.getExitValue();
         }
 
         @Override
@@ -593,12 +623,23 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 Class<?> clazz = Class.forName(className);
                 System.out.println("Executing " + clazz.getSimpleName() + ": " + executable + " " + Arrays.toString(args));
                 Method method = clazz.getMethod("privateMain", String[].class, Configuration.class);
-                Object o = method.invoke(clazz.newInstance(), args, conf);
+
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                PrintStream stderr = System.err;
+                Object o;
+                try {
+                    PrintStream newErr = new PrintStream(outputStream);
+                    System.setErr(newErr);
+                    o = method.invoke(clazz.newInstance(), args, conf);
+                    newErr.flush();
+                } finally {
+                    System.setErr(stderr);
+                }
                 System.out.println("Finish execution " + clazz.getSimpleName());
                 if (((Number) o).intValue() != 0) {
                     throw new RuntimeException("Exit code = " + o);
                 }
-                return new Result(((Number) o).intValue(), new ObjectMap());
+                return new Result(((Number) o).intValue(), readResult(outputStream.toString()));
 
             } catch (Exception e) {
 //                e.printStackTrace();

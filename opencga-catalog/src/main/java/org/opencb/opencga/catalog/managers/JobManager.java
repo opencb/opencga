@@ -444,7 +444,12 @@ public class JobManager extends ResourceManager<Job> {
             for (Map.Entry<String, Object> entry : job.getParams().entrySet()) {
                 // We assume that every variable ending in 'file' corresponds to input files that need to be accessible in catalog
                 if (entry.getKey().toLowerCase().endsWith(fileParamSuffix)) {
-                    for (String fileStr : StringUtils.split((String) entry.getValue(), ',')) {
+                    String[] files = StringUtils.split((String) entry.getValue(), ',');
+                    for (String fileStr : files) {
+                        // We skip the ALL and NONE files as they are not real files
+                        if (files.length == 1 && (fileStr.equals(ParamConstants.ALL) || fileStr.equals(ParamConstants.NONE))) {
+                            continue;
+                        }
                         try {
                             // Validate the user has access to the file
                             File file = catalogManager.getFileManager().get(study, fileStr,
