@@ -513,88 +513,96 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
 
         Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
 
-        if (parameters.containsKey(REPORT_UPDATE.key()))  {
+        if (parameters.containsKey(REPORT_UPDATE.key())) {
             ObjectMap reportParameters = parameters.getNestedMap(REPORT_UPDATE.key());
             reportParameters.put(ReportQueryParams.DATE.key(), TimeUtils.getTime());
             String[] stringParams = {ReportQueryParams.OVERVIEW.key(), ReportQueryParams.RECOMMENDATION.key(),
                     ReportQueryParams.EXPERIMENTAL_PROCEDURE.key(), ReportQueryParams.METHODOLOGY.key(),
-                    ReportQueryParams.LIMITATIONS.key(), ReportQueryParams.DATE.key(), };
+                    ReportQueryParams.LIMITATIONS.key(), ReportQueryParams.DATE.key(),};
             filterStringParams(reportParameters, document.getSet(), stringParams, REPORT.key() + ".");
 
             String[] objectParams = {ReportQueryParams.DISCUSSION.key(), ReportQueryParams.CONCLUSION.key(),
                     ReportQueryParams.ATTRIBUTES.key()};
             filterObjectParams(reportParameters, document.getSet(), objectParams, REPORT.key() + ".");
 
-            String[] commentParams = {ReportQueryParams.COMMENTS.key()};
-            ParamUtils.AddRemoveReplaceAction basicOperation = ParamUtils.AddRemoveReplaceAction
-                    .from(actionMap, ReportQueryParams.COMMENTS.key(), ParamUtils.AddRemoveReplaceAction.ADD);
-            switch (basicOperation) {
-                case REMOVE:
-                    fixCommentsForRemoval(reportParameters);
-                    filterObjectParams(reportParameters, document.getPull(), commentParams, REPORT.key() + ".");
-                    break;
-                case ADD:
-                    filterObjectParams(reportParameters, document.getAddToSet(), commentParams, REPORT.key() + ".");
-                    break;
-                case REPLACE:
-                    filterReplaceParams(reportParameters.getAsList(ReportQueryParams.COMMENTS.key(), ClinicalComment.class), document,
-                            ClinicalComment::getDate, QueryParams.REPORT.key() + "." + QueryParams.COMMENTS_DATE.key());
-                    break;
-                default:
-                    throw new IllegalStateException("Unknown operation " + basicOperation);
+            if (reportParameters.containsKey(ReportQueryParams.COMMENTS.key())) {
+                String[] commentParams = {ReportQueryParams.COMMENTS.key()};
+                ParamUtils.AddRemoveReplaceAction basicOperation = ParamUtils.AddRemoveReplaceAction
+                        .from(actionMap, ReportQueryParams.COMMENTS.key(), ParamUtils.AddRemoveReplaceAction.ADD);
+                switch (basicOperation) {
+                    case REMOVE:
+                        fixCommentsForRemoval(reportParameters);
+                        filterObjectParams(reportParameters, document.getPull(), commentParams, REPORT.key() + ".");
+                        break;
+                    case ADD:
+                        filterObjectParams(reportParameters, document.getAddToSet(), commentParams, REPORT.key() + ".");
+                        break;
+                    case REPLACE:
+                        filterReplaceParams(reportParameters.getAsList(ReportQueryParams.COMMENTS.key(), ClinicalComment.class), document,
+                                ClinicalComment::getDate, QueryParams.REPORT.key() + "." + QueryParams.COMMENTS_DATE.key());
+                        break;
+                    default:
+                        throw new IllegalStateException("Unknown operation " + basicOperation);
+                }
             }
 
-            String[] signatureParams = new String[]{ReportQueryParams.SIGNATURES.key()};
-            ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, ReportQueryParams.SIGNATURES.key(),
-                    ParamUtils.BasicUpdateAction.ADD);
-            switch (operation) {
-                case SET:
-                    filterObjectParams(reportParameters, document.getSet(), signatureParams, REPORT.key() + ".");
-                    break;
-                case REMOVE:
-                    fixSignaturesForRemoval(reportParameters);
-                    filterObjectParams(reportParameters, document.getPull(), signatureParams, REPORT.key() + ".");
-                    break;
-                case ADD:
-                    filterObjectParams(reportParameters, document.getAddToSet(), signatureParams, REPORT.key() + ".");
-                    break;
-                default:
-                    throw new IllegalStateException("Unknown operation " + basicOperation);
+            if (reportParameters.containsKey(ReportQueryParams.SIGNATURES.key())) {
+                String[] signatureParams = new String[]{ReportQueryParams.SIGNATURES.key()};
+                ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, ReportQueryParams.SIGNATURES.key(),
+                        ParamUtils.BasicUpdateAction.ADD);
+                switch (operation) {
+                    case SET:
+                        filterObjectParams(reportParameters, document.getSet(), signatureParams, REPORT.key() + ".");
+                        break;
+                    case REMOVE:
+                        fixSignaturesForRemoval(reportParameters);
+                        filterObjectParams(reportParameters, document.getPull(), signatureParams, REPORT.key() + ".");
+                        break;
+                    case ADD:
+                        filterObjectParams(reportParameters, document.getAddToSet(), signatureParams, REPORT.key() + ".");
+                        break;
+                    default:
+                        throw new IllegalStateException("Unknown operation " + operation);
+                }
             }
 
-            String[] imagesParams = new String[]{ReportQueryParams.IMAGES.key()};
-            operation = ParamUtils.BasicUpdateAction.from(actionMap, ReportQueryParams.IMAGES.key(),
-                    ParamUtils.BasicUpdateAction.ADD);
-            switch (operation) {
-                case SET:
-                    filterStringParams(reportParameters, document.getSet(), imagesParams, REPORT.key() + ".");
-                    break;
-                case REMOVE:
-                    filterStringParams(reportParameters, document.getPull(), imagesParams, REPORT.key() + ".");
-                    break;
-                case ADD:
-                    filterStringParams(reportParameters, document.getAddToSet(), imagesParams, REPORT.key() + ".");
-                    break;
-                default:
-                    throw new IllegalStateException("Unknown operation " + basicOperation);
+            if (reportParameters.containsKey(ReportQueryParams.IMAGES.key())) {
+                String[] imagesParams = new String[]{ReportQueryParams.IMAGES.key()};
+                ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, ReportQueryParams.IMAGES.key(),
+                        ParamUtils.BasicUpdateAction.ADD);
+                switch (operation) {
+                    case SET:
+                        filterStringParams(reportParameters, document.getSet(), imagesParams, REPORT.key() + ".");
+                        break;
+                    case REMOVE:
+                        filterStringParams(reportParameters, document.getPull(), imagesParams, REPORT.key() + ".");
+                        break;
+                    case ADD:
+                        filterStringParams(reportParameters, document.getAddToSet(), imagesParams, REPORT.key() + ".");
+                        break;
+                    default:
+                        throw new IllegalStateException("Unknown operation " + operation);
+                }
             }
 
-            String[] referencesParams = new String[]{ReportQueryParams.REFERENCES.key()};
-            operation = ParamUtils.BasicUpdateAction.from(actionMap, ReportQueryParams.REFERENCES.key(),
-                    ParamUtils.BasicUpdateAction.ADD);
-            switch (operation) {
-                case SET:
-                    filterObjectParams(reportParameters, document.getSet(), referencesParams, QueryParams.REPORT.key() + ".");
-                    break;
-                case REMOVE:
-                    fixReferencesForRemoval(reportParameters);
-                    filterObjectParams(reportParameters, document.getPull(), referencesParams, QueryParams.REPORT.key() + ".");
-                    break;
-                case ADD:
-                    filterObjectParams(reportParameters, document.getAddToSet(), referencesParams, QueryParams.REPORT.key() + ".");
-                    break;
-                default:
-                    throw new IllegalStateException("Unknown operation " + basicOperation);
+            if (reportParameters.containsKey(ReportQueryParams.REFERENCES.key())) {
+                String[] referencesParams = new String[]{ReportQueryParams.REFERENCES.key()};
+                ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, ReportQueryParams.REFERENCES.key(),
+                        ParamUtils.BasicUpdateAction.ADD);
+                switch (operation) {
+                    case SET:
+                        filterObjectParams(reportParameters, document.getSet(), referencesParams, QueryParams.REPORT.key() + ".");
+                        break;
+                    case REMOVE:
+                        fixReferencesForRemoval(reportParameters);
+                        filterObjectParams(reportParameters, document.getPull(), referencesParams, QueryParams.REPORT.key() + ".");
+                        break;
+                    case ADD:
+                        filterObjectParams(reportParameters, document.getAddToSet(), referencesParams, QueryParams.REPORT.key() + ".");
+                        break;
+                    default:
+                        throw new IllegalStateException("Unknown operation " + operation);
+                }
             }
         }
 
@@ -602,103 +610,115 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
         clinicalConverter.validateFamilyToUpdate(document.getSet());
         clinicalConverter.validateProbandToUpdate(document.getSet());
 
-        String[] objectAcceptedParams = new String[]{QueryParams.COMMENTS.key()};
-        ParamUtils.AddRemoveReplaceAction basicOperation = ParamUtils.AddRemoveReplaceAction.from(actionMap, QueryParams.COMMENTS.key(),
-                ParamUtils.AddRemoveReplaceAction.ADD);
-        switch (basicOperation) {
-            case REMOVE:
-                fixCommentsForRemoval(parameters);
-                filterObjectParams(parameters, document.getPull(), objectAcceptedParams);
-                break;
-            case ADD:
-                filterObjectParams(parameters, document.getAddToSet(), objectAcceptedParams);
-                break;
-            case REPLACE:
-                filterReplaceParams(parameters.getAsList(QueryParams.COMMENTS.key(), ClinicalComment.class), document,
-                        ClinicalComment::getDate, QueryParams.COMMENTS_DATE.key());
-                break;
-            default:
-                throw new IllegalStateException("Unknown operation " + basicOperation);
+        if (parameters.containsKey(COMMENTS.key())) {
+            String[] objectAcceptedParams = new String[]{QueryParams.COMMENTS.key()};
+            ParamUtils.AddRemoveReplaceAction basicOperation = ParamUtils.AddRemoveReplaceAction.from(actionMap, QueryParams.COMMENTS.key(),
+                    ParamUtils.AddRemoveReplaceAction.ADD);
+            switch (basicOperation) {
+                case REMOVE:
+                    fixCommentsForRemoval(parameters);
+                    filterObjectParams(parameters, document.getPull(), objectAcceptedParams);
+                    break;
+                case ADD:
+                    filterObjectParams(parameters, document.getAddToSet(), objectAcceptedParams);
+                    break;
+                case REPLACE:
+                    filterReplaceParams(parameters.getAsList(QueryParams.COMMENTS.key(), ClinicalComment.class), document,
+                            ClinicalComment::getDate, QueryParams.COMMENTS_DATE.key());
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown operation " + basicOperation);
+            }
         }
 
-        objectAcceptedParams = new String[]{ANALYSTS.key()};
-        ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, ANALYSTS.key(),
-                ParamUtils.BasicUpdateAction.ADD);
-        switch (operation) {
-            case SET:
-                filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
-                break;
-            case REMOVE:
-                fixAnalystsForRemoval(parameters);
-                filterObjectParams(parameters, document.getPull(), objectAcceptedParams);
-                break;
-            case ADD:
-                filterObjectParams(parameters, document.getAddToSet(), objectAcceptedParams);
-                break;
-            default:
-                throw new IllegalStateException("Unknown operation " + basicOperation);
+        if (parameters.containsKey(ANALYSTS.key())) {
+            String[] objectAcceptedParams = new String[]{ANALYSTS.key()};
+            ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, ANALYSTS.key(),
+                    ParamUtils.BasicUpdateAction.ADD);
+            switch (operation) {
+                case SET:
+                    filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
+                    break;
+                case REMOVE:
+                    fixAnalystsForRemoval(parameters);
+                    filterObjectParams(parameters, document.getPull(), objectAcceptedParams);
+                    break;
+                case ADD:
+                    filterObjectParams(parameters, document.getAddToSet(), objectAcceptedParams);
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown operation " + operation);
+            }
         }
 
-        objectAcceptedParams = new String[]{QueryParams.FILES.key()};
-        operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.FILES.key(),
-                ParamUtils.BasicUpdateAction.ADD);
-        switch (operation) {
-            case SET:
-                filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
-                clinicalConverter.validateFilesToUpdate(document.getSet());
-                break;
-            case REMOVE:
-                fixFilesForRemoval(parameters, FILES.key());
-                filterObjectParams(parameters, document.getPull(), objectAcceptedParams);
-                break;
-            case ADD:
-                filterObjectParams(parameters, document.getAddToSet(), objectAcceptedParams);
-                clinicalConverter.validateFilesToUpdate(document.getAddToSet());
-                break;
-            default:
-                throw new IllegalStateException("Unknown operation " + basicOperation);
+        if (parameters.containsKey(FILES.key())) {
+            String[] objectAcceptedParams = new String[]{QueryParams.FILES.key()};
+            ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.FILES.key(),
+                    ParamUtils.BasicUpdateAction.ADD);
+            switch (operation) {
+                case SET:
+                    filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
+                    clinicalConverter.validateFilesToUpdate(document.getSet());
+                    break;
+                case REMOVE:
+                    fixFilesForRemoval(parameters, FILES.key());
+                    filterObjectParams(parameters, document.getPull(), objectAcceptedParams);
+                    break;
+                case ADD:
+                    filterObjectParams(parameters, document.getAddToSet(), objectAcceptedParams);
+                    clinicalConverter.validateFilesToUpdate(document.getAddToSet());
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown operation " + operation);
+            }
         }
 
-        objectAcceptedParams = new String[]{REPORTED_FILES.key()};
-        operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.REPORTED_FILES.key(),
-                ParamUtils.BasicUpdateAction.ADD);
-        switch (operation) {
-            case SET:
-                filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
-                clinicalConverter.validateReportedFilesToUpdate(document.getSet());
-                break;
-            case REMOVE:
-                fixFilesForRemoval(parameters, REPORTED_FILES.key());
-                filterObjectParams(parameters, document.getPull(), objectAcceptedParams);
-                break;
-            case ADD:
-                filterObjectParams(parameters, document.getAddToSet(), objectAcceptedParams);
-                clinicalConverter.validateReportedFilesToUpdate(document.getAddToSet());
-                break;
-            default:
-                throw new IllegalStateException("Unknown operation " + basicOperation);
+        if (parameters.containsKey(REPORTED_FILES.key())) {
+            String[] objectAcceptedParams = new String[]{REPORTED_FILES.key()};
+            ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.REPORTED_FILES.key(),
+                    ParamUtils.BasicUpdateAction.ADD);
+            switch (operation) {
+                case SET:
+                    filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
+                    clinicalConverter.validateReportedFilesToUpdate(document.getSet());
+                    break;
+                case REMOVE:
+                    fixFilesForRemoval(parameters, REPORTED_FILES.key());
+                    filterObjectParams(parameters, document.getPull(), objectAcceptedParams);
+                    break;
+                case ADD:
+                    filterObjectParams(parameters, document.getAddToSet(), objectAcceptedParams);
+                    clinicalConverter.validateReportedFilesToUpdate(document.getAddToSet());
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown operation " + operation);
+            }
         }
 
-        objectAcceptedParams = new String[]{FLAGS.key()};
-        operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.FLAGS.key(), ParamUtils.BasicUpdateAction.ADD);
-        switch (operation) {
-            case SET:
-                filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
-                break;
-            case REMOVE:
-                fixFlagsForRemoval(parameters);
-                filterObjectParams(parameters, document.getPull(), objectAcceptedParams);
-                break;
-            case ADD:
-                filterObjectParams(parameters, document.getAddToSet(), objectAcceptedParams);
-                break;
-            default:
-                throw new IllegalStateException("Unknown operation " + basicOperation);
+        if (parameters.containsKey(FLAGS.key())) {
+            String[] objectAcceptedParams = new String[]{FLAGS.key()};
+            ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.FLAGS.key(),
+                    ParamUtils.BasicUpdateAction.ADD);
+            switch (operation) {
+                case SET:
+                    filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
+                    break;
+                case REMOVE:
+                    fixFlagsForRemoval(parameters);
+                    filterObjectParams(parameters, document.getPull(), objectAcceptedParams);
+                    break;
+                case ADD:
+                    filterObjectParams(parameters, document.getAddToSet(), objectAcceptedParams);
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown operation " + operation);
+            }
         }
 
         // Panels
         if (parameters.containsKey(PANELS.key())) {
-            operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.PANELS.key(), ParamUtils.BasicUpdateAction.ADD);
+            ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.PANELS.key(),
+                    ParamUtils.BasicUpdateAction.ADD);
             String[] panelParams = {QueryParams.PANELS.key()};
             switch (operation) {
                 case SET:
@@ -720,8 +740,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cli
 
         // Secondary interpretations
         if (parameters.containsKey(QueryParams.SECONDARY_INTERPRETATIONS.key())) {
-            operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.SECONDARY_INTERPRETATIONS.key(),
-                    ParamUtils.BasicUpdateAction.ADD);
+            ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap,
+                    QueryParams.SECONDARY_INTERPRETATIONS.key(), ParamUtils.BasicUpdateAction.ADD);
             String[] secondaryInterpretationParams = {QueryParams.SECONDARY_INTERPRETATIONS.key()};
             switch (operation) {
                 case SET:

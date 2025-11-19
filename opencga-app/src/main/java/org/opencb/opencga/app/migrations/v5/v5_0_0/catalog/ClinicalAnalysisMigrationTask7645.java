@@ -57,7 +57,8 @@ public class ClinicalAnalysisMigrationTask7645 extends MigrationTool {
                     Document report = document.get("report", Document.class);
                     if (report != null) {
                         // Copy ClinicalAnalysis.report.files to ClinicalAnalysis.reportedFiles
-                        updateDocument.getSet().put("reportedFiles", report.get("files"));
+                        List<Document> files = report.getList("files", Document.class);
+                        updateDocument.getSet().put("reportedFiles", files != null ? files : Collections.emptyList());
 
                         // Copy ClinicalAnalysis.report.signedBy and *.signature to ClinicalAnalysis.report.signatures
                         String signedBy = report.get("signedBy", String.class);

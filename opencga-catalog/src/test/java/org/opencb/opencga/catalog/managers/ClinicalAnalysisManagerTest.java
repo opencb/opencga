@@ -4161,4 +4161,65 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         assertFalse(fileIds.contains("NA19600.chrom20.small.bam"));
     }
 
+    @Test
+    public void updateReportedFilesTest() throws CatalogException {
+        // Create a dummy ClinicalAnalysis
+        ClinicalAnalysis clinicalAnalysis = createDummyEnvironment(true, true).first();
+
+        // Verify initially there are no reported files
+        assertTrue(clinicalAnalysis.getReportedFiles().isEmpty());
+
+        // Create some test files
+        catalogManager.getFileManager().create(studyFqn,
+                new FileCreateParams()
+                        .setContent(RandomStringUtils.randomAlphanumeric(1000))
+                        .setPath("/data/report_file1.txt")
+                        .setType(File.Type.FILE),
+                true, ownerToken);
+        catalogManager.getFileManager().create(studyFqn,
+                new FileCreateParams()
+                        .setContent(RandomStringUtils.randomAlphanumeric(1000))
+                        .setPath("/data/report_file2.txt")
+                        .setType(File.Type.FILE),
+                true, ownerToken);
+        catalogManager.getFileManager().create(studyFqn,
+                new FileCreateParams()
+                        .setContent(RandomStringUtils.randomAlphanumeric(1000))
+                        .setPath("/data/report_file3.txt")
+                        .setType(File.Type.FILE),
+                true, ownerToken);
+
+        // Set initial reported files
+        List<FileReferenceParam> reportedFiles = Arrays.asList(
+                new FileReferenceParam().setId("data:report_file1.txt"),
+                new FileReferenceParam().setId("data:report_file2.txt")
+        );
+
+        OpenCGAResult<ClinicalAnalysis> result = catalogManager.getClinicalAnalysisManager().update(studyFqn,
+                clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams().setReportedFiles(reportedFiles),
+                INCLUDE_RESULT, ownerToken);
+
+        // Verify reported files were set
+        assertNotNull(result.first().getReportedFiles());
+        assertEquals(2, result.first().getReportedFiles().size());
+        assertEquals("data/report_file1.txt", result.first().getReportedFiles().get(0).getPath());
+        assertEquals("data/report_file2.txt", result.first().getReportedFiles().get(1).getPath());
+
+        // Update reported files - replace with a different set
+        List<FileReferenceParam> updatedReportedFiles = Arrays.asList(
+                new FileReferenceParam().setId("data:report_file2.txt"),
+                new FileReferenceParam().setId("data:report_file3.txt")
+        );
+
+        result = catalogManager.getClinicalAnalysisManager().update(studyFqn,
+                clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams().setReportedFiles(updatedReportedFiles),
+                INCLUDE_RESULT, ownerToken);
+
+        // Verify reported files were updated
+        assertEquals(3, result.first().getReportedFiles().size());
+        assertEquals("data/report_file1.txt", result.first().getReportedFiles().get(0).getPath());
+        assertEquals("data/report_file2.txt", result.first().getReportedFiles().get(1).getPath());
+        assertEquals("data/report_file3.txt", result.first().getReportedFiles().get(2).getPath());
+    }
+
 }
