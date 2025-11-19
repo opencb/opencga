@@ -1076,7 +1076,7 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
         // Supported formats: "16", "16GB", "16 GB", "16.GB", "16.5", "16.5GB", "16.5 GB"
         // If memory is only a positive number, we will add GB as the unit
         String memory = minimumRequirements.getMemory().trim();
-        List<String> validUnits = Arrays.asList("MB", "GB");
+        List<String> validUnits = Arrays.asList("MB", "GB", "MIB", "GIB");
 
         String numericPart = null;
         String unit = null;

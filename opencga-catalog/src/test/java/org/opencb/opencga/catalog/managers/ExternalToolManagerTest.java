@@ -319,7 +319,7 @@ public class ExternalToolManagerTest extends AbstractManagerTest {
                 .setTags(Arrays.asList("updated", "variant-walker"))
                 .setContainer(new Container("walkerimage", "2.0", "sha256:abc123", "", "", ""));
 
-        OpenCGAResult<ExternalTool> update = externalToolManager.updateCustomTool(studyFqn, toolCreateParams.getId(), updateParams, INCLUDE_RESULT, ownerToken);
+        OpenCGAResult<ExternalTool> update = externalToolManager.updateVariantWalker(studyFqn, toolCreateParams.getId(), updateParams, INCLUDE_RESULT, ownerToken);
         assertEquals(1, update.getNumUpdated());
         ExternalTool updatedTool = update.first();
         assertEquals(updateParams.getName(), updatedTool.getName());
@@ -550,7 +550,7 @@ public class ExternalToolManagerTest extends AbstractManagerTest {
                 .setTags(Arrays.asList("variant-analysis", "clinical", "walker"))
                 .setContainer(new Container("walkerimage", "5.0", "", "walker --input ${INPUT}", "", ""));
 
-        OpenCGAResult<ExternalTool> update = externalToolManager.updateCustomTool(studyFqn, "walker-multi-update", updateParams, INCLUDE_RESULT, ownerToken);
+        OpenCGAResult<ExternalTool> update = externalToolManager.updateVariantWalker(studyFqn, "walker-multi-update", updateParams, INCLUDE_RESULT, ownerToken);
         assertEquals(1, update.getNumUpdated());
         ExternalTool updatedTool = update.first();
         assertEquals("Advanced Variant Walker", updatedTool.getName());
