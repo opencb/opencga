@@ -201,7 +201,7 @@ public class SampleIndexVariantAnnotationConverter {
         IndexField<Double> field = schema.getPopFreqIndex()
                 .getField(populationFrequency.getStudy(), populationFrequency.getPopulation());
         if (field != null) {
-            field.write(populationFrequency.getAltAlleleFreq().doubleValue(), bitBuffer);
+            field.write((double) populationFrequency.getAltAlleleFreq(), bitBuffer);
         }
     }
 

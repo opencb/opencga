@@ -387,6 +387,21 @@ public class TemplateEntryIterator<T> implements Iterator<T>, AutoCloseable {
             if (declaredField.getType().getName().equals("org.apache.avro.Schema")) {
                 continue;
             }
+            if (declaredField.getType().getName().equals("org.apache.avro.specific.SpecificData")) {
+                continue;
+            }
+            if (declaredField.getType().getName().equals("org.apache.avro.message.BinaryMessageEncoder")) {
+                continue;
+            }
+            if (declaredField.getType().getName().equals("org.apache.avro.message.BinaryMessageDecoder")) {
+                continue;
+            }
+            if (declaredField.getType().getName().equals("org.apache.avro.io.DatumReader")) {
+                continue;
+            }
+            if (declaredField.getType().getName().equals("org.apache.avro.io.DatumWriter")) {
+                continue;
+            }
             // Ignore jacoco custom fields
             if (declaredField.getName().equals("$jacocoData")) {
                 continue;

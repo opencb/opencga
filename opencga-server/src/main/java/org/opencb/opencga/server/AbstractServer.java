@@ -29,34 +29,26 @@ import java.nio.file.Path;
 /**
  * Created by imedina on 02/01/16.
  */
-public abstract class AbstractStorageServer {
+public abstract class AbstractServer {
 
-    protected Path opencgaHome;
-    protected int port;
+    protected final Path opencgaHome;
+    protected final int port;
 
     protected Configuration configuration;
     protected StorageConfiguration storageConfiguration;
 
-    protected Logger logger;
+    private Logger logger;
 
-    public AbstractStorageServer(Path opencgaHome) {
-        this(opencgaHome, 0);
-    }
-
-    public AbstractStorageServer(Path opencgaHome, int port) {
+    public AbstractServer(Path opencgaHome, int port) {
         this.opencgaHome = opencgaHome;
         this.port = port;
 
-        init();
-    }
+        logger = LoggerFactory.getLogger(AbstractServer.class);
 
-    private void init() {
-        logger = LoggerFactory.getLogger(this.getClass());
+        initConfigurationFiles(this.opencgaHome);
 
-        initConfigurationFiles(opencgaHome);
-
-        if (this.port == 0) {
-            this.port = configuration.getServer().getRest().getPort();
+        if (this.port <= 0) {
+            throw new IllegalArgumentException("Undefined port for the server");
         }
     }
 
@@ -82,20 +74,8 @@ public abstract class AbstractStorageServer {
 
     public abstract void blockUntilShutdown() throws Exception;
 
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("StorageServer{");
-        sb.append("port=").append(port);
-        sb.append('}');
-        return sb.toString();
-    }
-
     public int getPort() {
         return port;
-    }
-
-    public void setPort(int port) {
-        this.port = port;
     }
 
 }
