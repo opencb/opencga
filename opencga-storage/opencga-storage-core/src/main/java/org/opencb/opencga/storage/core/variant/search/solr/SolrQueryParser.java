@@ -174,8 +174,8 @@ public class SolrQueryParser {
                 solrQuery.setStart(queryOptions.getInt(QueryOptions.SKIP));
             }
 
-            if (queryOptions.containsKey(QueryOptions.SORT)) {
-                solrQuery.addSort(queryOptions.getString(QueryOptions.SORT), getSortOrder(queryOptions));
+            if (queryOptions.getBoolean(QueryOptions.SORT)) {
+                solrQuery.addSort("id", getSortOrder(queryOptions));
             }
         }
 

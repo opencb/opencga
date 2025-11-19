@@ -22,10 +22,8 @@ import io.grpc.stub.StreamObserver;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
-import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
+import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 
 /**
  * Created by pfurio on 26/10/16.
@@ -35,9 +33,10 @@ public class AlignmentGrpcService extends AlignmentServiceGrpc.AlignmentServiceI
     private GenericGrpcService genericGrpcService;
     private AlignmentStorageManager alignmentStorageManager;
 
-    public AlignmentGrpcService(Configuration configuration, StorageConfiguration storageConfiguration) {
-        genericGrpcService = new GenericGrpcService(configuration, storageConfiguration);
-        alignmentStorageManager = new AlignmentStorageManager(genericGrpcService.catalogManager, GenericGrpcService.storageEngineFactory);
+    public AlignmentGrpcService(GenericGrpcService genericGrpcService) {
+        this.genericGrpcService = genericGrpcService;
+        alignmentStorageManager = new AlignmentStorageManager(genericGrpcService.getCatalogManager(),
+                genericGrpcService.getStorageEngineFactory());
     }
 
     @Override

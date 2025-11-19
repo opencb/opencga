@@ -19,6 +19,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.main.*;
+import org.opencb.opencga.app.cli.main.custom.CustomAnalysisVariantCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.AnalysisVariantCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
@@ -1316,7 +1317,6 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Executing query in Analysis - Variant command line");
 
         AnalysisVariantCommandOptions.QueryCommandOptions commandOptions = analysisVariantCommandOptions.queryCommandOptions;
-
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
@@ -1399,8 +1399,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
-
-        return openCGAClient.getVariantClient().query(queryParams);
+        CustomAnalysisVariantCommandExecutor customAnalysisVariantCommandExecutor = new CustomAnalysisVariantCommandExecutor(queryParams, token, clientConfiguration, getSessionManager(), appHome, getLogger());
+        return customAnalysisVariantCommandExecutor.query(commandOptions);
     }
 
     private RestResponse<Job> runRelatedness() throws Exception {
