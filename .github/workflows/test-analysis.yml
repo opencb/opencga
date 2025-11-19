@@ -10,7 +10,6 @@ on:
         required: true
       hadoop:
         type: string
-        description: 'Hadoop flavour. Any of: [hdp3.1, hdi5.1, emr6.1, emr6.13]'
         required: false
         default: "hdi5.1"
       mvn_opts:
@@ -26,15 +25,32 @@ on:
         description: "Maven modules to test. Empty means all. Only top-level modules. Example: 'opencga-storage'"
         required: false
         default: ""
+      upload_artifact:
+        type: boolean
+        description: "Whether to upload the build artifact or not"
+        required: false
+        default: true
     secrets:
       SONAR_TOKEN:
         required: true
 
 jobs:
+
+  build:
+    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
+    with:
+      needs_hadoop_preparation: true
+      hadoop_flavour: ${{ inputs.hadoop }}
+      maven_opts: -P${{ inputs.hadoop }} -Dopencga.war.name=opencga -Dcheckstyle.skip
+      upload_artifact: ${{ inputs.upload_artifact }}
+      dependency_repos: "java-common-libs,biodata"
+    secrets: inherit
+
   analysis:
     name: Execute Sonar Analysis
     runs-on: ${{ vars.UBUNTU_VERSION }}
     if: ${{ inputs.sonar }}
+    needs: build
     steps:
       - uses: actions/checkout@v4
         with:
@@ -45,14 +61,13 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
           cache: 'maven'
-      - name: Install dependencies branches
-        run: |
-          if [ -f "./.github/workflows/scripts/get_same_branch.sh" ]; then
-            chmod +x ./.github/workflows/scripts/get_same_branch.sh
-            ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }} ${{ inputs.hadoop }}
-          else
-             echo "./.github/workflows/scripts/get_same_branch.sh does not exist."
-          fi
+      - name: Cache local Maven repository
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ needs.build.outputs.cache_key }}
+          ## Force cache hit to avoid analyzing with incomplete dependencies
+          fail-on-cache-miss: true
       - name: Test and Analyze
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
@@ -63,6 +78,7 @@ jobs:
   test:
     name: Execute JUnit and Jacoco tests
     runs-on: ${{ vars.UBUNTU_VERSION }}
+    needs: build
     steps:
       - uses: actions/checkout@v4
         with:
@@ -73,14 +89,13 @@ jobs:
           distribution: 'temurin'
           java-version: '8'
           cache: 'maven'
-      - name: Install dependencies branches
-        run: |
-          if [ -f "./.github/workflows/scripts/get_same_branch.sh" ]; then
-            chmod +x ./.github/workflows/scripts/get_same_branch.sh
-            ./.github/workflows/scripts/get_same_branch.sh ${{ github.ref_name }} ${{ inputs.hadoop }}
-          else
-             echo "./.github/workflows/scripts/get_same_branch.sh does not exist."
-          fi
+      - name: Cache local Maven repository
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ needs.build.outputs.cache_key }}
+          ## Force cache hit to avoid testing with incomplete dependencies
+          fail-on-cache-miss: true
       - name: Install Samtools
         run: sudo apt-get install samtools python3-deeptools
       - name: Start MongoDB v6.0
@@ -88,8 +103,6 @@ jobs:
         with:
           mongodb-version: 6.0
           mongodb-replica-set: rs-test
-      - name: Maven build (skip tests)
-        run: mvn -B clean install -DskipTests -P ${{ inputs.hadoop }} -Dcheckstyle.skip ${{ inputs.mvn_opts }}
       - name: Build Junit log file name
         id: BuildJunitLogFileName
         run: |
@@ -120,4 +133,3 @@ jobs:
           commit: '${{ github.sha }}'
           fail_on_test_failures: true
           fail_if_no_tests: false
-

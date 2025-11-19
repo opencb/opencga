@@ -212,6 +212,11 @@ public class ProjectManagerTest extends AbstractManagerTest {
 
     @Test
     public void createProjectCheckCellbase() throws CatalogException {
+        String cellbaseVersion = ParamConstants.CELLBASE_VERSION;
+        String cellbaseVersionJustNumber = cellbaseVersion.substring(1);
+
+        assertEquals("v", cellbaseVersion.substring(0, 1));
+
         Project pr = catalogManager.getProjectManager()
                 .create(new ProjectCreateParams()
                                 .setId("Project_1")
@@ -219,29 +224,18 @@ public class ProjectManagerTest extends AbstractManagerTest {
                                 .setOrganism(new ProjectOrganism("Homo sapiens", "grch38"))
                                 .setCellbase(new CellBaseConfiguration(
                                         ParamConstants.CELLBASE_URL,
-                                        "v5.0")),
+                                        cellbaseVersion)),
                         INCLUDE_RESULT, ownerToken).first();
-        assertNull(pr.getCellbase().getDataRelease());
-
-        pr = catalogManager.getProjectManager()
-                .create(new ProjectCreateParams()
-                                .setId("Project_2")
-                                .setName("Project about some genomes")
-                                .setOrganism(new ProjectOrganism("Homo sapiens", "grch38"))
-                                .setCellbase(new CellBaseConfiguration(
-                                        ParamConstants.CELLBASE_URL,
-                                        "5.0")),
-                        INCLUDE_RESULT, ownerToken).first();
-        assertNull(pr.getCellbase().getDataRelease());
+        assertNotNull(pr.getCellbase().getDataRelease());
 
         pr = catalogManager.getProjectManager()
                 .create(new ProjectCreateParams()
                                 .setId("Project_3")
                                 .setName("Project about some genomes")
-                                .setOrganism(new ProjectOrganism("Homo sapiens", "grch38"))
+                                .setOrganism(new ProjectOrganism("Homo sapiens", "grch37"))
                                 .setCellbase(new CellBaseConfiguration(
                                         ParamConstants.CELLBASE_URL,
-                                        ParamConstants.CELLBASE_VERSION)),
+                                        cellbaseVersionJustNumber)),
                         INCLUDE_RESULT, ownerToken).first();
         assertNotNull(pr.getCellbase().getDataRelease());
     }

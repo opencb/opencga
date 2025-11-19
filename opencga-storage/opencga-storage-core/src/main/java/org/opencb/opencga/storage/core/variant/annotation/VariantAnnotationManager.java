@@ -170,6 +170,11 @@ public abstract class VariantAnnotationManager {
             // Check sources for old cellbase versions
             List<ObjectMap> currentSourceVersion = current.getSourceVersion();
             List<ObjectMap> newSourceVersion = newVariantAnnotationMetadata.getSourceVersion();
+
+            if (newSourceVersion.isEmpty()) {
+                throw new IllegalArgumentException("Missing annotator source version!");
+            }
+
             if (CollectionUtils.isNotEmpty(currentSourceVersion) && !sameSourceVersion(newSourceVersion, currentSourceVersion)) {
                 String msg = "Source version of the annotator has changed. "
                         + "Existing annotation calculated with "
@@ -273,9 +278,7 @@ public abstract class VariantAnnotationManager {
         if (newAnnotator == null) {
             throw new IllegalArgumentException("Missing annotator information for VariantAnnotator: " + annotator.getClass());
         }
-        if (newSourceVersion.isEmpty()) {
-            throw new IllegalArgumentException("Missing annotator source version for VariantAnnotator: " + annotator.getClass());
-        }
+
         checkCurrentAnnotation(projectMetadata, overwrite, newAnnotationMetadata);
 
         VariantAnnotationMetadata current = projectMetadata.getAnnotation().getCurrent();
