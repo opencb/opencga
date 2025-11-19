@@ -1,6 +1,5 @@
 package com.zettagenomics.opencga.enterprise.cvdb;
 
-import com.zettagenomics.opencga.enterprise.cvdb.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import com.zettagenomics.opencga.enterprise.cvdb.models.CvdbIndexResult;
 import org.apache.commons.lang3.StringUtils;
@@ -34,7 +33,6 @@ import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 
 import java.io.IOException;
 import java.net.URL;
@@ -92,7 +90,6 @@ public class CvdbSolrEngineQueryPermissionsTest {
         cvdbEngine = cvdbSolrExternalResource.configure();
         cvdbEngine.setCatalogManager(catalogManager);
         cvdbEngine.setCollectionNameGenerator(collectionNameGenerator);
-        cvdbEngine.setVariantStorageMetadataManager(new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory()));
 
         if (!cvdbEngine.existCollections(collectionPrefix)) {
             cvdbEngine.createCollections(projectId, collectionPrefix, userToken);
