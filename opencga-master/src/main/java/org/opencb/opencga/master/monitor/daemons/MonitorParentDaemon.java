@@ -36,7 +36,7 @@ public abstract class MonitorParentDaemon implements Runnable, Closeable {
     protected final CatalogManager catalogManager;
     private final ExecutorFactory executorFactory;
 
-    private volatile boolean exit = false;
+    protected volatile boolean exit = false;
 
     protected final String token;
     protected final Logger logger;
@@ -57,6 +57,8 @@ public abstract class MonitorParentDaemon implements Runnable, Closeable {
         this.exit = exit;
     }
 
+    protected abstract void apply() throws Exception;
+
     public void run() {
         try {
             init();
@@ -67,6 +69,12 @@ public abstract class MonitorParentDaemon implements Runnable, Closeable {
 
         while (!exit) {
             try {
+                apply();
+            } catch (Exception e) {
+                logger.error("Catch exception " + e.getMessage(), e);
+            }
+
+            try {
                 Thread.sleep(interval);
             } catch (InterruptedException e) {
                 if (!exit) {
@@ -74,12 +82,6 @@ public abstract class MonitorParentDaemon implements Runnable, Closeable {
                 }
                 // If interrupted, stop the daemon
                 break;
-            }
-
-            try {
-                apply();
-            } catch (Exception e) {
-                logger.error("Catch exception " + e.getMessage(), e);
             }
         }
 
@@ -93,8 +95,6 @@ public abstract class MonitorParentDaemon implements Runnable, Closeable {
     public void init() throws Exception {
 
     }
-
-    public abstract void apply() throws Exception;
 
     protected BatchExecutor getBatchExecutor(Job job) {
         if (job.getExecution() == null || job.getExecution().getQueue() == null

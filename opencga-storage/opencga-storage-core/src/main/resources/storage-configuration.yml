@@ -31,7 +31,10 @@ search:
   configSet: "${OPENCGA.STORAGE.SEARCH.CONFIG_SET}"
   mode: "cloud"
   timeout: ${OPENCGA.STORAGE.SEARCH.TIMEOUT}
-  insertBatchSize: 5000
+  ## Insert batch size is the number of documents after which a commit is done.
+  ## This is used to avoid too many commits, which can be very expensive.
+  ## This number can be increased up to 500k, but it is not recommended to go beyond 50k.
+  insertBatchSize: 15000
 
 ## Clinical database for indexing the pathogenic variants reported.
 clinical:
@@ -64,7 +67,7 @@ benchmark:
   connectionType: REST         # Select between REST or DIRECT.
   mode: FIXED                  # Select between FIXED or RANDOM
   databaseName: "opencga"
-  rest: "http://localhost:8080/${opencga.war.name}"
+#  rest:
 
 io:
   connectors:
@@ -127,6 +130,11 @@ variant:
     search.intersect.active: true           # Allow intersect queries with the SearchEngine (Solr)
     search.intersect.always: false          # Force intersect queries
     search.intersect.params.threshold: 3    # Minimum number of QueryParams in the query to intersect
+    search.load.shardsPerNode: 2            # Number of shards to be created per node in the SearchEngine (Solr)
+    # Use blue-green deployment when overwriting an existing collection in the SearchEngine (Solr).
+    # In this scenario, data is loaded in a new collection, and when finished, the old collection is deleted.
+    # While loading, the old collection is still available for querying.
+    search.load.blueGreenOnOverwrite: false
 
     walker.docker.memory: "1024m" # Memory limit for the docker executor
 #    walker.docker.cpu: "1"        # CPU limit for the docker executor
@@ -178,6 +186,7 @@ variant:
        #storage.hadoop.mr.executor.ssh.key: "~/.ssh/id_rsa"   # Hadoop edge node ssh-key file
         storage.hadoop.mr.executor.ssh.password: ""           # Hadoop edge node password. Only if ssh-key is not present. Requires sshpass to run
         storage.hadoop.mr.executor.ssh.remoteOpenCgaHome:     # Remote opencga home location. Only if different from local location.
+        storage.hadoop.mr.executor.ssh.remoteTmp: "/tmp"      # Remote tmp location.
         storage.hadoop.mr.executor.ssh.terminationGracePeriodSeconds:  120 # Termination grace period in seconds for the ssh executor.
 
         # Increase the ScannerTimeoutPeriod from 60000 (1min) to 300000 (5min) to avoid ScannerTimeoutExceptions

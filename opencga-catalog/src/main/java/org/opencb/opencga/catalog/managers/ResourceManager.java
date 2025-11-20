@@ -153,10 +153,12 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
             InternalGetDataResult<R> responseResult = internalGet(organizationId, study.getUid(), entryList, query, options, userId,
                     ignoreException);
 
-            Map<String, InternalGetDataResult.Missing> missingMap = new HashMap<>();
+            final Map<String, InternalGetDataResult.Missing> missingMap;
             if (responseResult.getMissing() != null) {
                 missingMap = responseResult.getMissing().stream()
                         .collect(Collectors.toMap(InternalGetDataResult.Missing::getId, Function.identity()));
+            } else {
+                missingMap = Collections.emptyMap();
             }
 
             List<List<R>> versionedResults = responseResult.getVersionedResults();

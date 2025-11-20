@@ -29,6 +29,7 @@
 
     <artifactId>opencga-storage-hadoop-lib</artifactId>
     <packaging>pom</packaging>
+    <name>OpenCGA Storage Hadoop Lib</name>
 
     <dependencies>
         <dependency>
@@ -90,10 +91,12 @@
                 </property>
             </activation>
             <modules>
+                <module>opencga-storage-hadoop-lib-hbase2.0</module>
                 <module>opencga-storage-hadoop-lib-hdp3.1</module>
                 <module>opencga-storage-hadoop-lib-hdi5.1</module>
                 <module>opencga-storage-hadoop-lib-emr6.1</module>
                 <module>opencga-storage-hadoop-lib-emr6.13</module>
+                <module>opencga-storage-hadoop-lib-emr7.5</module>
             </modules>
         </profile>
         <profile>

@@ -12,6 +12,7 @@
 
     <artifactId>opencga-clinical</artifactId>
     <packaging>jar</packaging>
+    <name>OpenCGA Clinical</name>
 
     <dependencies>
         <!-- TODO Review -->

@@ -34,7 +34,7 @@ import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
-import org.opencb.opencga.storage.core.variant.annotation.DummyTestAnnotator;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantAnnotator;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManagerTest;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
@@ -139,7 +139,7 @@ public class HadoopVariantStatisticsManagerTest extends VariantStatisticsManager
         HadoopVariantStorageEngine engine = (HadoopVariantStorageEngine) this.variantStorageEngine;
 
         engine.getOptions().put(VariantStorageOptions.ANNOTATOR.key(), "other");
-        engine.getOptions().put(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyTestAnnotator.class.getName());
+        engine.getOptions().put(VariantStorageOptions.ANNOTATOR_CLASS.key(), DummyVariantAnnotator.class.getName());
         engine.annotate(outputUri, new QueryOptions(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true));
 
         runETL(engine, getResourceUri("gnomad/gnomad.genomes.v3.1.2.sites.small.vcf"), "GNOMAD_GENOMES", new ObjectMap());
@@ -174,9 +174,9 @@ public class HadoopVariantStatisticsManagerTest extends VariantStatisticsManager
                 VariantStats stats = variant.getStudy(populationFrequency.getStudy()).getStats(populationFrequency.getPopulation());
                 Assert.assertNotNull(stats);
                 Assert.assertThat(expected, CoreMatchers.hasItem(populationFrequency.getStudy() + ":" + populationFrequency.getPopulation()));
-                Assert.assertEquals(stats.getAltAlleleFreq(), populationFrequency.getAltAlleleFreq());
+                Assert.assertEquals(stats.getAltAlleleFreq().floatValue(), populationFrequency.getAltAlleleFreq(), 0.0000001);
                 Assert.assertEquals(stats.getAltAlleleCount(), populationFrequency.getAltAlleleCount());
-                Assert.assertEquals(stats.getRefAlleleFreq(), populationFrequency.getRefAlleleFreq());
+                Assert.assertEquals(stats.getRefAlleleFreq().floatValue(), populationFrequency.getRefAlleleFreq(), 0.0000001);
                 Assert.assertEquals(stats.getRefAlleleCount(), populationFrequency.getRefAlleleCount());
                 Assert.assertEquals(stats.getGenotypeCount().entrySet().stream().filter(e -> GenotypeClass.HOM_ALT.test(e.getKey())).mapToInt(Map.Entry::getValue).sum(),
                         populationFrequency.getAltHomGenotypeCount().intValue());

@@ -97,9 +97,6 @@ public class VariantPruneDriver extends AbstractVariantsTableDriver {
 
         scan.addColumn(COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.ALLELES.bytes());
         scan.addColumn(COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.TYPE.bytes());
-        scan.addColumn(COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.INDEX_NOT_SYNC.bytes());
-        scan.addColumn(COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.INDEX_UNKNOWN.bytes());
-        scan.addColumn(COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.INDEX_STUDIES.bytes());
 
         Map<Integer, List<String>> columnsPerStudy = new HashMap<>();
         VariantStorageMetadataManager metadataManager = getMetadataManager();
@@ -125,7 +122,7 @@ public class VariantPruneDriver extends AbstractVariantsTableDriver {
             columnsPerStudy.put(studyId, columnsToDelete);
         }
 
-        VariantMapReduceUtil.configureMapReduceScan(scan, getConf());
+        VariantMapReduceUtil.configureMapReduceScan(scan, job);
         logger.info("Scan = " + scan);
 
         FileOutputFormat.setCompressOutput(job, false);

@@ -43,7 +43,9 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
+import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
@@ -57,7 +59,7 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
+import org.opencb.opencga.storage.hadoop.variant.converters.HBaseVariantConverterConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.family.MendelianErrorSampleIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.*;
@@ -181,9 +183,9 @@ public class VariantHbaseTestUtils {
                             || key.endsWith(VariantPhoenixSchema.COHORT_STATS_FREQ_SUFFIX)
                             || key.endsWith(VariantPhoenixSchema.VARIANT_SCORE_SUFIX)) {
                         os.println("\t" + key + " = " + length(entry.getValue()) + ", " + PFloatArray.INSTANCE.toObject(entry.getValue()));
-                    } else if (key.endsWith(VariantPhoenixSchema.STUDY_SUFIX)) {
+                    } else if (VariantPhoenixSchema.isStudyColumn(key)) {
                         os.println("\t" + key + " = " + PUnsignedInt.INSTANCE.toObject(entry.getValue()));
-                    } else if (key.endsWith(VariantPhoenixSchema.SAMPLE_DATA_SUFIX) || key.endsWith(VariantPhoenixSchema.FILE_SUFIX)) {
+                    } else if (VariantPhoenixSchema.isFileColumn(key) || VariantPhoenixSchema.isSampleDataColumn(key)) {
                         os.println("\t" + key + " = " + result.getColumnLatestCell(GenomeHelper.COLUMN_FAMILY_BYTES, entry.getKey()).getTimestamp()+", " + PVarcharArray.INSTANCE.toObject(entry.getValue()));
                     } else if (key.endsWith(VariantPhoenixSchema.COHORT_STATS_MAF_SUFFIX)
                             || key.endsWith(VariantPhoenixSchema.COHORT_STATS_MGF_SUFFIX)) {
@@ -242,7 +244,7 @@ public class VariantHbaseTestUtils {
             return;
         }
         VariantDBIterator iterator = dbAdaptor.iterator(new VariantQuery().includeSampleId(true).includeSampleAll(),
-                new QueryOptions("simpleGenotypes", true));
+                new QueryOptions(HBaseVariantConverterConfiguration.SIMPLE_GENOTYPES, true));
         ObjectMapper mapper = new ObjectMapper().configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         while (iterator.hasNext()) {
             Variant variant = iterator.next();
@@ -393,8 +395,6 @@ public class VariantHbaseTestUtils {
 
     public static void printVariants(Collection<StudyMetadata> studies, VariantHadoopDBAdaptor dbAdaptor, Path outDir)
             throws Exception {
-        boolean old = HBaseToVariantConverter.isFailOnWrongVariants();
-        HBaseToVariantConverter.setFailOnWrongVariants(false);
         printMetaTable(dbAdaptor, outDir);
         for (StudyMetadata studyMetadata : studies) {
             printVariantsFromArchiveTable(dbAdaptor, studyMetadata, outDir);
@@ -406,7 +406,6 @@ public class VariantHbaseTestUtils {
         printSampleIndexTable(dbAdaptor, outDir);
         printVariantsFromVariantsTable(dbAdaptor, outDir);
         printVariantsFromDBAdaptor(dbAdaptor, outDir);
-        HBaseToVariantConverter.setFailOnWrongVariants(old);
     }
 
     private static void printVcf(StudyMetadata studyMetadata, VariantHadoopDBAdaptor dbAdaptor, Path outDir) throws IOException {
@@ -456,12 +455,24 @@ public class VariantHbaseTestUtils {
             SampleIndexDBAdaptor sampleIndexDBAdaptor = new SampleIndexDBAdaptor(dbAdaptor.getHBaseManager(), dbAdaptor.getTableNameGenerator(), dbAdaptor.getMetadataManager());
             SampleIndexSchema schema = sampleIndexDBAdaptor.getSchemaLatest(studyId);
             for (Integer sampleId : dbAdaptor.getMetadataManager().getIndexedSamples(studyId)) {
-                String sampleName = dbAdaptor.getMetadataManager().getSampleName(studyId, sampleId);
+                SampleMetadata sampleMetadata = dbAdaptor.getMetadataManager().getSampleMetadata(studyId, sampleId);
+                boolean sampleIndexReady = false;
+                for (Integer sampleIndexVersion : sampleMetadata.getSampleIndexVersions()) {
+                    if (sampleMetadata.getSampleIndexStatus(sampleIndexVersion) == TaskMetadata.Status.READY) {
+                        sampleIndexReady = true;
+                        break;
+                    }
+                }
+                String sampleName = sampleMetadata.getName();
+                out.println("");
+                out.println("");
+                out.println("");
+                out.println("SAMPLE: " + sampleName + " (id=" + sampleId + ")");
+                if (!sampleIndexReady) {
+                    out.println("MISSING SAMPLE INDEX");
+                    continue;
+                }
                 try (RawSingleSampleIndexVariantDBIterator it = sampleIndexDBAdaptor.rawIterator(studyName, sampleName)) {
-                    out.println("");
-                    out.println("");
-                    out.println("");
-                    out.println("SAMPLE: " + sampleName + " (id=" + sampleId + ")");
                     while (it.hasNext()) {
                         SampleIndexVariant entry = it.next();
                         out.println("_______________________");
@@ -524,7 +535,6 @@ public class VariantHbaseTestUtils {
                     }
 
                 });
-
             });
         }
     }

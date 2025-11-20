@@ -57,7 +57,7 @@ class RestClientGenerator(ABC):
             'Analysis - Clinical': 'ClinicalAnalysis',
             'Operations - Variant Storage': 'VariantOperation',
             'Meta': 'Meta',
-            'CVDB': 'CVDB',
+            'Analysis - CVDB': 'CVDB',
             'GA4GH': 'GA4GH',
             'Admin': 'Admin'
         }

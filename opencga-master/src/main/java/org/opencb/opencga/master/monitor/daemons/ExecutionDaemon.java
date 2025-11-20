@@ -139,7 +139,7 @@ import static org.opencb.opencga.core.api.ParamConstants.STUDY_PARAM;
 public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
 
     public static final String OUTDIR_PARAM = "outdir";
-    public static final int EXECUTION_RESULT_FILE_EXPIRATION_SECONDS = (int) TimeUnit.MINUTES.toSeconds(10);
+    public static final int EXECUTION_RESULT_FILE_EXPIRATION_SECONDS = (int) TimeUnit.MINUTES.toSeconds(1);
     public static final String REDACTED_TOKEN = "xxxxxxxxxxxxxxxxxxxxx";
     private final StorageConfiguration storageConfiguration;
     private final String internalCli;
@@ -206,7 +206,6 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
             put(GatkWrapperAnalysis.ID, "variant " + GatkWrapperAnalysis.ID + "-run");
             put(ExomiserWrapperAnalysis.ID, "variant " + ExomiserWrapperAnalysis.ID + "-run");
             put(VariantSecondaryAnnotationIndexOperationTool.ID, "variant secondary-index");
-            put(VariantSecondaryIndexSamplesDeleteOperationTool.ID, "variant secondary-index-delete");
             put(VariantScoreDeleteOperationTool.ID, "variant score-delete");
             put(VariantScoreIndexOperationTool.ID, "variant score-index");
             put(VariantSecondarySampleIndexOperationTool.ID, "variant sample-index");
@@ -280,14 +279,13 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
     }
 
     @Override
-    public void apply() throws Exception {
+    protected void apply() throws Exception {
         checkJobs();
     }
 
     @Override
     public void close() throws IOException {
         super.close();
-
         try {
             logger.info("Attempt to shutdown webhook executor");
             executor.shutdown();
@@ -379,6 +377,10 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
 
         switch (jobStatus.getId()) {
             case Enums.ExecutionStatus.RUNNING:
+                if (killSignalSent(job)) {
+                    return processKillJob(job);
+                }
+
                 ExecutionResult result = readExecutionResult(job);
                 if (result != null) {
                     if (result.getExecutor() != null
@@ -403,18 +405,43 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
                 // Register job results
                 return processFinishedJob(job, jobStatus);
             case Enums.ExecutionStatus.QUEUED:
+                if (killSignalSent(job)) {
+                    return processKillJob(job);
+                }
+
                 // Running job went back to Queued?
                 logger.info("Running job '{}' went back to '{}' status", job.getId(), jobStatus.getId());
                 return setStatus(job, new Enums.ExecutionStatus(Enums.ExecutionStatus.QUEUED));
             case Enums.ExecutionStatus.PENDING:
             case Enums.ExecutionStatus.UNKNOWN:
             default:
+                if (killSignalSent(job)) {
+                    return processKillJob(job);
+                }
+
                 logger.info("Unexpected status '{}' for job '{}'", jobStatus.getId(), job.getId());
                 return 0;
 
         }
 
 
+    }
+
+    private int processKillJob(Job job) {
+        logger.info("[{}] - Kill signal request received for job with status='{}'. Attempting to abort execution.", job.getId(),
+                job.getInternal().getStatus().getId());
+        try {
+            if (getBatchExecutor(job).kill(job.getId())) {
+                return abortKillJob(job, "Job was already in execution. Job killed by the user.");
+            } else {
+                logger.info("[{}] - Kill signal sent. Waiting for job to finish.", job.getId());
+                return 0;
+            }
+        } catch (Exception e) {
+            // Skip this job. Will be retried next loop iteration
+            logger.error("[{}] - Error trying to kill the job: {}", job.getId(), e.getMessage(), e);
+            return 0;
+        }
     }
 
     protected void checkQueuedJobs(List<String> organizationIds) {
@@ -754,11 +781,12 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
             return;
         }
 
-        List<String> fileList = new ArrayList<>(job.getInput().size());
+        List<String> filePathList = new ArrayList<>(job.getInput().size());
         for (File file : job.getInput()) {
-            fileList.add(file.getPath());
+            filePathList.add(file.getPath());
         }
-        List<File> inputFiles = VariantFileIndexerOperationManager.getInputFiles(catalogManager, job.getStudy().getId(), fileList, token);
+        List<File> inputFiles = VariantFileIndexerOperationManager.getInputFiles(catalogManager, job.getStudy().getId(), filePathList,
+                token);
         // Fetch the samples that are going to be indexed
         Set<String> sampleIds = new HashSet<>();
         inputFiles.forEach((f) -> sampleIds.addAll(f.getSampleIds()));
@@ -1125,6 +1153,9 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
         // Check if analysis result file is there
         ExecutionResult execution = readExecutionResult(job, EXECUTION_RESULT_FILE_EXPIRATION_SECONDS);
         if (execution != null) {
+            if (execution.getStatus().getName() == Status.Type.ERROR && job.getInternal().isKillJobRequested()) {
+                return new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED);
+            }
             return new Enums.ExecutionStatus(execution.getStatus().getName().name());
         }
 

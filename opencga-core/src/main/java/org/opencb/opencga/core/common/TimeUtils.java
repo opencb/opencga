@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -189,5 +190,9 @@ public class TimeUtils {
             logger.warn(e.getMessage());
         }
         return date != null;
+    }
+
+    public static Date toDate(long epochMillis) {
+        return Date.from(Instant.ofEpochMilli(epochMillis));
     }
 }

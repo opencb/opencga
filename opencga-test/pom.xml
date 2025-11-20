@@ -30,7 +30,7 @@
 
     <artifactId>opencga-test</artifactId>
     <packaging>jar</packaging>
-
+    <name>OpenCGA Test</name>
     <dependencies>
         <dependency>
             <groupId>org.opencb.opencga</groupId>

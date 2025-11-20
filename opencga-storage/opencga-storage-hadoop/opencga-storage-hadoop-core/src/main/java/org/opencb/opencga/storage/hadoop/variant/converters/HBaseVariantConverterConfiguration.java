@@ -4,23 +4,28 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 
 import java.util.List;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass.UNKNOWN_GENOTYPE;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.INCLUDE_SAMPLE_ID;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.getIncludeSampleData;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.isValidParam;
 
 public class HBaseVariantConverterConfiguration {
 
-    public static final String MUTABLE_SAMPLES_POSITION = "mutableSamplesPosition";
+    public static final String MUTABLE_SAMPLES_POSITION = "HBaseVariantConverterConfiguration.mutableSamplesPosition";
     @Deprecated
-    public static final String STUDY_NAME_AS_STUDY_ID = "studyNameAsStudyId";
-    public static final String SIMPLE_GENOTYPES = "simpleGenotypes";
+    public static final String STUDY_NAME_AS_STUDY_ID = "HBaseVariantConverterConfiguration.studyNameAsStudyId";
+    public static final String SIMPLE_GENOTYPES = "HBaseVariantConverterConfiguration.simpleGenotypes";
 
     private final VariantQueryProjection projection;
 
-    private final boolean failOnWrongVariants;
     private final boolean failOnEmptyVariants;
     private final boolean studyNameAsStudyId;
     private final boolean simpleGenotypes;
@@ -28,14 +33,15 @@ public class HBaseVariantConverterConfiguration {
     private final boolean mutableSamplesPosition;
     private final List<String> sampleDataKeys;
     private final boolean includeSampleId;
-    private final boolean includeIndexStatus;
+    private final long searchIndexCreationTs;
+    private final long searchIndexUpdateTs;
+    private final boolean sparse;
 
-    public HBaseVariantConverterConfiguration(VariantQueryProjection projection, boolean failOnWrongVariants, boolean failOnEmptyVariants,
+    public HBaseVariantConverterConfiguration(VariantQueryProjection projection, boolean failOnEmptyVariants,
                                               boolean studyNameAsStudyId, boolean simpleGenotypes, String unknownGenotype,
                                               boolean mutableSamplesPosition, List<String> sampleDataKeys, boolean includeSampleId,
-                                              boolean includeIndexStatus) {
+                                              long searchIndexCreationTs, long searchIndexUpdateTs, boolean sparse) {
         this.projection = projection;
-        this.failOnWrongVariants = failOnWrongVariants;
         this.failOnEmptyVariants = failOnEmptyVariants;
         this.studyNameAsStudyId = studyNameAsStudyId;
         this.simpleGenotypes = simpleGenotypes;
@@ -43,7 +49,9 @@ public class HBaseVariantConverterConfiguration {
         this.mutableSamplesPosition = mutableSamplesPosition;
         this.sampleDataKeys = sampleDataKeys;
         this.includeSampleId = includeSampleId;
-        this.includeIndexStatus = includeIndexStatus;
+        this.searchIndexCreationTs = searchIndexCreationTs;
+        this.searchIndexUpdateTs = searchIndexUpdateTs;
+        this.sparse = sparse;
     }
 
     public static Builder builder() {
@@ -51,7 +59,7 @@ public class HBaseVariantConverterConfiguration {
     }
 
     public static Builder builder(Configuration configuration) {
-        Builder builder = new Builder();
+        Builder builder = builder();
 
         if (StringUtils.isNotEmpty(configuration.get(MUTABLE_SAMPLES_POSITION))) {
             builder.setMutableSamplesPosition(configuration.getBoolean(MUTABLE_SAMPLES_POSITION, true));
@@ -62,12 +70,22 @@ public class HBaseVariantConverterConfiguration {
         if (StringUtils.isNotEmpty(configuration.get(SIMPLE_GENOTYPES))) {
             builder.setSimpleGenotypes(configuration.getBoolean(SIMPLE_GENOTYPES, false));
         }
-        builder.setUnknownGenotype(configuration.get(VariantQueryParam.UNKNOWN_GENOTYPE.key()));
+        Query query = VariantMapReduceUtil.getQueryFromConfig(configuration);
+
+        builder.setUnknownGenotype(query.getString(VariantQueryParam.UNKNOWN_GENOTYPE.key()));
+        builder.setSampleDataKeys(getIncludeSampleData(query));
+        if (isValidParam(query, VariantQueryUtils.SPARSE_SAMPLES)) {
+            builder.setSparse(query.getBoolean(VariantQueryUtils.SPARSE_SAMPLES.key(), false));
+        }
+        if (isValidParam(query, VariantQueryParam.INCLUDE_SAMPLE_ID)) {
+            builder.setIncludeSampleId(query.getBoolean(INCLUDE_SAMPLE_ID.key(), false));
+        }
+
         return builder;
     }
 
-    public static Builder builder(QueryOptions options) {
-        Builder builder = new Builder();
+    public static Builder builder(Query query, QueryOptions options) {
+        Builder builder = builder();
         if (options == null) {
             return builder;
         }
@@ -81,8 +99,24 @@ public class HBaseVariantConverterConfiguration {
         if (StringUtils.isNotEmpty(options.getString(SIMPLE_GENOTYPES))) {
             builder.setSimpleGenotypes(options.getBoolean(SIMPLE_GENOTYPES, false));
         }
-        builder.setUnknownGenotype(options.getString(VariantQueryParam.UNKNOWN_GENOTYPE.key()));
+        builder.setUnknownGenotype(query.getString(VariantQueryParam.UNKNOWN_GENOTYPE.key()));
+        builder.setSampleDataKeys(getIncludeSampleData(query));
+        if (isValidParam(query, VariantQueryUtils.SPARSE_SAMPLES)) {
+            builder.setSparse(query.getBoolean(VariantQueryUtils.SPARSE_SAMPLES.key(), false));
+        }
+        if (isValidParam(query, VariantQueryParam.INCLUDE_SAMPLE_ID)) {
+            builder.setIncludeSampleId(query.getBoolean(INCLUDE_SAMPLE_ID.key(), false));
+        }
+
         return builder;
+    }
+
+    public void configure(Configuration configuration) {
+        configuration.setBoolean(MUTABLE_SAMPLES_POSITION, mutableSamplesPosition);
+        configuration.setBoolean(STUDY_NAME_AS_STUDY_ID, studyNameAsStudyId);
+        configuration.setBoolean(SIMPLE_GENOTYPES, simpleGenotypes);
+        configuration.setBoolean(VariantQueryUtils.SPARSE_SAMPLES.key(), sparse);
+        configuration.set(VariantQueryParam.UNKNOWN_GENOTYPE.key(), unknownGenotype);
     }
 
     public VariantQueryProjection getProjection() {
@@ -97,10 +131,6 @@ public class HBaseVariantConverterConfiguration {
         return simpleGenotypes;
     }
 
-    public boolean getFailOnWrongVariants() {
-        return failOnWrongVariants;
-    }
-
     public boolean getFailOnEmptyVariants() {
         return failOnEmptyVariants;
     }
@@ -111,6 +141,10 @@ public class HBaseVariantConverterConfiguration {
 
     public boolean getMutableSamplesPosition() {
         return mutableSamplesPosition;
+    }
+
+    public boolean getSparse() {
+        return sparse;
     }
 
     /**
@@ -126,21 +160,29 @@ public class HBaseVariantConverterConfiguration {
         return includeSampleId;
     }
 
-    public boolean getIncludeIndexStatus() {
-        return includeIndexStatus;
+    public long getSearchIndexCreationTs() {
+        return searchIndexCreationTs;
+    }
+
+    public long getSearchIndexUpdateTs() {
+        return searchIndexUpdateTs;
     }
 
     public static class Builder {
         private VariantQueryProjection projection;
         private boolean studyNameAsStudyId = false;
         private boolean simpleGenotypes = false;
-        private boolean failOnWrongVariants = HBaseToVariantConverter.isFailOnWrongVariants();
         private boolean failOnEmptyVariants = false;
         private String unknownGenotype = UNKNOWN_GENOTYPE;
         private boolean mutableSamplesPosition = true;
         private List<String> sampleDataKeys;
         private boolean includeSampleId;
-        private boolean includeIndexStatus;
+        private long searchIndexCreationTs = -1;
+        private long searchIndexUpdateTs = -1;
+        private boolean sparse = false;
+
+        public Builder() {
+        }
 
         public Builder setProjection(VariantQueryProjection projection) {
             this.projection = projection;
@@ -154,11 +196,6 @@ public class HBaseVariantConverterConfiguration {
 
         public Builder setSimpleGenotypes(boolean simpleGenotypes) {
             this.simpleGenotypes = simpleGenotypes;
-            return this;
-        }
-
-        public Builder setFailOnWrongVariants(boolean failOnWrongVariants) {
-            this.failOnWrongVariants = failOnWrongVariants;
             return this;
         }
 
@@ -191,14 +228,20 @@ public class HBaseVariantConverterConfiguration {
             return this;
         }
 
-        public Builder setIncludeIndexStatus(boolean includeIndexStatus) {
-            this.includeIndexStatus = includeIndexStatus;
+        public Builder setIncludeIndexStatus(SearchIndexMetadata indexMetadata) {
+            this.searchIndexCreationTs = indexMetadata.getCreationDateTimestamp();
+            this.searchIndexUpdateTs = indexMetadata.getLastUpdateDateTimestamp();
+            return this;
+        }
+
+        public Builder setSparse(boolean sparse) {
+            this.sparse = sparse;
             return this;
         }
 
         public HBaseVariantConverterConfiguration build() {
             return new HBaseVariantConverterConfiguration(
-                    projection, failOnWrongVariants,
+                    projection,
                     failOnEmptyVariants,
                     studyNameAsStudyId,
                     simpleGenotypes,
@@ -206,7 +249,9 @@ public class HBaseVariantConverterConfiguration {
                     mutableSamplesPosition,
                     sampleDataKeys,
                     includeSampleId,
-                    includeIndexStatus);
+                    searchIndexCreationTs,
+                    searchIndexUpdateTs,
+                    sparse);
         }
     }
 }

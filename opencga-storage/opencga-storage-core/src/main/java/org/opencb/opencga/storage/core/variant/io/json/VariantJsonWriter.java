@@ -18,22 +18,17 @@ package org.opencb.opencga.storage.core.variant.io.json;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.util.MinimalPrettyPrinter;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.formats.variant.vcf4.VariantVcfFactory;
-import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
-import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.FileEntry;
-import org.opencb.biodata.models.variant.avro.VariantAnnotation;
-import org.opencb.biodata.models.variant.stats.VariantStats;
-import org.opencb.opencga.core.models.common.mixins.GenotypeJsonMixin;
-import org.opencb.opencga.core.models.common.mixins.VariantStatsJsonMixin;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
-import org.opencb.opencga.storage.core.variant.io.json.mixin.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -120,14 +115,11 @@ public class VariantJsonWriter implements VariantWriter {
     @Override
     public boolean pre() {
         jsonObjectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
-        jsonObjectMapper.addMixIn(StudyEntry.class, VariantSourceEntryJsonMixin.class);
-        jsonObjectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);
-        jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
-        jsonObjectMapper.addMixIn(VariantAnnotation.class, VariantAnnotationMixin.class);
-        jsonObjectMapper.addMixIn(ConsequenceType.class, ConsequenceTypeMixin.class);
+        JacksonUtils.addVariantMixIn(jsonObjectMapper);
 
         try {
             variantsGenerator = factory.createGenerator(variantsStream);
+            variantsGenerator.setPrettyPrinter(new MinimalPrettyPrinter("\n"));
             if (fileStream != null || fileMetadata != null) {
                 fileGenerator = factory.createGenerator(fileStream);
             }
@@ -164,7 +156,6 @@ public class VariantJsonWriter implements VariantWriter {
                 }
             }
             variantsGenerator.writeObject(variant);
-            variantsGenerator.writeRaw('\n');
             numVariantsWritten++;
         } catch (IOException ex) {
             logger.error(variant.toString(), ex);

@@ -72,7 +72,7 @@ public class VariantAnnotationRebuilderDriver extends AbstractVariantsTableDrive
         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.ALLELES.bytes());
         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.FULL_ANNOTATION.bytes());
 
-        VariantMapReduceUtil.configureMapReduceScan(scan, getConf());
+        VariantMapReduceUtil.configureMapReduceScan(scan, job);
         VariantMapReduceUtil.initTableMapperJob(job, variantTable, variantTable, scan, getMapperClass());
         VariantMapReduceUtil.setNoneReduce(job);
 
@@ -101,7 +101,7 @@ public class VariantAnnotationRebuilderDriver extends AbstractVariantsTableDrive
         protected void setup(Context context) throws IOException, InterruptedException {
             super.setup(context);
             converter = new VariantAnnotationToHBaseConverter();
-            toAnnotationConverter = new HBaseToVariantAnnotationConverter(0);
+            toAnnotationConverter = new HBaseToVariantAnnotationConverter();
         }
 
         @Override

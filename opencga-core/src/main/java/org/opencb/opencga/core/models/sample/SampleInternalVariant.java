@@ -1,5 +1,6 @@
 package org.opencb.opencga.core.models.sample;
 
+import java.util.List;
 import java.util.Objects;
 
 public class SampleInternalVariant {
@@ -10,6 +11,7 @@ public class SampleInternalVariant {
     private SampleInternalVariantSecondarySampleIndex secondarySampleIndex;
     private SampleInternalVariantAnnotationIndex annotationIndex;
     private SampleInternalVariantSecondaryAnnotationIndex secondaryAnnotationIndex;
+    private List<SampleInternalVariantAggregateFamily> aggregateFamily;
 
     public SampleInternalVariant() {
     }
@@ -29,6 +31,7 @@ public class SampleInternalVariant {
         sb.append(", secondarySampleIndex=").append(secondarySampleIndex);
         sb.append(", annotationIndex=").append(annotationIndex);
         sb.append(", secondaryAnnotationIndex=").append(secondaryAnnotationIndex);
+        sb.append(", aggregateFamily=").append(aggregateFamily);
         sb.append('}');
         return sb.toString();
     }
@@ -87,6 +90,15 @@ public class SampleInternalVariant {
         return this;
     }
 
+    public List<SampleInternalVariantAggregateFamily> getAggregateFamily() {
+        return aggregateFamily;
+    }
+
+    public SampleInternalVariant setAggregateFamily(List<SampleInternalVariantAggregateFamily> aggregateFamily) {
+        this.aggregateFamily = aggregateFamily;
+        return this;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -95,11 +107,12 @@ public class SampleInternalVariant {
         return Objects.equals(index, that.index) &&
                 Objects.equals(secondarySampleIndex, that.secondarySampleIndex) &&
                 Objects.equals(annotationIndex, that.annotationIndex) &&
-                Objects.equals(secondaryAnnotationIndex, that.secondaryAnnotationIndex);
+                Objects.equals(secondaryAnnotationIndex, that.secondaryAnnotationIndex) &&
+                Objects.equals(aggregateFamily, that.aggregateFamily);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(index, secondarySampleIndex, annotationIndex, secondaryAnnotationIndex);
+        return Objects.hash(index, secondarySampleIndex, annotationIndex, secondaryAnnotationIndex, aggregateFamily);
     }
 }

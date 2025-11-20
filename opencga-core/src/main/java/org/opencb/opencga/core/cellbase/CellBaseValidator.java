@@ -236,13 +236,40 @@ public class CellBaseValidator {
     }
 
     private void validateSpeciesAssembly(SpeciesProperties speciesProperties) {
-        for (SpeciesConfiguration sc : speciesProperties.getVertebrates()) {
+        if (validateSpeciesAssembly(speciesProperties.getVertebrates())) {
+            return;
+        }
+        if (validateSpeciesAssembly(speciesProperties.getBacteria())) {
+            return;
+        }
+        if (validateSpeciesAssembly(speciesProperties.getFungi())) {
+            return;
+        }
+        if (validateSpeciesAssembly(speciesProperties.getMetazoa())) {
+            return;
+        }
+        if (validateSpeciesAssembly(speciesProperties.getPlants())) {
+            return;
+        }
+        if (validateSpeciesAssembly(speciesProperties.getProtist())) {
+            return;
+        }
+        if (validateSpeciesAssembly(speciesProperties.getVirus())) {
+            return;
+        }
+        throw new IllegalArgumentException("Species '" + getSpecies() + "' not found in cellbase "
+                + "url: '" + getURL() + "'"
+                + ", version: '" + getVersion());
+    }
+
+    private boolean validateSpeciesAssembly(List<SpeciesConfiguration> species) {
+        for (SpeciesConfiguration sc : species) {
             if (sc.getId().equals(getSpecies())) {
                 List<String> assemblies = new ArrayList<>();
                 for (SpeciesConfiguration.Assembly scAssembly : sc.getAssemblies()) {
                     assemblies.add(scAssembly.getName());
                     if (scAssembly.getName().equalsIgnoreCase(getAssembly())) {
-                        return;
+                        return true;
                     }
                 }
                 throw new IllegalArgumentException("Assembly '" + getAssembly() + "' not found in cellbase "
@@ -251,9 +278,7 @@ public class CellBaseValidator {
                         + "', species: '" + getSpecies() + ". Supported assemblies : " + assemblies);
             }
         }
-        throw new IllegalArgumentException("Species '" + getSpecies() + "' not found in cellbase "
-                + "url: '" + getURL() + "'"
-                + ", version: '" + getVersion());
+        return false;
     }
 
     public boolean supportsDataRelease() throws IOException {
@@ -332,7 +357,14 @@ public class CellBaseValidator {
     }
 
     private ObjectMap retryMetaAbout() throws IOException {
-        return retry("meta/about", () -> cellBaseClient.getMetaClient().about().firstResult());
+        return retry("meta/about", () -> {
+            CellBaseDataResponse<ObjectMap> about = cellBaseClient.getMetaClient().about();
+            ObjectMap aboutMap = about.firstResult();
+            if (aboutMap == null || aboutMap.isEmpty()) {
+                throw new NullPointerException("meta/about information is null or empty");
+            }
+            return aboutMap;
+        });
     }
 
     private SpeciesProperties retryMetaSpecies() throws IOException {

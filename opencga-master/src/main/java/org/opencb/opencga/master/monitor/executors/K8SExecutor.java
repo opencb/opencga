@@ -550,17 +550,34 @@ public class K8SExecutor implements BatchExecutor {
         // Launch the main process in background.
         String mainProcess = commandLine + " &";
 
+        // Wait for the main process to finish and capture its PID.
+        // Active wait instead of `wait` to allow trap to kill -15 the job
+        // We will use this PID to kill the main process if the job is interrupted.
         String wait = "PID=$! ; \n"
                 + "echo $PID > PID ; \n"
                 + "while ps -p \"$PID\" >/dev/null; do \n"
                 + "    sleep 1 ; \n"
-                + "done \n"
-                + "touch '" + DIND_DONE_FILE + "' \n"
-                + "if [ -f INTERRUPTED ]; then\n"
-                + "  exit 1\n"
-                + "fi";
+                + "done \n";
 
-        return trapTerm + " " + mainProcess + " " + wait;
+        // Create a file to indicate that the dind sidecar container should finish
+        String dindDone = "touch '" + DIND_DONE_FILE + "' \n";
+
+        // If the job was interrupted, exit with error
+        String exitIfInterrupted = "if [ -f INTERRUPTED ]; then\n"
+                + "  exit 1\n"
+                + "fi \n";
+
+        // Capture error code and forward it
+        String captureErrorCode = "wait $PID\n"
+                + "ERRCODE=$? \n"
+                + "exit $ERRCODE";
+
+        return trapTerm + " "
+                + mainProcess + " "
+                + wait + " "
+                + dindDone + " "
+                + exitIfInterrupted + " "
+                + captureErrorCode;
     }
 
     private String getStatusForce(String k8sJobName) {

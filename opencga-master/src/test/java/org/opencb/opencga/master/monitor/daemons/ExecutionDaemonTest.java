@@ -64,6 +64,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
@@ -685,6 +686,75 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         assertEquals(FileStatus.ERROR, job.getOutput().get(0).getInternal().getStatus().getId());
     }
 
+    @Test
+    public void testKillPendingJob() throws CatalogException {
+        HashMap<String, Object> params = new HashMap<>();
+        params.put(ExecutionDaemon.OUTDIR_PARAM, "outputDir/");
+        Job job = catalogManager.getJobManager().submit(studyFqn, JobType.NATIVE, "variant-index", Enums.Priority.MEDIUM, params, ownerToken).first();
+        String jobId = job.getId();
+
+        catalogManager.getJobManager().kill(studyFqn, jobId, ownerToken);
+
+        checkStatus(getJob(jobId), Enums.ExecutionStatus.PENDING);
+        daemon.checkJobs();
+        checkStatus(getJob(jobId), Enums.ExecutionStatus.ABORTED);
+    }
+
+    @Test
+    public void testKillRunningJob() throws CatalogException {
+        HashMap<String, Object> params = new HashMap<>();
+        params.put(ExecutionDaemon.OUTDIR_PARAM, "outputDir/");
+        Job job = catalogManager.getJobManager().submit(studyFqn, JobType.NATIVE, "variant-index", Enums.Priority.MEDIUM, params, ownerToken).first();
+        String jobId = job.getId();
+
+        checkStatus(getJob(jobId), Enums.ExecutionStatus.PENDING);
+        daemon.checkJobs();
+        checkStatus(getJob(jobId), Enums.ExecutionStatus.QUEUED);
+        executor.jobStatus.put(jobId, Enums.ExecutionStatus.RUNNING);
+        daemon.checkJobs();
+        checkStatus(getJob(jobId), Enums.ExecutionStatus.RUNNING);
+
+        catalogManager.getJobManager().kill(studyFqn, jobId, ownerToken);
+
+        daemon.checkJobs();
+
+        checkStatus(getJob(jobId), Enums.ExecutionStatus.RUNNING);
+        daemon.checkJobs();
+
+        checkStatus(getJob(jobId), Enums.ExecutionStatus.RUNNING);
+        daemon.checkJobs();
+
+        checkStatus(getJob(jobId), Enums.ExecutionStatus.RUNNING);
+        daemon.checkJobs();
+        checkStatus(getJob(jobId), Enums.ExecutionStatus.ABORTED);
+    }
+
+    @Test
+    public void testKillQueuedJob() throws CatalogException {
+        HashMap<String, Object> params = new HashMap<>();
+        params.put(ExecutionDaemon.OUTDIR_PARAM, "outputDir/");
+        Job job = catalogManager.getJobManager().submit(studyFqn, JobType.NATIVE, "variant-index", Enums.Priority.MEDIUM, params, ownerToken).first();
+        String jobId = job.getId();
+
+        checkStatus(getJob(jobId), Enums.ExecutionStatus.PENDING);
+        daemon.checkJobs();
+        checkStatus(getJob(jobId), Enums.ExecutionStatus.QUEUED);
+
+        catalogManager.getJobManager().kill(studyFqn, jobId, ownerToken);
+
+        daemon.checkJobs();
+        checkStatus(getJob(jobId), Enums.ExecutionStatus.QUEUED);
+
+        daemon.checkJobs();
+        checkStatus(getJob(jobId), Enums.ExecutionStatus.QUEUED);
+
+        daemon.checkJobs();
+        checkStatus(getJob(jobId), Enums.ExecutionStatus.QUEUED);
+
+        daemon.checkJobs();
+        checkStatus(getJob(jobId), Enums.ExecutionStatus.ABORTED);
+    }
+
     private void checkStatus(Job job, String status) {
         assertEquals(status, job.getInternal().getStatus().getId());
         assertEquals(status, job.getInternal().getStatus().getName());
@@ -707,6 +777,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
     private static class DummyBatchExecutor implements BatchExecutor {
 
         public Map<String, String> jobStatus = new HashMap<>();
+        public Map<String, AtomicInteger> jobKillCount = new HashMap<>();
 
         @Override
         public void execute(Job job, String queue, String commandLine, Path stdout, Path stderr) throws Exception {
@@ -740,7 +811,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
         @Override
         public boolean kill(String jobId) throws Exception {
-            return false;
+            return jobKillCount.computeIfAbsent(jobId, k -> new AtomicInteger(3)).decrementAndGet() < 0;
         }
     }
 }
