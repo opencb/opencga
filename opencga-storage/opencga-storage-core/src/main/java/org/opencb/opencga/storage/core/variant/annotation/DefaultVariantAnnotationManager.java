@@ -517,18 +517,23 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
     protected void postAnnotate(Query query, boolean doCreate, boolean doLoad, ObjectMap params)
             throws VariantAnnotatorException, StorageEngineException, IOException {
         boolean overwrite = params.getBoolean(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), false);
+        VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
+        if (doLoad) {
+            dbAdaptor.getMetadataManager().updateProjectMetadata(projectMetadata -> {
+                projectMetadata.setAnnotationIndexLastUpdateEndTimestamp(System.currentTimeMillis());
+                return projectMetadata;
+            });
+        }
         if (doLoad && doCreate) {
             ProjectMetadata.VariantAnnotationMetadata newAnnotationMetadata = variantAnnotator.getVariantAnnotationMetadata();
 
-            dbAdaptor.getMetadataManager().updateProjectMetadata(projectMetadata -> {
+            metadataManager.updateProjectMetadata(projectMetadata -> {
                 updateCurrentAnnotation(variantAnnotator, projectMetadata, overwrite, newAnnotationMetadata);
             });
-            dbAdaptor.getMetadataManager().updateAnnotationIndexTimestamp(annotateAll, annotationStartTimestamp);
+            metadataManager.updateAnnotationIndexTimestamp(annotateAll, annotationStartTimestamp);
         }
 
         if (doLoad && filesToBeAnnotated != null) {
-            VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
-
             for (Map.Entry<Integer, Collection<Integer>> entry : samplesToBeAnnotated.entrySet()) {
                 Integer studyId = entry.getKey();
                 Collection<Integer> sampleIds = entry.getValue();

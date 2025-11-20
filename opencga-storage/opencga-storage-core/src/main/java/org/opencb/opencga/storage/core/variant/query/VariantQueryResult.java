@@ -79,6 +79,8 @@ public class VariantQueryResult<T> extends OpenCGAResult<T> {
         }
         if (variantQuery != null) {
             addSamplesMetadataIfRequested(variantQuery);
+            addEvents(variantQuery);
+
         }
     }
 
@@ -102,6 +104,7 @@ public class VariantQueryResult<T> extends OpenCGAResult<T> {
         this(dataResult, dataResult.getResults());
         if (variantQuery != null) {
             addSamplesMetadataIfRequested(variantQuery);
+            addEvents(variantQuery);
         }
     }
 
@@ -132,7 +135,7 @@ public class VariantQueryResult<T> extends OpenCGAResult<T> {
         this(dataResult, (ParsedVariantQuery) null);
     }
 
-    private void addSamplesMetadataIfRequested(ParsedVariantQuery query) {
+    public void addEvents(ParsedVariantQuery query) {
         VariantQueryProjection projection = query.getProjection();
 
         // Ensure is modifiable
@@ -145,6 +148,10 @@ public class VariantQueryResult<T> extends OpenCGAResult<T> {
         if (!projection.getEvents().isEmpty()) {
             getEvents().addAll(projection.getEvents());
         }
+    }
+
+    private void addSamplesMetadataIfRequested(ParsedVariantQuery query) {
+        VariantQueryProjection projection = query.getProjection();
 
         if (query.getQuery().sampleMetadata()) {
             setSamples(query.getProjection().getSampleNames());

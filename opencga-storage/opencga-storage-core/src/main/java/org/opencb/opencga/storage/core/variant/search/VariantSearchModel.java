@@ -17,14 +17,11 @@
 package org.opencb.opencga.storage.core.variant.search;
 
 import org.apache.solr.client.solrj.beans.Field;
-import org.opencb.biodata.models.variant.Variant;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter.HASH_PREFIX;
 
 /**
  * Created by wasim on 09/11/16.
@@ -38,8 +35,8 @@ public class VariantSearchModel {
     @Field("id")
     private String id;
 
-    @Field("variantId")
-    private String variantId;
+    @Field("fullId")
+    private String fullId;
 
     @Field("chromosome")
     private String chromosome;
@@ -57,34 +54,34 @@ public class VariantSearchModel {
     private String type;
 
     @Field("release")
-    private int release;
+    private Integer release;
 
     @Field("studies")
     private List<String> studies;
 
     @Field("phastCons")
-    private double phastCons;
+    private Double phastCons;
 
     @Field("phylop")
-    private double phylop;
+    private Double phylop;
 
     @Field("gerp")
-    private double gerp;
+    private Double gerp;
 
     @Field("caddRaw")
-    private double caddRaw;
+    private Double caddRaw;
 
     @Field("caddScaled")
-    private double caddScaled;
+    private Double caddScaled;
 
     @Field("sift")
-    private double sift;
+    private Double sift;
 
     @Field("siftDesc")
     private String siftDesc;
 
     @Field("polyphen")
-    private double polyphen;
+    private Double polyphen;
 
     @Field("polyphenDesc")
     private String polyphenDesc;
@@ -107,9 +104,6 @@ public class VariantSearchModel {
     @Field("traits")
     private List<String> traits;
 
-    @Field("other")
-    private List<String> other;
-
     @Field("passStats_*")
     private Map<String, Float> passStats;
 
@@ -125,39 +119,11 @@ public class VariantSearchModel {
     @Field("popFreq_*")
     private Map<String, Float> popFreq;
 
-    @Field("gt_*")
-    private Map<String, String> gt;
-
-    @Field("dp_*")
-    private Map<String, Integer> dp;
-
-    @Field("sampleFormat_*")
-    private Map<String, String> sampleFormat;
-
-    @Field("qual_*")
-    private Map<String, Float> qual;
-
-    @Field("filter_*")
-    private Map<String, String> filter;
-
-    @Field("fileInfo_*")
-    private Map<String, String> fileInfo;
-
     @Field("attr_*")
     private Map<String, Object> attr;
 
 
-    public static final double MISSING_VALUE = -100.0;
-
     public VariantSearchModel() {
-        phastCons = MISSING_VALUE;
-        phylop = MISSING_VALUE;
-        gerp = MISSING_VALUE;
-        caddRaw = MISSING_VALUE;
-        caddScaled = MISSING_VALUE;
-        sift = MISSING_VALUE;
-        polyphen = MISSING_VALUE;
-
         this.xrefs = new ArrayList<>();
         this.studies = new ArrayList<>();
         this.genes = new ArrayList<>();
@@ -165,24 +131,17 @@ public class VariantSearchModel {
         this.soAcc = new ArrayList<>();
         this.geneToSoAcc = new ArrayList<>();
         this.traits = new ArrayList<>();
-        this.other = new ArrayList<>();
         this.passStats = new HashMap<>();
         this.altStats = new HashMap<>();
         this.score = new HashMap<>();
         this.scorePValue = new HashMap<>();
         this.popFreq = new HashMap<>();
-        this.gt = new HashMap<>();
-        this.dp = new HashMap<>();
-        this.sampleFormat = new HashMap<>();
-        this.qual = new HashMap<>();
-        this.filter = new HashMap<>();
-        this.fileInfo = new HashMap<>();
         this.attr = new HashMap<>();
     }
 
     public VariantSearchModel(VariantSearchModel init) {
         this.id = init.getId();
-        this.variantId = init.getVariantId();
+        this.fullId = init.getFullId();
         this.chromosome = init.getChromosome();
         this.start = init.getStart();
         this.end = init.getEnd();
@@ -205,18 +164,11 @@ public class VariantSearchModel {
         this.geneToSoAcc = init.geneToSoAcc;
         this.clinicalSig = init.getClinicalSig();
         this.traits = init.getTraits();
-        this.other = init.getOther();
         this.passStats = init.getPassStats();
         this.altStats = init.getAltStats();
         this.score = init.getScore();
         this.scorePValue = init.getScorePValue();
         this.popFreq = init.getPopFreq();
-        this.gt = init.getGt();
-        this.dp = init.getDp();
-        this.sampleFormat = init.getSampleFormat();
-        this.qual = init.getQual();
-        this.filter = init.getFilter();
-        this.fileInfo = init.getFileInfo();
         this.attr = init.getAttr();
     }
 
@@ -224,7 +176,7 @@ public class VariantSearchModel {
     public String toString() {
         final StringBuilder sb = new StringBuilder("VariantSearchModel{");
         sb.append("id='").append(id).append('\'');
-        sb.append(", variantId='").append(variantId).append('\'');
+        sb.append(", fullId='").append(fullId).append('\'');
         sb.append(", chromosome='").append(chromosome).append('\'');
         sb.append(", start=").append(start);
         sb.append(", end=").append(end);
@@ -247,18 +199,11 @@ public class VariantSearchModel {
         sb.append(", geneToSoAcc=").append(geneToSoAcc);
         sb.append(", clinicalSig=").append(clinicalSig);
         sb.append(", traits=").append(traits);
-        sb.append(", other=").append(other);
         sb.append(", passStats=").append(passStats);
         sb.append(", altStats=").append(altStats);
         sb.append(", score=").append(score);
         sb.append(", scorePValue=").append(scorePValue);
         sb.append(", popFreq=").append(popFreq);
-        sb.append(", gt=").append(gt);
-        sb.append(", dp=").append(dp);
-        sb.append(", sampleFormat=").append(sampleFormat);
-        sb.append(", qual=").append(qual);
-        sb.append(", filter=").append(filter);
-        sb.append(", fileInfo=").append(fileInfo);
         sb.append(", attr=").append(attr);
         sb.append('}');
         return sb.toString();
@@ -268,28 +213,17 @@ public class VariantSearchModel {
         return id;
     }
 
-    public Variant toVariantSimple() {
-        String variantId = getId();
-        if (variantId.startsWith(HASH_PREFIX)) {
-            Object o = getAttr().get("attr_id");
-            variantId = o instanceof String ? (String) o : ((List<String>) o).get(0);
-        }
-        Variant variant = new Variant(variantId);
-        variant.setId(variantId);
-        return variant;
-    }
-
     public VariantSearchModel setId(String id) {
         this.id = id;
         return this;
     }
 
-    public String getVariantId() {
-        return variantId;
+    public String getFullId() {
+        return fullId;
     }
 
-    public VariantSearchModel setVariantId(String variantId) {
-        this.variantId = variantId;
+    public VariantSearchModel setFullId(String fullId) {
+        this.fullId = fullId;
         return this;
     }
 
@@ -338,11 +272,11 @@ public class VariantSearchModel {
         return this;
     }
 
-    public int getRelease() {
+    public Integer getRelease() {
         return release;
     }
 
-    public VariantSearchModel setRelease(int release) {
+    public VariantSearchModel setRelease(Integer release) {
         this.release = release;
         return this;
     }
@@ -356,56 +290,56 @@ public class VariantSearchModel {
         return this;
     }
 
-    public double getPhastCons() {
+    public Double getPhastCons() {
         return phastCons;
     }
 
-    public VariantSearchModel setPhastCons(double phastCons) {
+    public VariantSearchModel setPhastCons(Double phastCons) {
         this.phastCons = phastCons;
         return this;
     }
 
-    public double getPhylop() {
+    public Double getPhylop() {
         return phylop;
     }
 
-    public VariantSearchModel setPhylop(double phylop) {
+    public VariantSearchModel setPhylop(Double phylop) {
         this.phylop = phylop;
         return this;
     }
 
-    public double getGerp() {
+    public Double getGerp() {
         return gerp;
     }
 
-    public VariantSearchModel setGerp(double gerp) {
+    public VariantSearchModel setGerp(Double gerp) {
         this.gerp = gerp;
         return this;
     }
 
-    public double getCaddRaw() {
+    public Double getCaddRaw() {
         return caddRaw;
     }
 
-    public VariantSearchModel setCaddRaw(double caddRaw) {
+    public VariantSearchModel setCaddRaw(Double caddRaw) {
         this.caddRaw = caddRaw;
         return this;
     }
 
-    public double getCaddScaled() {
+    public Double getCaddScaled() {
         return caddScaled;
     }
 
-    public VariantSearchModel setCaddScaled(double caddScaled) {
+    public VariantSearchModel setCaddScaled(Double caddScaled) {
         this.caddScaled = caddScaled;
         return this;
     }
 
-    public double getSift() {
+    public Double getSift() {
         return sift;
     }
 
-    public VariantSearchModel setSift(double sift) {
+    public VariantSearchModel setSift(Double sift) {
         this.sift = sift;
         return this;
     }
@@ -419,11 +353,11 @@ public class VariantSearchModel {
         return this;
     }
 
-    public double getPolyphen() {
+    public Double getPolyphen() {
         return polyphen;
     }
 
-    public VariantSearchModel setPolyphen(double polyphen) {
+    public VariantSearchModel setPolyphen(Double polyphen) {
         this.polyphen = polyphen;
         return this;
     }
@@ -491,15 +425,6 @@ public class VariantSearchModel {
         return this;
     }
 
-    public List<String> getOther() {
-        return other;
-    }
-
-    public VariantSearchModel setOther(List<String> other) {
-        this.other = other;
-        return this;
-    }
-
     public Map<String, Float> getPassStats() {
         return passStats;
     }
@@ -542,60 +467,6 @@ public class VariantSearchModel {
 
     public VariantSearchModel setPopFreq(Map<String, Float> popFreq) {
         this.popFreq = popFreq;
-        return this;
-    }
-
-    public Map<String, String> getGt() {
-        return gt;
-    }
-
-    public VariantSearchModel setGt(Map<String, String> gt) {
-        this.gt = gt;
-        return this;
-    }
-
-    public Map<String, Integer> getDp() {
-        return dp;
-    }
-
-    public VariantSearchModel setDp(Map<String, Integer> dp) {
-        this.dp = dp;
-        return this;
-    }
-
-    public Map<String, String> getSampleFormat() {
-        return sampleFormat;
-    }
-
-    public VariantSearchModel setSampleFormat(Map<String, String> sampleFormat) {
-        this.sampleFormat = sampleFormat;
-        return this;
-    }
-
-    public Map<String, Float> getQual() {
-        return qual;
-    }
-
-    public VariantSearchModel setQual(Map<String, Float> qual) {
-        this.qual = qual;
-        return this;
-    }
-
-    public Map<String, String> getFilter() {
-        return filter;
-    }
-
-    public VariantSearchModel setFilter(Map<String, String> filter) {
-        this.filter = filter;
-        return this;
-    }
-
-    public Map<String, String> getFileInfo() {
-        return fileInfo;
-    }
-
-    public VariantSearchModel setFileInfo(Map<String, String> fileInfo) {
-        this.fileInfo = fileInfo;
         return this;
     }
 

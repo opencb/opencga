@@ -50,6 +50,7 @@ import org.opencb.opencga.core.models.job.*;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyPermissions;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -319,6 +320,9 @@ public class JobManager extends ResourceManager<Job> {
         // Auto generate id
         if (StringUtils.isEmpty(job.getId())) {
             job.setId(job.getTool().getId() + "." + TimeUtils.getTime() + "." + RandomStringUtils.randomAlphanumeric(6));
+        } else {
+            // Check if the id is valid
+            ParamUtils.checkIdentifier(job.getId(), "job id");
         }
         job.setPriority(ParamUtils.defaultObject(job.getPriority(), Enums.Priority.MEDIUM));
         job.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.JOB));
@@ -384,8 +388,7 @@ public class JobManager extends ResourceManager<Job> {
             job.setInput(inputFiles);
         }
 
-
-
+        job.setExecution(new ExecutionResult());
         job.setAttributes(ParamUtils.defaultObject(job.getAttributes(), HashMap::new));
     }
 

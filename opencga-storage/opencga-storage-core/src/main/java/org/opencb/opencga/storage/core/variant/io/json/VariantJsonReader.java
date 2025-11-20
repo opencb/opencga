@@ -19,15 +19,12 @@ package org.opencb.opencga.storage.core.variant.io.json;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.opencb.biodata.models.variant.Genotype;
-import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
-import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.opencga.core.common.IOUtils;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.storage.core.variant.io.AbstractVariantReader;
-import org.opencb.opencga.core.models.common.mixins.GenotypeJsonMixin;
-import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantSourceEntryJsonMixin;
-import org.opencb.opencga.core.models.common.mixins.VariantStatsJsonMixin;
+import org.slf4j.Logger;
 import org.xerial.snappy.SnappyInputStream;
 
 import java.io.FileInputStream;
@@ -55,6 +52,16 @@ public class VariantJsonReader extends AbstractVariantReader {
     private InputStream variantsStream;
 
     private String variantFilename;
+    private final Logger logger = org.slf4j.LoggerFactory.getLogger(VariantJsonReader.class);
+    private int maxBatchSize = Integer.MAX_VALUE;
+
+    public VariantJsonReader(InputStream variantsStream, int maxBatchSize) {
+        super((InputStream) null, new VariantStudyMetadata());
+        this.variantsStream = variantsStream;
+        this.factory = new JsonFactory();
+        this.jsonObjectMapper = new ObjectMapper(this.factory);
+        this.maxBatchSize = maxBatchSize;
+    }
 
     public VariantJsonReader(VariantStudyMetadata metadata, InputStream variantsStream, InputStream metaFileStream) {
         super(metaFileStream, metadata);
@@ -108,9 +115,7 @@ public class VariantJsonReader extends AbstractVariantReader {
     public boolean pre() {
         super.pre();
 
-        jsonObjectMapper.addMixIn(StudyEntry.class, VariantSourceEntryJsonMixin.class);
-        jsonObjectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);
-        jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
+        JacksonUtils.addVariantMixIn(jsonObjectMapper);
         try {
             variantsParser = factory.createParser(variantsStream);
             // TODO Optimizations for memory management?
@@ -124,12 +129,22 @@ public class VariantJsonReader extends AbstractVariantReader {
     @Override
     public List<Variant> read(int batchSize) {
         List<Variant> listRecords = new ArrayList<>(batchSize);
-
+        long length = 0;
         try {
-            for (int i = 0; i < batchSize && variantsParser.nextToken() != null; i++) {
+            while (listRecords.size() < batchSize && variantsParser.nextToken() != null) {
+                long offset = variantsParser.getCurrentLocation().getByteOffset();
                 Variant variant = variantsParser.readValueAs(Variant.class);
+                long thisLength = variantsParser.getCurrentLocation().getByteOffset() - offset;
+                length += thisLength;
                 listRecords.add(variant);
+                if (length > maxBatchSize) {
+                    // stop reading when maxBatchSize is reached
+                    logger.debug("Stopping reading at {}, maxBatchSize {}. Read {}/{}", IOUtils.humanReadableByteCount(length, false),
+                            IOUtils.humanReadableByteCount(maxBatchSize, false), listRecords.size(), batchSize);
+                    break;
+                }
             }
+//            logger.info("Read {}/{} variants, {}", listRecords.size(), batchSize, IOUtils.humanReadableByteCount(length, false));
         } catch (IOException ex) {
             throw new UncheckedIOException(ex);
         }
