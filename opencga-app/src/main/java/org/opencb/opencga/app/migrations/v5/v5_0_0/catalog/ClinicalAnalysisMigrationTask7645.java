@@ -82,6 +82,17 @@ public class ClinicalAnalysisMigrationTask7645 extends MigrationTool {
         ClinicalAnalysisStudyConfiguration defaultClinicalConfiguration = ClinicalAnalysisStudyConfiguration.defaultConfiguration();
         Document defaultClinicalConfigurationDoc = convertToDocument(defaultClinicalConfiguration);
 
+        Map<String, Document> allClinicalStatuses = new HashMap<>();
+        for (ClinicalStatusValue status : defaultClinicalConfiguration.getStatus()) {
+            Document statusDoc = convertToDocument(status);
+            allClinicalStatuses.put(status.getType().name(), statusDoc);
+        }
+        Map<String, Document> allInterpretationStatuses = new HashMap<>();
+        for (ClinicalStatusValue status : defaultClinicalConfiguration.getInterpretation().getStatus()) {
+            Document statusDoc = convertToDocument(status);
+            allInterpretationStatuses.put(status.getType().name(), statusDoc);
+        }
+
         // Migrate Study configuration
         Bson studyProjection = Projections.include("_id", "fqn", "internal.configuration");
         migrateCollection(Arrays.asList(OrganizationMongoDBAdaptorFactory.STUDY_COLLECTION,
@@ -132,21 +143,29 @@ public class ClinicalAnalysisMigrationTask7645 extends MigrationTool {
                     updateDocument.getSet().put("internal.configuration.clinical.report",
                             defaultClinicalConfigurationDoc.get("report", Collections.emptyMap()));
 
-                    // Add INCONCLUSIVE status to Study.internal.configuration.clinical.status
+                    // Add missing statuses to Study.internal.configuration.clinical.status
                     List<Document> clinicalStatus = clinical.getList("status", Document.class);
                     if (clinicalStatus == null) {
                         updateDocument.getSet().put("internal.configuration.clinical.status",
                                 defaultClinicalConfigurationDoc.get("status", Collections.emptyList()));
                     } else {
-                        List<Document> allClinicalStatuses = new ArrayList<>(clinicalStatus.size() + 1);
-                        allClinicalStatuses.addAll(clinicalStatus);
-                        for (ClinicalStatusValue status : defaultClinicalConfiguration.getStatus()) {
-                            if (ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE == status.getType()) {
-                                Document statusDoc = convertToDocument(status);
-                                allClinicalStatuses.add(statusDoc);
+                        Set<String> existingStatusTypes = new HashSet<>(allClinicalStatuses.keySet());
+                        List<Document> newStatusList = new LinkedList<>();
+
+                        for (Document status : clinicalStatus) {
+                            // Configure the type field based on the id field if it matches one of the status types
+                            if (existingStatusTypes.contains(status.getString("id").toUpperCase())) {
+                                status.put("type", status.getString("id").toUpperCase());
                             }
+                            existingStatusTypes.remove(status.getString("type"));
+                            newStatusList.add(status);
                         }
-                        updateDocument.getSet().put("internal.configuration.clinical.status", allClinicalStatuses);
+                        // Loop over remaining status types that have not been found in the existing statuses
+                        for (String existingStatusType : existingStatusTypes) {
+                            Document statusDoc = allClinicalStatuses.get(existingStatusType);
+                            newStatusList.add(statusDoc);
+                        }
+                        updateDocument.getSet().put("internal.configuration.clinical.status", newStatusList);
                     }
 
                     // Add INCONCLUSIVE status to Study.internal.configuration.clinical.interpretation.status
@@ -161,15 +180,25 @@ public class ClinicalAnalysisMigrationTask7645 extends MigrationTool {
                             updateDocument.getSet().put("internal.configuration.clinical.interpretation.status",
                                     interpretation.get("status", Collections.emptyList()));
                         } else {
-                            List<Document> allInterpretationStatuses = new ArrayList<>(interpretationStatus.size() + 1);
-                            allInterpretationStatuses.addAll(interpretationStatus);
-                            for (ClinicalStatusValue status : defaultClinicalConfiguration.getInterpretation().getStatus()) {
-                                if (ClinicalStatusValue.ClinicalStatusType.INCONCLUSIVE == status.getType()) {
-                                    Document statusDoc = convertToDocument(status);
-                                    allInterpretationStatuses.add(statusDoc);
+                            Set<String> existingStatusTypes = new HashSet<>(allInterpretationStatuses.keySet());
+                            List<Document> newStatusList = new LinkedList<>();
+
+                            for (Document status : interpretationStatus) {
+                                // Configure the type field based on the id field if it matches one of the status types
+                                if (existingStatusTypes.contains(status.getString("id").toUpperCase())) {
+                                    status.put("type", status.getString("id").toUpperCase());
                                 }
+                                existingStatusTypes.remove(status.getString("type"));
+                                newStatusList.add(status);
                             }
-                            updateDocument.getSet().put("internal.configuration.clinical.interpretation.status", allInterpretationStatuses);
+
+                            // Loop over remaining status types that have not been found in the existing statuses
+                            for (String existingStatusType : existingStatusTypes) {
+                                Document statusDoc = allInterpretationStatuses.get(existingStatusType);
+                                newStatusList.add(statusDoc);
+                            }
+
+                            updateDocument.getSet().put("internal.configuration.clinical.interpretation.status", newStatusList);
                         }
                     }
 
