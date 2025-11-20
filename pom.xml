@@ -211,7 +211,7 @@
             <url>https://repo.maven.apache.org/maven2</url>
             <releases>
                 <enabled>true</enabled>
-                <updatePolicy>daily</updatePolicy>
+                <updatePolicy>always</updatePolicy>
             </releases>
             <snapshots>
                 <enabled>false</enabled>
@@ -222,7 +222,7 @@
             <url>https://central.sonatype.com/repository/maven-snapshots/</url>
             <snapshots>
                 <enabled>true</enabled>
-                <updatePolicy>daily</updatePolicy>
+                <updatePolicy>always</updatePolicy>
             </snapshots>
         </repository>
         <repository>
