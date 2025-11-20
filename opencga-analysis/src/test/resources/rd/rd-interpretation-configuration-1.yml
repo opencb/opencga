@@ -155,13 +155,8 @@ queries:
     unknownGenotype: "./."
     cohortStatsMaf: ALL<0.01
 
-# Only one consequence variant (e.g., splice_acceptor_variant) per variant,
-# if false, the evidence will include all consequences related to the transcript
-oneConsequencePerEvidence: false
-
 # Tier configuration with rules to be evaluated in order
 tierConfiguration:
-  discardUntieredEvidences: true
   tiers:
     tier_1:
       label: TIER1

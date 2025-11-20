@@ -60,6 +60,7 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.*;
 import static org.opencb.opencga.core.api.ParamConstants.INCLUDE_INTERPRETATION;
 
+@Deprecated
 @Category(MediumTests.class)
 public class ClinicalInterpretationAnalysisTest {
 

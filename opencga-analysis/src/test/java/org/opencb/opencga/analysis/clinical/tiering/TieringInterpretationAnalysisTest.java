@@ -38,6 +38,7 @@ import static org.junit.Assert.assertEquals;
 import static org.opencb.opencga.catalog.managers.AbstractClinicalManagerTest.TIERING_MODE;
 import static org.opencb.opencga.core.tools.ResourceManager.ANALYSIS_DIRNAME;
 
+@Deprecated
 @Category(MediumTests.class)
 public class TieringInterpretationAnalysisTest {
 

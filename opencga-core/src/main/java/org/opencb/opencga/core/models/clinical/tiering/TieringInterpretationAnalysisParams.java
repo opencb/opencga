@@ -7,6 +7,7 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
+@Deprecated
 public class TieringInterpretationAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = FieldConstants.TIERING_INTERPRETATION_PARAMS_DESCRIPTION;
 

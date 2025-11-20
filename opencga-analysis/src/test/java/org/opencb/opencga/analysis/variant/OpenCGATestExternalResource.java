@@ -306,9 +306,9 @@ public class OpenCGATestExternalResource extends ExternalResource {
         }
 
         // Clinical interpretation analysis
-        filename = "interpretation-configuration.yml";
-        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/interpretation")).toAbsolutePath();
-        try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/interpretation/" + filename)) {
+        filename = "rd-interpretation-configuration.yml";
+        analysisPath = Files.createDirectories(opencgaHome.resolve("analysis/rd")).toAbsolutePath();
+        try (FileInputStream inputStream = new FileInputStream("../opencga-app/app/analysis/rd/" + filename)) {
             Files.copy(inputStream, analysisPath.resolve(filename), StandardCopyOption.REPLACE_EXISTING);
         }
 

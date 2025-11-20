@@ -113,10 +113,11 @@ public abstract class InterpretationAnalysis extends OpenCgaToolScopeStudy {
     }
 
     protected void saveInterpretation(String studyId, ClinicalAnalysis clinicalAnalysis, Query query) throws ToolException {
-        saveInterpretation(studyId, clinicalAnalysis, query, new ObjectMap());
+        saveInterpretation("", "", ParamUtils.SaveInterpretationAs.SECONDARY, clinicalAnalysis, query, new ObjectMap(), studyId);
     }
 
-    protected void saveInterpretation(String studyId, ClinicalAnalysis clinicalAnalysis, Query query, ObjectMap additionalAttributes)
+    protected void saveInterpretation(String name, String description, ParamUtils.SaveInterpretationAs saveAs,
+                                      ClinicalAnalysis clinicalAnalysis, Query query, ObjectMap additionalAttributes, String studyId)
             throws ToolException {
 
         // Interpretation method
@@ -140,6 +141,8 @@ public abstract class InterpretationAnalysis extends OpenCgaToolScopeStudy {
         }
 
         org.opencb.biodata.models.clinical.interpretation.Interpretation interpretation = new Interpretation()
+                .setName(name)
+                .setDescription(description)
                 .setPrimaryFindings(primaryFindings)
                 .setSecondaryFindings(secondaryFindings)
                 .setAnalyst(analyst)
@@ -157,7 +160,7 @@ public abstract class InterpretationAnalysis extends OpenCgaToolScopeStudy {
         // Store interpretation analysis in DB
         try {
             catalogManager.getInterpretationManager().create(studyId, clinicalAnalysis.getId(), new Interpretation(interpretation),
-                    ParamUtils.SaveInterpretationAs.SECONDARY, QueryOptions.empty(), token);
+                    saveAs, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             throw new ToolException("Error saving interpretation into database", e);
         }

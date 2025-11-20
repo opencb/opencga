@@ -21,7 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.analysis.clinical.ClinicalAnalysisLoadTask;
-import org.opencb.opencga.analysis.clinical.ClinicalInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.rd.RdInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
 import org.opencb.opencga.analysis.clinical.ClinicalTsvAnnotationLoader;
 import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysis;
@@ -45,7 +45,7 @@ import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.analysis.knockout.*;
 import org.opencb.opencga.core.models.clinical.*;
-import org.opencb.opencga.core.models.clinical.interpretation.ClinicalInterpretationAnalysisParams;
+import org.opencb.opencga.core.models.clinical.interpretation.RdInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.clinical.tiering.TieringInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.job.Job;
@@ -1371,7 +1371,7 @@ public class ClinicalWebService extends AnalysisWebService {
 
     @POST
     @Path("/interpreter/tiering/run")
-    @ApiOperation(value = TieringInterpretationAnalysis.DESCRIPTION, response = Job.class)
+    @ApiOperation(value = TieringInterpretationAnalysis.DESCRIPTION, hidden = true, response = Job.class)
     public Response interpretationTieringRun(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
@@ -1412,7 +1412,7 @@ public class ClinicalWebService extends AnalysisWebService {
 
     @POST
     @Path("/interpreter/team/run")
-    @ApiOperation(value = TeamInterpretationAnalysis.DESCRIPTION, response = Job.class)
+    @ApiOperation(value = TeamInterpretationAnalysis.DESCRIPTION, hidden = true, response = Job.class)
     public Response interpretationTeamRun(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
@@ -1428,7 +1428,7 @@ public class ClinicalWebService extends AnalysisWebService {
 
     @POST
     @Path("/interpreter/zetta/run")
-    @ApiOperation(value = ZettaInterpretationAnalysis.DESCRIPTION, response = Job.class)
+    @ApiOperation(value = ZettaInterpretationAnalysis.DESCRIPTION, hidden = true, response = Job.class)
     public Response interpretationZettaRun(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
@@ -1444,7 +1444,7 @@ public class ClinicalWebService extends AnalysisWebService {
 
     @POST
     @Path("/interpreter/cancerTiering/run")
-    @ApiOperation(value = CancerTieringInterpretationAnalysis.DESCRIPTION, response = Job.class)
+    @ApiOperation(value = CancerTieringInterpretationAnalysis.DESCRIPTION, hidden = true, response = Job.class)
     public Response interpretationCancerTieringRun(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
@@ -1459,9 +1459,9 @@ public class ClinicalWebService extends AnalysisWebService {
     }
 
     @POST
-    @Path("/interpreter/customTiering/run")
-    @ApiOperation(value = ClinicalInterpretationAnalysis.DESCRIPTION, response = Job.class)
-    public Response interpretationCustomTieringRun(
+    @Path("/interpreter/rd/run")
+    @ApiOperation(value = RdInterpretationAnalysis.DESCRIPTION, response = Job.class)
+    public Response interpretationRdRun(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
@@ -1470,7 +1470,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
-            @ApiParam(value = "Parameters to execute the clinical interpretation analysis based on tiering", required = true) ClinicalInterpretationAnalysisParams params) {
-        return submitJob(study, JobType.NATIVE, ClinicalInterpretationAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+            @ApiParam(value = "Parameters to execute the rare disease interpretation analysis", required = true) RdInterpretationAnalysisParams params) {
+        return submitJob(study, JobType.NATIVE, RdInterpretationAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 }

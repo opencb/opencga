@@ -14,40 +14,28 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.clinical;
+package org.opencb.opencga.analysis.clinical.rd;
 
 import java.util.List;
 import java.util.Map;
 
 public class TierConfiguration {
 
-    private Boolean discardUntieredEvidences;
     private Map<String, Tier> tiers;
 
     public TierConfiguration() {
     }
 
-    public TierConfiguration(Boolean discardUntieredEvidences, Map<String, Tier> tiers) {
-        this.discardUntieredEvidences = discardUntieredEvidences;
+    public TierConfiguration(Map<String, Tier> tiers) {
         this.tiers = tiers;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("TierConfiguration{");
-        sb.append("discardUntieredEvidences=").append(discardUntieredEvidences);
         sb.append(", tiers=").append(tiers);
         sb.append('}');
         return sb.toString();
-    }
-
-    public Boolean getDiscardUntieredEvidences() {
-        return discardUntieredEvidences;
-    }
-
-    public TierConfiguration setDiscardUntieredEvidences(Boolean discardUntieredEvidences) {
-        this.discardUntieredEvidences = discardUntieredEvidences;
-        return this;
     }
 
     public Map<String, Tier> getTiers() {

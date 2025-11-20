@@ -141,12 +141,6 @@ queries:
   MITOCHONDRIAL:
     <<: *dominant_query
     familySegregation: mitochondrial
-    region:
-      - M
-      - Mt
-      - mt
-      - m
-      - MT
 
   DE_NOVO:
     <<: *dominant_query
@@ -161,22 +155,13 @@ queries:
     unknownGenotype: "./."
     cohortStatsMaf: ALL<0.01
 
-# Only one consequence variant (e.g., splice_acceptor_variant) per variant,
-# if false, the evidence will include all consequences related to the transcript
-oneConsequencePerEvidence: false
-
 # Tier configuration with rules to be evaluated in order
 tierConfiguration:
-  discardUntieredEvidences: true
   tiers:
     tier_1:
       label: TIER1
       description: "Highest priority variants"
       scenarios:
-        - conditions:
-            in_panel: variant
-            moi_match: true
-
         - conditions:
             in_panel: gene
             moi_match: true
@@ -191,9 +176,6 @@ tierConfiguration:
       label: TIER2
       description: "Medium priority variants"
       scenarios:
-        - conditions:
-            in_panel: variant
-
         - conditions:
             in_panel: gene
             moi_match: true
