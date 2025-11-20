@@ -1,41 +1,64 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.opencb.biodata.models.clinical.ClinicalDiscussion;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
+import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.main.*;
+import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.AnalysisClinicalCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
+import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
+import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveReplaceAction;
+import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
+import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
+import org.opencb.opencga.catalog.utils.ParamUtils.SaveInterpretationAs;
+import org.opencb.opencga.catalog.utils.ParamUtils.UpdateAction;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGeneSummary;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividualSummary;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariant;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariantSummary;
 import org.opencb.opencga.core.models.analysis.knockout.RgaKnockoutByGene;
-import org.opencb.opencga.core.models.clinical.CancerTieringInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntryList;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclUpdateParams;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisCreateParams;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisLoadParams;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysisQualityControl;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysisQualityControlUpdateParam;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalystParam;
 import org.opencb.opencga.core.models.clinical.ClinicalReport;
+import org.opencb.opencga.core.models.clinical.ClinicalRequest;
+import org.opencb.opencga.core.models.clinical.ClinicalResponsible;
+import org.opencb.opencga.core.models.clinical.DisorderReferenceParam;
 import org.opencb.opencga.core.models.clinical.ExomiserInterpretationAnalysisParams;
+import org.opencb.opencga.core.models.clinical.FamilyParam;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.clinical.InterpretationCreateParams;
 import org.opencb.opencga.core.models.clinical.InterpretationUpdateParams;
+import org.opencb.opencga.core.models.clinical.PriorityParam;
+import org.opencb.opencga.core.models.clinical.ProbandParam;
 import org.opencb.opencga.core.models.clinical.RgaAnalysisParams;
-import org.opencb.opencga.core.models.clinical.TeamInterpretationAnalysisParams;
-import org.opencb.opencga.core.models.clinical.ZettaInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.clinical.interpretation.RdInterpretationAnalysisParams;
-import org.opencb.opencga.core.models.clinical.tiering.TieringInterpretationAnalysisParams;
+import org.opencb.opencga.core.models.common.StatusParam;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
+import org.opencb.opencga.core.models.study.configuration.ClinicalConsentAnnotationParam;
+import org.opencb.opencga.core.models.study.configuration.ClinicalConsentConfiguration;
+import org.opencb.opencga.core.models.study.configuration.InterpretationStudyConfiguration;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.opencga.core.response.RestResponse;
 
@@ -103,23 +126,11 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             case "interpretation-info":
                 queryResponse = infoInterpretation();
                 break;
-            case "interpreter-cancer-tiering-run":
-                queryResponse = runInterpreterCancerTiering();
-                break;
-            case "interpreter-custom-tiering-run":
-                queryResponse = runInterpreterCustomTiering();
-                break;
             case "interpreter-exomiser-run":
                 queryResponse = runInterpreterExomiser();
                 break;
-            case "interpreter-team-run":
-                queryResponse = runInterpreterTeam();
-                break;
-            case "interpreter-tiering-run":
-                queryResponse = runInterpreterTiering();
-                break;
-            case "interpreter-zetta-run":
-                queryResponse = runInterpreterZetta();
+            case "interpreter-rd-run":
+                queryResponse = runInterpreterRd();
                 break;
             case "load":
                 queryResponse = load();
@@ -564,92 +575,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getClinicalAnalysisClient().infoInterpretation(commandOptions.interpretations, queryParams);
     }
 
-    private RestResponse<Job> runInterpreterCancerTiering() throws Exception {
-        logger.debug("Executing runInterpreterCancerTiering in Analysis - Clinical command line");
-
-        AnalysisClinicalCommandOptions.RunInterpreterCancerTieringCommandOptions commandOptions = analysisClinicalCommandOptions.runInterpreterCancerTieringCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
-        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
-        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
-        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
-        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
-        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
-
-
-        CancerTieringInterpretationAnalysisParams cancerTieringInterpretationAnalysisParams = null;
-        if (commandOptions.jsonDataModel) {
-            RestResponse<Job> res = new RestResponse<>();
-            res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/interpreter/cancerTiering/run"));
-            return res;
-        } else if (commandOptions.jsonFile != null) {
-            cancerTieringInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), CancerTieringInterpretationAnalysisParams.class);
-        } else {
-            ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "clinicalAnalysis", commandOptions.clinicalAnalysis, true);
-            putNestedIfNotNull(beanParams, "discardedVariants", commandOptions.discardedVariants, true);
-            putNestedIfNotNull(beanParams, "primary", commandOptions.primary, true);
-
-            cancerTieringInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
-                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), CancerTieringInterpretationAnalysisParams.class);
-        }
-        return openCGAClient.getClinicalAnalysisClient().runInterpreterCancerTiering(cancerTieringInterpretationAnalysisParams, queryParams);
-    }
-
-    private RestResponse<Job> runInterpreterCustomTiering() throws Exception {
-        logger.debug("Executing runInterpreterCustomTiering in Analysis - Clinical command line");
-
-        AnalysisClinicalCommandOptions.RunInterpreterCustomTieringCommandOptions commandOptions = analysisClinicalCommandOptions.runInterpreterCustomTieringCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
-        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
-        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
-        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
-        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
-        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
-
-
-        RdInterpretationAnalysisParams rdInterpretationAnalysisParams = null;
-        if (commandOptions.jsonDataModel) {
-            RestResponse<Job> res = new RestResponse<>();
-            res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/interpreter/customTiering/run"));
-            return res;
-        } else if (commandOptions.jsonFile != null) {
-            rdInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), RdInterpretationAnalysisParams.class);
-        } else {
-            ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "clinicalAnalysisId", commandOptions.clinicalAnalysisId, true);
-            putNestedIfNotNull(beanParams, "primary", commandOptions.primary, true);
-            putNestedIfNotEmpty(beanParams, "clinicalInterpretationParams.penetrance", commandOptions.clinicalInterpretationParamsPenetrance, true);
-            putNestedIfNotNull(beanParams, "clinicalInterpretationParams.discardUntieredEvidences", commandOptions.clinicalInterpretationParamsDiscardUntieredEvidences, true);
-            putNestedIfNotNull(beanParams, "clinicalInterpretationParams.oneConsequencePerEvidence", commandOptions.clinicalInterpretationParamsOneConsequencePerEvidence, true);
-            putNestedIfNotEmpty(beanParams, "configFile", commandOptions.configFile, true);
-            putNestedIfNotEmpty(beanParams, "outdir", commandOptions.outdir, true);
-
-            rdInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
-                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), RdInterpretationAnalysisParams.class);
-        }
-        return openCGAClient.getClinicalAnalysisClient().runInterpreterCustomTiering(rdInterpretationAnalysisParams, queryParams);
-    }
-
     private RestResponse<Job> runInterpreterExomiser() throws Exception {
         logger.debug("Executing runInterpreterExomiser in Analysis - Clinical command line");
 
@@ -690,52 +615,10 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getClinicalAnalysisClient().runInterpreterExomiser(exomiserInterpretationAnalysisParams, queryParams);
     }
 
-    private RestResponse<Job> runInterpreterTeam() throws Exception {
-        logger.debug("Executing runInterpreterTeam in Analysis - Clinical command line");
+    private RestResponse<Job> runInterpreterRd() throws Exception {
+        logger.debug("Executing runInterpreterRd in Analysis - Clinical command line");
 
-        AnalysisClinicalCommandOptions.RunInterpreterTeamCommandOptions commandOptions = analysisClinicalCommandOptions.runInterpreterTeamCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
-        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
-        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
-        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
-        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
-        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
-
-
-        TeamInterpretationAnalysisParams teamInterpretationAnalysisParams = null;
-        if (commandOptions.jsonDataModel) {
-            RestResponse<Job> res = new RestResponse<>();
-            res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/interpreter/team/run"));
-            return res;
-        } else if (commandOptions.jsonFile != null) {
-            teamInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), TeamInterpretationAnalysisParams.class);
-        } else {
-            ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "clinicalAnalysis", commandOptions.clinicalAnalysis, true);
-            putNestedIfNotNull(beanParams, "panels", commandOptions.panels, true);
-            putNestedIfNotEmpty(beanParams, "familySegregation", commandOptions.familySegregation, true);
-            putNestedIfNotNull(beanParams, "primary", commandOptions.primary, true);
-
-            teamInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
-                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), TeamInterpretationAnalysisParams.class);
-        }
-        return openCGAClient.getClinicalAnalysisClient().runInterpreterTeam(teamInterpretationAnalysisParams, queryParams);
-    }
-
-    private RestResponse<Job> runInterpreterTiering() throws Exception {
-        logger.debug("Executing runInterpreterTiering in Analysis - Clinical command line");
-
-        AnalysisClinicalCommandOptions.RunInterpreterTieringCommandOptions commandOptions = analysisClinicalCommandOptions.runInterpreterTieringCommandOptions;
+        AnalysisClinicalCommandOptions.RunInterpreterRdCommandOptions commandOptions = analysisClinicalCommandOptions.runInterpreterRdCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
@@ -751,117 +634,29 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        TieringInterpretationAnalysisParams tieringInterpretationAnalysisParams = null;
+        RdInterpretationAnalysisParams rdInterpretationAnalysisParams = null;
         if (commandOptions.jsonDataModel) {
             RestResponse<Job> res = new RestResponse<>();
             res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/interpreter/tiering/run"));
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/interpreter/rd/run"));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            tieringInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), TieringInterpretationAnalysisParams.class);
+            rdInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), RdInterpretationAnalysisParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
+            putNestedIfNotEmpty(beanParams, "description", commandOptions.description, true);
             putNestedIfNotEmpty(beanParams, "clinicalAnalysisId", commandOptions.clinicalAnalysisId, true);
             putNestedIfNotNull(beanParams, "primary", commandOptions.primary, true);
-            putNestedIfNotEmpty(beanParams, "tieringParams.penetrance", commandOptions.tieringParamsPenetrance, true);
             putNestedIfNotEmpty(beanParams, "configFile", commandOptions.configFile, true);
             putNestedIfNotEmpty(beanParams, "outdir", commandOptions.outdir, true);
 
-            tieringInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
+            rdInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), TieringInterpretationAnalysisParams.class);
+                    .readValue(beanParams.toJson(), RdInterpretationAnalysisParams.class);
         }
-        return openCGAClient.getClinicalAnalysisClient().runInterpreterTiering(tieringInterpretationAnalysisParams, queryParams);
-    }
-
-    private RestResponse<Job> runInterpreterZetta() throws Exception {
-        logger.debug("Executing runInterpreterZetta in Analysis - Clinical command line");
-
-        AnalysisClinicalCommandOptions.RunInterpreterZettaCommandOptions commandOptions = analysisClinicalCommandOptions.runInterpreterZettaCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
-        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
-        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
-        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
-        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
-        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
-
-
-        ZettaInterpretationAnalysisParams zettaInterpretationAnalysisParams = null;
-        if (commandOptions.jsonDataModel) {
-            RestResponse<Job> res = new RestResponse<>();
-            res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/analysis/clinical/interpreter/zetta/run"));
-            return res;
-        } else if (commandOptions.jsonFile != null) {
-            zettaInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), ZettaInterpretationAnalysisParams.class);
-        } else {
-            ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "clinicalAnalysis", commandOptions.clinicalAnalysis, true);
-            putNestedIfNotNull(beanParams, "id", commandOptions.id, true);
-            putNestedIfNotEmpty(beanParams, "region", commandOptions.region, true);
-            putNestedIfNotEmpty(beanParams, "type", commandOptions.type, true);
-            putNestedIfNotEmpty(beanParams, "study", commandOptions.bodyStudy, true);
-            putNestedIfNotEmpty(beanParams, "file", commandOptions.file, true);
-            putNestedIfNotEmpty(beanParams, "filter", commandOptions.filter, true);
-            putNestedIfNotEmpty(beanParams, "qual", commandOptions.qual, true);
-            putNestedIfNotEmpty(beanParams, "fileData", commandOptions.fileData, true);
-            putNestedIfNotEmpty(beanParams, "sample", commandOptions.sample, true);
-            putNestedIfNotEmpty(beanParams, "sampleData", commandOptions.sampleData, true);
-            putNestedIfNotEmpty(beanParams, "sampleAnnotation", commandOptions.sampleAnnotation, true);
-            putNestedIfNotEmpty(beanParams, "sampleMetadata", commandOptions.sampleMetadata, true);
-            putNestedIfNotEmpty(beanParams, "cohort", commandOptions.cohort, true);
-            putNestedIfNotEmpty(beanParams, "cohortStatsRef", commandOptions.cohortStatsRef, true);
-            putNestedIfNotEmpty(beanParams, "cohortStatsAlt", commandOptions.cohortStatsAlt, true);
-            putNestedIfNotEmpty(beanParams, "cohortStatsMaf", commandOptions.cohortStatsMaf, true);
-            putNestedIfNotEmpty(beanParams, "cohortStatsMgf", commandOptions.cohortStatsMgf, true);
-            putNestedIfNotEmpty(beanParams, "cohortStatsPass", commandOptions.cohortStatsPass, true);
-            putNestedIfNotEmpty(beanParams, "score", commandOptions.score, true);
-            putNestedIfNotEmpty(beanParams, "family", commandOptions.family, true);
-            putNestedIfNotEmpty(beanParams, "familyDisorder", commandOptions.familyDisorder, true);
-            putNestedIfNotEmpty(beanParams, "familySegregation", commandOptions.familySegregation, true);
-            putNestedIfNotEmpty(beanParams, "familyMembers", commandOptions.familyMembers, true);
-            putNestedIfNotEmpty(beanParams, "familyProband", commandOptions.familyProband, true);
-            putNestedIfNotEmpty(beanParams, "gene", commandOptions.gene, true);
-            putNestedIfNotEmpty(beanParams, "ct", commandOptions.ct, true);
-            putNestedIfNotEmpty(beanParams, "xref", commandOptions.xref, true);
-            putNestedIfNotEmpty(beanParams, "biotype", commandOptions.biotype, true);
-            putNestedIfNotEmpty(beanParams, "proteinSubstitution", commandOptions.proteinSubstitution, true);
-            putNestedIfNotEmpty(beanParams, "conservation", commandOptions.conservation, true);
-            putNestedIfNotEmpty(beanParams, "populationFrequencyAlt", commandOptions.populationFrequencyAlt, true);
-            putNestedIfNotEmpty(beanParams, "populationFrequencyRef", commandOptions.populationFrequencyRef, true);
-            putNestedIfNotEmpty(beanParams, "populationFrequencyMaf", commandOptions.populationFrequencyMaf, true);
-            putNestedIfNotEmpty(beanParams, "transcriptFlag", commandOptions.transcriptFlag, true);
-            putNestedIfNotEmpty(beanParams, "geneTraitId", commandOptions.geneTraitId, true);
-            putNestedIfNotEmpty(beanParams, "go", commandOptions.go, true);
-            putNestedIfNotEmpty(beanParams, "expression", commandOptions.expression, true);
-            putNestedIfNotEmpty(beanParams, "proteinKeyword", commandOptions.proteinKeyword, true);
-            putNestedIfNotEmpty(beanParams, "drug", commandOptions.drug, true);
-            putNestedIfNotEmpty(beanParams, "functionalScore", commandOptions.functionalScore, true);
-            putNestedIfNotEmpty(beanParams, "clinical", commandOptions.clinical, true);
-            putNestedIfNotEmpty(beanParams, "clinicalSignificance", commandOptions.clinicalSignificance, true);
-            putNestedIfNotNull(beanParams, "clinicalConfirmedStatus", commandOptions.clinicalConfirmedStatus, true);
-            putNestedIfNotEmpty(beanParams, "customAnnotation", commandOptions.customAnnotation, true);
-            putNestedIfNotEmpty(beanParams, "panel", commandOptions.panel, true);
-            putNestedIfNotEmpty(beanParams, "panelModeOfInheritance", commandOptions.panelModeOfInheritance, true);
-            putNestedIfNotEmpty(beanParams, "panelConfidence", commandOptions.panelConfidence, true);
-            putNestedIfNotEmpty(beanParams, "panelRoleInCancer", commandOptions.panelRoleInCancer, true);
-            putNestedIfNotEmpty(beanParams, "trait", commandOptions.trait, true);
-            putNestedIfNotNull(beanParams, "primary", commandOptions.primary, true);
-
-            zettaInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper().copy()
-                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), ZettaInterpretationAnalysisParams.class);
-        }
-        return openCGAClient.getClinicalAnalysisClient().runInterpreterZetta(zettaInterpretationAnalysisParams, queryParams);
+        return openCGAClient.getClinicalAnalysisClient().runInterpreterRd(rdInterpretationAnalysisParams, queryParams);
     }
 
     private RestResponse<Job> load() throws Exception {
