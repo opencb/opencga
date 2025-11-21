@@ -17,11 +17,9 @@
 package org.opencb.opencga.server.rest.admin;
 
 import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.analysis.resource.ResourceFetcherTool;
-import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -62,6 +60,18 @@ public class AdminWSServer extends AnalysisWebService { //OpenCGAWSServer {
     }
 
     //******************************** USERS **********************************//
+
+    @GET
+    @Path("/organizations/list")
+    @ApiOperation(value = "List current Organizations", response = String.class)
+    public Response organizationList() {
+        try {
+            return createOkResponse(catalogManager.getAdminManager().getOrganizationIds(token));
+        } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
+
+    }
 
     @GET
     @Path("/users/search")
@@ -323,23 +333,6 @@ public class AdminWSServer extends AnalysisWebService { //OpenCGAWSServer {
 //    public Response stats() {
 //        return createErrorResponse(new NotImplementedException());
 //    }
-
-    @POST
-    @Path("/catalog/jwt")
-    @ApiOperation(value = "Change JWT secret key")
-    public Response jwt(
-            @ApiParam(value = ParamConstants.ORGANIZATION_DESCRIPTION) @QueryParam(ParamConstants.ORGANIZATION) String organizationId,
-            @ApiParam(value = "JSON containing the parameters", required = true) JWTParams jwtParams
-    ) {
-        ObjectMap params = new ObjectMap();
-        params.putIfNotNull(MetaDBAdaptor.SECRET_KEY, jwtParams.getSecretKey());
-        try {
-            catalogManager.updateJWTParameters(organizationId, params, token);
-            return createOkResponse(DataResult.empty());
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
 
     @POST
     @Path("/token")

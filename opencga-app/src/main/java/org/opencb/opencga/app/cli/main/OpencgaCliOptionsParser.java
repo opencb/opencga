@@ -179,7 +179,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         JCommander adminSubCommands = jCommander.getCommands().get("admin");
         adminSubCommands.addCommand("audit-group-by", adminCommandOptions.groupByAuditCommandOptions);
         adminSubCommands.addCommand("catalog-install", adminCommandOptions.installCatalogCommandOptions);
-        adminSubCommands.addCommand("catalog-jwt", adminCommandOptions.jwtCatalogCommandOptions);
+        adminSubCommands.addCommand("organizations-list", adminCommandOptions.listOrganizationsCommandOptions);
         adminSubCommands.addCommand("resource-fetch", adminCommandOptions.fetchResourceCommandOptions);
         adminSubCommands.addCommand("users-create", adminCommandOptions.createUsersCommandOptions);
         adminSubCommands.addCommand("users-import", adminCommandOptions.importUsersCommandOptions);
