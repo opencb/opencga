@@ -232,17 +232,17 @@
                         <configuration>
                             <target>
                                 <echo>Preparing ${build.dir} folder</echo>
-                                <exec executable="rm">
+                                <exec executable="rm" failonerror="true">
                                     <arg value="-rf"/>
                                     <arg value="${build.dir}"/>
                                 </exec>
-                                <exec executable="mkdir">
+                                <exec executable="mkdir" failonerror="true">
                                     <arg value="${build.dir}"/>
                                     <arg value="${build.dir}/conf"/>
                                 </exec>
 
                                 <echo>Copying to ${build.dir}</echo>
-                                <exec executable="cp">
+                                <exec executable="cp" failonerror="true">
                                     <arg value="-r"/>
                                     <arg value="${project.basedir}/target/appassembler/bin"/>
                                     <arg value="${project.basedir}/target/appassembler/libs"/>
@@ -251,16 +251,21 @@
                                 </exec>
 
                                 <echo>Coping configuration file</echo>
-                                <exec executable="cp">
+                                <exec executable="cp" failonerror="true">
                                     <arg value="${project.basedir}/../opencga-storage-core/target/classes/${storage.configuration.file}"/>
                                     <arg value="${build.dir}/conf"/>
                                 </exec>
 
-                                <echo>Coping configuration file</echo>
-                                <exec executable="cp">
+                                <echo>Coping benchmark files</echo>
+                                <exec executable="cp" failonerror="true">
                                     <arg value="-r"/>
                                     <arg value="${project.basedir}/../opencga-storage-benchmark/target/classes/benchmark"/>
                                     <arg value="${build.dir}"/>
+                                </exec>
+                                <exec executable="cp" failonerror="true">
+                                    <arg value="-r"/>
+                                    <arg value="${project.basedir}/../opencga-storage-benchmark/src/main/python/."/>
+                                    <arg value="${build.dir}/benchmark/bin/"/>
                                 </exec>
                             </target>
                         </configuration>

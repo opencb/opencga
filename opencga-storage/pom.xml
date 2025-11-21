@@ -49,11 +49,6 @@
                 <artifactId>opencga-storage-server</artifactId>
                 <version>${project.parent.version}</version>
             </dependency>
-            <dependency>
-                <groupId>org.opencb.opencga</groupId>
-                <artifactId>opencga-storage-benchmark</artifactId>
-                <version>${project.parent.version}</version>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 

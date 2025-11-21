@@ -25,16 +25,16 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.util.StopWatch;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.common.IOUtils;
-import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.commons.io.DataReader;
+import org.opencb.opencga.core.common.*;
 import org.opencb.opencga.core.config.DatabaseCredentials;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.config.storage.StorageEngineConfiguration;
@@ -50,10 +50,10 @@ import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.*;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
@@ -66,10 +66,10 @@ import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.executors.*;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
-import org.opencb.opencga.storage.core.variant.search.SamplesSearchIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantAggregationExecutor;
 import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.HBaseCompatApi;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
@@ -101,11 +101,12 @@ import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdapt
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDeleteHBaseColumnTask;
 import org.opencb.opencga.storage.hadoop.variant.io.HadoopVariantExporter;
 import org.opencb.opencga.storage.hadoop.variant.mr.StreamVariantDriver;
+import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsFileCleaner;
 import org.opencb.opencga.storage.hadoop.variant.prune.VariantPruneManager;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreLoader;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreRemover;
 import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchDataWriter;
-import org.opencb.opencga.storage.hadoop.variant.search.SecondaryIndexPendingVariantsManager;
+import org.opencb.opencga.storage.hadoop.variant.search.pending.index.file.SecondaryIndexPendingVariantsFileBasedManager;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopMRVariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
@@ -127,6 +128,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.REGION;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.isValidParam;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.*;
 import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver.*;
 
@@ -142,8 +144,10 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     public static final String STUDY_ID = "studyId";
 
     // Project attributes
-    // Last time (in millis from epoch) that the list of "pendingVariantsToAnnotate" was updated
-    public static final String LAST_VARIANTS_TO_ANNOTATE_UPDATE_TS = "lastVariantsToAnnotateUpdateTs";
+    // Last time (in millis from epoch) that the list of "pendingVariantsToAnnotate" was updated. Timestamp at operation start!
+    public static final String LAST_PENDING_VARIANTS_TO_ANNOTATE_UPDATE_TS = "lastVariantsToAnnotateUpdateTs";
+    // Last time (in millis from epoch) that the list of "pendingVariantsToSearchIndex" was updated. Timestamp at operation start!
+    public static final String LAST_PENDING_VARIANTS_TO_SEARCH_INDEX_UPDATE_TS = "lastPendingVariantsToSearchIndexUpdateTs";
 
     // Study attributes
     // Specify if all missing genotypes from the study are updated. Set to true after fill_missings / aggregation
@@ -355,8 +359,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                         .append(StreamVariantDriver.OUTPUT_PARAM, outputFile)
         ), "Walk data");
         List<URI> uris = new ArrayList<>();
-        URI stderrFile = UriUtils.createUriSafe(outputFile.toString() + StreamVariantDriver.STDERR_TXT_GZ);
-        URI countersFile = UriUtils.createUriSafe(outputFile.toString() + ".counters.json");
+        URI stderrFile = UriUtils.toUri(outputFile.toString() + StreamVariantDriver.STDERR_TXT_GZ);
+        URI countersFile = UriUtils.toUri(outputFile.toString() + ".counters.json");
         try {
             IOConnector ioConnector = ioConnectorProvider.get(outputFile);
             if (ioConnector.exists(outputFile)) {
@@ -487,35 +491,172 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                 false, params.isOverwrite(), options);
     }
 
+    public boolean shouldRunDiscoverPendingVariantsSecondaryAnnotationIndex(SearchIndexMetadata indexMetadata, boolean overwrite)
+            throws IOException, StorageEngineException {
+        boolean shouldRunDiscover = false;
+        if (overwrite) {
+            logger.info("Overwrite is true, running discover pending variants to secondary annotation index");
+            shouldRunDiscover = true;
+        }
+
+        if (!shouldRunDiscover) {
+            // Check pending variant files integrity
+            logger.info("Checking pending variants files integrity");
+            SecondaryIndexPendingVariantsFileBasedManager pendingVariantsFileBasedManager =
+                    new SecondaryIndexPendingVariantsFileBasedManager(getVariantTableName(), getConf());
+            try {
+                int filesCount = pendingVariantsFileBasedManager.checkFilesIntegrity();
+                if (filesCount < 0) {
+                    logger.warn("Pending variants files integrity check failed. Running discover pending variants to secondary index. "
+                            + "Remove old '" + HadoopVariantStorageEngine.LAST_PENDING_VARIANTS_TO_SEARCH_INDEX_UPDATE_TS + "'");
+                    shouldRunDiscover = true;
+
+                    int indexMetadataVersion = indexMetadata.getVersion();
+                    getMetadataManager().updateProjectMetadata(pm -> {
+                        pm.getSecondaryAnnotationIndex().getIndexMetadata(indexMetadataVersion)
+                                .getAttributes().remove(LAST_PENDING_VARIANTS_TO_SEARCH_INDEX_UPDATE_TS);
+                    });
+                } else {
+                    logger.info("Pending variants files integrity check passed. {} pending variants files found.", filesCount);
+                }
+            } catch (IOException e) {
+                throw new StorageEngineException("Error checking pending variants files integrity", e);
+            }
+        }
+
+        if (!shouldRunDiscover) {
+            long lastUpdateTimestamp = indexMetadata.getAttributes().getLong(LAST_PENDING_VARIANTS_TO_SEARCH_INDEX_UPDATE_TS);
+            ProjectMetadata projectMetadata = getMetadataManager().getProjectMetadata();
+            long lastVariantIndexTs = projectMetadata.getVariantIndexLastTimestamp();
+            long lastAnnotationTs = projectMetadata.getAnnotationIndexLastUpdateEndTimestamp();
+            long lastStatsTs = projectMetadata.getStatsLastEndTimestamp();
+
+            if (lastUpdateTimestamp == 0
+                    || lastUpdateTimestamp < lastVariantIndexTs
+                    || lastUpdateTimestamp < lastAnnotationTs
+                    || lastUpdateTimestamp < lastStatsTs) {
+                logger.info("Pending variants to secondary index not up to date. Running discover pending variants to secondary index.");
+                shouldRunDiscover = true;
+            } else {
+                logger.info("Pending variants to secondary index is up to date. Skip MapReduce job.");
+            }
+        }
+
+
+        if (getOptions().getBoolean("skipDiscoverPendingVariantsToSecondaryIndex", false)) {
+            // Ignore other options if skipDiscoverPendingVariantsToSecondaryIndex is true
+            // Testing purposes
+            shouldRunDiscover = false;
+            logger.info("Skip discover pending variants to secondary index.");
+        }
+        if (getOptions().getBoolean("forceDiscoverPendingVariantsToSecondaryIndex", false)) {
+            // Ignore other options if forceDiscoverPendingVariantsToSecondaryIndex is true
+            // Testing purposes
+            shouldRunDiscover = true;
+            logger.info("Force discover pending variants to secondary index.");
+        }
+        return shouldRunDiscover;
+    }
+
+    public ObjectMap runDiscoverPendingVariantsSecondaryAnnotationIndex(
+            Query query, QueryOptions queryOptions, boolean overwrite, SearchIndexMetadata indexMetadata, long updateStartTimestamp)
+            throws StorageEngineException, IOException {
+        final ObjectMap mrResult;
+        boolean partialLoad = isValidParam(query, VariantQueryParam.REGION);
+        ObjectMap mrOptions = getMergedOptions(queryOptions);
+        if (partialLoad) {
+            mrOptions.put(VariantQueryParam.REGION.key(), query.getString(VariantQueryParam.REGION.key()));
+        }
+        mrResult = new SecondaryIndexPendingVariantsFileBasedManager(getVariantTableName(), getConf())
+                .discoverPending(getMRExecutor(), getVariantTableName(), overwrite, mrOptions.appendAll(query));
+        if (!partialLoad) {
+            // Update pending variants timestamp if this is not a partial load
+            int version = indexMetadata.getVersion();
+            getMetadataManager().updateProjectMetadata(pm -> {
+                SearchIndexMetadata im = pm.getSecondaryAnnotationIndex().getIndexMetadata(version);
+                im.getAttributes().put("pendingVariantsToSecondaryIndex", mrResult);
+                im.getAttributes().put(LAST_PENDING_VARIANTS_TO_SEARCH_INDEX_UPDATE_TS, updateStartTimestamp);
+            });
+        }
+        return mrResult;
+    }
+
     @Override
-    public VariantSearchLoadResult secondaryIndex(Query query, QueryOptions queryOptions, boolean overwrite)
+    public VariantSearchLoadResult secondaryIndex(Query query, QueryOptions queryOptions, final boolean overwrite,
+                                                  SearchIndexMetadata indexMetadata, long updateStartTimestamp)
             throws StorageEngineException, IOException, VariantSearchException {
         queryOptions = queryOptions == null ? new QueryOptions() : new QueryOptions(queryOptions);
 
-        if (getOptions().getBoolean("skipDiscoverPendingVariantsToSecondaryIndex", false)) {
-            logger.info("Skip discover pending variants to secondary index");
+        boolean shouldRunDiscover = shouldRunDiscoverPendingVariantsSecondaryAnnotationIndex(indexMetadata, overwrite);
+        final ObjectMap mrResult;
+        if (shouldRunDiscover) {
+            mrResult = runDiscoverPendingVariantsSecondaryAnnotationIndex(query, queryOptions, overwrite,
+                    indexMetadata, updateStartTimestamp);
+            indexMetadata = getMetadataManager().getProjectMetadata().getSecondaryAnnotationIndex()
+                    .getIndexMetadata(indexMetadata.getVersion());
         } else {
-            new SecondaryIndexPendingVariantsManager(getDBAdaptor())
-                    .discoverPending(getMRExecutor(), overwrite, getMergedOptions(queryOptions));
+            mrResult = null;
+            // Discover pending variants to secondary index not run.
+            // Use the "lastPendingVariantsToSecondaryIndexUpdateTs" attribute as the updateStartTimestamp.
+            // This is the timestamp of the last time we ran discover pending variants to secondary index
+            updateStartTimestamp = indexMetadata.getAttributes().getLong(LAST_PENDING_VARIANTS_TO_SEARCH_INDEX_UPDATE_TS);
         }
 
-        return super.secondaryIndex(query, queryOptions, overwrite);
+
+        VariantSearchLoadResult loadResult = super.secondaryIndex(query, queryOptions, overwrite, indexMetadata, updateStartTimestamp);
+        if (mrResult == null) {
+            loadResult.getAttributes().put("runDiscoverPendingVariantsToSecondaryIndexMr", false);
+        } else {
+            loadResult.getAttributes().put("runDiscoverPendingVariantsToSecondaryIndexMr", true);
+            loadResult.getAttributes().put("pendingVariantsToSecondaryIndexResult", mrResult);
+        }
+        return loadResult;
     }
 
     @Override
-    protected VariantDBIterator getVariantsToSecondaryIndex(boolean overwrite, Query query, QueryOptions queryOptions,
-                                                            VariantDBAdaptor dbAdaptor) throws StorageEngineException {
+    protected VariantSearchLoadResult secondaryIndexLoad(boolean overwrite, SearchIndexMetadata indexMetadata,
+                                                         Query query, QueryOptions queryOptions, long updateStartTimestamp)
+            throws StorageEngineException, IOException {
+        VariantSearchManager variantSearchManager = getVariantSearchManager();
 
-        logger.info("Get variants to index from pending variants table");
+        logger.info("Get variants to index from pending variants files");
         logger.info("Query: " + query.toJson());
-        return new SecondaryIndexPendingVariantsManager(getDBAdaptor()).iterator(query);
-    }
+        SecondaryIndexPendingVariantsFileBasedManager pendingVariantsManager
+                = new SecondaryIndexPendingVariantsFileBasedManager(getVariantTableName(), getConf());
 
-    @Override
-    protected HadoopVariantSearchDataWriter newVariantSearchDataWriter(String collection) throws StorageEngineException {
-        return new HadoopVariantSearchDataWriter(
-                collection, getVariantSearchManager().getSolrClient(), getVariantSearchManager().getInsertBatchSize(),
-                getDBAdaptor());
+        DataReader<Variant> reader = pendingVariantsManager.reader(query);
+
+        PendingVariantsFileCleaner cleaner = pendingVariantsManager.cleaner();
+        HadoopVariantSearchDataWriter writer = new HadoopVariantSearchDataWriter(
+                variantSearchManager, indexMetadata,
+                getDBAdaptor(),
+                cleaner,
+                updateStartTimestamp
+        );
+
+        return ShutdownHookUtils.run(() -> {
+            try {
+                Callable<Long> totalCount = () -> {
+                    try (VariantDBIterator iterator = pendingVariantsManager.iterator(query, 1000)) {
+                        long count = 0;
+                        while (iterator.hasNext()) {
+                            iterator.next();
+                            count++;
+                        }
+                        return count;
+                    }
+                };
+                VariantSearchLoadResult load = variantSearchManager.load(indexMetadata, reader, writer, totalCount);
+                cleaner.success();
+                return load;
+            } catch (Exception e) {
+                throw new StorageEngineException("Exception building secondary index", e);
+            }
+        }, () -> {
+            logger.warn("Abort cleaning pending variants files.");
+            // If the shutdown hook is triggered, we abort the cleaner to avoid deleting files
+            cleaner.abort();
+        });
     }
 
     @Override
@@ -1235,7 +1376,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     protected List<VariantAggregationExecutor> initVariantAggregationExecutors() {
         List<VariantAggregationExecutor> executors = new ArrayList<>(3);
         try {
-            executors.add(new SearchIndexVariantAggregationExecutor(getVariantSearchManager(), getDBName()));
+            executors.add(new SearchIndexVariantAggregationExecutor(getVariantSearchManager()));
             executors.add(new SampleIndexVariantAggregationExecutor(getMetadataManager(), getSampleIndexDBAdaptor()));
             executors.add(new ChromDensityVariantAggregationExecutor(this, getMetadataManager()));
         } catch (Exception e) {
@@ -1382,8 +1523,6 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         executors.add(new BreakendVariantQueryExecutor(
                 getStorageEngineId(), getOptions(), new SampleIndexVariantQueryExecutor(
                 getDBAdaptor(), getSampleIndexDBAdaptor(), getStorageEngineId(), getOptions()), getDBAdaptor()));
-        executors.add(new SamplesSearchIndexVariantQueryExecutor(
-                getDBAdaptor(), getVariantSearchManager(), getStorageEngineId(), dbName, getConfiguration(), getOptions()));
         executors.add(new SampleIndexMendelianErrorQueryExecutor(
                 getDBAdaptor(), getSampleIndexDBAdaptor(), getStorageEngineId(), getOptions()));
         executors.add(new SampleIndexOnlyVariantQueryExecutor(
@@ -1391,7 +1530,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         executors.add(new SampleIndexVariantQueryExecutor(
                 getDBAdaptor(), getSampleIndexDBAdaptor(), getStorageEngineId(), getOptions()));
         executors.add(new SearchIndexVariantQueryExecutor(
-                getDBAdaptor(), getVariantSearchManager(), getStorageEngineId(), dbName, getConfiguration(), getOptions())
+                getDBAdaptor(), getVariantSearchManager(), getStorageEngineId(), getConfiguration(), getOptions())
                 .setIntersectParamsThreshold(1));
         executors.add(new HBaseColumnIntersectVariantQueryExecutor(
                 getDBAdaptor(), getStorageEngineId(), getOptions()));
@@ -1416,7 +1555,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     private Configuration getHadoopConfiguration(ObjectMap options) {
-        Configuration conf = this.conf == null ? HBaseConfiguration.create() : this.conf;
+        Configuration conf = this.conf == null ? HBaseConfiguration.create(new HdfsConfiguration()) : this.conf;
         // This is the only key needed to connect to HDFS:
         //   CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY = fs.defaultFS
         //
