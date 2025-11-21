@@ -22,7 +22,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 
 import java.util.*;
 
@@ -31,8 +31,8 @@ public class ClinicalInterpretationQueryParser extends ClinicalQueryParser {
     // Map from clinical interpretation fields (keys) to Solr indexed fields (values)
     public static Map<String, List<String>> ciToCisFieldMap;
 
-    public ClinicalInterpretationQueryParser(String collectionPrefix, VariantStorageMetadataManager variantStorageMetadataManager) {
-        super(collectionPrefix, variantStorageMetadataManager);
+    public ClinicalInterpretationQueryParser(String collectionPrefix, SearchIndexMetadata indexMetadata) {
+        super(collectionPrefix, indexMetadata);
     }
 
     @Override

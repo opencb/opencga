@@ -106,3 +106,4 @@ tests/
 reports/test/
 reports/collected_reports.txt
 .portpatch_states
+reports/*.log.gz
