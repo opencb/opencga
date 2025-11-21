@@ -117,6 +117,9 @@ public class AdminMain {
                         case "storage":
                             commandExecutor = new StorageCommandExecutor(cliOptionsParser.getStorageCommandOptions());
                             break;
+                        case "benchmark":
+                            commandExecutor = new BenchmarkCommandExecutor(cliOptionsParser.getBenchmarkCommandOptions());
+                            break;
                         default:
                             System.out.printf("ERROR: not valid command passed: '%s'", parsedCommand);
                             break;
