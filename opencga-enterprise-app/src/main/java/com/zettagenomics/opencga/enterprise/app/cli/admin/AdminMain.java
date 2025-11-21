@@ -105,9 +105,6 @@ public class AdminMain {
                         case "server":
                             commandExecutor = new EnterpriseServerCommandExecutor(cliOptionsParser.getServerCommandOptions());
                             break;
-                        case "meta":
-                            commandExecutor = new MetaCommandExecutor(cliOptionsParser.getMetaCommandOptions());
-                            break;
                         case "panel":
                             commandExecutor = new PanelCommandExecutor(cliOptionsParser.getPanelCommandOptions());
                             break;
