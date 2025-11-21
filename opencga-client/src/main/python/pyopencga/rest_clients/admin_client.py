@@ -54,16 +54,13 @@ class Admin(_ParentRestClient):
 
         return self._post(category='admin', resource='install', subcategory='catalog', data=data, **options)
 
-    def jwt_catalog(self, data=None, **options):
+    def list_organizations(self, **options):
         """
-        Change JWT secret key.
-        PATH: /{apiVersion}/admin/catalog/jwt
-
-        :param dict data: JSON containing the parameters. (REQUIRED)
-        :param str organization: Organization id.
+        List current Organizations.
+        PATH: /{apiVersion}/admin/organizations/list
         """
 
-        return self._post(category='admin', resource='jwt', subcategory='catalog', data=data, **options)
+        return self._get(category='admin', resource='list', subcategory='organizations', **options)
 
     def fetch_resource(self, data=None, **options):
         """
