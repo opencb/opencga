@@ -61,6 +61,9 @@ class Cohort(_ParentRestClient):
         :param str status: status.
         :param str internal_status: internalStatus.
         :param str annotation: Cohort annotation.
+        :param str tags: Tags. Also admits basic regular expressions using the
+            operator '~', i.e. '~{perl-regex}' e.g. '~value' for case
+            sensitive, '~/value/i' for case insensitive search.
         :param str acl: acl.
         :param str samples: Cohort sample IDs.
         :param str num_samples: Number of samples.
@@ -137,6 +140,9 @@ class Cohort(_ParentRestClient):
         :param str uuid: Comma separated list of cohort IDs up to a maximum of
             100.
         :param str type: Cohort type.
+        :param str tags: Tags. Also admits basic regular expressions using the
+            operator '~', i.e. '~{perl-regex}' e.g. '~value' for case
+            sensitive, '~/value/i' for case insensitive search.
         :param str creation_date: creationDate.
         :param str modification_date: modificationDate.
         :param bool deleted: deleted.
@@ -223,6 +229,9 @@ class Cohort(_ParentRestClient):
         :param str uuid: Comma separated list of cohort IDs up to a maximum of
             100.
         :param str type: Cohort type.
+        :param str tags: Tags. Also admits basic regular expressions using the
+            operator '~', i.e. '~{perl-regex}' e.g. '~value' for case
+            sensitive, '~/value/i' for case insensitive search.
         :param str creation_date: creationDate.
         :param str modification_date: modificationDate.
         :param bool deleted: deleted.
@@ -303,6 +312,8 @@ class Cohort(_ParentRestClient):
         :param str annotation_sets_action: Action to be performed if the array
             of annotationSets is being updated. Allowed values: ['ADD SET
             REMOVE']
+        :param str tags_action: Action to be performed if the array of tags is
+            being updated. Allowed values: ['ADD SET REMOVE']
         :param bool include_result: Flag indicating to include the created or
             updated document result in the response.
         :param dict data: body.

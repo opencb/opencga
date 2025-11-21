@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.benchmark;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.config.gui.ArgumentsPanel;
 import org.apache.jmeter.control.LoopController;
@@ -33,13 +34,13 @@ import org.apache.jmeter.threads.gui.ThreadGroupGui;
 import org.apache.jmeter.timers.ConstantTimer;
 import org.apache.jmeter.util.JMeterUtils;
 import org.apache.jorphan.collections.HashTree;
-import org.opencb.opencga.storage.core.StorageEngineFactory;
+import org.apache.jorphan.collections.ListedHashTree;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -97,7 +98,7 @@ public class BenchmarkRunner {
         JMeterUtils.initLocale();
 
         // JMeter Test Plan, basically JOrphan HashTree
-        testPlanTree = new HashTree();
+        testPlanTree = new ListedHashTree();
 
         // Test Plan
         testPlan = new TestPlan("Create JMeter Script From Java Code");
@@ -110,12 +111,12 @@ public class BenchmarkRunner {
         // summary =      2 in   1.3s =    1.5/s Avg:   631 Min:   290 Max:   973 Err:     0 (0.00%)
         Summariser summer = null;
         String summariserName = JMeterUtils.getPropDefault("summariser.name", "summary");
-        if (summariserName.length() > 0) {
+        if (!summariserName.isEmpty()) {
             summer = new Summariser(summariserName);
         }
 
         // Store execution results into a .jtl file
-        resultFile = outdir.resolve(buildOutputFileName()).toString() + ".jtl";
+        resultFile = outdir.resolve(buildOutputFileName()) + ".jtl";
         ResultCollector resultCollector = new ResultCollector(summer);
         resultCollector.setFilename(resultFile);
         testPlanTree.add(testPlan, resultCollector);
@@ -181,44 +182,93 @@ public class BenchmarkRunner {
     }
 
     private String buildOutputFileName() {
-        return dbName + "." + "benchmark" + "." + storageConfiguration.getBenchmark().getMode();
+        return dbName.replaceAll("[@:]", "_")
+                + "." + "benchmark"
+                + "." + storageConfiguration.getBenchmark().getMode();
+    }
+
+    private static final class QueryResultStats {
+        private String queryId;
+        private int count;
+        private int successCount;
+        private double totalTime;
+        private double bytes;
+
+        private QueryResultStats(String queryId) {
+            this.queryId = queryId;
+        }
     }
 
     private void printResults(File jmxFile, PrintStream out) {
-        Map<String, ArrayList<Double>> result = new HashMap<>();
+        Map<String, QueryResultStats> results = new HashMap<>();
         try (BufferedReader br = new BufferedReader(new FileReader(resultFile))) {
-            out.println("\n\n*********   Test completed   **********\n\n");
             String line = br.readLine(); // ignore first line
             while ((line = br.readLine()) != null) {
-                ArrayList<Double> averages = new ArrayList<Double>();
                 String[] splittedResult = line.split(",(?=([^\"]*\"[^\"]*\")*[^\"]*$)");
                 String label = splittedResult[2];
-                if (result.keySet().contains(label)) {
-                    averages = result.get(label);
-                    averages.set(0, averages.get(0) + Double.parseDouble(splittedResult[1]));
-                    averages.set(1, averages.get(1) + (splittedResult[7].equals("true") ? 1D : 0D));
-                    averages.set(2, averages.get(2) + 1D);
-                } else {
-                    averages.add(0, Double.parseDouble(splittedResult[1]));
-                    averages.add(1, (splittedResult[7].equals("true") ? 1D : 0D));
-                    averages.add(2, 1D);
+                QueryResultStats result = results.computeIfAbsent(label, QueryResultStats::new);
+                result.count++;
+                // elapsed
+                result.totalTime += Double.parseDouble(splittedResult[1]);
+                result.bytes += Long.parseLong(splittedResult[9]);
+                if (splittedResult[7].equals("true")) {
+                    result.successCount++;
                 }
-                result.put(label, averages);
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
 
+        out.println();
+        out.println();
+        out.println("*********   Test completed   **********");
+        out.println();
+        out.println("Concurrency (number of Threads) : " + storageConfiguration.getBenchmark().getConcurrency());
+        out.println("Repetitions : " + storageConfiguration.getBenchmark().getNumRepetitions());
+        out.println("Delay (ms) : " + storageConfiguration.getBenchmark().getDelay());
+        out.println("Connection Type : " + storageConfiguration.getBenchmark().getConnectionType());
+        if (storageConfiguration.getBenchmark().getConnectionType().equals(ConnectionType.REST.name())) {
+            out.println("URL : " + storageConfiguration.getBenchmark().getRest());
+        }
+        out.println();
+        int keyLength = Math.max(18, results.keySet().stream().mapToInt(String::length).max().orElse(0));
+        String format = "| %3s | %-" + keyLength + "s | %12s | %18s | %18s | %18s |\n";
+        out.printf(format,   "#",           "Query ID",  "Num queries",     "Avg. Time (ms)",      "Avg. size (B)",  "Success Ratio (%)");
+        out.printf(format, "---", StringUtils.repeat('-', keyLength), "------------",
+                "------------------", "------------------", "------------------");
         int i = 0;
-        for (String key : result.keySet()) {
-            out.println(++i + ": Query ID : " + String.format("%1$-18s", key)
-                    + ", Avg. Time : " + String.format("%.2f", (result.get(key).get(0) / result.get(key).get(2)))
-                    + " ms, Success Ratio : " + (result.get(key).get(1) / result.get(key).get(2) * 100));
+        for (QueryResultStats result : results.values()) {
+            String key = result.queryId;
+            if (key.startsWith("\"") && key.endsWith("\"")) {
+                key = key.substring(1, key.length() - 1);
+            }
+            double avgTime = result.totalTime / result.count;
+            double successRatio = (double) result.successCount / result.count * 100;
+            double avgSize = result.bytes / result.count;
+            out.printf(format, ++i, key,
+                    result.count,
+                    String.format("%.2f", avgTime),
+                    String.format("%.2f", avgSize),
+                    String.format("%.2f", successRatio));
         }
 
-        out.println("\n\nTest Results File  : " + resultFile);
+        out.println();
+        out.println();
+        out.println("Test Results File  : " + resultFile);
         out.println("JMeter Script File : " + jmxFile.toPath());
-        out.println("\n\n** How To Generate JMeter HTML Report ** \n\nUse the following command from outDir (" + outdir + ") :"
-                + "\n\ncd " + outdir + "\njmeter -g " + buildOutputFileName() + ".jtl -o Dashboard\n");
+        out.println();
+        out.println();
+        out.println("** How To Generate JMeter HTML Report **");
+        out.println();
+        out.println();
+        out.println("Use the following command from outDir (" + outdir + ") :");
+        out.println();
+        out.println("cd " + outdir + "");
+        out.println("jmeter -g " + buildOutputFileName() + ".jtl -o Dashboard");
+        out.println();
+        out.println("** How To Generate MatPlotLib Charts **");
+        out.println("python3 " + jmeterHome.getParent().resolve("bin").resolve("benchmark_plot_series.py") + " " + outdir.getParent());
+        out.println();
+
     }
 }

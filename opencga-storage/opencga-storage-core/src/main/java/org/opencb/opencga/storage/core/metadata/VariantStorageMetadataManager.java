@@ -42,6 +42,7 @@ import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.adaptors.*;
 import org.opencb.opencga.storage.core.metadata.models.*;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
@@ -259,6 +260,25 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
     public boolean studyExists(String studyName) {
         return exists() && getStudyIdOrNull(studyName) != null;
+    }
+
+    public ProjectMetadata setActiveSearchIndexMetadata(SearchIndexMetadata indexMetadata, long updateStartTimestamp)
+            throws StorageEngineException {
+        return updateProjectMetadata(projectMetadata -> {
+            for (SearchIndexMetadata value : projectMetadata.getSecondaryAnnotationIndex().getValues()) {
+                if (value.getVersion() == indexMetadata.getVersion()) {
+                    value.setStatus(SearchIndexMetadata.Status.ACTIVE);
+                    value.setLastUpdateDate(Date.from(Instant.ofEpochMilli(updateStartTimestamp)));
+                } else {
+                    if (value.getStatus() == SearchIndexMetadata.Status.ACTIVE || value.getStatus() == SearchIndexMetadata.Status.STAGING) {
+                        // If there is an older active or staging index, update its status to DEPRECATED
+                        value.setStatus(SearchIndexMetadata.Status.DEPRECATED);
+                    }
+                }
+            }
+            updateProjectStatus(projectMetadata);
+            return projectMetadata;
+        });
     }
 
     public interface UpdateFunction<T, E extends Exception> {
@@ -584,8 +604,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             }
             pm.setVariantIndexLastTimestamp();
             // As new variants have been added, the annotation and secondary-annotation are outdated.
-            pm.setAnnotationIndexStatus(TaskMetadata.Status.NONE);
-            pm.setSecondaryAnnotationIndexStatus(TaskMetadata.Status.NONE);
+            updateProjectStatus(pm);
             return pm;
         });
     }
@@ -596,11 +615,14 @@ public class VariantStorageMetadataManager implements AutoCloseable {
      */
     public void invalidateCurrentVariantAnnotationIndex() throws StorageEngineException {
         updateProjectMetadata(pm -> {
-            pm.setAnnotationIndexLastTimestamp(0);
-            pm.setSecondaryAnnotationIndexLastTimestamp(0);
+            logger.info("Invalidating current variant annotation index on project '{}'", pm.getName());
+            pm.setAnnotationIndexLastUpdateStartTimestamp(0);
+            pm.setAnnotationIndexLastFullUpdateStartTimestamp(0);
 
-            pm.setAnnotationIndexStatus(TaskMetadata.Status.NONE);
-            pm.setSecondaryAnnotationIndexStatus(TaskMetadata.Status.NONE);
+            for (SearchIndexMetadata indexMetadata : pm.getSecondaryAnnotationIndex().getValues()) {
+                indexMetadata.setLastUpdateDate(Date.from(Instant.EPOCH));
+            }
+            updateProjectStatus(pm);
             return pm;
         });
     }
@@ -617,41 +639,58 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         updateProjectMetadata(projectMetadata -> {
             // Update annotation timestamp.
             // This includes full and partial annotations
-            projectMetadata.setAnnotationIndexLastTimestamp(annotationStartTimestamp);
-            // Any time a new annotation is loaded, the secondary annotation index status is reset.
-            projectMetadata.setSecondaryAnnotationIndexStatus(TaskMetadata.Status.NONE);
+            projectMetadata.setAnnotationIndexLastUpdateStartTimestamp(annotationStartTimestamp);
             if (annotateAll) {
-                // The annotation would be marked as "READY" if all the variants from the database are annotated.
-                // This requires that no other variants where loaded while annotating,
-                // and for this process to be annotating all variants.
-                TaskMetadata.Status pre = projectMetadata.getAnnotationIndexStatus();
-                if (projectMetadata.getAnnotationIndexLastTimestamp() > projectMetadata.getVariantIndexLastTimestamp()) {
-                    projectMetadata.setAnnotationIndexStatus(TaskMetadata.Status.READY);
-                } else {
-                    projectMetadata.setAnnotationIndexStatus(TaskMetadata.Status.NONE);
-                }
-                if (pre != projectMetadata.getAnnotationIndexStatus()) {
-                    logger.info("Annotation index status changed from {} to {}", pre, projectMetadata.getAnnotationIndexStatus());
-                }
-            } // else : partial annotations doesn't change the annotation status
+                // If all variants are being annotated, update the full annotation timestamp
+                projectMetadata.setAnnotationIndexLastFullUpdateStartTimestamp(annotationStartTimestamp);
+            }
+
+            // Any time a new annotation is loaded, the secondary annotation index status would be reset.
+            updateProjectStatus(projectMetadata);
         });
     }
 
-    /**
-     * Update the timestamp with the last time that a full secondary variant annotation was executed successfully.
-     * @param startTimestamp Starting time of the secondary annotation index (not the end time)
-     * @throws StorageEngineException if there is a problem updating the metadata
-     */
-    public void updateSecondaryAnnotationIndexTimestamp(long startTimestamp) throws StorageEngineException {
-        updateProjectMetadata(projectMetadata -> {
-            projectMetadata.setSecondaryAnnotationIndexLastTimestamp(startTimestamp);
-            if (projectMetadata.getAnnotationIndexLastTimestamp() < startTimestamp
-                    && projectMetadata.getStatsLastTimestamp() < startTimestamp) {
-                projectMetadata.setSecondaryAnnotationIndexStatus(TaskMetadata.Status.READY);
+    private static void updateProjectStatus(ProjectMetadata projectMetadata) {
+
+        // Update annotation status
+        TaskMetadata.Status annotationIndexStatus = projectMetadata.getAnnotationIndexStatus();
+        if (projectMetadata.getAnnotationIndexLastFullUpdateStartTimestamp() > projectMetadata.getVariantIndexLastTimestamp()) {
+            // The annotation would be marked as "READY" if all the variants from the database are annotated.
+            // This requires that no other variants where loaded while annotating,
+            // and for this process to be annotating all variants.
+            projectMetadata.setAnnotationIndexStatus(TaskMetadata.Status.READY);
+        } else {
+            projectMetadata.setAnnotationIndexStatus(TaskMetadata.Status.NONE);
+        }
+        if (annotationIndexStatus != projectMetadata.getAnnotationIndexStatus()) {
+            logger.info("Annotation index status changed from '{}' to '{}'", annotationIndexStatus,
+                    projectMetadata.getAnnotationIndexStatus());
+        }
+
+        // Update secondary annotation status
+        // Secondary annotation index is considered READY if it is up to date with
+        // - the last annotation index (which includes partial annotations)
+        // - the last stats index
+        // - the last variant index
+        for (SearchIndexMetadata indexMetadata : projectMetadata.getSecondaryAnnotationIndex().getValues()) {
+            Date lastUpdateDate = indexMetadata.getLastUpdateDate();
+            SearchIndexMetadata.DataStatus dataStatus = indexMetadata.getDataStatus();
+            if (lastUpdateDate != null) {
+                if (lastUpdateDate.getTime() > projectMetadata.getAnnotationIndexLastUpdateStartTimestamp()
+                        && lastUpdateDate.getTime() > projectMetadata.getStatsLastEndTimestamp()
+                        && lastUpdateDate.getTime() > projectMetadata.getVariantIndexLastTimestamp()) {
+                    indexMetadata.setDataStatus(SearchIndexMetadata.DataStatus.READY);
+                } else {
+                    indexMetadata.setDataStatus(SearchIndexMetadata.DataStatus.OUT_OF_DATE);
+                }
             } else {
-                projectMetadata.setSecondaryAnnotationIndexStatus(TaskMetadata.Status.NONE);
+                indexMetadata.setDataStatus(SearchIndexMetadata.DataStatus.EMPTY);
             }
-        });
+            if (dataStatus != indexMetadata.getDataStatus()) {
+                logger.info("Secondary annotation index '{}' status changed from '{}' to '{}'",
+                        indexMetadata.getVersion(), dataStatus, indexMetadata.getDataStatus());
+            }
+        }
     }
 
     /**
@@ -660,9 +699,9 @@ public class VariantStorageMetadataManager implements AutoCloseable {
      */
     public void updateStatsIndexTimestamp() throws StorageEngineException {
         updateProjectMetadata(project -> {
-            project.setStatsIndexLastTimestamp(System.currentTimeMillis());
+            project.setStatsIndexLastEndTimestamp(System.currentTimeMillis());
             // As new variant stats have been added, the secondary-annotation-index is outdated.
-            project.setSecondaryAnnotationIndexStatus(TaskMetadata.Status.NONE);
+            updateProjectStatus(project);
         });
     }
 
@@ -1943,6 +1982,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 CohortMetadata.Type.AGGREGATE_FAMILY, CohortMetadata.AGGREGATE_FAMILY_PREFIX);
     }
 
+    @Deprecated
     public int registerSecondaryIndexSamples(int studyId, List<String> samples, boolean resume)
             throws StorageEngineException {
         return registerInternalCohort(studyId, samples, resume, false,

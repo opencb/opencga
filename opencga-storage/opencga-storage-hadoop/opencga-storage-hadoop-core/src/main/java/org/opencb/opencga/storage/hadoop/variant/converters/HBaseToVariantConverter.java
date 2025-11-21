@@ -64,8 +64,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
     protected HBaseVariantConverterConfiguration configuration;
 
     public HBaseToVariantConverter(VariantStorageMetadataManager scm) {
-        long ts = scm.getProjectMetadata().getSecondaryAnnotationIndexLastTimestamp();
-        this.annotationConverter = new HBaseToVariantAnnotationConverter(ts)
+        this.annotationConverter = new HBaseToVariantAnnotationConverter()
                 .setAnnotationIds(scm.getProjectMetadata().getAnnotation());
         HBaseToVariantStatsConverter statsConverter = new HBaseToVariantStatsConverter();
         this.studyEntryConverter = new HBaseToStudyEntryConverter(scm, statsConverter);
@@ -115,7 +114,9 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         if (configuration.getProjection() != null) {
             annotationConverter.setIncludeFields(configuration.getProjection().getFields());
         }
-        annotationConverter.setIncludeIndexStatus(configuration.getIncludeIndexStatus());
+        if (configuration.getSearchIndexCreationTs() >= 0) {
+            annotationConverter.setIncludeIndexStatus(configuration.getSearchIndexCreationTs(), configuration.getSearchIndexUpdateTs());
+        }
         return this;
     }
 

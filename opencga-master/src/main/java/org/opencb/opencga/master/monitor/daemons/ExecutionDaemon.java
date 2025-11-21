@@ -207,7 +207,6 @@ public class ExecutionDaemon extends MonitorParentDaemon implements Closeable {
             put(GatkWrapperAnalysis.ID, "variant " + GatkWrapperAnalysis.ID + "-run");
             put(ExomiserWrapperAnalysis.ID, "variant " + ExomiserWrapperAnalysis.ID + "-run");
             put(VariantSecondaryAnnotationIndexOperationTool.ID, "variant secondary-index");
-            put(VariantSecondaryIndexSamplesDeleteOperationTool.ID, "variant secondary-index-delete");
             put(VariantScoreDeleteOperationTool.ID, "variant score-delete");
             put(VariantScoreIndexOperationTool.ID, "variant score-index");
             put(VariantSecondarySampleIndexOperationTool.ID, "variant sample-index");
