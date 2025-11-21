@@ -535,8 +535,8 @@ public class DocumentToVariantAnnotationConverter
         }
 
         return new ConsequenceType(ensemblGeneId, geneName, ensemblGeneId, ensemblTranscriptId, ensemblTranscriptId, hgvs, strand, biotype,
-                null, exonOverlapList, spliceScores, transcriptAnnotationFlags, cDnaPosition, cdsPosition, codon, proteinVariantAnnotation,
-                soTerms);
+                null, exonOverlapList, spliceScores, null, transcriptAnnotationFlags, cDnaPosition, cdsPosition, codon,
+                proteinVariantAnnotation, soTerms);
     }
 
     private ProteinVariantAnnotation buildProteinVariantAnnotation(String uniprotAccession, String uniprotName, int aaPosition,

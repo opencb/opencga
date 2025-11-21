@@ -29,32 +29,32 @@ public class ParsedVariantQuery {
     private List<Event> events = new ArrayList<>();
 
     private VariantQueryProjection projection;
-
     private final VariantStudyQuery studyQuery;
+    private final VariantAnnotationQuery annotationQuery;
+
     private Integer limit;
     private int skip;
     private boolean count;
     private int approximateCountSamplingSize;
     private List<Region> geneRegions;
     private List<Region> regions;
-    private List<List<String>> clinicalCombination;
-    private List<String> clinicalCombinationList;
     private VariantQuerySource source;
-    //    private VariantAnnotationQuery annotationQuery;
 
 
     public ParsedVariantQuery() {
         this.inputQuery = new Query();
         this.inputOptions = new QueryOptions();
         this.query = new VariantQuery();
-        studyQuery = new VariantStudyQuery();
+        this.studyQuery = new VariantStudyQuery();
+        this.annotationQuery = new VariantAnnotationQuery();
     }
 
     public ParsedVariantQuery(Query inputQuery, QueryOptions inputOptions) {
         this.inputQuery = inputQuery;
         this.inputOptions = inputOptions;
         this.query = new VariantQuery(inputQuery);
-        studyQuery = new VariantStudyQuery();
+        this.studyQuery = new VariantStudyQuery();
+        this.annotationQuery = new VariantAnnotationQuery();
     }
 
     public ParsedVariantQuery(ParsedVariantQuery other) {
@@ -70,9 +70,8 @@ public class ParsedVariantQuery {
         this.approximateCountSamplingSize = other.approximateCountSamplingSize;
         this.geneRegions = new ArrayList<>(other.geneRegions);
         this.regions = new ArrayList<>(other.regions);
-        this.clinicalCombination = new ArrayList<>(other.clinicalCombination);
-        this.clinicalCombinationList = new ArrayList<>(other.clinicalCombinationList);
         this.source = other.source;
+        this.annotationQuery = new VariantAnnotationQuery(other.annotationQuery);
     }
 
     public Query getInputQuery() {
@@ -224,21 +223,25 @@ public class ParsedVariantQuery {
     }
 
     public List<List<String>> getClinicalCombinations() {
-        return clinicalCombination;
+        return annotationQuery.clinicalCombination;
     }
 
     public ParsedVariantQuery setClinicalCombination(List<List<String>> clinicalCombination) {
-        this.clinicalCombination = clinicalCombination;
+        this.annotationQuery.setClinicalCombination(clinicalCombination);
         return this;
     }
 
     public List<String> getClinicalCombinationsList() {
-        return clinicalCombinationList;
+        return annotationQuery.clinicalCombinationList;
     }
 
     public ParsedVariantQuery setClinicalCombinationList(List<String> clinicalCombinationList) {
-        this.clinicalCombinationList = clinicalCombinationList;
+        this.annotationQuery.setClinicalCombinationList(clinicalCombinationList);
         return this;
+    }
+
+    public VariantAnnotationQuery getAnnotationQuery() {
+        return annotationQuery;
     }
 
     public VariantQuerySource getSource() {
@@ -327,6 +330,38 @@ public class ParsedVariantQuery {
             }
         }
 
+    }
+
+    public static class VariantAnnotationQuery {
+
+        private List<List<String>> clinicalCombination;
+        private List<String> clinicalCombinationList;
+
+        public VariantAnnotationQuery() {
+        }
+
+        public VariantAnnotationQuery(VariantAnnotationQuery other) {
+            this.clinicalCombination = new ArrayList<>(other.clinicalCombination);
+            this.clinicalCombinationList = new ArrayList<>(other.clinicalCombinationList);
+        }
+
+        public List<List<String>> getClinicalCombination() {
+            return clinicalCombination;
+        }
+
+        public VariantAnnotationQuery setClinicalCombination(List<List<String>> clinicalCombination) {
+            this.clinicalCombination = clinicalCombination;
+            return this;
+        }
+
+        public List<String> getClinicalCombinationList() {
+            return clinicalCombinationList;
+        }
+
+        public VariantAnnotationQuery setClinicalCombinationList(List<String> clinicalCombinationList) {
+            this.clinicalCombinationList = clinicalCombinationList;
+            return this;
+        }
     }
 
     public static class VariantQueryXref {

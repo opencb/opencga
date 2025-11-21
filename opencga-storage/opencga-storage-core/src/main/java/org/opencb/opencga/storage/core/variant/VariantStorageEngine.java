@@ -1456,23 +1456,28 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         return new VariantQueryParser(getCellBaseUtils(), getMetadataManager());
     }
 
+    @Deprecated
     public DataResult distinct(Query query, String field) throws StorageEngineException {
         return getDBAdaptor().distinct(query, field);
     }
 
+    @Deprecated
     public DataResult rank(Query query, String field, int numResults, boolean asc) throws StorageEngineException {
         return getDBAdaptor().rank(query, field, numResults, asc);
     }
 
+    @Deprecated
     public DataResult getFrequency(Query query, Region region, int regionIntervalSize) throws StorageEngineException {
         return getDBAdaptor().getFrequency(getVariantQueryParser().parseQuery(query, new QueryOptions(VariantField.SUMMARY, true)),
                 region, regionIntervalSize);
     }
 
+    @Deprecated
     public DataResult groupBy(Query query, String field, QueryOptions options) throws StorageEngineException {
         return getDBAdaptor().groupBy(query, field, options);
     }
 
+    @Deprecated
     public DataResult groupBy(Query query, List<String> fields, QueryOptions options) throws StorageEngineException {
         return getDBAdaptor().groupBy(query, fields, options);
     }

@@ -293,6 +293,10 @@ public class VariantQuery extends Query {
         return includeFile(ParamConstants.ALL);
     }
 
+    public VariantQuery includeFileNone() {
+        return includeFile(ParamConstants.NONE);
+    }
+
     public String includeFile() {
         return getString(VariantQueryParam.INCLUDE_FILE.key());
     }

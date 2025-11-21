@@ -71,23 +71,8 @@ public class HBaseFileMetadataDBAdaptor extends AbstractHBaseDBAdaptor implement
 
     @Override
     public LinkedHashSet<Integer> getIndexedFiles(int studyId, boolean includePartial) {
-        // FIXME!
-        LinkedHashSet<Integer> indexedFiles = new LinkedHashSet<>();
-        fileIterator(studyId).forEachRemaining(file -> {
-            if (file.isIndexed()) {
-                if (!includePartial) {
-                    // Exclude partial files
-                    if (file.getType() == FileMetadata.Type.PARTIAL
-                        && file.getAttributes().get(FileMetadata.VIRTUAL_PARENT) != null) {
-                        // This is a partial file. Skip it
-                        return;
-                    }
-                }
-                indexedFiles.add(file.getId());
-            }
-        });
-
-        return indexedFiles;
+        // FIXME! Default implementation is very inefficient
+        return FileMetadataDBAdaptor.super.getIndexedFiles(studyId, includePartial);
     }
 
     @Override

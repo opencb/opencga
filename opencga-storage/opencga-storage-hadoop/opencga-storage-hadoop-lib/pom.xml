@@ -103,7 +103,8 @@
             <id>storage-hadoop</id>
             <activation>
                 <property>
-                    <name>!skipStorageHadoop</name>
+                    <name>storageEngine</name>
+                    <value>hadoop</value>
                 </property>
             </activation>
 

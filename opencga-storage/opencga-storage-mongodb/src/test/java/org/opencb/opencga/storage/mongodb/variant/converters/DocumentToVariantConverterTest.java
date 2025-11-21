@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.mongodb.variant.converters;
 
-import com.google.common.collect.Lists;
 import org.bson.Document;
 import org.bson.types.Binary;
 import org.junit.Before;
@@ -30,8 +29,8 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions;
 import org.opencb.opencga.storage.mongodb.variant.protobuf.VariantMongoDBProto;
 
@@ -54,6 +53,9 @@ public class DocumentToVariantConverterTest {
 
     private VariantStorageMetadataManager metadataManager;
     private VariantQueryProjection variantQueryProjection;
+    private List<String> sampleNames;
+    private Integer na001;
+    private Integer na002;
 
     @Before
     public void setUp() throws StorageEngineException {
@@ -62,22 +64,26 @@ public class DocumentToVariantConverterTest {
         metadataManager = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
 
         // Java native class
-        studyId = metadataManager.createStudy("1").getId();
+        studyId = metadataManager.createStudy("study1").getId();
         metadataManager.updateStudyMetadata(studyId, studyMetadata -> {
             studyMetadata.getAttributes().put(MongoDBVariantStorageOptions.DEFAULT_GENOTYPE.key(), "0/0");
             return studyMetadata;
         });
-        fileId = metadataManager.registerFile(studyId, "1", Arrays.asList("NA001", "NA002"));
+        sampleNames = Arrays.asList("NA001", "NA002");
+        fileId = metadataManager.registerFile(studyId, "file1.vcf", sampleNames);
         metadataManager.addIndexedFiles(studyId, Collections.singletonList(fileId));
+        na001 = metadataManager.getSampleId(studyId, "NA001");
+        na002 = metadataManager.getSampleId(studyId, "NA002");
 
 
         StudyMetadata studyMetadata = metadataManager.getStudyMetadata(studyId);
-        variantQueryProjection = new VariantQueryProjection(studyMetadata, Arrays.asList(1, 2), Arrays.asList(fileId));
+        variantQueryProjection = new VariantQueryProjection(studyMetadata, Arrays.asList(na001, na002), Arrays.asList(fileId));
 
 
         //Setup variant
         variant = new Variant("1", 1000, 1000, "A", "C");
-        variant.setId("rs666");
+//        variant.setId(variant.toString());
+        variant.setNames(Arrays.asList("rs666"));
 
         //Setup variantSourceEntry
         studyEntry = new StudyEntry(fileId.toString(), studyId.toString());
@@ -95,6 +101,7 @@ public class DocumentToVariantConverterTest {
         na002.put("GT", "0/1");
         na002.put("DP", "5");
         studyEntry.addSampleData("NA002", na002);
+        studyEntry.getSamples().forEach(s -> s.setFileIndex(0));
         variant.addStudyEntry(studyEntry);
 
         //Setup mongoVariant
@@ -114,9 +121,9 @@ public class DocumentToVariantConverterTest {
         chunkIds.add("1_0_10k");
         mongoVariant.append(DocumentToVariantConverter.AT_FIELD, new Document("chunkIds", chunkIds));
 
-        LinkedList hgvs = new LinkedList();
+//        LinkedList hgvs = new LinkedList();
 //        hgvs.add(new Document("type", "genomic").append("name", "1:g.1000A>C"));
-        mongoVariant.append("hgvs", hgvs);
+//        mongoVariant.append("hgvs", hgvs);
     }
 
     @Test
@@ -127,7 +134,7 @@ public class DocumentToVariantConverterTest {
                 .getStudyId()));
 
 //        mongoStudy.append(DocumentToVariantSourceEntryConverter.FORMAT_FIELD, variantSourceEntry.getFormat());
-        mongoStudy.append(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD, new Document("0/1", Collections.singletonList(2)));
+        mongoStudy.append(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD, new Document("0/1", Collections.singletonList(na002)));
 
         Document mongoFile = new Document(DocumentToStudyVariantEntryConverter.FILEID_FIELD, Integer.parseInt(studyEntry
                 .getFiles().get(0).getFileId()))
@@ -155,7 +162,8 @@ public class DocumentToVariantConverterTest {
                         new DocumentToSamplesConverter(metadataManager, variantQueryProjection)),
                 new DocumentToVariantStatsConverter());
         Variant converted = converter.convertToDataModelType(mongoVariant);
-        assertEquals("\n" + variant.toJson() + "\n" + converted.toJson(), variant, converted);
+        variant.setId(variant.toString());
+        assertEquals("\n" + variant.toJson() + "\n" + converted.toJson(), variant.getImpl(), converted.getImpl());
     }
 
     @Test
@@ -175,14 +183,13 @@ public class DocumentToVariantConverterTest {
                 .append(DocumentToStudyVariantEntryConverter.FILES_FIELD, Collections.singletonList(mongoFile));
         Document genotypeCodes = new Document();
 //        genotypeCodes.append("def", "0/0");
-        genotypeCodes.append("0/1", Collections.singletonList(2));
+        genotypeCodes.append("0/1", Collections.singletonList(na002));
         mongoStudy.append(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD, genotypeCodes);
 
         List<Document> studies = new LinkedList<>();
         studies.add(mongoStudy);
         mongoVariant.append(DocumentToVariantConverter.STUDIES_FIELD, studies);
 
-        List<String> sampleNames = Lists.newArrayList("NA001", "NA002");
         DocumentToVariantConverter converter = new DocumentToVariantConverter(
                 new DocumentToStudyVariantEntryConverter(
                         true,
@@ -200,6 +207,7 @@ public class DocumentToVariantConverterTest {
         DocumentToVariantConverter converter = new DocumentToVariantConverter();
         Variant converted = converter.convertToDataModelType(mongoVariant);
         variant.setStudies(Collections.<StudyEntry>emptyList());
+        variant.setId(variant.toString());
         assertEquals("\n" + variant.toJson() + "\n" + converted.toJson(), variant, converted);
     }
 
@@ -214,6 +222,15 @@ public class DocumentToVariantConverterTest {
 
     @Test
     public void testFieldsMap() {
+        if (VariantField.values().length != DocumentToVariantConverter.FIELDS_MAP.size()) {
+            List<String> missing = new ArrayList<>();
+            for (VariantField field : VariantField.values()) {
+                if (!DocumentToVariantConverter.FIELDS_MAP.containsKey(field)) {
+                    missing.add(field.name());
+                }
+            }
+            throw new IllegalStateException("FIELDS_MAP is missing fields: " + missing);
+        }
         assertEquals(VariantField.values().length, DocumentToVariantConverter.FIELDS_MAP.size());
     }
 

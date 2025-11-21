@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.mongodb.variant.adaptors;
 
 import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -14,13 +15,12 @@ import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.dummy.DummyStudyMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashSet;
+import java.util.*;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
@@ -38,6 +38,14 @@ import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVa
 @Category(ShortTests.class)
 public class VariantMongoDBQueryParserTest {
 
+    public static final int sample_10101_id = 10101;
+    public static final int sample_10201_id = 10201;
+    public static final int sample_10301_id = 10301;
+    public static final int file_0_id = 100000;
+    public static final int file_1_id = 100001;
+    public static final int file_2_id = 100002;
+    public static final int file_3_id = 100003;
+    public static final int file_4_id = 100004;
     private VariantMongoDBQueryParser parser;
     private VariantStorageMetadataManager metadataManager;
 
@@ -59,22 +67,26 @@ public class VariantMongoDBQueryParserTest {
     protected StudyMetadata newStudy(String studyName, int files, boolean sameSamples) throws StorageEngineException {
         StudyMetadata sm = metadataManager.createStudy(studyName);
         int studyId = sm.getId();
-        for (int fileIdx = 1; fileIdx <= files; fileIdx++) {
+        for (int fileIdx = 0; fileIdx <= files; fileIdx++) {
             int fileId = metadataManager.registerFile(studyId, "/data/file_" + fileIdx);
 
-            LinkedHashSet<Integer> samplesInFile = new LinkedHashSet<>();
+            List<String> samplesInFile = new ArrayList<>();
             for (int sampleIdx = 1; sampleIdx <= 5; sampleIdx++) {
                 int sampleId;
                 if (sameSamples) {
                     sampleId = studyId * 10000 + sampleIdx;
                 } else {
-                    sampleId = studyId * 10000 + 100 * fileId + sampleIdx;
+                    sampleId = studyId * 10000 + 100 * (fileId - 100000) + sampleIdx;
                 }
-                samplesInFile.add(sampleId);
-                metadataManager.unsecureUpdateSampleMetadata(studyId, new SampleMetadata(studyId, sampleId, "sample_" + sampleId));
+                String name = "sample_" + sampleId;
+                System.out.println("Registering sample " + name + " in file " + fileId + " of study " + studyName);
+                samplesInFile.add(name);
+                metadataManager.unsecureUpdateSampleMetadata(studyId, new SampleMetadata(studyId, sampleId, name));
             }
-            metadataManager.updateFileMetadata(studyId, fileId, fileMetadata -> fileMetadata.setSamples(samplesInFile));
+            metadataManager.registerFileSamples(studyId, fileId, samplesInFile);
+//            metadataManager.updateFileMetadata(studyId, fileId, fileMetadata -> fileMetadata.setSamples(samplesInFile));
             metadataManager.addIndexedFiles(studyId, Collections.singletonList(fileId));
+            System.out.println("Registered file " + fileId + " with samples " + samplesInFile);
         }
 
         metadataManager.updateStudyMetadata(studyId, studyMetadata -> {
@@ -88,14 +100,14 @@ public class VariantMongoDBQueryParserTest {
 
     @Test
     public void testQuerySampleAddFile() {
-        Document mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1").append(SAMPLE.key(), "sample_10101"));
+        Bson mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1").append(SAMPLE.key(), "sample_10101"));
 
         Document expected = new Document(STUDIES_FIELD + '.' + STUDYID_FIELD, 1)
                 .append("$and", Collections.singletonList(
                         new Document("$or", Arrays.asList(
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", 10101),
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", 10101)))))
-                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, 1);
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", sample_10101_id),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", sample_10101_id)))))
+                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, file_1_id);
 
         checkEqualDocuments(expected, mongoQuery);
     }
@@ -104,7 +116,7 @@ public class VariantMongoDBQueryParserTest {
     public void testQuerySampleNotAddFile() {
         // In Study2 all the files have the same samples.
         // See #641
-        Document mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_2").append(SAMPLE.key(), "sample_20001"));
+        Bson mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_2").append(SAMPLE.key(), "sample_20001"));
 
         Document expected = new Document(STUDIES_FIELD + '.' + STUDYID_FIELD, 2)
                 .append("$and", Collections.singletonList(
@@ -118,21 +130,21 @@ public class VariantMongoDBQueryParserTest {
     @Test
     public void testQuerySampleAddMultipleFile() throws StorageEngineException {
         int studyId = metadataManager.getStudyId("study_2");
-        metadataManager.updateFileMetadata(studyId, 4, fileMetadata -> {
+        metadataManager.updateFileMetadata(studyId, file_3_id, fileMetadata -> {
             fileMetadata.setSamples(new LinkedHashSet<>());
         });
-        metadataManager.addIndexedFiles(studyId, Collections.singletonList(4));
+        metadataManager.addIndexedFiles(studyId, Collections.singletonList(file_3_id));
 
         // Now, in Study2, not all the files have the same samples, so the parser must add fileId : $in:[1,2,3]
         // Improvement to #641
-        Document mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_2").append(SAMPLE.key(), "sample_20001"));
+        Bson mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_2").append(SAMPLE.key(), "sample_20001"));
 
         Document expected = new Document(STUDIES_FIELD + '.' + STUDYID_FIELD, 2)
                 .append("$and", Collections.singletonList(
                         new Document("$or", Arrays.asList(
                                 new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", 20001),
                                 new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", 20001)))))
-                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, new Document("$in", Arrays.asList(1, 2, 3)));
+                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, new Document("$in", Arrays.asList(file_1_id, 100000, file_2_id)));
 
         checkEqualDocuments(expected, mongoQuery);
     }
@@ -157,7 +169,7 @@ public class VariantMongoDBQueryParserTest {
 
         // Now, in Study2, not all the files have the same samples, so the parser must add fileId : $in:[1,2,3]
         // Improvement to #641
-        Document mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_2").append(GENOTYPE.key(), "sample_20001:0/1,sample_20004:0/1"));
+        Bson mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_2").append(GENOTYPE.key(), "sample_20001:0/1,sample_20004:0/1"));
 
         Document expected = new Document(STUDIES_FIELD + '.' + STUDYID_FIELD, 2)
                 .append("$or", Arrays.asList(
@@ -180,16 +192,18 @@ public class VariantMongoDBQueryParserTest {
         metadataManager.unsecureUpdateSampleMetadata(studyId, new SampleMetadata(studyId, 5, "sample_20005"));
         metadataManager.unsecureUpdateSampleMetadata(studyId, new SampleMetadata(studyId, 6, "sample_20006"));
 //        metadataManager.registerSamples(studyId, Arrays.asList("sample_20004", "sample_20005", "sample_20006"));
-        metadataManager.registerFileSamples(studyId, 4, Arrays.asList("sample_20004", "sample_20005", "sample_20006"));
+        int file4 = metadataManager.getFileIdOrFail(studyId, "file_4");
+        metadataManager.registerFileSamples(studyId, file4, Arrays.asList("sample_20004", "sample_20005", "sample_20006"));
         metadataManager.registerFile(studyId, "file_5", Arrays.asList("sample_20004", "sample_20005", "sample_20006"));
-        metadataManager.addIndexedFiles(studyId, Collections.singletonList(4));
-        metadataManager.addIndexedFiles(studyId, Collections.singletonList(5));
+        int file5 = metadataManager.getFileIdOrFail(studyId, "file_5");
+        metadataManager.addIndexedFiles(studyId, Collections.singletonList(file4));
+        metadataManager.addIndexedFiles(studyId, Collections.singletonList(file5));
 
         metadataManager.registerFile(studyId, "file_10", Collections.singletonList("sample_20010"));
 
         // Now, in Study2, not all the files have the same samples, so the parser must add fileId : $in:[1,2,3]
         // Improvement to #641
-        Document mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_2").append(GENOTYPE.key(), "sample_20001:0/1;sample_20004:0/1"));
+        Bson mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_2").append(GENOTYPE.key(), "sample_20001:0/1;sample_20004:0/1"));
 
         Document expected = new Document(STUDIES_FIELD + '.' + STUDYID_FIELD, 2)
                 .append("$and", Arrays.asList(
@@ -205,18 +219,18 @@ public class VariantMongoDBQueryParserTest {
     @Test
     public void testQuerySamplesAddFile() {
         // Filter samples from same file
-        Document mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1")
+        Bson mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1")
                 .append(SAMPLE.key(), "sample_10101;sample_10102"));
 
         Document expected = new Document(STUDIES_FIELD + '.' + STUDYID_FIELD, 1)
                 .append("$and", Arrays.asList(
                         new Document("$or", Arrays.asList(
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", 10101),
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", 10101))),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", sample_10101_id),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", sample_10101_id))),
                         new Document("$or", Arrays.asList(
                                 new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", 10102),
                                 new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", 10102)))))
-                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, 1);
+                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, file_1_id);
 
         checkEqualDocuments(expected, mongoQuery);
     }
@@ -224,18 +238,18 @@ public class VariantMongoDBQueryParserTest {
     @Test
     public void testQuerySamplesANDFileANDAddFile() {
         // Filter samples from same file
-        Document mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1")
+        Bson mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1")
                 .append(FILE.key(), "file_1;file_3")
                 .append(SAMPLE.key(), "sample_10101;sample_10201"));
 
         Document expected = new Document(STUDIES_FIELD + '.' + STUDYID_FIELD, 1)
                 .append("$and", Arrays.asList(
                         new Document("$or", Arrays.asList(
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", 10101),
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", 10101))),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", sample_10101_id),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", sample_10101_id))),
                         new Document("$or", Arrays.asList(
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", 10201),
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", 10201)))
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", sample_10201_id),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", sample_10201_id)))
                 ))
                 .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, new Document("$all", Arrays.asList(1, 2, 3)));
 
@@ -245,18 +259,18 @@ public class VariantMongoDBQueryParserTest {
     @Test
     public void testQuerySamplesANDFileORAddFile() {
         // Filter samples from same file
-        Document mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1")
+        Bson mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1")
                 .append(FILE.key(), "file_1,file_3")
                 .append(SAMPLE.key(), "sample_10101;sample_10201"));
 
         Document expected = new Document(STUDIES_FIELD + '.' + STUDYID_FIELD, 1)
                 .append("$and", Arrays.asList(
                         new Document("$or", Arrays.asList(
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", 10101),
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", 10101))),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", sample_10101_id),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", sample_10101_id))),
                         new Document("$or", Arrays.asList(
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", 10201),
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", 10201))),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", sample_10201_id),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", sample_10201_id))),
                         new Document(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, new Document("$in", Arrays.asList(1, 3))),
                         new Document(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, new Document("$all", Arrays.asList(1, 2)))
                 ));
@@ -267,18 +281,18 @@ public class VariantMongoDBQueryParserTest {
     @Test
     public void testQuerySamplesANDFileNegatedAddFile() {
         // Filter samples from same file
-        Document mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1")
+        Bson mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1")
                 .append(FILE.key(), "!file_3;!file_4")
                 .append(SAMPLE.key(), "sample_10101;sample_10201"));
 
         Document expected = new Document(STUDIES_FIELD + '.' + STUDYID_FIELD, 1)
                 .append("$and", Arrays.asList(
                         new Document("$or", Arrays.asList(
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", 10101),
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", 10101))),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", sample_10101_id),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", sample_10101_id))),
                         new Document("$or", Arrays.asList(
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", 10201),
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", 10201))),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", sample_10201_id),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", sample_10201_id))),
                         new Document(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, new Document("$all", Arrays.asList(1, 2))),
                         new Document(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, new Document("$nin", Arrays.asList(3, 4)))
                 ));
@@ -289,22 +303,22 @@ public class VariantMongoDBQueryParserTest {
     @Test
     public void testQuerySamplesORFileANDAddFile() {
         // Filter samples from same file
-        Document mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1")
+        Bson mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1")
                 .append(FILE.key(), "file_1;file_3")
                 .append(SAMPLE.key(), "sample_10101,sample_10201"));
 
         Document expected = new Document(STUDIES_FIELD + '.' + STUDYID_FIELD, 1)
                 .append("$or", Arrays.asList(
                         new Document("$or", Arrays.asList(
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", 10101),
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", 10101)))
-                                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, 1),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", sample_10101_id),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", sample_10101_id)))
+                                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, file_1_id),
                         new Document("$or", Arrays.asList(
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", 10201),
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", 10201)))
-                                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, 2)
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", sample_10201_id),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", sample_10201_id)))
+                                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, file_2_id)
                 ))
-                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, new Document("$all", Arrays.asList(1, 3)));
+                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, new Document("$all", Arrays.asList(file_1_id, file_3_id)));
 
         checkEqualDocuments(expected, mongoQuery);
     }
@@ -312,21 +326,21 @@ public class VariantMongoDBQueryParserTest {
     @Test
     public void testQuerySamplesORFileORAddFile() {
         // Filter samples from same file
-        Document mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1")
+        Bson mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1")
                 .append(FILE.key(), "file_1,file_3")
                 .append(SAMPLE.key(), "sample_10101,sample_10201"));
 
         Document expected = new Document(STUDIES_FIELD + '.' + STUDYID_FIELD, 1)
                 .append("$or", Arrays.asList(
                         new Document("$or", Arrays.asList(
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", 10101),
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", 10101)))
-                                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, 1),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", sample_10101_id),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", sample_10101_id)))
+                                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, file_1_id),
                         new Document("$or", Arrays.asList(
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", 10201),
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", 10201)))
-                                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, 2)))
-                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, new Document("$in", Arrays.asList(1, 3)));
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", sample_10201_id),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", sample_10201_id)))
+                                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, file_2_id)))
+                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, new Document("$in", Arrays.asList(file_1_id, file_3_id)));
 
         checkEqualDocuments(expected, mongoQuery);
     }
@@ -334,21 +348,21 @@ public class VariantMongoDBQueryParserTest {
     @Test
     public void testQuerySamplesORFileNegatedAddFile() {
         // Filter samples from same file
-        Document mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1")
+        Bson mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1")
                 .append(FILE.key(), "!file_3;!file_4")
                 .append(SAMPLE.key(), "sample_10101,sample_10201"));
 
         Document expected = new Document(STUDIES_FIELD + '.' + STUDYID_FIELD, 1)
                 .append("$or", Arrays.asList(
                         new Document("$or", Arrays.asList(
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", 10101),
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", 10101)))
-                                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, 1),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", sample_10101_id),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", sample_10101_id)))
+                                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, file_1_id),
                         new Document("$or", Arrays.asList(
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", 10201),
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", 10201)))
-                                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, 2)))
-                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, new Document("$nin", Arrays.asList(3, 4)));
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", sample_10201_id),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", sample_10201_id)))
+                                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, file_2_id)))
+                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, new Document("$nin", Arrays.asList(file_3_id, file_4_id)));
 
         checkEqualDocuments(expected, mongoQuery);
     }
@@ -356,18 +370,18 @@ public class VariantMongoDBQueryParserTest {
     @Test
     public void testQuerySamplesAddFiles() {
         // Filter samples from different files
-        Document mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1")
+        Bson mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1")
                 .append(SAMPLE.key(), "sample_10101;sample_10201"));
 
         Document expected = new Document(STUDIES_FIELD + '.' + STUDYID_FIELD, 1)
                 .append("$and", Arrays.asList(
                         new Document("$or", Arrays.asList(
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", 10101),
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", 10101))),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", sample_10101_id),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", sample_10101_id))),
                         new Document("$or", Arrays.asList(
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", 10201),
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", 10201)))))
-                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, new Document("$all", Arrays.asList(1, 2)));
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", sample_10201_id),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", sample_10201_id)))))
+                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, new Document("$all", Arrays.asList(file_1_id, file_2_id)));
 
         checkEqualDocuments(expected, mongoQuery);
     }
@@ -375,23 +389,23 @@ public class VariantMongoDBQueryParserTest {
     @Test
     public void testQueryAnySamplesFromAllFiles() {
         // If filter by any samples from all files, don't add the files.fid filter
-        Document mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1")
+        Bson mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1")
                 .append(SAMPLE.key(), "sample_10101,sample_10201,sample_10301"));
 
         Document expected = new Document(STUDIES_FIELD + '.' + STUDYID_FIELD, 1)
                 .append("$or", Arrays.asList(
                         new Document("$or", Arrays.asList(
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", 10101),
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", 10101)))
-                                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, 1),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", sample_10101_id),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", sample_10101_id)))
+                                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, file_1_id),
                         new Document("$or", Arrays.asList(
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", 10201),
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", 10201)))
-                                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, 2),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", sample_10201_id),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", sample_10201_id)))
+                                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, file_2_id),
                         new Document("$or", Arrays.asList(
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", 10301),
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", 10301)))
-                                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, 3))
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", sample_10301_id),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", sample_10301_id)))
+                                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, file_3_id))
                 );
 
         checkEqualDocuments(expected, mongoQuery);
@@ -400,34 +414,34 @@ public class VariantMongoDBQueryParserTest {
     @Test
     public void testQueryAllSamplesFromAllFiles2() {
         // If filter by ALL samples from ALL files, add the files.fid filter with $all
-        Document mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1")
+        Bson mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1")
                 .append(SAMPLE.key(), "sample_10101;sample_10201;sample_10301"));
 
         Document expected = new Document(STUDIES_FIELD + '.' + STUDYID_FIELD, 1)
                 .append("$and", Arrays.asList(
                         new Document("$or", Arrays.asList(
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", 10101),
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", 10101))),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", sample_10101_id),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", sample_10101_id))),
                         new Document("$or", Arrays.asList(
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", 10201),
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", 10201))),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", sample_10201_id),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", sample_10201_id))),
                         new Document("$or", Arrays.asList(
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", 10301),
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", 10301))))
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", sample_10301_id),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", sample_10301_id))))
                 )
-                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, new Document("$all", Arrays.asList(1, 2, 3)));
+                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, new Document("$all", Arrays.asList(file_1_id, file_2_id, file_3_id)));
 
         checkEqualDocuments(expected, mongoQuery);
     }
 
     @Test
     public void testQueryGenotypesAddFiles() {
-        Document mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1").append(GENOTYPE.key(), "sample_10101" + IS + "0/1"));
+        Bson mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1").append(GENOTYPE.key(), "sample_10101" + IS + "0/1"));
 
         Document expected = new Document(STUDIES_FIELD + '.' + STUDYID_FIELD, 1)
                 .append("$and", Collections.singletonList(
                         new Document("$or", Arrays.asList(
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", 10101)))))
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", sample_10101_id)))))
                 .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, 1);
 
         checkEqualDocuments(expected, mongoQuery);
@@ -436,19 +450,19 @@ public class VariantMongoDBQueryParserTest {
     @Test
     public void testQueryAnySample() {
         // Filter samples from different files
-        Document mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1")
+        Bson mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1")
                 .append(SAMPLE.key(), "sample_10101,sample_10201"));
 
         Document expected = new Document(STUDIES_FIELD + '.' + STUDYID_FIELD, 1)
                 .append("$or", Arrays.asList(
                         new Document("$or", Arrays.asList(
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", 10101),
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", 10101)))
-                                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, 1),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", sample_10101_id),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", sample_10101_id)))
+                                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, file_1_id),
                         new Document("$or", Arrays.asList(
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", 10201),
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", 10201)))
-                                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, 2)));
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".0/1", sample_10201_id),
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", sample_10201_id)))
+                                .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, file_2_id)));
 
         checkEqualDocuments(expected, mongoQuery);
     }
@@ -456,7 +470,7 @@ public class VariantMongoDBQueryParserTest {
     @Test
     public void testQueryDefaultGenotypesNotAddFiles() {
         // FILES filter should not be used when the genotype filter is the default genotype
-        Document mongoQuery = parser.parseQuery(new Query()
+        Bson mongoQuery = parser.parseQuery(new Query()
                 .append(STUDY.key(), "study_1")
                 .append(GENOTYPE.key(), "sample_10101" + IS + "0/0" + OR + "1/1"));
 
@@ -469,7 +483,7 @@ public class VariantMongoDBQueryParserTest {
                                         ANY, // $ne 1/1
                                         ANY  // $ne ?/?
                                 )),
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", 10101) // $eq 1/1
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".1/1", sample_10101_id) // $eq 1/1
                         ))))
                 .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, 1);
         checkEqualDocuments(expected, mongoQuery);
@@ -478,19 +492,19 @@ public class VariantMongoDBQueryParserTest {
     @Test
     public void testQueryUnknownGenotypesNotAddFiles() {
         // FILES filter should not be used when the genotype filter is the unknown genotype
-        Document mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1").append(GENOTYPE.key(), "sample_10101" + IS + GenotypeClass.UNKNOWN_GENOTYPE));
+        Bson mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1").append(GENOTYPE.key(), "sample_10101" + IS + GenotypeClass.UNKNOWN_GENOTYPE));
 
         Document expected = new Document(STUDIES_FIELD + '.' + STUDYID_FIELD, 1)
                 .append("$and", Collections.singletonList(
                         new Document("$or", Arrays.asList(
-                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".?/?", 10101)))));
+                                new Document(STUDIES_FIELD + '.' + GENOTYPES_FIELD + ".?/?", sample_10101_id)))));
 
         checkEqualDocuments(expected, mongoQuery);
     }
 
     @Test
     public void testQueryNegatedGenotypes() {
-        Document mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1")
+        Bson mongoQuery = parser.parseQuery(new Query().append(STUDY.key(), "study_1")
                 .append(GENOTYPE.key(), "sample_10101" + IS + NOT + "1/1"));
 
         Document expected = new Document(STUDIES_FIELD + '.' + STUDYID_FIELD, 1)
@@ -522,26 +536,27 @@ public class VariantMongoDBQueryParserTest {
                 .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD, 1) // Ensure that fileId is always returned
                 .append(STUDIES_FIELD + '.' + FILES_FIELD + '.' + SAMPLE_DATA_FIELD, 1);
 
-        Document projection = parser.createProjection(new Query(), new QueryOptions(QueryOptions.INCLUDE,
+        Bson projection = parser.createProjection(new VariantQuery().includeSampleAll(), new QueryOptions(QueryOptions.INCLUDE,
                 STUDIES_SAMPLES + "," + STUDIES_SECONDARY_ALTERNATES + ',' + STUDIES_STATS));
-        checkEqualDocuments(expected, projection);
+        checkEqualDocuments(expected, projection, false);
 
-        projection = parser.createProjection(new Query()
-                .append(INCLUDE_GENOTYPE.key(), true)
-                .append(INCLUDE_SAMPLE_DATA.key(), ALL)
-                .append(INCLUDE_FILE.key(), NONE), new QueryOptions(QueryOptions.INCLUDE, STUDIES.fieldName()));
-        checkEqualDocuments(expected, projection);
+        projection = parser.createProjection(new VariantQuery()
+                .includeSampleAll()
+                .includeGenotype(true)
+                .includeSampleData(ALL)
+                .includeFileNone(), new QueryOptions(QueryOptions.INCLUDE, STUDIES.fieldName()));
+        checkEqualDocuments(expected, projection, false);
 
         expected.append(LENGTH_FIELD, 1);
         expected.append(IDS_FIELD, 1);
         projection = parser.createProjection(new Query().append(INCLUDE_SAMPLE.key(), ALL)
                 .append(INCLUDE_FILE.key(), NONE), new QueryOptions(QueryOptions.EXCLUDE, ANNOTATION.fieldName()));
-        checkEqualDocuments(expected, projection);
+        checkEqualDocuments(expected, projection, false);
 
         expected.remove(STUDIES_FIELD + '.' + FILES_FIELD + '.' + SAMPLE_DATA_FIELD);
         projection = parser.createProjection(new Query().append(INCLUDE_SAMPLE.key(), ALL)
                 .append(INCLUDE_FILE.key(), NONE).append(INCLUDE_GENOTYPE.key(), true), new QueryOptions(QueryOptions.EXCLUDE, ANNOTATION.fieldName()));
-        checkEqualDocuments(expected, projection);
+        checkEqualDocuments(expected, projection, false);
 
     }
 

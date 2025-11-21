@@ -88,7 +88,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
 
     @Before
     public void before() throws Exception {
-        options = new QueryOptions();
+        options = new QueryOptions(QueryOptions.COUNT, true);
         query = new Query();
         metadataManager = getVariantStorageEngine().getMetadataManager();
         if (studyMetadata1 == null) {

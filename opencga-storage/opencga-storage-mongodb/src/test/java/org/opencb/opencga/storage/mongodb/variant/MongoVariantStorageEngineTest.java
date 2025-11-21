@@ -37,6 +37,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.core.testclassification.duration.LongTests;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -82,7 +83,7 @@ import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSt
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
-@Category(ShortTests.class)
+@Category(LongTests.class)
 public class MongoVariantStorageEngineTest extends VariantStorageEngineTest implements MongoDBVariantStorageTest {
 
     @Before

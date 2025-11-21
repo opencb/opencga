@@ -43,6 +43,7 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.MergeMode;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -71,7 +72,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions.*;
 import static org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBQueryParser.OVERLAPPED_FILES_ONLY;
@@ -631,8 +631,8 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
     private StudyMetadata preMerge(List<Integer> fileIds) throws StorageEngineException {
         VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
+        ensureStudyMetadataExists();
         return metadataManager.updateStudyMetadata(getStudyId(), studyMetadata -> {
-            studyMetadata = ensureStudyMetadataExists(studyMetadata);
             LinkedHashSet<Integer> indexedFiles = getMetadataManager().getIndexedFiles(studyMetadata.getId());
             for (Integer fileId : fileIds) {
                 if (indexedFiles.contains(fileId)) {
@@ -744,7 +744,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             return;
         }
 
-        VariantFileMetadata fileMetadata = getMetadataManager().getVariantFileMetadata(getStudyId(), fileId, null).first();
+        VariantFileMetadata fileMetadata = getMetadataManager().getVariantFileMetadata(getStudyId(), fileId);
         String file = getMetadataManager().getFileName(getStudyId(), fileId);
         Long count = dbAdaptor.count(new Query()
                 .append(VariantQueryParam.FILE.key(), file)

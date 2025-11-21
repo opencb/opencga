@@ -110,6 +110,8 @@ jobs:
           if [[ -z "$MODULE" ]]; then
             MODULE="opencga"
           fi
+          // Module name is a path to a module, get only the last part for the log file name
+          MODULE=$(basename $MODULE )
           TAGS=$(echo ${{ inputs.test_profile }} | sed -e 's/run\([^,]*\)Tests/\1/g'  | tr ',' '_' | tr '[:upper:]' '[:lower:]' )
           echo "TESTS_LOG_FILE_NAME=junit_${{ inputs.hadoop }}_${TAGS}_${MODULE}.log.gz" >> $GITHUB_OUTPUT
       - name: Run Junit tests

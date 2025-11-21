@@ -20,17 +20,19 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mongodb.util.JSON;
+import org.bson.BsonInt32;
+import org.bson.BsonInt64;
 import org.bson.Document;
+import org.bson.conversions.Bson;
+import org.bson.json.JsonMode;
+import org.bson.json.JsonWriterSettings;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -147,7 +149,7 @@ public class DocumentToVariantAnnotationConverterTest {
         ObjectMapper jsonObjectMapper = new ObjectMapper();
         jsonObjectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        variantAnnotation = jsonObjectMapper.convertValue(JSON.parse(variantJson), VariantAnnotation.class);
+        variantAnnotation = jsonObjectMapper.readValue(variantJson, VariantAnnotation.class);
 
 //        System.out.println("annotation = " + jsonObjectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(variantAnnotation));
         dbObject = new Document()
@@ -300,14 +302,65 @@ public class DocumentToVariantAnnotationConverterTest {
 
     }
 
-    public static void checkEqualDocuments(Document expected, Document actual) {
+    public static void checkEqualDocuments(Document expected, Bson actual) {
+        checkEqualDocuments(expected, actual, true);
+    }
+
+    public static void checkEqualDocuments(Document expected, Bson actual, boolean toExplicitOps) {
+        Document actualDocument = new Document(actual.toBsonDocument());
+        Document inputExpected = expected;
+        if (toExplicitOps) {
+            expected = toExplicitOps(expected);
+        }
+
+//        // unflatten
+//        if (actualDocument.size() == 1 && actualDocument.containsKey("$and")) {
+//            List<BsonDocument> andList = (List<BsonDocument>) actualDocument.get("$and");
+//            actualDocument = new Document();
+//            for (BsonDocument doc : andList) {
+//                actualDocument.putAll(doc);
+//            }
+//        }
+
         try {
-            checkEqualObjects(expected, actual, "");
+            checkEqualObjects(expected, actualDocument, "");
         } catch (AssertionError error) {
-            System.out.println("expected = " + expected.toJson());
-            System.out.println("actual   = " + actual.toJson());
+            JsonWriterSettings settings = JsonWriterSettings.builder().indent(false).outputMode(JsonMode.SHELL).build();
+            System.out.println("expected            = " + expected.toJson(settings));
+//            System.out.println("expectedExplicitOps = " + expectedExplicitOps.toJson(settings));
+//            System.out.println("actualDocument      = " + actualDocument.toJson(settings));
+            System.out.println("actual              = " + actual.toBsonDocument().toJson(settings));
             throw error;
         }
+    }
+
+    private static Document toExplicitOps(Document expected) {
+        Document expectedDocument;
+        if (expected.size() > 1) {
+            expectedDocument = new Document();
+            List<Document> andList = new ArrayList<>();
+            for (Map.Entry<String, Object> entry : expected.entrySet()) {
+                Object value = entry.getValue();
+                if (value instanceof Document) {
+                    value = toExplicitOps((Document) value);
+                } else if (value instanceof Collection) {
+                    List<Object> list = new ArrayList<>();
+                    for (Object o : (List<?>) value) {
+                        if (o instanceof Document) {
+                            list.add(toExplicitOps((Document) o));
+                        } else {
+                            list.add(o);
+                        }
+                    }
+                    value = list;
+                }
+                andList.add(new Document(entry.getKey(), value));
+            }
+            expectedDocument.put("$and", andList);
+        } else {
+            expectedDocument = expected;
+        }
+        return expectedDocument;
     }
 
     private static void checkEqualObjects(Object expected, Object actual, String path) {
@@ -321,6 +374,13 @@ public class DocumentToVariantAnnotationConverterTest {
         if (actual instanceof Map) {
             actual = new Document((Map) actual);
         }
+        if (actual instanceof BsonInt32) {
+            actual = ((BsonInt32) actual).getValue();
+        }
+        if (actual instanceof BsonInt64) {
+            actual = ((BsonInt64) actual).getValue();
+        }
+
         if (expected instanceof Document && actual instanceof Document) {
             checkEqualObjects((Document) expected, (Document) actual, path);
         } else if (expected instanceof List && actual instanceof List) {

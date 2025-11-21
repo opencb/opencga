@@ -119,6 +119,7 @@
         <opencga.war.name>opencga</opencga.war.name>
         <opencga.env.file>opencga-env.sh</opencga.env.file>
 
+        <storageEngine>hadoop</storageEngine>
         <opencga.hadoop.thirdparty.version>1.1.0</opencga.hadoop.thirdparty.version>
 
         <opencga-hadoop-shaded.id.default>hbase2.0</opencga-hadoop-shaded.id.default>
@@ -283,6 +284,11 @@
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-storage-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-storage-mongodb</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -1600,6 +1606,18 @@
             </build>
         </profile>
 
+        <profile>
+            <id>storage-mongodb</id>
+            <activation>
+                <property>
+                    <name>storageEngine</name>
+                    <value>mongodb</value>
+                </property>
+            </activation>
+            <properties>
+                <OPENCGA.STORAGE.DEFAULT_ENGINE>mongodb</OPENCGA.STORAGE.DEFAULT_ENGINE>
+            </properties>
+        </profile>
         <profile>
             <id>hbase2.0</id>
             <activation>

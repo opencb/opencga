@@ -196,7 +196,7 @@ public class VariantQueryParser {
             studyQuery.setStudies(VariantQueryUtils.splitValue(query, STUDY));
         }
         if (isValidParam(query, GENOTYPE)) {
-            HashMap<Object, List<String>> map = new HashMap<>();
+            HashMap<Object, List<String>> map = new LinkedHashMap<>();
             QueryOperation op = VariantQueryUtils.parseGenotypeFilter(query.genotype(), map);
 
             if (defaultStudy == null) {
@@ -207,10 +207,7 @@ public class VariantQueryParser {
 
             List<KeyOpValue<SampleMetadata, List<String>>> values = new ArrayList<>();
             for (Map.Entry<Object, List<String>> entry : map.entrySet()) {
-                Integer sampleId = metadataManager.getSampleId(defaultStudy.getId(), entry.getKey());
-                if (sampleId == null) {
-                    throw VariantQueryException.sampleNotFound(entry.getKey(), defaultStudy.getName());
-                }
+                int sampleId = metadataManager.getSampleIdOrFail(defaultStudy.getId(), entry.getKey());
                 values.add(new KeyOpValue<>(metadataManager.getSampleMetadata(defaultStudy.getId(), sampleId), "=", entry.getValue()));
             }
 

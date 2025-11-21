@@ -64,13 +64,15 @@ public class DocumentToStudyVariantEntryConverterTest {
             studyMetadata.getAttributes().put(MongoDBVariantStorageOptions.DEFAULT_GENOTYPE.key(), "0/0");
             return studyMetadata;
         });
-        fileId = metadataManager.registerFile(studyId, "1", Arrays.asList("NA001", "NA002", "NA003"));
+        sampleNames = Lists.newArrayList("NA001", "NA002", "NA003");
+        fileId = metadataManager.registerFile(studyId, "file1.vcf", sampleNames);
         metadataManager.addIndexedFiles(studyId, Collections.singletonList(fileId));
 //        metadataManager.updateFileMetadata(studyId, fileId, fileMetadata -> fileMetadata.setIndexStatus(TaskMetadata.Status.READY));
 
 
         StudyMetadata studyMetadata = metadataManager.getStudyMetadata(studyId);
-        variantQueryProjection = new VariantQueryProjection(studyMetadata, Arrays.asList(1, 2, 3), Arrays.asList(fileId));
+        List<Integer> sampleIds = metadataManager.getSampleIds(studyId, sampleNames);
+        variantQueryProjection = new VariantQueryProjection(studyMetadata, sampleIds, Arrays.asList(fileId));
 
         studyEntry = new StudyEntry(studyId.toString());
         FileEntry fileEntry = new FileEntry(fileId.toString(), null, new HashMap<>());
@@ -81,11 +83,12 @@ public class DocumentToStudyVariantEntryConverterTest {
         studyEntry.setSampleDataKeys(Collections.singletonList("GT"));
 
 
-        studyEntry.setSamplesPosition(metadataManager.getSamplesPosition(studyMetadata));
+        studyEntry.setSamplesPosition(metadataManager.getSamplesPosition(studyMetadata, new LinkedHashSet<>(sampleNames)));
         studyEntry.addSampleData("NA001", "GT", "0/0");
         studyEntry.addSampleData("NA002", "GT", "0/1");
         studyEntry.addSampleData("NA003", "GT", "1/1");
 
+        studyEntry.getSamples().forEach(s -> s.setFileIndex(0));
 
         // MongoDB object
         mongoStudy = new Document(DocumentToStudyVariantEntryConverter.STUDYID_FIELD, studyId);
@@ -102,18 +105,17 @@ public class DocumentToStudyVariantEntryConverterTest {
 
         Document genotypeCodes = new Document();
 //        genotypeCodes.append("def", "0/0");
-        genotypeCodes.append("0/1", Collections.singletonList(2));
-        genotypeCodes.append("1/1", Collections.singletonList(3));
+        genotypeCodes.append("0/1", Collections.singletonList(sampleIds.get(1)));
+        genotypeCodes.append("1/1", Collections.singletonList(sampleIds.get(2)));
         mongoStudy.append(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD, genotypeCodes);
 
-        sampleNames = Lists.newArrayList("NA001", "NA002", "NA003");
 
 
         mongoFileWithIds = new Document((this.mongoStudy));
         mongoFileWithIds.put(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD, new Document());
 //        ((Document) mongoFileWithIds.get("samp")).put("def", "0/0");
-        ((Document) mongoFileWithIds.get(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD)).put("0/1", Collections.singletonList(2));
-        ((Document) mongoFileWithIds.get(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD)).put("1/1", Collections.singletonList(3));
+        ((Document) mongoFileWithIds.get(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD)).put("0/1", Collections.singletonList(sampleIds.get(1)));
+        ((Document) mongoFileWithIds.get(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD)).put("1/1", Collections.singletonList(sampleIds.get(2)));
     }
 
     /* TODO move to variant converter: sourceEntry does not have stats anymore
@@ -246,6 +248,7 @@ public class DocumentToStudyVariantEntryConverterTest {
 
         // Test with no stats converter provided
         DocumentToSamplesConverter samplesConverter = new DocumentToSamplesConverter(metadataManager, variantQueryProjection);
+        samplesConverter.setIncludeSampleId(false);
         converter = new DocumentToStudyVariantEntryConverter(
                 true,
                 studyId, fileId,

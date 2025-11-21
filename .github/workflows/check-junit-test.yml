@@ -31,6 +31,8 @@ on:
           - "opencga-master"
           - "opencga-server"
           - "opencga-storage"
+          - "opencga-storage/opencga-storage-mongodb"
+          - "opencga-storage/opencga-storage-hadoop"
           - "opencga-test"
       short_tests:
         description: 'Run short tests.'

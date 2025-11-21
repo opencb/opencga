@@ -22,29 +22,107 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga-storage</artifactId>
-        <version>2.7.2-SNAPSHOT</version>
+        <version>5.0.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>opencga-storage-mongodb</artifactId>
     <packaging>jar</packaging>
-    <name>OpenCB OpenCGA Storage MongoDB project</name>
+    <name>OpenCGA Storage MongoDB</name>
 
     <dependencies>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-core</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-core</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.opencb.biodata</groupId>
+            <artifactId>biodata-models</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.biodata</groupId>
+            <artifactId>biodata-formats</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.biodata</groupId>
+            <artifactId>biodata-tools</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.opencb.commons</groupId>
             <artifactId>commons-datastore-mongodb</artifactId>
-            <version>${java-common-libs.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-simple</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
+        <dependency>
+            <groupId>org.opencb.commons</groupId>
+            <artifactId>commons-datastore-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.commons</groupId>
+            <artifactId>commons-lib</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-collections4</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.avro</groupId>
+            <artifactId>avro</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>bson</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongodb-driver-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongodb-driver-sync</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.github.samtools</groupId>
+            <artifactId>htsjdk</artifactId>
+        </dependency>
+
 
         <!--Tests-->
         <dependency>
@@ -66,6 +144,22 @@
             <groupId>org.apache.solr</groupId>
             <artifactId>solr-test-framework</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
     <build>

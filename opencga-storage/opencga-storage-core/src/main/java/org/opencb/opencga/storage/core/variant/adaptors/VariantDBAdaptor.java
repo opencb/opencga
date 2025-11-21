@@ -129,6 +129,7 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      * @param field Field to be distinct, it must be a valid QueryParams id
      * @return A DataResult with the all the distinct values
      */
+    @Deprecated
     DataResult distinct(Query query, String field);
 
     /**
@@ -140,6 +141,7 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      * @param regionIntervalSize Size of the interval window, by default it is adjusted to return 200 chunks
      * @return Frequencies of queried variants
      */
+    @Deprecated
     DataResult getFrequency(ParsedVariantQuery query, Region region, int regionIntervalSize);
 
     /**
@@ -152,10 +154,13 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      * @param asc        Whether we want the top or the bottom part of the rank
      * @return A DataResult with a list of the entities and the number of elements
      */
+    @Deprecated
     DataResult rank(Query query, String field, int numResults, boolean asc);
 
+    @Deprecated
     DataResult groupBy(Query query, String field, QueryOptions options);
 
+    @Deprecated
     DataResult groupBy(Query query, List<String> fields, QueryOptions options);
 
     /**
@@ -169,23 +174,18 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
         return VariantQueryProjectionParser.getIncludeSampleIds(query, options, getMetadataManager());
     }
 
+    @Deprecated
     DataResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp, QueryOptions queryOptions);
 
+    @Deprecated
     DataResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyMetadata studyMetadata, long timestamp,
                             QueryOptions options);
 
+    @Deprecated
     DataResult updateAnnotations(List<VariantAnnotation> variantAnnotations, long timestamp, QueryOptions queryOptions);
 
-    /**
-     * Update custom annotation for all the variants with in a given region.
-     *
-     * @param query       Region to update
-     * @param name        Custom annotation name.
-     * @param attribute   Custom annotation for the region
-     * @param timeStamp   Timestamp of the operation
-     * @param options     Other options
-     * @return            Result of the insertion
-     */
+
+    @Deprecated
     DataResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, long timeStamp, QueryOptions options);
 
     VariantStorageMetadataManager getMetadataManager();

@@ -35,6 +35,7 @@ import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
+import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
@@ -122,13 +123,13 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public DataResult<List<String>> familyIndex(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
+    public DataResult<Trio> familyIndex(String study, List<Trio> trios, ObjectMap options) throws StorageEngineException {
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         int studyId = metadataManager.getStudyId(study);
-        for (List<String> trio : trios) {
-            Integer father = metadataManager.getSampleId(studyId, trio.get(0));
-            Integer mother = metadataManager.getSampleId(studyId, trio.get(1));
-            Integer child = metadataManager.getSampleId(studyId, trio.get(2));
+        for (Trio trio : trios) {
+            Integer father = metadataManager.getSampleId(studyId, trio.getFather());
+            Integer mother = metadataManager.getSampleId(studyId, trio.getMother());
+            Integer child = metadataManager.getSampleId(studyId, trio.getChild());
             metadataManager.updateSampleMetadata(studyId, child, sampleMetadata -> {
                 sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.READY, 1);
                 if (father != null && father > 0) {
@@ -139,7 +140,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
                 }
             });
         }
-        return new DataResult<List<String>>().setResults(trios);
+        return new DataResult<Trio>().setResults(trios);
     }
 
     @Override
@@ -257,7 +258,9 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     @Override
     public List<StoragePipelineResult> index(List<URI> inputFiles, URI outdirUri, boolean doExtract, boolean doTransform, boolean doLoad)
             throws StorageEngineException {
-
+        if (doLoad) {
+            createStudyIfNeeded();
+        }
         Map<URI, MongoDBVariantStoragePipeline> storageResultMap = new LinkedHashMap<>();
         Map<URI, StoragePipelineResult> resultsMap = new LinkedHashMap<>();
         LinkedList<StoragePipelineResult> results = new LinkedList<>();

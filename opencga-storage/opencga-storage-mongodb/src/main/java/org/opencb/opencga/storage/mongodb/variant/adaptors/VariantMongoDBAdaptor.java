@@ -35,7 +35,6 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.*;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.config.storage.StorageEngineConfiguration;
-import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -46,6 +45,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
@@ -180,18 +180,18 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return credentials;
     }
 
-    /**
-     * Remove all the variants from the database resulting of executing the query.
-     *
-     * @param query   Query to be executed in the database
-     * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
-     * @return A DataResult with the number of deleted variants
-     */
-    public DataResult remove(Query query, QueryOptions options) {
-        Bson mongoQuery = queryParser.parseQuery(query);
-        logger.debug("Delete to be executed: '{}'", mongoQuery.toString());
-        return variantsCollection.remove(mongoQuery, options);
-    }
+//    /**
+//     * Remove all the variants from the database resulting of executing the query.
+//     *
+//     * @param query   Query to be executed in the database
+//     * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
+//     * @return A DataResult with the number of deleted variants
+//     */
+//    public DataResult remove(Query query, QueryOptions options) {
+//        Bson mongoQuery = queryParser.parseQuery(query);
+//        logger.debug("Delete to be executed: '{}'", mongoQuery.toString());
+//        return variantsCollection.remove(mongoQuery, options);
+//    }
 
     /**
      * Remove the given file from the database with all the samples it has.
@@ -470,8 +470,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return getStageCollection(studyId).remove(purgeQuery, new QueryOptions(MULTI, true)).getNumDeleted();
     }
 
+
     @Override
-    public VariantQueryResult<Variant> get(ParsedVariantQuery variantQuery, QueryOptions options) {
+    public VariantQueryResult<Variant> get(ParsedVariantQuery variantQuery) {
+        QueryOptions options = variantQuery.getInputOptions();
         if (options == null) {
             options = new QueryOptions();
         } else {
@@ -480,15 +482,15 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         if (options.getBoolean(QueryOptions.COUNT) && options.getInt(QueryOptions.LIMIT, -1) == 0) {
             DataResult<Long> count = count(variantQuery);
             DataResult<Variant> result = new DataResult<>(count.getTime(), count.getEvents(), 0, Collections.emptyList(), count.first());
-            return addSamplesMetadataIfRequested(result, variantQuery.getQuery(), options, getMetadataManager());
+            return new VariantQueryResult<>(result, MongoDBVariantStorageEngine.STORAGE_ENGINE_ID, variantQuery);
         } else if (!options.getBoolean(QueryOptions.COUNT) && options.getInt(QueryOptions.LIMIT, -1) == 0) {
             DataResult<Variant> result = new DataResult<>(0, Collections.emptyList(), 0, Collections.emptyList(), -1);
-            return addSamplesMetadataIfRequested(result, variantQuery.getQuery(), options, getMetadataManager());
+            return new VariantQueryResult<>(result, MongoDBVariantStorageEngine.STORAGE_ENGINE_ID, variantQuery);
         }
 
         VariantQueryProjection variantQueryProjection = variantQuery.getProjection();
-        Document mongoQuery = queryParser.parseQuery(variantQuery.getQuery());
-        Document projection = queryParser.createProjection(variantQuery.getQuery(), options, variantQueryProjection);
+        Bson mongoQuery = queryParser.parseQuery(variantQuery);
+        Bson projection = queryParser.createProjection(variantQuery.getQuery(), options, variantQueryProjection);
 
         if (options.getBoolean("explain", false)) {
             Document explain = variantsCollection.nativeQuery().explain(mongoQuery, projection, options);
@@ -497,8 +499,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
 
         DocumentToVariantConverter converter = getDocumentToVariantConverter(variantQuery.getQuery(), variantQueryProjection);
-        return addSamplesMetadataIfRequested(variantsCollection.find(mongoQuery, projection, converter, options),
-                variantQuery.getQuery(), options, getMetadataManager());
+        DataResult<Variant> result = variantsCollection.find(mongoQuery, projection, converter, options);
+        return new VariantQueryResult<>(result, MongoDBVariantStorageEngine.STORAGE_ENGINE_ID, variantQuery);
+
     }
 
     @Override
@@ -544,12 +547,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     queryResult.setNumMatches(queryResult.getResults().size());
                     watch.stop();
                     queryResult.setTime(((int) watch.getTime()));
-                    return addSamplesMetadataIfRequested(queryResult, query, options, metadataManager);
+                    return queryResult;
                 }
             }
         }
         watch.stop();
-        return new VariantQueryResult<>(((int) watch.getTime()), 0, 0, null, Collections.emptyList(), null,
+        return new VariantQueryResult<>(((int) watch.getTime()), 0, 0, null, Collections.emptyList(),
                 MongoDBVariantStorageEngine.STORAGE_ENGINE_ID);
     }
 
@@ -558,8 +561,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         query = query == null ? new Query() : query;
         validateAnnotationQuery(query);
         options = validateAnnotationQueryOptions(options);
-        Document mongoQuery = queryParser.parseQuery(query);
-        Document projection = queryParser.createProjection(query, options);
+        Bson mongoQuery = queryParser.parseQuery(query);
+        Bson projection = queryParser.createProjection(query, options);
 
         MongoDBCollection annotationCollection;
         if (name.equals(VariantAnnotationManager.CURRENT)) {
@@ -583,7 +586,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public DataResult<Long> count(ParsedVariantQuery variantQuery) {
-        Document mongoQuery = queryParser.parseQuery(variantQuery.getQuery());
+        Bson mongoQuery = queryParser.parseQuery(variantQuery);
+        logger.info("Mongo Query : " + mongoQuery.toBsonDocument().toJson());
         DataResult<Long> count = variantsCollection.count(mongoQuery);
         count.setResults(Collections.singletonList(count.getNumMatches()));
         return count;
@@ -616,12 +620,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         + '.' + DocumentToVariantAnnotationConverter.CT_GENE_NAME_FIELD;
                 break;
         }
-        Document mongoQuery = queryParser.parseQuery(query);
+        Bson mongoQuery = queryParser.parseQuery(query);
         return variantsCollection.distinct(documentPath, mongoQuery);
     }
 
     @Override
-    public VariantDBIterator iterator(ParsedVariantQuery variantQuery, QueryOptions options) {
+    public VariantDBIterator iterator(ParsedVariantQuery variantQuery) {
+        QueryOptions options = variantQuery.getInputOptions();
         if (options == null) {
             options = new QueryOptions();
         }
@@ -630,8 +635,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     private VariantDBIterator iteratorFinal(final ParsedVariantQuery variantQuery, final QueryOptions options) {
         VariantQueryProjection variantQueryProjection = variantQuery.getProjection();
-        Document mongoQuery = queryParser.parseQuery(variantQuery);
-        Document projection = queryParser.createProjection(variantQuery.getQuery(), options, variantQueryProjection);
+        Bson mongoQuery = queryParser.parseQuery(variantQuery);
+        Bson projection = queryParser.createProjection(variantQuery.getQuery(), options, variantQueryProjection);
         DocumentToVariantConverter converter = getDocumentToVariantConverter(variantQuery.getQuery(), variantQueryProjection);
         options.putIfAbsent(MongoDBCollection.BATCH_SIZE, 100);
 
@@ -658,9 +663,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             options = new QueryOptions();
         }
 
-        Document mongoQuery = queryParser.parseQuery(query);
-        Document projection = queryParser.createProjection(query, options);
+        Bson mongoQuery = queryParser.parseQuery(query);
+        Bson projection = queryParser.createProjection(query, options);
         options.putIfAbsent(MongoDBCollection.BATCH_SIZE, 100);
+        logger.info("Query : " + mongoQuery.toBsonDocument().toJson());
+        logger.info("Projection: " + projection.toBsonDocument().toJson());
 
 
         if (persistent) {
@@ -672,6 +679,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
+    @Deprecated
     public DataResult getFrequency(ParsedVariantQuery query, Region region, int regionIntervalSize) {
         // db.variants.aggregate( { $match: { $and: [ {chr: "1"}, {start: {$gt: 251391, $lt: 2701391}} ] }},
         //                        { $group: { _id: { $subtract: [ { $divide: ["$start", 20000] }, { $divide: [{$mod: ["$start", 20000]},
@@ -694,10 +702,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         andArr.add(new Document(DocumentToVariantConverter.START_FIELD, start));
 
         // Parsing the rest of options
-        Document mongoQuery = queryParser.parseQuery(query);
-        if (!mongoQuery.isEmpty()) {
-            andArr.add(mongoQuery);
-        }
+        Bson mongoQuery = queryParser.parseQuery(query);
+//        if (!mongoQuery.isEmpty()) {
+//            andArr.add(mongoQuery);
+//        }
+        andArr.add(mongoQuery);
         Document match = new Document("$match", new Document("$and", andArr));
 
 //        qb.and("_at.chunkIds").in(chunkIds);
@@ -780,6 +789,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
+    @Deprecated
     public DataResult rank(Query query, String field, int numResults, boolean asc) {
         QueryOptions options = new QueryOptions();
         options.put("limit", numResults);
@@ -790,6 +800,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
+    @Deprecated
     public DataResult groupBy(Query query, String field, QueryOptions options) {
         if (options == null) {
             options = new QueryOptions();
@@ -828,7 +839,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 break;
         }
 
-        Document mongoQuery = queryParser.parseQuery(query);
+        Bson mongoQuery = queryParser.parseQuery(query);
 
         boolean count = options.getBoolean("count", false);
         int order = options.getInt("order", -1);
@@ -897,6 +908,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
+    @Deprecated
     public DataResult groupBy(Query query, List<String> fields, QueryOptions options) {
         String warningMsg = "Unimplemented VariantMongoDBAdaptor::groupBy list of fields. Using field[0] : '" + fields.get(0) + "'";
         logger.warn(warningMsg);
@@ -1052,7 +1064,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     @Override
     public DataResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, long timeStamp,
                                                QueryOptions options) {
-        Document queryDocument = queryParser.parseQuery(query);
+        Bson queryDocument = queryParser.parseQuery(query);
         Document updateDocument = DocumentToVariantAnnotationConverter.convertToStorageType(attribute);
         return variantsCollection.update(queryDocument,
                 combine(set(DocumentToVariantConverter.CUSTOM_ANNOTATION_FIELD + '.' + name, updateDocument),
@@ -1061,7 +1073,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     public DataResult removeAnnotation(String annotationId, Query query, QueryOptions queryOptions) {
-        Document mongoQuery = queryParser.parseQuery(query);
+        Bson mongoQuery = queryParser.parseQuery(query);
         logger.debug("deleteAnnotation: query = {}", mongoQuery);
 
         Document update = new Document("$set", new Document(DocumentToVariantConverter.ANNOTATION_FIELD + ".0", null));
