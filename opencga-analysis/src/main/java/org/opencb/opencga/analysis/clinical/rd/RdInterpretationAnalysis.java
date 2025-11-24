@@ -35,29 +35,28 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.clinical.ClinicalUtils;
-import org.opencb.opencga.analysis.clinical.InterpretationAnalysis;
+import org.opencb.opencga.analysis.AnalysisUtils;
+import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
-import org.opencb.opencga.core.models.clinical.interpretation.RdInterpretationAnalysisParams;
-import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
-import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.opencb.opencga.core.tools.annotations.Tool;
-import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -65,24 +64,34 @@ import static org.opencb.biodata.models.clinical.ClinicalProperty.ModeOfInherita
 import static org.opencb.biodata.models.clinical.ClinicalProperty.Penetrance.UNKNOWN;
 import static org.opencb.biodata.models.clinical.interpretation.VariantClassification.calculateAcmgClassification;
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.*;
-import static org.opencb.opencga.catalog.utils.ParamUtils.SaveInterpretationAs.PRIMARY;
-import static org.opencb.opencga.catalog.utils.ParamUtils.SaveInterpretationAs.SECONDARY;
-import static org.opencb.opencga.core.tools.ResourceManager.ANALYSIS_DIRNAME;
 
-@Tool(id = RdInterpretationAnalysis.ID, resource = Enums.Resource.CLINICAL)
-public class RdInterpretationAnalysis extends InterpretationAnalysis {
-
-    public static final String ID = "interpretation-rd";
-    public static final String DESCRIPTION = "Run clinical interpretation analysis for rare diseases";
+public class RdInterpretationAnalysis {
 
     public static final String PANEL_REGION_QUERY_KEY = "PANEL_REGION";
     public static final String REGION = "REGION";
     public static final String GENE = "GENE";
     public static final String VARIANT = "VARIANT";
+    
+    private String clinicalAnalysisId;
+    
+    private String probandId;
+    private String familyId;
+    private List<String> panelIds;
 
-    private ClinicalAnalysis ca;
-    private RdInterpretationConfiguration rdInterpretationConfig;
+    private List<Panel> panels;
+    private String disorderId;
+    List<String> sampleIds;
 
+    private Path configPath;
+    private RdInterpretationConfiguration config;
+
+    private String study;
+    private CatalogManager catalogManager;
+    private VariantStorageManager variantStorageManager;
+    private String token;
+
+    protected Logger logger = LoggerFactory.getLogger(this.getClass());   
+    
     private String assembly;
 
     private static Map<ModeOfInheritance, List<ModeOfInheritance>> moiCompatibility;
@@ -102,105 +111,38 @@ public class RdInterpretationAnalysis extends InterpretationAnalysis {
         moiCompatibility.put(ModeOfInheritance.UNKNOWN, Collections.emptyList());
     }
 
-    @ToolParams
-    protected final RdInterpretationAnalysisParams analysisParams = new RdInterpretationAnalysisParams();
-
-    @Override
-    protected InterpretationMethod getInterpretationMethod() {
-        return getInterpretationMethod(ID);
+    public RdInterpretationAnalysis(String probandId, String familyId, List<String> panelIds, Path configPath, String study,
+                                    CatalogManager catalogManager, VariantStorageManager variantStorageManager, String token) {
+        this.probandId = probandId;
+        this.familyId = familyId;
+        this.panelIds = panelIds;
+        init(configPath, study, catalogManager, variantStorageManager, token);
     }
-
-    @Override
-    protected void check() throws Exception {
-        // IMPORTANT: the first thing to do since it initializes "study" from params.get(STUDY_PARAM)
-        super.check();
-
-        setUpStorageEngineExecutor(study);
-
-        // Check clinical analysis
-        if (StringUtils.isEmpty(analysisParams.getClinicalAnalysisId())) {
-            throw new ToolException("Missing clinical analysis ID");
-        }
-
-        // Get clinical analysis to check diseases, proband and family
-        try {
-            ca = catalogManager.getClinicalAnalysisManager().get(study, analysisParams.getClinicalAnalysisId(),
-                    QueryOptions.empty(), token).first();
-        } catch (
-                CatalogException e) {
-            throw new ToolException(e);
-        }
-
-        // Check disease panels in clinical analysis
-        if (CollectionUtils.isEmpty(ca.getPanels())) {
-            throw new ToolException("Missing disease panels in clinical analysis " + ca.getId());
-        }
-
-        // Check proband in clinical analysis
-        if (ca.getProband() == null || StringUtils.isEmpty(ca.getProband().getId())) {
-            throw new ToolException("Missing proband in clinical analysis " + ca.getId());
-        }
-        OpenCGAResult<Individual> indvidualResult = getCatalogManager().getIndividualManager().get(study, ca.getProband().getId(),
-                QueryOptions.empty(), token);
-        if (indvidualResult.getNumResults() == 0) {
-            throw new ToolException("Proband '" + ca.getProband().getId() + "' in clinical analysis " + ca.getId() + " not found.");
-        }
-        if (CollectionUtils.isEmpty(ca.getProband().getDisorders())) {
-            throw new ToolException("No disorders associated to proband '" + ca.getProband().getId() + "' in clinical analysis "
-                    + ca.getId());
-        }
-        if (ca.getProband().getDisorders().size() > 1) {
-            logger.warn("More than one disorder associated to proband '{}' in clinical analysis {}. Proceeding with the first one: {}",
-                    ca.getProband().getId(), ca.getId(), ca.getProband().getDisorders().get(0).getId());
-        }
-
-        // Check family in clinical analysis
-        if (ca.getFamily() != null && StringUtils.isNotEmpty(ca.getFamily().getId())) {
-            OpenCGAResult<Family> familyResult = getCatalogManager().getFamilyManager().get(study, ca.getFamily().getId(),
-                    QueryOptions.empty(), token);
-            if (familyResult.getNumResults() == 0) {
-                throw new ToolException("Family '" + ca.getFamily().getId() + "' in clinical analysis " + ca.getId() + " not found.");
-            }
-        } else {
-            logger.warn("Missing family in clinical analysis {}. Proceeding without family information.", ca.getId());
-        }
-
-        // Read clinical interpretation configuration file from the user parameters or default one if not provided
-        Path configPath;
-        if (StringUtils.isNotEmpty(analysisParams.getConfigFile())) {
-            logger.info("User provides the RD interpretation configuration file: {}", analysisParams.getConfigFile());
-            File opencgaFile = getCatalogManager().getFileManager().get(study, analysisParams.getConfigFile(), QueryOptions.empty(), token)
-                    .first();
-            configPath = Paths.get(opencgaFile.getUri());
-        } else {
-            logger.info("Using default configuration file for the RD interpretation analysis");
-            configPath = getOpencgaHome().resolve(ANALYSIS_DIRNAME).resolve("rd").resolve("rd-interpretation-configuration.yml");
-        }
-        if (!Files.exists(configPath)) {
-            throw new ToolException("RD interpretation configuration file not found: " + configPath);
-        }
-        rdInterpretationConfig = JacksonUtils.getDefaultObjectMapper().convertValue(new Yaml().load(Files.newInputStream(configPath)),
-                RdInterpretationConfiguration.class);
-
-        // Get assembly
-        try {
-            assembly = clinicalInterpretationManager.getAssembly(study, token);
-        } catch (CatalogException e) {
-            throw new ToolException(e);
-        }
+    
+    public RdInterpretationAnalysis(String clinicalAnalysisId, Path configPath, String study, CatalogManager catalogManager,
+                                    VariantStorageManager variantStorageManager, String token) {
+        this.clinicalAnalysisId = clinicalAnalysisId;
+        init(configPath, study, catalogManager, variantStorageManager, token);
     }
-
-    @Override
-    protected void run() throws ToolException {
-        step(this::runClinicalInterpretationAnalysis);
+    
+    private void init(Path configPath, String study, CatalogManager catalogManager,
+                      VariantStorageManager variantStorageManager, String token) {
+        this.configPath = configPath;
+        this.study = study;
+        this.catalogManager = catalogManager;
+        this.variantStorageManager = variantStorageManager;
+        this.token = token;
     }
+    
+    public Interpretation run() throws CatalogException, ToolException {
+        // Check parameters before running analysis
+        check();
 
-    private void runClinicalInterpretationAnalysis() throws ToolException {
         // Create map to store the variants returned by each query
         Map<String, List<Variant>> variantsPerQuery = new HashMap<>();
 
         // Execute variant queries from the interpretation configuration
-        Map<String, Object> queries = rdInterpretationConfig.getQueries();
+        Map<String, Object> queries = config.getQueries();
         for (Map.Entry<String, Object> entry : queries.entrySet()) {
             if (PANEL_REGION_QUERY_KEY.equalsIgnoreCase(entry.getKey())) {
                 queryByPanelRegions(entry, variantsPerQuery);
@@ -236,37 +178,135 @@ public class RdInterpretationAnalysis extends InterpretationAnalysis {
         for (Variant variant : allVariants) {
             List<ModeOfInheritance> mois = variantMoisMap.getOrDefault(variant.toString(), Collections.emptyList());
             List<DiseasePanel> panels = getDiseasePanels(variant, variantPanelsMap);
-            clinicalVariants.add(createClinicalVariant(variant, mois, panels, rdInterpretationConfig));
+            clinicalVariants.add(createClinicalVariant(variant, mois, panels, config));
         }
 
-        // Finally, set tier in each clinical variant evidence  if tier configuration is provided
+        // Then, set tier in each clinical variant evidence  if tier configuration is provided
         List<ClinicalVariant> updatedClinicalVariants = setTierInClinicalVariants(clinicalVariants);
 
-        // Write clinical variants
-        ClinicalUtils.writeClinicalVariants(updatedClinicalVariants, getOutDir().resolve(PRIMARY_FINDINGS_FILENAME));
-        logger.info("{} clinical variants written to {}", clinicalVariants.size(), getOutDir().resolve(PRIMARY_FINDINGS_FILENAME));
+        // And finally, create interpretation
+        Interpretation interpretation = new Interpretation()
+                .setPrimaryFindings(updatedClinicalVariants)
+                .setCreationDate(TimeUtils.getTime());
 
-        // Add interpretation in the clinical analysis and then save in catalog
+        // Set clinical analysis ID
+        if (StringUtils.isNotEmpty(clinicalAnalysisId)) {
+            interpretation.setClinicalAnalysisId(clinicalAnalysisId);
+        }
+
+        // Set method
+        InterpretationMethod method = new InterpretationMethod(RdInterpretationAnalysisTool.ID, null, null,
+                Collections.singletonList(new Software().setName("OpenCGA").setVersion(GitRepositoryState.getInstance().getBuildVersion())
+                        .setCommit(GitRepositoryState.getInstance().getCommitId())));
+        interpretation.setMethod(method);
+
+        // Set attributes
         ObjectMap additionalAttributes = new ObjectMap();
-        additionalAttributes.put("configuration", rdInterpretationConfig);
-        saveInterpretation(analysisParams.getName(), analysisParams.getDescription(), analysisParams.isPrimary() ? PRIMARY : SECONDARY,
-                ca, null, additionalAttributes, study);
+        additionalAttributes.put("configuration", config);
+        interpretation.setAttributes(additionalAttributes);
+
+        return interpretation;
+    }
+
+    private void check() throws CatalogException {
+        // Check clinical analysis
+        if (StringUtils.isNotEmpty(clinicalAnalysisId)) {
+            ClinicalAnalysis ca = catalogManager.getClinicalAnalysisManager().get(study, clinicalAnalysisId, QueryOptions.empty(), token)
+                    .first();
+            // Check proband in clinical analysis
+            if (ca.getProband() == null || StringUtils.isEmpty(ca.getProband().getId())) {
+                throw new IllegalArgumentException("Missing proband in clinical analysis " + ca.getId());
+            }
+            probandId = ca.getProband().getId();
+
+            // Check family in clinical analysis
+            if (ca.getFamily() == null || StringUtils.isEmpty(ca.getFamily().getId())) {
+                throw new IllegalArgumentException("Missing family in clinical analysis " + ca.getId());
+            }
+            familyId = ca.getFamily().getId();
+
+            // Check disease panels in clinical analysis
+            if (CollectionUtils.isEmpty(ca.getPanels())) {
+                throw new IllegalArgumentException("Missing disease panels in clinical analysis " + ca.getId());
+            }
+            panels = ca.getPanels();
+        }
+        
+        // Check proband
+        OpenCGAResult<Individual> indvidualResult = catalogManager.getIndividualManager().get(study, probandId, QueryOptions.empty(),
+                token);
+        if (indvidualResult.getNumResults() == 0) {
+            throw new IllegalArgumentException("Proband '" + probandId + " not found.");
+        }
+        Individual proband = indvidualResult.first();
+        if (CollectionUtils.isEmpty(proband.getDisorders())) {
+            throw new IllegalArgumentException("No disorders associated to proband '" + probandId);
+        }
+        sampleIds = new ArrayList<>();
+        if (CollectionUtils.isNotEmpty(proband.getSamples())) {
+            sampleIds.add(proband.getSamples().get(0).getId());
+        }
+        if (proband.getMother() != null && CollectionUtils.isNotEmpty(proband.getMother().getSamples())) {
+            sampleIds.add(proband.getMother().getSamples().get(0).getId());
+        }
+        if (proband.getFather() != null && CollectionUtils.isNotEmpty(proband.getFather().getSamples())) {
+            sampleIds.add(proband.getFather().getSamples().get(0).getId());
+        }
+        if (sampleIds.isEmpty()) {
+            throw new IllegalArgumentException("No samples associated to proband '" + probandId + " and his parents.");
+        }
+
+        // Check disorder
+        if (proband.getDisorders().size() > 1) {
+            logger.warn("More than one disorder associated to proband '{}'. Proceeding with the first one: {}", probandId,
+                    proband.getDisorders().get(0).getId());
+        }
+        disorderId = proband.getDisorders().get(0).getId();
+
+        // Check family in clinical analysis
+        OpenCGAResult<Family> familyResult = catalogManager.getFamilyManager().get(study, familyId, QueryOptions.empty(), token);
+        if (familyResult.getNumResults() == 0) {
+            throw new IllegalArgumentException("Family '" + familyId + "' not found.");
+        }
+
+        // Check configuration
+        if (!Files.exists(configPath)) {
+            throw new IllegalArgumentException("RD interpretation configuration file " + configPath + " not found.");
+        }
+        try {
+            config = JacksonUtils.getDefaultObjectMapper().convertValue(new Yaml().load(Files.newInputStream(configPath)),
+                    RdInterpretationConfiguration.class);
+        } catch (IOException e) {
+            throw new IllegalArgumentException(e);
+        }
+        if (config == null) {
+            throw new IllegalArgumentException("RD interpretation configuration is null");
+        }
+        if (MapUtils.isEmpty(config.getQueries())) {
+            throw new IllegalArgumentException("Missing queries in RD interpretation configuration");
+        }
+        if (config.getTierConfiguration() == null || MapUtils.isEmpty(config.getTierConfiguration().getTiers())) {
+            throw new IllegalArgumentException("No tier configuration found in RD interpretation configuration.");
+        }
+
+        // Get assembly
+        this.assembly = AnalysisUtils.getAssembly(catalogManager, study, token);
     }
 
     private List<ClinicalVariant> setTierInClinicalVariants(List<ClinicalVariant> inputClinicalVariants) {
         List<ClinicalVariant> outputClinicalVariants = inputClinicalVariants;
 
-        if (rdInterpretationConfig.getTierConfiguration() != null
-                && MapUtils.isNotEmpty(rdInterpretationConfig.getTierConfiguration().getTiers())) {
+        if (config.getTierConfiguration() != null
+                && MapUtils.isNotEmpty(config.getTierConfiguration().getTiers())) {
 
             // Get valid tiers from interpretation configuration
-            Set<String> validTiers = rdInterpretationConfig.getTierConfiguration().getTiers().values().stream()
+            Set<String> validTiers = config.getTierConfiguration().getTiers().values().stream()
                     .map(tier -> tier.getLabel().toLowerCase()).collect(Collectors.toSet());
 
             // Set tier for each clinical variant evidence
             List<ClinicalVariant> updatedClinicalVariants = new ArrayList<>(inputClinicalVariants);
             for (ClinicalVariant clinicalVariant : updatedClinicalVariants) {
-                setTier(clinicalVariant, rdInterpretationConfig.getTierConfiguration());
+                setTier(clinicalVariant, config.getTierConfiguration());
             }
 
             // Filter out clinical variants with no tier assigned in any of their evidences
@@ -475,32 +515,32 @@ public class RdInterpretationAnalysis extends InterpretationAnalysis {
             return null;
         }
         // Get panel from clinical analysis, otherwise null
-        return ca.getPanels().stream().filter(p -> panelId.equalsIgnoreCase(p.getId())).findFirst().orElse(null);
+        return panels.stream().filter(p -> panelId.equalsIgnoreCase(p.getId())).findFirst().orElse(null);
     }
 
     private List<DiseasePanel> getDiseasePanels(Variant variant, Map<String, List<DiseasePanel>> variantPanelsMap) {
-        List<DiseasePanel> panels = variantPanelsMap.getOrDefault(variant.toString(), Collections.emptyList());
-        if (CollectionUtils.isNotEmpty(ca.getPanels())) {
-            for (Panel panel : ca.getPanels()) {
+        List<DiseasePanel> diseasePanels = variantPanelsMap.getOrDefault(variant.toString(), Collections.emptyList());
+        if (CollectionUtils.isNotEmpty(panels)) {
+            for (Panel panel : panels) {
                 if (CollectionUtils.isNotEmpty(panel.getRegions())) {
                     for (DiseasePanel.RegionPanel regionPanel : panel.getRegions()) {
                         if (regionPanel.getCoordinates().stream()
                                 .anyMatch(coordinate -> Region.parseRegion(coordinate.getLocation())
                                         .overlaps(variant.getChromosome(), variant.getStart(), variant.getEnd()))
-                                && !panels.contains(panel)) {
-                            panels.add(panel);
+                                && !diseasePanels.contains(panel)) {
+                            diseasePanels.add(panel);
                             break;
                         }
                     }
                 }
             }
         }
-        return panels;
+        return diseasePanels;
     }
 
     private Map<String, List<DiseasePanel>> getVariantPanelsMap(Map<String, List<Variant>> variantsPerQuery) {
         Map<String, List<DiseasePanel>> variantPanelsMap = new HashMap<>();
-        for (DiseasePanel panel : ca.getPanels()) {
+        for (DiseasePanel panel : panels) {
             for (Map.Entry<String, List<Variant>> entry : variantsPerQuery.entrySet()) {
                 for (Variant variant : entry.getValue()) {
                     variantPanelsMap.computeIfAbsent(variant.toString(), k -> new ArrayList<>());
@@ -535,7 +575,7 @@ public class RdInterpretationAnalysis extends InterpretationAnalysis {
     private Map<String, List<ModeOfInheritance>> getVariantMoisMap(Map<String, List<Variant>> variantsPerQuery) {
         Map<String, List<ModeOfInheritance>> variantMoisMap = new HashMap<>();
         for (Map.Entry<String, List<Variant>> entry : variantsPerQuery.entrySet()) {
-            Map<String, Object> map = (Map<String, Object>) rdInterpretationConfig.getQueries().get(entry.getKey());
+            Map<String, Object> map = (Map<String, Object>) config.getQueries().get(entry.getKey());
             ModeOfInheritance moi = getModeOfInheritanceFromQuery(map);
             for (Variant variant : entry.getValue()) {
                 variantMoisMap.computeIfAbsent(variant.toString(), k -> new ArrayList<>());
@@ -556,28 +596,23 @@ public class RdInterpretationAnalysis extends InterpretationAnalysis {
         }
         ModeOfInheritance moi = getModeOfInheritanceFromQuery(query);
         if (moi != ModeOfInheritance.UNKNOWN) {
-            query.put(FAMILY.key(), ca.getFamily().getId());
-            query.put(FAMILY_PROBAND.key(), ca.getProband().getId());
-            query.put(FAMILY_DISORDER.key(), ca.getProband().getDisorders().get(0).getId());
+            query.put(FAMILY.key(), familyId);
+            query.put(FAMILY_PROBAND.key(), probandId);
+            query.put(FAMILY_DISORDER.key(), disorderId);
         }
         logger.info("Query label: {} (moi = {}); query = {}", entry.getKey(), moi, query.toJson());
 
         // Execute query and save the returned variants in the map variantsPerQuery
         try {
-            variantsPerQuery.put(entry.getKey(), clinicalInterpretationManager.getVariantStorageManager().get(query, QueryOptions.empty(),
-                    token).getResults());
+            variantsPerQuery.put(entry.getKey(), variantStorageManager.get(query, QueryOptions.empty(), token).getResults());
         } catch (Exception e) {
             logger.warn("Skipping variant query '{}' by error: {}", entry.getKey(), e.getMessage(), e);
         }
     }
 
     private void queryByPanelRegions(Map.Entry<String, Object> entry, Map<String, List<Variant>> variantsPerQuery) throws ToolException {
-        // Prepare disease panels from the clinical analysis
-        if (CollectionUtils.isEmpty(ca.getPanels())) {
-            logger.warn("No disease panels found in the clinical analysis, so skipping region queries.");
-            return;
-        }
-        List<Region> regions = ca.getPanels().stream()
+        // Prepare disease panels
+        List<Region> regions = panels.stream()
                 .filter(panel -> panel.getRegions() != null)
                 .flatMap(panel -> panel.getRegions().stream())
                 .flatMap(regionPanel -> regionPanel.getCoordinates().stream())
@@ -601,14 +636,12 @@ public class RdInterpretationAnalysis extends InterpretationAnalysis {
                 .append(VariantQueryParam.FILTER.key(), VCFConstants.PASSES_FILTERS_v4)
                 .append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.");
 
-        Map<String, String> sampleMap = ClinicalUtils.getSampleMap(ca, ca.getProband());
-        if (!sampleMap.isEmpty()) {
-            query.append(VariantQueryParam.SAMPLE.key(), sampleMap.values());
+        if (CollectionUtils.isNotEmpty(sampleIds)) {
+            query.append(VariantQueryParam.SAMPLE.key(), sampleIds);
         }
 
         try {
-            variantsPerQuery.put(entry.getKey(), clinicalInterpretationManager.getVariantStorageManager().get(query, QueryOptions.empty(),
-                    token).getResults());
+            variantsPerQuery.put(entry.getKey(), variantStorageManager.get(query, QueryOptions.empty(), token).getResults());
         } catch (CatalogException | IOException | StorageEngineException e) {
             logger.warn("Error querying region variants: {}", e.getMessage(), e);
         }

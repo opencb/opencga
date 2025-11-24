@@ -21,10 +21,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.analysis.clinical.ClinicalAnalysisLoadTask;
-import org.opencb.opencga.analysis.clinical.rd.RdInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
 import org.opencb.opencga.analysis.clinical.ClinicalTsvAnnotationLoader;
 import org.opencb.opencga.analysis.clinical.exomiser.ExomiserInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.rd.RdInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.rd.RdInterpretationAnalysisTool;
 import org.opencb.opencga.analysis.clinical.rga.AuxiliarRgaAnalysis;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
@@ -45,7 +46,7 @@ import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.analysis.knockout.*;
 import org.opencb.opencga.core.models.clinical.*;
-import org.opencb.opencga.core.models.clinical.interpretation.RdInterpretationAnalysisParams;
+import org.opencb.opencga.core.models.clinical.interpretation.RdInterpretationAnalysisToolParams;
 import org.opencb.opencga.core.models.clinical.tiering.TieringInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.job.Job;
@@ -54,13 +55,15 @@ import org.opencb.opencga.core.models.job.ToolInfo;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
 import org.opencb.opencga.core.models.variant.VariantQueryParams;
+import org.opencb.opencga.core.tools.ResourceManager;
 import org.opencb.opencga.core.tools.annotations.*;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.*;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -1460,7 +1463,7 @@ public class ClinicalWebService extends AnalysisWebService {
 
     @POST
     @Path("/interpreter/rd/run")
-    @ApiOperation(value = RdInterpretationAnalysis.DESCRIPTION, response = Job.class)
+    @ApiOperation(value = RdInterpretationAnalysisTool.DESCRIPTION, response = Job.class)
     public Response interpretationRdRun(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
@@ -1470,7 +1473,34 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_SCHEDULED_START_TIME_DESCRIPTION) @QueryParam(ParamConstants.JOB_SCHEDULED_START_TIME) String scheduledStartTime,
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.SUBMIT_JOB_PRIORITY_PARAM) String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
-            @ApiParam(value = "Parameters to execute the rare disease interpretation analysis", required = true) RdInterpretationAnalysisParams params) {
-        return submitJob(study, JobType.NATIVE, RdInterpretationAnalysis.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+            @ApiParam(value = "Parameters to execute the rare disease interpretation analysis", required = true) RdInterpretationAnalysisToolParams params) {
+        return submitJob(study, JobType.NATIVE, RdInterpretationAnalysisTool.ID, params, jobName, jobDescription, dependsOn, jobTags, scheduledStartTime, jobPriority, dryRun);
+    }
+
+    @GET
+    @Path("/interpreter/rd/query")
+    @ApiOperation(value = "RD interpretation analysis", response = Interpretation.class)
+    public Response queryRdInterpretation(
+            @ApiParam(value = ParamConstants.CLINICAL_ANALYSES_DESCRIPTION) @QueryParam(value = "clinicalAnalysisId") String clinicalAnalysisId,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyId) {
+        try {
+            java.nio.file.Path configPath = opencgaHome.resolve(ResourceManager.ANALYSIS_DIRNAME)
+                    .resolve(RdInterpretationAnalysisTool.RD_DIR)
+                    .resolve(RdInterpretationAnalysisTool.RD_INTERPRETATION_CONFIGURATION_FILE);
+
+            // Execute the RD interpretation analysis
+            int startTime = (int) System.currentTimeMillis();
+            RdInterpretationAnalysis rdInterpretationAnalysis = new RdInterpretationAnalysis(clinicalAnalysisId, configPath, studyId,
+                    catalogManager, getVariantStorageManager(), token);
+            org.opencb.biodata.models.clinical.interpretation.Interpretation interpretation = rdInterpretationAnalysis.run();
+            int dbTime = (int) System.currentTimeMillis() - startTime;
+
+            // Build the response
+            DataResult<Interpretation> analysisResult = new DataResult<>(dbTime, null, 1,
+                    Collections.singletonList(new Interpretation(interpretation)), 1);
+            return createOkResponse(analysisResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
     }
 }

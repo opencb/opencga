@@ -41,7 +41,7 @@ import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.clinical.InterpretationCreateParams;
 import org.opencb.opencga.core.models.clinical.InterpretationUpdateParams;
 import org.opencb.opencga.core.models.clinical.RgaAnalysisParams;
-import org.opencb.opencga.core.models.clinical.interpretation.RdInterpretationAnalysisParams;
+import org.opencb.opencga.core.models.clinical.interpretation.RdInterpretationAnalysisToolParams;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -366,6 +366,19 @@ public class ClinicalAnalysisClient extends ParentClient {
     }
 
     /**
+     * RD interpretation analysis.
+     * @param params Map containing any of the following optional parameters.
+     *       clinicalAnalysisId: Comma separated list of clinical analysis IDs or names up to a maximum of 100.
+     *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Interpretation> queryInterpreterRd(ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("analysis", null, "clinical/interpreter/rd", null, "query", params, GET, Interpretation.class);
+    }
+
+    /**
      * Run clinical interpretation analysis for rare diseases.
      * @param data Parameters to execute the rare disease interpretation analysis.
      * @param params Map containing any of the following optional parameters.
@@ -381,7 +394,7 @@ public class ClinicalAnalysisClient extends ParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Job> runInterpreterRd(RdInterpretationAnalysisParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Job> runInterpreterRd(RdInterpretationAnalysisToolParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("analysis", null, "clinical/interpreter/rd", null, "run", params, POST, Job.class);

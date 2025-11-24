@@ -375,6 +375,19 @@ class ClinicalAnalysis(_ParentRestClient):
 
         return self._post(category='analysis', resource='run', subcategory='clinical/interpreter/exomiser', data=data, **options)
 
+    def query_interpreter_rd(self, **options):
+        """
+        RD interpretation analysis.
+        PATH: /{apiVersion}/analysis/clinical/interpreter/rd/query
+
+        :param str clinical_analysis_id: Comma separated list of clinical
+            analysis IDs or names up to a maximum of 100.
+        :param str study: Study [[organization@]project:]study where study and
+            project can be either the ID or UUID.
+        """
+
+        return self._get(category='analysis', resource='query', subcategory='clinical/interpreter/rd', **options)
+
     def run_interpreter_rd(self, data=None, **options):
         """
         Run clinical interpretation analysis for rare diseases.

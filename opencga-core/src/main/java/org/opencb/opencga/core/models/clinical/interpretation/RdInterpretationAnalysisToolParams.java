@@ -4,7 +4,7 @@ import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
-public class RdInterpretationAnalysisParams extends ToolParams {
+public class RdInterpretationAnalysisToolParams extends ToolParams {
     @DataField(id = "name", description = "RD interpretation name")
     private String name;
 
@@ -23,11 +23,11 @@ public class RdInterpretationAnalysisParams extends ToolParams {
     @DataField(id = "outdir", description = FieldConstants.JOB_OUT_DIR_DESCRIPTION)
     private String outdir;
 
-    public RdInterpretationAnalysisParams() {
+    public RdInterpretationAnalysisToolParams() {
     }
 
-    public RdInterpretationAnalysisParams(String name, String description, String clinicalAnalysisId, boolean primary, String configFile,
-                                          String outdir) {
+    public RdInterpretationAnalysisToolParams(String name, String description, String clinicalAnalysisId, boolean primary, String configFile,
+                                              String outdir) {
         this.name = name;
         this.description = description;
         this.clinicalAnalysisId = clinicalAnalysisId;
@@ -53,7 +53,7 @@ public class RdInterpretationAnalysisParams extends ToolParams {
         return name;
     }
 
-    public RdInterpretationAnalysisParams setName(String name) {
+    public RdInterpretationAnalysisToolParams setName(String name) {
         this.name = name;
         return this;
     }
@@ -62,7 +62,7 @@ public class RdInterpretationAnalysisParams extends ToolParams {
         return description;
     }
 
-    public RdInterpretationAnalysisParams setDescription(String description) {
+    public RdInterpretationAnalysisToolParams setDescription(String description) {
         this.description = description;
         return this;
     }
@@ -71,7 +71,7 @@ public class RdInterpretationAnalysisParams extends ToolParams {
         return clinicalAnalysisId;
     }
 
-    public RdInterpretationAnalysisParams setClinicalAnalysisId(String clinicalAnalysisId) {
+    public RdInterpretationAnalysisToolParams setClinicalAnalysisId(String clinicalAnalysisId) {
         this.clinicalAnalysisId = clinicalAnalysisId;
         return this;
     }
@@ -80,7 +80,7 @@ public class RdInterpretationAnalysisParams extends ToolParams {
         return primary;
     }
 
-    public RdInterpretationAnalysisParams setPrimary(boolean primary) {
+    public RdInterpretationAnalysisToolParams setPrimary(boolean primary) {
         this.primary = primary;
         return this;
     }
@@ -89,7 +89,7 @@ public class RdInterpretationAnalysisParams extends ToolParams {
         return configFile;
     }
 
-    public RdInterpretationAnalysisParams setConfigFile(String configFile) {
+    public RdInterpretationAnalysisToolParams setConfigFile(String configFile) {
         this.configFile = configFile;
         return this;
     }
@@ -98,7 +98,7 @@ public class RdInterpretationAnalysisParams extends ToolParams {
         return outdir;
     }
 
-    public RdInterpretationAnalysisParams setOutdir(String outdir) {
+    public RdInterpretationAnalysisToolParams setOutdir(String outdir) {
         this.outdir = outdir;
         return this;
     }

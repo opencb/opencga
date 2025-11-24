@@ -126,6 +126,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         analysisClinicalSubCommands.addCommand("interpretation-search", analysisClinicalCommandOptions.searchInterpretationCommandOptions);
         analysisClinicalSubCommands.addCommand("interpretation-info", analysisClinicalCommandOptions.infoInterpretationCommandOptions);
         analysisClinicalSubCommands.addCommand("interpreter-exomiser-run", analysisClinicalCommandOptions.runInterpreterExomiserCommandOptions);
+        analysisClinicalSubCommands.addCommand("interpreter-rd-query", analysisClinicalCommandOptions.queryInterpreterRdCommandOptions);
         analysisClinicalSubCommands.addCommand("interpreter-rd-run", analysisClinicalCommandOptions.runInterpreterRdCommandOptions);
         analysisClinicalSubCommands.addCommand("load", analysisClinicalCommandOptions.loadCommandOptions);
         analysisClinicalSubCommands.addCommand("rga-aggregation-stats", analysisClinicalCommandOptions.aggregationStatsRgaCommandOptions);

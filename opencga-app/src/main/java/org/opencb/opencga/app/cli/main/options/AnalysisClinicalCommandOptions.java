@@ -44,6 +44,7 @@ public class AnalysisClinicalCommandOptions {
         public SearchInterpretationCommandOptions searchInterpretationCommandOptions;
         public InfoInterpretationCommandOptions infoInterpretationCommandOptions;
         public RunInterpreterExomiserCommandOptions runInterpreterExomiserCommandOptions;
+        public QueryInterpreterRdCommandOptions queryInterpreterRdCommandOptions;
         public RunInterpreterRdCommandOptions runInterpreterRdCommandOptions;
         public LoadCommandOptions loadCommandOptions;
         public AggregationStatsRgaCommandOptions aggregationStatsRgaCommandOptions;
@@ -84,6 +85,7 @@ public class AnalysisClinicalCommandOptions {
         this.searchInterpretationCommandOptions = new SearchInterpretationCommandOptions();
         this.infoInterpretationCommandOptions = new InfoInterpretationCommandOptions();
         this.runInterpreterExomiserCommandOptions = new RunInterpreterExomiserCommandOptions();
+        this.queryInterpreterRdCommandOptions = new QueryInterpreterRdCommandOptions();
         this.runInterpreterRdCommandOptions = new RunInterpreterRdCommandOptions();
         this.loadCommandOptions = new LoadCommandOptions();
         this.aggregationStatsRgaCommandOptions = new AggregationStatsRgaCommandOptions();
@@ -786,6 +788,20 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--exomiser-version"}, description = "Exomiser version, e.g.: 14.0.0. If the version is not specified, the default version will be used. Refer to the configuration file to view all installed Exomiser versions and identify the default version.", required = false, arity = 1)
         public String exomiserVersion;
+    
+    }
+
+    @Parameters(commandNames = {"interpreter-rd-query"}, commandDescription ="RD interpretation analysis")
+    public class QueryInterpreterRdCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--clinical-analysis-id"}, description = "Comma separated list of clinical analysis IDs or names up to a maximum of 100", required = false, arity = 1)
+        public String clinicalAnalysisId; 
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
     
     }
 

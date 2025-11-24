@@ -292,6 +292,16 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
         return this._post("analysis", null, "clinical/interpreter/exomiser", null, "run", data, params);
     }
 
+    /** RD interpretation analysis
+    * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.clinicalAnalysisId] - Comma separated list of clinical analysis IDs or names up to a maximum of 100.
+    * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
+    * @returns {Promise} Promise object in the form of RestResponse instance.
+    */
+    queryInterpreterRd(params) {
+        return this._get("analysis", null, "clinical/interpreter/rd", null, "query", params);
+    }
+
     /** Run clinical interpretation analysis for rare diseases
     * @param {Object} data - Parameters to execute the rare disease interpretation analysis.
     * @param {Object} [params] - The Object containing the following optional parameters:

@@ -22,7 +22,7 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
-import org.opencb.opencga.core.models.clinical.interpretation.RdInterpretationAnalysisParams;
+import org.opencb.opencga.core.models.clinical.interpretation.RdInterpretationAnalysisToolParams;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.operations.variant.VariantSecondarySampleIndexParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -48,7 +48,7 @@ import static org.opencb.opencga.catalog.managers.AbstractClinicalManagerTest.TI
 import static org.opencb.opencga.catalog.utils.ResourceManager.ANALYSIS_DIRNAME;
 
 @Category(MediumTests.class)
-public class RdInterpretationAnalysisTest {
+public class RdInterpretationAnalysisToolTest {
 
     private static AbstractClinicalManagerTest clinicalTest;
     private static ResourceManager resourceManager;
@@ -101,10 +101,10 @@ public class RdInterpretationAnalysisTest {
         System.out.println("opencga.getOpencgaHome() = " + opencga.getOpencgaHome().toAbsolutePath());
         System.out.println("outDir = " + outDir);
 
-        RdInterpretationAnalysisParams params = new RdInterpretationAnalysisParams();
+        RdInterpretationAnalysisToolParams params = new RdInterpretationAnalysisToolParams();
         params.setClinicalAnalysisId(caId);
 
-        toolRunner.execute(RdInterpretationAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, clinicalTest.studyFqn),
+        toolRunner.execute(RdInterpretationAnalysisTool.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, clinicalTest.studyFqn),
                 outDir, null, false, clinicalTest.token);
 
         ca = clinicalTest.catalogManager.getClinicalAnalysisManager().get(clinicalTest.studyFqn, caId, QueryOptions.empty(),
@@ -154,13 +154,13 @@ public class RdInterpretationAnalysisTest {
                         .setSample(Collections.singletonList(ca.getProband().getSamples().get(0).getId())),
                 Paths.get(opencga.createTmpOutdir()), "family-index", false, clinicalTest.token);
 
-        RdInterpretationAnalysisParams params = new RdInterpretationAnalysisParams();
+        RdInterpretationAnalysisToolParams params = new RdInterpretationAnalysisToolParams();
         params.setName(interpretationName);
         params.setDescription(interpretationDescription);
         params.setClinicalAnalysisId(caId);
         params.setConfigFile(opencgaFile.getId());
 
-        toolRunner.execute(RdInterpretationAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, clinicalTest.studyFqn),
+        toolRunner.execute(RdInterpretationAnalysisTool.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, clinicalTest.studyFqn),
                 outDir, null, false, clinicalTest.token);
 
         ca = clinicalTest.catalogManager.getClinicalAnalysisManager().get(clinicalTest.studyFqn, caId, QueryOptions.empty(),
@@ -240,14 +240,14 @@ public class RdInterpretationAnalysisTest {
                         .setSample(Collections.singletonList(ca.getProband().getSamples().get(0).getId())),
                 Paths.get(opencga.createTmpOutdir()), "family-index", false, clinicalTest.token);
 
-        RdInterpretationAnalysisParams params = new RdInterpretationAnalysisParams();
+        RdInterpretationAnalysisToolParams params = new RdInterpretationAnalysisToolParams();
         params.setName(interpretationName);
         params.setDescription(interpretationDescription);
         params.setClinicalAnalysisId(caId);
         params.setConfigFile(opencgaFile.getId());
         params.setPrimary(true);
 
-        toolRunner.execute(RdInterpretationAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, clinicalTest.studyFqn),
+        toolRunner.execute(RdInterpretationAnalysisTool.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, clinicalTest.studyFqn),
                 outDir, null, false, clinicalTest.token);
 
         ca = clinicalTest.catalogManager.getClinicalAnalysisManager().get(clinicalTest.studyFqn, caId, QueryOptions.empty(),
