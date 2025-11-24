@@ -1,9 +1,9 @@
 package org.opencb.opencga.app.migrations.v5.v5_0_0.catalog;
 
+import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.Projections;
-import com.mongodb.client.model.UpdateOneModel;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.OrganizationMongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.migration.Migration;
@@ -12,25 +12,35 @@ import org.opencb.opencga.core.config.ExecutionQueue;
 
 import java.util.Arrays;
 
-@Migration(id = "support_queues_in_job__task_5662",
+@Migration(id = "support_queues_in_job__task_7442",
         description = "Support for multiple queues in Job #7442", version = "5.0.0",
         language = Migration.MigrationLanguage.JAVA, domain = Migration.MigrationDomain.CATALOG, date = 20250725)
 public class JobQueueMigration_Task7442 extends MigrationTool {
 
     @Override
     protected void run() throws Exception {
-        migrateCollection(Arrays.asList(OrganizationMongoDBAdaptorFactory.JOB_COLLECTION,
-                OrganizationMongoDBAdaptorFactory.DELETED_JOB_COLLECTION),
-                Filters.exists("tool.minimumRequirements.type", false),
-                Projections.include("_id"),
-                (document, bulk) -> {
-                    MongoDBAdaptor.UpdateDocument updateDocument = new MongoDBAdaptor.UpdateDocument();
+        Bson toolRequirementsCheck = Filters.and(
+                Filters.exists("tool.minimumRequirements", true),
+                Filters.exists("tool.minimumRequirements.processorType", false)
+        );
+        MongoDBAdaptor.UpdateDocument updateDocument = new MongoDBAdaptor.UpdateDocument();
+        updateDocument.getSet().put("tool.minimumRequirements.processorType", ExecutionQueue.ProcessorType.CPU.name());
+        updateDocument.getSet().put("tool.minimumRequirements.queue", "");
+        Document toolRequirementsUpdate = updateDocument.toFinalUpdateDocument();
 
-                    updateDocument.getSet().put("tool.minimumRequirements.type", ExecutionQueue.ProcessorType.CPU.name());
-                    updateDocument.getSet().put("tool.minimumRequirements.queue", "");
-                    updateDocument.getSet().put("execution.queue", new Document());
-                    bulk.add(new UpdateOneModel<>(Filters.eq("_id", document.get("_id")), updateDocument.toFinalUpdateDocument()));
-                });
+        Bson executionQueueCheck = Filters.and(
+                Filters.exists("execution", true),
+                Filters.exists("execution.queue", false)
+        );
+        updateDocument = new MongoDBAdaptor.UpdateDocument();
+        updateDocument.getSet().put("execution.queue", new Document());
+        Document executionQueueUpdate = updateDocument.toFinalUpdateDocument();
+
+        for (String collection : Arrays.asList(OrganizationMongoDBAdaptorFactory.JOB_COLLECTION,
+                OrganizationMongoDBAdaptorFactory.DELETED_JOB_COLLECTION)) {
+            MongoCollection<Document> mongoCollection = getMongoCollection(collection);
+            mongoCollection.updateMany(toolRequirementsCheck, toolRequirementsUpdate);
+            mongoCollection.updateMany(executionQueueCheck, executionQueueUpdate);
+        }
     }
-
 }
