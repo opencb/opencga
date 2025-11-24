@@ -193,7 +193,36 @@ public class VariantQueryParser {
         StudyMetadata defaultStudy = getDefaultStudy(query);
         studyQuery.setDefaultStudy(defaultStudy);
         if (isValidParam(query, STUDY)) {
-            studyQuery.setStudies(VariantQueryUtils.splitValue(query, STUDY));
+            ParsedQuery<NegatableValue<ResourceId>> studies = splitValue(query, STUDY)
+                    .map(studyName -> {
+                        boolean negated = false;
+                        if (isNegated(studyName)) {
+                            studyName = removeNegation(studyName);
+                            negated = true;
+                        }
+                        int studyId = metadataManager.getStudyId(studyName);
+                        return new NegatableValue<>(new ResourceId(ResourceId.Type.STUDY, studyId, studyName), negated);
+                    });
+
+            studyQuery.setStudies(studies);
+        }
+        if (isValidParam(query, FILE)) {
+            ParsedQuery<NegatableValue<ResourceId>> files = splitValue(query, FILE)
+                    .map(fileName -> {
+                        boolean negated = false;
+                        if (isNegated(fileName)) {
+                            fileName = removeNegation(fileName);
+                            negated = true;
+                        }
+                        Pair<Integer, Integer> fileIdPair = metadataManager.getFileIdPair(fileName, false, defaultStudy);
+                        if (fileIdPair == null) {
+                            throw VariantQueryException.fileNotFound(fileName, defaultStudy.getName());
+                        }
+                        return new NegatableValue<>(new ResourceId(ResourceId.Type.FILE, fileIdPair.getRight(), fileName), negated
+                        );
+                    });
+
+            studyQuery.setFiles(files);
         }
         if (isValidParam(query, GENOTYPE)) {
             HashMap<Object, List<String>> map = new LinkedHashMap<>();
@@ -298,9 +327,7 @@ public class VariantQueryParser {
             query.remove(ANNOT_CLINICAL_CONFIRMED_STATUS.key());
         }
         if (VariantQueryUtils.isValidParam(query, ANNOT_CLINICAL_SIGNIFICANCE)) {
-            String v = query.getString(ANNOT_CLINICAL_SIGNIFICANCE.key());
-            QueryOperation operator = VariantQueryUtils.checkOperator(v);
-            List<String> values = VariantQueryUtils.splitValue(v, operator);
+            ParsedQuery<String> values = splitValue(query, ANNOT_CLINICAL_SIGNIFICANCE);
             List<String> clinicalSignificanceList = new ArrayList<>(values.size());
             for (String clinicalSignificance : values) {
                 ClinicalSignificance enumValue = EnumUtils.getEnum(ClinicalSignificance.class, clinicalSignificance);
@@ -322,7 +349,7 @@ public class VariantQueryParser {
                 clinicalSignificanceList.add(clinicalSignificance);
             }
             query.put(ANNOT_CLINICAL_SIGNIFICANCE.key(),
-                    String.join(operator == null ? "" : operator.separator(), clinicalSignificanceList));
+                    String.join(values.getSeparator(), clinicalSignificanceList));
         }
 
         if (isValidParam(query, ANNOT_SIFT)) {
@@ -990,12 +1017,8 @@ public class VariantQueryParser {
     public StudyMetadata getDefaultStudy(Query query) {
         final StudyMetadata defaultStudy;
         if (isValidParam(query, STUDY)) {
-            String value = query.getString(STUDY.key());
-
-            // Check that the study exists
-            QueryOperation studiesOperation = checkOperator(value);
-            List<String> studiesNames = splitValue(value, studiesOperation);
-            List<Integer> studyIds = metadataManager.getStudyIds(studiesNames); // Non negated studyIds
+            ParsedQuery<String> studies = splitValue(query, STUDY);
+            List<Integer> studyIds = metadataManager.getStudyIds(studies.getValues()); // Non negated studyIds
             if (studyIds.size() == 1) {
                 defaultStudy = metadataManager.getStudyMetadata(studyIds.get(0));
             } else {

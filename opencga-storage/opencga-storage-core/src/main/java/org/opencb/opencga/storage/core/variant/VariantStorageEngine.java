@@ -744,12 +744,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             throw new StorageEngineException("Search is not active!");
         }
 
-        Query query = copy(inputQuery);
-        QueryOptions queryOptions = copy(inputQueryOptions);
-
-        VariantDBAdaptor dbAdaptor = getDBAdaptor();
-
-
         VariantSearchManager variantSearchManager = getVariantSearchManager();
         SearchIndexMetadata indexMetadata = variantSearchManager.getSearchIndexMetadataForLoading();
 
@@ -841,7 +835,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
 
         long updateTimestamp = System.currentTimeMillis();
-        return secondaryIndex(inputQuery, inputQueryOptions, overwrite, indexMetadata, updateTimestamp);
+        return secondaryIndex(copy(inputQuery), copy(inputQueryOptions), overwrite, indexMetadata, updateTimestamp);
     }
 
     protected VariantSearchLoadResult secondaryIndex(Query inputQuery, QueryOptions inputQueryOptions, boolean overwrite,

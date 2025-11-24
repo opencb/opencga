@@ -254,7 +254,8 @@ public class ParsedVariantQuery {
     }
 
     public static class VariantStudyQuery {
-        private ParsedQuery<String> studies;
+        private ParsedQuery<NegatableValue<ResourceId>> studies;
+        private ParsedQuery<NegatableValue<ResourceId>> files;
         private ParsedQuery<KeyOpValue<SampleMetadata, List<String>>> genotypes;
 //        // SAMPLE : [ KEY OP VALUE ] *
         private ParsedQuery<KeyValues<SampleMetadata, KeyOpValue<String, String>>> sampleDataQuery;
@@ -265,19 +266,47 @@ public class ParsedVariantQuery {
         public VariantStudyQuery() {
         }
 
-        public VariantStudyQuery(VariantStudyQuery studyQuery) {
-            this.studies = studyQuery.studies;
-            this.genotypes = studyQuery.genotypes;
-            this.sampleDataQuery = studyQuery.sampleDataQuery;
-            this.defaultStudy = studyQuery.defaultStudy;
+        public VariantStudyQuery(ParsedQuery<NegatableValue<ResourceId>> studies,
+                                 ParsedQuery<NegatableValue<ResourceId>> files,
+                                 ParsedQuery<KeyOpValue<SampleMetadata, List<String>>> genotypes,
+                                 ParsedQuery<KeyValues<SampleMetadata, KeyOpValue<String, String>>> sampleDataQuery,
+                                 StudyMetadata defaultStudy) {
+            this.studies = studies;
+            this.files = files;
+            this.genotypes = genotypes;
+            this.sampleDataQuery = sampleDataQuery;
+            this.defaultStudy = defaultStudy;
         }
 
-        public ParsedQuery<String> getStudies() {
+        public VariantStudyQuery(VariantStudyQuery other) {
+            this(
+                    other.studies,
+                    other.files,
+                    other.genotypes,
+                    other.sampleDataQuery,
+                    other.defaultStudy
+            );
+        }
+
+        /**
+         * Value of {@link VariantQueryParam#STUDY}.
+         * @return List of studies to be used in the query
+         */
+        public ParsedQuery<NegatableValue<ResourceId>> getStudies() {
             return studies;
         }
 
-        public VariantStudyQuery setStudies(ParsedQuery<String> studies) {
+        public VariantStudyQuery setStudies(ParsedQuery<NegatableValue<ResourceId>> studies) {
             this.studies = studies;
+            return this;
+        }
+
+        public ParsedQuery<NegatableValue<ResourceId>> getFiles() {
+            return files;
+        }
+
+        public VariantStudyQuery setFiles(ParsedQuery<NegatableValue<ResourceId>> files) {
+            this.files = files;
             return this;
         }
 

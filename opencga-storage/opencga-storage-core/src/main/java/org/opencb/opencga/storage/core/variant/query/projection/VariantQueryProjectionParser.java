@@ -13,10 +13,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.query.KeyOpValue;
-import org.opencb.opencga.storage.core.variant.query.KeyValues;
-import org.opencb.opencga.storage.core.variant.query.ParsedQuery;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -264,9 +261,10 @@ public class VariantQueryProjectionParser {
                 studies = query.getAsStringList(VariantQueryParam.INCLUDE_STUDY.key());
             }
         } else if (VariantQueryUtils.isValidParam(query, STUDY)) {
-            String value = query.getString(STUDY.key());
-            studies = new ArrayList<>(VariantQueryUtils.splitValue(value, VariantQueryUtils.checkOperator(value)));
-            studies.removeIf(VariantQueryUtils::isNegated);
+            studies = splitValueNegatable(query, STUDY)
+                    .removeIf(NegatableValue::isNegated)
+                    .map(NegatableValue::getValue)
+                    .getValues();
             // if empty, all the studies
             if (studies.isEmpty()) {
                 studies = null;
@@ -420,11 +418,10 @@ public class VariantQueryProjectionParser {
         }
         Set<String> includeFiles = null;
         if (VariantQueryUtils.isValidParam(query, FILE)) {
-            String files = query.getString(FILE.key());
-            includeFiles = VariantQueryUtils.splitValue(files, VariantQueryUtils.checkOperator(files))
-                    .stream()
-                    .filter(value -> !VariantQueryUtils.isNegated(value))
-                    .collect(Collectors.toCollection(LinkedHashSet::new));
+            includeFiles = new LinkedHashSet<>(splitValueNegatable(query, FILE)
+                    .removeIf(NegatableValue::isNegated)
+                    .map(NegatableValue::getValue)
+                    .getValues());
         }
         if (VariantQueryUtils.isValidParam(query, FILE_DATA)) {
             ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> parsedQuery = VariantQueryUtils.parseFileData(query);
@@ -675,10 +672,10 @@ public class VariantQueryProjectionParser {
                     samples = new ArrayList<>(map.size());
                     map.keySet().stream().map(Object::toString).forEach(samples::add);
                 } else {
-                    samples = VariantQueryUtils.splitValue(value, VariantQueryUtils.checkOperator(value))
-                            .stream()
-                            .filter((v) -> !VariantQueryUtils.isNegated(v)) // Discard negated
-                            .collect(Collectors.toList());
+                    samples = splitValueNegatable(query, SAMPLE)
+                            .removeIf(NegatableValue::isNegated)
+                            .map(NegatableValue::getValue)
+                            .getValues();
                 }
             }
             if (VariantQueryUtils.isValidParam(query, GENOTYPE)) {
@@ -697,25 +694,22 @@ public class VariantQueryProjectionParser {
                 samples.addAll(sampleDataQuery.mapValues(KeyValues::getKey));
             }
             if (VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_MENDELIAN_ERROR)) {
-                String value = query.getString(VariantQueryUtils.SAMPLE_MENDELIAN_ERROR.key());
                 if (samples == null) {
                     samples = new ArrayList<>();
                 }
-                samples.addAll(VariantQueryUtils.splitValue(value, VariantQueryUtils.checkOperator(value)));
+                samples.addAll(VariantQueryUtils.splitValue(query, VariantQueryUtils.SAMPLE_MENDELIAN_ERROR).getValues());
             }
             if (VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_DE_NOVO)) {
-                String value = query.getString(VariantQueryUtils.SAMPLE_DE_NOVO.key());
                 if (samples == null) {
                     samples = new ArrayList<>();
                 }
-                samples.addAll(VariantQueryUtils.splitValue(value, VariantQueryUtils.checkOperator(value)));
+                samples.addAll(VariantQueryUtils.splitValue(query, VariantQueryUtils.SAMPLE_DE_NOVO).getValues());
             }
             if (VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_DE_NOVO_STRICT)) {
-                String value = query.getString(VariantQueryUtils.SAMPLE_DE_NOVO_STRICT.key());
                 if (samples == null) {
                     samples = new ArrayList<>();
                 }
-                samples.addAll(VariantQueryUtils.splitValue(value, VariantQueryUtils.checkOperator(value)));
+                samples.addAll(VariantQueryUtils.splitValue(query, VariantQueryUtils.SAMPLE_DE_NOVO_STRICT).getValues());
             }
             if (CollectionUtils.isEmpty(samples)) {
                 samples = null;

@@ -725,36 +725,42 @@ public class VariantSqlQueryParser {
 
         final StudyMetadata defaultStudyMetadata = variantQuery.getStudyQuery().getDefaultStudy();
         if (isValidParam(query, STUDY)) {
-            String value = query.getString(STUDY.key());
-            QueryOperation operation = checkOperator(value);
-            List<String> values = splitValue(value, operation);
+            ParsedQuery<NegatableValue<ResourceId>> studies = variantQuery.getStudyQuery().getStudies();
             StringBuilder sb = new StringBuilder();
-            Iterator<String> iterator = values.iterator();
-            Map<String, Integer> studies = metadataManager.getStudies(options);
             Set<Integer> notNullStudies = new HashSet<>();
+            Iterator<NegatableValue<ResourceId>> iterator = studies.getValues().iterator();
             while (iterator.hasNext()) {
-                String study = iterator.next();
-                Integer studyId = metadataManager.getStudyId(study, false, studies);
-                if (isNegated(study)) {
+                NegatableValue<ResourceId> studyValue = iterator.next();
+                int studyId = studyValue.getValue().getId();
+                if (studyValue.isNegated()) {
                     sb.append("\"").append(getStudyColumn(studyId).column()).append("\" IS NULL ");
                 } else {
                     notNullStudies.add(studyId);
                     sb.append("\"").append(getStudyColumn(studyId).column()).append("\" IS NOT NULL ");
                 }
                 if (iterator.hasNext()) {
-                    if (operation == null || operation.equals(QueryOperation.AND)) {
+                    if (studies.getOperation() == QueryOperation.AND) {
                         sb.append(" AND ");
                     } else {
                         sb.append(" OR ");
                     }
                 }
             }
+            final String filter;
             // Skip this filter if contains all the existing studies (union of all studies), or if there is only one study
-            if (studies.size() == notNullStudies.size() && notNullStudies.containsAll(studies.values())
-                    && (operation == QueryOperation.OR || studies.size() == 1)) {
-                logger.debug("Skip studies filter to phoenix");
+            if (studies.getOperation() == QueryOperation.OR || studies.size() == 1) {
+                Map<String, Integer> allStudies = metadataManager.getStudies(options);
+                if (allStudies.size() == notNullStudies.size() && notNullStudies.containsAll(allStudies.values())) {
+                    logger.debug("Skip studies filter to phoenix");
+                    filter = null;
+                } else {
+                    filter = sb.toString();
+                }
             } else {
-                filters.add(sb.toString());
+                filter = sb.toString();
+            }
+            if (filter != null) {
+                filters.add(filter);
             }
         }
 //        else {
@@ -1508,32 +1514,31 @@ public class VariantSqlQueryParser {
         addQueryFilter(query, ANNOT_HPO, VariantColumn.XREFS, filters);
 
         if (isValidParam(query, ANNOT_GO_GENES)) {
-            String value = query.getString(ANNOT_GO_GENES.key());
-            if (checkOperator(value) == QueryOperation.AND) {
-                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_GO, value, "Unimplemented AND operator");
+            Values<String> genesByGo = splitValue(query, ANNOT_GO_GENES);
+            if (genesByGo.getOperation() == QueryOperation.AND) {
+                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_GO, query, "Unimplemented AND operator");
             }
-            List<String> genesByGo = splitValue(value, QueryOperation.OR);
             if (genesByGo.isEmpty()) {
                 // If any gene was found, the query will return no results.
                 // FIXME: Find another way of returning empty results
                 filters.add(getVoidFilter());
             } else {
-                addQueryFilter(new Query(ANNOT_GO.key(), genesByGo), ANNOT_GO, VariantColumn.GENES, filters);
+                addQueryFilter(new Query(ANNOT_GO.key(), genesByGo.getValues()), ANNOT_GO, VariantColumn.GENES, filters);
             }
 
         }
         if (isValidParam(query, ANNOT_EXPRESSION_GENES)) {
-            String value = query.getString(ANNOT_EXPRESSION.key());
-            if (checkOperator(value) == QueryOperation.AND) {
-                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_EXPRESSION, value, "Unimplemented AND operator");
+            Values<String> genesByExpression = splitValue(query, ANNOT_EXPRESSION);
+            if (genesByExpression.getOperation() == QueryOperation.AND) {
+                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_EXPRESSION, query, "Unimplemented AND operator");
             }
-            List<String> genesByExpression = splitValue(value, QueryOperation.OR);
             if (genesByExpression.isEmpty()) {
                 // If any gene was found, the query will return no results.
                 // FIXME: Find another way of returning empty results
                 filters.add(getVoidFilter());
             } else {
-                addQueryFilter(new Query(ANNOT_EXPRESSION.key(), genesByExpression), ANNOT_EXPRESSION, VariantColumn.GENES, filters);
+                addQueryFilter(new Query(ANNOT_EXPRESSION.key(), genesByExpression.getValues()),
+                        ANNOT_EXPRESSION, VariantColumn.GENES, filters);
             }
         }
 

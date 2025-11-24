@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.core.variant.adaptors;
+package org.opencb.opencga.storage.core.variant.query;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Rule;
@@ -29,10 +29,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
-import org.opencb.opencga.storage.core.variant.query.KeyOpValue;
-import org.opencb.opencga.storage.core.variant.query.KeyValues;
-import org.opencb.opencga.storage.core.variant.query.ParsedQuery;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 
 import java.lang.reflect.Field;
 import java.util.*;

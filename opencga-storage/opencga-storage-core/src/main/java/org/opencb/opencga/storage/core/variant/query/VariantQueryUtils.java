@@ -324,7 +324,7 @@ public final class VariantQueryUtils {
             return validParam;
         } else {
             String strValue = query.getString(param.key());
-            return splitValue(strValue, checkOperator(strValue))
+            return splitValueInternal(strValue, checkOperator(strValue))
                     .stream()
                     .anyMatch((v) -> !isNegated(v)); // Discard negated
         }
@@ -640,7 +640,7 @@ public final class VariantQueryUtils {
             }
         } else if (isValidParam(query, STUDY)) {
             String value = query.getString(STUDY.key());
-            long numStudies = splitValue(value, checkOperator(value)).stream().filter(s -> !isNegated(s)).count();
+            long numStudies = splitValueInternal(value, checkOperator(value)).stream().filter(s -> !isNegated(s)).count();
             return numStudies > 1;
         } else {
             return studies.size() > 1;
@@ -785,11 +785,14 @@ public final class VariantQueryUtils {
 
             return new ParsedQuery<>(FILE_DATA, fileValues.getOperation(), files);
         } else {
-            ParsedQuery<String> fileIds = splitValue(query, FILE);
-            fileIds.getValues().removeIf(VariantQueryUtils::isNegated);
+            Values<String> fileIds;
+            ParsedQuery<NegatableValue<String>> fileQuery = splitValueNegatable(query, FILE);
+            fileQuery.getValues().removeIf(NegatableValue::isNegated);
 
-            if (fileIds.getValues().isEmpty()) {
+            if (fileQuery.getValues().isEmpty()) {
                 fileIds = splitValue(query, INCLUDE_FILE);
+            } else {
+                fileIds = fileQuery.map(NegatableValue::getValue);
             }
 
             if (fileIds.getValues().isEmpty()) {
@@ -1016,7 +1019,7 @@ public final class VariantQueryUtils {
         Values<KeyOpValue<String, String>> values = parseMultiKeyValueFilter(GENOTYPE, sampleGenotypes);
 
         for (KeyOpValue<String, String> keyOpValue : values.getValues()) {
-            List<String> gts = splitValue(keyOpValue.getValue(), QueryOperation.OR);
+            List<String> gts = splitValueInternal(keyOpValue.getValue(), QueryOperation.OR);
             boolean anyNegated = false;
             boolean allNegated = true;
             for (String gt : gts) {
@@ -1219,7 +1222,20 @@ public final class VariantQueryUtils {
     public static ParsedQuery<String> splitValue(Query query, QueryParam param) {
         String value = query.getString(param.key());
         QueryOperation operation = checkOperator(value);
-        return new ParsedQuery<>(param, operation, splitValue(value, operation));
+        return new ParsedQuery<>(param, operation, splitValueInternal(value, operation));
+    }
+
+    public static ParsedQuery<NegatableValue<String>> splitValueNegatable(Query query, QueryParam param) {
+        String value = query.getString(param.key());
+        QueryOperation operation = checkOperator(value);
+        List<NegatableValue<String>> values = splitValueInternal(value, operation).stream().map(v -> {
+            if (isNegated(v)) {
+                return new NegatableValue<>(removeNegation(v), true);
+            } else {
+                return new NegatableValue<>(v, false);
+            }
+        }).collect(Collectors.toList());
+        return new ParsedQuery<>(param, operation, values);
     }
 
     /**
@@ -1230,16 +1246,7 @@ public final class VariantQueryUtils {
      */
     public static Values<String> splitValues(String value) {
         QueryOperation operation = checkOperator(value);
-        return new Values<>(operation, splitValue(value, operation));
-    }
-
-    /*
-     * @deprecated use {@link #splitValues(String)}
-     */
-    @Deprecated
-    public static Pair<QueryOperation, List<String>> splitValue(String value) {
-        QueryOperation operation = checkOperator(value);
-        return Pair.of(operation, splitValue(value, operation));
+        return new Values<>(operation, splitValueInternal(value, operation));
     }
 
     /**
@@ -1248,8 +1255,14 @@ public final class VariantQueryUtils {
      * @param value     Value to split
      * @param operation Operation that defines the split delimiter
      * @return List of values, without the delimiter
+     * @deprecated Use {@link #splitValues(String)}
      */
+    @Deprecated
     public static List<String> splitValue(String value, QueryOperation operation) {
+        return splitValueInternal(value, operation);
+    }
+
+    private static List<String> splitValueInternal(String value, QueryOperation operation) {
         List<String> list;
         if (value == null || value.isEmpty()) {
             list = new ArrayList<>();
@@ -1268,11 +1281,7 @@ public final class VariantQueryUtils {
         return list;
     }
 
-    public static List<String> splitQuotes(String value, QueryOperation operation) {
-        return splitQuotes(value, operation == QueryOperation.AND ? AND_CHAR : OR_CHAR);
-    }
-
-    public static List<String> splitQuotes(String value, char separator) {
+    static List<String> splitQuotes(String value, char separator) {
         boolean inQuote = false;
         List<String> list = new ArrayList<>();
         StringBuilder sb = new StringBuilder();
@@ -1466,17 +1475,13 @@ public final class VariantQueryUtils {
             return;
         }
         if (isValidParam(query, VariantQueryParam.ANNOT_EXPRESSION)) {
-            String value = query.getString(VariantQueryParam.ANNOT_EXPRESSION.key());
-            // Check if comma separated of semi colon separated (AND or OR)
-            VariantQueryUtils.QueryOperation queryOperation = checkOperator(value);
-            // Split by comma or semi colon
-            List<String> expressionValues = splitValue(value, queryOperation);
+            ParsedQuery<String> expressionValues = splitValue(query, ANNOT_EXPRESSION);
 
-            if (queryOperation == VariantQueryUtils.QueryOperation.AND) {
-                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_EXPRESSION, value, "Unimplemented AND operator");
+            if (expressionValues.getOperation() == VariantQueryUtils.QueryOperation.AND) {
+                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_EXPRESSION, query, "Unimplemented AND operator");
             }
 //            query.remove(VariantQueryParam.ANNOT_EXPRESSION.key());
-            Set<String> genesByExpression = cellBaseUtils.getGenesByExpression(expressionValues);
+            Set<String> genesByExpression = cellBaseUtils.getGenesByExpression(expressionValues.getValues());
             if (genesByExpression.isEmpty()) {
                 genesByExpression = Collections.singleton(NONE);
             }
@@ -1493,17 +1498,13 @@ public final class VariantQueryUtils {
             return;
         }
         if (isValidParam(query, VariantQueryParam.ANNOT_GO)) {
-            String value = query.getString(VariantQueryParam.ANNOT_GO.key());
-            // Check if comma separated of semi colon separated (AND or OR)
-            VariantQueryUtils.QueryOperation queryOperation = checkOperator(value);
-            // Split by comma or semi colon
-            List<String> goValues = splitValue(value, queryOperation);
+            ParsedQuery<String> goValues = splitValue(query, ANNOT_GO);
 
-            if (queryOperation == VariantQueryUtils.QueryOperation.AND) {
-                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_GO, value, "Unimplemented AND operator");
+            if (goValues.getOperation() == VariantQueryUtils.QueryOperation.AND) {
+                throw VariantQueryException.malformedParam(VariantQueryParam.ANNOT_GO, query, "Unimplemented AND operator");
             }
 //            query.remove(VariantQueryParam.ANNOT_GO.key());
-            Set<String> genesByGo = cellBaseUtils.getGenesByGo(goValues);
+            Set<String> genesByGo = cellBaseUtils.getGenesByGo(goValues.getValues());
             if (genesByGo.isEmpty()) {
                 genesByGo = Collections.singleton(NONE);
             }

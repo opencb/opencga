@@ -36,6 +36,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.models.Trio;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
@@ -144,20 +145,20 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public VariantSearchLoadResult secondaryIndex(Query inputQuery, QueryOptions inputQueryOptions, boolean overwrite)
+    protected VariantSearchLoadResult secondaryIndex(Query inputQuery, QueryOptions inputQueryOptions, boolean overwrite,
+                                                     SearchIndexMetadata indexMetadata, long updateStartTimestamp)
             throws StorageEngineException, IOException, VariantSearchException {
         VariantSearchManager variantSearchManager = getVariantSearchManager();
 
         int deletedVariants;
         VariantSearchLoadResult searchIndex;
-        long timeStamp = System.currentTimeMillis();
 
-        if (configuration.getSearch().isActive() && variantSearchManager.isAlive(dbName)) {
+        if (configuration.getSearch().isActive() && variantSearchManager.isAlive(indexMetadata)) {
             // First remove trashed variants.
             ProgressLogger progressLogger = new ProgressLogger("Variants removed from Solr");
-            try (VariantDBIterator removedVariants = getDBAdaptor().trashedVariants(timeStamp)) {
-                deletedVariants = variantSearchManager.delete(dbName, removedVariants, progressLogger);
-                getDBAdaptor().cleanTrash(timeStamp);
+            try (VariantDBIterator removedVariants = getDBAdaptor().trashedVariants(updateStartTimestamp)) {
+                deletedVariants = variantSearchManager.delete(indexMetadata, removedVariants, progressLogger);
+                getDBAdaptor().cleanTrash(updateStartTimestamp);
             } catch (StorageEngineException | IOException | RuntimeException e) {
                 throw e;
             } catch (Exception e) {
@@ -165,20 +166,25 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
             }
 
             // Then, load new variants.
-            searchIndex = super.secondaryIndex(inputQuery, inputQueryOptions, overwrite);
+            searchIndex = super.secondaryIndex(inputQuery, inputQueryOptions, overwrite, indexMetadata, updateStartTimestamp);
         } else {
             //The current dbName from the SearchEngine is not alive or does not exist. There is nothing to remove
             deletedVariants = 0;
             logger.debug("Skip removed variants!");
 
             // Try to index the rest of variants. This method will fail if the search engine is not alive
-            searchIndex = super.secondaryIndex(inputQuery, inputQueryOptions, overwrite);
+            searchIndex = super.secondaryIndex(inputQuery, inputQueryOptions, overwrite, indexMetadata, updateStartTimestamp);
 
             // If the variants were loaded correctly, the trash can be clean up.
-            getDBAdaptor().cleanTrash(timeStamp);
+            getDBAdaptor().cleanTrash(updateStartTimestamp);
         }
 
-        return new VariantSearchLoadResult(searchIndex.getNumProcessedVariants(), searchIndex.getNumLoadedVariants(), deletedVariants);
+        return new VariantSearchLoadResult(
+                searchIndex.getNumProcessedVariants(),
+                searchIndex.getNumLoadedVariants(),
+                deletedVariants,
+                searchIndex.getNumInsertedVariants(),
+                searchIndex.getNumLoadedVariantsPartialStatsUpdate());
     }
 
     @Override

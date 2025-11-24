@@ -32,7 +32,6 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
@@ -484,420 +483,391 @@ public class VariantMongoDBQueryParser {
                             }
                         });
             }
+*/
             if (isValidParam(query, VARIANTS_TO_INDEX)) {
-                long ts = metadataManager.getProjectMetadata().getAttributes()
-                        .getLong(SEARCH_INDEX_LAST_TIMESTAMP.key());
+                long ts = metadataManager.getProjectMetadata().getSecondaryAnnotationIndex().getSearchIndexMetadataForLoading()
+                        .getLastUpdateDateTimestamp();
                 if (ts > 0) {
                     String key = INDEX_FIELD + '.' + DocumentToVariantConverter.INDEX_TIMESTAMP_FIELD;
-                    builder.or(
-                            QueryBuilder.start(key).greaterThan(ts).get(),
-                            QueryBuilder.start(key).exists(false).get()); // It may not exist from versions <1.4.x
+                    filters.add(gte(key, ts));
                 } // Otherwise, get all variants
             }
-*/
         }
         return filters;
     }
 
-    private List<Bson> parseStudyQueryParams(ParsedVariantQuery parsedVariantQuery, Query query) {
+    private List<Bson> parseStudyQueryParams(ParsedVariantQuery parsedVariantQuery, @Deprecated Query query) {
         List<Bson> filters = new ArrayList<>();
-        if (query != null) {
-            Map<String, Integer> studies = metadataManager.getStudies(null);
+        if (query == null) {
+            return filters;
+        }
 
-            String studyQueryPrefix = DocumentToVariantConverter.STUDIES_FIELD + '.';
-            final StudyMetadata defaultStudy = parsedVariantQuery.getStudyQuery().getDefaultStudy();
+        String studyQueryPrefix = DocumentToVariantConverter.STUDIES_FIELD + '.';
+        final StudyMetadata defaultStudy = parsedVariantQuery.getStudyQuery().getDefaultStudy();
 
-            if (isValidParam(query, STUDY)) {
-                String value = query.getString(STUDY.key());
 
-                addQueryFilter(studyQueryPrefix + DocumentToStudyVariantEntryConverter.STUDYID_FIELD, value,
-                        filters, study -> metadataManager.getStudyId(study, false, studies));
-            }
+        if (parsedVariantQuery.getStudyQuery().getStudies() != null) {
+            ParsedQuery<NegatableValue<ResourceId>> studies = parsedVariantQuery.getStudyQuery().getStudies();
 
-            boolean overlappedFilesFiles = query.getBoolean(OVERLAPPED_FILES_ONLY);
-            List<Integer> fileIds = Collections.emptyList();
-            List<String> fileNames = Collections.emptyList();
-            QueryOperation filesOperation = QueryOperation.OR;
-            if (isValidParam(query, FILE)) {
-                String filesValue = query.getString(FILE.key());
-                filesOperation = checkOperator(filesValue);
-                fileNames = splitValue(filesValue, filesOperation);
+            filters.add(addQueryFilter(studyQueryPrefix + DocumentToStudyVariantEntryConverter.STUDYID_FIELD,
+                    studies.getValues(),
+                    study -> study.getValue().getId()));
+        }
 
-                fileIds = fileNames
-                        .stream()
-                        .filter(value -> !isNegated(value))
-                        .map(value -> {
-                            Integer fileId = metadataManager.getFileIdPair(value, false, defaultStudy).getValue();
-                            if (fileId == null) {
-                                throw VariantQueryException.fileNotFound(value, defaultStudy.getName());
-                            }
-                            if (overlappedFilesFiles) {
-                                fileId = -fileId;
-                            }
-                            return fileId;
-                        })
-                        .collect(Collectors.toList());
-            } else if (isValidParam(query, INCLUDE_FILE)) {
-                List<String> files = VariantQueryProjectionParser.getIncludeFilesList(query);
-                if (files != null) {
-                    fileIds = new ArrayList<>(files.size());
-                    for (String file : files) {
-                        fileIds.add(metadataManager.getFileIdPair(file, false, defaultStudy).getValue());
-                    }
+        boolean overlappedFilesFiles = query.getBoolean(OVERLAPPED_FILES_ONLY);
+        List<Integer> fileIds = Collections.emptyList();
+        QueryOperation filesOperation = QueryOperation.OR;
+        ParsedQuery<NegatableValue<ResourceId>> fileQuery = null;
+        if (parsedVariantQuery.getStudyQuery().getFiles() != null) {
+            fileQuery = parsedVariantQuery.getStudyQuery().getFiles();
+            filesOperation = fileQuery.getOperation();
+            fileIds = fileQuery.getValues().stream().filter(v -> !v.isNegated())
+                    .map(NegatableValue::getValue).map(ResourceId::getId).collect(Collectors.toList());
+
+        } else if (isValidParam(query, INCLUDE_FILE)) {
+            List<String> files = VariantQueryProjectionParser.getIncludeFilesList(query);
+            if (files != null) {
+                fileIds = new ArrayList<>(files.size());
+                for (String file : files) {
+                    fileIds.add(metadataManager.getFileIdPair(file, false, defaultStudy).getValue());
                 }
             }
+        }
 
-            if (isValidParam(query, FILTER) || isValidParam(query, QUAL) || isValidParam(query, FILE_DATA)) {
-                String filterValue = query.getString(FILTER.key());
-                QueryOperation filterOperation = checkOperator(filterValue);
-                List<String> filterValues = splitValue(filterValue, filterOperation);
-                ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> parsedFileData = parseFileData(query);
-                QueryOperation fileDataOperation = parsedFileData.getOperation();
+        if (isValidParam(query, FILTER) || isValidParam(query, QUAL) || isValidParam(query, FILE_DATA)) {
+            String filterValue = query.getString(FILTER.key());
+            QueryOperation filterOperation = checkOperator(filterValue);
+            List<String> filterValues = splitValue(filterValue, filterOperation);
+            ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> parsedFileData = parseFileData(query);
+            QueryOperation fileDataOperation = parsedFileData.getOperation();
 
 
-                boolean useFileElemMatch = !fileIds.isEmpty();
-                boolean infoInFileElemMatch = useFileElemMatch && (fileDataOperation == null || filesOperation == fileDataOperation);
+            boolean useFileElemMatch = !fileIds.isEmpty();
+            boolean infoInFileElemMatch = useFileElemMatch && (fileDataOperation == null || filesOperation == fileDataOperation);
 
 //                values = query.getString(QUAL.key());
 //                QueryOperation qualOperation = checkOperator(values);
 //                List<String> qualValues = splitValue(values, qualOperation);
-                if (!useFileElemMatch) {
-                    String key = studyQueryPrefix
-                            + DocumentToStudyVariantEntryConverter.FILES_FIELD + '.'
-                            + DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD + '.';
+            if (!useFileElemMatch) {
+                String key = studyQueryPrefix
+                        + DocumentToStudyVariantEntryConverter.FILES_FIELD + '.'
+                        + DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD + '.';
 
+                if (isValidParam(query, FILTER)) {
+                    getFileFilter(key + StudyEntry.FILTER, filterValues, filterOperation, filters);
+                }
+                if (isValidParam(query, QUAL)) {
+                    addCompListQueryFilter(key + StudyEntry.QUAL, query.getString(QUAL.key()), filters, false);
+                }
+            } else {
+                List<Bson> fileElemMatch = new ArrayList<>(fileIds.size());
+                String key = DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD + '.';
+
+                for (Integer fileId : fileIds) {
+                    List<Bson> fileFilters = new ArrayList<>();
+
+                    fileFilters.add(eq(DocumentToStudyVariantEntryConverter.FILEID_FIELD, fileId));
                     if (isValidParam(query, FILTER)) {
-                        getFileFilter(key + StudyEntry.FILTER, filterValues, filterOperation, filters);
+                        getFileFilter(key + StudyEntry.FILTER, filterValues, filterOperation, fileFilters);
                     }
                     if (isValidParam(query, QUAL)) {
-                        addCompListQueryFilter(key + StudyEntry.QUAL, query.getString(QUAL.key()), filters, false);
+                        addCompListQueryFilter(key + StudyEntry.QUAL, query.getString(QUAL.key()), fileFilters, false);
                     }
-                } else {
-                    List<Bson> fileElemMatch = new ArrayList<>(fileIds.size());
-                    String key = DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD + '.';
 
-                    for (Integer fileId : fileIds) {
-                        List<Bson> fileFilters = new ArrayList<>();
-
-                        fileFilters.add(eq(DocumentToStudyVariantEntryConverter.FILEID_FIELD, fileId));
-                        if (isValidParam(query, FILTER)) {
-                            getFileFilter(key + StudyEntry.FILTER, filterValues, filterOperation, fileFilters);
-                        }
-                        if (isValidParam(query, QUAL)) {
-                            addCompListQueryFilter(key + StudyEntry.QUAL, query.getString(QUAL.key()), fileFilters, false);
-                        }
-
-                        if (infoInFileElemMatch && !parsedFileData.getValues().isEmpty()) {
-                            if (defaultStudy == null) {
-                                throw VariantQueryException.missingStudyForFile(fileId.toString(),
-                                        metadataManager.getStudyNames());
-                            }
-                            String fileName = metadataManager.getFileName(defaultStudy.getId(), fileId);
-                            KeyValues<String, KeyOpValue<String, String>> fileDataValue =
-                                    parsedFileData.getValue(kv -> kv.getKey().equals(fileName));
-                            if (fileDataValue.getValues() != null) {
-                                KeyOpValue<String, String> filterKeyOp = fileDataValue.getValue(s -> s.getKey().equals(StudyEntry.FILTER));
-                                Values<Bson> extraFilterFilters = null;
-                                if (filterKeyOp != null) {
-                                    fileDataValue.getValues().remove(filterKeyOp);
-                                    Values<String> splitFilterValues = splitValues(filterKeyOp.getValue());
-                                    List<Bson> filterFilters = getFileFilter(key + StudyEntry.FILTER, splitFilterValues.getValues());
-                                    extraFilterFilters = new Values<>(splitFilterValues.getOperation(), filterFilters);
-                                }
-                                addCompListQueryFilter(DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD, fileDataValue, fileFilters,
-                                        true, extraFilterFilters);
-                            }
-                        }
-                        fileElemMatch.add(elemMatch(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD, and(fileFilters)));
-                    }
-                    addAll(filters, filesOperation, fileElemMatch);
-
-                }
-
-                if (!infoInFileElemMatch && !parsedFileData.getValues().isEmpty()) {
-                    List<Bson> infoElemMatch = new ArrayList<>(parsedFileData.getValues().size());
-                    for (KeyValues<String, KeyOpValue<String, String>> fileDataValue : parsedFileData.getValues()) {
+                    if (infoInFileElemMatch && !parsedFileData.getValues().isEmpty()) {
                         if (defaultStudy == null) {
-                            throw VariantQueryException.missingStudyForFile(fileDataValue.getKey(), metadataManager.getStudyNames());
+                            throw VariantQueryException.missingStudyForFile(fileId.toString(),
+                                    metadataManager.getStudyNames());
                         }
-                        List<Bson> infoFilters = new ArrayList<>();
-                        Integer fileId = metadataManager.getFileId(defaultStudy.getId(), fileDataValue.getKey(), true);
-                        infoFilters.add(eq(DocumentToStudyVariantEntryConverter.FILEID_FIELD, fileId));
+                        String fileName = metadataManager.getFileName(defaultStudy.getId(), fileId);
+                        KeyValues<String, KeyOpValue<String, String>> fileDataValue =
+                                parsedFileData.getValue(kv -> kv.getKey().equals(fileName));
                         if (fileDataValue.getValues() != null) {
                             KeyOpValue<String, String> filterKeyOp = fileDataValue.getValue(s -> s.getKey().equals(StudyEntry.FILTER));
                             Values<Bson> extraFilterFilters = null;
                             if (filterKeyOp != null) {
                                 fileDataValue.getValues().remove(filterKeyOp);
                                 Values<String> splitFilterValues = splitValues(filterKeyOp.getValue());
-                                String key = DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD + ".";
                                 List<Bson> filterFilters = getFileFilter(key + StudyEntry.FILTER, splitFilterValues.getValues());
                                 extraFilterFilters = new Values<>(splitFilterValues.getOperation(), filterFilters);
                             }
-
-                            addCompListQueryFilter(DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD, fileDataValue, infoFilters,
+                            addCompListQueryFilter(DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD, fileDataValue, fileFilters,
                                     true, extraFilterFilters);
                         }
-                        infoElemMatch.add(elemMatch(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD, and(infoFilters)));
                     }
-                    addAll(filters, fileDataOperation, infoElemMatch);
+                    fileElemMatch.add(elemMatch(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD, and(fileFilters)));
                 }
+                addAll(filters, filesOperation, fileElemMatch);
+
             }
 
-            if (isValidParam(query, SAMPLE_DATA)) {
-                throw VariantQueryException.unsupportedVariantQueryFilter(SAMPLE_DATA, MongoDBVariantStorageEngine.STORAGE_ENGINE_ID);
+            if (!infoInFileElemMatch && !parsedFileData.getValues().isEmpty()) {
+                List<Bson> infoElemMatch = new ArrayList<>(parsedFileData.getValues().size());
+                for (KeyValues<String, KeyOpValue<String, String>> fileDataValue : parsedFileData.getValues()) {
+                    if (defaultStudy == null) {
+                        throw VariantQueryException.missingStudyForFile(fileDataValue.getKey(), metadataManager.getStudyNames());
+                    }
+                    List<Bson> infoFilters = new ArrayList<>();
+                    Integer fileId = metadataManager.getFileId(defaultStudy.getId(), fileDataValue.getKey(), true);
+                    infoFilters.add(eq(DocumentToStudyVariantEntryConverter.FILEID_FIELD, fileId));
+                    if (fileDataValue.getValues() != null) {
+                        KeyOpValue<String, String> filterKeyOp = fileDataValue.getValue(s -> s.getKey().equals(StudyEntry.FILTER));
+                        Values<Bson> extraFilterFilters = null;
+                        if (filterKeyOp != null) {
+                            fileDataValue.getValues().remove(filterKeyOp);
+                            Values<String> splitFilterValues = splitValues(filterKeyOp.getValue());
+                            String key = DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD + ".";
+                            List<Bson> filterFilters = getFileFilter(key + StudyEntry.FILTER, splitFilterValues.getValues());
+                            extraFilterFilters = new Values<>(splitFilterValues.getOperation(), filterFilters);
+                        }
+
+                        addCompListQueryFilter(DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD, fileDataValue, infoFilters,
+                                true, extraFilterFilters);
+                    }
+                    infoElemMatch.add(elemMatch(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD, and(infoFilters)));
+                }
+                addAll(filters, fileDataOperation, infoElemMatch);
+            }
+        }
+
+        if (isValidParam(query, SAMPLE_DATA)) {
+            throw VariantQueryException.unsupportedVariantQueryFilter(SAMPLE_DATA, MongoDBVariantStorageEngine.STORAGE_ENGINE_ID);
+        }
+
+        // Only will contain values if the genotypesOperator is AND
+        Set<List<Integer>> fileIdGroupsFromSamples = Collections.emptySet();
+        Set<Integer> fileIdsFromSamples = Collections.emptySet();
+        ParsedQuery<KeyOpValue<SampleMetadata, List<String>>> genotypesQuery = parsedVariantQuery.getStudyQuery().getGenotypes();
+        if (genotypesQuery != null) {
+            // One bson query per sample
+            List<Bson> genotypeQueries = new ArrayList<>(genotypesQuery.getValues().size());
+
+            fileIdGroupsFromSamples = new LinkedHashSet<>();
+            fileIdsFromSamples = new LinkedHashSet<>();
+
+            List<String> defaultGenotypes;
+            List<String> loadedGenotypes;
+            if (defaultStudy != null) {
+                defaultGenotypes = defaultStudy.getAttributes().getAsStringList(DEFAULT_GENOTYPE.key());
+                loadedGenotypes = defaultStudy.getAttributes().getAsStringList(LOADED_GENOTYPES.key());
+                loadedGenotypes.replaceAll(DocumentToSamplesConverter::genotypeToDataModelType);
+            } else {
+                defaultGenotypes = DEFAULT_GENOTYPE.defaultValue();
+                loadedGenotypes = Arrays.asList(
+                        "0/0", "0|0",
+                        "0/1", "1/0", "1/1", "./.",
+                        "0|1", "1|0", "1|1", ".|.",
+                        "0|2", "2|0", "2|1", "1|2", "2|2",
+                        "0/2", "2/0", "2/1", "1/2", "2/2",
+                        GenotypeClass.UNKNOWN_GENOTYPE);
             }
 
-            // Only will contain values if the genotypesOperator is AND
-            Set<List<Integer>> fileIdGroupsFromSamples = Collections.emptySet();
-            Set<Integer> fileIdsFromSamples = Collections.emptySet();
-            ParsedQuery<KeyOpValue<SampleMetadata, List<String>>> genotypesQuery = parsedVariantQuery.getStudyQuery().getGenotypes();
-            if (genotypesQuery != null) {
-                fileIdGroupsFromSamples = new LinkedHashSet<>();
-                fileIdsFromSamples = new LinkedHashSet<>();
+            for (KeyOpValue<SampleMetadata, List<String>> sampleGenotypeFilter : genotypesQuery.getValues()) {
+                SampleMetadata sample = sampleGenotypeFilter.getKey();
+                List<String> genotypes = sampleGenotypeFilter.getValue();
+                // Build the query for this sample
+                // {
+                //   $and: [
+                //      <genotypesFiltersAnd>... ,
+                //      {$or : <genotypesFiltersOr> }
+                //   ]
+                // }
+                //
+                // e.g.
+                // genotype="0/1,1/1" -> genotype = "0/1" OR genotype = "1/1"
+                // {
+                //   $and: [
+                //      { $or: [ {"gt.0|1" : <sampleId> } , {"gt.1|1" : <sampleId> } ] }
+                //      { "files.fileId" : { $in : [<fileIdFromSample>] } }
+                //   ]
+                // }
 
-                List<String> defaultGenotypes;
-                List<String> loadedGenotypes;
-                if (defaultStudy != null) {
-                    defaultGenotypes = defaultStudy.getAttributes().getAsStringList(DEFAULT_GENOTYPE.key());
-                    loadedGenotypes = defaultStudy.getAttributes().getAsStringList(LOADED_GENOTYPES.key());
-                    loadedGenotypes.replaceAll(DocumentToSamplesConverter::genotypeToDataModelType);
-                } else {
-                    defaultGenotypes = DEFAULT_GENOTYPE.defaultValue();
-                    loadedGenotypes = Arrays.asList(
-                            "0/0", "0|0",
-                            "0/1", "1/0", "1/1", "./.",
-                            "0|1", "1|0", "1|1", ".|.",
-                            "0|2", "2|0", "2|1", "1|2", "2|2",
-                            "0/2", "2/0", "2/1", "1/2", "2/2",
-                            GenotypeClass.UNKNOWN_GENOTYPE);
+                List<Bson> genotypesFiltersAnd = new ArrayList<>();
+                List<Bson> genotypesFiltersOr = new ArrayList<>();
+
+                // If empty, should find none. Add non-existing genotype
+                // TODO: Fast empty result
+                if (genotypes.isEmpty()) {
+                    genotypes.add(GenotypeClass.NONE_GT_VALUE);
                 }
 
-                /*
-                    * Query structure:
-                    * and [
-                    *     <genotypeQueryOp> [  // Genotypes filters
-                    *         and [ // Sample 1 - gt=0/1 or gt=1/1
-                    *             or [ gt.0/1 : sampleId, gt.1/1 : sampleId ]
-                    *         ],
-                    *         and [ // Sample 2 - gt=0/0 - default genotype "0/0"
-                    *
-                    *         ]
-                    *     ],
-                    *     or [ // File filters from samples
-                    *         fileId : fileIdFromSample1,
-                    *         fileId : fileIdFromSample2,
-                    *         ...
-                    *     ]
-                    * ]
+                int sampleId = sample.getId();
 
-                 */
+                boolean canFilterSampleByFile = true;
+                boolean defaultGenotypeNegated = false;
 
-                List<Bson> genotypeQueries = new ArrayList<>(genotypesQuery.getValues().size());
-
-                for (KeyOpValue<SampleMetadata, List<String>> sampleGenotypeFilter : genotypesQuery.getValues()) {
-                    SampleMetadata sample = sampleGenotypeFilter.getKey();
-                    List<String> genotypes = sampleGenotypeFilter.getValue();
-
-                    // If empty, should find none. Add non-existing genotype
-                    // TODO: Fast empty result
-                    if (genotypes.isEmpty()) {
-                        genotypes.add(GenotypeClass.NONE_GT_VALUE);
-                    }
-
-                    int sampleId = sample.getId();
-                    List<Bson> genotypesFilters = new ArrayList<>();
-                    List<Bson> genotypesFiltersOr = new ArrayList<>();
-
-                    boolean canFilterSampleByFile = true;
-                    boolean defaultGenotypeNegated = false;
-
-                    for (String genotype : genotypes) {
-                        if (genotype.equals(GenotypeClass.UNKNOWN_GENOTYPE)) {
-                            // We can not filter sample by file if one of the requested genotypes is the unknown genotype
+                for (String genotype : genotypes) {
+                    if (genotype.equals(GenotypeClass.UNKNOWN_GENOTYPE)) {
+                        // We can not filter sample by file if one of the requested genotypes is the unknown genotype
+                        canFilterSampleByFile = false;
+                        break;
+                    } else if (isNegated(genotype)) {
+                        // Do not filter sample by file if the genotypes are negated, unless is a defaultGenotype
+                        if (defaultGenotypes.contains(removeNegation(genotype))) {
+                            canFilterSampleByFile = true;
+                            defaultGenotypeNegated = true;
+                        } else {
                             canFilterSampleByFile = false;
                             break;
-                        } else if (isNegated(genotype)) {
-                            // Do not filter sample by file if the genotypes are negated, unless is a defaultGenotype
-                            if (defaultGenotypes.contains(removeNegation(genotype))) {
-                                canFilterSampleByFile = true;
-                                defaultGenotypeNegated = true;
-                            } else {
-                                canFilterSampleByFile = false;
-                                break;
-                            }
                         }
                     }
+                }
 
-                    if (canFilterSampleByFile) {
-                        // Extra filter by FILE IDs associated to the sample
+                if (canFilterSampleByFile) {
+                    // Extra filter by FILE IDs associated to the sample
+                    List<Integer> fileIdsFromSample = metadataManager.getFileIdsFromSampleId(defaultStudy.getId(), sampleId, true);
 
-                        List<Integer> fileIdsFromSample = new ArrayList<>();
-                        for (Integer file : metadataManager.getIndexedFiles(defaultStudy.getId())) {
-                            FileMetadata fileMetadata = metadataManager.getFileMetadata(defaultStudy.getId(), file);
-                            if (fileMetadata.getSamples().contains(sampleId)) {
-                                fileIdsFromSample.add(file);
-                            }
-                        }
-
-                        String key = studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD
-                                + '.' + DocumentToStudyVariantEntryConverter.FILEID_FIELD;
-                        if (defaultGenotypeNegated) {
-                            Bson negatedFile;
-                            if (fileIdsFromSample.size() == 1) {
-                                negatedFile = ne(key, fileIdsFromSample.get(0));
-                            } else {
-                                negatedFile = nin(key, fileIdsFromSample);
-                            }
-                            genotypesFiltersOr.add(negatedFile);
-                        } else if (genotypesQuery.getOperation() == QueryOperation.OR) {
-                            if (fileIdsFromSample.size() == 1) {
-                                genotypesFilters.add(eq(key, fileIdsFromSample.get(0)));
-                            } else {
-                                genotypesFilters.add(in(key, fileIdsFromSample));
-                            }
+                    String key = studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD
+                            + '.' + DocumentToStudyVariantEntryConverter.FILEID_FIELD;
+                    if (defaultGenotypeNegated) {
+                        Bson negatedFile;
+                        if (fileIdsFromSample.size() == 1) {
+                            negatedFile = ne(key, fileIdsFromSample.get(0));
                         } else {
-                            // FILE ID filter can be added at the end, together with the main FILE filter
-                            fileIdGroupsFromSamples.add(fileIdsFromSample);
-                            fileIdsFromSamples.addAll(fileIdsFromSample);
+                            negatedFile = nin(key, fileIdsFromSample);
                         }
+                        genotypesFiltersOr.add(negatedFile);
+                    } else if (genotypesQuery.getOperation() == QueryOperation.OR) {
+                        if (fileIdsFromSample.size() == 1) {
+                            genotypesFiltersAnd.add(eq(key, fileIdsFromSample.get(0)));
+                        } else {
+                            genotypesFiltersAnd.add(in(key, fileIdsFromSample));
+                        }
+                    } else {
+                        // FILE ID filter can be added at the end, together with the main FILE filter
+                        fileIdGroupsFromSamples.add(fileIdsFromSample);
+                        fileIdsFromSamples.addAll(fileIdsFromSample);
+                    }
+                }
+
+                for (String genotype : genotypes) {
+                    if (genotype.equals(GenotypeClass.NA_GT_VALUE)) {
+                        continue;
                     }
 
-                    for (String genotype : genotypes) {
-                        if (genotype.equals(GenotypeClass.NA_GT_VALUE)) {
-                            continue;
-                        }
-
-                        boolean negated = isNegated(genotype);
+                    boolean negated = isNegated(genotype);
+                    if (negated) {
+                        genotype = removeNegation(genotype);
+                    }
+                    if (defaultGenotypes.contains(genotype)) {
+                        // Filter by default genotype, which is missing
+                        // This means that we need to find the sample in all genotypes different than the default genotype
                         if (negated) {
-                            genotype = removeNegation(genotype);
-                        }
-                        if (defaultGenotypes.contains(genotype)) {
-                            // Filter by default genotype, which is missing
-                            // This means that we need to find the sample in all genotypes different than the default genotype
-                            if (negated) {
-                                for (String otherGenotype : loadedGenotypes) {
-                                    if (defaultGenotypes.contains(otherGenotype)) {
-                                        continue;
-                                    }
-                                    String key = studyQueryPrefix
-                                            + DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD
-                                            + '.' + DocumentToSamplesConverter.genotypeToStorageType(otherGenotype);
-                                    genotypesFiltersOr.add(eq(key, sampleId));
+                            for (String otherGenotype : loadedGenotypes) {
+                                if (defaultGenotypes.contains(otherGenotype)) {
+                                    continue;
                                 }
-                            } else {
-                                List<Bson> defaultGenotypeFilter = new ArrayList<>();
-                                for (String otherGenotype : loadedGenotypes) {
-                                    if (defaultGenotypes.contains(otherGenotype)) {
-                                        continue;
-                                    }
-                                    String key = studyQueryPrefix
-                                            + DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD
-                                            + '.' + DocumentToSamplesConverter.genotypeToStorageType(otherGenotype);
-                                    defaultGenotypeFilter.add(ne(key, sampleId));
-                                }
-                                genotypesFiltersOr.add(and(defaultGenotypeFilter));
-                            }
-                        } else {
-                            String key = studyQueryPrefix
-                                    + DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD
-                                    + '.' + DocumentToSamplesConverter.genotypeToStorageType(genotype);
-                            if (negated) {
-                                //and [ {"gt.0|1" : { $ne : <sampleId> } } ]
-                                genotypesFilters.add(ne(key, sampleId));
-                            } else {
-                                //or [ {"gt.0|1" : <sampleId> } ]
+                                String key = studyQueryPrefix
+                                        + DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD
+                                        + '.' + DocumentToSamplesConverter.genotypeToStorageType(otherGenotype);
                                 genotypesFiltersOr.add(eq(key, sampleId));
                             }
+                        } else {
+                            List<Bson> defaultGenotypeFilter = new ArrayList<>();
+                            for (String otherGenotype : loadedGenotypes) {
+                                if (defaultGenotypes.contains(otherGenotype)) {
+                                    continue;
+                                }
+                                String key = studyQueryPrefix
+                                        + DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD
+                                        + '.' + DocumentToSamplesConverter.genotypeToStorageType(otherGenotype);
+                                defaultGenotypeFilter.add(ne(key, sampleId));
+                            }
+                            genotypesFiltersOr.add(and(defaultGenotypeFilter));
                         }
-                    }
-
-                    if (!genotypesFiltersOr.isEmpty()) {
-                        genotypesFilters.add(0, or(genotypesFiltersOr));
-                    }
-                    if (genotypesFilters.size() == 1) {
-                        genotypeQueries.add(genotypesFilters.get(0));
                     } else {
-                        genotypeQueries.add(and(genotypesFilters));
+                        String key = studyQueryPrefix
+                                + DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD
+                                + '.' + DocumentToSamplesConverter.genotypeToStorageType(genotype);
+                        if (negated) {
+                            //and [ {"gt.0|1" : { $ne : <sampleId> } } ]
+                            genotypesFiltersAnd.add(ne(key, sampleId));
+                        } else {
+                            //or [ {"gt.0|1" : <sampleId> } ]
+                            genotypesFiltersOr.add(eq(key, sampleId));
+                        }
                     }
                 }
 
-
-                addAll(filters, genotypesQuery.getOperation(), genotypeQueries);
+                if (!genotypesFiltersOr.isEmpty()) {
+                    genotypesFiltersAnd.add(0, or(genotypesFiltersOr));
+                }
+                if (genotypesFiltersAnd.size() == 1) {
+                    genotypeQueries.add(genotypesFiltersAnd.get(0));
+                } else {
+                    genotypeQueries.add(and(genotypesFiltersAnd));
+                }
             }
 
-            if (fileNames.isEmpty()) {
-                // If there is no valid files filter, add files filter to speed up this query
-                if (!fileIdGroupsFromSamples.isEmpty()) {
-                    if ((genotypesQuery.getOperation() != QueryOperation.AND || fileIdGroupsFromSamples.size() == 1)
-                            && fileIdsFromSamples.containsAll(metadataManager.getIndexedFiles(defaultStudy.getId()))) {
-                        // Do not add files filter if operator is OR and must select all the files.
-                        // i.e. ANY file among ALL indexed files
-                        logger.debug("Skip filter by all files");
-                    } else {
-                        addFileGroupsFilter(filters, studyQueryPrefix, genotypesQuery.getOperation(), fileIdGroupsFromSamples, null);
-                    }
-                }
-            } else {
-                if (fileIdGroupsFromSamples.isEmpty()) {
-                    filters.add(addQueryFilter(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD
-                                    + '.' + DocumentToStudyVariantEntryConverter.FILEID_FIELD,
-                            fileNames, filesOperation,
-                            value -> {
-                                Integer fileId = metadataManager.getFileIdPair(value, false, defaultStudy).getValue();
-                                if (fileId == null) {
-                                    throw VariantQueryException.fileNotFound(value, defaultStudy.getName());
-                                }
-                                if (overlappedFilesFiles) {
-                                    fileId = -fileId;
-                                }
-                                return fileId;
-                            }));
+
+            addAll(filters, genotypesQuery.getOperation(), genotypeQueries);
+        }
+
+        if (fileQuery == null) {
+            // If there is no valid files filter, add files filter to speed up this query
+            if (!fileIdGroupsFromSamples.isEmpty()) {
+                if ((genotypesQuery.getOperation() != QueryOperation.AND || fileIdGroupsFromSamples.size() == 1)
+                        && fileIdsFromSamples.containsAll(metadataManager.getIndexedFiles(defaultStudy.getId()))) {
+                    // Do not add files filter if operator is OR and must select all the files.
+                    // i.e. ANY file among ALL indexed files
+                    logger.debug("Skip filter by all files");
                 } else {
-                    /* FIXME : TASK-8038
-                    // fileIdGroupsFromSamples is not empty. gtQueryOperation is always AND at this point
-                    // assert gtQueryOperation == Operation.AND || gtQueryOperation == null
-                    if (filesOperation == QueryOperation.AND || filesOperation == null) {
-                        // sample = AND, files = AND
-                        // Simple mix
-
-                        // Some files may be negated. Get them, and put them appart
-                        List<Integer> negatedFiles = null;
-                        if (fileNames.stream().anyMatch(VariantQueryUtils::isNegated)) {
-                            negatedFiles = fileNames
-                                    .stream()
-                                    .filter(VariantQueryUtils::isNegated)
-                                    .map(value -> {
-                                        Integer fileId = metadataManager.getFileIdPair(value, false, defaultStudy)
-                                                .getValue();
-                                        if (fileId == null) {
-                                            throw VariantQueryException.fileNotFound(value, defaultStudy.getName());
-                                        }
-                                        if (overlappedFilesFiles) {
-                                            fileId = -fileId;
-                                        }
-                                        return fileId;
-                                    })
-                                    .collect(Collectors.toList());
-                        }
-                        for (Integer fileId : fileIds) {
-                            fileIdGroupsFromSamples.add(Collections.singletonList(fileId));
-                        }
-                        addFileGroupsFilter(builder, studyQueryPrefix, QueryOperation.AND, fileIdGroupsFromSamples, negatedFiles);
-
-                    } else if (filesOperation == QueryOperation.OR) {
-                        // samples = AND, files = OR
-
-                        // Put all files in a group
-                        // the filesOperation==OR will will be expressed with an "$in" of the new group
-                        fileIdGroupsFromSamples.add(fileIds);
-                        addFileGroupsFilter(builder, studyQueryPrefix, QueryOperation.AND, fileIdGroupsFromSamples, null);
-                    }
-                     */
+                    addFileGroupsFilter(filters, studyQueryPrefix, genotypesQuery.getOperation(), fileIdGroupsFromSamples, null);
                 }
+            }
+        } else {
+            if (fileIdGroupsFromSamples.isEmpty()) {
+                filters.add(addQueryFilter(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD
+                                + '.' + DocumentToStudyVariantEntryConverter.FILEID_FIELD,
+                        fileQuery.getValues(), filesOperation,
+                        value -> {
+                            int fileId = value.getValue().getId();
+                            if (overlappedFilesFiles) {
+                                return -fileId;
+                            } else {
+                                return fileId;
+                            }
+                        }));
+            } else {
+                // fileIdGroupsFromSamples is not empty. gtQueryOperation is always AND at this point
+                // assert gtQueryOperation == Operation.AND || gtQueryOperation == null
+                if (filesOperation == QueryOperation.AND || filesOperation == null) {
+                    // sample = AND, files = AND
+                    // Simple mix
 
+                    // Some files may be negated. Get them, and put them appart
+                    List<Integer> negatedFiles = null;
+                    if (fileQuery.stream().anyMatch(NegatableValue::isNegated)) {
+                        negatedFiles = fileQuery
+                                .stream()
+                                .filter(NegatableValue::isNegated)
+                                .map(value -> {
+                                    int fileId = value.getValue().getId();
+                                    if (overlappedFilesFiles) {
+                                        return -fileId;
+                                    } else {
+                                        return fileId;
+                                    }
+                                })
+                                .collect(Collectors.toList());
+                    }
+                    for (Integer fileId : fileIds) {
+                        fileIdGroupsFromSamples.add(Collections.singletonList(fileId));
+                    }
+                    addFileGroupsFilter(filters, studyQueryPrefix, QueryOperation.AND, fileIdGroupsFromSamples, negatedFiles);
+
+                } else if (filesOperation == QueryOperation.OR) {
+                    // samples = AND, files = OR
+
+                    // Put all files in a group
+                    // the filesOperation==OR will be expressed with an "$in" of the new group
+                    fileIdGroupsFromSamples.add(fileIds);
+                    addFileGroupsFilter(filters, studyQueryPrefix, QueryOperation.AND, fileIdGroupsFromSamples, null);
+                }
             }
 
         }
+
         return filters;
     }
 
@@ -963,7 +933,8 @@ public class VariantMongoDBQueryParser {
         } else if (operation == QueryOperation.OR) {
             filters.add(Filters.or(fileQueries));
         } else {
-            filters.add(Filters.and(fileQueries));
+//            filters.add(Filters.and(fileQueries));
+            filters.addAll(fileQueries);
         }
     }
 
@@ -1251,8 +1222,14 @@ public class VariantMongoDBQueryParser {
         final Bson filter;
         if (values.size() == 1) {
             S elem = values.iterator().next();
-            if (elem instanceof String && isNegated((String) elem)) {
-                T mapped = map.apply((S) removeNegation((String) elem));
+            if (elem instanceof String && isNegated((String) elem)
+                    || elem instanceof NegatableValue && ((NegatableValue<?>) elem).isNegated()) {
+                T mapped;
+                if (elem instanceof String) {
+                    mapped = map.apply((S) removeNegation((String) elem));
+                } else {
+                    mapped = map.apply(elem);
+                }
                 if (mapped instanceof Collection) {
                     filter = nin(key, mapped);
                 } else {
@@ -1291,8 +1268,14 @@ public class VariantMongoDBQueryParser {
             List<Object> listNotIs = new ArrayList<>(values.size());
 
             for (S elem : values) {
-                if (elem instanceof String && isNegated((String) elem)) {
-                    T mapped = map.apply((S) removeNegation((String) elem));
+                if (elem instanceof String && isNegated((String) elem)
+                        || elem instanceof NegatableValue && ((NegatableValue<?>) elem).isNegated()) {
+                    T mapped;
+                    if (elem instanceof String) {
+                        mapped = map.apply((S) removeNegation((String) elem));
+                    } else {
+                        mapped = map.apply(elem);
+                    }
                     if (mapped instanceof Collection) {
                         listNotIs.addAll(((Collection) mapped));
                     } else {
