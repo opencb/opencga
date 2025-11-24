@@ -123,6 +123,15 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
         @Parameter(names = {"--tool-type"}, description = "Tool type executed by the job [OPERATION, ANALYSIS]", required = false, arity = 1)
         public String toolType; 
     
+        @Parameter(names = {"--tool.minimum-requirements.queue"}, description = "Queue where the job is expected to be executed.", required = false, arity = 1)
+        public String toolMinimumRequirementsQueue; 
+    
+        @Parameter(names = {"--tool.minimum-requirements.processor-type"}, description = "Processor type required to run the job. Allowed values: [CPU, GPU, FPGA]", required = false, arity = 1)
+        public String toolMinimumRequirementsProcessorType; 
+    
+        @Parameter(names = {"--execution.queue.id"}, description = "Queue id where the job has been submitted to be executed.", required = false, arity = 1)
+        public String executionQueueId; 
+    
         @Parameter(names = {"--user-id"}, description = "User that created the job", required = false, arity = 1)
         public String userId; 
     
@@ -271,6 +280,15 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
         @Parameter(names = {"--tool-type"}, description = "Tool type executed by the job [OPERATION, ANALYSIS]", required = false, arity = 1)
         public String toolType; 
     
+        @Parameter(names = {"--tool.minimum-requirements.queue"}, description = "Queue where the job is expected to be executed.", required = false, arity = 1)
+        public String toolMinimumRequirementsQueue; 
+    
+        @Parameter(names = {"--tool.minimum-requirements.processor-type"}, description = "Processor type required to run the job. Allowed values: [CPU, GPU, FPGA]", required = false, arity = 1)
+        public String toolMinimumRequirementsProcessorType; 
+    
+        @Parameter(names = {"--execution.queue.id"}, description = "Queue id where the job has been submitted to be executed.", required = false, arity = 1)
+        public String executionQueueId; 
+    
         @Parameter(names = {"--tool.external-executor.id"}, description = "Id of the external executor. This field is only applicable for jobs executed by an external executor.", required = false, arity = 1)
         public String toolExternalExecutorId; 
     
@@ -409,6 +427,15 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
     
         @Parameter(names = {"--tool-type"}, description = "Tool type executed by the job [OPERATION, ANALYSIS]", required = false, arity = 1)
         public String toolType; 
+    
+        @Parameter(names = {"--tool.minimum-requirements.queue"}, description = "Queue where the job is expected to be executed.", required = false, arity = 1)
+        public String toolMinimumRequirementsQueue; 
+    
+        @Parameter(names = {"--tool.minimum-requirements.processor-type"}, description = "Processor type required to run the job. Allowed values: [CPU, GPU, FPGA]", required = false, arity = 1)
+        public String toolMinimumRequirementsProcessorType; 
+    
+        @Parameter(names = {"--execution.queue.id"}, description = "Queue id where the job has been submitted to be executed.", required = false, arity = 1)
+        public String executionQueueId; 
     
         @Parameter(names = {"--tool.external-executor.id"}, description = "Id of the external executor. This field is only applicable for jobs executed by an external executor.", required = false, arity = 1)
         public String toolExternalExecutorId; 
