@@ -44,7 +44,7 @@ public class AnalysisClinicalCommandOptions {
         public SearchInterpretationCommandOptions searchInterpretationCommandOptions;
         public InfoInterpretationCommandOptions infoInterpretationCommandOptions;
         public RunInterpreterExomiserCommandOptions runInterpreterExomiserCommandOptions;
-        public QueryInterpreterRdCommandOptions queryInterpreterRdCommandOptions;
+        public RdInterpreterCommandOptions rdInterpreterCommandOptions;
         public RunInterpreterRdCommandOptions runInterpreterRdCommandOptions;
         public LoadCommandOptions loadCommandOptions;
         public AggregationStatsRgaCommandOptions aggregationStatsRgaCommandOptions;
@@ -85,7 +85,7 @@ public class AnalysisClinicalCommandOptions {
         this.searchInterpretationCommandOptions = new SearchInterpretationCommandOptions();
         this.infoInterpretationCommandOptions = new InfoInterpretationCommandOptions();
         this.runInterpreterExomiserCommandOptions = new RunInterpreterExomiserCommandOptions();
-        this.queryInterpreterRdCommandOptions = new QueryInterpreterRdCommandOptions();
+        this.rdInterpreterCommandOptions = new RdInterpreterCommandOptions();
         this.runInterpreterRdCommandOptions = new RunInterpreterRdCommandOptions();
         this.loadCommandOptions = new LoadCommandOptions();
         this.aggregationStatsRgaCommandOptions = new AggregationStatsRgaCommandOptions();
@@ -791,8 +791,8 @@ public class AnalysisClinicalCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"interpreter-rd-query"}, commandDescription ="RD interpretation analysis")
-    public class QueryInterpreterRdCommandOptions {
+    @Parameters(commandNames = {"interpreter-rd"}, commandDescription ="Rare disease interpretation analysis")
+    public class RdInterpreterCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
@@ -820,7 +820,7 @@ public class AnalysisClinicalCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"interpreter-rd-run"}, commandDescription ="Run clinical interpretation analysis for rare diseases")
+    @Parameters(commandNames = {"interpreter-rd-run"}, commandDescription ="Run interpretation analysis for rare diseases")
     public class RunInterpreterRdCommandOptions {
     
         @ParametersDelegate

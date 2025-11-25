@@ -375,10 +375,10 @@ class ClinicalAnalysis(_ParentRestClient):
 
         return self._post(category='analysis', resource='run', subcategory='clinical/interpreter/exomiser', data=data, **options)
 
-    def query_interpreter_rd(self, **options):
+    def rd_interpreter(self, **options):
         """
-        RD interpretation analysis.
-        PATH: /{apiVersion}/analysis/clinical/interpreter/rd/query
+        Rare disease interpretation analysis.
+        PATH: /{apiVersion}/analysis/clinical/interpreter/rd
 
         :param str clinical_analysis_id: Clinical analysis ID.
         :param str proband_id: Proband ID.
@@ -391,11 +391,11 @@ class ClinicalAnalysis(_ParentRestClient):
             project can be either the ID or UUID.
         """
 
-        return self._get(category='analysis', resource='query', subcategory='clinical/interpreter/rd', **options)
+        return self._get(category='analysis', resource='rd', subcategory='clinical/interpreter', **options)
 
     def run_interpreter_rd(self, data=None, **options):
         """
-        Run clinical interpretation analysis for rare diseases.
+        Run interpretation analysis for rare diseases.
         PATH: /{apiVersion}/analysis/clinical/interpreter/rd/run
 
         :param dict data: Parameters to execute the rare disease

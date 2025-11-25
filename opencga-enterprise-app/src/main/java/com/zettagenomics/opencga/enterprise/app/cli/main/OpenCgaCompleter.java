@@ -44,7 +44,7 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> clinicalList = asList( "acl-update","aggregationstats","annotation-sets-load","clinical-configuration-update","create","distinct","interpretation-aggregation-stats","interpretation-distinct","interpretation-search","interpretation-info","interpreter-exomiser-run","interpreter-rd-query","interpreter-rd-run","load","rga-aggregation-stats","rga-gene-query","rga-gene-summary","rga-index-run","rga-individual-query","rga-individual-summary","rga-variant-query","rga-variant-summary","search","variant-query","acl","delete","update","annotation-sets-annotations-update","info","interpretation-create","interpretation-clear","interpretation-delete","interpretation-revert","interpretation-update","report-update")
+    private List<Candidate> clinicalList = asList( "acl-update","aggregationstats","annotation-sets-load","clinical-configuration-update","create","distinct","interpretation-aggregation-stats","interpretation-distinct","interpretation-search","interpretation-info","interpreter-exomiser-run","interpreter-rd","interpreter-rd-run","load","rga-aggregation-stats","rga-gene-query","rga-gene-summary","rga-index-run","rga-individual-query","rga-individual-summary","rga-variant-query","rga-variant-summary","search","variant-query","acl","delete","update","annotation-sets-annotations-update","info","interpretation-create","interpretation-clear","interpretation-delete","interpretation-revert","interpretation-update","report-update")
             .stream()
             .map(Candidate::new)
             .collect(toList());
