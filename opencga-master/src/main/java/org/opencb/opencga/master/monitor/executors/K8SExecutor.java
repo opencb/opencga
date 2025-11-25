@@ -69,6 +69,7 @@ public class K8SExecutor implements BatchExecutor {
     public static final String K8S_TOLERATIONS = "k8s.tolerations";
     public static final String K8S_SECURITY_CONTEXT = "k8s.securityContext";
     public static final String K8S_POD_SECURITY_CONTEXT = "k8s.podSecurityContext";
+    public static final String AGENT_POOL_OPTION = "agentpool";
     public static final EnvVar DOCKER_HOST = new EnvVar("DOCKER_HOST", "tcp://localhost:2375", null);
     public static final int DEFAULT_TIMEOUT = 30000; // in ms
 
@@ -141,8 +142,12 @@ public class K8SExecutor implements BatchExecutor {
         this.terminationGracePeriodSeconds = execution.getOptions().getInt(K8S_TERMINATION_GRACE_PERIOD_SECONDS, 5 * 60);
         this.logToStdout = execution.getOptions().getBoolean(K8S_LOG_TO_STDOUT, true);
         this.requestFactor = execution.getRequestFactor();
+
         this.nodeSelector = new HashMap<>();
-        this.nodeSelector.put("agentpool", executionQueue.getId());
+        this.nodeSelector.put(AGENT_POOL_OPTION, executionQueue.getId());
+        // Override node selector if defined in execution options
+        this.nodeSelector.putAll(getMap(executionQueue.getOptions(), K8S_NODE_SELECTOR));
+
         if (execution.getOptions().containsKey(K8S_SECURITY_CONTEXT)) {
             securityContext = buildObject(execution.getOptions().get(K8S_SECURITY_CONTEXT), SecurityContext.class);
         } else {
