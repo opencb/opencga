@@ -71,9 +71,9 @@ public class RdInterpretationAnalysis {
     public static final String REGION = "REGION";
     public static final String GENE = "GENE";
     public static final String VARIANT = "VARIANT";
-    
+
     private String clinicalAnalysisId;
-    
+
     private String probandId;
     private String familyId;
     private List<String> panelIds;
@@ -90,8 +90,8 @@ public class RdInterpretationAnalysis {
     private VariantStorageManager variantStorageManager;
     private String token;
 
-    protected Logger logger = LoggerFactory.getLogger(this.getClass());   
-    
+    protected Logger logger = LoggerFactory.getLogger(this.getClass());
+
     private String assembly;
 
     private static Map<ModeOfInheritance, List<ModeOfInheritance>> moiCompatibility;
@@ -225,7 +225,7 @@ public class RdInterpretationAnalysis {
             throw new IllegalArgumentException("Missing clinical analysis ID or family ID");
         }
         if (StringUtils.isNotEmpty(clinicalAnalysisId) && StringUtils.isNotEmpty(probandId)) {
-                throw new IllegalArgumentException("Cannot provide both clinical analysis ID and proband IDs");
+            throw new IllegalArgumentException("Cannot provide both clinical analysis ID and proband IDs");
         }
 
         // Check clinical analysis
@@ -248,7 +248,7 @@ public class RdInterpretationAnalysis {
             // Get clinical analysis panels
             caPanels = ca.getPanels();
         }
-        
+
         // Check proband
         if (StringUtils.isEmpty(probandId)) {
             throw new IllegalArgumentException("Missing proband ID");
@@ -462,7 +462,7 @@ public class RdInterpretationAnalysis {
             switch (evidence.getGenomicFeature().getType()) {
                 case VARIANT: {
                     DiseasePanel.VariantPanel variantPanel = getVariantPanel(panel, variant);
-                    if (variantPanel != null && CollectionUtils.isNotEmpty(variantPanel.getCoordinates())) {
+                    if (variantPanel != null && CollectionUtils.isNotEmpty(variantPanel.getModesOfInheritance())) {
                         for (ModeOfInheritance panelMoi : variantPanel.getModesOfInheritance()) {
                             if (isMoICompatible(moi, panelMoi)) {
                                 return true;
@@ -473,7 +473,7 @@ public class RdInterpretationAnalysis {
                 }
                 case GENE: {
                     DiseasePanel.GenePanel genePanel = getGenePanel(panel, evidence.getGenomicFeature().getGeneName());
-                    if (genePanel != null && CollectionUtils.isNotEmpty(genePanel.getCoordinates())) {
+                    if (genePanel != null && CollectionUtils.isNotEmpty(genePanel.getModesOfInheritance())) {
                         for (ModeOfInheritance panelMoi : genePanel.getModesOfInheritance()) {
                             if (isMoICompatible(moi, panelMoi)) {
                                 return true;
@@ -486,9 +486,11 @@ public class RdInterpretationAnalysis {
                     List<DiseasePanel.RegionPanel> regionPanels = getRegionPanels(panel, variant);
                     if (CollectionUtils.isNotEmpty(regionPanels)) {
                         for (DiseasePanel.RegionPanel regionPanel : regionPanels) {
-                            for (ModeOfInheritance panelMoi : regionPanel.getModesOfInheritance()) {
-                                if (isMoICompatible(moi, panelMoi)) {
-                                    return true;
+                            if (regionPanel != null && CollectionUtils.isNotEmpty(regionPanel.getModesOfInheritance())) {
+                                for (ModeOfInheritance panelMoi : regionPanel.getModesOfInheritance()) {
+                                    if (isMoICompatible(moi, panelMoi)) {
+                                        return true;
+                                    }
                                 }
                             }
                         }
@@ -505,11 +507,14 @@ public class RdInterpretationAnalysis {
     }
 
     private static boolean isMoICompatible(ModeOfInheritance evidenceMoi, ModeOfInheritance panelMoi) {
+        if (evidenceMoi == null || panelMoi == null) {
+            return false;
+        }
         return moiCompatibility.get(evidenceMoi).contains(panelMoi);
     }
 
     private boolean evaluateConsequenceImpact(List<String> soTerms, ClinicalVariantEvidence evidence) {
-        if (CollectionUtils.isEmpty(evidence.getGenomicFeature().getConsequenceTypes())) {
+        if (evidence.getGenomicFeature() == null || CollectionUtils.isEmpty(evidence.getGenomicFeature().getConsequenceTypes())) {
             return false;
         }
 
@@ -850,7 +855,7 @@ public class RdInterpretationAnalysis {
             transcriptId = ct.getTranscriptId();
         }
         if (StringUtils.isEmpty(transcriptId)) {
-            logger.warn("Consequence type (gene name: {}) has no transcript ID, so skipping genomic feature creation.", ct.getGeneName());
+            //logger.warn("Consequence type (gene name: {}) has no transcript ID, so skipping genomic feature creation.", ct.getGeneName());
             return null;
         }
 

@@ -22,14 +22,13 @@ _COMMONS:
       - 1000G:EAS<0.002
       - 1000G:EUR<0.002
       - 1000G:SAS<0.002
-      - GNOMAD_EXOMES:AFR<0.001
-      - GNOMAD_EXOMES:AMR<0.001
-      - GNOMAD_EXOMES:EAS<0.001
-      - GNOMAD_EXOMES:FIN<0.001
-      - GNOMAD_EXOMES:NFE<0.001
-      - GNOMAD_EXOMES:ASJ<0.001
-      - GNOMAD_EXOMES:OTH<0.002
-    cohortStatsMaf: ALL<0.001
+      - GNOMAD_GENOMES:AFR<0.001
+      - GNOMAD_GENOMES:AMR<0.001
+      - GNOMAD_GENOMES:EAS<0.001
+      - GNOMAD_GENOMES:FIN<0.001
+      - GNOMAD_GENOMES:NFE<0.001
+      - GNOMAD_GENOMES:ASJ<0.001
+      - GNOMAD_GENOMES:OTH<0.002
     ct:
       - transcript_ablation
       - splice_acceptor_variant
@@ -68,14 +67,13 @@ _COMMONS:
       - 1000G:EAS<0.01
       - 1000G:EUR<0.01
       - 1000G:SAS<0.01
-      - GNOMAD_EXOMES:AFR<0.01
-      - GNOMAD_EXOMES:AMR<0.01
-      - GNOMAD_EXOMES:EAS<0.01
-      - GNOMAD_EXOMES:FIN<0.01
-      - GNOMAD_EXOMES:NFE<0.01
-      - GNOMAD_EXOMES:ASJ<0.01
-      - GNOMAD_EXOMES:OTH<0.01
-    cohortStatsMaf: ALL<0.01
+      - GNOMAD_GENOMES:AFR<0.01
+      - GNOMAD_GENOMES:AMR<0.01
+      - GNOMAD_GENOMES:EAS<0.01
+      - GNOMAD_GENOMES:FIN<0.01
+      - GNOMAD_GENOMES:NFE<0.01
+      - GNOMAD_GENOMES:ASJ<0.01
+      - GNOMAD_GENOMES:OTH<0.01
     ct:
       - transcript_ablation
       - splice_acceptor_variant
@@ -153,7 +151,6 @@ queries:
   PANEL_REGION:
     filter: PASS
     unknownGenotype: "./."
-    cohortStatsMaf: ALL<0.01
     ct:
       - transcript_ablation
       - splice_acceptor_variant
