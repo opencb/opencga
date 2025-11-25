@@ -21,6 +21,7 @@ public class JobQueueMigration_Task7442 extends MigrationTool {
     protected void run() throws Exception {
         Bson toolRequirementsCheck = Filters.and(
                 Filters.exists("tool.minimumRequirements", true),
+                Filters.ne("tool.minimumRequirements", null),
                 Filters.exists("tool.minimumRequirements.processorType", false)
         );
         MongoDBAdaptor.UpdateDocument updateDocument = new MongoDBAdaptor.UpdateDocument();
