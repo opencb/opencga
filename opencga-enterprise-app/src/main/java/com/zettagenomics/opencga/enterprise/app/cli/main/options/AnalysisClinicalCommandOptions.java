@@ -797,8 +797,23 @@ public class AnalysisClinicalCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--clinical-analysis-id"}, description = "Comma separated list of clinical analysis IDs or names up to a maximum of 100", required = false, arity = 1)
+        @Parameter(names = {"--clinical-analysis-id"}, description = "Clinical analysis ID", required = false, arity = 1)
         public String clinicalAnalysisId; 
+    
+        @Parameter(names = {"--proband-id"}, description = "Proband ID", required = false, arity = 1)
+        public String probandId; 
+    
+        @Parameter(names = {"--family-id"}, description = "Family ID", required = false, arity = 1)
+        public String familyId; 
+    
+        @Parameter(names = {"--panel-ids"}, description = "List of panel IDs (separated by commas)", required = false, arity = 1)
+        public String panelIds; 
+    
+        @Parameter(names = {"--disorder-id"}, description = "Disorder ID", required = false, arity = 1)
+        public String disorderId; 
+    
+        @Parameter(names = {"--config-file"}, description = "RD interpretation configuration file (otherwise the default one will be used)", required = false, arity = 1)
+        public String configFile; 
     
         @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 

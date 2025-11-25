@@ -30,7 +30,7 @@
 #' | searchInterpretation | /{apiVersion}/analysis/clinical/interpretation/search | include, exclude, limit, skip, sort, study, id, uuid, name, clinicalAnalysisId, analystId, methodName, panels, primaryFindings, secondaryFindings, creationDate, modificationDate, status, internalStatus, release |
 #' | infoInterpretation | /{apiVersion}/analysis/clinical/interpretation/{interpretations}/info | include, exclude, interpretations[*], study, version, deleted |
 #' | runInterpreterExomiser | /{apiVersion}/analysis/clinical/interpreter/exomiser/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
-#' | queryInterpreterRd | /{apiVersion}/analysis/clinical/interpreter/rd/query | clinicalAnalysisId, study |
+#' | queryInterpreterRd | /{apiVersion}/analysis/clinical/interpreter/rd/query | clinicalAnalysisId, probandId, familyId, panelIds, disorderId, configFile, study |
 #' | runInterpreterRd | /{apiVersion}/analysis/clinical/interpreter/rd/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | load | /{apiVersion}/analysis/clinical/load | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | aggregationStatsRga | /{apiVersion}/analysis/clinical/rga/aggregationStats | limit, skip, sampleId, individualId, sex, phenotypes, disorders, numParents, geneId, geneName, chromosome, start, end, transcriptId, variants, dbSnps, knockoutType, filter, type, clinicalSignificance, populationFrequency, consequenceType, study, field[*] |
@@ -274,7 +274,12 @@ setMethod("clinicalClient", "OpencgaR", function(OpencgaR, annotationSet, clinic
 
         #' @section Endpoint /{apiVersion}/analysis/clinical/interpreter/rd/query:
         #' RD interpretation analysis.
-        #' @param clinicalAnalysisId Comma separated list of clinical analysis IDs or names up to a maximum of 100.
+        #' @param clinicalAnalysisId Clinical analysis ID.
+        #' @param probandId Proband ID.
+        #' @param familyId Family ID.
+        #' @param panelIds List of panel IDs (separated by commas).
+        #' @param disorderId Disorder ID.
+        #' @param configFile RD interpretation configuration file (otherwise the default one will be used).
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
         queryInterpreterRd=fetchOpenCGA(object=OpencgaR, category="analysis", categoryId=NULL,
                 subcategory="clinical/interpreter/rd", subcategoryId=NULL, action="query", params=params,

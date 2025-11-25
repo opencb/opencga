@@ -380,8 +380,13 @@ class ClinicalAnalysis(_ParentRestClient):
         RD interpretation analysis.
         PATH: /{apiVersion}/analysis/clinical/interpreter/rd/query
 
-        :param str clinical_analysis_id: Comma separated list of clinical
-            analysis IDs or names up to a maximum of 100.
+        :param str clinical_analysis_id: Clinical analysis ID.
+        :param str proband_id: Proband ID.
+        :param str family_id: Family ID.
+        :param str panel_ids: List of panel IDs (separated by commas).
+        :param str disorder_id: Disorder ID.
+        :param str config_file: RD interpretation configuration file
+            (otherwise the default one will be used).
         :param str study: Study [[organization@]project:]study where study and
             project can be either the ID or UUID.
         """
