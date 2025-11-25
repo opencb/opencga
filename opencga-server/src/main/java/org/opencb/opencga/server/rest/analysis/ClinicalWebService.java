@@ -1479,9 +1479,9 @@ public class ClinicalWebService extends AnalysisWebService {
     }
 
     @GET
-    @Path("/interpreter/rd/query")
-    @ApiOperation(value = "RD interpretation analysis", response = Interpretation.class)
-    public Response queryRdInterpretation(
+    @Path("/interpreter/rd")
+    @ApiOperation(value = "Rare disease interpretation analysis", response = Interpretation.class)
+    public Response rdInterpretationAnalysis(
             @ApiParam(value = "Clinical analysis ID") @QueryParam(value = "clinicalAnalysisId") String clinicalAnalysisId,
             @ApiParam(value = "Proband ID") @QueryParam(value = "probandId") String probandId,
             @ApiParam(value = "Family ID") @QueryParam(value = "familyId") String familyId,

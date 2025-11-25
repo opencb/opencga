@@ -129,8 +129,8 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             case "interpreter-exomiser-run":
                 queryResponse = runInterpreterExomiser();
                 break;
-            case "interpreter-rd-query":
-                queryResponse = queryInterpreterRd();
+            case "interpreter-rd":
+                queryResponse = rdInterpreter();
                 break;
             case "interpreter-rd-run":
                 queryResponse = runInterpreterRd();
@@ -618,10 +618,10 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getClinicalAnalysisClient().runInterpreterExomiser(exomiserInterpretationAnalysisParams, queryParams);
     }
 
-    private RestResponse<Interpretation> queryInterpreterRd() throws Exception {
-        logger.debug("Executing queryInterpreterRd in Analysis - Clinical command line");
+    private RestResponse<Interpretation> rdInterpreter() throws Exception {
+        logger.debug("Executing rdInterpreter in Analysis - Clinical command line");
 
-        AnalysisClinicalCommandOptions.QueryInterpreterRdCommandOptions commandOptions = analysisClinicalCommandOptions.queryInterpreterRdCommandOptions;
+        AnalysisClinicalCommandOptions.RdInterpreterCommandOptions commandOptions = analysisClinicalCommandOptions.rdInterpreterCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("clinicalAnalysisId", commandOptions.clinicalAnalysisId);
@@ -635,7 +635,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        return openCGAClient.getClinicalAnalysisClient().queryInterpreterRd(queryParams);
+        return openCGAClient.getClinicalAnalysisClient().rdInterpreter(queryParams);
     }
 
     private RestResponse<Job> runInterpreterRd() throws Exception {

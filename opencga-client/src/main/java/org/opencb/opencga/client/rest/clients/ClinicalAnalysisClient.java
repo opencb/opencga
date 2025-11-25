@@ -366,7 +366,7 @@ public class ClinicalAnalysisClient extends ParentClient {
     }
 
     /**
-     * RD interpretation analysis.
+     * Rare disease interpretation analysis.
      * @param params Map containing any of the following optional parameters.
      *       clinicalAnalysisId: Clinical analysis ID.
      *       probandId: Proband ID.
@@ -378,13 +378,13 @@ public class ClinicalAnalysisClient extends ParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Interpretation> queryInterpreterRd(ObjectMap params) throws ClientException {
+    public RestResponse<Interpretation> rdInterpreter(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("analysis", null, "clinical/interpreter/rd", null, "query", params, GET, Interpretation.class);
+        return execute("analysis", null, "clinical/interpreter", null, "rd", params, GET, Interpretation.class);
     }
 
     /**
-     * Run clinical interpretation analysis for rare diseases.
+     * Run interpretation analysis for rare diseases.
      * @param data Parameters to execute the rare disease interpretation analysis.
      * @param params Map containing any of the following optional parameters.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.

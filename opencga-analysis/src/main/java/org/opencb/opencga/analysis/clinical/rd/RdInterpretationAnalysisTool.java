@@ -41,7 +41,7 @@ import static org.opencb.opencga.core.tools.ResourceManager.ANALYSIS_DIRNAME;
 public class RdInterpretationAnalysisTool extends InterpretationAnalysis {
 
     public static final String ID = "interpretation-rd";
-    public static final String DESCRIPTION = "Run clinical interpretation analysis for rare diseases";
+    public static final String DESCRIPTION = "Run interpretation analysis for rare diseases";
 
     public static final String RD_DIR = "rd";
     public static final String RD_INTERPRETATION_CONFIGURATION_FILE = "rd-interpretation-configuration.yml";
