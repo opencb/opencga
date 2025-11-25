@@ -625,6 +625,11 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("clinicalAnalysisId", commandOptions.clinicalAnalysisId);
+        queryParams.putIfNotEmpty("probandId", commandOptions.probandId);
+        queryParams.putIfNotEmpty("familyId", commandOptions.familyId);
+        queryParams.putIfNotEmpty("panelIds", commandOptions.panelIds);
+        queryParams.putIfNotEmpty("disorderId", commandOptions.disorderId);
+        queryParams.putIfNotEmpty("configFile", commandOptions.configFile);
         queryParams.putIfNotEmpty("study", commandOptions.study);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());

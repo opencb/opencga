@@ -154,6 +154,21 @@ queries:
     filter: PASS
     unknownGenotype: "./."
     cohortStatsMaf: ALL<0.01
+    ct:
+      - transcript_ablation
+      - splice_acceptor_variant
+      - splice_donor_variant
+      - stop_gained
+      - frameshift_variant
+      - stop_lost
+      - start_lost
+      - transcript_amplification
+      - inframe_insertion
+      - inframe_deletion
+      - initiator_codon_variant
+      - missense_variant
+      - splice_region_variant
+      - incomplete_terminal_codon_variant
 
 # Tier configuration with rules to be evaluated in order
 tierConfiguration:

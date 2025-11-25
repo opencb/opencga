@@ -368,7 +368,12 @@ public class ClinicalAnalysisClient extends ParentClient {
     /**
      * RD interpretation analysis.
      * @param params Map containing any of the following optional parameters.
-     *       clinicalAnalysisId: Comma separated list of clinical analysis IDs or names up to a maximum of 100.
+     *       clinicalAnalysisId: Clinical analysis ID.
+     *       probandId: Proband ID.
+     *       familyId: Family ID.
+     *       panelIds: List of panel IDs (separated by commas).
+     *       disorderId: Disorder ID.
+     *       configFile: RD interpretation configuration file (otherwise the default one will be used).
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.

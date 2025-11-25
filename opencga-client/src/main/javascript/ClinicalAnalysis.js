@@ -294,7 +294,12 @@ export default class ClinicalAnalysis extends OpenCGAParentClass {
 
     /** RD interpretation analysis
     * @param {Object} [params] - The Object containing the following optional parameters:
-    * @param {String} [params.clinicalAnalysisId] - Comma separated list of clinical analysis IDs or names up to a maximum of 100.
+    * @param {String} [params.clinicalAnalysisId] - Clinical analysis ID.
+    * @param {String} [params.probandId] - Proband ID.
+    * @param {String} [params.familyId] - Family ID.
+    * @param {String} [params.panelIds] - List of panel IDs (separated by commas).
+    * @param {String} [params.disorderId] - Disorder ID.
+    * @param {String} [params.configFile] - RD interpretation configuration file (otherwise the default one will be used).
     * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */

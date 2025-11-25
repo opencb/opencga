@@ -63,6 +63,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -158,7 +159,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @QueryParam(ParamConstants.CLINICAL_ANALYSIS_SKIP_CREATE_DEFAULT_INTERPRETATION_PARAM) boolean skipCreateInterpretation,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(name = "body", value = "JSON containing clinical analysis information", required = true)
-                    ClinicalAnalysisCreateParams params) {
+            ClinicalAnalysisCreateParams params) {
         try {
             return createOkResponse(clinicalManager.create(studyStr, params.toClinicalAnalysis(), skipCreateInterpretation, queryOptions,
                     token));
@@ -213,7 +214,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)") @QueryParam("attributes") String attributes,
 
             @ApiParam(name = "body", value = "JSON containing clinical analysis information", required = true)
-                    ClinicalAnalysisUpdateParams params) {
+            ClinicalAnalysisUpdateParams params) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
             return createOkResponse(clinicalManager.update(studyStr, query, params, true, queryOptions, token));
@@ -629,7 +630,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @QueryParam("setAs") ParamUtils.SaveInterpretationAs setAs,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(name = "body", value = "JSON containing clinical interpretation information", required = true)
-                    InterpretationCreateParams params) {
+            InterpretationCreateParams params) {
         try {
             if (setAs == null) {
                 setAs = ParamUtils.SaveInterpretationAs.SECONDARY;
@@ -671,7 +672,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = "Interpretation ID") @PathParam("interpretation") String interpretationId,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(name = "body", value = "JSON containing clinical interpretation information", required = true)
-                    InterpretationUpdateParams params) {
+            InterpretationUpdateParams params) {
         try {
             if (primaryFindingsAction == null) {
                 primaryFindingsAction = ParamUtils.UpdateAction.ADD;
@@ -1481,18 +1482,34 @@ public class ClinicalWebService extends AnalysisWebService {
     @Path("/interpreter/rd/query")
     @ApiOperation(value = "RD interpretation analysis", response = Interpretation.class)
     public Response queryRdInterpretation(
-            @ApiParam(value = ParamConstants.CLINICAL_ANALYSES_DESCRIPTION) @QueryParam(value = "clinicalAnalysisId") String clinicalAnalysisId,
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyId) {
+            @ApiParam(value = "Clinical analysis ID") @QueryParam(value = "clinicalAnalysisId") String clinicalAnalysisId,
+            @ApiParam(value = "Proband ID") @QueryParam(value = "probandId") String probandId,
+            @ApiParam(value = "Family ID") @QueryParam(value = "familyId") String familyId,
+            @ApiParam(value = "List of panel IDs (separated by commas)") @QueryParam(value = "panelIds") String panels,
+            @ApiParam(value = "Disorder ID") @QueryParam(value = "disorderId") String disorderId,
+            @ApiParam(value = "RD interpretation configuration file (otherwise the default one will be used)")
+            @QueryParam(value = "configFile") String configFile,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study) {
         try {
-            java.nio.file.Path configPath = opencgaHome.resolve(ResourceManager.ANALYSIS_DIRNAME)
-                    .resolve(RdInterpretationAnalysisTool.RD_DIR)
-                    .resolve(RdInterpretationAnalysisTool.RD_INTERPRETATION_CONFIGURATION_FILE);
+            // Check configuration file
+            java.nio.file.Path configPath;
+            if (StringUtils.isEmpty(configFile)) {
+                configPath = opencgaHome.resolve(ResourceManager.ANALYSIS_DIRNAME)
+                        .resolve(RdInterpretationAnalysisTool.RD_DIR)
+                        .resolve(RdInterpretationAnalysisTool.RD_INTERPRETATION_CONFIGURATION_FILE);
+            } else {
+                configPath = Paths.get(catalogManager.getFileManager().get(study, configFile, QueryOptions.empty(), token)
+                        .first().getUri().getPath()).toAbsolutePath();
+            }
+            // Check panels
+            List<String> panelsIds = StringUtils.isNotEmpty(panels) ? getIdList(panels) : null;
 
             // Execute the RD interpretation analysis
             int startTime = (int) System.currentTimeMillis();
-            RdInterpretationAnalysis rdInterpretationAnalysis = new RdInterpretationAnalysis(clinicalAnalysisId, configPath, studyId,
-                    catalogManager, getVariantStorageManager(), token);
-            org.opencb.biodata.models.clinical.interpretation.Interpretation interpretation = rdInterpretationAnalysis.run();
+            RdInterpretationAnalysis rdInterpretationAnalysis = new RdInterpretationAnalysis(study, catalogManager,
+                    getVariantStorageManager(), token);
+            org.opencb.biodata.models.clinical.interpretation.Interpretation interpretation = rdInterpretationAnalysis
+                    .run(clinicalAnalysisId, probandId, familyId, panelsIds, disorderId, configPath);
             int dbTime = (int) System.currentTimeMillis() - startTime;
 
             // Build the response
