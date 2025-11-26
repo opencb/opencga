@@ -26,10 +26,12 @@ on:
         required: false
         default: "false"
       branch:
+        type: string
         description: "Opencga-enterprise ref to use (optional) used only for manual builds"
         required: false
         default: ""
       task:
+        type: string
         description: "Task to use to compile dependencies (optional) used only for manual builds"
         required: false
         default: ""

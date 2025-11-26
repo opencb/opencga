@@ -9,7 +9,7 @@ on:
         type: string
         required: true
       task:
-        description: "The task to be built (e.g., 'TASK-1234'). Only necessary if not exists branch for enterprise in this task"
+        description: "The task to be built (e.g., 'TASK-1234'). If not provided, the branch will be used."
         type: string
         required: false
       tag:
