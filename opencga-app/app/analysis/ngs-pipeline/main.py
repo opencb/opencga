@@ -34,7 +34,7 @@ def parse_args(argv=None):
     run_parser = subparsers.add_parser("genomics", help="Align reads to reference genome and call variants")
     run_parser.add_argument("-p", "--pipeline", required=True, help="Pipeline JSON file to execute")
     run_parser.add_argument("-s", "--samples", help="Samples to be processed. Accepted format: sample_id::file1,file2::somatic(0/1)::role(F/M/C/U)")
-    run_parser.add_argument("-d", "--data-dir", help="Input directory for data files. Accepted formats: FASTQ, BAM")
+    run_parser.add_argument("--samples-file", help="File containing samples to be processed, one per line. Accepted format: sample_id::file1,file2::somatic(0/1)::role(F/M/C/U)")
     run_parser.add_argument("-i", "--index-dir", help="Directory containing reference and aligner indexes")
     run_parser.add_argument("--steps", default="quality-control,alignment,variant-calling", help="Pipeline step to execute")
     run_parser.add_argument("--overwrite", action="store_true", help="Force re-run even if step previously completed")
@@ -161,10 +161,28 @@ def genomics(args):
     if args.index_dir:
         pipeline.get("input", {}).update({"indexDir": args.index_dir})
 
-    ## 3. Set input in pipeline configuration if provided
+    ## 3. Set samples in pipeline configuration if provided
+    samples = []
+    # 3.1 Check if samples provided via --samples or --samples-file
     if args.samples:
-        pipeline.get("input", {}).update({"samples": []})
+        logger.debug(f"Loading samples from command line: {args.samples}")
         samples = args.samples.split(";")
+    elif args.samples_file:
+        samples_file_path = Path(args.samples_file).resolve()
+        if not samples_file_path.is_file():
+            logger.error(f"ERROR: 'samples-file' not found: {samples_file_path}")
+            return 1
+        logger.debug(f"Loading samples from file: {args.samples_file}")
+        with samples_file_path.open("r", encoding="utf-8") as sfh:
+            for line in sfh:
+                line = line.strip()
+                if line and not line.startswith("#"):
+                    samples.append(line)
+
+    # 3.2 If samples provided, parse and set in pipeline configuration object
+    if samples:
+        # Reset pipeline samples list
+        pipeline.get("input", {}).update({"samples": []})
         for sample in samples:
             ## Parse sample string, format: sample_id::file1,file2::somatic(0/1)::role(T/N/U)
             parts = sample.split("::")
@@ -176,11 +194,14 @@ def genomics(args):
             pipeline.get("input", {}).update({"samples": sample_list})
         logger.debug(f"Input set in pipeline configuration: {pipeline.get('input')}")
 
-    ## 4. Check input files exist
+    # 3.3 Use those in pipeline configuration. If none provided, report error
+    logger.debug("No samples provided via --samples or --samples-file; using pipeline configuration samples.")
     samples = pipeline.get("input", {}).get("samples", [])
     if not samples:
         logger.error("ERROR: No input files specified in pipeline configuration or via --samples")
         return 1
+
+    ## 4. Check input files exist
     for sample in samples:
         for f in sample.get("files", []):
             fpath = Path(f).resolve()
