@@ -57,6 +57,7 @@ def parse_args(argv=None):
     run_parser = subparsers.add_parser("affy", help="Process Affymetrix microarray data")
     run_parser.add_argument("-p", "--pipeline", help="Pipeline JSON file to execute")
     run_parser.add_argument("-s", "--samples", help="Samples to be processed. Accepted format: sample_id::file1,file2::somatic(0/1)::role(F/M/C/U)")
+    run_parser.add_argument("--samples-file", help="File containing samples to be processed, one per line. Accepted format: sample_id::file1,file2::somatic(0/1)::role(F/M/C/U)")
     run_parser.add_argument("-d", "--data-dir", help="Input directory for data files. Accepted format: CEL")
     run_parser.add_argument("--chip-type", help="Affymetrix chip type (e.g., 'Axiom_KU8', 'HG-U133_Plus_2')")
     run_parser.add_argument("-i", "--index-dir", help="Directory containing reference index and APT configuration files")
@@ -128,6 +129,19 @@ def clean(args):
         return 0
     return None
 
+def get_pipeline(pipeline: str):
+    ## 1. Load pipeline configuration
+    pipeline_path = Path(pipeline).resolve()
+    if not pipeline_path.is_file():
+        logger.error(f"ERROR: 'pipeline' configuration file not found: {pipeline_path}")
+        return 1
+    with pipeline_path.open("r", encoding="utf-8") as fh:
+        pipeline = json.load(fh)
+    if not isinstance(pipeline, dict):
+        logger.error(f"ERROR: 'pipeline' configuration is not a JSON object: {pipeline_path}")
+        return 1
+    return pipeline
+
 
 def prepare(args):
     ## 1. Validate the index types
@@ -147,14 +161,18 @@ def prepare(args):
 
 def genomics(args):
     ## 1. Load pipeline configuration
-    pipeline_path = Path(args.pipeline).resolve()
-    if not pipeline_path.is_file():
-        logger.error(f"ERROR: 'pipeline' configuration file not found: {pipeline_path}")
-        return 1
-    with pipeline_path.open("r", encoding="utf-8") as fh:
-        pipeline = json.load(fh)
-    if not isinstance(pipeline, dict):
-        logger.error(f"ERROR: 'pipeline' configuration is not a JSON object: {pipeline_path}")
+    # pipeline_path = Path(args.pipeline).resolve()
+    # if not pipeline_path.is_file():
+    #     logger.error(f"ERROR: 'pipeline' configuration file not found: {pipeline_path}")
+    #     return 1
+    # with pipeline_path.open("r", encoding="utf-8") as fh:
+    #     pipeline = json.load(fh)
+    # if not isinstance(pipeline, dict):
+    #     logger.error(f"ERROR: 'pipeline' configuration is not a JSON object: {pipeline_path}")
+    #     return 1
+    ## 1. Load pipeline configuration
+    pipeline = get_pipeline(args.pipeline)
+    if not pipeline or not isinstance(pipeline, dict):
         return 1
 
     ## 2. Set reference in pipeline configuration if provided
@@ -255,14 +273,8 @@ def rna_seq(args):
 
 def affy(args):
     ## 1. Load pipeline configuration
-    pipeline_path = Path(args.pipeline).resolve()
-    if not pipeline_path.is_file():
-        logger.error(f"ERROR: 'pipeline' configuration file not found: {pipeline_path}")
-        return 1
-    with pipeline_path.open("r", encoding="utf-8") as fh:
-        pipeline = json.load(fh)
-    if not isinstance(pipeline, dict):
-        logger.error(f"ERROR: 'pipeline' configuration is not a JSON object: {pipeline_path}")
+    pipeline = get_pipeline(args.pipeline)
+    if not pipeline or not isinstance(pipeline, dict):
         return 1
 
     ## 2. Set reference in pipeline configuration if provided
