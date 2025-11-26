@@ -51,7 +51,7 @@ jobs:
         with:
           fetch-depth: 10
           ref: ${{ inputs.branch || github.ref_name }}
-      - run:
+      - run: |
           echo "Checked out: ${{ inputs.branch || github.ref_name }}"
       - id: get_opencga_branch
         name: Get OpenCGA branch from pom.xml property
@@ -67,7 +67,7 @@ jobs:
           ref: ${{ steps.get_opencga_branch.outputs.opencga_branch }}
           path: opencga-home
           fetch-depth: '10'
-      - run:
+      - run: |
           echo "Opencga ref: ${{ steps.get_opencga_branch.outputs.opencga_branch }}"
       - name: Set up JDK 8
         uses: actions/setup-java@v4
