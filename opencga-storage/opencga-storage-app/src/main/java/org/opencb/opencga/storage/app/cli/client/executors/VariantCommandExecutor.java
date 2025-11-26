@@ -36,28 +36,29 @@ import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.core.config.storage.StorageEngineConfiguration;
+import org.opencb.opencga.core.models.common.mixins.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
 import org.opencb.opencga.storage.app.cli.CommandExecutor;
 import org.opencb.opencga.storage.app.cli.GeneralCliOptions;
 import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
-import org.opencb.opencga.core.config.storage.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
-import org.opencb.opencga.core.models.common.mixins.GenericRecordAvroJsonMixin;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.search.solr.SolrVariantDBIterator;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 
 import java.io.*;
@@ -68,8 +69,8 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Function;
 
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateFamilyCommandOptions.AGGREGATE_FAMILY_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateCommandOptions.AGGREGATE_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateFamilyCommandOptions.AGGREGATE_FAMILY_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationDeleteCommandOptions.ANNOTATION_DELETE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationQueryCommandOptions.ANNOTATION_QUERY_COMMAND;
@@ -730,10 +731,9 @@ public class VariantCommandExecutor extends CommandExecutor {
         // variantStorageEngine.getConfiguration().getSearch()
 
         // TODO: initialize solrUrl and database (i.e.: core/collection name) from the configuration file
-        String solrUrl = (searchOptions.solrUrl == null ? "http://localhost:8983/solr/" : searchOptions.solrUrl);
-        String dbName = (searchOptions.dbName == null ? "variants" : searchOptions.dbName);
+//        String solrUrl = (searchOptions.solrUrl == null ? "http://localhost:8983/solr/" : searchOptions.solrUrl);
 
-        variantStorageEngine.getConfiguration().getSearch().setHost(solrUrl);
+//        variantStorageEngine.getConfiguration().getSearch().setHost(solrUrl);
 
 //        VariantSearchManager variantSearchManager = new VariantSearchManager(solrUrl, dbName);
 //        VariantSearchManager variantSearchManager = new VariantSearchManager(variantStorageEngine.getStudyConfigurationManager(),
@@ -743,10 +743,10 @@ public class VariantCommandExecutor extends CommandExecutor {
         QueryOptions options = new QueryOptions();
         options.putAll(searchOptions.commonOptions.params);
         // create the database, this method checks if it exists and the solrConfig name
-        if (searchOptions.create) {
-            variantSearchManager.create(dbName, searchOptions.solrConfig);
-            querying = false;
-        }
+//        if (searchOptions.create) {
+//            variantSearchManager.create(dbName, searchOptions.solrConfig);
+//            querying = false;
+//        }
 
         // index
         if (searchOptions.index) {
@@ -757,14 +757,10 @@ public class VariantCommandExecutor extends CommandExecutor {
 
         String mode = variantStorageEngine.getConfiguration().getSearch().getMode();
         if (querying) {
-            if ("cloud".equals(mode)) {
-                if (!variantSearchManager.existsCollection(dbName)) {
-                    throw new IllegalArgumentException("Search " + mode + " '" + dbName + "' does not exists");
-                }
-            } else {
-                if (!variantSearchManager.existsCore(dbName)) {
-                    throw new IllegalArgumentException("Search " + mode + " '" + dbName + "' does not exists");
-                }
+            SearchIndexMetadata indexMetadata = variantSearchManager.getSearchIndexMetadataForQueries();
+
+            if (!variantSearchManager.exists(indexMetadata)) {
+                throw new IllegalArgumentException("Search " + mode + " '" + variantSearchManager.buildCollectionName(indexMetadata) + "' does not exists");
             }
             int count = 0;
             try {
@@ -780,7 +776,7 @@ public class VariantCommandExecutor extends CommandExecutor {
                     queryOptions.put(QueryOptions.SKIP, 0);
                     // TODO: move this to the function mentioned in the previous TODO
                     queryOptions.put(QueryOptions.FACET, searchOptions.facet);
-                    DataResult<FacetField> facetedQueryResult = variantSearchManager.facetedQuery(dbName, query, queryOptions);
+                    DataResult<FacetField> facetedQueryResult = variantSearchManager.facetedQuery(indexMetadata, query, queryOptions);
                     if (facetedQueryResult.getResults() != null && CollectionUtils.isNotEmpty(facetedQueryResult.getResults())) {
                         System.out.println("Faceted fields (" + facetedQueryResult.getResults().size() + "):");
                         facetedQueryResult.getResults().forEach(f -> System.out.println(f.toString()));
@@ -789,7 +785,7 @@ public class VariantCommandExecutor extends CommandExecutor {
                     queryOptions.put(QueryOptions.LIMIT, Integer.MAX_VALUE);
                     queryOptions.put(QueryOptions.SKIP, 0);
 
-                    SolrVariantDBIterator iterator = variantSearchManager.iterator(dbName, query, queryOptions);
+                    SolrVariantDBIterator iterator = variantSearchManager.iterator(indexMetadata, query, queryOptions);
                     System.out.print("[");
                     while (iterator.hasNext()) {
                         Variant variant = iterator.next();

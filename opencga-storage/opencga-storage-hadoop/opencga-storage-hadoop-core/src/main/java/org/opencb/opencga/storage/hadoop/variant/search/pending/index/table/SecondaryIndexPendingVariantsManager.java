@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.hadoop.variant.search;
+package org.opencb.opencga.storage.hadoop.variant.search.pending.index.table;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -23,10 +23,10 @@ public class SecondaryIndexPendingVariantsManager extends PendingVariantsManager
     }
 
     @Override
-    public void discoverPending(MRExecutor mrExecutor, ObjectMap options) throws StorageEngineException {
+    public ObjectMap discoverPending(MRExecutor mrExecutor, ObjectMap options) throws StorageEngineException {
         options = new ObjectMap(options);
         // Never filter by study!
         options.remove(VariantQueryParam.STUDY.key());
-        super.discoverPending(mrExecutor, options);
+        return super.discoverPending(mrExecutor, options);
     }
 }

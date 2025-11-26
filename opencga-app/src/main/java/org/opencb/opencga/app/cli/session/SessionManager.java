@@ -128,7 +128,9 @@ public class SessionManager {
     }
 
     public Path getSessionPath(String hostName) {
-        return sessionFolder.resolve(hostName + SESSION_FILENAME_SUFFIX);
+        String sessionFileName = hostName + SESSION_FILENAME_SUFFIX;
+        sessionFileName = sessionFileName.replaceAll("[^a-zA-Z0-9.-]+", "_"); // Sanitize host name
+        return sessionFolder.resolve(sessionFileName);
     }
 
     public Session getSession() {
@@ -233,10 +235,10 @@ public class SessionManager {
         if (!Files.exists(sessionFolder)) {
             Files.createDirectory(sessionFolder);
         }
+        Path sessionPath = getSessionPath(hostName);
         logger.debug("Saving '{}'", session);
-        logger.debug("Session file '{}'", hostName + SESSION_FILENAME_SUFFIX);
+        logger.debug("Session file '{}'", sessionPath.getFileName());
 
-        Path sessionPath = sessionFolder.resolve(hostName + SESSION_FILENAME_SUFFIX);
         objectWriter.writeValue(sessionPath.toFile(), session);
     }
 

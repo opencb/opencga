@@ -4,10 +4,9 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.io.DataWriter;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchIdGenerator;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsDBCleaner;
-import org.opencb.opencga.storage.hadoop.variant.prune.SecondaryIndexPrunePendingVariantsManager;
 
 import java.io.IOException;
 import java.util.*;
@@ -21,15 +20,14 @@ import java.util.*;
 public class HadoopVariantSearchDataDeleter implements DataWriter<Variant> {
 
     private final String collection;
+    private final VariantSearchIdGenerator idGenerator;
     private final SolrClient solrClient;
     private final PendingVariantsDBCleaner cleaner;
 
-    public HadoopVariantSearchDataDeleter(String collection, SolrClient solrClient, VariantHadoopDBAdaptor dbAdaptor) {
-        this(collection, solrClient, new SecondaryIndexPrunePendingVariantsManager(dbAdaptor).cleaner());
-    }
-
-    public HadoopVariantSearchDataDeleter(String collection, SolrClient solrClient, PendingVariantsDBCleaner cleaner) {
+    public HadoopVariantSearchDataDeleter(String collection, VariantSearchIdGenerator idGenerator,
+                                          SolrClient solrClient, PendingVariantsDBCleaner cleaner) {
         this.collection = collection;
+        this.idGenerator = idGenerator;
         this.solrClient = solrClient;
         this.cleaner = cleaner;
     }
@@ -46,7 +44,7 @@ public class HadoopVariantSearchDataDeleter implements DataWriter<Variant> {
         for (Variant variant : batch) {
             byte[] row = VariantPhoenixKeyFactory.generateVariantRowKey(variant);
             variantRows.add(row);
-            variantIds.add(variant.toString());
+            variantIds.add(idGenerator.getId(variant));
         }
 
         try {

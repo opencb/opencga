@@ -26,6 +26,7 @@ import org.opencb.opencga.storage.benchmark.variant.generators.QueryGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -37,23 +38,19 @@ import java.util.Objects;
  */
 public class VariantStorageEngineRestSampler extends HTTPSampler implements VariantStorageEngineSampler {
 
-    public static final String REST_PATH = "/webservices/rest/v1/analysis/variant/query";
-    public static final String STORAGE_REST_PATH = "/webservices/rest/variants/query";
+    public static final String STORAGE_ENGINE_REST_PATH = "/webservices/rest/variants/query";
     private Logger logger = LoggerFactory.getLogger(getClass());
     private QueryGenerator queryGenerator;
 
     public VariantStorageEngineRestSampler() {
-        setPath(STORAGE_REST_PATH);
-        setMethod("GET");
     }
 
-    public VariantStorageEngineRestSampler(String host, int port) {
-        this();
-        setDomain(host);
-        setPort(port);
+    public VariantStorageEngineRestSampler(URI url) {
+        this(url.getScheme(), url.getHost(), url.getPath(), url.getPort());
     }
 
-    public VariantStorageEngineRestSampler(String host, String path, int port) {
+    public VariantStorageEngineRestSampler(String protocol, String host, String path, int port) {
+        setProtocol(protocol);
         setDomain(host);
         setPort(port);
         setPath(path);
@@ -64,13 +61,21 @@ public class VariantStorageEngineRestSampler extends HTTPSampler implements Vari
     public String getQueryString(String contentEncoding) {
         StringBuilder sb = new StringBuilder(super.getQueryString(contentEncoding));
 
-        if (sb.length() != 0) {
-            sb.append('&');
+        try {
+            Query query = getQueryGenerator().generateQuery(new Query());
+            for (Map.Entry<String, Object> entry : query.entrySet()) {
+                String key = entry.getKey();
+                Object value = entry.getValue();
+                if (sb.length() != 0) {
+                    sb.append('&');
+                }
+                sb.append(key).append('=').append(value);
+            }
+            return encodedString(sb.toString());
+        } catch (Exception e) {
+            logger.warn("Error generating query string", e);
+            throw e;
         }
-
-        Query query = getQueryGenerator().generateQuery(new Query());
-        query.forEach((key, value) -> sb.append(key).append('=').append(value).append('&'));
-        return encodedString(sb.toString());
     }
 
     @Override
