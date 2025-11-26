@@ -25,7 +25,14 @@ on:
         type: string
         required: false
         default: "false"
-
+      branch:
+        description: "Opencga-enterprise ref to use (optional) used only for manual builds"
+        required: false
+        default: ""
+      task:
+        description: "Task to use to compile dependencies (optional) used only for manual builds"
+        required: false
+        default: ""
     outputs:
       version:
         description: "XetaBase project version"
@@ -40,7 +47,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: '10'
+          fetch-depth: 10
+          ref: ${{ inputs.branch || github.ref_name }}
+      - run:
+          echo "Checked out: ${{ inputs.branch || github.ref_name }}"
       - id: get_opencga_branch
         name: Get OpenCGA branch from pom.xml property
         run: |
@@ -55,6 +65,8 @@ jobs:
           ref: ${{ steps.get_opencga_branch.outputs.opencga_branch }}
           path: opencga-home
           fetch-depth: '10'
+      - run:
+          echo "Opencga ref: ${{ steps.get_opencga_branch.outputs.opencga_branch }}"
       - name: Set up JDK 8
         uses: actions/setup-java@v4
         with:
@@ -95,6 +107,9 @@ jobs:
               CLIENTS="$CLIENTS --javascript-client"
           fi
           branch_name=$(git rev-parse --abbrev-ref HEAD)
+          if [[ -n "${{ inputs.task }}" ]]; then 
+            branch_name="${{ inputs.task }}"
+          fi
           ./build.sh --storage-hadoop ${{ inputs.storage_hadoop }} --prepare-branches --prepare-hadoop --task "$branch_name" $CLIENTS
         env:
           THIRDPARTY_READ_TOKEN: ${{ secrets.THIRDPARTY_READ_TOKEN }}
