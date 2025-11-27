@@ -101,7 +101,7 @@ public abstract class MongoDBAdaptor extends AbstractDBAdaptor {
         T execute(ClientSession session) throws CatalogException;
     }
 
-    protected <T> T runTransaction(TransactionBodyWithException<T> body) throws CatalogException {
+    public <T> T runTransaction(TransactionBodyWithException<T> body) throws CatalogException {
         return runTransaction(body, null);
     }
 
