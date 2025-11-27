@@ -45,7 +45,6 @@ import org.opencb.opencga.storage.core.variant.query.*;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantQueryParser;
-import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTask;
@@ -71,17 +70,6 @@ import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.Variant
  */
 public class VariantSqlQueryParser {
 
-    public static final List<String> DEFAULT_LOADED_GENOTYPES = Collections.unmodifiableList(Arrays.asList(
-            ".", "./.",
-            "0/0", "0|0",
-            "0/1", "1/0", "1/1",
-            "0/2", "1/2", "2/2",
-            "0/3", "1/3", "2/3", "3/3",
-            ".|.",
-            "0|1", "1|0", "1|1",
-            "0|2", "2|0", "2|1", "1|2", "2|2",
-            "0|3", "1|3", "2|3", "3|3",
-            "3|0", "3|1", "3|2"));
     private final Configuration conf;
     private final String variantTable;
     private final Logger logger = LoggerFactory.getLogger(VariantSqlQueryParser.class);
@@ -1149,7 +1137,7 @@ public class VariantSqlQueryParser {
 //        Map<String, String> infoValuesMap = pair.getValue();
 
         if (!parsedQuery.getValues().isEmpty()) {
-            List<String> fixedAttributes = HBaseToVariantConverter.getFixedAttributes(defaultStudyMetadata);
+            List<String> fixedAttributes = VariantQueryParser.getFixedAttributes(defaultStudyMetadata);
 
             List<String> fileDataFilters = new ArrayList<>(parsedQuery.size());
             for (KeyValues<String, KeyOpValue<String, String>> fileDataValues : parsedQuery.getValues()) {
@@ -1245,7 +1233,7 @@ public class VariantSqlQueryParser {
         ParsedQuery<KeyValues<SampleMetadata, KeyOpValue<String, String>>> sampleDataQuery = query.getStudyQuery().getSampleDataQuery();
 
         if (!sampleDataQuery.isEmpty()) {
-            List<String> fixedFormat = HBaseToVariantConverter.getFixedFormat(defaultStudyMetadata);
+            List<String> fixedFormat = VariantQueryParser.getFixedFormat(defaultStudyMetadata);
 
             int i = -1;
             List<String> samplesFilters = new LinkedList<>();

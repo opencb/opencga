@@ -11,8 +11,10 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.exceptions.NonStandardCompliantSampleField;
+import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
+import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
@@ -1108,6 +1110,45 @@ public class VariantQueryParser {
             }
         }
         return removedRegions;
+    }
+
+    /**
+     * Get fixed format for the VARCHAR ARRAY sample columns.
+     * @param studyMetadata study metadata
+     * @return  List of fixed formats
+     */
+    // TODO: TASK-8038 Add to VariantQueryStudyProjection
+    public static List<String> getFixedFormat(StudyMetadata studyMetadata) {
+        List<String> format;
+        List<String> extraFields = studyMetadata.getAttributes().getAsStringList(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key());
+        if (extraFields.isEmpty()) {
+            extraFields = Collections.singletonList(VariantMerger.GENOTYPE_FILTER_KEY);
+        }
+
+        boolean excludeGenotypes = studyMetadata.getAttributes()
+                .getBoolean(EXCLUDE_GENOTYPES.key(), EXCLUDE_GENOTYPES.defaultValue());
+
+        if (excludeGenotypes) {
+            format = new ArrayList<>(extraFields);
+        } else {
+            format = new ArrayList<>(1 + extraFields.size());
+            format.add(VariantMerger.GT_KEY);
+            format.addAll(extraFields);
+        }
+        return format;
+    }
+
+    public static List<String> getFixedAttributes(StudyMetadata studyMetadata) {
+        return getFixedAttributes(studyMetadata.getVariantHeader());
+    }
+
+    public static List<String> getFixedAttributes(VariantFileHeader variantHeader) {
+        return variantHeader
+                .getComplexLines()
+                .stream()
+                .filter(line -> line.getKey().equalsIgnoreCase("INFO"))
+                .map(VariantFileHeaderComplexLine::getId)
+                .collect(Collectors.toList());
     }
 
 }

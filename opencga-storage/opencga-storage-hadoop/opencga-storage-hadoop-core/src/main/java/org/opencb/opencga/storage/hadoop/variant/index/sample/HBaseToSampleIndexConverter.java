@@ -1,20 +1,27 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.commons.Converter;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.io.bit.BitInputStream;
+import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexEntry;
+import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexVariant;
+import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexVariantBiConverter;
+import org.opencb.opencga.storage.core.variant.index.sample.schema.FileDataSchema;
+import org.opencb.opencga.storage.core.variant.index.sample.schema.FileIndexSchema;
+import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntry.SampleIndexGtEntry;
+import org.opencb.opencga.storage.core.variant.index.core.IndexUtils;
+import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexEntry.SampleIndexGtEntry;
 
 import java.nio.ByteBuffer;
 import java.util.*;
 
-import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.*;
+import static org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema.*;
 
 /**
  * Converts Results to SampleIndexEntry.
@@ -117,12 +124,25 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
         }
         Map<String, List<Variant>> map = new HashMap<>();
         for (Cell cell : result.rawCells()) {
-            if (SampleIndexSchema.isGenotypeColumn(cell)) {
+            if (SampleIndexSchema.isGenotypeColumn(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength())) {
                 String gt = Bytes.toString(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
-                map.put(gt, converter.toVariants(cell));
+                map.put(gt, toVariants(cell));
             }
         }
         return map;
+    }
+
+    public List<Variant> toVariants(Cell cell) {
+        List<Variant> variants;
+        if (isGenotypeColumn(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength())) {
+            byte[] row = CellUtil.cloneRow(cell);
+            String chromosome = SampleIndexSchema.chromosomeFromRowKey(row);
+            int batchStart = SampleIndexSchema.batchStartFromRowKey(row);
+            variants = converter.toVariants(chromosome, batchStart, cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
+        } else {
+            variants = Collections.emptyList();
+        }
+        return variants;
     }
 
     public Map<String, TreeSet<SampleIndexVariant>> convertToMapSampleVariantIndex(Result result) {
@@ -138,14 +158,14 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
         Map<String, ByteBuffer> fileDataMap = new HashMap<>();
         for (Cell cell : result.rawCells()) {
             if (columnStartsWith(cell, FILE_PREFIX_BYTES)) {
-                String gt = SampleIndexSchema.getGt(cell, FILE_PREFIX_BYTES);
+                String gt = getGt(cell, FILE_PREFIX_BYTES);
                 BitInputStream bis = new BitInputStream(
                         cell.getValueArray(),
                         cell.getValueOffset(),
                         cell.getValueLength());
                 fileIndexMap.put(gt, bis);
             } else if (columnStartsWith(cell, FILE_DATA_PREFIX_BYTES)) {
-                String gt = SampleIndexSchema.getGt(cell, FILE_DATA_PREFIX_BYTES);
+                String gt = getGt(cell, FILE_DATA_PREFIX_BYTES);
                 // Slice the buffer.
                 // The wrap buffer contains the whole array, where the position is the offset.
                 // The position might be set to 0 by `.reset()` method, which would allow reading data before offset.
@@ -187,5 +207,9 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
             }
         }
         return count;
+    }
+
+    public static String getGt(Cell cell, byte[] prefix) {
+        return SampleIndexSchema.getGt(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength(), prefix);
     }
 }

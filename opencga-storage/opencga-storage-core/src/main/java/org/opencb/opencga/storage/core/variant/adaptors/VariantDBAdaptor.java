@@ -44,6 +44,9 @@ import java.util.Map;
  */
 public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
 
+    String NATIVE = "native";
+    String QUIET = "quiet";
+
     /**
      * Fetch all variants resulting of executing the query in the database. Returned fields are taken from
      * the 'include' and 'exclude' fields at options.

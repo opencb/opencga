@@ -36,9 +36,9 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.CellBaseRestVariantAnnotator;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntry;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.HBaseSampleIndexDBAdaptor;
+import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexEntry;
+import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 
 import java.net.URI;
 import java.nio.file.Paths;
@@ -949,7 +949,7 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
 
     public void checkSampleIndex(int studyIdActual, int studyIdExpected) throws Exception {
         VariantHadoopDBAdaptor dbAdaptor = (VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor();
-        SampleIndexDBAdaptor sampleIndexDBAdaptor = new SampleIndexDBAdaptor(
+        HBaseSampleIndexDBAdaptor sampleIndexDBAdaptor = new HBaseSampleIndexDBAdaptor(
                 dbAdaptor.getHBaseManager(),
                 dbAdaptor.getTableNameGenerator(),
                 dbAdaptor.getMetadataManager());

@@ -18,10 +18,10 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
-import org.opencb.opencga.storage.hadoop.variant.index.query.LocusQuery;
-import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
+import org.opencb.opencga.storage.core.variant.index.sample.query.LocusQuery;
+import org.opencb.opencga.storage.core.variant.index.sample.query.SampleIndexQuery;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.HBaseSampleIndexDBAdaptor;
+import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
@@ -33,7 +33,7 @@ import java.util.*;
 import static org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator.getDBNameFromVariantsTableName;
 
 /**
- * Iterate over an HBase table with multiple GET operations to specific RowKeys given from {@link SampleIndexDBAdaptor}.
+ * Iterate over an HBase table with multiple GET operations to specific RowKeys given from {@link HBaseSampleIndexDBAdaptor}.
  * return (ImmutableBytesWritable, Result) pairs.
  *
  * Implementation note: {@link TableRecordReader} is not an interface. Has to overwrite all methods to ensure
@@ -41,7 +41,7 @@ import static org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableN
  */
 public class SampleIndexTableRecordReader extends TableRecordReader {
 
-    private final SampleIndexDBAdaptor sampleIndexDBAdaptor;
+    private final HBaseSampleIndexDBAdaptor sampleIndexDBAdaptor;
     private final HBaseManager hBaseManager;
     private final VariantStorageMetadataManager metadataManager;
 
@@ -68,7 +68,7 @@ public class SampleIndexTableRecordReader extends TableRecordReader {
                 tableNameGenerator.getMetaTableName(),
                 conf));
 
-        sampleIndexDBAdaptor = new SampleIndexDBAdaptor(hBaseManager, tableNameGenerator, metadataManager);
+        sampleIndexDBAdaptor = new HBaseSampleIndexDBAdaptor(hBaseManager, tableNameGenerator, metadataManager);
 
         Query query = VariantMapReduceUtil.getQueryFromConfig(conf);
         sampleIndexQuery = sampleIndexDBAdaptor.parseSampleIndexQuery(query);

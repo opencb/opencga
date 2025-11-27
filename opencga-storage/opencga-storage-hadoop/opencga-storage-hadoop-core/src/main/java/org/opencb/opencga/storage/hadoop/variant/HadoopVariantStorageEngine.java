@@ -60,6 +60,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBItera
 import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleDataManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
+import org.opencb.opencga.storage.core.variant.index.sample.executors.*;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
@@ -93,11 +94,10 @@ import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromArchiveMapper;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromFile;
 import org.opencb.opencga.storage.hadoop.variant.gaps.PrepareFillMissingDriver;
 import org.opencb.opencga.storage.hadoop.variant.gaps.write.FillMissingHBaseWriterDriver;
-import org.opencb.opencga.storage.hadoop.variant.index.*;
 import org.opencb.opencga.storage.hadoop.variant.index.family.FamilyIndexLoader;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexAnnotationLoader;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexBuilder;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.HBaseSampleIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDeleteHBaseColumnTask;
 import org.opencb.opencga.storage.hadoop.variant.io.HadoopVariantExporter;
 import org.opencb.opencga.storage.hadoop.variant.mr.StreamVariantDriver;
@@ -161,7 +161,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     private final AtomicReference<VariantHadoopDBAdaptor> dbAdaptor = new AtomicReference<>();
     private Logger logger = LoggerFactory.getLogger(HadoopVariantStorageEngine.class);
     private HBaseVariantTableNameGenerator tableNameGenerator;
-    private final AtomicReference<SampleIndexDBAdaptor> sampleIndexDBAdaptor = new AtomicReference<>();
+    private final AtomicReference<HBaseSampleIndexDBAdaptor> sampleIndexDBAdaptor = new AtomicReference<>();
 
     public HadoopVariantStorageEngine() {
 //        variantReaderUtils = new HdfsVariantReaderUtils(conf);
@@ -1304,14 +1304,14 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         return dbAdaptor.get();
     }
 
-    public SampleIndexDBAdaptor getSampleIndexDBAdaptor() throws StorageEngineException {
+    public HBaseSampleIndexDBAdaptor getSampleIndexDBAdaptor() throws StorageEngineException {
         VariantHadoopDBAdaptor dbAdaptor = getDBAdaptor();
-        SampleIndexDBAdaptor sampleIndexDBAdaptor = this.sampleIndexDBAdaptor.get();
+        HBaseSampleIndexDBAdaptor sampleIndexDBAdaptor = this.sampleIndexDBAdaptor.get();
         if (sampleIndexDBAdaptor == null) {
             synchronized (this.sampleIndexDBAdaptor) {
                 sampleIndexDBAdaptor = this.sampleIndexDBAdaptor.get();
                 if (sampleIndexDBAdaptor == null) {
-                    sampleIndexDBAdaptor = new SampleIndexDBAdaptor(dbAdaptor.getHBaseManager(),
+                    sampleIndexDBAdaptor = new HBaseSampleIndexDBAdaptor(dbAdaptor.getHBaseManager(),
                             dbAdaptor.getTableNameGenerator(), dbAdaptor.getMetadataManager());
                     this.sampleIndexDBAdaptor.set(sampleIndexDBAdaptor);
                 }

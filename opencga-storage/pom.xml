@@ -40,6 +40,7 @@
         <module>opencga-storage-mongodb</module>
         <module>opencga-storage-server</module>
         <module>opencga-storage-benchmark</module>
+        <module>opencga-storage-thirdparty</module>
     </modules>
 
     <dependencyManagement>

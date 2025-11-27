@@ -27,13 +27,8 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
-import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.biodata.tools.commons.Converter;
-import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
@@ -45,7 +40,6 @@ import org.slf4j.LoggerFactory;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory.extractVariantFromResult;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory.extractVariantFromResultSet;
@@ -68,44 +62,6 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
                 .setAnnotationIds(scm.getProjectMetadata().getAnnotation());
         HBaseToVariantStatsConverter statsConverter = new HBaseToVariantStatsConverter();
         this.studyEntryConverter = new HBaseToStudyEntryConverter(scm, statsConverter);
-    }
-
-    /**
-     * Get fixed format for the VARCHAR ARRAY sample columns.
-     * @param studyMetadata study metadata
-     * @return  List of fixed formats
-     */
-    public static List<String> getFixedFormat(StudyMetadata studyMetadata) {
-        List<String> format;
-        List<String> extraFields = studyMetadata.getAttributes().getAsStringList(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key());
-        if (extraFields.isEmpty()) {
-            extraFields = Collections.singletonList(VariantMerger.GENOTYPE_FILTER_KEY);
-        }
-
-        boolean excludeGenotypes = studyMetadata.getAttributes()
-                .getBoolean(VariantStorageOptions.EXCLUDE_GENOTYPES.key(), VariantStorageOptions.EXCLUDE_GENOTYPES.defaultValue());
-
-        if (excludeGenotypes) {
-            format = new ArrayList<>(extraFields);
-        } else {
-            format = new ArrayList<>(1 + extraFields.size());
-            format.add(VariantMerger.GT_KEY);
-            format.addAll(extraFields);
-        }
-        return format;
-    }
-
-    public static List<String> getFixedAttributes(StudyMetadata studyMetadata) {
-        return getFixedAttributes(studyMetadata.getVariantHeader());
-    }
-
-    public static List<String> getFixedAttributes(VariantFileHeader variantHeader) {
-        return variantHeader
-                .getComplexLines()
-                .stream()
-                .filter(line -> line.getKey().equalsIgnoreCase("INFO"))
-                .map(VariantFileHeaderComplexLine::getId)
-                .collect(Collectors.toList());
     }
 
     public HBaseToVariantConverter<T> configure(HBaseVariantConverterConfiguration configuration) {

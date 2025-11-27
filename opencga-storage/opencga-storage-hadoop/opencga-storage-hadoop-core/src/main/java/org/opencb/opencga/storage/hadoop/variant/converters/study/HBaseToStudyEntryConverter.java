@@ -32,11 +32,11 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
-import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseVariantConverterConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.HBaseToVariantStatsConverter;
@@ -430,7 +430,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             return;
         }
 
-        List<String> fixedAttributes = HBaseToVariantConverter.getFixedAttributes(studyMetadata);
+        List<String> fixedAttributes = VariantQueryParser.getFixedAttributes(studyMetadata);
         HashMap<String, String> attributes = convertFileAttributes(fileColumn, fixedAttributes);
         OriginalCall originalCall = null;
         VariantOverlappingStatus overlappingStatus =
@@ -1033,7 +1033,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
     private List<String> getFixedSampleDataKeys(StudyMetadata studyMetadata) {
         return fixedFormatsMap.computeIfAbsent(studyMetadata.getId(),
-                (s) -> HBaseToVariantConverter.getFixedFormat(studyMetadata));
+                (s) -> VariantQueryParser.getFixedFormat(studyMetadata));
     }
 
     private Set<Integer> getFilesFromReturnedSamples(int studyId) {

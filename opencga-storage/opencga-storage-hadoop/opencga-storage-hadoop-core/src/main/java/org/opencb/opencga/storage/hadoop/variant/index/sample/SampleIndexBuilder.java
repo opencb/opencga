@@ -6,6 +6,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
@@ -24,7 +25,7 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOpti
  */
 public class SampleIndexBuilder {
 
-    private final SampleIndexDBAdaptor sampleIndexDBAdaptor;
+    private final HBaseSampleIndexDBAdaptor sampleIndexDBAdaptor;
     private final HBaseVariantTableNameGenerator tableNameGenerator;
     private final String study;
     private final MRExecutor mrExecutor;
@@ -32,7 +33,7 @@ public class SampleIndexBuilder {
     private final SampleIndexSchema schema;
     private Logger logger = LoggerFactory.getLogger(SampleIndexBuilder.class);
 
-    public SampleIndexBuilder(SampleIndexDBAdaptor sampleIndexDBAdaptor, String study, MRExecutor mrExecutor) {
+    public SampleIndexBuilder(HBaseSampleIndexDBAdaptor sampleIndexDBAdaptor, String study, MRExecutor mrExecutor) {
         this.sampleIndexDBAdaptor = sampleIndexDBAdaptor;
         this.study = study;
         this.mrExecutor = mrExecutor;

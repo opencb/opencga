@@ -28,7 +28,7 @@ public class SampleIndexAnnotationLoader {
 
     private final HBaseVariantTableNameGenerator tableNameGenerator;
     private final MRExecutor mrExecutor;
-    private final SampleIndexDBAdaptor sampleDBAdaptor;
+    private final HBaseSampleIndexDBAdaptor sampleDBAdaptor;
     private final VariantStorageMetadataManager metadataManager;
     private final Logger logger = LoggerFactory.getLogger(SampleIndexAnnotationLoader.class);
 
@@ -37,10 +37,10 @@ public class SampleIndexAnnotationLoader {
         this.tableNameGenerator = tableNameGenerator;
         this.mrExecutor = mrExecutor;
         this.metadataManager = metadataManager;
-        this.sampleDBAdaptor = new SampleIndexDBAdaptor(hBaseManager, tableNameGenerator, this.metadataManager);
+        this.sampleDBAdaptor = new HBaseSampleIndexDBAdaptor(hBaseManager, tableNameGenerator, this.metadataManager);
     }
 
-    public SampleIndexAnnotationLoader(SampleIndexDBAdaptor sampleDBAdaptor, MRExecutor mrExecutor) {
+    public SampleIndexAnnotationLoader(HBaseSampleIndexDBAdaptor sampleDBAdaptor, MRExecutor mrExecutor) {
         this.mrExecutor = mrExecutor;
         this.sampleDBAdaptor = sampleDBAdaptor;
         this.metadataManager = sampleDBAdaptor.getMetadataManager();

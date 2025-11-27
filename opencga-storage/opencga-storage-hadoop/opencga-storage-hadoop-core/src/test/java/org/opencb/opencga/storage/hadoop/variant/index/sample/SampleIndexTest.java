@@ -37,6 +37,9 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexEntry;
+import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexVariantBiConverter;
+import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 import org.opencb.opencga.storage.core.variant.query.*;
 import org.opencb.opencga.storage.core.variant.query.executors.VariantQueryExecutor;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -45,15 +48,15 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
-import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexOnlyVariantQueryExecutor;
-import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantAggregationExecutor;
-import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantQueryExecutor;
+import org.opencb.opencga.storage.core.variant.index.core.IndexUtils;
+import org.opencb.opencga.storage.core.variant.index.sample.executors.SampleIndexOnlyVariantQueryExecutor;
+import org.opencb.opencga.storage.core.variant.index.sample.executors.SampleIndexVariantAggregationExecutor;
+import org.opencb.opencga.storage.core.variant.index.sample.executors.SampleIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.mr.SampleIndexAnnotationLoaderDriver;
-import org.opencb.opencga.storage.hadoop.variant.index.core.CategoricalMultiValuedIndexField;
+import org.opencb.opencga.storage.core.variant.index.core.CategoricalMultiValuedIndexField;
 import org.opencb.opencga.storage.hadoop.variant.index.family.FamilyIndexDriver;
-import org.opencb.opencga.storage.hadoop.variant.index.query.SampleFileIndexQuery;
-import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
+import org.opencb.opencga.storage.core.variant.index.sample.query.SampleFileIndexQuery;
+import org.opencb.opencga.storage.core.variant.index.sample.query.SampleIndexQuery;
 
 import java.nio.file.Paths;
 import java.util.*;
@@ -81,7 +84,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     public static ExternalResource externalResource = new HadoopExternalResource();
 
     private VariantHadoopDBAdaptor dbAdaptor;
-    private SampleIndexDBAdaptor sampleIndexDBAdaptor;
+    private HBaseSampleIndexDBAdaptor sampleIndexDBAdaptor;
     private static boolean loaded = false;
     public static final String STUDY_NAME_3 = "study_3";
     public static final String STUDY_NAME_4 = "study_4";
@@ -305,7 +308,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                     if (entry.getValue().getVariants() == null) {
                         actualVariants = Collections.emptyList();
                     } else {
-                        actualVariants = Lists.newArrayList(converter.toVariantsIterator(entry.getValue()))
+                        actualVariants = Lists.newArrayList(converter.toVariantsIterator(record.getChromosome(), record.getBatchStart(), entry.getValue()))
                                 .stream()
                                 .map(Variant::toString)
                                 .collect(toList());

@@ -13,7 +13,7 @@ import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.HBaseSampleIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,12 +26,12 @@ import java.util.stream.Collectors;
 public class FamilyIndexLoader {
 
     private final VariantStorageMetadataManager metadataManager;
-    private final SampleIndexDBAdaptor sampleIndexDBAdaptor;
+    private final HBaseSampleIndexDBAdaptor sampleIndexDBAdaptor;
     private final MRExecutor mrExecutor;
     private final Logger logger = LoggerFactory.getLogger(FamilyIndexLoader.class);
     private final HBaseVariantTableNameGenerator tableNameGenerator;
 
-    public FamilyIndexLoader(SampleIndexDBAdaptor sampleIndexDBAdaptor, VariantHadoopDBAdaptor dbAdaptor, MRExecutor mrExecutor) {
+    public FamilyIndexLoader(HBaseSampleIndexDBAdaptor sampleIndexDBAdaptor, VariantHadoopDBAdaptor dbAdaptor, MRExecutor mrExecutor) {
         this.sampleIndexDBAdaptor = sampleIndexDBAdaptor;
         this.metadataManager = dbAdaptor.getMetadataManager();
         this.tableNameGenerator = dbAdaptor.getTableNameGenerator();

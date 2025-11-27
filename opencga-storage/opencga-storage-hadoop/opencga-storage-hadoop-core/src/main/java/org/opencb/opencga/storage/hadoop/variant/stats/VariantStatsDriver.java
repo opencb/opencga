@@ -17,6 +17,7 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.utils.MapReduceOutputFile;
@@ -24,7 +25,6 @@ import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
-import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -110,7 +110,7 @@ public class VariantStatsDriver extends AbstractVariantsTableDriver {
     protected void preExecution() throws IOException, StorageEngineException {
         super.preExecution();
         StudyMetadata studyMetadata = getMetadataManager().getStudyMetadata(getStudyId());
-        if (!HBaseToVariantConverter.getFixedFormat(studyMetadata).contains("GT")) {
+        if (!VariantQueryParser.getFixedFormat(studyMetadata).contains("GT")) {
             throw new IllegalArgumentException("Study '" + studyMetadata.getName() + "' does not have Genotypes");
         }
     }

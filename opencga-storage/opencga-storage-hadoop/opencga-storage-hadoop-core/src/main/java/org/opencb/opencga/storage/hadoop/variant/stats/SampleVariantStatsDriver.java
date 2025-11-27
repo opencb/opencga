@@ -29,10 +29,10 @@ import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.hadoop.utils.AvroWritable;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.VariantTableAggregationDriver;
-import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
 import org.opencb.opencga.storage.hadoop.variant.filters.VariantRowFilterFactory;
@@ -250,8 +250,8 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
         super.setupJob(job, archiveTable, variantTable);
 
         StudyMetadata studyMetadata = getMetadataManager().getStudyMetadata(getStudyId());
-        List<String> fixedFormat = HBaseToVariantConverter.getFixedFormat(studyMetadata);
-        List<String> fileAttributes = HBaseToVariantConverter.getFixedAttributes(studyMetadata);
+        List<String> fixedFormat = VariantQueryParser.getFixedFormat(studyMetadata);
+        List<String> fileAttributes = VariantQueryParser.getFixedAttributes(studyMetadata);
 
         job.getConfiguration().set(SAMPLE_IDS, sampleIds.stream().map(Objects::toString).collect(Collectors.joining(",")));
         job.getConfiguration().set(INCLUDE_SAMPLE_IDS, includeSample.stream().map(Objects::toString).collect(Collectors.joining(",")));

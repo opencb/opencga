@@ -28,9 +28,9 @@ import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
-import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.AbstractSampleIndexEntryFilter;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
+import org.opencb.opencga.storage.core.variant.index.sample.query.SampleIndexQuery;
+import org.opencb.opencga.storage.core.variant.index.sample.AbstractSampleIndexEntryFilter;
+import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexQueryParser;
 
 import java.net.URI;
 import java.util.*;

@@ -12,6 +12,9 @@ import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.SplitData;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
+import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexVariant;
+import org.opencb.opencga.storage.core.variant.index.sample.file.SampleIndexVariantConverter;
+import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -21,8 +24,8 @@ import java.io.UncheckedIOException;
 import java.util.*;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.INCLUDE_GENOTYPE;
-import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.getChunkStart;
-import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.validGenotype;
+import static org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema.getChunkStart;
+import static org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema.validGenotype;
 
 /**
  * Created on 14/05/18.
@@ -41,12 +44,12 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
     private final int[] fileIdxMap;
     private final byte[] family;
     private final ObjectMap options;
-    private final SampleIndexDBAdaptor dbAdaptor;
+    private final HBaseSampleIndexDBAdaptor dbAdaptor;
     private final SampleIndexVariantConverter sampleIndexVariantConverter;
     private final boolean includeGenotype;
     private final SampleIndexSchema schema;
 
-    public SampleIndexDBLoader(SampleIndexDBAdaptor dbAdaptor, HBaseManager hBaseManager,
+    public SampleIndexDBLoader(HBaseSampleIndexDBAdaptor dbAdaptor, HBaseManager hBaseManager,
                                VariantStorageMetadataManager metadataManager,
                                int studyId, int fileId, List<Integer> sampleIds,
                                SplitData splitData, ObjectMap options, SampleIndexSchema schema) {

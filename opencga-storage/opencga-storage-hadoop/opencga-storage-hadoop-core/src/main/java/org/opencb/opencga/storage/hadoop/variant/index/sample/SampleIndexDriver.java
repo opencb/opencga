@@ -27,12 +27,15 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexVariant;
+import org.opencb.opencga.storage.core.variant.index.sample.file.SampleIndexVariantConverter;
+import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
-import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.mr.VariantTableSampleIndexOrderMapper;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantAlignedInputFormat;
@@ -184,9 +187,9 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
         }
 
         StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
-        fixedAttributes = HBaseToVariantConverter.getFixedAttributes(studyMetadata);
+        fixedAttributes = VariantQueryParser.getFixedAttributes(studyMetadata);
 
-        fixedFormat = HBaseToVariantConverter.getFixedFormat(studyMetadata);
+        fixedFormat = VariantQueryParser.getFixedFormat(studyMetadata);
         hasGenotype = fixedFormat.contains(VCFConstants.GENOTYPE_KEY);
 
         if (hasGenotype) {
