@@ -18,21 +18,19 @@ package org.opencb.opencga.core.models.operations.variant;
 
 import org.opencb.opencga.core.tools.ToolParams;
 
-import java.util.List;
-
 public class VariantSecondaryAnnotationIndexParams extends ToolParams {
     public static final String DESCRIPTION = "Variant secondary annotation index params.";
 
+    private String region;
+    private boolean overwrite;
+
     public VariantSecondaryAnnotationIndexParams() {
     }
-    public VariantSecondaryAnnotationIndexParams(String region, List<String> sample, boolean overwrite) {
+
+    public VariantSecondaryAnnotationIndexParams(String region, boolean overwrite) {
         this.region = region;
-        this.sample = sample;
         this.overwrite = overwrite;
     }
-    private String region;
-    private List<String> sample;
-    private boolean overwrite;
 
     public String getRegion() {
         return region;
@@ -40,15 +38,6 @@ public class VariantSecondaryAnnotationIndexParams extends ToolParams {
 
     public VariantSecondaryAnnotationIndexParams setRegion(String region) {
         this.region = region;
-        return this;
-    }
-
-    public List<String> getSample() {
-        return sample;
-    }
-
-    public VariantSecondaryAnnotationIndexParams setSample(List<String> sample) {
-        this.sample = sample;
         return this;
     }
 

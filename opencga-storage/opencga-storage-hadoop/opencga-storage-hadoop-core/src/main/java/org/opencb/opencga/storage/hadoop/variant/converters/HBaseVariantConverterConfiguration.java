@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
@@ -32,13 +33,14 @@ public class HBaseVariantConverterConfiguration {
     private final boolean mutableSamplesPosition;
     private final List<String> sampleDataKeys;
     private final boolean includeSampleId;
-    private final boolean includeIndexStatus;
+    private final long searchIndexCreationTs;
+    private final long searchIndexUpdateTs;
     private final boolean sparse;
 
     public HBaseVariantConverterConfiguration(VariantQueryProjection projection, boolean failOnEmptyVariants,
                                               boolean studyNameAsStudyId, boolean simpleGenotypes, String unknownGenotype,
                                               boolean mutableSamplesPosition, List<String> sampleDataKeys, boolean includeSampleId,
-                                              boolean includeIndexStatus, boolean sparse) {
+                                              long searchIndexCreationTs, long searchIndexUpdateTs, boolean sparse) {
         this.projection = projection;
         this.failOnEmptyVariants = failOnEmptyVariants;
         this.studyNameAsStudyId = studyNameAsStudyId;
@@ -47,7 +49,8 @@ public class HBaseVariantConverterConfiguration {
         this.mutableSamplesPosition = mutableSamplesPosition;
         this.sampleDataKeys = sampleDataKeys;
         this.includeSampleId = includeSampleId;
-        this.includeIndexStatus = includeIndexStatus;
+        this.searchIndexCreationTs = searchIndexCreationTs;
+        this.searchIndexUpdateTs = searchIndexUpdateTs;
         this.sparse = sparse;
     }
 
@@ -157,8 +160,12 @@ public class HBaseVariantConverterConfiguration {
         return includeSampleId;
     }
 
-    public boolean getIncludeIndexStatus() {
-        return includeIndexStatus;
+    public long getSearchIndexCreationTs() {
+        return searchIndexCreationTs;
+    }
+
+    public long getSearchIndexUpdateTs() {
+        return searchIndexUpdateTs;
     }
 
     public static class Builder {
@@ -170,7 +177,8 @@ public class HBaseVariantConverterConfiguration {
         private boolean mutableSamplesPosition = true;
         private List<String> sampleDataKeys;
         private boolean includeSampleId;
-        private boolean includeIndexStatus;
+        private long searchIndexCreationTs = -1;
+        private long searchIndexUpdateTs = -1;
         private boolean sparse = false;
 
         public Builder() {
@@ -220,8 +228,9 @@ public class HBaseVariantConverterConfiguration {
             return this;
         }
 
-        public Builder setIncludeIndexStatus(boolean includeIndexStatus) {
-            this.includeIndexStatus = includeIndexStatus;
+        public Builder setIncludeIndexStatus(SearchIndexMetadata indexMetadata) {
+            this.searchIndexCreationTs = indexMetadata.getCreationDateTimestamp();
+            this.searchIndexUpdateTs = indexMetadata.getLastUpdateDateTimestamp();
             return this;
         }
 
@@ -240,7 +249,8 @@ public class HBaseVariantConverterConfiguration {
                     mutableSamplesPosition,
                     sampleDataKeys,
                     includeSampleId,
-                    includeIndexStatus,
+                    searchIndexCreationTs,
+                    searchIndexUpdateTs,
                     sparse);
         }
     }

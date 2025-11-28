@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -82,7 +83,13 @@ public class HadoopMRVariantStatisticsManager extends VariantStatisticsManager {
             postCalculateStats(metadataManager, sm, cohorts, startTime, error);
         }
 
-        dbAdaptor.updateStatsColumns(sm);
+    }
 
+    @Override
+    public void postCalculateStats(VariantStorageMetadataManager metadataManager, StudyMetadata sm,
+                                   Collection<String> cohorts, long startTime,  boolean error) throws StorageEngineException {
+        super.postCalculateStats(metadataManager, sm, cohorts, startTime, error);
+
+        dbAdaptor.updateStatsColumns(sm);
     }
 }

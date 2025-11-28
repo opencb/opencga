@@ -294,9 +294,11 @@ public class FieldConstants {
     public static final String CLINICAL_ANALYSIS_QUALITY_CONTROL_FILES = "List of ClinicalAnalysisQualityControl files.";
 
     //Cohort
+    public static final String COHORT_NAME = "Cohort name.";
     public static final String COHORT_TYPE = "Cohort type that can have the values CASE_CONTROL, CASE_SET, CONTROL_SET, PAIRED, "
             + "PAIRED_TUMOR, AGGREGATE, TIME_SERIES, FAMILY, TRIO and COLLECTION.";
     public static final String COHORT_SAMPLES = "List of cohort samples.";
+    public static final String COHORT_TAGS = "List of tags.";
     public static final String COHORT_NUM_SAMPLES = "Number of samples.";
 
     //File

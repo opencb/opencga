@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.core.variant.dummy;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.config.storage.StorageEngineConfiguration;
+import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageTest;
 
@@ -26,7 +27,7 @@ public interface DummyVariantStorageTest extends VariantStorageTest {
                     .setOptions(new ObjectMap())
             );
             DummyVariantStorageEngine storageManager = new DummyVariantStorageEngine();
-            storageManager.setConfiguration(storageConfiguration, DummyVariantStorageEngine.STORAGE_ENGINE_ID);
+            storageManager.setConfiguration(storageConfiguration, DummyVariantStorageEngine.STORAGE_ENGINE_ID, VariantStorageBaseTest.DB_NAME);
             return storageManager;
         }
     }
