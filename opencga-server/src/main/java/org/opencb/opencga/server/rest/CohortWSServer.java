@@ -33,8 +33,8 @@ import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.tools.annotations.*;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.*;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.HashMap;
@@ -167,6 +167,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.COHORT_NAMES_DESCRIPTION) @QueryParam(ParamConstants.COHORT_NAME_PARAM) String name,
             @ApiParam(value = ParamConstants.COHORT_UUIDS_DESCRIPTION) @QueryParam(ParamConstants.COHORT_UUID_PARAM) String uuid,
             @ApiParam(value = ParamConstants.COHORT_TYPE_DESCRIPTION) @QueryParam(ParamConstants.COHORT_TYPE_PARAM) String type,
+            @ApiParam(value = ParamConstants.COHORT_TAGS_DESCRIPTION) @QueryParam(ParamConstants.COHORT_TAGS_PARAM) String tags,
             @ApiParam(value = ParamConstants.COHORT_CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.COHORT_CREATION_DATE_PARAM) String creationDate,
             @ApiParam(value = ParamConstants.COHORT_MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.COHORT_MODIFICATION_DATE_PARAM) String modificationDate,
             @ApiParam(value = ParamConstants.COHORT_DELETED_DESCRIPTION) @QueryParam(ParamConstants.COHORT_DELETED_PARAM) boolean deleted,
@@ -194,6 +195,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.COHORT_NAMES_DESCRIPTION) @QueryParam(ParamConstants.COHORT_NAME_PARAM) String name,
             @ApiParam(value = ParamConstants.COHORT_UUIDS_DESCRIPTION) @QueryParam(ParamConstants.COHORT_UUID_PARAM) String uuid,
             @ApiParam(value = ParamConstants.COHORT_TYPE_DESCRIPTION) @QueryParam(ParamConstants.COHORT_TYPE_PARAM) String type,
+            @ApiParam(value = ParamConstants.COHORT_TAGS_DESCRIPTION) @QueryParam(ParamConstants.COHORT_TAGS_PARAM) String tags,
             @ApiParam(value = ParamConstants.COHORT_CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.COHORT_CREATION_DATE_PARAM) String creationDate,
             @ApiParam(value = ParamConstants.COHORT_MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.COHORT_MODIFICATION_DATE_PARAM) String modificationDate,
             @ApiParam(value = ParamConstants.COHORT_DELETED_DESCRIPTION) @QueryParam(ParamConstants.COHORT_DELETED_PARAM) boolean deleted,
@@ -273,6 +275,8 @@ public class CohortWSServer extends OpenCGAWSServer {
             @QueryParam("samplesAction") ParamUtils.BasicUpdateAction samplesAction,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
             @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
+            @ApiParam(value = "Action to be performed if the array of tags is being updated.", allowableValues = "ADD,SET,REMOVE",
+                    defaultValue = "ADD") @QueryParam("tagsAction") ParamUtils.BasicUpdateAction tagsAction,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(value = "body") CohortUpdateParams params) {
         try {
@@ -287,6 +291,9 @@ public class CohortWSServer extends OpenCGAWSServer {
 
             actionMap.put(CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
             actionMap.put(CohortDBAdaptor.QueryParams.SAMPLES.key(), samplesAction);
+            if (tagsAction != null) {
+                actionMap.put(CohortDBAdaptor.QueryParams.TAGS.key(), tagsAction);
+            }
             queryOptions.put(Constants.ACTIONS, actionMap);
 
             List<String> cohortIds = getIdList(cohorts);
@@ -409,6 +416,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.COHORT_STATUS_DESCRIPTION) @QueryParam(ParamConstants.COHORT_STATUS_PARAM) String status,
             @ApiParam(value = ParamConstants.COHORT_INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.COHORT_INTERNAL_STATUS_PARAM) String internalStatus,
             @ApiParam(value = ParamConstants.COHORT_ANNOTATION_DESCRIPTION) @QueryParam(ParamConstants.COHORT_ANNOTATION_PARAM) String annotation,
+            @ApiParam(value = ParamConstants.COHORT_TAGS_DESCRIPTION) @QueryParam(ParamConstants.COHORT_TAGS_PARAM) String tags,
             @ApiParam(value = ParamConstants.COHORT_ACL_DESCRIPTION) @QueryParam(ParamConstants.COHORT_ACL_PARAM) String acl,
             @ApiParam(value = ParamConstants.COHORT_SAMPLES_DESCRIPTION) @QueryParam(ParamConstants.COHORT_SAMPLES_PARAM) String samplesStr,
             @ApiParam(value = ParamConstants.COHORT_NUMBER_OF_SAMPLES_DESCRIPTION) @QueryParam(ParamConstants.COHORT_NUMBER_OF_SAMPLES_PARAM) String numSamples,

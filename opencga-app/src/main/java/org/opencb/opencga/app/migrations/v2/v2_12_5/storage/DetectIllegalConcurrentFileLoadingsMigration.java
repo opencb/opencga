@@ -161,7 +161,7 @@ public class DetectIllegalConcurrentFileLoadingsMigration extends StorageMigrati
                                     .getNumMatches();
 
                             File catalogFile = catalogManager.getFileManager().search(study,
-                                    new Query(FileDBAdaptor.QueryParams.URI.key(), UriUtils.createUriSafe(fileMetadata.getPath())),
+                                    new Query(FileDBAdaptor.QueryParams.URI.key(), UriUtils.toUri(fileMetadata.getPath())),
                                     new QueryOptions(), token).first();
                             if (catalogFile == null) {
                                 logger.warn("File '{}'({}) not found in catalog", fileName, fileId);

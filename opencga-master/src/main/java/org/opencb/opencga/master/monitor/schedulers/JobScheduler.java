@@ -10,8 +10,10 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.OrganizationManager;
 import org.opencb.opencga.catalog.utils.CatalogFqn;
+import org.opencb.opencga.catalog.utils.JobExecutionUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.ExecutionQueue;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.organizations.Organization;
 import org.opencb.opencga.core.models.study.Group;
@@ -26,6 +28,7 @@ public class JobScheduler {
     private final String token;
 
     private Map<String, UserRole> userRoles;
+    private final Map<ExecutionQueue.ProcessorType, List<ExecutionQueue>> availableQueues;
 
     private static final float PRIORITY_WEIGHT = 0.6F;
     private static final float IDLE_TIME_WEIGHT = 0.4F;
@@ -35,38 +38,43 @@ public class JobScheduler {
     private final Logger logger = LoggerFactory.getLogger(JobScheduler.class);
 
 
-    public JobScheduler(CatalogManager catalogManager, String token) {
+    public JobScheduler(CatalogManager catalogManager, List<ExecutionQueue> queueList, String token) {
         this.catalogManager = catalogManager;
         this.token = token;
+
+        this.availableQueues = new HashMap<>();
+        for (ExecutionQueue queue : queueList) {
+            if (!availableQueues.containsKey(queue.getProcessorType())) {
+                availableQueues.put(queue.getProcessorType(), new ArrayList<>());
+            }
+            availableQueues.get(queue.getProcessorType()).add(queue);
+        }
     }
 
-    private void getUserRoles() throws CatalogException {
+    private void getUserRoles(String organizationId) throws CatalogException {
         StopWatch stopWatch = StopWatch.createStarted();
         this.userRoles = new HashMap<>();
 
-        List<String> organizationIds = catalogManager.getOrganizationManager().getOrganizationIds(token);
-        for (String organizationId : organizationIds) {
-            if (ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)) {
-                QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.ID.key());
-                catalogManager.getUserManager().search(organizationId, new Query(), options, token).getResults()
-                        .forEach(user -> getUserRole(organizationId, user.getId()).setSuperAdmin(true));
-            } else {
-                Organization organization = catalogManager.getOrganizationManager().get(organizationId,
-                        OrganizationManager.INCLUDE_ORGANIZATION_ADMINS, token).first();
-                getUserRole(organizationId, organization.getOwner()).addOrganizationOwner(organizationId);
-                organization.getAdmins().forEach(user -> getUserRole(organizationId, user).addOrganizationAdmin(organizationId));
+        if (ParamConstants.ADMIN_ORGANIZATION.equals(organizationId)) {
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.ID.key());
+            catalogManager.getUserManager().search(organizationId, new Query(), options, token).getResults()
+                    .forEach(user -> getUserRole(organizationId, user.getId()).setSuperAdmin(true));
+        } else {
+            Organization organization = catalogManager.getOrganizationManager().get(organizationId,
+                    OrganizationManager.INCLUDE_ORGANIZATION_ADMINS, token).first();
+            getUserRole(organizationId, organization.getOwner()).addOrganizationOwner(organizationId);
+            organization.getAdmins().forEach(user -> getUserRole(organizationId, user).addOrganizationAdmin(organizationId));
 
-                QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(StudyDBAdaptor.QueryParams.FQN.key(),
-                        StudyDBAdaptor.QueryParams.GROUPS.key()));
-                catalogManager.getStudyManager().searchInOrganization(organizationId, new Query(), options, token).getResults()
-                        .forEach(study -> {
-                            for (Group group : study.getGroups()) {
-                                if (ParamConstants.ADMINS_GROUP.equals(group.getId())) {
-                                    group.getUserIds().forEach(user -> getUserRole(organizationId, user).addStudyAdmin(study.getFqn()));
-                                }
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(StudyDBAdaptor.QueryParams.FQN.key(),
+                    StudyDBAdaptor.QueryParams.GROUPS.key()));
+            catalogManager.getStudyManager().searchInOrganization(organizationId, new Query(), options, token).getResults()
+                    .forEach(study -> {
+                        for (Group group : study.getGroups()) {
+                            if (ParamConstants.ADMINS_GROUP.equals(group.getId())) {
+                                group.getUserIds().forEach(user -> getUserRole(organizationId, user).addStudyAdmin(study.getFqn()));
                             }
-                        });
-            }
+                        }
+                    });
         }
 
         logger.debug("Time spent fetching user roles: {}", TimeUtils.durationToString(stopWatch));
@@ -152,31 +160,52 @@ public class JobScheduler {
         return appPriority * 0.6f + usersPriority * 0.4f;
     }
 
-    public Iterator<Job> schedule(List<Job> pendingJobs, List<Job> queuedJobs, List<Job> runningJobs) {
+    public Map<String, List<Job>> schedule(String organizationId, List<Job> pendingJobs, Set<String> exhaustedQueues) {
         Date currentDate = new Date();
-        TreeMap<Float, List<Job>> jobTreeMap = new TreeMap<>();
 
-        try {
-            getUserRoles();
-        } catch (CatalogException e) {
-            throw new RuntimeException("Scheduler exception: " + e.getMessage(), e);
+        Map<String, TreeMap<Float, List<Job>>> jobTreeMap = new HashMap<>();
+        for (List<ExecutionQueue> queues : this.availableQueues.values()) {
+            for (ExecutionQueue queue : queues) {
+                if (exhaustedQueues.contains(queue.getId())) {
+                    logger.debug("Organization '{}' has exhausted queue '{}'. Skipping scheduling for this queue.", organizationId,
+                            queue.getId());
+                } else {
+                    jobTreeMap.put(queue.getId(), new TreeMap<>());
+                    logger.debug("Organization '{}' has queue '{}' available for scheduling.", organizationId, queue.getId());
+                }
+            }
         }
 
-        Map<String, Boolean> organizationJobStatus = new HashMap<>();
         try {
-            List<String> organizationIds = catalogManager.getOrganizationManager().getOrganizationIds(token);
-            for (String organizationId : organizationIds) {
-                boolean exceeds = catalogManager.getJobManager().exceedsExecutionLimitQuota(organizationId);
-                organizationJobStatus.put(organizationId, exceeds);
-            }
+            getUserRoles(organizationId);
         } catch (CatalogException e) {
-            throw new RuntimeException("Couldn't get the execution quota status: " + e.getMessage(), e);
+            throw new RuntimeException("Organization '" + organizationId + "'. Scheduler exception: " + e.getMessage(), e);
+        }
+
+        boolean exceeds;
+        try {
+            exceeds = catalogManager.getJobManager().exceedsExecutionLimitQuota(organizationId);
+        } catch (CatalogException e) {
+            throw new RuntimeException("Couldn't get the execution quota status for Organization '" + organizationId + "': "
+                    + e.getMessage(), e);
         }
 
         Map<String, List<Long>> rescheduleJobs = new HashMap<>();
-
         StopWatch stopWatch = StopWatch.createStarted();
         for (Job job : pendingJobs) {
+            String queueId = job.getTool().getMinimumRequirements().getQueue();
+            if (StringUtils.isEmpty(queueId)) {
+                List<ExecutionQueue> executionQueues = this.availableQueues.get(job.getTool().getMinimumRequirements().getProcessorType());
+                queueId = JobExecutionUtils.findOptimalQueues(executionQueues, job.getTool().getMinimumRequirements()).get(0).getId();
+                logger.debug("Job '{}' has no queue defined. Optimal queue for scheduling is '{}' .", job.getId(), queueId);
+            }
+
+            if (exhaustedQueues.contains(queueId)) {
+                logger.debug("Job '{}' can't be queued yet. The queue '{}' has been exhausted for the organization '{}'.",
+                        job.getId(), queueId, organizationId);
+                continue;
+            }
+
             if (StringUtils.isNotEmpty(job.getScheduledStartTime())) {
                 Date date = TimeUtils.toDate(job.getScheduledStartTime());
                 if (date.after(currentDate)) {
@@ -186,9 +215,7 @@ public class JobScheduler {
                 }
             }
 
-            // Check if execution limit quota has been exceeded
-            String organizationId = CatalogFqn.extractFqnFromStudyFqn(job.getStudy().getId()).getOrganizationId();
-            if (organizationJobStatus.get(organizationId)) {
+            if (exceeds) {
                 logger.debug("Job '{}' can't be queued yet. The organization '{}' has exceeded the execution limit quota."
                         + " It will be scheduled for next month.", job.getId(), organizationId);
                 rescheduleJobs.putIfAbsent(job.getStudy().getId(), new ArrayList<>());
@@ -197,19 +224,28 @@ public class JobScheduler {
             }
 
             float priority = getPriorityWeight(job);
-            if (!jobTreeMap.containsKey(priority)) {
-                jobTreeMap.put(priority, new ArrayList<>());
+            if (!jobTreeMap.containsKey(queueId)) {
+                logger.warn("Job '{}' has no queue defined. Skipping scheduling for this job.", job.getId());
+                continue;
             }
-            jobTreeMap.get(priority).add(job);
+            if (!jobTreeMap.get(queueId).containsKey(priority)) {
+                jobTreeMap.get(queueId).put(priority, new ArrayList<>());
+            }
+            jobTreeMap.get(queueId).get(priority).add(job);
         }
         logger.debug("Time spent scheduling jobs: {}", TimeUtils.durationToString(stopWatch));
 
         stopWatch.reset();
         stopWatch.start();
-        // Obtain iterator
-        List<Job> allJobs = new ArrayList<>();
-        for (Float priority : jobTreeMap.descendingKeySet()) {
-            allJobs.addAll(jobTreeMap.get(priority));
+
+        Map<String, List<Job>> allJobs = new HashMap<>();
+        for (Map.Entry<String, TreeMap<Float, List<Job>>> entry : jobTreeMap.entrySet()) {
+            if (!entry.getValue().isEmpty()) {
+                allJobs.put(entry.getKey(), new ArrayList<>());
+                for (Float priority : entry.getValue().descendingKeySet()) {
+                    allJobs.get(entry.getKey()).addAll(entry.getValue().get(priority));
+                }
+            }
         }
         logger.debug("Time spent creating iterator: {}", TimeUtils.durationToString(stopWatch));
 
@@ -236,7 +272,7 @@ public class JobScheduler {
             logger.debug("Time spent rescheduling jobs for next month: {}", TimeUtils.durationToString(stopWatch));
         }
 
-        return allJobs.iterator();
+        return allJobs;
     }
 
     private static class UserRole {

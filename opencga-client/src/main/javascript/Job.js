@@ -55,6 +55,10 @@ export default class Job extends OpenCGAParentClass {
     * @param {String} [params.toolId] - Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e.
     *     '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
     * @param {String} [params.toolType] - Tool type executed by the job [OPERATION, ANALYSIS].
+    * @param {String} [params.tool.minimumRequirements.queue] - Queue where the job is expected to be executed.
+    * @param {String} [params.tool.minimumRequirements.processorType] - Processor type required to run the job. Allowed values: [CPU, GPU,
+    *     FPGA].
+    * @param {String} [params.execution.queue.id] - Queue id where the job has been submitted to be executed.
     * @param {String} [params.userId] - User that created the job.
     * @param {String} [params.priority] - Priority of the job.
     * @param {String} [params.status] - Filter by status.
@@ -101,6 +105,10 @@ export default class Job extends OpenCGAParentClass {
     * @param {String} [params.toolId] - Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e.
     *     '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
     * @param {String} [params.toolType] - Tool type executed by the job [OPERATION, ANALYSIS].
+    * @param {String} [params.tool.minimumRequirements.queue] - Queue where the job is expected to be executed.
+    * @param {String} [params.tool.minimumRequirements.processorType] - Processor type required to run the job. Allowed values: [CPU, GPU,
+    *     FPGA].
+    * @param {String} [params.execution.queue.id] - Queue id where the job has been submitted to be executed.
     * @param {String} [params.tool.externalExecutor.id] - Id of the external executor. This field is only applicable for jobs executed by an
     *     external executor.
     * @param {String} [params.parentId] - Job id that generated this job (if any).
@@ -162,6 +170,10 @@ export default class Job extends OpenCGAParentClass {
     * @param {String} [params.toolId] - Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e.
     *     '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
     * @param {String} [params.toolType] - Tool type executed by the job [OPERATION, ANALYSIS].
+    * @param {String} [params.tool.minimumRequirements.queue] - Queue where the job is expected to be executed.
+    * @param {String} [params.tool.minimumRequirements.processorType] - Processor type required to run the job. Allowed values: [CPU, GPU,
+    *     FPGA].
+    * @param {String} [params.execution.queue.id] - Queue id where the job has been submitted to be executed.
     * @param {String} [params.tool.externalExecutor.id] - Id of the external executor. This field is only applicable for jobs executed by an
     *     external executor.
     * @param {String} [params.parentId] - Job id that generated this job (if any).

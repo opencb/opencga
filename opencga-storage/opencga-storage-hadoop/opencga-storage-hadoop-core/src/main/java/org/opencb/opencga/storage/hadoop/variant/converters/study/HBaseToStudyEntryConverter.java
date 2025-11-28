@@ -1135,5 +1135,15 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         public String getSampleData(int idx) {
             return sampleColumnWithoutFile.getSampleData(idx);
         }
+
+        @Override
+        public boolean hasTimestamp() {
+            return sampleColumnWithoutFile.hasTimestamp();
+        }
+
+        @Override
+        public long getTimestamp() {
+            return sampleColumnWithoutFile.getTimestamp();
+        }
     }
 }

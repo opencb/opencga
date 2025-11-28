@@ -259,11 +259,6 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     }
 
     @Override
-    public MetaDBAdaptor getCatalogMetaDBAdaptor(String organizationId) throws CatalogDBException {
-        return getOrganizationMongoDBAdaptorFactory(organizationId).getCatalogMetaDBAdaptor();
-    }
-
-    @Override
     public OpenCGAResult<Organization> createOrganization(Organization organization, QueryOptions options, String userId)
             throws CatalogException {
         OrganizationMongoDBAdaptorFactory orgFactory = getOrganizationMongoDBAdaptorFactory(organization.getId(), false);
