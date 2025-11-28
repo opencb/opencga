@@ -35,7 +35,6 @@
         <app.dir>${project.basedir}/app</app.dir>
         <sonar.skip>true</sonar.skip>
         <opencga.client.dir>opencga-client-${project.parent.version}</opencga.client.dir>
-
     </properties>
 
     <dependencies>
@@ -717,8 +716,7 @@
             <id>storage-hadoop</id>
             <activation>
                 <property>
-                    <name>storageEngine</name>
-                    <value>hadoop</value>
+                    <name>hadoop</name>
                 </property>
             </activation>
             <dependencies>
@@ -811,8 +809,7 @@
             <id>storage-mongodb</id>
             <activation>
                 <property>
-                    <name>storageEngine</name>
-                    <value>mongodb</value>
+                    <name>!hadoop</name>
                 </property>
             </activation>
             <dependencies>

@@ -103,8 +103,7 @@
             <id>storage-hadoop</id>
             <activation>
                 <property>
-                    <name>storageEngine</name>
-                    <value>hadoop</value>
+                    <name>hadoop</name>
                 </property>
             </activation>
 
