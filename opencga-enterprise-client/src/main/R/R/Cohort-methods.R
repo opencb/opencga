@@ -20,16 +20,16 @@
 #' | endpointName | Endpoint WS | parameters accepted |
 #' | -- | :-- | --: |
 #' | updateAcl | /{apiVersion}/cohorts/acl/{members}/update | study, members[*], action[*], body[*] |
-#' | aggregationStats | /{apiVersion}/cohorts/aggregationStats | study, id, name, uuid, type, creationDate, modificationDate, deleted, status, internalStatus, annotation, acl, samples, numSamples, release, field |
+#' | aggregationStats | /{apiVersion}/cohorts/aggregationStats | study, id, name, uuid, type, creationDate, modificationDate, deleted, status, internalStatus, annotation, tags, acl, samples, numSamples, release, field |
 #' | loadAnnotationSets | /{apiVersion}/cohorts/annotationSets/load | study, variableSetId[*], path[*], parents, annotationSetId, body |
 #' | create | /{apiVersion}/cohorts/create | include, exclude, study, variableSet, variable, includeResult, body[*] |
-#' | distinct | /{apiVersion}/cohorts/distinct | study, id, name, uuid, type, creationDate, modificationDate, deleted, status, internalStatus, annotation, acl, samples, numSamples, release, field[*] |
+#' | distinct | /{apiVersion}/cohorts/distinct | study, id, name, uuid, type, tags, creationDate, modificationDate, deleted, status, internalStatus, annotation, acl, samples, numSamples, release, field[*] |
 #' | generate | /{apiVersion}/cohorts/generate | include, exclude, study, id, somatic, individualId, fileIds, creationDate, modificationDate, internalStatus, status, phenotypes, annotation, acl, release, snapshot, includeResult, body[*] |
-#' | search | /{apiVersion}/cohorts/search | include, exclude, limit, skip, count, flattenAnnotations, study, id, name, uuid, type, creationDate, modificationDate, deleted, status, internalStatus, annotation, acl, samples, numSamples, release |
+#' | search | /{apiVersion}/cohorts/search | include, exclude, limit, skip, count, flattenAnnotations, study, id, name, uuid, type, tags, creationDate, modificationDate, deleted, status, internalStatus, annotation, acl, samples, numSamples, release |
 #' | acl | /{apiVersion}/cohorts/{cohorts}/acl | cohorts[*], study, member, silent |
 #' | delete | /{apiVersion}/cohorts/{cohorts}/delete | study, cohorts[*] |
 #' | info | /{apiVersion}/cohorts/{cohorts}/info | include, exclude, flattenAnnotations, cohorts[*], study, deleted |
-#' | update | /{apiVersion}/cohorts/{cohorts}/update | include, exclude, cohorts[*], study, samplesAction, annotationSetsAction, includeResult, body |
+#' | update | /{apiVersion}/cohorts/{cohorts}/update | include, exclude, cohorts[*], study, samplesAction, annotationSetsAction, tagsAction, includeResult, body |
 #' | updateAnnotationSetsAnnotations | /{apiVersion}/cohorts/{cohort}/annotationSets/{annotationSet}/annotations/update | cohort[*], study, annotationSet[*], action, body |
 #'
 #' @md
@@ -64,6 +64,7 @@ setMethod("cohortClient", "OpencgaR", function(OpencgaR, annotationSet, cohort, 
         #' @param status status.
         #' @param internalStatus internalStatus.
         #' @param annotation Cohort annotation.
+        #' @param tags Tags. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
         #' @param acl acl.
         #' @param samples Cohort sample IDs.
         #' @param numSamples Number of samples.
@@ -104,6 +105,7 @@ setMethod("cohortClient", "OpencgaR", function(OpencgaR, annotationSet, cohort, 
         #' @param name Comma separated list of cohort names up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
         #' @param uuid Comma separated list of cohort IDs up to a maximum of 100.
         #' @param type Cohort type.
+        #' @param tags Tags. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
         #' @param creationDate creationDate.
         #' @param modificationDate modificationDate.
         #' @param deleted deleted.
@@ -154,6 +156,7 @@ setMethod("cohortClient", "OpencgaR", function(OpencgaR, annotationSet, cohort, 
         #' @param name Comma separated list of cohort names up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
         #' @param uuid Comma separated list of cohort IDs up to a maximum of 100.
         #' @param type Cohort type.
+        #' @param tags Tags. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
         #' @param creationDate creationDate.
         #' @param modificationDate modificationDate.
         #' @param deleted deleted.
@@ -202,6 +205,7 @@ setMethod("cohortClient", "OpencgaR", function(OpencgaR, annotationSet, cohort, 
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
         #' @param samplesAction Action to be performed if the array of samples is being updated. Allowed values: ['ADD SET REMOVE']
         #' @param annotationSetsAction Action to be performed if the array of annotationSets is being updated. Allowed values: ['ADD SET REMOVE']
+        #' @param tagsAction Action to be performed if the array of tags is being updated. Allowed values: ['ADD SET REMOVE']
         #' @param includeResult Flag indicating to include the created or updated document result in the response.
         #' @param data body.
         update=fetchOpenCGA(object=OpencgaR, category="cohorts", categoryId=cohorts, subcategory=NULL,

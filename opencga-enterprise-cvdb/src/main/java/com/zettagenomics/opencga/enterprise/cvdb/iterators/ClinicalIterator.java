@@ -68,4 +68,8 @@ public class ClinicalIterator<M,N,C extends SearchConverter<M, N>> extends Clini
     public long getNumFound() {
         return nativeSolrIterator.getNumFound();
     }
+
+    public C getConverter() {
+        return converter;
+    }
 }

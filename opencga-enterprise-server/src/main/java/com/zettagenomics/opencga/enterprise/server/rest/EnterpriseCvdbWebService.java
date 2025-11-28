@@ -1,16 +1,13 @@
 package com.zettagenomics.opencga.enterprise.server.rest;
 
 import com.zettagenomics.opencga.enterprise.catalog.managers.EnterpriseFactory;
-import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import com.zettagenomics.opencga.enterprise.cvdb.CvdbSolrEngine;
-import com.zettagenomics.opencga.enterprise.cvdb.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.CvdbIndexTask;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.CvdbUpdateAclTask;
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbIndexTaskParams;
-import com.zettagenomics.opencga.enterprise.server.commons.EnterpriseParamConstants;
-
 import com.zettagenomics.opencga.enterprise.cvdb.tasks.params.CvdbUpdateAclTaskParams;
-
+import com.zettagenomics.opencga.enterprise.server.CvdbWSUtils;
+import com.zettagenomics.opencga.enterprise.server.commons.EnterpriseParamConstants;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.biodata.models.clinical.interpretation.stats.ClinicalVariantSummaryStats;
@@ -25,7 +22,6 @@ import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobType;
 import org.opencb.opencga.core.tools.annotations.*;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
-import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -35,7 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.zettagenomics.opencga.enterprise.core.api.ParamConstants.*;
 import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParam.*;
-import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParser.*;
+import static com.zettagenomics.opencga.enterprise.cvdb.parsers.ClinicalQueryParser.CV_FACET_FIELDS;
 import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 
 @Path("/{apiVersion}/analysis/cvdb")
@@ -57,13 +53,14 @@ public class EnterpriseCvdbWebService extends OpenCGAWSServer {
         CvdbSolrEngine cvdbEngine = cvdbEngineAtomicRef.get();
         if (cvdbEngine == null) {
             synchronized(cvdbEngineAtomicRef) {
-                cvdbEngine = cvdbEngineAtomicRef.get();
-                if (cvdbEngine == null) {
-                    logger.info("Initializing CVDB Solr Engine");
-                    EnterpriseConfiguration enterpriseConfiguration = EnterpriseConfiguration.load(opencgaHome);
-                    cvdbEngine = new CvdbSolrEngine(enterpriseConfiguration.getCvdb(), catalogManager, new VariantStorageMetadataManager(
-                            new DummyVariantStorageMetadataDBAdaptorFactory()));
-                    cvdbEngineAtomicRef.set(cvdbEngine);
+                try {
+                    cvdbEngine = cvdbEngineAtomicRef.get();
+                    if (cvdbEngine == null) {
+                        cvdbEngine = CvdbWSUtils.getCvdbSolrEngine(catalogManager, opencgaHome);
+                        cvdbEngineAtomicRef.set(cvdbEngine);
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException("Unable to initialize CVDB engine", e);
                 }
             }
         }
