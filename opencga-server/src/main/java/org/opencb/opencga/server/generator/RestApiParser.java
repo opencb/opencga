@@ -302,11 +302,9 @@ public class RestApiParser {
         param.setParentName(parentParamName);
         param.setTypeClass(propertyClass.getName() + ";");
         param.setRequired(isRequired(property));
-        if (property.getField() != null) {
-            DataField dataField = property.getField().getAnnotated().getAnnotation(DataField.class);
-            if (dataField != null && StringUtils.isNotEmpty(dataField.defaultValue())) {
-                param.setDefaultValue(dataField.defaultValue());
-            }
+        DataField dataField = getDataField(property);
+        if (dataField != null && StringUtils.isNotEmpty(dataField.defaultValue())) {
+            param.setDefaultValue(dataField.defaultValue());
         }
         param.setComplex(!CommandLineUtils.isPrimitiveType(propertyClass.getName()));
         param.setDescription(getDescriptionField(variablePrefix, property));
@@ -431,11 +429,10 @@ public class RestApiParser {
             return property.getMetadata().getDescription();
         }
         // Get from custom annotation
-        if (property.getField() != null) {
-            DataField dataField = property.getField().getAnnotated().getAnnotation(DataField.class);
-            if (dataField != null && StringUtils.isNotEmpty(dataField.description())) {
-                return dataField.description();
-            }
+
+        DataField dataField = getDataField(property);
+        if (dataField != null && StringUtils.isNotEmpty(dataField.description())) {
+            return dataField.description();
         }
 
         // Get from ParamConstants
@@ -447,8 +444,10 @@ public class RestApiParser {
                 barField.setAccessible(true);
                 return (String) barField.get(null);
             }
-        } catch (Exception ignore) {
+        } catch (NoSuchFieldException ignore) {
             // logger.error("RestApiParser error: field: '" + fieldName + "' not found in ParamConstants");
+        } catch (IllegalAccessException e) {
+            throw new IllegalStateException("Unable to read field from ParamConstants", e);
         }
 
         if (property.getRawPrimaryType().isEnum()) {
@@ -457,6 +456,18 @@ public class RestApiParser {
                     .collect(Collectors.joining(", "));
         } else {
             return "The body web service " + property.getName() + " parameter";
+        }
+    }
+
+    private static DataField getDataField(BeanPropertyDefinition property) {
+        if (property.getField() != null) {
+            return property.getField().getAnnotated().getAnnotation(DataField.class);
+        } else if (property.getGetter() != null) {
+            return property.getGetter().getAnnotated().getAnnotation(DataField.class);
+        } else if (property.getSetter() != null) {
+            return property.getSetter().getAnnotated().getAnnotation(DataField.class);
+        } else {
+            return null;
         }
     }
 }
