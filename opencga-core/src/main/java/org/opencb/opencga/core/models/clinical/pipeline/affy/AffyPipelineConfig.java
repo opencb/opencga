@@ -18,9 +18,11 @@ package org.opencb.opencga.core.models.clinical.pipeline.affy;
 
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.models.clinical.pipeline.PipelineConfig;
-import org.opencb.opencga.core.models.clinical.pipeline.PipelineInput;
 
 public class AffyPipelineConfig extends PipelineConfig {
+
+    @DataField(id = "input", description = "Affy pipeline input configuration")
+    private AffyPipelineInput input;
 
     @DataField(id = "steps", description = "Affy pipeline steps (quality control and genotype)")
     private AffyPipelineSteps steps;
@@ -29,22 +31,33 @@ public class AffyPipelineConfig extends PipelineConfig {
         super();
     }
 
-    public AffyPipelineConfig(String name, String version, String type, String description, PipelineInput input, AffyPipelineSteps steps) {
-        super(name, version, type, description, input);
+    public AffyPipelineConfig(String name, String version, String type, String description, AffyPipelineInput input,
+                              AffyPipelineSteps steps) {
+        super(name, version, type, description);
+        this.input = input;
         this.steps = steps;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("AffyPipelineConfig{");
-        sb.append("steps=").append(steps);
+        sb.append("input=").append(input);
+        sb.append(", steps=").append(steps);
         sb.append(", name='").append(name).append('\'');
         sb.append(", version='").append(version).append('\'');
         sb.append(", type='").append(type).append('\'');
         sb.append(", description='").append(description).append('\'');
-        sb.append(", input=").append(input);
         sb.append('}');
         return sb.toString();
+    }
+
+    public AffyPipelineInput getInput() {
+        return input;
+    }
+
+    public AffyPipelineConfig setInput(AffyPipelineInput input) {
+        this.input = input;
+        return this;
     }
 
     public AffyPipelineSteps getSteps() {

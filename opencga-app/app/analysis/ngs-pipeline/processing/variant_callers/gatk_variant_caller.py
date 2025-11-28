@@ -48,36 +48,18 @@ class GatkVariantCaller(VariantCaller):
 
     def _run_gatk_haplotype_caller(self, reference_path: Path, bam_file_path: Path, vcf_file: str):
         """Run GATK HaplotypeCaller using Docker"""
+        input_bindings = {
+            reference_path.parent: "/reference",
+            bam_file_path.parent: "/input",
+        }
+        self.run_docker_command(self.docker_image,
+                                ["gatk", "HaplotypeCaller",
+                                 "-R", f"/reference/{reference_path.name}",
+                                 "-I", f"/input/{bam_file_path.name}",
+                                 "-O", f"/output/{vcf_file}"],
+                                input_bindings,
+                                {self.output: "/output"})
 
-        # Set up volume bindings
-        bindings = []
-
-        # Reference directory binding
-        ref_parent = reference_path.parent
-        bindings.extend(["--mount", f"type=bind,source={ref_parent},target=/reference,readonly"])
-
-        # BAM file directory binding
-        bam_parent = bam_file_path.parent
-        bindings.extend(["--mount", f"type=bind,source={bam_parent},target=/input,readonly"])
-
-        # Output directory binding
-        bindings.extend(["--mount", f"type=bind,source={self.output},target=/output"])
-
-        # Get relative paths for Docker
-        ref_name = reference_path.name
-        bam_name = bam_file_path.name
-
-        # Build Docker command
-        docker_cmd = (["docker", "run", "--rm"]
-                      + bindings
-                      + [self.docker_image]
-                      + ["gatk", "HaplotypeCaller"]
-                      + ["-R", f"/reference/{ref_name}"]
-                      + ["-I", f"/input/{bam_name}"]
-                      + ["-O", f"/output/{vcf_file}"])
-
-        self.logger.info("Running GATK HaplotypeCaller with Docker command: %s", ' '.join(docker_cmd))
-        self.run_command(docker_cmd)
 
     def _apply_best_practices(self, bam_file_path: Path, input_config: dict, tool_config: dict) -> str:
         ## GATK best practices can be implemented here

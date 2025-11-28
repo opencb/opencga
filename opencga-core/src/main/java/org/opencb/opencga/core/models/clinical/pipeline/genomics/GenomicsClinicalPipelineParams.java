@@ -16,20 +16,36 @@
 
 package org.opencb.opencga.core.models.clinical.pipeline.genomics;
 
+import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelineParams;
+import org.opencb.opencga.core.models.operations.variant.VariantIndexParams;
+
+import java.util.List;
 
 public class GenomicsClinicalPipelineParams extends ClinicalPipelineParams<GenomicsPipelineConfig> {
 
+    @DataField(id = "samples", description = "List of samples following the format: sample_id:file_id1;file_id2[:rol[:somatic]]; 'rol'"
+            + " can be 'mother', 'father' or 'child'. If the sample is somatic, then add ':somatic' at")
+    protected List<String> samples;
+
     public GenomicsClinicalPipelineParams() {
         super();
-        pipeline = new GenomicsPipelineConfig();
+    }
+
+    public GenomicsClinicalPipelineParams(List<String> samples) {
+        this.samples = samples;
+    }
+
+    public GenomicsClinicalPipelineParams(String indexDir, List<String> steps, VariantIndexParams variantIndexParams, String pipelineFile,
+                                          GenomicsPipelineConfig pipeline, List<String> samples) {
+        super(indexDir, steps, variantIndexParams, pipelineFile, pipeline);
+        this.samples = samples;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("GenomicsClinicalPipelineParams{");
         sb.append("samples=").append(samples);
-        sb.append(", dataDir='").append(dataDir).append('\'');
         sb.append(", indexDir='").append(indexDir).append('\'');
         sb.append(", steps=").append(steps);
         sb.append(", variantIndexParams=").append(variantIndexParams);
@@ -37,6 +53,15 @@ public class GenomicsClinicalPipelineParams extends ClinicalPipelineParams<Genom
         sb.append(", pipeline=").append(pipeline);
         sb.append('}');
         return sb.toString();
+    }
+
+    public List<String> getSamples() {
+        return samples;
+    }
+
+    public GenomicsClinicalPipelineParams setSamples(List<String> samples) {
+        this.samples = samples;
+        return this;
     }
 }
 

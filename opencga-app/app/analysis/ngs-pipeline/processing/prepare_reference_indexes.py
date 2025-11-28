@@ -65,15 +65,15 @@ class PrepareReferenceIndexes(BaseProcessor):
                 case "bwa-mem2":
                     if self.check_tool_availability("bwa-mem2"):
                         self.bwa_mem2_index(reference_path)
+                case "minimap2":
+                    if self.check_tool_availability("minimap2"):
+                        self.minimap2_index(reference_path)
                 case "bowtie2":
                     if self.check_tool_availability("bowtie2-build"):
                         self.bowtie2_index(reference_path)
                 case "hisat2":
                     if self.check_tool_availability("hisat2-build"):
                         self.hisat2_index(reference_path)
-                case "minimap2":
-                    if self.check_tool_availability("minimap2"):
-                        self.minimap2_index(reference_path)
                 case "star2":
                     if self.check_tool_availability("star2"):
                         self.star2_index(reference_path)

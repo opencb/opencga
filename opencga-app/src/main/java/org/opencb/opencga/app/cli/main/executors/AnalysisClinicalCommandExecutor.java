@@ -935,11 +935,10 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), AffyClinicalPipelineWrapperParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotNull(beanParams, "pipelineParams.samples", commandOptions.pipelineParamsSamples, true);
-            putNestedIfNotEmpty(beanParams, "pipelineParams.dataDir", commandOptions.pipelineParamsDataDir, true);
             putNestedIfNotEmpty(beanParams, "pipelineParams.indexDir", commandOptions.pipelineParamsIndexDir, true);
             putNestedIfNotNull(beanParams, "pipelineParams.steps", commandOptions.pipelineParamsSteps, true);
             putNestedIfNotEmpty(beanParams, "pipelineParams.pipelineFile", commandOptions.pipelineParamsPipelineFile, true);
+            putNestedIfNotEmpty(beanParams, "pipelineParams.dataDir", commandOptions.pipelineParamsDataDir, true);
             putNestedIfNotEmpty(beanParams, "outdir", commandOptions.outdir, true);
 
             affyClinicalPipelineWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()
@@ -979,11 +978,10 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(new java.io.File(commandOptions.jsonFile), GenomicsClinicalPipelineWrapperParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotNull(beanParams, "pipelineParams.samples", commandOptions.pipelineParamsSamples, true);
-            putNestedIfNotEmpty(beanParams, "pipelineParams.dataDir", commandOptions.pipelineParamsDataDir, true);
             putNestedIfNotEmpty(beanParams, "pipelineParams.indexDir", commandOptions.pipelineParamsIndexDir, true);
             putNestedIfNotNull(beanParams, "pipelineParams.steps", commandOptions.pipelineParamsSteps, true);
             putNestedIfNotEmpty(beanParams, "pipelineParams.pipelineFile", commandOptions.pipelineParamsPipelineFile, true);
+            putNestedIfNotNull(beanParams, "pipelineParams.samples", commandOptions.pipelineParamsSamples, true);
             putNestedIfNotEmpty(beanParams, "outdir", commandOptions.outdir, true);
 
             genomicsClinicalPipelineWrapperParams = JacksonUtils.getDefaultObjectMapper().copy()

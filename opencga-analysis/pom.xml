@@ -287,6 +287,21 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>de.flapdoodle.embed</groupId>
+            <artifactId>de.flapdoodle.embed.mongo</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>de.flapdoodle.embed</groupId>
+            <artifactId>de.flapdoodle.embed.process</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>de.flapdoodle.reverse</groupId>
+            <artifactId>de.flapdoodle.reverse</artifactId>
+            <scope>test</scope>
+        </dependency>
 
         <dependency>
             <!-- Need dependency for running hadoop tests. -->

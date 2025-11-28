@@ -32,19 +32,14 @@ public class PipelineConfig {
     @DataField(id = "description", description = "Pipeline description")
     protected String description;
 
-    @DataField(id = "input", description = "Pipeline input configuration")
-    protected PipelineInput input;
-
     public PipelineConfig() {
-        this.input = new PipelineInput();
     }
 
-    public PipelineConfig(String name, String version, String type, String description, PipelineInput input) {
+    public PipelineConfig(String name, String version, String type, String description) {
         this.name = name;
         this.version = version;
         this.type = type;
         this.description = description;
-        this.input = input;
     }
 
     @Override
@@ -54,7 +49,6 @@ public class PipelineConfig {
         sb.append(", version='").append(version).append('\'');
         sb.append(", type='").append(type).append('\'');
         sb.append(", description='").append(description).append('\'');
-        sb.append(", input=").append(input);
         sb.append('}');
         return sb.toString();
     }
@@ -92,15 +86,6 @@ public class PipelineConfig {
 
     public PipelineConfig setDescription(String description) {
         this.description = description;
-        return this;
-    }
-
-    public PipelineInput getInput() {
-        return input;
-    }
-
-    public PipelineConfig setInput(PipelineInput input) {
-        this.input = input;
         return this;
     }
 }

@@ -25,13 +25,6 @@ import java.util.List;
 
 public class ClinicalPipelineParams<T extends PipelineConfig> extends ToolParams {
 
-    @DataField(id = "samples", description = "List of samples following the format: sample_id:file_id1;file_id2[:rol[:somatic]]; 'rol'"
-            + " can be 'mother', 'father' or 'child'. If the sample is somatic, then add ':somatic' at")
-    protected List<String> samples;
-
-    @DataField(id = "dataDir", description = "Directory where the data files are located, e.g. CEL files in affy pipelines")
-    protected String dataDir;
-
     @DataField(id = "indexDir", description = "Directory where the reference genome, aligner indexes are located, and in affy pipelines,"
             + " Affymetrix files too")
     protected String indexDir;
@@ -49,40 +42,27 @@ public class ClinicalPipelineParams<T extends PipelineConfig> extends ToolParams
     protected T pipeline;
 
     public ClinicalPipelineParams() {
-        this.samples = new ArrayList<>();
         this.steps = new ArrayList<>();
+    }
+
+    public ClinicalPipelineParams(String indexDir, List<String> steps, VariantIndexParams variantIndexParams, String pipelineFile, T pipeline) {
+        this.indexDir = indexDir;
+        this.steps = steps;
+        this.variantIndexParams = variantIndexParams;
+        this.pipelineFile = pipelineFile;
+        this.pipeline = pipeline;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClinicalPipelineParams{");
-        sb.append("samples=").append(samples);
-        sb.append(", dataDir='").append(dataDir).append('\'');
-        sb.append(", indexDir='").append(indexDir).append('\'');
+        sb.append("indexDir='").append(indexDir).append('\'');
         sb.append(", steps=").append(steps);
         sb.append(", variantIndexParams=").append(variantIndexParams);
         sb.append(", pipelineFile='").append(pipelineFile).append('\'');
         sb.append(", pipeline=").append(pipeline);
         sb.append('}');
         return sb.toString();
-    }
-
-    public List<String> getSamples() {
-        return samples;
-    }
-
-    public ClinicalPipelineParams<T> setSamples(List<String> samples) {
-        this.samples = samples;
-        return this;
-    }
-
-    public String getDataDir() {
-        return dataDir;
-    }
-
-    public ClinicalPipelineParams<T> setDataDir(String dataDir) {
-        this.dataDir = dataDir;
-        return this;
     }
 
     public String getIndexDir() {

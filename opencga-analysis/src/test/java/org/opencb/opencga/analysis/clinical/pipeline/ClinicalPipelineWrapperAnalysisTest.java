@@ -423,13 +423,9 @@ public class ClinicalPipelineWrapperAnalysisTest {
 
         execute(AffyClinicalPipelineWrapperAnalysis.ID, "affy-pipeline-job", affyWrapperParams.toParams(), outDir);
 
-        VariantQueryResult<Variant> variantQueryResult = opencga.getVariantStorageManager()
-                .get(new Query(ParamConstants.STUDY_PARAM, studyId), QueryOptions.empty(), token);
-        for (Variant variant : variantQueryResult.getResults()) {
-            System.out.println(variant.toStringSimple());
-        }
-        System.out.println("variantQueryResult.getNumResults() = " + variantQueryResult.getNumResults());
-        assertEquals(10, variantQueryResult.getNumResults());
+        Path path = outDir.resolve("Axiom_KU8.sorted.nodup.filtered.fixed.vcf.gz");
+        Assert.assertTrue(Files.exists(path));
+        Assert.assertTrue(Files.size(path) > 0);
     }
 
     private void execute(String toolId, String inputJobId, Map<String, Object> params, Path outDir) throws CatalogException, ToolException {

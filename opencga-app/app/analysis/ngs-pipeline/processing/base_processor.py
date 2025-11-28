@@ -1,6 +1,8 @@
+import os
 import subprocess
 from abc import abstractmethod
 from pathlib import Path
+
 
 class BaseProcessor:
     """Base class for processing steps with common functionality."""
@@ -124,3 +126,50 @@ class BaseProcessor:
         if result.stderr:
             self.logger.warning("Command stderr: %s", result.stderr.strip())
         return result
+
+    def run_docker_command(self, docker_image: str, cmd: str | list[str], input_bindings: dict, output_bindings: dict, check: bool = True) -> subprocess.CompletedProcess:
+        """
+        Execute a command inside a Docker container with volume bindings.
+
+        Parameters
+        ----------
+        docker_image : str
+            Docker image to use
+        cmd : list[str]
+            Command to execute inside the container
+        input_bindings : dict
+            Dictionary of host paths to container paths for volume bindings
+        output_bindings : dict
+            Dictionary of host paths to container paths for volume bindings
+        check : bool, optional
+            Whether to check return code (default: True)
+
+        Returns
+        -------
+        subprocess.CompletedProcess
+            Result of the command execution
+        """
+        # Set up volume bindings
+        binding_args = []
+        for host_path, container_path in input_bindings.items():
+            binding_args.extend(["--mount", f"type=bind,source={host_path},target={container_path},readonly"])
+
+        for host_path, container_path in output_bindings.items():
+            binding_args.extend(["--mount", f"type=bind,source={host_path},target={container_path}"])
+
+
+        # Build Docker command
+        docker_cmd = (["docker", "run", "--rm", f"--user={os.getuid()}:{os.getgid()}"]
+                      + binding_args
+                      + [docker_image]
+                      + (cmd if isinstance(cmd, list) else [cmd]))
+
+        # Log and execute the Docker command
+        self.logger.debug("Executing Docker command: %s", ' '.join(docker_cmd))
+        result = subprocess.run(docker_cmd, check=check, capture_output=True, text=True)
+        if result.stdout:
+            self.logger.info("Docker command output: %s", result.stdout.strip())
+        if result.stderr:
+            self.logger.warning("Docker command stderr: %s", result.stderr.strip())
+        return result
+

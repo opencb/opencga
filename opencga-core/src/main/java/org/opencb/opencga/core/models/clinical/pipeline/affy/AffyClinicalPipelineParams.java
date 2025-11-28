@@ -16,28 +16,35 @@
 
 package org.opencb.opencga.core.models.clinical.pipeline.affy;
 
-import org.checkerframework.checker.units.qual.A;
 import org.opencb.commons.annotations.DataField;
-import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.models.clinical.pipeline.ClinicalPipelineParams;
 import org.opencb.opencga.core.models.operations.variant.VariantIndexParams;
-import org.opencb.opencga.core.tools.ToolParams;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class AffyClinicalPipelineParams extends ClinicalPipelineParams<AffyPipelineConfig> {
 
+    @DataField(id = "dataDir", description = "Directory where the data files are located, e.g. CEL files in affy pipelines")
+    protected String dataDir;
+
     public AffyClinicalPipelineParams() {
         super();
-        this.pipeline = new AffyPipelineConfig();
+    }
+
+    public AffyClinicalPipelineParams(String dataDir) {
+        this.dataDir = dataDir;
+    }
+
+    public AffyClinicalPipelineParams(String indexDir, List<String> steps, VariantIndexParams variantIndexParams, String pipelineFile,
+                                      AffyPipelineConfig pipeline, String dataDir) {
+        super(indexDir, steps, variantIndexParams, pipelineFile, pipeline);
+        this.dataDir = dataDir;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("AffyClinicalPipelineParams{");
-        sb.append("samples=").append(samples);
-        sb.append(", dataDir='").append(dataDir).append('\'');
+        sb.append("dataDir='").append(dataDir).append('\'');
         sb.append(", indexDir='").append(indexDir).append('\'');
         sb.append(", steps=").append(steps);
         sb.append(", variantIndexParams=").append(variantIndexParams);
@@ -45,6 +52,15 @@ public class AffyClinicalPipelineParams extends ClinicalPipelineParams<AffyPipel
         sb.append(", pipeline=").append(pipeline);
         sb.append('}');
         return sb.toString();
+    }
+
+    public String getDataDir() {
+        return dataDir;
+    }
+
+    public AffyClinicalPipelineParams setDataDir(String dataDir) {
+        this.dataDir = dataDir;
+        return this;
     }
 }
 

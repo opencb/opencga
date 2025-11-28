@@ -32,6 +32,8 @@ import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.Execution;
+import org.opencb.opencga.core.config.ExecutionFactor;
+import org.opencb.opencga.core.config.ExecutionQueue;
 import org.opencb.opencga.core.models.common.Enums;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,6 +69,7 @@ public class K8SExecutor implements BatchExecutor {
     public static final String K8S_TOLERATIONS = "k8s.tolerations";
     public static final String K8S_SECURITY_CONTEXT = "k8s.securityContext";
     public static final String K8S_POD_SECURITY_CONTEXT = "k8s.podSecurityContext";
+    public static final String AGENT_POOL_OPTION = "agentpool";
     public static final EnvVar DOCKER_HOST = new EnvVar("DOCKER_HOST", "tcp://localhost:2375", null);
     public static final int DEFAULT_TIMEOUT = 30000; // in ms
 
@@ -115,8 +118,9 @@ public class K8SExecutor implements BatchExecutor {
     private final int ttlSecondsAfterFinished;
     private final boolean logToStdout;
     private long terminationGracePeriodSeconds;
+    private final ExecutionFactor requestFactor;
 
-    public K8SExecutor(Configuration configuration) {
+    public K8SExecutor(Configuration configuration, ExecutionQueue executionQueue) {
         Execution execution = configuration.getAnalysis().getExecution();
         String k8sClusterMaster = execution.getOptions().getString(K8S_MASTER_NODE);
         this.namespace = execution.getOptions().getString(K8S_NAMESPACE);
@@ -137,7 +141,14 @@ public class K8SExecutor implements BatchExecutor {
         this.ttlSecondsAfterFinished = execution.getOptions().getInt(K8S_TTL_SECONDS_AFTER_FINISHED, 3600);
         this.terminationGracePeriodSeconds = execution.getOptions().getInt(K8S_TERMINATION_GRACE_PERIOD_SECONDS, 5 * 60);
         this.logToStdout = execution.getOptions().getBoolean(K8S_LOG_TO_STDOUT, true);
-        nodeSelector = getMap(execution.getOptions(), K8S_NODE_SELECTOR);
+        this.requestFactor = execution.getRequestFactor();
+
+        this.nodeSelector = new HashMap<>();
+        this.nodeSelector.put(AGENT_POOL_OPTION, executionQueue.getId());
+        // Override node selector if defined in execution options
+        this.nodeSelector.putAll(getMap(executionQueue.getOptions(), K8S_NODE_SELECTOR));
+
+
         if (execution.getOptions().containsKey(K8S_SECURITY_CONTEXT)) {
             securityContext = buildObject(execution.getOptions().get(K8S_SECURITY_CONTEXT), SecurityContext.class);
         } else {
@@ -156,13 +167,19 @@ public class K8SExecutor implements BatchExecutor {
         }
 
         HashMap<String, Quantity> requests = new HashMap<>();
-        for (Map.Entry<String, String> entry : getMap(execution.getOptions(), K8S_REQUESTS).entrySet()) {
-            requests.put(entry.getKey(), new Quantity(entry.getValue()));
-        }
+        requests.put("cpu", new Quantity(String.valueOf(execution.getDefaultRequest().getCpu() * this.requestFactor.getCpu())));
+        long memoryBytes = IOUtils.fromHumanReadableToByte(execution.getDefaultRequest().getMemory());
+        Quantity memory = new Quantity(String.valueOf(memoryBytes * this.requestFactor.getMemory()));
+        requests.put("memory", memory);
+//        for (Map.Entry<String, String> entry : getMap(execution.getOptions(), K8S_REQUESTS).entrySet()) {
+//            requests.put(entry.getKey(), new Quantity(entry.getValue()));
+//        }
         HashMap<String, Quantity> limits = new HashMap<>();
-        for (Map.Entry<String, String> entry : getMap(execution.getOptions(), K8S_LIMITS).entrySet()) {
-            limits.put(entry.getKey(), new Quantity(entry.getValue()));
-        }
+        limits.put("cpu", new Quantity(String.valueOf(executionQueue.getCpu())));
+        limits.put("memory", new Quantity(String.valueOf(executionQueue.getMemory())));
+//        for (Map.Entry<String, String> entry : getMap(execution.getOptions(), K8S_LIMITS).entrySet()) {
+//            limits.put(entry.getKey(), new Quantity(entry.getValue()));
+//        }
         resources = new ResourceRequirementsBuilder()
                 .withLimits(limits)
                 .withRequests(requests)
@@ -172,7 +189,7 @@ public class K8SExecutor implements BatchExecutor {
 
         String javaHeap = execution.getOptions().getString(K8S_JAVA_HEAP);
         if (StringUtils.isEmpty(javaHeap) && requests.containsKey("memory")) {
-            Quantity memory = requests.get("memory");
+            memory = requests.get("memory");
             String amount = memory.getAmount();
             long bytes = IOUtils.fromHumanReadableToByte(amount);
             bytes -= IOUtils.fromHumanReadableToByte("300Mi");
@@ -348,13 +365,13 @@ public class K8SExecutor implements BatchExecutor {
             ResourceRequirementsBuilder resources = new ResourceRequirementsBuilder(this.resources);
             if (StringUtils.isNotEmpty(job.getTool().getMinimumRequirements().getMemory())) {
                 long memoryBytes = IOUtils.fromHumanReadableToByte(job.getTool().getMinimumRequirements().getMemory());
-                Quantity memory = new Quantity(String.valueOf(memoryBytes));
+                Quantity memory = new Quantity(String.valueOf(memoryBytes * this.requestFactor.getMemory()));
                 resources.addToRequests("memory", memory);
                 resources.addToLimits("memory", memory);
             }
             if (StringUtils.isNotEmpty(job.getTool().getMinimumRequirements().getCpu())) {
                 double cpuUnits = Double.parseDouble(job.getTool().getMinimumRequirements().getCpu());
-                Quantity cpu = new Quantity(Double.toString(cpuUnits));
+                Quantity cpu = new Quantity(Double.toString(cpuUnits * this.requestFactor.getCpu()));
                 resources.addToRequests("cpu", cpu);
                 resources.addToLimits("cpu", cpu);
             }
@@ -659,7 +676,7 @@ public class K8SExecutor implements BatchExecutor {
     }
 
     private Map<String, String> getMap(ObjectMap objectMap, String key) {
-        if (objectMap.containsKey(key)) {
+        if (objectMap != null && objectMap.containsKey(key)) {
             Map<String, String> map = new HashMap<>();
             ((Map<String, Object>) objectMap.get(key)).forEach((k, v) -> map.put(k, v.toString()));
             return map;

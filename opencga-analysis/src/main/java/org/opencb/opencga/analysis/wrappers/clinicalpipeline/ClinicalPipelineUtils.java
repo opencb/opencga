@@ -7,14 +7,16 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.clinical.pipeline.*;
+import org.opencb.opencga.core.models.clinical.pipeline.PipelineConfig;
+import org.opencb.opencga.core.models.clinical.pipeline.PipelineSample;
+import org.opencb.opencga.core.models.clinical.pipeline.PipelineTool;
 import org.opencb.opencga.core.models.file.File;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -124,121 +126,29 @@ public class ClinicalPipelineUtils {
         return first.substring(0, prefixLength);
     }
 
-    public static <P extends ClinicalPipelineParams, C extends PipelineConfig> C checkCommons(P params, CatalogManager catalogManager,
-                                                                                              String study, String token)
-            throws CatalogException, ToolException, IOException {
-        // Check pipeline configuration
-        C updatedPipelineConfig = checkPipelineConfig(params.getPipelineFile(), (C) params.getPipeline(), catalogManager, study, token);
-
-        // Update from params: samples, data dir and index dir
-        updatePipelineConfigFromParams(updatedPipelineConfig, params.getSamples(), params.getDataDir(), params.getIndexDir());
-
-        // Update physical paths
-        updatePipelineConfigWithPhysicalPaths(updatedPipelineConfig, study, catalogManager, token);
-
-        return updatedPipelineConfig;
-    }
-
-    private static <C extends PipelineConfig> C checkPipelineConfig(String pipelineFile, C pipelineConfig, CatalogManager catalogManager,
-                                                                   String study, String token)
-            throws ToolException, CatalogException, IOException {
-        // Check pipeline configuration, if a pipeline file is provided, check the file exists and then read the file content
-        // to add it to the params
-        if (StringUtils.isEmpty(pipelineFile) && pipelineConfig == null) {
-            throw new ToolException("Missing clinical pipeline configuration. You can either provide a pipeline configuration file or"
-                    + " directly the pipeline configuration.");
-        }
-
-        C updatedPipelineConfig;
-
-        // Get pipeline config
-        if (!StringUtils.isEmpty(pipelineFile)) {
-            logger.info("Checking clinical pipeline configuration file {}", pipelineFile);
-            File opencgaFile = catalogManager.getFileManager().get(study, pipelineFile, QueryOptions.empty(), token).first();
-            if (opencgaFile.getType() != File.Type.FILE) {
-                throw new ToolException("Clinical pipeline configuration file '" + pipelineFile + "' is not a file.");
-            }
-            Path pipelinePath = Paths.get(opencgaFile.getUri()).toAbsolutePath();
-            updatedPipelineConfig = JacksonUtils.getDefaultObjectMapper().readerFor(pipelineConfig.getClass())
-                    .readValue(pipelinePath.toFile());
-        } else {
-            logger.info("Getting clinical pipeline configuration provided directly in the parameters");
-            updatedPipelineConfig = copyPipelineConfig(pipelineConfig);
-        }
-
-        return updatedPipelineConfig;
-    }
-
-    private static  <C extends PipelineConfig> void updatePipelineConfigFromParams(C pipelineConfig, List<String> samples, String dataDir,
-                                                                                  String indexDir) throws ToolException {
-        // If samples are provided in the pipeline params, set them in the pipeline config and get the real file paths
-        if (CollectionUtils.isNotEmpty(samples)) {
-            List<PipelineSample> pipelineSamples = new ArrayList<>();
-            for (String sample : samples) {
-                pipelineSamples.add(createPipelineSampleFromString(sample));
-            }
-            pipelineConfig.getInput().setSamples(pipelineSamples);
-        }
-
-        // If data dir is provided in the pipeline params, set it in the pipeline config to be processed later
-        if (StringUtils.isNotEmpty(dataDir)) {
-            pipelineConfig.getInput().setDataDir(dataDir);
-        }
-
-        // If index dir is provided in the pipeline params, set it in the pipeline config to be processed later
-        if (StringUtils.isNotEmpty(indexDir)) {
-            pipelineConfig.getInput().setIndexDir(indexDir);
-        }
-    }
-
-    private static <C extends PipelineConfig> void updatePipelineConfigWithPhysicalPaths(C pipelineConfig, String study,
-                                                                                        CatalogManager catalogManager, String token)
+    public static Path getPhysicalDirPath(String inputPath, String study, CatalogManager catalogManager, String token)
             throws CatalogException, ToolException {
-        if (pipelineConfig.getInput() == null) {
-            throw new ToolException("Clinical pipeline configuration is missing the input section.");
-        }
+        return getPhysicalPath(inputPath, File.Type.DIRECTORY, study, catalogManager, token);
+    }
 
-        // Update sample files (by getting the real paths) in the pipeline configuration
-        if (!CollectionUtils.isEmpty(pipelineConfig.getInput().getSamples())) {
-            for (PipelineSample sample : pipelineConfig.getInput().getSamples()) {
-                List<String> updatedFiles = new ArrayList<>();
-                for (String file : sample.getFiles()) {
-                    logger.info("Checking sample file {}", file);
-                    File opencgaFile = catalogManager.getFileManager().get(study, file, QueryOptions.empty(), token).first();
-                    if (opencgaFile.getType() != File.Type.FILE) {
-                        throw new ToolException("Clinical pipeline sample file '" + file + "' for sample ID '" + sample.getId()
-                                + "' is not a file.");
-                    }
-                    // Add the real path to the updated files
-                    updatedFiles.add(Paths.get(opencgaFile.getUri()).toAbsolutePath().toString());
-                }
-                // Set updated files in the sample
-                sample.setFiles(updatedFiles);
-            }
-        }
+    public static Path getPhysicalFilePath(String inputPath, String study, CatalogManager catalogManager, String token)
+            throws CatalogException, ToolException {
+        return getPhysicalPath(inputPath, File.Type.FILE, study, catalogManager, token);
+    }
 
-        // Update data dir (by getting the real path) in the pipeline configuration
-        String inputDir = pipelineConfig.getInput().getDataDir();
-        if (!StringUtils.isEmpty(inputDir)) {
-            logger.info("Checking data dir {}", inputDir);
-            File opencgaFile = catalogManager.getFileManager().get(study, inputDir, QueryOptions.empty(), token).first();
-            if (opencgaFile.getType() != File.Type.DIRECTORY) {
-                throw new ToolException("Clinical pipeline data dir '" + inputDir + "' is not a folder.");
-            }
-            // Update the data dir in the pipeline config
-            pipelineConfig.getInput().setDataDir(Paths.get(opencgaFile.getUri()).toAbsolutePath().toString());
+    public static Path getPhysicalPath(String inputPath, File.Type fileType, String study, CatalogManager catalogManager, String token)
+            throws CatalogException, ToolException {
+        logger.info("Checking path {} as {}", inputPath, fileType.name());
+        File opencgaFile = catalogManager.getFileManager().get(study, inputPath, QueryOptions.empty(), token).first();
+        if (opencgaFile.getType() != fileType) {
+            throw new ToolException("Clinical pipeline path '" + inputPath + "' is not a " + fileType.name());
         }
-
-        // Update index dir (by getting the real path) in the pipeline configuration
-        inputDir = pipelineConfig.getInput().getIndexDir();
-        if (!StringUtils.isEmpty(inputDir)) {
-            logger.info("Checking index dir {}", inputDir);
-            File opencgaFile = catalogManager.getFileManager().get(study, inputDir, QueryOptions.empty(), token).first();
-            if (opencgaFile.getType() != File.Type.DIRECTORY) {
-                throw new ToolException("Clinical pipeline index dir '" + inputDir + "' is not a folder.");
-            }
-            // Update the data dir in the pipeline config
-            pipelineConfig.getInput().setIndexDir(Paths.get(opencgaFile.getUri()).toAbsolutePath().toString());
+        // Update the data dir in the pipeline config
+        Path outputPath = Paths.get(opencgaFile.getUri()).toAbsolutePath();
+        if (Files.exists(outputPath)) {
+            return outputPath;
+        } else {
+            throw new ToolException("Clinical pipeline path '" + inputPath + "' does not exist in the file system.");
         }
     }
 
@@ -250,7 +160,7 @@ public class ClinicalPipelineUtils {
         return copy;
     }
 
-    private static PipelineSample createPipelineSampleFromString(String sampleString) throws ToolException {
+    public static PipelineSample createPipelineSampleFromString(String sampleString) throws ToolException {
         // Parse the input format: sample_id::file_id1[,file_id2][::somatic::role]
         String[] fields = sampleString.split(SAMPLE_FIELD_SEP);
         if (fields.length < 2) {
@@ -316,47 +226,15 @@ public class ClinicalPipelineUtils {
         return steps.toString();
     }
 
-
-    public static void setInputBindings(PipelineInput pipelineInput, Path pipelineConfigPath, Path scriptPath,
-                                        List<AbstractMap.SimpleEntry<String, String>> inputBindings, Set<String> readOnlyInputBindings)
+    public static void setCommonInputBindings(Path pipelineConfigPath, Path scriptPath,
+                                              List<AbstractMap.SimpleEntry<String, String>> inputBindings,
+                                              Set<String> readOnlyInputBindings)
             throws IOException {
 
         // Script binding
         Path virtualScriptPath = Paths.get(SCRIPT_VIRTUAL_PATH);
         inputBindings.add(new AbstractMap.SimpleEntry<>(scriptPath.toAbsolutePath().toString(), virtualScriptPath.toString()));
         readOnlyInputBindings.add(virtualScriptPath.toString());
-
-        // Input binding, and update samples with virtual paths
-        if (!CollectionUtils.isEmpty(pipelineInput.getSamples())) {
-            for (PipelineSample pipelineSample : pipelineInput.getSamples()) {
-                List<String> virtualPaths = new ArrayList<>(pipelineSample.getFiles().size());
-                for (int i = 0; i < pipelineSample.getFiles().size(); i++) {
-                    Path path = Paths.get(pipelineSample.getFiles().get(i)).toAbsolutePath();
-                    inputBindings.add(new AbstractMap.SimpleEntry<>(path.toString(), path.toString()));
-                    readOnlyInputBindings.add(path.toString());
-
-                    // Add to the list of virtual files
-                    virtualPaths.add(path.toString());
-                }
-                pipelineSample.setFiles(virtualPaths);
-            }
-        }
-
-        // Data dir binding
-        if (!StringUtils.isEmpty(pipelineInput.getDataDir())) {
-            Path path = Paths.get(pipelineInput.getDataDir()).toAbsolutePath();
-            inputBindings.add(new AbstractMap.SimpleEntry<>(path.toString(), path.toString()));
-            readOnlyInputBindings.add(path.toString());
-            pipelineInput.setDataDir(path.toString());
-        }
-
-        // Index dir binding
-        if (!StringUtils.isEmpty(pipelineInput.getIndexDir())) {
-            Path path = Paths.get(pipelineInput.getIndexDir()).toAbsolutePath();
-            inputBindings.add(new AbstractMap.SimpleEntry<>(path.toString(), path.toString()));
-            readOnlyInputBindings.add(path.toString());
-            pipelineInput.setIndexDir(path.toString());
-        }
 
         // Pipeline config binding
         Path virtualPipelineParamsPath = Paths.get(INPUT_VIRTUAL_PATH).resolve(pipelineConfigPath.getFileName());
