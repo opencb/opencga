@@ -107,6 +107,7 @@ public enum VariantField {
         RELEASE("release"),
         INDEX_SYNCHRONIZATION("indexSync"),
         INDEX_STUDIES("indexStudies"),
+        INDEX_STATS("indexStats"),
         ANNOTATION_ID("annotationId"),
         VARIANT_ID("id");
 

@@ -144,6 +144,7 @@
 {"collections": ["cohort"], "fields": {"id": 1, "studyUid": 1}, "options": {"unique": true}}
 {"collections": ["cohort"], "fields": {"name": 1, "studyUid": 1}, "options": {}}
 {"collections": ["cohort"], "fields": {"type": 1, "studyUid": 1}, "options": {}}
+{"collections": ["cohort"], "fields": {"tags": 1, "studyUid": 1}, "options": {}}
 {"collections": ["cohort"], "fields": {"samples.uid": 1, "studyUid": 1}, "options": {}}
 {"collections": ["cohort"], "fields": {"numSamples": 1, "studyUid": 1}, "options": {}}
 {"collections": ["cohort"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {}}
