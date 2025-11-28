@@ -615,6 +615,12 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
         @Parameter(names = {"--minimum-requirements-disk"}, description = "Minimum disk required to execute the process.", required = false, arity = 1)
         public String minimumRequirementsDisk;
     
+        @Parameter(names = {"--minimum-requirements-processor-type"}, description = "Execution type. Must be one of CPU, GPU or FPGA.", required = false, arity = 1)
+        public String minimumRequirementsProcessorType;
+    
+        @Parameter(names = {"--minimum-requirements-queue"}, description = "Expected queue to execute the process.", required = false, arity = 1)
+        public String minimumRequirementsQueue;
+    
     }
 
     @Parameters(commandNames = {"acl"}, commandDescription ="Return the acl of the job. If member is provided, it will only return the acl for the member.")
