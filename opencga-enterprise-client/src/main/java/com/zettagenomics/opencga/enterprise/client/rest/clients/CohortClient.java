@@ -88,6 +88,8 @@ public class CohortClient extends ParentClient {
      *       status: status.
      *       internalStatus: internalStatus.
      *       annotation: Cohort annotation.
+     *       tags: Tags. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case
+     *            sensitive, '~/value/i' for case insensitive search.
      *       acl: acl.
      *       samples: Cohort sample IDs.
      *       numSamples: Number of samples.
@@ -154,6 +156,8 @@ public class CohortClient extends ParentClient {
      *            '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
      *       uuid: Comma separated list of cohort IDs up to a maximum of 100.
      *       type: Cohort type.
+     *       tags: Tags. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case
+     *            sensitive, '~/value/i' for case insensitive search.
      *       creationDate: creationDate.
      *       modificationDate: modificationDate.
      *       deleted: deleted.
@@ -223,6 +227,8 @@ public class CohortClient extends ParentClient {
      *            '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
      *       uuid: Comma separated list of cohort IDs up to a maximum of 100.
      *       type: Cohort type.
+     *       tags: Tags. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case
+     *            sensitive, '~/value/i' for case insensitive search.
      *       creationDate: creationDate.
      *       modificationDate: modificationDate.
      *       deleted: deleted.
@@ -297,6 +303,7 @@ public class CohortClient extends ParentClient {
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
      *       samplesAction: Action to be performed if the array of samples is being updated.
      *       annotationSetsAction: Action to be performed if the array of annotationSets is being updated.
+     *       tagsAction: Action to be performed if the array of tags is being updated.
      *       includeResult: Flag indicating to include the created or updated document result in the response.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.

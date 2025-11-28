@@ -134,6 +134,9 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--annotation"}, description = "Cohort annotation", required = false, arity = 1)
         public String annotation; 
     
+        @Parameter(names = {"--tags"}, description = "Tags. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String tags; 
+    
         @Parameter(names = {"--acl"}, description = "acl", required = false, arity = 1)
         public String acl; 
     
@@ -222,6 +225,9 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--type"}, description = "Enum param allowed values: CASE_CONTROL, CASE_SET, CONTROL_SET, PAIRED, PAIRED_TUMOR, AGGREGATE, TIME_SERIES, FAMILY, TRIO, COLLECTION", required = false, arity = 1)
         public String type;
     
+        @Parameter(names = {"--tags"}, description = "The body web service tags parameter", required = false, arity = 1)
+        public String tags;
+    
         @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String description;
     
@@ -265,6 +271,9 @@ public class CohortsCommandOptions {
     
         @Parameter(names = {"--type"}, description = "Cohort type", required = false, arity = 1)
         public String type; 
+    
+        @Parameter(names = {"--tags"}, description = "Tags. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String tags; 
     
         @Parameter(names = {"--creation-date", "--cd"}, description = "creationDate", required = false, arity = 1)
         public String creationDate; 
@@ -373,6 +382,9 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--type"}, description = "Enum param allowed values: CASE_CONTROL, CASE_SET, CONTROL_SET, PAIRED, PAIRED_TUMOR, AGGREGATE, TIME_SERIES, FAMILY, TRIO, COLLECTION", required = false, arity = 1)
         public String type;
     
+        @Parameter(names = {"--tags"}, description = "The body web service tags parameter", required = false, arity = 1)
+        public String tags;
+    
         @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String description;
     
@@ -434,6 +446,9 @@ public class CohortsCommandOptions {
     
         @Parameter(names = {"--type"}, description = "Cohort type", required = false, arity = 1)
         public String type; 
+    
+        @Parameter(names = {"--tags"}, description = "Tags. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = false, arity = 1)
+        public String tags; 
     
         @Parameter(names = {"--creation-date", "--cd"}, description = "creationDate", required = false, arity = 1)
         public String creationDate; 
@@ -551,6 +566,9 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
+        @Parameter(names = {"--tags-action"}, description = "Action to be performed if the array of tags is being updated.", required = false, arity = 1)
+        public String tagsAction = "ADD"; 
+    
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
         public boolean includeResult = false; 
     
@@ -562,6 +580,9 @@ public class CohortsCommandOptions {
     
         @Parameter(names = {"--type"}, description = "Enum param allowed values: CASE_CONTROL, CASE_SET, CONTROL_SET, PAIRED, PAIRED_TUMOR, AGGREGATE, TIME_SERIES, FAMILY, TRIO, COLLECTION", required = false, arity = 1)
         public String type;
+    
+        @Parameter(names = {"--tags"}, description = "The body web service tags parameter", required = false, arity = 1)
+        public String tags;
     
         @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String description;
