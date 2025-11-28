@@ -253,7 +253,7 @@ public class VersionedMongoDBAdaptor {
 
                 // Insert/replace in archive collection
                 Bson tmpBsonQuery = Filters.and(
-                        Filters.eq(ID, fixedResult.get(ID)),
+                        Filters.eq(PRIVATE_UID, fixedResult.get(PRIVATE_UID)),
                         Filters.eq(VERSION, fixedResult.get(VERSION))
                 );
                 logger.debug("Copying current document to archive: query : {}", tmpBsonQuery.toBsonDocument());
@@ -263,9 +263,9 @@ public class VersionedMongoDBAdaptor {
 
         // 4. Perform any additional reference checks/updates over those that have increased its version in this call
         if (!uidsChanged.isEmpty()) {
-            Query query = new Query(PRIVATE_UID, uidsChanged);
             if (postVersionIncrementExecution != null) {
-                List<String> includeList = new ArrayList<>(Arrays.asList(ID, VERSION));
+                Query query = new Query(PRIVATE_UID, uidsChanged);
+                List<String> includeList = new ArrayList<>(Arrays.asList(PRIVATE_UID, ID, VERSION));
                 if (postVersionIncrementExecution != null) {
                     includeList.addAll(postVersionIncrementAdditionalIncludeFields);
                 }
@@ -300,7 +300,7 @@ public class VersionedMongoDBAdaptor {
 
                 // Insert/replace in archive collection
                 Bson tmpBsonQuery = Filters.and(
-                        Filters.eq(ID, result.get(ID)),
+                        Filters.eq(PRIVATE_UID, result.get(PRIVATE_UID)),
                         Filters.eq(VERSION, result.get(VERSION))
                 );
                 archiveCollection.update(tmpBsonQuery, result, upsertOptions);

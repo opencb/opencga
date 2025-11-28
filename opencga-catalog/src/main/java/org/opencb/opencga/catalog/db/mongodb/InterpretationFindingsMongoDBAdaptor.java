@@ -370,6 +370,7 @@ public class InterpretationFindingsMongoDBAdaptor extends CatalogMongoDBAdaptor 
         }
         query.put(QueryParams.ID.key(), privateIds);
         query.remove(QueryParams.INTERPRETATION_ID.key());
+        query.remove(QueryParams.STUDY_UID.key());
     }
 
     private String generatePrivateId(long studyUid, String interpretationId, String findingId) {
