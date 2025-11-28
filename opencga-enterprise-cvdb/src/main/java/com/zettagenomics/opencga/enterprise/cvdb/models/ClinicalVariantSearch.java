@@ -38,6 +38,9 @@ public class ClinicalVariantSearch extends VariantSearchModel {
 
     // Clinical variant fields
 
+    @Field("variantId")
+    private String variantId;
+
     @Field("primaryFinding")
     private boolean primaryFinding;
 
@@ -105,6 +108,7 @@ public class ClinicalVariantSearch extends VariantSearchModel {
         sb.append("studyId='").append(studyId).append('\'');
         sb.append(", caId='").append(caId).append('\'');
         sb.append(", ciId='").append(ciId).append('\'');
+        sb.append(", variantId='").append(variantId).append('\'');
         sb.append(", primaryFinding=").append(primaryFinding);
         sb.append(", primaryInterpretation=").append(primaryInterpretation);
         sb.append(", comments=").append(comments);
@@ -147,6 +151,15 @@ public class ClinicalVariantSearch extends VariantSearchModel {
 
     public ClinicalVariantSearch setCiId(String ciId) {
         this.ciId = ciId;
+        return this;
+    }
+
+    public String getVariantId() {
+        return variantId;
+    }
+
+    public ClinicalVariantSearch setVariantId(String variantId) {
+        this.variantId = variantId;
         return this;
     }
 

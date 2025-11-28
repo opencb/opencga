@@ -1,6 +1,5 @@
 package com.zettagenomics.opencga.enterprise.cvdb;
 
-import com.zettagenomics.opencga.enterprise.cvdb.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import com.zettagenomics.opencga.enterprise.cvdb.iterators.ClinicalIncludeHandler;
 import com.zettagenomics.opencga.enterprise.cvdb.models.CvdbIndexResult;
@@ -41,7 +40,6 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 
 import java.io.IOException;
 import java.net.URL;
@@ -101,7 +99,6 @@ public class CvdbSolrEngineQueryTest {
         cvdbEngine = cvdbSolrExternalResource.configure();
         cvdbEngine.setCatalogManager(catalogManager);
         cvdbEngine.setCollectionNameGenerator(collectionNameGenerator);
-        cvdbEngine.setVariantStorageMetadataManager(new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory()));
 
         if (!cvdbEngine.existCollections(collectionPrefix)) {
             cvdbEngine.createCollections(projectId, collectionPrefix, userToken);
@@ -117,10 +114,10 @@ public class CvdbSolrEngineQueryTest {
         assertEquals(2, indexResult.getNumIndexed());
         assertEquals(0, indexResult.getFailures().size());
 
-        caParser = new ClinicalAnalysisQueryParser(collectionPrefix, cvdbEngine.getVariantStorageMetadataManager());
-        ciParser = new ClinicalInterpretationQueryParser(collectionPrefix, cvdbEngine.getVariantStorageMetadataManager());
-        cvParser = new ClinicalVariantQueryParser(collectionPrefix, cvdbEngine.getVariantStorageMetadataManager());
-        cveParser = new ClinicalVariantEvidenceQueryParser(collectionPrefix, cvdbEngine.getVariantStorageMetadataManager());
+        caParser = new ClinicalAnalysisQueryParser(collectionPrefix, cvdbEngine.getSearchIndexMetadata());
+        ciParser = new ClinicalInterpretationQueryParser(collectionPrefix, cvdbEngine.getSearchIndexMetadata());
+        cvParser = new ClinicalVariantQueryParser(collectionPrefix, cvdbEngine.getSearchIndexMetadata());
+        cveParser = new ClinicalVariantEvidenceQueryParser(collectionPrefix, cvdbEngine.getSearchIndexMetadata());
     }
 
     public static void setUpCatalogManager(CatalogManager catalogManager) throws CatalogException {
