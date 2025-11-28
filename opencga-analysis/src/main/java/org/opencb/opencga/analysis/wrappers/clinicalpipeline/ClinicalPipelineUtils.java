@@ -160,7 +160,7 @@ public class ClinicalPipelineUtils {
         return copy;
     }
 
-    private static PipelineSample createPipelineSampleFromString(String sampleString) throws ToolException {
+    public static PipelineSample createPipelineSampleFromString(String sampleString) throws ToolException {
         // Parse the input format: sample_id::file_id1[,file_id2][::somatic::role]
         String[] fields = sampleString.split(SAMPLE_FIELD_SEP);
         if (fields.length < 2) {

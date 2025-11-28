@@ -460,6 +460,8 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "minimumRequirements.cpu", commandOptions.minimumRequirementsCpu, true);
             putNestedIfNotEmpty(beanParams, "minimumRequirements.memory", commandOptions.minimumRequirementsMemory, true);
             putNestedIfNotEmpty(beanParams, "minimumRequirements.disk", commandOptions.minimumRequirementsDisk, true);
+            putNestedIfNotNull(beanParams, "minimumRequirements.processorType", commandOptions.minimumRequirementsProcessorType, true);
+            putNestedIfNotEmpty(beanParams, "minimumRequirements.queue", commandOptions.minimumRequirementsQueue, true);
 
             customToolInlineParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)

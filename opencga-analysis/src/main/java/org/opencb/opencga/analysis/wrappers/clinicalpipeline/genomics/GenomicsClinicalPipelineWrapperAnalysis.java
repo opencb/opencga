@@ -160,15 +160,23 @@ public class GenomicsClinicalPipelineWrapperAnalysis extends OpenCgaTool {
         }
 
         // Update sample files (by getting the real paths) in the pipeline configuration
-        if (!CollectionUtils.isEmpty(analysisParams.getPipelineParams().getSamples())) {
-            for (PipelineSample sample : updatedPipelineConfig.getInput().getSamples()) {
+        if (CollectionUtils.isNotEmpty(analysisParams.getPipelineParams().getSamples())) {
+            List<PipelineSample> pipelineSamples = new ArrayList<>();
+            for (String sample : analysisParams.getPipelineParams().getSamples()) {
+                PipelineSample pipelineSample = createPipelineSampleFromString(sample);
                 List<String> updatedFiles = new ArrayList<>();
-                for (String file : sample.getFiles()) {
+                for (String file : pipelineSample.getFiles()) {
                     Path path = getPhysicalFilePath(file, study, catalogManager, token);
                     updatedFiles.add(path.toString());
                 }
                 // Set updated files in the sample
-                sample.setFiles(updatedFiles);
+                pipelineSample.setFiles(updatedFiles);
+                // And add to the list of samples
+                pipelineSamples.add(pipelineSample);
+            }
+            // Add updated samples to the pipeline config
+            if (CollectionUtils.isNotEmpty(pipelineSamples)) {
+                updatedPipelineConfig.getInput().setSamples(pipelineSamples);
             }
         }
 

@@ -5,7 +5,7 @@
   "type": "affy",
   "input": {
     "dataDir": "",
-    "indexDir": "",
+    "indexDir": ""
   },
   "steps": {
     "qualityControl": {
