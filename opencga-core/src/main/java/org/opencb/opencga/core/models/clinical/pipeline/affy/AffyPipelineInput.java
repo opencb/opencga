@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.models.clinical.pipeline;
+package org.opencb.opencga.core.models.clinical.pipeline.affy;
 
 import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.models.clinical.pipeline.PipelineSample;
 
 import java.util.List;
 
-public class PipelineInput {
+public class AffyPipelineInput {
 
     @DataField(id = "dataDir", description = "Directory containing data pipeline (e.g., CEL files in affy pipelines,...)")
     private String dataDir;
@@ -28,16 +29,12 @@ public class PipelineInput {
     @DataField(id = "indexDir", description = "Directory containing pipeline indexes")
     private String indexDir;
 
-    @DataField(id = "samples", description = "List of samples to process")
-    private List<PipelineSample> samples;
-
-    public PipelineInput() {
+    public AffyPipelineInput() {
     }
 
-    public PipelineInput(String dataDir, String indexDir, List<PipelineSample> samples) {
+    public AffyPipelineInput(String dataDir, String indexDir) {
         this.dataDir = dataDir;
         this.indexDir = indexDir;
-        this.samples = samples;
     }
 
     @Override
@@ -45,7 +42,6 @@ public class PipelineInput {
         final StringBuilder sb = new StringBuilder("PipelineInput{");
         sb.append("dataDir='").append(dataDir).append('\'');
         sb.append(", indexDir='").append(indexDir).append('\'');
-        sb.append(", samples=").append(samples);
         sb.append('}');
         return sb.toString();
     }
@@ -54,7 +50,7 @@ public class PipelineInput {
         return dataDir;
     }
 
-    public PipelineInput setDataDir(String dataDir) {
+    public AffyPipelineInput setDataDir(String dataDir) {
         this.dataDir = dataDir;
         return this;
     }
@@ -63,17 +59,8 @@ public class PipelineInput {
         return indexDir;
     }
 
-    public PipelineInput setIndexDir(String indexDir) {
+    public AffyPipelineInput setIndexDir(String indexDir) {
         this.indexDir = indexDir;
-        return this;
-    }
-
-    public List<PipelineSample> getSamples() {
-        return samples;
-    }
-
-    public PipelineInput setSamples(List<PipelineSample> samples) {
-        this.samples = samples;
         return this;
     }
 }

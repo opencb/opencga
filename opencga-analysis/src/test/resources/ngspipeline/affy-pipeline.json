@@ -6,7 +6,6 @@
   "input": {
     "dataDir": "",
     "indexDir": "",
-    "samples": []
   },
   "steps": {
     "qualityControl": {

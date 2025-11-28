@@ -17,18 +17,20 @@
 package org.opencb.opencga.analysis.wrappers.clinicalpipeline.affy;
 
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelineUtils;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
-import org.opencb.opencga.core.models.clinical.pipeline.PipelineConfig;
 import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyPipelineConfig;
+import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyPipelineInput;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 import static org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelineUtils.*;
@@ -94,6 +96,30 @@ public class AffyClinicalPipelineWrapperAnalysisExecutor extends DockerWrapperAn
                 + " -o " + OUTPUT_VIRTUAL_PATH
                 + " -p " + getVirtualPath(pipelineConfigPath, inputBindings)
                 + " --steps " + buildStepsParam(pipelineSteps);
+    }
+
+    public static void setInputBindings(AffyPipelineInput pipelineInput, Path pipelineConfigPath, Path scriptPath,
+                                        List<AbstractMap.SimpleEntry<String, String>> inputBindings, Set<String> readOnlyInputBindings)
+            throws IOException {
+
+        // Common bindings
+        setCommonInputBindings(pipelineConfigPath, scriptPath, inputBindings, readOnlyInputBindings);
+
+        // Data dir binding
+        if (!StringUtils.isEmpty(pipelineInput.getDataDir())) {
+            Path path = Paths.get(pipelineInput.getDataDir()).toAbsolutePath();
+            inputBindings.add(new AbstractMap.SimpleEntry<>(path.toString(), path.toString()));
+            readOnlyInputBindings.add(path.toString());
+            pipelineInput.setDataDir(path.toString());
+        }
+
+        // Index dir binding
+        if (!StringUtils.isEmpty(pipelineInput.getIndexDir())) {
+            Path path = Paths.get(pipelineInput.getIndexDir()).toAbsolutePath();
+            inputBindings.add(new AbstractMap.SimpleEntry<>(path.toString(), path.toString()));
+            readOnlyInputBindings.add(path.toString());
+            pipelineInput.setIndexDir(path.toString());
+        }
     }
 
     public String getStudy() {

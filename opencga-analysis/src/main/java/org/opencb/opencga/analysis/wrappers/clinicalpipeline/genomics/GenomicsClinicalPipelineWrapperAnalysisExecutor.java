@@ -17,17 +17,22 @@
 package org.opencb.opencga.analysis.wrappers.clinicalpipeline.genomics;
 
 
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelineUtils;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
+import org.opencb.opencga.core.models.clinical.pipeline.PipelineSample;
 import org.opencb.opencga.core.models.clinical.pipeline.genomics.GenomicsPipelineConfig;
+import org.opencb.opencga.core.models.clinical.pipeline.genomics.GenomicsPipelineInput;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 import static org.opencb.opencga.analysis.wrappers.clinicalpipeline.ClinicalPipelineUtils.*;
@@ -95,6 +100,38 @@ public class GenomicsClinicalPipelineWrapperAnalysisExecutor extends DockerWrapp
                 + " -o " + getOutDir().toAbsolutePath()
                 + " -p " + getVirtualPath(pipelineConfigPath, inputBindings)
                 + " --steps " + buildStepsParam(pipelineSteps);
+    }
+
+    public static void setInputBindings(GenomicsPipelineInput pipelineInput, Path pipelineConfigPath, Path scriptPath,
+                                        List<AbstractMap.SimpleEntry<String, String>> inputBindings, Set<String> readOnlyInputBindings)
+            throws IOException {
+
+        // Common bindings
+        setCommonInputBindings(pipelineConfigPath, scriptPath, inputBindings, readOnlyInputBindings);
+
+        // Input binding, and update samples with virtual paths
+        if (!CollectionUtils.isEmpty(pipelineInput.getSamples())) {
+            for (PipelineSample pipelineSample : pipelineInput.getSamples()) {
+                List<String> virtualPaths = new ArrayList<>(pipelineSample.getFiles().size());
+                for (int i = 0; i < pipelineSample.getFiles().size(); i++) {
+                    Path path = Paths.get(pipelineSample.getFiles().get(i)).toAbsolutePath();
+                    inputBindings.add(new AbstractMap.SimpleEntry<>(path.toString(), path.toString()));
+                    readOnlyInputBindings.add(path.toString());
+
+                    // Add to the list of virtual files
+                    virtualPaths.add(path.toString());
+                }
+                pipelineSample.setFiles(virtualPaths);
+            }
+        }
+
+        // Index dir binding
+        if (!StringUtils.isEmpty(pipelineInput.getIndexDir())) {
+            Path path = Paths.get(pipelineInput.getIndexDir()).toAbsolutePath();
+            inputBindings.add(new AbstractMap.SimpleEntry<>(path.toString(), path.toString()));
+            readOnlyInputBindings.add(path.toString());
+            pipelineInput.setIndexDir(path.toString());
+        }
     }
 
     public String getStudy() {

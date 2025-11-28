@@ -1231,12 +1231,6 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean jobDryRun; 
     
-        @Parameter(names = {"--pipeline-params-samples"}, description = "List of samples following the format: sample_id:file_id1;file_id2[:rol[:somatic]]; 'rol' can be 'mother', 'father' or 'child'. If the sample is somatic, then add ':somatic' at", required = false, arity = 1)
-        public String pipelineParamsSamples;
-    
-        @Parameter(names = {"--pipeline-params-data-dir"}, description = "Directory where the data files are located, e.g. CEL files in affy pipelines", required = false, arity = 1)
-        public String pipelineParamsDataDir;
-    
         @Parameter(names = {"--pipeline-params-index-dir"}, description = "Directory where the reference genome, aligner indexes are located, and in affy pipelines, Affymetrix files too", required = false, arity = 1)
         public String pipelineParamsIndexDir;
     
@@ -1245,6 +1239,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--pipeline-params-pipeline-file"}, description = "Clinical pipeline configuration file", required = false, arity = 1)
         public String pipelineParamsPipelineFile;
+    
+        @Parameter(names = {"--pipeline-params-data-dir"}, description = "Directory where the data files are located, e.g. CEL files in affy pipelines", required = false, arity = 1)
+        public String pipelineParamsDataDir;
     
         @Parameter(names = {"--outdir"}, description = "Output dir for the job.", required = false, arity = 1)
         public String outdir;
@@ -1287,12 +1284,6 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean jobDryRun; 
     
-        @Parameter(names = {"--pipeline-params-samples"}, description = "List of samples following the format: sample_id:file_id1;file_id2[:rol[:somatic]]; 'rol' can be 'mother', 'father' or 'child'. If the sample is somatic, then add ':somatic' at", required = false, arity = 1)
-        public String pipelineParamsSamples;
-    
-        @Parameter(names = {"--pipeline-params-data-dir"}, description = "Directory where the data files are located, e.g. CEL files in affy pipelines", required = false, arity = 1)
-        public String pipelineParamsDataDir;
-    
         @Parameter(names = {"--pipeline-params-index-dir"}, description = "Directory where the reference genome, aligner indexes are located, and in affy pipelines, Affymetrix files too", required = false, arity = 1)
         public String pipelineParamsIndexDir;
     
@@ -1301,6 +1292,9 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--pipeline-params-pipeline-file"}, description = "Clinical pipeline configuration file", required = false, arity = 1)
         public String pipelineParamsPipelineFile;
+    
+        @Parameter(names = {"--pipeline-params-samples"}, description = "List of samples following the format: sample_id:file_id1;file_id2[:rol[:somatic]]; 'rol' can be 'mother', 'father' or 'child'. If the sample is somatic, then add ':somatic' at", required = false, arity = 1)
+        public String pipelineParamsSamples;
     
         @Parameter(names = {"--outdir"}, description = "Output dir for the job.", required = false, arity = 1)
         public String outdir;
