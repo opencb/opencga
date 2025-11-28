@@ -148,6 +148,7 @@ public class K8SExecutor implements BatchExecutor {
         // Override node selector if defined in execution options
         this.nodeSelector.putAll(getMap(executionQueue.getOptions(), K8S_NODE_SELECTOR));
 
+
         if (execution.getOptions().containsKey(K8S_SECURITY_CONTEXT)) {
             securityContext = buildObject(execution.getOptions().get(K8S_SECURITY_CONTEXT), SecurityContext.class);
         } else {
@@ -675,7 +676,7 @@ public class K8SExecutor implements BatchExecutor {
     }
 
     private Map<String, String> getMap(ObjectMap objectMap, String key) {
-        if (objectMap.containsKey(key)) {
+        if (objectMap != null && objectMap.containsKey(key)) {
             Map<String, String> map = new HashMap<>();
             ((Map<String, Object>) objectMap.get(key)).forEach((k, v) -> map.put(k, v.toString()));
             return map;
