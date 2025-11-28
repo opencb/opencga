@@ -310,7 +310,8 @@ public class OrganizationMongoDBAdaptorFactory {
     }
 
     public void createAllCollections() throws CatalogDBException {
-        if (!mongoDataStore.getCollectionNames().isEmpty()) {
+        if (!mongoDataStore.getCollectionNames().isEmpty()
+                && mongoDataStore.getCollectionNames().containsAll(OrganizationMongoDBAdaptorFactory.COLLECTIONS_LIST)) {
             throw new CatalogDBException("Database " + mongoDataStore.getDatabaseName() + " already exists with the following "
                     + "collections: " + StringUtils.join(mongoDataStore.getCollectionNames()) + ".\nPlease, remove the database or"
                     + " choose a different one.");
@@ -439,10 +440,6 @@ public class OrganizationMongoDBAdaptorFactory {
 
     public MigrationMongoDBAdaptor getMigrationDBAdaptor() {
         return migrationDBAdaptor;
-    }
-
-    public MetaMongoDBAdaptor getCatalogMetaDBAdaptor() {
-        return null;
     }
 
     public NoteMongoDBAdaptor getCatalogNotesDBAdaptor() {

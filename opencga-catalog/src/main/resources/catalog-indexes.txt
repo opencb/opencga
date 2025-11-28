@@ -23,6 +23,8 @@
 {"collections": ["job"], "fields": {"type": 1, "studyUid": 1}, "options": {}}
 {"collections": ["job"], "fields": {"tool.id": 1, "studyUid": 1}, "options": {}}
 {"collections": ["job"], "fields": {"tool.type": 1, "studyUid": 1}, "options": {}}
+{"collections": ["job"], "fields": {"tool.minimumRequirements.processorType": 1, "studyUid": 1}, "options": {}}
+{"collections": ["job"], "fields": {"tool.minimumRequirements.queue": 1, "studyUid": 1}, "options": {}}
 {"collections": ["job"], "fields": {"userId": 1, "studyUid": 1}, "options": {}}
 {"collections": ["job"], "fields": {"parentId": 1, "studyUid": 1}, "options": {}}
 {"collections": ["job"], "fields": {"outDir.uid": 1, "studyUid": 1}, "options": {}}
@@ -35,6 +37,7 @@
 {"collections": ["job"], "fields": {"internal.status.id": 1, "studyUid": 1}, "options": {}}
 {"collections": ["job"], "fields": {"internal.status.id": 1, "_priority": 1, "_creationDate": 1}, "options": {}}
 {"collections": ["job"], "fields": {"internal.killJobRequested": 1, "studyUid": 1}, "options": {}}
+{"collections": ["job"], "fields": {"execution.queue.id": 1, "studyUid": 1}, "options": {}}
 {"collections": ["job"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {}}
 {"collections": ["job"], "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {}}
 {"collections": ["job"], "fields": {"studyUid": 1, "_acl": 1}, "options": {}}
@@ -144,6 +147,7 @@
 {"collections": ["cohort"], "fields": {"id": 1, "studyUid": 1}, "options": {"unique": true}}
 {"collections": ["cohort"], "fields": {"name": 1, "studyUid": 1}, "options": {}}
 {"collections": ["cohort"], "fields": {"type": 1, "studyUid": 1}, "options": {}}
+{"collections": ["cohort"], "fields": {"tags": 1, "studyUid": 1}, "options": {}}
 {"collections": ["cohort"], "fields": {"samples.uid": 1, "studyUid": 1}, "options": {}}
 {"collections": ["cohort"], "fields": {"numSamples": 1, "studyUid": 1}, "options": {}}
 {"collections": ["cohort"], "fields": {"_creationDate": 1, "studyUid": 1}, "options": {}}

@@ -12,6 +12,7 @@ public class RandomQueries {
 
     private List<Region> regions;
     private List<String> gene;
+    private String geneFile;
     private List<String> ct;
     private List<String> type;
     private List<String> study;
@@ -26,6 +27,7 @@ public class RandomQueries {
     private List<String> includeSample;
     private List<String> includeFile;
     private List<String> includeStudy;
+    private List<Score> cohortStats;
 
     private Score qual;
     private Score conservation;
@@ -72,6 +74,15 @@ public class RandomQueries {
 
     public RandomQueries setGene(List<String> gene) {
         this.gene = gene;
+        return this;
+    }
+
+    public String getGeneFile() {
+        return geneFile;
+    }
+
+    public RandomQueries setGeneFile(String geneFile) {
+        this.geneFile = geneFile;
         return this;
     }
 
@@ -243,6 +254,15 @@ public class RandomQueries {
 
     public RandomQueries setIncludeStudy(List<String> includeStudy) {
         this.includeStudy = includeStudy;
+        return this;
+    }
+
+    public List<Score> getCohortStats() {
+        return cohortStats;
+    }
+
+    public RandomQueries setCohortStats(List<Score> cohortStats) {
+        this.cohortStats = cohortStats;
         return this;
     }
 

@@ -4,8 +4,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.hdfs.HdfsConfiguration;
+import org.apache.hadoop.hdfs.client.HdfsClientConfigKeys;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.io.managers.IOConnector;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,6 +17,7 @@ import java.io.OutputStream;
 import java.math.BigInteger;
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.Collection;
 
 /**
  * Created on 03/05/19.
@@ -20,6 +25,8 @@ import java.nio.file.Path;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class HDFSIOConnector extends Configured implements IOConnector {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(HDFSIOConnector.class);
 
     public HDFSIOConnector(ObjectMap options) {
         Configuration conf = new Configuration();
@@ -37,6 +44,27 @@ public class HDFSIOConnector extends Configured implements IOConnector {
     public static boolean isLocal(URI uri, Configuration conf) {
         String scheme = uri.getScheme();
         return "file".equals(scheme) || StringUtils.isEmpty(scheme) && conf.get(FileSystem.FS_DEFAULT_NAME_KEY).startsWith("file:");
+    }
+
+    public static org.apache.hadoop.fs.Path getHdfsRootPath(Configuration conf) throws IOException {
+        Collection<String> nameservices = conf.getTrimmedStringCollection(HdfsClientConfigKeys.DFS_NAMESERVICES);
+        if (nameservices.isEmpty()) {
+            nameservices = new HdfsConfiguration().getTrimmedStringCollection(HdfsClientConfigKeys.DFS_NAMESERVICES);
+        }
+        for (String nameServiceId : nameservices) {
+            try {
+                org.apache.hadoop.fs.Path hdfsRootPath = new org.apache.hadoop.fs.Path("hdfs", nameServiceId, "/");
+//                LOGGER.info("Checking if {} is a valid HDFS path", hdfsRootPath);
+                FileSystem hdfsFileSystem = hdfsRootPath.getFileSystem(conf);
+                if (hdfsFileSystem != null) {
+                    // FileSystem is not null, so it is a valid HDFS path
+                    return hdfsRootPath;
+                }
+            } catch (Exception e) {
+                LOGGER.debug("This file system is not hdfs:// . Skip!", e);
+            }
+        }
+        return null;
     }
 
     private FileSystem getFileSystem(URI uri) throws IOException {

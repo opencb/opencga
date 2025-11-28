@@ -26,13 +26,13 @@ import java.util.List;
  */
 public class PendingVariantsReader extends AbstractHBaseDataReader<Variant> {
 
-    private final PendingVariantsDescriptor descriptor;
+    private final PendingVariantsTableBasedDescriptor descriptor;
 
-    public PendingVariantsReader(Query query, PendingVariantsDescriptor descriptor, VariantHadoopDBAdaptor dbAdaptor) {
+    public PendingVariantsReader(Query query, PendingVariantsTableBasedDescriptor descriptor, VariantHadoopDBAdaptor dbAdaptor) {
         this(query, descriptor, dbAdaptor.getHBaseManager(), dbAdaptor.getTableNameGenerator());
     }
 
-    public PendingVariantsReader(Query query, PendingVariantsDescriptor descriptor,
+    public PendingVariantsReader(Query query, PendingVariantsTableBasedDescriptor descriptor,
                                  HBaseManager hBaseManager, HBaseVariantTableNameGenerator tableNameGenerator) {
         super(hBaseManager, descriptor.getTableName(tableNameGenerator), parseScan(query));
         this.descriptor = descriptor;

@@ -183,7 +183,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         JCommander adminSubCommands = jCommander.getCommands().get("admin");
         adminSubCommands.addCommand("audit-group-by", adminCommandOptions.groupByAuditCommandOptions);
         adminSubCommands.addCommand("catalog-install", adminCommandOptions.installCatalogCommandOptions);
-        adminSubCommands.addCommand("catalog-jwt", adminCommandOptions.jwtCatalogCommandOptions);
+        adminSubCommands.addCommand("organizations-list", adminCommandOptions.listOrganizationsCommandOptions);
         adminSubCommands.addCommand("resource-fetch", adminCommandOptions.fetchResourceCommandOptions);
         adminSubCommands.addCommand("users-create", adminCommandOptions.createUsersCommandOptions);
         adminSubCommands.addCommand("users-import", adminCommandOptions.importUsersCommandOptions);
@@ -422,7 +422,6 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         operationsVariantStorageSubCommands.addCommand("variant-secondary-sample-index", operationsVariantStorageCommandOptions.variantSecondarySampleIndexCommandOptions);
         operationsVariantStorageSubCommands.addCommand("configure-variant-secondary-sample-index", operationsVariantStorageCommandOptions.configureVariantSecondarySampleIndexCommandOptions);
         operationsVariantStorageSubCommands.addCommand("variant-secondary-index", operationsVariantStorageCommandOptions.secondaryIndexVariantCommandOptions);
-        operationsVariantStorageSubCommands.addCommand("variant-secondary-index-delete", operationsVariantStorageCommandOptions.deleteVariantSecondaryIndexCommandOptions);
         operationsVariantStorageSubCommands.addCommand("variant-setup", operationsVariantStorageCommandOptions.setupVariantCommandOptions);
         operationsVariantStorageSubCommands.addCommand("variant-stats-delete", operationsVariantStorageCommandOptions.deleteVariantStatsCommandOptions);
         operationsVariantStorageSubCommands.addCommand("variant-stats-index", operationsVariantStorageCommandOptions.indexVariantStatsCommandOptions);

@@ -55,12 +55,11 @@ def parse_args(argv=None):
 
     ## --- affy command ---
     run_parser = subparsers.add_parser("affy", help="Process Affymetrix microarray data")
-    run_parser.add_argument("-p", "--pipeline", help="Pipeline JSON file to execute")
-    run_parser.add_argument("-s", "--samples", help="Samples to be processed. Accepted format: sample_id::file1,file2::somatic(0/1)::role(F/M/C/U)")
-    run_parser.add_argument("--samples-file", help="File containing samples to be processed, one per line. Accepted format: sample_id::file1,file2::somatic(0/1)::role(F/M/C/U)")
+    run_parser.add_argument("-p", "--pipeline", required=True, help="Pipeline JSON file to execute")
+    # run_parser.add_argument("-s", "--samples", help="Samples to be processed. Accepted format: sample_id::file1,file2::somatic(0/1)::role(F/M/C/U)")
     run_parser.add_argument("-d", "--data-dir", help="Input directory for data files. Accepted format: CEL")
-    run_parser.add_argument("--chip-type", help="Affymetrix chip type (e.g., 'Axiom_KU8', 'HG-U133_Plus_2')")
-    run_parser.add_argument("-i", "--index-dir", help="Directory containing reference index and APT configuration files")
+    run_parser.add_argument("-i", "--index-dir", required=True, help="Directory containing reference index and APT configuration files")
+    # run_parser.add_argument("--chip-type", help="Affymetrix chip type (e.g., 'Axiom_KU8', 'HG-U133_Plus_2')")
     run_parser.add_argument("--steps", default="quality-control,genotype", help="Pipeline step to execute")
     run_parser.add_argument("--overwrite", action="store_true", help="Force re-run even if step previously completed")
     run_parser.add_argument("-c", "--clean", action="store_true", help="Clean existing directory before running")
@@ -280,54 +279,16 @@ def affy(args):
     ## 2. Set reference in pipeline configuration if provided
     if args.index_dir:
         pipeline.get("input", {}).update({"indexDir": args.index_dir})
-
-
+        if not Path(args.index_dir).is_dir():
+            logger.error(f"ERROR: 'index-dir' not found: {args.index_dir}")
+            return 1
 
     ## 3. Set input in pipeline configuration if provided
-    if args.samples:
-        samples = []
-        # This can be a string or a directory path
-        if Path(args.samples).is_dir():
-            samples_path = Path(args.samples).resolve()
-            logger.debug(f"Loading samples from file/directory: {args.samples}")
-            # Sample are *.CEL file names in the directory
-            cel_files = list(samples_path.glob("*.CEL"))
-            for cel_file in cel_files:
-                sample_id = cel_file.stem
-                samples.append(f"{sample_id}::{str(cel_file)}::0::U")
-            logger.debug(f"Parsed sample IDs: {samples}")
-        else:
-            samples = samples.split(";")
-
-        ## Reset pipeline samples list
-        pipeline.get("input", {}).update({"samples": []})
-        # samples = args.samples.split(";")
-        for sample in samples:
-            ## Parse sample string, format: sample_id::file1,file2::somatic(0/1)::role(T/N/U)
-            parts = sample.split("::")
-            parts += [""] * (4 - len(parts))  # complete 'parts' to length 4
-            sample_id, files, somatic, role = parts[0], parts[1].split(","), parts[2] or 0, parts[3] or "U"
-            logger.debug(f"Sample '{sample_id}' files='{files}' somatic='{somatic}' role='{role}'")
-            ## Append to existing samples list
-            sample_list = pipeline.get("input", {}).get("samples", []) + [
-                {"id": sample_id, "files": files, "somatic": somatic, "role": role}]
-            pipeline.get("input", {}).update({"samples": sample_list})
-        logger.info("Input set in pipeline configuration: %s", json.dumps(pipeline.get("input", {}), ensure_ascii=False))
-
-    ## 4. Check input files exist
-    samples = pipeline.get("input", {}).get("samples", [])
-    if not samples:
-        logger.error("ERROR: No input files specified in pipeline configuration or via --samples")
-        return 1
-    for sample in samples:
-        for f in sample.get("files", []):
-            fpath = Path(f).resolve()
-            if not fpath.is_file():
-                logger.error(f"ERROR: Input file for sample '{sample.get('id')}' not found: {fpath}")
-                return 1
-    logger.debug(f"All input files verified for {len(samples)} samples.")
-
-
+    if args.data_dir:
+        pipeline.get("input", {}).update({"dataDir": args.data_dir})
+        if not Path(args.data_dir).is_dir():
+            logger.error(f"ERROR: 'data-dir' not found: {args.data_dir}")
+            return 1
 
     affy_impl = AffymetrixMicroarray(pipeline=pipeline, output=outdir, logger=logger)
     affy_impl.execute()

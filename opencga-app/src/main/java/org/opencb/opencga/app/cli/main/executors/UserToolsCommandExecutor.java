@@ -13,6 +13,7 @@ import org.opencb.opencga.app.cli.main.options.UserToolsCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.config.ExecutionQueue;
 import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.externalTool.Container;
@@ -287,6 +288,8 @@ public class UserToolsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "minimumRequirements.cpu", commandOptions.minimumRequirementsCpu, true);
             putNestedIfNotEmpty(beanParams, "minimumRequirements.memory", commandOptions.minimumRequirementsMemory, true);
             putNestedIfNotEmpty(beanParams, "minimumRequirements.disk", commandOptions.minimumRequirementsDisk, true);
+            putNestedIfNotNull(beanParams, "minimumRequirements.processorType", commandOptions.minimumRequirementsProcessorType, true);
+            putNestedIfNotEmpty(beanParams, "minimumRequirements.queue", commandOptions.minimumRequirementsQueue, true);
             putNestedIfNotNull(beanParams, "draft", commandOptions.draft, true);
             putNestedIfNotEmpty(beanParams, "internal.registrationDate", commandOptions.internalRegistrationDate, true);
             putNestedIfNotEmpty(beanParams, "internal.lastModified", commandOptions.internalLastModified, true);
@@ -377,6 +380,8 @@ public class UserToolsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "minimumRequirements.cpu", commandOptions.minimumRequirementsCpu, true);
             putNestedIfNotEmpty(beanParams, "minimumRequirements.memory", commandOptions.minimumRequirementsMemory, true);
             putNestedIfNotEmpty(beanParams, "minimumRequirements.disk", commandOptions.minimumRequirementsDisk, true);
+            putNestedIfNotNull(beanParams, "minimumRequirements.processorType", commandOptions.minimumRequirementsProcessorType, true);
+            putNestedIfNotEmpty(beanParams, "minimumRequirements.queue", commandOptions.minimumRequirementsQueue, true);
             putNestedIfNotNull(beanParams, "draft", commandOptions.draft, true);
             putNestedIfNotEmpty(beanParams, "creationDate", commandOptions.creationDate, true);
             putNestedIfNotEmpty(beanParams, "modificationDate", commandOptions.modificationDate, true);
@@ -725,6 +730,8 @@ public class UserToolsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "minimumRequirements.cpu", commandOptions.minimumRequirementsCpu, true);
             putNestedIfNotEmpty(beanParams, "minimumRequirements.memory", commandOptions.minimumRequirementsMemory, true);
             putNestedIfNotEmpty(beanParams, "minimumRequirements.disk", commandOptions.minimumRequirementsDisk, true);
+            putNestedIfNotNull(beanParams, "minimumRequirements.processorType", commandOptions.minimumRequirementsProcessorType, true);
+            putNestedIfNotEmpty(beanParams, "minimumRequirements.queue", commandOptions.minimumRequirementsQueue, true);
             putNestedIfNotNull(beanParams, "draft", commandOptions.draft, true);
             putNestedIfNotEmpty(beanParams, "internal.registrationDate", commandOptions.internalRegistrationDate, true);
             putNestedIfNotEmpty(beanParams, "internal.lastModified", commandOptions.internalLastModified, true);
@@ -849,6 +856,8 @@ public class UserToolsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "minimumRequirements.cpu", commandOptions.minimumRequirementsCpu, true);
             putNestedIfNotEmpty(beanParams, "minimumRequirements.memory", commandOptions.minimumRequirementsMemory, true);
             putNestedIfNotEmpty(beanParams, "minimumRequirements.disk", commandOptions.minimumRequirementsDisk, true);
+            putNestedIfNotNull(beanParams, "minimumRequirements.processorType", commandOptions.minimumRequirementsProcessorType, true);
+            putNestedIfNotEmpty(beanParams, "minimumRequirements.queue", commandOptions.minimumRequirementsQueue, true);
             putNestedIfNotNull(beanParams, "draft", commandOptions.draft, true);
             putNestedIfNotEmpty(beanParams, "creationDate", commandOptions.creationDate, true);
             putNestedIfNotEmpty(beanParams, "modificationDate", commandOptions.modificationDate, true);

@@ -20,6 +20,7 @@ import org.opencb.commons.annotations.DataField;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.api.FieldConstants;
+import org.opencb.opencga.core.config.ExecutionQueue;
 import org.opencb.opencga.core.tools.ToolDependency;
 
 import java.net.URI;
@@ -37,6 +38,9 @@ public class ExecutionResult {
     @DataField(id = "executor", indexed = true,
             description = FieldConstants.EXECUTION_RESULT_EXECUTION_INFO)
     private ExecutorInfo executor;
+
+    @DataField(id = "queue", description = FieldConstants.EXECUTION_RESULT_QUEUE)
+    private ExecutionQueue queue;
 
     @DataField(id = "start", indexed = true,
             description = FieldConstants.EXECUTION_RESULT_START)
@@ -83,6 +87,7 @@ public class ExecutionResult {
     public String toString() {
         final StringBuilder sb = new StringBuilder("ExecutionResult{");
         sb.append("executor=").append(executor);
+        sb.append(", queue=").append(queue);
         sb.append(", start=").append(start);
         sb.append(", end=").append(end);
         sb.append(", status=").append(status);
@@ -110,6 +115,15 @@ public class ExecutionResult {
 
     public ExecutionResult setExecutor(ExecutorInfo executor) {
         this.executor = executor;
+        return this;
+    }
+
+    public ExecutionQueue getQueue() {
+        return queue;
+    }
+
+    public ExecutionResult setQueue(ExecutionQueue queue) {
+        this.queue = queue;
         return this;
     }
 

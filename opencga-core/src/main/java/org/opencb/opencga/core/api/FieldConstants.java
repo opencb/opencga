@@ -294,9 +294,11 @@ public class FieldConstants {
     public static final String CLINICAL_ANALYSIS_QUALITY_CONTROL_FILES = "List of ClinicalAnalysisQualityControl files.";
 
     //Cohort
+    public static final String COHORT_NAME = "Cohort name.";
     public static final String COHORT_TYPE = "Cohort type that can have the values CASE_CONTROL, CASE_SET, CONTROL_SET, PAIRED, "
             + "PAIRED_TUMOR, AGGREGATE, TIME_SERIES, FAMILY, TRIO and COLLECTION.";
     public static final String COHORT_SAMPLES = "List of cohort samples.";
+    public static final String COHORT_TAGS = "List of tags.";
     public static final String COHORT_NUM_SAMPLES = "Number of samples.";
 
     //File
@@ -364,6 +366,8 @@ public class FieldConstants {
     public static final String MIN_REQUIREMENTS_CPU_DESCRIPTION = "Minimum number of cpu cores required to execute the process.";
     public static final String MIN_REQUIREMENTS_MEMORY_DESCRIPTION = "Minimum memory required to execute the process.";
     public static final String MIN_REQUIREMENTS_DISK_DESCRIPTION = "Minimum disk required to execute the process.";
+    public static final String MIN_REQUIREMENTS_TYPE_DESCRIPTION = "Execution type. Must be one of CPU, GPU or FPGA.";
+    public static final String MIN_REQUIREMENTS_QUEUE_DESCRIPTION = "Expected queue to execute the process.";
 
     public static final String WORKFLOW_SYSTEM_ID_DESCRIPTION = "Workflow system id. Valid values: NEXTFLOW.";
     public static final String WORKFLOW_SYSTEM_VERSION_DESCRIPTION = "Workflow system version to use.";
@@ -439,6 +443,7 @@ public class FieldConstants {
     public static final String EXECUTION_RESULT_EXECUTION_INFO = "Object describes execution information.";
     public static final String EXECUTION_RESULT_START = "Date the execution started.";
     public static final String EXECUTION_RESULT_END = "Date the execution was completed.";
+    public static final String EXECUTION_RESULT_QUEUE = "Queue where the job is scheduled or was executed.";
     public static final String EXECUTION_RESULT_STATUS = "Executor status can have the values PENDING, RUNNING, DONE and ERROR.";
     public static final String EXECUTION_RESULT_DEPENDENCIES = "List of tool dependencies used during the execution.";
     public static final String EXECUTION_RESULT_EXTERNAL_FILES = "List of uris to the external files.";

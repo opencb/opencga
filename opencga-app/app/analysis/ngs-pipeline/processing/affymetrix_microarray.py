@@ -82,18 +82,15 @@ class AffymetrixMicroarray(BaseProcessor):
     Create a one-column file with all .CEL files and header line 'cel_files'
     """
     def create_cel_list_file(self):
-        ## 1. Loop all input.samples.files and write a file
-        # Open a file called cel_files.txt in the outdir
-
-        cel_list_path = self.output / "cel_files.txt"
-        # cel_list_path.parent.mkdir(parents=True, exist_ok=True)
-
+        ## 1. Find all CEL files in the directory
         cel_files: list[str] = []
-        for sample in self.pipeline.get("input", {}).get("samples", []):
-            for f in sample.get("files", []):
-                if isinstance(f, str) and f.lower().endswith(".cel"):
-                    cel_files.append(f)
+        data_dir_path = Path(self.pipeline.get("input", {}).get("dataDir", ""))
+        if data_dir_path.is_dir():
+            # Files are *.CEL file names in the directory
+            cel_files = list(data_dir_path.glob("*.CEL"))
 
+        ## 2. Create cel_files.txt file
+        cel_list_path = self.output / "cel_files.txt"
         with cel_list_path.open("w", encoding="utf-8") as fh:
             fh.write("cel_files\n")
             for f in cel_files:
