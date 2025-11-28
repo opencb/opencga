@@ -58,8 +58,8 @@ public class RdInterpretationAnalysisToolTest {
     private ClinicalAnalysis ca;
     private Path outDir;
 
-    private String interpretationName = "test #1";
-    private String interpretationDescription = "Hello my interpretation test #1";
+    private String interpretationName;
+    private String interpretationDescription;
 
     @ClassRule
     public static OpenCGATestExternalResource opencga = new OpenCGATestExternalResource(true);
@@ -93,6 +93,8 @@ public class RdInterpretationAnalysisToolTest {
     public void testClinicalInterpretationWithDefaultConfig() throws IOException, CatalogException, ToolException {
         Assume.assumeTrue(Paths.get("/opt/tiering-data").toFile().exists());
 
+        interpretationName = "default-config";
+        interpretationDescription = "Default config for interpretation";
         String caId = clinicalTest.CA_OPA_15914_1;
 
         checkClinicalAnalysis(caId);
@@ -101,7 +103,14 @@ public class RdInterpretationAnalysisToolTest {
         System.out.println("opencga.getOpencgaHome() = " + opencga.getOpencgaHome().toAbsolutePath());
         System.out.println("outDir = " + outDir);
 
+        toolRunner.execute(VariantSecondarySampleIndexOperationTool.class, clinicalTest.studyFqn, new VariantSecondarySampleIndexParams()
+                        .setFamilyIndex(true)
+                        .setSample(Collections.singletonList(ca.getProband().getSamples().get(0).getId())),
+                Paths.get(opencga.createTmpOutdir()), "family-index", false, clinicalTest.token);
+
         RdInterpretationAnalysisToolParams params = new RdInterpretationAnalysisToolParams();
+        params.setName(interpretationName);
+        params.setDescription(interpretationDescription);
         params.setClinicalAnalysisId(caId);
 
         toolRunner.execute(RdInterpretationAnalysisTool.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, clinicalTest.studyFqn),
@@ -110,25 +119,18 @@ public class RdInterpretationAnalysisToolTest {
         ca = clinicalTest.catalogManager.getClinicalAnalysisManager().get(clinicalTest.studyFqn, caId, QueryOptions.empty(),
                 clinicalTest.token).first();
 
-        assertEquals(1, ca.getSecondaryInterpretations().size());
-        assertEquals(0, ca.getSecondaryInterpretations().get(0).getPrimaryFindings().size());
-
-        assertTrue(ca.getSecondaryInterpretations().get(0).getAttributes().containsKey("configuration"));
-        RdInterpretationConfiguration config = JacksonUtils.getDefaultObjectMapper().convertValue(ca.getSecondaryInterpretations()
-                .get(0).getAttributes().get("configuration"), RdInterpretationConfiguration.class);
-        Assert.assertEquals(9, config.getQueries().size());
-        Assert.assertEquals(3, config.getTierConfiguration().getTiers().size());
-        Assert.assertEquals("TIER1", config.getTierConfiguration().getTiers().get("tier_1").getLabel());
-        Assert.assertEquals("TIER3", config.getTierConfiguration().getTiers().get("tier_3").getLabel());
+        checkResults(caId, false);
 
         // Clean up interpretations
         deleteInterpretations();
     }
 
     @Test
-    public void testClinicalInterpretationWithCustomConfig() throws IOException, CatalogException, ToolException, StorageEngineException {
+    public void testClinicalInterpretationWithFileConfig() throws IOException, CatalogException, ToolException, StorageEngineException {
         Assume.assumeTrue(Paths.get("/opt/tiering-data").toFile().exists());
 
+        interpretationName = "custom-file-config";
+        interpretationDescription = "Custom file config for interpretation";
         String caId = clinicalTest.CA_OPA_15914_1;
         checkClinicalAnalysis(caId);
 
@@ -139,10 +141,6 @@ public class RdInterpretationAnalysisToolTest {
         // Read tiering configuration and register in catalog
         Path configPath = opencga.getOpencgaHome().resolve(ANALYSIS_DIRNAME).resolve("rd").resolve("rd-interpretation-configuration.yml");
         RdInterpretationConfiguration interpretationConfiguration = JacksonUtils.getDefaultObjectMapper().convertValue(new Yaml().load(Files.newInputStream(configPath)), RdInterpretationConfiguration.class);
-        for (String key: interpretationConfiguration.getQueries().keySet()) {
-            Map<String, Object> filters = (Map<String, Object>) interpretationConfiguration.getQueries().get(key);
-            filters.remove("cohortStatsMaf");
-        }
         Path updatedConfigPath = Paths.get(opencga.createTmpOutdir("_interpretation_custom_config_data")).resolve(configPath.getFileName());
         JacksonUtils.getDefaultObjectMapper().writerFor(RdInterpretationConfiguration.class).writeValue(updatedConfigPath.toFile(), interpretationConfiguration);
         InputStream inputStream = Files.newInputStream(updatedConfigPath);
@@ -163,60 +161,22 @@ public class RdInterpretationAnalysisToolTest {
         toolRunner.execute(RdInterpretationAnalysisTool.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, clinicalTest.studyFqn),
                 outDir, null, false, clinicalTest.token);
 
-        ca = clinicalTest.catalogManager.getClinicalAnalysisManager().get(clinicalTest.studyFqn, caId, QueryOptions.empty(),
-                clinicalTest.token).first();
 
-        for (ClinicalVariant primaryFinding : ca.getSecondaryInterpretations().get(0).getPrimaryFindings()) {
-            System.out.println("primaryFinding = " + primaryFinding.getId());
-            for (ClinicalVariantEvidence evidence : primaryFinding.getEvidences()) {
-                System.out.println("\tEvidence " + evidence.getClassification().getTier() + " (gene, transcript, panel, moi, so): "
-                        + evidence.getGenomicFeature().getGeneName() + ", "
-                        + evidence.getGenomicFeature().getTranscriptId() + ", "
-                        + evidence.getPanelId() + ", "
-                        + evidence.getModeOfInheritances().get(0) + ", "
-                        +  StringUtils.join(evidence.getGenomicFeature().getConsequenceTypes().stream().map(ct -> ct.getName()).toArray(), ",")
-                );
-            }
-        }
-
-        assertEquals(1, ca.getSecondaryInterpretations().size());
-        assertEquals(interpretationName, ca.getSecondaryInterpretations().get(0).getName());
-        assertEquals(interpretationDescription, ca.getSecondaryInterpretations().get(0).getDescription());
-        assertEquals(3, ca.getSecondaryInterpretations().get(0).getPrimaryFindings().size());
-        int numEvidences = 0;
-        for (ClinicalVariant primaryFinding : ca.getSecondaryInterpretations().get(0).getPrimaryFindings()) {
-            numEvidences += primaryFinding.getEvidences().size();
-        }
-        checkEvidence("13:24905747:C:T", "TIER3", "CENPJ", "ENST00000418179.1", "Intellectual_disability-PanelAppId-285",
-                COMPOUND_HETEROZYGOUS, "2KB_upstream_variant", ca.getSecondaryInterpretations().get(0).getPrimaryFindings());
-        checkEvidence("13:24907147:A:C", "TIER2", "CENPJ", "XM_011535150.2", "Intellectual_disability-PanelAppId-285",
-                COMPOUND_HETEROZYGOUS, "missense_variant", ca.getSecondaryInterpretations().get(0).getPrimaryFindings());
-        checkEvidence("15:93020173:C:T", "TIER1", "CHD2", "ENST00000626874.2", "Epileptic_encephalopathy-PanelAppId-67",
-                DE_NOVO, "stop_gained", ca.getSecondaryInterpretations().get(0).getPrimaryFindings());
-        assertEquals(34, numEvidences);
-
-        assertTrue(ca.getSecondaryInterpretations().get(0).getAttributes().containsKey("configuration"));
-        RdInterpretationConfiguration config = JacksonUtils.getDefaultObjectMapper().convertValue(ca.getSecondaryInterpretations()
-                .get(0).getAttributes().get("configuration"), RdInterpretationConfiguration.class);
-        Assert.assertEquals(9, config.getQueries().size());
-        Assert.assertEquals(3, config.getTierConfiguration().getTiers().size());
-        Assert.assertEquals("TIER1", config.getTierConfiguration().getTiers().get("tier_1").getLabel());
-        Assert.assertEquals("TIER3", config.getTierConfiguration().getTiers().get("tier_3").getLabel());
+        checkResults(caId, false);
 
         // Clean up interpretations
         deleteInterpretations();
     }
 
     @Test
-    public void testClinicalInterpretationWithCustomConfigAndPrimary() throws IOException, CatalogException, ToolException, StorageEngineException {
+    public void testClinicalInterpretationWithFileConfigAndPrimary() throws IOException, CatalogException, ToolException, StorageEngineException {
         Assume.assumeTrue(Paths.get("/opt/tiering-data").toFile().exists());
 
+        interpretationName = "Primary - test #2";
+        interpretationDescription = "Primary interpreatation for test #2";
         String caId = clinicalTest.CA_OPA_15914_1;
         checkClinicalAnalysis(caId);
         deleteInterpretations(false);
-
-        String interpretationName = "test #1";
-        String interpretationDescription = "Hello my interpretation test #1";
 
         outDir = Paths.get(opencga.createTmpOutdir("_interpretation_custom_config"));
         System.out.println("opencga.getOpencgaHome() = " + opencga.getOpencgaHome().toAbsolutePath());
@@ -225,10 +185,6 @@ public class RdInterpretationAnalysisToolTest {
         // Read tiering configuration and register in catalog
         Path configPath = opencga.getOpencgaHome().resolve(ANALYSIS_DIRNAME).resolve("rd").resolve("rd-interpretation-configuration.yml");
         RdInterpretationConfiguration interpretationConfiguration = JacksonUtils.getDefaultObjectMapper().convertValue(new Yaml().load(Files.newInputStream(configPath)), RdInterpretationConfiguration.class);
-        for (String key: interpretationConfiguration.getQueries().keySet()) {
-            Map<String, Object> filters = (Map<String, Object>) interpretationConfiguration.getQueries().get(key);
-            filters.remove("cohortStatsMaf");
-        }
         Path updatedConfigPath = Paths.get(opencga.createTmpOutdir("_interpretation_custom_config_data")).resolve(configPath.getFileName());
         JacksonUtils.getDefaultObjectMapper().writerFor(RdInterpretationConfiguration.class).writeValue(updatedConfigPath.toFile(), interpretationConfiguration);
         InputStream inputStream = Files.newInputStream(updatedConfigPath);
@@ -250,45 +206,7 @@ public class RdInterpretationAnalysisToolTest {
         toolRunner.execute(RdInterpretationAnalysisTool.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, clinicalTest.studyFqn),
                 outDir, null, false, clinicalTest.token);
 
-        ca = clinicalTest.catalogManager.getClinicalAnalysisManager().get(clinicalTest.studyFqn, caId, QueryOptions.empty(),
-                clinicalTest.token).first();
-
-        assertEquals(1, ca.getSecondaryInterpretations().size());
-        assertEquals(interpretationName, ca.getInterpretation().getName());
-        assertEquals(interpretationDescription, ca.getInterpretation().getDescription());
-        for (ClinicalVariant primaryFinding : ca.getInterpretation().getPrimaryFindings()) {
-            System.out.println("primaryFinding = " + primaryFinding.getId());
-            for (ClinicalVariantEvidence evidence : primaryFinding.getEvidences()) {
-                System.out.println("\tEvidence " + evidence.getClassification().getTier() + " (gene, transcript, panel, moi, so): "
-                        + evidence.getGenomicFeature().getGeneName() + ", "
-                        + evidence.getGenomicFeature().getTranscriptId() + ", "
-                        + evidence.getPanelId() + ", "
-                        + evidence.getModeOfInheritances().get(0) + ", "
-                        +  StringUtils.join(evidence.getGenomicFeature().getConsequenceTypes().stream().map(ct -> ct.getName()).toArray(), ",")
-                );
-            }
-        }
-
-        assertEquals(3, ca.getInterpretation().getPrimaryFindings().size());
-        int numEvidences = 0;
-        for (ClinicalVariant primaryFinding : ca.getInterpretation().getPrimaryFindings()) {
-            numEvidences += primaryFinding.getEvidences().size();
-        }
-        checkEvidence("13:24905747:C:T", "TIER3", "CENPJ", "ENST00000418179.1", "Intellectual_disability-PanelAppId-285",
-                COMPOUND_HETEROZYGOUS, "2KB_upstream_variant", ca.getInterpretation().getPrimaryFindings());
-        checkEvidence("13:24907147:A:C", "TIER2", "CENPJ", "XM_011535150.2", "Intellectual_disability-PanelAppId-285",
-                COMPOUND_HETEROZYGOUS, "missense_variant", ca.getInterpretation().getPrimaryFindings());
-        checkEvidence("15:93020173:C:T", "TIER1", "CHD2", "ENST00000626874.2", "Epileptic_encephalopathy-PanelAppId-67",
-                DE_NOVO, "stop_gained", ca.getInterpretation().getPrimaryFindings());
-        assertEquals(34, numEvidences);
-
-        assertTrue(ca.getInterpretation().getAttributes().containsKey("configuration"));
-        RdInterpretationConfiguration config = JacksonUtils.getDefaultObjectMapper().convertValue(ca.getInterpretation()
-                .getAttributes().get("configuration"), RdInterpretationConfiguration.class);
-        Assert.assertEquals(9, config.getQueries().size());
-        Assert.assertEquals(3, config.getTierConfiguration().getTiers().size());
-        Assert.assertEquals("TIER1", config.getTierConfiguration().getTiers().get("tier_1").getLabel());
-        Assert.assertEquals("TIER3", config.getTierConfiguration().getTiers().get("tier_3").getLabel());
+        checkResults(caId, true);
 
         // Clean up interpretations
         deleteInterpretations();
@@ -352,5 +270,55 @@ public class RdInterpretationAnalysisToolTest {
             assertEquals(null, ca.getInterpretation());
         }
         assertEquals(0, ca.getSecondaryInterpretations().size());
+    }
+
+    private void checkResults(String caId, boolean primary) throws CatalogException {
+        ca = clinicalTest.catalogManager.getClinicalAnalysisManager().get(clinicalTest.studyFqn, caId, QueryOptions.empty(),
+                clinicalTest.token).first();
+
+        Interpretation interpretation;
+        if (primary) {
+            interpretation = ca.getInterpretation();
+        } else {
+            interpretation = ca.getSecondaryInterpretations().get(0);
+            assertEquals(1, ca.getSecondaryInterpretations().size());
+        }
+
+        assertEquals(interpretationName, interpretation.getName());
+        assertEquals(interpretationDescription, interpretation.getDescription());
+
+        for (ClinicalVariant primaryFinding : interpretation.getPrimaryFindings()) {
+            System.out.println("primaryFinding = " + primaryFinding.getId());
+            for (ClinicalVariantEvidence evidence : primaryFinding.getEvidences()) {
+                System.out.println("\tEvidence " + evidence.getClassification().getTier() + " (gene, transcript, panel, moi, so): "
+                        + evidence.getGenomicFeature().getGeneName() + ", "
+                        + evidence.getGenomicFeature().getTranscriptId() + ", "
+                        + evidence.getPanelId() + ", "
+                        + evidence.getModeOfInheritances().get(0) + ", "
+                        +  StringUtils.join(evidence.getGenomicFeature().getConsequenceTypes().stream().map(ct -> ct.getName()).toArray(), ",")
+                );
+            }
+        }
+
+        assertEquals(3, interpretation.getPrimaryFindings().size());
+        int numEvidences = 0;
+        for (ClinicalVariant primaryFinding : interpretation.getPrimaryFindings()) {
+            numEvidences += primaryFinding.getEvidences().size();
+        }
+        checkEvidence("13:24905747:C:T", "TIER3", "CENPJ", "ENST00000418179.1", "Intellectual_disability-PanelAppId-285",
+                COMPOUND_HETEROZYGOUS, "2KB_upstream_variant", interpretation.getPrimaryFindings());
+        checkEvidence("13:24907147:A:C", "TIER2", "CENPJ", "XM_011535150.2", "Intellectual_disability-PanelAppId-285",
+                COMPOUND_HETEROZYGOUS, "missense_variant", interpretation.getPrimaryFindings());
+        checkEvidence("15:93020173:C:T", "TIER1", "CHD2", "ENST00000626874.2", "Epileptic_encephalopathy-PanelAppId-67",
+                DE_NOVO, "stop_gained", interpretation.getPrimaryFindings());
+        assertEquals(34, numEvidences);
+
+        assertTrue(interpretation.getAttributes().containsKey("configuration"));
+        RdInterpretationConfiguration config = JacksonUtils.getDefaultObjectMapper().convertValue(interpretation
+                .getAttributes().get("configuration"), RdInterpretationConfiguration.class);
+        Assert.assertEquals(9, config.getQueries().size());
+        Assert.assertEquals(3, config.getTierConfiguration().getTiers().size());
+        Assert.assertEquals("TIER1", config.getTierConfiguration().getTiers().get("tier_1").getLabel());
+        Assert.assertEquals("TIER3", config.getTierConfiguration().getTiers().get("tier_3").getLabel());
     }
 }

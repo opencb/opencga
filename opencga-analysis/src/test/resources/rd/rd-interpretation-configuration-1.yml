@@ -17,18 +17,20 @@ _COMMONS:
       - TR_J_gene
       - TR_V_gene
     populationFrequencyAlt:
-      - 1000G:AFR<0.002
-      - 1000G:AMR<0.002
-      - 1000G:EAS<0.002
-      - 1000G:EUR<0.002
-      - 1000G:SAS<0.002
-      - GNOMAD_GENOMES:AFR<0.001
-      - GNOMAD_GENOMES:AMR<0.001
-      - GNOMAD_GENOMES:EAS<0.001
-      - GNOMAD_GENOMES:FIN<0.001
-      - GNOMAD_GENOMES:NFE<0.001
-      - GNOMAD_GENOMES:ASJ<0.001
-      - GNOMAD_GENOMES:OTH<0.002
+      - 1000G:ALL<0.005
+      #      - 1000G:AFR<0.002
+      #      - 1000G:AMR<0.002
+      #      - 1000G:EAS<0.002
+      #      - 1000G:EUR<0.002
+      #      - 1000G:SAS<0.002
+      - GNOMAD_GENOMES:ALL<0.001
+    #      - GNOMAD_GENOMES:AFR<0.001
+    #      - GNOMAD_GENOMES:AMR<0.001
+    #      - GNOMAD_GENOMES:EAS<0.001
+    #      - GNOMAD_GENOMES:FIN<0.001
+    #      - GNOMAD_GENOMES:NFE<0.001
+    #      - GNOMAD_GENOMES:ASJ<0.001
+    #      - GNOMAD_GENOMES:OTH<0.002
     ct:
       - transcript_ablation
       - splice_acceptor_variant
@@ -62,18 +64,20 @@ _COMMONS:
       - TR_J_gene
       - TR_V_gene
     populationFrequencyAlt:
-      - 1000G:AFR<0.01
-      - 1000G:AMR<0.01
-      - 1000G:EAS<0.01
-      - 1000G:EUR<0.01
-      - 1000G:SAS<0.01
-      - GNOMAD_GENOMES:AFR<0.01
-      - GNOMAD_GENOMES:AMR<0.01
-      - GNOMAD_GENOMES:EAS<0.01
-      - GNOMAD_GENOMES:FIN<0.01
-      - GNOMAD_GENOMES:NFE<0.01
-      - GNOMAD_GENOMES:ASJ<0.01
-      - GNOMAD_GENOMES:OTH<0.01
+      - 1000G:ALL<0.001
+      #      - 1000G:AFR<0.01
+      #      - 1000G:AMR<0.01
+      #      - 1000G:EAS<0.01
+      #      - 1000G:EUR<0.01
+      #      - 1000G:SAS<0.01
+      - GNOMAD_GENOMES:ALL<0.001
+    #      - GNOMAD_GENOMES:AFR<0.01
+    #      - GNOMAD_GENOMES:AMR<0.01
+    #      - GNOMAD_GENOMES:EAS<0.01
+    #      - GNOMAD_GENOMES:FIN<0.01
+    #      - GNOMAD_GENOMES:NFE<0.01
+    #      - GNOMAD_GENOMES:ASJ<0.01
+    #      - GNOMAD_GENOMES:OTH<0.01
     ct:
       - transcript_ablation
       - splice_acceptor_variant
