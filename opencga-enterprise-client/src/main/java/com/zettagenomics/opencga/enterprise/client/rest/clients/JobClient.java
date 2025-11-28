@@ -82,6 +82,9 @@ public class JobClient extends ParentClient {
      *       toolId: Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g.
      *            '~value' for case sensitive, '~/value/i' for case insensitive search.
      *       toolType: Tool type executed by the job [OPERATION, ANALYSIS].
+     *       tool.minimumRequirements.queue: Queue where the job is expected to be executed.
+     *       tool.minimumRequirements.processorType: Processor type required to run the job. Allowed values: [CPU, GPU, FPGA].
+     *       execution.queue.id: Queue id where the job has been submitted to be executed.
      *       userId: User that created the job.
      *       priority: Priority of the job.
      *       status: Filter by status.
@@ -134,6 +137,9 @@ public class JobClient extends ParentClient {
      *       toolId: Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g.
      *            '~value' for case sensitive, '~/value/i' for case insensitive search.
      *       toolType: Tool type executed by the job [OPERATION, ANALYSIS].
+     *       tool.minimumRequirements.queue: Queue where the job is expected to be executed.
+     *       tool.minimumRequirements.processorType: Processor type required to run the job. Allowed values: [CPU, GPU, FPGA].
+     *       execution.queue.id: Queue id where the job has been submitted to be executed.
      *       tool.externalExecutor.id: Id of the external executor. This field is only applicable for jobs executed by an external executor.
      *       parentId: Job id that generated this job (if any).
      *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
@@ -199,6 +205,9 @@ public class JobClient extends ParentClient {
      *       toolId: Tool ID executed by the job. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g.
      *            '~value' for case sensitive, '~/value/i' for case insensitive search.
      *       toolType: Tool type executed by the job [OPERATION, ANALYSIS].
+     *       tool.minimumRequirements.queue: Queue where the job is expected to be executed.
+     *       tool.minimumRequirements.processorType: Processor type required to run the job. Allowed values: [CPU, GPU, FPGA].
+     *       execution.queue.id: Queue id where the job has been submitted to be executed.
      *       tool.externalExecutor.id: Id of the external executor. This field is only applicable for jobs executed by an external executor.
      *       parentId: Job id that generated this job (if any).
      *       dryRun: Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters
