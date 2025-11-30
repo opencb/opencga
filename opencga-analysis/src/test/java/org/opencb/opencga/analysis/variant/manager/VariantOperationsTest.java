@@ -124,8 +124,8 @@ public class VariantOperationsTest {
     public static Object[][] parameters() {
         return new Object[][]{
 //                {MongoDBVariantStorageEngine.STORAGE_ENGINE_ID},
-                {DummyVariantStorageEngine.STORAGE_ENGINE_ID},
-                {HadoopVariantStorageEngine.STORAGE_ENGINE_ID}
+                {HadoopVariantStorageEngine.STORAGE_ENGINE_ID},
+                {DummyVariantStorageEngine.STORAGE_ENGINE_ID}
         };
     }
 
@@ -175,7 +175,7 @@ public class VariantOperationsTest {
 
             try {
                 VariantStorageEngine engine = opencga.getStorageEngineFactory().getVariantStorageEngine(storageEngine, DB_NAME);
-                if (storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID)) {
+                if (storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID) && hadoopExternalResource.isReady()) {
                     VariantHbaseTestUtils.printVariants(((VariantHadoopDBAdaptor) engine.getDBAdaptor()), Paths.get(opencga.createTmpOutdir("_hbase_print_variants_AFTER")).toUri());
                 }
             } catch (Exception e) {
@@ -189,10 +189,6 @@ public class VariantOperationsTest {
 
     @BeforeClass
     public static void beforeClass() throws Exception {
-        if (HadoopVariantStorageTest.HadoopSolrSupport.isSolrTestingAvailable()) {
-            solrExternalResource = new VariantSolrExternalResource();
-            solrExternalResource.before();
-        }
     }
 
     @AfterClass
@@ -202,8 +198,9 @@ public class VariantOperationsTest {
             hadoopExternalResource.after();
             hadoopExternalResource = null;
         }
-        if (HadoopVariantStorageTest.HadoopSolrSupport.isSolrTestingAvailable()) {
+        if (solrExternalResource != null) {
             solrExternalResource.after();
+            solrExternalResource = null;
         }
     }
 
@@ -245,6 +242,14 @@ public class VariantOperationsTest {
             DummyVariantStorageEngine.configure(opencga.getStorageEngineFactory(), true);
         }
 
+        if (HadoopVariantStorageTest.HadoopSolrSupport.isSolrTestingAvailable()) {
+            if (solrExternalResource == null) {
+                solrExternalResource = new VariantSolrExternalResource();
+                solrExternalResource.before();
+            } else {
+                solrExternalResource.clearCollections();
+            }
+        }
         catalogManager = opencga.getCatalogManager();
         if (HadoopVariantStorageTest.HadoopSolrSupport.isSolrTestingAvailable()) {
             variantStorageManager = opencga.getVariantStorageManager(solrExternalResource);
@@ -266,6 +271,12 @@ public class VariantOperationsTest {
         }
 
         setUpCatalogManager();
+        if (HadoopVariantStorageTest.HadoopSolrSupport.isSolrTestingAvailable()) {
+            solrExternalResource.configure(variantStorageManager.getVariantStorageEngine(STUDY, token));
+            solrExternalResource.configure(variantStorageManager.getVariantStorageEngineForStudyOperation(STUDY, new ObjectMap(), token));
+        }
+
+        dummyVariantSetup(variantStorageManager, STUDY, token);
 
         file = opencga.createFile(STUDY, "variant-test-file.vcf.gz", token);
 //            variantStorageManager.index(STUDY, file.getId(), opencga.createTmpOutdir("_index"), new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true), token);

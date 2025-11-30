@@ -401,6 +401,7 @@ public class ParamConstants {
     public static final String COHORT_NAME_PARAM = "name";
     public static final String COHORT_UUID_PARAM = "uuid";
     public static final String COHORT_TYPE_PARAM = "type";
+    public static final String COHORT_TAGS_PARAM = "tags";
     public static final String COHORT_CREATION_DATE_PARAM = CREATION_DATE_PARAM;
     public static final String COHORT_MODIFICATION_DATE_PARAM = MODIFICATION_DATE_PARAM;
     public static final String COHORT_DELETED_PARAM = DELETED_PARAM;
@@ -425,6 +426,7 @@ public class ParamConstants {
     public static final String COHORT_ACL_DESCRIPTION = ACL_PARAM;
     public static final String COHORT_SAMPLES_DESCRIPTION = "Cohort sample IDs";
     public static final String COHORT_NUMBER_OF_SAMPLES_DESCRIPTION = "Number of samples";
+    public static final String COHORT_TAGS_DESCRIPTION = "Tags" + REGEX_SUPPORT;
     public static final String COHORT_RELEASE_DESCRIPTION = RELEASE_PARAM;
     public static final String CLINICAL_ID_PARAM = "id";
     public static final String CLINICAL_UUID_PARAM = "uuid";
@@ -581,9 +583,16 @@ public class ParamConstants {
     public static final String JOB_INTERNAL_KILL_JOB_REQUESTED_PARAM = "internal.killJobRequested";
     public static final String JOB_INTERNAL_KILL_JOB_REQUESTED_DESCRIPTION = "Flag indicating that the user requested to kill the job.";
     public static final String JOB_TOOL_TYPE_PARAM = "toolType";
+    public static final String JOB_TOOL_REQUIREMENTS_PROCESSOR_TYPE_PARAM = "tool.minimumRequirements.processorType";
+    public static final String JOB_TOOL_REQUIREMENTS_QUEUE_PARAM = "tool.minimumRequirements.queue";
+    public static final String JOB_EXECUTION_QUEUE_ID_PARAM = "execution.queue.id";
     public static final String JOB_TYPE_DESCRIPTION = "Job type (NATIVE, WORKFLOW, CUSTOM or WALKER)";
     public static final String JOB_TOOL_ID_DESCRIPTION = "Tool ID executed by the job" + REGEX_SUPPORT;
     public static final String JOB_TOOL_TYPE_DESCRIPTION = "Tool type executed by the job [OPERATION, ANALYSIS]";
+    public static final String JOB_TOOL_REQUIREMENTS_PROCESSOR_TYPE_DESCRIPTION = "Processor type required to run the job. "
+            + "Allowed values: [CPU, GPU, FPGA]";
+    public static final String JOB_TOOL_REQUIREMENTS_QUEUE_DESCRIPTION = "Queue where the job is expected to be executed.";
+    public static final String JOB_EXECUTION_QUEUE_ID_DESCRIPTION = "Queue id where the job has been submitted to be executed.";
     public static final String JOB_USER_PARAM = "userId";
     public static final String JOB_USER_DESCRIPTION = "User that created the job";
     public static final String JOB_PRIORITY_PARAM = "priority";

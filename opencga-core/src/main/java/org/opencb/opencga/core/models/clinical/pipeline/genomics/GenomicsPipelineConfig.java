@@ -18,9 +18,11 @@ package org.opencb.opencga.core.models.clinical.pipeline.genomics;
 
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.models.clinical.pipeline.PipelineConfig;
-import org.opencb.opencga.core.models.clinical.pipeline.PipelineInput;
 
 public class GenomicsPipelineConfig extends PipelineConfig {
+
+    @DataField(id = "input", description = "Genomics pipeline input configuration")
+    private GenomicsPipelineInput input;
 
     @DataField(id = "steps", description = "Pipeline steps: quality control, alignment and variant calling")
     private GenomicsPipelineSteps steps;
@@ -28,22 +30,33 @@ public class GenomicsPipelineConfig extends PipelineConfig {
     public GenomicsPipelineConfig() {
     }
 
-    public GenomicsPipelineConfig(String name, String version, String type, String description, PipelineInput input, GenomicsPipelineSteps steps) {
-        super(name, version, type, description, input);
+    public GenomicsPipelineConfig(String name, String version, String type, String description, GenomicsPipelineInput input,
+                                  GenomicsPipelineSteps steps) {
+        super(name, version, type, description);
+        this.input = input;
         this.steps = steps;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("GenomicsPipelineConfig{");
-        sb.append("steps=").append(steps);
+        sb.append("input=").append(input);
+        sb.append(", steps=").append(steps);
         sb.append(", name='").append(name).append('\'');
         sb.append(", version='").append(version).append('\'');
         sb.append(", type='").append(type).append('\'');
         sb.append(", description='").append(description).append('\'');
-        sb.append(", input=").append(input);
         sb.append('}');
         return sb.toString();
+    }
+
+    public GenomicsPipelineInput getInput() {
+        return input;
+    }
+
+    public GenomicsPipelineConfig setInput(GenomicsPipelineInput input) {
+        this.input = input;
+        return this;
     }
 
     public GenomicsPipelineSteps getSteps() {

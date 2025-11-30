@@ -1,16 +1,16 @@
 package org.opencb.opencga.analysis.wrappers.clinicalpipeline.genomics;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.clinical.pipeline.genomics.GenomicsAlignmentPipelineTool;
-import org.opencb.opencga.core.models.clinical.pipeline.genomics.GenomicsClinicalPipelineWrapperParams;
-import org.opencb.opencga.core.models.clinical.pipeline.genomics.GenomicsPipelineConfig;
-import org.opencb.opencga.core.models.clinical.pipeline.genomics.GenomicsVariantCallingPipelineTool;
+import org.opencb.opencga.core.models.clinical.pipeline.PipelineSample;
+import org.opencb.opencga.core.models.clinical.pipeline.genomics.*;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;
@@ -60,8 +60,11 @@ public class GenomicsClinicalPipelineWrapperAnalysis extends OpenCgaTool {
 
         setUpStorageEngineExecutor(study);
 
-        // Check commons
-        updatedPipelineConfig = checkCommons(analysisParams.getPipelineParams(), catalogManager, study, token);
+        // Check pipeline configuration
+        updatedPipelineConfig = checkPipelineConfig();
+
+        // Update from params: samples, data dir and index dir
+        updatePipelineConfigFromParams();
 
         // Check pipeline steps
         checkPipelineSteps();
@@ -121,6 +124,66 @@ public class GenomicsClinicalPipelineWrapperAnalysis extends OpenCgaTool {
                     : new ObjectMap();
 
             getVariantStorageManager().index(study, vcfFile.getId(), getScratchDir().toAbsolutePath().toString(), storageOptions, token);
+        }
+    }
+
+    private GenomicsPipelineConfig checkPipelineConfig() throws ToolException, CatalogException, IOException {
+        // Check pipeline configuration, if a pipeline file is provided, check the file exists and then read the file content
+        // to add it to the params
+        GenomicsClinicalPipelineParams params = analysisParams.getPipelineParams();
+        if (StringUtils.isEmpty(params.getPipelineFile()) && params.getPipeline() == null) {
+            throw new ToolException("Missing genomics pipeline configuration. You can either provide a pipeline configuration file or"
+                    + " directly the pipeline configuration.");
+        }
+
+        // Get pipeline config
+        if (!StringUtils.isEmpty(params.getPipelineFile())) {
+            String pipelineFile = params.getPipelineFile();
+            logger.info("Checking genomics pipeline configuration file {}", pipelineFile);
+            File opencgaFile = catalogManager.getFileManager().get(study, pipelineFile, QueryOptions.empty(), token).first();
+            if (opencgaFile.getType() != File.Type.FILE) {
+                throw new ToolException("Genomics pipeline configuration file '" + pipelineFile + "' is not a file.");
+            }
+            Path pipelinePath = Paths.get(opencgaFile.getUri()).toAbsolutePath();
+            return JacksonUtils.getDefaultObjectMapper().readerFor(GenomicsPipelineConfig.class).readValue(pipelinePath.toFile());
+        } else {
+            logger.info("Getting genomics pipeline configuration provided directly in the parameters");
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.readValue(mapper.writeValueAsString(params.getPipeline()), GenomicsPipelineConfig.class);
+        }
+    }
+
+    private void updatePipelineConfigFromParams() throws ToolException, CatalogException {
+        // Init input if not present
+        if (updatedPipelineConfig.getInput() == null) {
+            updatedPipelineConfig.setInput(new GenomicsPipelineInput());
+        }
+
+        // Update sample files (by getting the real paths) in the pipeline configuration
+        if (CollectionUtils.isNotEmpty(analysisParams.getPipelineParams().getSamples())) {
+            List<PipelineSample> pipelineSamples = new ArrayList<>();
+            for (String sample : analysisParams.getPipelineParams().getSamples()) {
+                PipelineSample pipelineSample = createPipelineSampleFromString(sample);
+                List<String> updatedFiles = new ArrayList<>();
+                for (String file : pipelineSample.getFiles()) {
+                    Path path = getPhysicalFilePath(file, study, catalogManager, token);
+                    updatedFiles.add(path.toString());
+                }
+                // Set updated files in the sample
+                pipelineSample.setFiles(updatedFiles);
+                // And add to the list of samples
+                pipelineSamples.add(pipelineSample);
+            }
+            // Add updated samples to the pipeline config
+            if (CollectionUtils.isNotEmpty(pipelineSamples)) {
+                updatedPipelineConfig.getInput().setSamples(pipelineSamples);
+            }
+        }
+
+        // If index dir is provided in the pipeline params, set it in the pipeline config to be processed later
+        if (StringUtils.isNotEmpty(analysisParams.getPipelineParams().getIndexDir())) {
+            Path path = getPhysicalDirPath(analysisParams.getPipelineParams().getIndexDir(), study, catalogManager, token);
+            updatedPipelineConfig.getInput().setIndexDir(path.toString());
         }
     }
 

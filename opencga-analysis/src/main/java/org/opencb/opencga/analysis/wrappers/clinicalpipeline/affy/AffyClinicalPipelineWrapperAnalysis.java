@@ -1,12 +1,18 @@
 package org.opencb.opencga.analysis.wrappers.clinicalpipeline.affy;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyClinicalPipelineParams;
 import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyClinicalPipelineWrapperParams;
 import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyPipelineConfig;
+import org.opencb.opencga.core.models.clinical.pipeline.affy.AffyPipelineInput;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;
@@ -17,6 +23,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -53,8 +60,11 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaTool {
 
         setUpStorageEngineExecutor(study);
 
-        // Check commons
-        updatedPipelineConfig = checkCommons(analysisParams.getPipelineParams(), catalogManager, study, token);
+        // Check pipeline configuration
+        updatedPipelineConfig = checkPipelineConfig();
+
+        // Update from params: samples, data dir and index dir
+        updatePipelineConfigFromParams();
 
         // Check pipeline steps
         checkPipelineSteps();
@@ -116,6 +126,51 @@ public class AffyClinicalPipelineWrapperAnalysis extends OpenCgaTool {
                 : new ObjectMap();
 
         getVariantStorageManager().index(study, vcfFile.getId(), getScratchDir().toAbsolutePath().toString(), storageOptions, token);
+    }
+
+    private AffyPipelineConfig checkPipelineConfig() throws ToolException, CatalogException, IOException {
+        // Check pipeline configuration, if a pipeline file is provided, check the file exists and then read the file content
+        // to add it to the params
+        AffyClinicalPipelineParams params = analysisParams.getPipelineParams();
+        if (StringUtils.isEmpty(params.getPipelineFile()) && params.getPipeline() == null) {
+            throw new ToolException("Missing affy pipeline configuration. You can either provide a pipeline configuration file or"
+                    + " directly the pipeline configuration.");
+        }
+
+        // Get pipeline config
+        if (!StringUtils.isEmpty(params.getPipelineFile())) {
+            String pipelineFile = params.getPipelineFile();
+            logger.info("Checking affy pipeline configuration file {}", pipelineFile);
+            File opencgaFile = catalogManager.getFileManager().get(study, pipelineFile, QueryOptions.empty(), token).first();
+            if (opencgaFile.getType() != File.Type.FILE) {
+                throw new ToolException("Affy pipeline configuration file '" + pipelineFile + "' is not a file.");
+            }
+            Path pipelinePath = Paths.get(opencgaFile.getUri()).toAbsolutePath();
+            return JacksonUtils.getDefaultObjectMapper().readerFor(AffyPipelineConfig.class).readValue(pipelinePath.toFile());
+        } else {
+            logger.info("Getting affy pipeline configuration provided directly in the parameters");
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.readValue(mapper.writeValueAsString(params.getPipeline()), AffyPipelineConfig.class);
+        }
+    }
+
+    private void updatePipelineConfigFromParams() throws ToolException, CatalogException {
+        // Init input if not present
+        if (updatedPipelineConfig.getInput() == null) {
+            updatedPipelineConfig.setInput(new AffyPipelineInput());
+        }
+
+        // If data dir is provided in the pipeline params, set it in the pipeline config to be processed later
+        if (StringUtils.isNotEmpty(analysisParams.getPipelineParams().getDataDir())) {
+            Path path = getPhysicalDirPath(analysisParams.getPipelineParams().getDataDir(), study, catalogManager, token);
+            updatedPipelineConfig.getInput().setDataDir(path.toString());
+        }
+
+        // If index dir is provided in the pipeline params, set it in the pipeline config to be processed later
+        if (StringUtils.isNotEmpty(analysisParams.getPipelineParams().getIndexDir())) {
+            Path path = getPhysicalDirPath(analysisParams.getPipelineParams().getIndexDir(), study, catalogManager, token);
+            updatedPipelineConfig.getInput().setIndexDir(path.toString());
+        }
     }
 
     private void checkPipelineSteps() throws ToolException, CatalogException {

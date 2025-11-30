@@ -220,10 +220,41 @@ analysis:
   execution:
     # Accepted values are "local", "SGE", "k8s"
     # see org.opencb.opencga.master.monitor.executors.ExecutorFactory
-    id: "${OPENCGA.EXECUTION.MODE}"
-    defaultQueue: ""            # Default queue to be used to submit jobs
-    availableQueues:            # Other queues for specific applications
-    toolsPerQueue:
+    id: "${OPENCGA.EXECUTION.MODE}"    # DEPRECATED Use queues.executor instead
+    defaultQueue: ""                   # DEPRECATED
+    availableQueues:                   # DEPRECATED Use queues
+    toolsPerQueue:                     # DEPRECATED Never used
+    queues:
+#      - id: "default"
+#        executor: "local"
+#        description: "Default queue for execution"
+#        type: "CPU"
+#        cpu: 8
+#        memory: "32G"
+      - id: "scpu"
+        executor: "k8s"
+        description: "Small queue for execution"
+        processorType: "CPU"
+        cpu: 8
+        memory: "32G"
+      - id: "mcpu"
+        executor: "k8s"
+        description: "Medium queue for execution"
+        processorType: "CPU"
+        cpu: 16
+        memory: "64G"
+      - id: "sgpu"
+        executor: "k8s"
+        description: "Small queue for GPU executions"
+        processorType: "GPU"
+        cpu: 6
+        memory: "112G"
+    defaultRequest:
+      cpu: 2
+      memory: "8G"
+    requestFactor:
+      cpu: 0.95
+      memory: 0.9
     #       docker:
     #          - "circos"
     #          - "deeptools"

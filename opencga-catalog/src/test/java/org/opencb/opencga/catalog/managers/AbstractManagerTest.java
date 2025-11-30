@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.experimental.categories.Category;
@@ -179,6 +180,11 @@ public class  AbstractManagerTest extends GenericTest {
     private static boolean firstExecutionFinished = false;
 
     protected static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
+
+    @BeforeClass
+    public static void configureFirstExecution() {
+        firstExecutionFinished = false;
+    }
 
     @Before
     public void setUp() throws Exception {

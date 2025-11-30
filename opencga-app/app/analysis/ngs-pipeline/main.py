@@ -58,7 +58,7 @@ def parse_args(argv=None):
     run_parser.add_argument("-p", "--pipeline", required=True, help="Pipeline JSON file to execute")
     # run_parser.add_argument("-s", "--samples", help="Samples to be processed. Accepted format: sample_id::file1,file2::somatic(0/1)::role(F/M/C/U)")
     run_parser.add_argument("-d", "--data-dir", help="Input directory for data files. Accepted format: CEL")
-    run_parser.add_argument("-i", "--index-dir", required=True, help="Directory containing reference index and APT configuration files")
+    run_parser.add_argument("-i", "--index-dir", help="Directory containing reference index and APT configuration files")
     # run_parser.add_argument("--chip-type", help="Affymetrix chip type (e.g., 'Axiom_KU8', 'HG-U133_Plus_2')")
     run_parser.add_argument("--steps", default="quality-control,genotype", help="Pipeline step to execute")
     run_parser.add_argument("--overwrite", action="store_true", help="Force re-run even if step previously completed")
@@ -144,7 +144,7 @@ def get_pipeline(pipeline: str):
 
 def prepare(args):
     ## 1. Validate the index types
-    indexes = args.aligner_indexes.split(",")
+    indexes = args.indexes.split(",")
     for idx in indexes:
         if idx not in ["reference-genome", "bwa", "bwa-mem2", "minimap2", "bowtie2", "hisat2"]:
             logger.error(f"ERROR: Unsupported index type specified: {idx}")
