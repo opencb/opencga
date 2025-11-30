@@ -1,10 +1,6 @@
 from pathlib import Path
 
-from .aligners.bowtie2_aligner import Bowtie2Aligner
-from .aligners.bwa_aligner import BwaAligner
-from .aligners.bwamem2_aligner import BwaMem2Aligner
-from .aligners.minimap2_aligner import Minimap2Aligner
-from .base_processor import BaseProcessor
+from processing.base_processor import BaseProcessor
 
 
 class AffymetrixMicroarray(BaseProcessor):

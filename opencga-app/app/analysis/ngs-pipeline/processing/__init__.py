@@ -4,6 +4,6 @@ from .prepare_reference_indexes import PrepareReferenceIndexes
 from .quality_control import QualityControl
 from .variant_calling import VariantCalling
 
-from .affymetrix_microarray import AffymetrixMicroarray
+from .affymetrix import Affymetrix
 
-__all__ = ["QualityControl", "Alignment", "VariantCalling", "PrepareReferenceIndexes", "AffymetrixMicroarray"]
+__all__ = ["QualityControl", "Alignment", "VariantCalling", "PrepareReferenceIndexes", "Affymetrix"]

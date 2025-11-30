@@ -7,7 +7,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from processing import QualityControl, Alignment, VariantCalling, PrepareReferenceIndexes, AffymetrixMicroarray
+from processing import QualityControl, Alignment, VariantCalling, PrepareReferenceIndexes, Affymetrix
 
 # Define global constants
 VALID_STEPS = ["quality-control", "alignment", "variant-calling"]
@@ -290,7 +290,7 @@ def affy(args):
             logger.error(f"ERROR: 'data-dir' not found: {args.data_dir}")
             return 1
 
-    affy_impl = AffymetrixMicroarray(pipeline=pipeline, output=outdir, logger=logger)
+    affy_impl = Affymetrix(pipeline=pipeline, output=outdir, logger=logger)
     affy_impl.execute()
     return 0
 
