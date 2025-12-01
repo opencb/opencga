@@ -343,7 +343,7 @@ public class FieldConstants {
             + "'repository/image', 'registry/repository/image' ";
     public static final String CONTAINER_TAG_DESCRIPTION = "Container tag. It refers to a specific version of an image.";
     public static final String CONTAINER_DIGEST_DESCRIPTION = "Digest of the Container image. It is a sha256 hash that uniquely identifies a"
-            + " specific Container image.";
+            + " specific Container image. Example: 'sha256:3a5c8...'";
     public static final String CONTAINER_COMMANDLINE_DESCRIPTION = "Container command line which may contain additional parameters.";
     public static final String CONTAINER_USER_DESCRIPTION = "User that can access the private Container repository.";
     public static final String CONTAINER_PASSWORD_DESCRIPTION = "Password corresponding to the user that can access the Container repository.";

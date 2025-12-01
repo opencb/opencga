@@ -273,7 +273,7 @@ public class UserToolsCommandOptions {
         @Parameter(names = {"--container-tag"}, description = "Container tag. It refers to a specific version of an image.", required = false, arity = 1)
         public String containerTag;
     
-        @Parameter(names = {"--container-digest"}, description = "Digest of the Container image. It is a sha256 hash that uniquely identifies a specific Container image.", required = false, arity = 1)
+        @Parameter(names = {"--container-digest"}, description = "Digest of the Container image. It is a sha256 hash that uniquely identifies a specific Container image. Example: 'sha256:3a5c8...'", required = false, arity = 1)
         public String containerDigest;
     
         @Parameter(names = {"--container-command-line"}, description = "Container command line which may contain additional parameters.", required = false, arity = 1)
@@ -436,7 +436,7 @@ public class UserToolsCommandOptions {
         @Parameter(names = {"--container-tag"}, description = "Container tag. It refers to a specific version of an image.", required = false, arity = 1)
         public String containerTag;
     
-        @Parameter(names = {"--container-digest"}, description = "Digest of the Container image. It is a sha256 hash that uniquely identifies a specific Container image.", required = false, arity = 1)
+        @Parameter(names = {"--container-digest"}, description = "Digest of the Container image. It is a sha256 hash that uniquely identifies a specific Container image. Example: 'sha256:3a5c8...'", required = false, arity = 1)
         public String containerDigest;
     
         @Parameter(names = {"--container-command-line"}, description = "Container command line which may contain additional parameters.", required = false, arity = 1)
@@ -628,7 +628,7 @@ public class UserToolsCommandOptions {
         @Parameter(names = {"--container-tag"}, description = "Container tag. It refers to a specific version of an image.", required = false, arity = 1)
         public String containerTag;
     
-        @Parameter(names = {"--container-digest"}, description = "Digest of the Container image. It is a sha256 hash that uniquely identifies a specific Container image.", required = false, arity = 1)
+        @Parameter(names = {"--container-digest"}, description = "Digest of the Container image. It is a sha256 hash that uniquely identifies a specific Container image. Example: 'sha256:3a5c8...'", required = false, arity = 1)
         public String containerDigest;
     
         @Parameter(names = {"--container-command-line"}, description = "Container command line which may contain additional parameters.", required = false, arity = 1)
@@ -1040,7 +1040,7 @@ public class UserToolsCommandOptions {
         @Parameter(names = {"--container-tag"}, description = "Container tag. It refers to a specific version of an image.", required = false, arity = 1)
         public String containerTag;
     
-        @Parameter(names = {"--container-digest"}, description = "Digest of the Container image. It is a sha256 hash that uniquely identifies a specific Container image.", required = false, arity = 1)
+        @Parameter(names = {"--container-digest"}, description = "Digest of the Container image. It is a sha256 hash that uniquely identifies a specific Container image. Example: 'sha256:3a5c8...'", required = false, arity = 1)
         public String containerDigest;
     
         @Parameter(names = {"--container-command-line"}, description = "Container command line which may contain additional parameters.", required = false, arity = 1)

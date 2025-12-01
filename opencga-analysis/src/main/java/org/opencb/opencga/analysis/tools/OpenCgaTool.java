@@ -314,8 +314,7 @@ public abstract class OpenCgaTool {
     }
 
     private void deleteScratchDirectory() throws ToolException {
-        // FIXME: Why not delete scratch directory for NextFlowExecutor?
-        //        Risk of filling up the disk with junk files.
+        // FIXME: In the future, allow removing the scratch directory for Nextflow tools too
         if (NextFlowToolExecutor.ID.equals(getId())) {
             privateLogger.info("Skip deleting scratch directory for tool '{}'.", getId());
             return;
