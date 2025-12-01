@@ -30,6 +30,10 @@ on:
         description: "Whether to upload the build artifact or not"
         required: false
         default: true
+      ref-name:
+        type: string
+        required: false
+        default: ""
     secrets:
       SONAR_TOKEN:
         required: true
@@ -37,13 +41,14 @@ on:
 jobs:
 
   build:
-    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
+    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@TASK-8055
     with:
       needs_hadoop_preparation: true
       hadoop_flavour: ${{ inputs.hadoop }}
       maven_opts: -P${{ inputs.hadoop }} -Dopencga.war.name=opencga -Dcheckstyle.skip
       upload_artifact: ${{ inputs.upload_artifact }}
       dependency_repos: "java-common-libs,biodata"
+      ref-name: ${{ inputs.ref-name != '' && inputs.ref-name || github.ref_name }}
     secrets: inherit
 
   analysis:
@@ -61,6 +66,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
           cache: 'maven'
+          ref: ${{ inputs.ref-name != '' && inputs.ref-name || github.ref_name }}
       - name: Cache local Maven repository
         uses: actions/cache/restore@v4
         with:
@@ -83,6 +89,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: '10'
+          ref: ${{ inputs.ref-name != '' && inputs.ref-name || github.ref_name }}
       - name: Set up JDK 8
         uses: actions/setup-java@v4
         with:

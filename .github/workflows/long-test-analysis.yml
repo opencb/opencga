@@ -1,4 +1,4 @@
-name: Long test for run only on weekend
+name: Test active branches only in weekends
 
 
 ## Every Saturday at 01:10
@@ -13,9 +13,12 @@ jobs:
       fail-fast: false
       matrix:
         hadoop: ["hdi5.1", "emr6.1", "emr6.13", "emr7.5", "hbase2.0"]
+        test_profile: ["runShortTests","runMediumTests","runLongTests"]
+        branches: ${{ vars.ACTIVE_BRANCHES }}
     uses: ./.github/workflows/test-analysis.yml
     with:
-      test_profile: runShortTests,runMediumTests,runLongTests
+      test_profile: ${{ matrix.test_profile }}
       hadoop: ${{ matrix.hadoop }}
+      ref-name: ${{ matrix.branches }}
       upload_artifact: false
     secrets: inherit
