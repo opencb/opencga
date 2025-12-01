@@ -21,6 +21,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.config.DatabaseCredentials;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.config.storage.StorageEngineConfiguration;
@@ -34,6 +35,7 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -41,6 +43,7 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorExcept
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -112,7 +115,46 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator) throws StorageEngineException {
-        return new DefaultVariantAnnotationManager(annotator, getDBAdaptor(), getIOManagerProvider()){
+        return new DefaultVariantAnnotationManager(annotator, getDBAdaptor(), getIOManagerProvider()) {
+
+            @Override
+            protected void postAnnotate(Query query, boolean doCreate, boolean doLoad, ObjectMap params)
+                    throws VariantAnnotatorException, StorageEngineException, IOException {
+                super.postAnnotate(query, doCreate, doLoad, params);
+
+                VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
+                List<Integer> studies = VariantQueryProjectionParser.getIncludeStudies(query, null, metadataManager);
+
+                boolean sampleIndex = YesNoAuto.parse(params, VariantStorageOptions.ANNOTATION_SAMPLE_INDEX.key())
+                        .booleanValue(true);
+
+                if (!sampleIndex) {
+                    logger.info("Skip Sample Index Annotation");
+                    // Nothing to do!
+                    return;
+                } else {
+                    // Run on all pending samples
+                    for (Integer studyId : studies) {
+                        Set<Integer> samplesToUpdate = new HashSet<>();
+                        for (Integer file : filesToBeAnnotated.getOrDefault(studyId, Collections.emptyList())) {
+                            samplesToUpdate.addAll(metadataManager.getSampleIdsFromFileId(studyId, file));
+                        }
+                        for (Integer file : alreadyAnnotatedFiles.getOrDefault(studyId, Collections.emptyList())) {
+                            samplesToUpdate.addAll(metadataManager.getSampleIdsFromFileId(studyId, file));
+                        }
+                        if (!samplesToUpdate.isEmpty()) {
+                            int sampleIndexVersion = metadataManager.getStudyMetadata(studyId)
+                                    .getSampleIndexConfigurationLatest(true).getVersion();
+                            for (Integer sampleId : samplesToUpdate) {
+                                metadataManager.updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
+                                    sampleMetadata.setSampleIndexAnnotationStatus(TaskMetadata.Status.READY, sampleIndexVersion);
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+
             @Override
             public void saveAnnotation(String name, ObjectMap options) throws StorageEngineException, VariantAnnotatorException {
                 dbAdaptor.getMetadataManager().updateProjectMetadata(project -> {
