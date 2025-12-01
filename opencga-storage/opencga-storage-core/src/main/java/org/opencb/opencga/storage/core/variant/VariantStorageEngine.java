@@ -1145,17 +1145,18 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 // Remove files and belonging samples
                 metadataManager.removeIndexedFiles(studyMetadata.getId(), fileIds);
 
-                // Remove samples partial
-                metadataManager.removeSamples(studyMetadata.getId(), samplesPartial, fileIds, true);
+                for (Integer fileId : fileIds) {
+                    metadataManager.removeVariantFileMetadata(studyMetadata.getId(), fileId);
+                }
+
+                // Remove samples
+                metadataManager.removeSamples(studyMetadata.getId(), samplesPartial, fileIds);
 
                 // Restore default cohort with indexed samples
                 metadataManager.setSamplesToCohort(studyMetadata.getId(), StudyEntry.DEFAULT_COHORT,
                         metadataManager.getIndexedSamples(studyMetadata.getId()));
 
 
-                for (Integer fileId : fileIds) {
-                    metadataManager.removeVariantFileMetadata(studyMetadata.getId(), fileId);
-                }
             }
             return studyMetadata;
         });
