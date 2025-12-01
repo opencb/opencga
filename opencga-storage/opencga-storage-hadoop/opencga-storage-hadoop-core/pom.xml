@@ -454,6 +454,9 @@
                                 <ignoredUsedUndeclaredDependency>
                                     com.lmax:disruptor
                                 </ignoredUsedUndeclaredDependency>
+                                <ignoredUsedUndeclaredDependency>
+                                    org.apache.avro:avro-mapred
+                                </ignoredUsedUndeclaredDependency>
                             </ignoredUsedUndeclaredDependencies>
                         </configuration>
                     </execution>
