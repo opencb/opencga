@@ -954,11 +954,11 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             FileMetadata fileMetadata = getFileMetadata(studyId, fileId);
             samples.addAll(fileMetadata.getSamples());
         }
+        int updatedSamples = 0;
         for (Integer sample : samples) {
-            if (!isSampleIndexed(studyId, sample)) {
-                updateSampleMetadata(studyId, sample, sampleMetadata -> {
-                    sampleMetadata.setIndexStatus(TaskMetadata.Status.READY);
-                });
+            if (setNewIndexedSample(getSampleMetadata(studyId, sample))) {
+                updateSampleMetadata(studyId, sample, VariantStorageMetadataManager::setNewIndexedSample);
+                updatedSamples++;
             }
         }
 
@@ -972,6 +972,44 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         fileIdsFromSampleIdCache.clear();
         fileIdIndexedCache.clear();
         sampleIdIndexedCache.clear();
+    }
+
+    public static boolean setNewIndexedSample(SampleMetadata sampleMetadata) {
+        boolean updated = false;
+        if (sampleMetadata.getIndexStatus() != TaskMetadata.Status.READY) {
+            sampleMetadata.setIndexStatus(TaskMetadata.Status.READY);
+            updated = true;
+        }
+        if (sampleMetadata.getAnnotationStatus() != TaskMetadata.Status.NONE) {
+            sampleMetadata.setAnnotationStatus(TaskMetadata.Status.NONE);
+            updated = true;
+        }
+        if (sampleMetadata.getSecondaryAnnotationIndexStatus() != TaskMetadata.Status.NONE) {
+            sampleMetadata.setSecondaryAnnotationIndexStatus(TaskMetadata.Status.NONE);
+            updated = true;
+        }
+        if (sampleMetadata.getMendelianErrorStatus() != TaskMetadata.Status.NONE) {
+            sampleMetadata.setMendelianErrorStatus(TaskMetadata.Status.NONE);
+            updated = true;
+        }
+        if (sampleMetadata.getSampleIndexVersion() != null) {
+            for (Integer v : sampleMetadata.getSampleIndexVersions()) {
+                // Do not reset sampleIndexStatus. It's handled independently
+//                if (sampleMetadata.getSampleIndexStatus(v) != TaskMetadata.Status.NONE) {
+//                    sampleMetadata.setSampleIndexStatus(TaskMetadata.Status.NONE, v);
+//                    updated = true;
+//                }
+                if (sampleMetadata.getSampleIndexAnnotationStatus(v) != TaskMetadata.Status.NONE) {
+                    sampleMetadata.setSampleIndexAnnotationStatus(TaskMetadata.Status.NONE, v);
+                    updated = true;
+                }
+                if (sampleMetadata.getFamilyIndexStatus(v) != TaskMetadata.Status.NONE) {
+                    sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.NONE, v);
+                    updated = true;
+                }
+            }
+        }
+        return updated;
     }
 
     public void removeIndexedFiles(int studyId, Collection<Integer> fileIds) throws StorageEngineException {
@@ -1003,11 +1041,44 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         removeSamples(studyId, samples, fileIds, false);
     }
 
-    public void removeSamples(int studyId, Collection<Integer> sampleId) throws StorageEngineException {
-        removeSamples(studyId, sampleId, Collections.emptyList(), true);
+    public void removeSamples(int studyId, Collection<Integer> sampleIds) throws StorageEngineException {
+        removeSamples(studyId, sampleIds, Collections.emptyList(), true);
     }
 
-    public void removeSamples(int studyId, Collection<Integer> sampleIds, Collection<Integer> removedFileIds, boolean removeFromAllFiles)
+    public void removeSamples(int studyId, Collection<Integer> sampleIds, Collection<Integer> otherRemovedFileIds)
+            throws StorageEngineException {
+        removeSamples(studyId, sampleIds, otherRemovedFileIds, true);
+    }
+
+
+    /**
+     * Remove samples from the study metadata and clean up related references.
+     *
+     * This method performs the following steps:
+     * For each sample:
+     * - If {@code removeFromAllFiles} is true, removes the sample from all its files.
+     * - If false, only removes from files that are not indexed; if any file is still indexed, the sample is only partially removed.
+     * - Updates the sample status if fully removed.
+     * - Collects cohort IDs associated with the sample for further cleanup.
+     * <p>
+     * After processing samples:
+     * - Removes the sample references from each affected file metadata (those in {@code fileIdsToCleanSamples}).
+     * - Removes samples from cohorts via {@link #removeSamplesFromCohorts(int, Collection, Collection, Collection)}.
+     * <p>
+     * Notes:
+     * - {@code otherRemovedFileIds} are file ids that are being removed by other operations and should be ignored
+     *   when deciding whether a sample is totally removed.
+     * - If {@code removeFromAllFiles} is true, the sample will be removed from all files (regardless of indexing).
+     * - Order of file lists in sample metadata must be preserved; do not mutate sample.getFiles() directly here.
+     *
+     * @param studyId                 Study identifier.
+     * @param sampleIds               Collection of sample IDs to remove.
+     * @param otherRemovedFileIds     Files that are concurrently being removed and should be ignored when computing removal.
+     * @param removeFromAllFiles      If true, remove samples from all files; otherwise, only from non-indexed files.
+     * @throws StorageEngineException if there is any metadata update error.
+     */
+    private void removeSamples(int studyId, Collection<Integer> sampleIds, Collection<Integer> otherRemovedFileIds,
+                              boolean removeFromAllFiles)
             throws StorageEngineException {
         Set<Integer> fileIdsToCleanSamples = new HashSet<>();
         Set<Integer> cohortIds = new HashSet<>();
@@ -1017,7 +1088,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 boolean totalRemove = true;
 
                 for (Integer fileId : sample.getFiles()) {
-                    if (!removedFileIds.contains(fileId)) {
+                    if (!otherRemovedFileIds.contains(fileId)) {
                         if (removeFromAllFiles) {
                             fileIdsToCleanSamples.add(fileId);
                         } else {
@@ -1030,30 +1101,13 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                         }
                     }
                 }
+
                 cohortIds.addAll(sample.getCohorts());
                 cohortIds.addAll(sample.getInternalCohorts());
                 cohortIds.addAll(sample.getSecondaryIndexCohorts());
                 if (removeFromAllFiles || totalRemove) {
                     removedSampleIds.add(sampleId);
-                    sample.setIndexStatus(TaskMetadata.Status.NONE);
-                    sample.setIndexStatus(TaskMetadata.Status.NONE);
-                    for (Integer v : sample.getSampleIndexVersions()) {
-                        sample.setSampleIndexStatus(TaskMetadata.Status.NONE, v);
-                    }
-                    for (Integer v : sample.getSampleIndexAnnotationVersions()) {
-                        sample.setSampleIndexAnnotationStatus(TaskMetadata.Status.NONE, v);
-                    }
-                    for (Integer v : sample.getFamilyIndexVersions()) {
-                        sample.setFamilyIndexStatus(TaskMetadata.Status.NONE, v);
-                    }
-
-                    sample.setAnnotationStatus(TaskMetadata.Status.NONE);
-                    sample.setMendelianErrorStatus(TaskMetadata.Status.NONE);
-                    sample.setFiles(new ArrayList<>());
-                    sample.setCohorts(new HashSet<>());
-                    sample.setInternalCohorts(new HashSet<>());
-                    sample.setSecondaryIndexCohorts(new HashSet<>());
-                    sample.setAttributes(new ObjectMap());
+                    setRemovedSample(sample);
                 }
                 // else {
                 //      WARN: Do not remove files from sample.files list!
@@ -1070,7 +1124,39 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             });
         }
 
-        removeSamplesFromCohorts(studyId, cohortIds, removedFileIds, removedSampleIds);
+        removeSamplesFromCohorts(studyId, cohortIds, otherRemovedFileIds, removedSampleIds);
+    }
+
+    public void removeIndexedSamples(int studyId, Collection<Integer> sampleIds) throws StorageEngineException {
+        for (Integer fileId : getFileIdsFromSampleIds(studyId, sampleIds)) {
+            updateFileMetadata(studyId, fileId, f -> {
+                f.getSamples().removeAll(sampleIds);
+            });
+        }
+
+        for (Integer sampleId : sampleIds) {
+            updateSampleMetadata(studyId, sampleId, VariantStorageMetadataManager::setRemovedSample);
+        }
+    }
+
+    private static void setRemovedSample(SampleMetadata sampleMetadata) {
+        sampleMetadata.setIndexStatus(TaskMetadata.Status.NONE);
+        for (Integer v : sampleMetadata.getSampleIndexVersions()) {
+            sampleMetadata.setSampleIndexStatus(TaskMetadata.Status.NONE, v);
+        }
+        for (Integer v : sampleMetadata.getSampleIndexAnnotationVersions()) {
+            sampleMetadata.setSampleIndexAnnotationStatus(TaskMetadata.Status.NONE, v);
+        }
+        for (Integer v : sampleMetadata.getFamilyIndexVersions()) {
+            sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.NONE, v);
+        }
+        sampleMetadata.setAnnotationStatus(TaskMetadata.Status.NONE);
+        sampleMetadata.setMendelianErrorStatus(TaskMetadata.Status.NONE);
+        sampleMetadata.setFiles(new ArrayList<>());
+        sampleMetadata.setCohorts(new HashSet<>());
+        sampleMetadata.setInternalCohorts(new HashSet<>());
+        sampleMetadata.setSecondaryIndexCohorts(new HashSet<>());
+        sampleMetadata.setAttributes(new ObjectMap());
     }
 
     public Iterable<FileMetadata> fileMetadataIterable(int studyId) {
