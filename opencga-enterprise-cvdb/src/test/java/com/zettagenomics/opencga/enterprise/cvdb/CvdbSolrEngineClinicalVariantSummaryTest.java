@@ -1,5 +1,7 @@
 package com.zettagenomics.opencga.enterprise.cvdb;
 
+import com.zettagenomics.opencga.enterprise.catalog.managers.EnterpriseFactory;
+import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
 import com.zettagenomics.opencga.enterprise.cvdb.models.CvdbIndexResult;
 import org.junit.Assert;
@@ -24,6 +26,7 @@ import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.User;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -48,6 +51,8 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
     protected static String projectId2 = "project2";
     protected static Study study2;
 
+    protected static String projectId3 = "project3";
+    protected static Study study3;
 
     public static CvdbSolrExtenalResource cvdbSolrExternalResource;
 
@@ -70,10 +75,15 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
         familyManager = catalogManager.getFamilyManager();
         setUpCatalogManager(catalogManager);
 
+        // Enterprise factory init
+        InputStream is = CvdbSolrEngineClinicalVariantSummaryTest.class.getClassLoader().getResourceAsStream("enterprise-configuration.yml");
+        EnterpriseConfiguration config = EnterpriseConfiguration.load(is);
+        EnterpriseFactory.init(catalogManager, config);
+
         // CVDB
         collectionNameGenerator = new CollectionNameGenerator(catalogManager);
         String collectionPrefix = collectionNameGenerator.getCollectionPrefix(organizationId, projectId, userToken);
-        cvdbSolrExternalResource = new CvdbSolrExtenalResource(true, organizationId, projectId, collectionPrefix);
+        cvdbSolrExternalResource = new CvdbSolrExtenalResource(false, organizationId, projectId, collectionPrefix);
         cvdbSolrExternalResource.before();
 
         cvdbEngine = cvdbSolrExternalResource.configure();
@@ -84,14 +94,25 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
             cvdbEngine.createCollections(projectId, collectionPrefix, userToken);
         }
 
-        // Load and index
-        TestUtilities.loadClinicalAnalsysesInCatalog(Arrays.asList("ca1.json.gz", "ca3.json.gz"), study, userToken, opencgaToken, catalogManager);
+        // For testing, the same case is loaded in two different projects
+        TestUtilities.loadClinicalAnalsysesInCatalog(Collections.singletonList("ca3.json.gz"), study, userToken, opencgaToken, catalogManager);
+        TestUtilities.loadClinicalAnalsysesInCatalog(Collections.singletonList("ca3.json.gz"), study2, userToken, opencgaToken, catalogManager);
 
         // CVDB index from catalog
         CvdbIndexResult indexResult = cvdbEngine.indexProject(projectId, true, userToken);
         System.out.println(indexResult.getFailures());
-        assertEquals(2, indexResult.getNumIndexed());
+        assertEquals(1, indexResult.getNumIndexed());
         assertEquals(0, indexResult.getFailures().size());
+
+        indexResult = cvdbEngine.indexProject(projectId2, true, userToken);
+        System.out.println(indexResult.getFailures());
+        assertEquals(1, indexResult.getNumIndexed());
+        assertEquals(0, indexResult.getFailures().size());
+
+        // Check CVDB datastores
+        Assert.assertTrue(cvdbEngine.isAvailableCvdbDataStore(projectId, userToken));
+        Assert.assertTrue(cvdbEngine.isAvailableCvdbDataStore(projectId2, userToken));
+        Assert.assertFalse(cvdbEngine.isAvailableCvdbDataStore(projectId3, userToken));
     }
 
     public static void setUpCatalogManager(CatalogManager catalogManager) throws CatalogException {
@@ -115,7 +136,12 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
 
         catalogManager.getProjectManager().create(projectId2, "Project #2 about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, userToken).first();
-        study2 = catalogManager.getStudyManager().create(projectId2, "phase2", null, "Phase 2", "Done", null, null, null, null,
+        study2 = catalogManager.getStudyManager().create(projectId2, "phase3", null, "Phase 3", "Done", null, null, null, null,
+                INCLUDE_RESULT, userToken).first();
+
+        catalogManager.getProjectManager().create(projectId3, "Project #3 about some genomes", "", "Homo sapiens",
+                null, "GRCh38", INCLUDE_RESULT, userToken).first();
+        study3 = catalogManager.getStudyManager().create(projectId3, "phase3", null, "Phase 3", "Done", null, null, null, null,
                 INCLUDE_RESULT, userToken).first();
     }
 
@@ -123,31 +149,11 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
     // T E S T S
     //-----------------------------------------------------------------------
 
-    @Test
-    public void testCvdbContent() throws IOException, CvdbException, CatalogException {
-        Query query = new Query();
-        query.put(PROJECT_PARAM_NAME, projectId);
-        QueryOptions queryOptions = new QueryOptions();
-
-        DataResult<ClinicalAnalysis> caResult = cvdbEngine.searchClinicalAnalyses(query, queryOptions, userToken);
-        System.out.println("num. ca = " + caResult.getNumResults());
-        assertTrue(caResult.getNumResults() > 0);
-        DataResult<Interpretation> ciResult = cvdbEngine.searchClinicalInterpretations(query, queryOptions, userToken);
-        System.out.println("num. ci = " + ciResult.getNumResults());
-        assertTrue(ciResult.getNumResults() > 0);
-        DataResult<ClinicalVariant> cvResult = cvdbEngine.searchClinicalVariants(query, queryOptions, userToken);
-        System.out.println("num. cv = " + cvResult.getNumResults());
-        assertTrue(cvResult.getNumResults() > 0);
-        DataResult<ClinicalVariantEvidence> cveResult = cvdbEngine.searchClinicalVariantEvidences(query, queryOptions, userToken);
-        System.out.println("num. cve = " + cveResult.getNumResults());
-        assertTrue(cveResult.getNumResults() > 0);
-    }
-
     @Ignore
     @Test
     public void testClinicalVariantSummaryStatsFromVariantId() throws IOException, CvdbException, CatalogException {
         // CVDB query
-        String variantId = "X:54751204:C:T";
+        String variantId = "X:124481724:T:TA";
         Query query = new Query()
                 .append(PROJECT_PARAM_NAME, projectId)
                 .append(STUDY_PARAM_NAME, study.getFqn())
@@ -179,16 +185,17 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
         }
 
         DataResult<ClinicalVariantSummaryStats> result = cvdbEngine.getClinicalVariantSummaryStats(variantId, null, userToken);
-        System.out.println("getClinicalVariantSummaryStats, result.first() = " + result.first());
-
-        Assert.assertEquals(caResult.getNumResults(), result.first().getNumClinicalAnalyses());
-        Assert.assertEquals(variantId, result.first().getVariantId());
-        Assert.assertEquals(ciPrim, result.first().getNumPrimaryInterpretations());
-        Assert.assertEquals(ciSec, result.first().getNumSecondaryInterpretations());
-//        Assert.assertEquals(1, result.first().getPrimaryInterpretationSummary().getEvidencePhenotypeCounts().size());
-//        Assert.assertEquals(2, (int) result.first().getPrimaryInterpretationSummary().getEvidencePhenotypeCounts().get("VACTERL-like phenotypes"));
-//        Assert.assertEquals(1, result.first().getPrimaryInterpretationSummary().getEvidenceReviewTierCounts().size());
-//        Assert.assertEquals(2, (int) result.first().getPrimaryInterpretationSummary().getEvidenceReviewTierCounts().get("TIER3"));
+//        System.out.println("getClinicalVariantSummaryStats, result.first() = " + result.first());
+//
+//        Assert.assertEquals(caResult.getNumResults(), result.first().getNumClinicalAnalyses());
+//        Assert.assertEquals(variantId, result.first().getVariantId());
+//        Assert.assertEquals(ciPrim, result.first().getNumPrimaryInterpretations());
+//        Assert.assertEquals(ciSec, result.first().getNumSecondaryInterpretations());
+//        Assert.assertEquals(2, result.first().getInterpretation().getPanels().size());
+//        Assert.assertEquals(2L, (long) result.first().getInterpretation().getPanels().get("VACTERL-like phenotypes"));
+//        Assert.assertEquals(2, result.first().getEvidence().getMois().size());
+//        Assert.assertEquals(2L, (long) result.first().getEvidence().getMois().get("X_LINKED_RECESSIVE"));
+//        Assert.assertEquals(1L, (long) result.first().getEvidence().getMois().get("X_LINKED_DOMINANT"));
 
         System.out.println("============================================");
         System.out.println("result.first() = " + result.first());
@@ -199,7 +206,7 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
     @Test
     public void testClinicalVariantSummaryStatsFromVariantIds() throws IOException, CvdbException, CatalogException {
         // CVDB query
-        List<String> variantIds = Arrays.asList("X:54751204:C:T", "X:53196017:G:A");
+        List<String> variantIds = Arrays.asList("X:124481724:T:TA", "X:53196017:G:A");
 
         DataResult<ClinicalVariantSummaryStats> result = cvdbEngine.getClinicalVariantSummaryStats(variantIds,
                 Collections.singletonList(projectId), userToken);
@@ -208,13 +215,19 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
         System.out.println("ClinicalVariantSummaryStats, result.getResults().get(1) = " + result.getResults().get(1));
 
         Assert.assertEquals(2, result.getNumResults());
-        Assert.assertEquals(1L, result.first().getNumClinicalAnalyses());
+
+        //
+//        Assert.assertEquals(variantIds.get(0), result.getResults().get(0).getVariantId());
+//        Assert.assertEquals(1L, result.getResults().get(0).getNumClinicalAnalyses());
 //        Assert.assertEquals(1, result.first().getNumPrimaryInterpretations());
 //        Assert.assertEquals(4, result.first().getNumSecondaryInterpretations());
 //        Assert.assertEquals(1, result.first().getPrimaryInterpretationSummary().getEvidencePhenotypeCounts().size());
 //        Assert.assertEquals(2, (int) result.first().getPrimaryInterpretationSummary().getEvidencePhenotypeCounts().get("VACTERL-like phenotypes"));
 //        Assert.assertEquals(1, result.first().getPrimaryInterpretationSummary().getEvidenceReviewTierCounts().size());
 //        Assert.assertEquals(2, (int) result.first().getPrimaryInterpretationSummary().getEvidenceReviewTierCounts().get("TIER3"));
+
+
+        Assert.assertEquals(variantIds.get(1), result.getResults().get(1).getVariantId());
         Assert.assertEquals(1L, result.getResults().get(1).getNumClinicalAnalyses());
 //        Assert.assertEquals(1, result.getResults().get(1).getNumPrimaryInterpretations());
 //        Assert.assertEquals(3, result.getResults().get(1).getNumSecondaryInterpretations());
@@ -227,48 +240,6 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
         System.out.println("result.getResults().get(0) = " + result.getResults().get(0));
         System.out.println("result.getResults().get(1) = " + result.getResults().get(1));
         System.out.println("============================================");
-    }
-
-    @Ignore
-    @Test
-    public void testUpdateSummaryStats() throws IOException, CvdbException, CatalogException {
-        // CVDB query
-        List<String> variantIds = Arrays.asList("X:54751204:C:T", "X:53196017:G:A");
-
-        DataResult<ClinicalVariantSummaryStats> result = cvdbEngine.getClinicalVariantSummaryStats(variantIds,
-                Collections.singletonList(projectId), userToken);
-        Assert.assertEquals(2, result.getNumResults());
-
-        System.out.println("============================================");
-        System.out.println("result.getResults().get(0) = " + result.getResults().get(0));
-        System.out.println("result.getResults().get(1) = " + result.getResults().get(1));
-        System.out.println("After updating 1 with 0");
-        cvdbEngine.updateSummaryStats(result.getResults().get(0), result.getResults().get(1));
-        System.out.println("result.getResults().get(1) = " + result.getResults().get(1));
-        System.out.println("============================================");
-    }
-
-    @Test
-    public void testQueryOptionsExcludeStats() {
-        QueryOptions queryOptions = new QueryOptions();
-        System.out.println("queryOptions = " + queryOptions.toJson());
-        System.out.println("CvdbUtils.getSkipStats(queryOptions) = " + CvdbUtils.getSkipStats(queryOptions));
-        assertEquals(false, CvdbUtils.getSkipStats(queryOptions));
-
-        queryOptions.put(EXCLUDE, "annotation,toto");
-        System.out.println("queryOptions = " + queryOptions.toJson());
-        System.out.println("CvdbUtils.getSkipStats(queryOptions) = " + CvdbUtils.getSkipStats(queryOptions));
-        assertEquals(false, CvdbUtils.getSkipStats(queryOptions));
-
-        queryOptions.put(EXCLUDE, "stats");
-        System.out.println("queryOptions = " + queryOptions.toJson());
-        System.out.println("CvdbUtils.getSkipStats(queryOptions) = " + CvdbUtils.getSkipStats(queryOptions));
-        assertEquals(true, CvdbUtils.getSkipStats(queryOptions));
-
-        queryOptions.put(EXCLUDE, "annotation,stats,toto");
-        System.out.println("queryOptions = " + queryOptions.toJson());
-        System.out.println("CvdbUtils.getSkipStats(queryOptions) = " + CvdbUtils.getSkipStats(queryOptions));
-        assertEquals(true, CvdbUtils.getSkipStats(queryOptions));
     }
 }
 

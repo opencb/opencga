@@ -1014,11 +1014,8 @@ public class CvdbSolrEngine {
             if (project.getInternal().isFederated()) {
                 federatedProjects.putIfAbsent(project.getFederation().getId(), new LinkedList<>());
                 federatedProjects.get(project.getFederation().getId()).add(project);
-            } else {
-                String collectionPrefix = collectionNameGenerator.getCollectionPrefix(organizationId, project.getId(), token);
-                if (existCollections(collectionPrefix)) {
-                    localProjects.add(project);
-                }
+            } else if (isAvailableCvdbDataStore(project)) {
+                localProjects.add(project);
             }
         }
 
@@ -1651,8 +1648,7 @@ public class CvdbSolrEngine {
         }
     }
 
-
-    public void updateSummaryStats(ClinicalVariantSummaryStats srcStats, ClinicalVariantSummaryStats destStats) {
+    private void updateSummaryStats(ClinicalVariantSummaryStats srcStats, ClinicalVariantSummaryStats destStats) {
         // Clinical analysis stats: num. cases, disorder IDs, proband disorder IDs and phenotype names
         destStats.setNumClinicalAnalyses(destStats.getNumClinicalAnalyses() + srcStats.getNumClinicalAnalyses());
         updateStatsMap(srcStats.getClinicalAnalysis().getDisorders(), destStats.getClinicalAnalysis().getDisorders());
@@ -1756,13 +1752,13 @@ public class CvdbSolrEngine {
 
     //----------------------------------------------------------------------
 
-    private boolean isAvailableCvdbDataStore(String projectId, String token) throws CatalogException {
+    public boolean isAvailableCvdbDataStore(String projectId, String token) throws CatalogException {
         QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "internal.datastores");
         Project project = catalogManager.getProjectManager().get(projectId, queryOptions, token).first();
         return isAvailableCvdbDataStore(project);
     }
 
-    private boolean isAvailableCvdbDataStore(Project project) throws CatalogException {
+    public boolean isAvailableCvdbDataStore(Project project) {
         return (project != null
                 && project.getInternal() != null
                 && project.getInternal().getDatastores() != null
