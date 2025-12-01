@@ -56,13 +56,13 @@ RUN apt-get update -y && \
     cp bwa-mem2* /usr/local/bin/ && \
     cd .. && \
 
-    ## 5. Install Thermofisher APT tools
+    ## 5. Install Thermo Fisher APT tools
     mkdir affy && \
     cd affy && \
     wget https://downloads.thermofisher.com/APT/APT_2.12.0/apt_2.12.0_linux_64_x86_binaries.zip && \
     unzip apt_2.12.0_linux_64_x86_binaries.zip && \
     chmod +x bin/* && \
-    cp bin/*-axiom bin/apt-format-result bin/apt-copynumber-axiom-cnvmix bin/apt2-summary-plate-norm bin/ps-metrics bin/ps-classification /usr/local/bin/ && \
+    cp bin/*-axiom bin/apt-copynumber-axiom-cnvmix bin/apt2-summary-plate-norm bin/ps-metrics bin/ps-classification bin/apt-format-result /usr/local/bin/ && \
     cd .. && \
 
     ## 6. Installation dependencies using R install.packages() is slower than apt-get but final size is 400MB smaller.
