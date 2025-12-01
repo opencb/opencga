@@ -400,6 +400,11 @@ public class CvdbSolrEngine {
 
     private void removeClinicalAnalysis(String caId, String organizationId, String projectId, String studyId, String collectionPrefix)
             throws CvdbException {
+        if (!existCollections(collectionPrefix)) {
+            logger.info("Collections for prefix '{}' do not exist. Nothing to remove.", collectionPrefix);
+            return;
+        }
+
         logger.info("Removing clinical analysis {} and its interpretations, clinical variants and evidences", caId);
 
         SolrClient solrClient = getSolrClient();
@@ -1014,8 +1019,12 @@ public class CvdbSolrEngine {
             if (project.getInternal().isFederated()) {
                 federatedProjects.putIfAbsent(project.getFederation().getId(), new LinkedList<>());
                 federatedProjects.get(project.getFederation().getId()).add(project);
-            } else if (isAvailableCvdbDataStore(project)) {
-                localProjects.add(project);
+            } else {
+                if (isAvailableCvdbDataStore(project)) {
+                    localProjects.add(project);
+                } else {
+                    logger.info("CVDB data store is not available for project {}. Skipping it.", project.getFqn());
+                }
             }
         }
 
@@ -1061,11 +1070,7 @@ public class CvdbSolrEngine {
 
             for (String variantId : variantIds) {
                 for (Project project : localProjects) {
-                    // Check CVDB data store availability for that project
-                    if (!isAvailableCvdbDataStore(project)) {
-                        continue;
-                    }
-
+                    // Set query
                     query = new Query()
                             .append(PROJECT_PARAM_NAME, project.getId())
                             .append(CV_VARIANT_ID_NAME, variantId);
@@ -1527,7 +1532,7 @@ public class CvdbSolrEngine {
         }
     }
 
-    private List<String> createCollections(String collectionPrefix) throws CvdbException {
+    public List<String> createCollections(String collectionPrefix) throws CvdbException {
         List<String> collectionNames = new ArrayList<>();
         try {
             for (String collectionSuffix : collectionNameGenerator.getCollectionSuffixes()) {
@@ -1543,6 +1548,22 @@ public class CvdbSolrEngine {
             throw new CvdbException("Creating Solr CVDB collections; collection prefix = '" + collectionPrefix + "'", e);
         }
         return collectionNames;
+    }
+
+    public void removeCollections(String collectionPrefix) throws CvdbException {
+        List<String> collectionNames = new ArrayList<>();
+        try {
+            for (String collectionSuffix : collectionNameGenerator.getCollectionSuffixes()) {
+                String collectionName = collectionNameGenerator.getCollectionName(collectionPrefix, collectionSuffix);
+                if (!solrManager.exists(collectionName)) {
+                    String configSet = COLLECTION_CONFIGSETS_MAP.get(collectionSuffix);
+                    logger.info("Removing collection name = {}", collectionName);
+                    solrManager.remove(collectionName);
+                }
+            }
+        } catch (SolrException e) {
+            throw new CvdbException("Removing Solr CVDB collections; collection prefix = '" + collectionPrefix + "'", e);
+        }
     }
 
     private boolean clinicalAnalysisExists(String clinicalAnalysisId, String collectionName, SolrClient solrClient)
