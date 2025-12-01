@@ -14,7 +14,7 @@ jobs:
       matrix:
         hadoop: ["hdi5.1", "emr6.1", "emr6.13", "emr7.5", "hbase2.0"]
         test_profile: ["runShortTests","runMediumTests","runLongTests"]
-        branches: ${{ vars.ACTIVE_BRANCHES }}
+        branches: ${{ fromJson(vars.ACTIVE_BRANCHES) }}
     uses: ./.github/workflows/test-analysis.yml
     with:
       test_profile: ${{ matrix.test_profile }}
