@@ -16,11 +16,16 @@
 
 package org.opencb.opencga.analysis.variant.manager.operations;
 
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchronizer;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.VariantIndexStatus;
+import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
@@ -33,7 +38,9 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class VariantDeleteOperationManager extends OperationManager {
 
@@ -101,7 +108,7 @@ public class VariantDeleteOperationManager extends OperationManager {
 
         variantStorageEngine.removeFiles(study, fileNames, outdir);
         // Update study configuration to synchronize
-        synchronizeCatalogStudyFromStorage(study, token, true);
+        synchronizeCatalogStudyFromStorage(study, token, true, fileNames);
 
     }
 
@@ -121,8 +128,26 @@ public class VariantDeleteOperationManager extends OperationManager {
         CatalogStorageMetadataSynchronizer metadataSynchronizer
                 = new CatalogStorageMetadataSynchronizer(catalogManager, metadataManager);
 
+        // Get all files related to the samples
+        Set<String> allFilesFromSamples = new HashSet<>();
+        for (Sample sample : catalogManager.getSampleManager().get(study, samples,
+                new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.FILE_IDS.key()), token).getResults()) {
+            if (sample.getFileIds() != null) {
+                allFilesFromSamples.addAll(sample.getFileIds());
+            }
+        }
+        // Get only the files that are indexed.
+        List<String> fileIds = new ArrayList<>(allFilesFromSamples.size());
+        for (File file : catalogManager.getFileManager().search(study,
+                new Query(FileDBAdaptor.QueryParams.ID.key(), allFilesFromSamples)
+                        .append(FileDBAdaptor.QueryParams.INTERNAL_VARIANT_INDEX_STATUS_ID.key(), VariantIndexStatus.READY),
+                new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.ID.key()), token).getResults()) {
+            fileIds.add(file.getId());
+        }
+
         // Update Catalog file and cohort status.
         metadataSynchronizer.synchronizeCatalogFromStorage(study, token);
+        synchronizeCatalogStudyFromStorage(study, token, true, fileIds);
         metadataSynchronizer.synchronizeCatalogSamplesFromStorage(study, samples, token);
     }
 

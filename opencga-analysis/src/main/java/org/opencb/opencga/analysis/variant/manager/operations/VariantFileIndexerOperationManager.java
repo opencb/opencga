@@ -196,7 +196,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
         List<File> inputFiles = getInputFiles(catalogManager, studyFqn, files, token);
 
         // Update Catalog from the storage metadata. This may change the index status of the inputFiles .
-        getSynchronizer().synchronizeCatalogFromStorage(studyFqn, inputFiles, token, FILE_GET_QUERY_OPTIONS);
+        getSynchronizer().synchronizeCatalogFilesFromStorage(studyFqn, inputFiles, token, FILE_GET_QUERY_OPTIONS);
 
         LOGGER.debug("Index - Number of files to be indexed: {}, list of files: {}", inputFiles.size(),
                 inputFiles.stream().map(File::getName).collect(Collectors.toList()));
@@ -345,7 +345,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                     List<File> inputFiles = catalogManager.getFileManager().search(studyFqn,
                             new Query(FileDBAdaptor.QueryParams.URI.key(), fileUris),
                             new QueryOptions(QueryOptions.INCLUDE, "id,name,path,uri"), token).getResults();
-                    getSynchronizer().synchronizeCatalogFromStorage(studyFqn, inputFiles, true, token);
+                    getSynchronizer().synchronizeCatalogFilesFromStorage(studyFqn, inputFiles, true, token);
                 }
             }
             variantStorageEngine.close();
