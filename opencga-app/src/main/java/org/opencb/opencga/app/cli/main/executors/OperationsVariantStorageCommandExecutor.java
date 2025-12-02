@@ -20,6 +20,7 @@ import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.JulieParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
+import org.opencb.opencga.core.models.operations.variant.VariantAnnotationExtensionConfigureParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAnnotationIndexParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAnnotationSaveParams;
 import org.opencb.opencga.core.models.operations.variant.VariantConfigureParams;
@@ -85,6 +86,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             case "variant-annotation-delete":
                 queryResponse = deleteVariantAnnotation();
                 break;
+            case "variant-annotation-extension-configure":
+                queryResponse = variantAnnotationExtensionConfigure();
+                break;
             case "variant-annotation-index":
                 queryResponse = indexVariantAnnotation();
                 break;
@@ -147,9 +151,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                 break;
             case "variant-secondary-index":
                 queryResponse = secondaryIndexVariant();
-                break;
-            case "variant-secondary-index-delete":
-                queryResponse = deleteVariantSecondaryIndex();
                 break;
             case "variant-setup":
                 queryResponse = setupVariant();
@@ -263,6 +264,45 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("annotationId", commandOptions.annotationId);
 
         return openCGAClient.getVariantOperationClient().deleteVariantAnnotation(queryParams);
+    }
+
+    private RestResponse<ObjectMap> variantAnnotationExtensionConfigure() throws Exception {
+        logger.debug("Executing variantAnnotationExtensionConfigure in Operations - Variant Storage command line");
+
+        OperationsVariantStorageCommandOptions.VariantAnnotationExtensionConfigureCommandOptions commandOptions = operationsVariantStorageCommandOptions.variantAnnotationExtensionConfigureCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
+        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
+        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
+        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
+        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
+        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
+        queryParams.putIfNotEmpty("project", commandOptions.project);
+
+
+        VariantAnnotationExtensionConfigureParams variantAnnotationExtensionConfigureParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<ObjectMap> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/operation/variant/annotation/extension/configure"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            variantAnnotationExtensionConfigureParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), VariantAnnotationExtensionConfigureParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "extension", commandOptions.extension, true);
+            putNestedIfNotNull(beanParams, "resources", commandOptions.resources, true);
+            putNestedMapIfNotEmpty(beanParams, "params", commandOptions.params, true);
+            putNestedIfNotNull(beanParams, "overwrite", commandOptions.overwrite, true);
+
+            variantAnnotationExtensionConfigureParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), VariantAnnotationExtensionConfigureParams.class);
+        }
+        return openCGAClient.getVariantOperationClient().variantAnnotationExtensionConfigure(variantAnnotationExtensionConfigureParams, queryParams);
     }
 
     private RestResponse<Job> indexVariantAnnotation() throws Exception {
@@ -453,6 +493,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .readValue(new java.io.File(commandOptions.jsonFile), VariantAggregateFamilyParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "family", commandOptions.family, true);
             putNestedIfNotNull(beanParams, "samples", commandOptions.samples, true);
             putNestedIfNotEmpty(beanParams, "gapsGenotype", commandOptions.gapsGenotype, true);
             putNestedIfNotNull(beanParams, "resume", commandOptions.resume, true);
@@ -1008,7 +1049,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "region", commandOptions.region, true);
-            putNestedIfNotNull(beanParams, "sample", commandOptions.sample, true);
             putNestedIfNotNull(beanParams, "overwrite", commandOptions.overwrite, true);
 
             variantSecondaryAnnotationIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
@@ -1119,7 +1159,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "region", commandOptions.region, true);
-            putNestedIfNotNull(beanParams, "sample", commandOptions.sample, true);
             putNestedIfNotNull(beanParams, "overwrite", commandOptions.overwrite, true);
 
             variantSecondaryAnnotationIndexParams = JacksonUtils.getDefaultObjectMapper().copy()
@@ -1127,28 +1166,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                     .readValue(beanParams.toJson(), VariantSecondaryAnnotationIndexParams.class);
         }
         return openCGAClient.getVariantOperationClient().secondaryIndexVariant(variantSecondaryAnnotationIndexParams, queryParams);
-    }
-
-    private RestResponse<Job> deleteVariantSecondaryIndex() throws Exception {
-        logger.debug("Executing deleteVariantSecondaryIndex in Operations - Variant Storage command line");
-
-        OperationsVariantStorageCommandOptions.DeleteVariantSecondaryIndexCommandOptions commandOptions = operationsVariantStorageCommandOptions.deleteVariantSecondaryIndexCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
-        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
-        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
-        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
-        queryParams.putIfNotEmpty("jobScheduledStartTime", commandOptions.jobScheduledStartTime);
-        queryParams.putIfNotEmpty("jobPriority", commandOptions.jobPriority);
-        queryParams.putIfNotNull("jobDryRun", commandOptions.jobDryRun);
-        queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotEmpty("samples", commandOptions.samples);
-        if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
-            queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
-
-        return openCGAClient.getVariantOperationClient().deleteVariantSecondaryIndex(queryParams);
     }
 
     private RestResponse<VariantSetupResult> setupVariant() throws Exception {

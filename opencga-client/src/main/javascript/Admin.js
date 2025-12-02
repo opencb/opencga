@@ -59,14 +59,12 @@ export default class Admin extends OpenCGAParentClass {
         return this._post("admin", null, "catalog", null, "install", data);
     }
 
-    /** Change JWT secret key
-    * @param {Object} data - JSON containing the parameters.
-    * @param {Object} [params] - The Object containing the following optional parameters:
-    * @param {String} [params.organization] - Organization id.
+    /** List current Organizations
+    * 
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
-    jwtCatalog(data, params) {
-        return this._post("admin", null, "catalog", null, "jwt", data, params);
+    listOrganizations() {
+        return this._get("admin", null, "organizations", null, "list");
     }
 
     /** Fetch resources from the public server and save them into the OpenCGA local installation
@@ -134,7 +132,7 @@ export default class Admin extends OpenCGAParentClass {
         return this._get("admin", null, "users", null, "search", params);
     }
 
-    /** Synchronise a group of users from an authentication origin with a group in a study from catalog
+    /** [DEPRECATED] Moved to /users/sync
     * @param {Object} data - JSON containing the parameters.
     * @param {Object} [params] - The Object containing the following optional parameters:
     * @param {String} [params.organization] - Organization id.

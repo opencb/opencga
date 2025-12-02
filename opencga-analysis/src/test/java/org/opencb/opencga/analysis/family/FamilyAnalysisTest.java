@@ -36,13 +36,14 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -109,7 +110,8 @@ public class FamilyAnalysisTest extends GenericTest {
     @Test
     public void creationTest() throws IOException {
         PedigreeGraph pedigreeGraph = family.getPedigreeGraph();
-        assertEquals(runAndGetPedigreeImageB64(family), pedigreeGraph.getBase64());
+        testBase64Image(pedigreeGraph, "family/creationTest.png");
+
     }
 
     @Test
@@ -137,30 +139,30 @@ public class FamilyAnalysisTest extends GenericTest {
                 .first();
 
         PedigreeGraph pedigreeGraph = updatedFamily.getPedigreeGraph();
-        assertEquals(runAndGetPedigreeImageB64(updatedFamily), pedigreeGraph.getBase64());
+        testBase64Image(pedigreeGraph, "family/threeMemberNoDisorderFamilyTest.png");
+
+
     }
 
     @Test
     public void threeGenerationFamilyTest() throws CatalogException, IOException {
         Family threeGenFamily = createThreeGenerationFamily("Cos-Cos", true).first();
         PedigreeGraph pedigreeGraph = threeGenFamily.getPedigreeGraph();
-        assertEquals(runAndGetPedigreeImageB64(threeGenFamily), pedigreeGraph.getBase64());
+        testBase64Image(pedigreeGraph, "family/threeGenerationFamilyTest.png");
     }
 
     @Test
     public void threeGenerationFamilyWithoutDisorderTest() throws CatalogException, IOException {
         Family threeGenFamily = createThreeGenerationFamily("Hello-Hello", false).first();
         PedigreeGraph pedigreeGraph = threeGenFamily.getPedigreeGraph();
-        assertEquals(runAndGetPedigreeImageB64(threeGenFamily), pedigreeGraph.getBase64());
+        testBase64Image(pedigreeGraph, "family/threeGenerationFamilyWithoutDisorderTest.png");
     }
 
     @Test
     public void test2Member2GenerationFamilyTest() throws CatalogException, IOException {
         Family family = create2Member2GenerationDummyFamily("Colo-Colo", "father222-sample", "child2222-sample").first();
-
         PedigreeGraph pedigreeGraph = family.getPedigreeGraph();
-
-        assertEquals(runAndGetPedigreeImageB64(family), pedigreeGraph.getBase64());
+        testBase64Image(pedigreeGraph, "family/test2Member2GenerationFamilyTest.png");
     }
 
     @Test
@@ -469,11 +471,47 @@ public class FamilyAnalysisTest extends GenericTest {
         return familyOpenCGAResult;
     }
 
+    public static void testBase64Image(PedigreeGraph pedigreeGraph, String resourceImage) throws IOException {
+        String base64Image = pedigreeGraph.getBase64();
 
-    public String runAndGetPedigreeImageB64(Family family) throws IOException {
-        Path scratchDir = Paths.get(opencga.createTmpOutdir());
-        PedigreeGraph pedigreeGraph = PedigreeGraphUtils.getPedigreeGraph(family, opencga.getOpencgaHome(), scratchDir);
-        return pedigreeGraph.getBase64();
+        // Ensure the Base64 string is not null or empty
+        assertTrue(StringUtils.isNotEmpty(base64Image));
 
+        // 1. Remove the data URI prefix if it exists (e.g., "data:image/png;base64,")
+        String base64Data = base64Image;
+        if (base64Image.contains(",")) {
+            base64Data = base64Image.substring(base64Image.indexOf(',') + 1);
+        }
+
+        // 2. Decode the Base64 string to byte array
+        byte[] decodedBytes = Base64.getDecoder().decode(base64Data);
+
+        // 3. Convert byte array to BufferedImage
+        BufferedImage actualImage = ImageIO.read(new ByteArrayInputStream(decodedBytes));
+        assertTrue(actualImage != null);
+
+        // 3.1 Save actual image to disk for debugging (optional)
+//        try {
+//            ImageIO.write(actualImage, "png", Paths.get("/tmp/actualImage." + TimeUtils.getTimeMillis() + ".png").toFile());
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+
+        // 4. Load the expected "golden master" image from resources
+        InputStream expectedImageStream = FamilyAnalysisTest.class.getClassLoader().getResourceAsStream(resourceImage);
+        assertTrue(expectedImageStream != null);
+        BufferedImage expectedImage = ImageIO.read(expectedImageStream);
+
+        // 5. Compare the actual image with the expected image
+        // First, check dimensions
+        assertEquals(expectedImage.getWidth(), actualImage.getWidth());
+        assertEquals(expectedImage.getHeight(), actualImage.getHeight());
+
+        // Then, compare pixel by pixel (can be slow for large images, but robust)
+        for (int y = 0; y < expectedImage.getHeight(); y++) {
+            for (int x = 0; x < expectedImage.getWidth(); x++) {
+                assertEquals(expectedImage.getRGB(x, y), actualImage.getRGB(x, y));
+            }
+        }
     }
 }

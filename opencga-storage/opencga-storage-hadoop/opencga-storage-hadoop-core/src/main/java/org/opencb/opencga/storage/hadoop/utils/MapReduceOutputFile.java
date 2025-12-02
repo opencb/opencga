@@ -12,6 +12,7 @@ import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.parquet.hadoop.ParquetFileWriter;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.storage.hadoop.io.HDFSIOConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xerial.snappy.SnappyInputStream;
@@ -38,7 +39,6 @@ public class MapReduceOutputFile {
     private static final Logger LOGGER = LoggerFactory.getLogger(MapReduceOutputFile.class);
 
     private final Configuration conf;
-    private final Supplier<String> nameGenerator;
     private final Map<String, String> extraFiles = new HashMap<>();
     private String namedOutput;
     protected Path localOutput;
@@ -56,13 +56,13 @@ public class MapReduceOutputFile {
     public MapReduceOutputFile(String outdirStr, Supplier<String> nameGenerator, String tempFilePrefix, boolean ensureHdfs,
                                Configuration conf) throws IOException {
         this.conf = conf;
-        this.nameGenerator = nameGenerator == null ? () -> null : nameGenerator;
+        nameGenerator = nameGenerator == null ? () -> null : nameGenerator;
         namedOutput = null;
 
         outdir = new Path(outdirStr);
 
         if (isLocal(outdir)) {
-            localOutput = getLocalOutput(outdir);
+            localOutput = getLocalOutput(outdir, nameGenerator);
             outdir = getTempOutdir(tempFilePrefix, localOutput.getName(), ensureHdfs, conf);
             outdir.getFileSystem(conf).deleteOnExit(outdir);
         }
@@ -72,6 +72,12 @@ public class MapReduceOutputFile {
         } else {
             LOGGER.info(" * MapReduce outdir : " + toUri(outdir));
         }
+    }
+
+    public MapReduceOutputFile(Path outdir, Path localOutput, Configuration conf) {
+        this.localOutput = localOutput;
+        this.outdir = outdir;
+        this.conf = conf;
     }
 
     public static Path getTempOutdir(String prefix, String suffix, boolean ensureHdfs, Configuration conf) throws IOException {
@@ -89,23 +95,16 @@ public class MapReduceOutputFile {
             if (!isHdfs(tmpDir, conf)) {
                 LOGGER.info("Temporary directory is not in hdfs:// . Hdfs is required for this temporary file.");
                 LOGGER.info("   Default file system : " + FileSystem.getDefaultUri(conf));
-                for (String nameServiceId : conf.getTrimmedStringCollection("dfs.nameservices")) {
-                    try {
-                        Path hdfsTmpPath = new Path("hdfs", nameServiceId, "/tmp/");
-                        FileSystem hdfsFileSystem = hdfsTmpPath.getFileSystem(conf);
-                        if (hdfsFileSystem != null) {
-                            LOGGER.info("Change to file system : " + hdfsFileSystem.getUri());
-                            tmpDir = hdfsTmpPath;
-                            break;
-                        }
-                    } catch (Exception e) {
-                        LOGGER.debug("This file system is not hdfs:// . Skip!", e);
-                    }
+                Path hdfsRootPath = HDFSIOConnector.getHdfsRootPath(conf);
+                if (hdfsRootPath != null) {
+                    LOGGER.info("Change to file system : " + hdfsRootPath.getFileSystem(conf).getUri());
+                    tmpDir = new Path(hdfsRootPath, "/tmp/");
                 }
             }
         }
         return new Path(tmpDir, fileName);
     }
+
 
     /**
      * Check if a given Hadoop path is local.
@@ -269,7 +268,7 @@ public class MapReduceOutputFile {
         return tmpUri;
     }
 
-    protected Path getLocalOutput(Path outdir) throws IOException {
+    protected Path getLocalOutput(Path outdir, Supplier<String> nameGenerator) throws IOException {
         if (!isLocal(outdir)) {
             throw new IllegalArgumentException("Outdir " + outdir + " is not in the local filesystem");
         }
@@ -358,7 +357,8 @@ public class MapReduceOutputFile {
             LOGGER.info(" Target : {}", localOutput.toUri());
             fileSystem.copyToLocalFile(false, paths.get(0), localOutput);
         } else {
-            LOGGER.info("Concat and copy to local : " + paths.size() + " partial files");
+            LOGGER.info("Concat and copy to local : " + paths.size() + " partial files"
+                    + (partFilePrefix == null ? "" : " with prefix '" + partFilePrefix + "'"));
             LOGGER.info(" Source {}: {}", getCompression(paths.get(0).getName()), mrOutdir.toUri());
             LOGGER.info(" Target {}: {}", getCompression(localOutput.getName()), localOutput.toUri());
             LOGGER.info(" ---- ");

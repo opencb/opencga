@@ -38,6 +38,7 @@ import org.opencb.opencga.core.models.notes.NoteUpdateParams;
 import org.opencb.opencga.core.models.study.CustomGroup;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.GroupCreateParams;
+import org.opencb.opencga.core.models.study.GroupSyncParams;
 import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.core.models.study.PermissionRule;
 import org.opencb.opencga.core.models.study.Study;
@@ -109,6 +110,9 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
             case "groups":
                 queryResponse = groups();
                 break;
+            case "groups-sync":
+                queryResponse = syncGroups();
+                break;
             case "groups-update":
                 queryResponse = updateGroups();
                 break;
@@ -144,6 +148,9 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "update":
                 queryResponse = update();
+                break;
+            case "users-sync":
+                queryResponse = syncUsers();
                 break;
             case "variablesets":
                 queryResponse = variableSets();
@@ -315,6 +322,33 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotNull("silent", commandOptions.silent);
 
         return openCGAClient.getStudyClient().groups(commandOptions.study, queryParams);
+    }
+
+    private RestResponse<Group> syncGroups() throws Exception {
+        logger.debug("Executing syncGroups in Studies command line");
+
+        StudiesCommandOptions.SyncGroupsCommandOptions commandOptions = studiesCommandOptions.syncGroupsCommandOptions;
+
+        GroupSyncParams groupSyncParams = null;
+        if (commandOptions.jsonDataModel) {
+            RestResponse<Group> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/studies/{study}/groups/sync"));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
+            groupSyncParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), GroupSyncParams.class);
+        } else {
+            ObjectMap beanParams = new ObjectMap();
+            putNestedIfNotEmpty(beanParams, "authenticationOriginId", commandOptions.authenticationOriginId, true);
+            putNestedIfNotEmpty(beanParams, "remoteGroupId", commandOptions.remoteGroupId, true);
+            putNestedIfNotEmpty(beanParams, "localGroupId", commandOptions.localGroupId, true);
+
+            groupSyncParams = JacksonUtils.getDefaultObjectMapper().copy()
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
+                    .readValue(beanParams.toJson(), GroupSyncParams.class);
+        }
+        return openCGAClient.getStudyClient().syncGroups(commandOptions.study, groupSyncParams);
     }
 
     private RestResponse<Group> updateGroups() throws Exception {
@@ -599,6 +633,13 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
                     .readValue(beanParams.toJson(), StudyUpdateParams.class);
         }
         return openCGAClient.getStudyClient().update(commandOptions.study, studyUpdateParams, queryParams);
+    }
+
+    private RestResponse<Object> syncUsers() throws Exception {
+        logger.debug("Executing syncUsers in Studies command line");
+
+        StudiesCommandOptions.SyncUsersCommandOptions commandOptions = studiesCommandOptions.syncUsersCommandOptions;
+        return openCGAClient.getStudyClient().syncUsers(commandOptions.study, commandOptions.authenticationOriginId);
     }
 
     private RestResponse<VariableSet> variableSets() throws Exception {

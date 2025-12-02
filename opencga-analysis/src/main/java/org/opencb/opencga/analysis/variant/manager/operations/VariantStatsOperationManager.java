@@ -70,7 +70,7 @@ public class VariantStatsOperationManager extends OperationManager {
         // Synchronize catalog with storage
         CatalogStorageMetadataSynchronizer synchronizer =
                 new CatalogStorageMetadataSynchronizer(catalogManager, variantStorageEngine.getMetadataManager());
-        synchronizer.synchronizeCatalogStudyFromStorage(study, token);
+        synchronizer.synchronizeCatalogFromStorage(study, token);
 
         Map<String, List<String>> cohortsMap = checkCanCalculateCohorts(study, cohorts, overwriteStats, resume, token);
 
@@ -108,7 +108,7 @@ public class VariantStatsOperationManager extends OperationManager {
         // Synchronize catalog with storage
         CatalogStorageMetadataSynchronizer synchronizer =
                 new CatalogStorageMetadataSynchronizer(catalogManager, variantStorageEngine.getMetadataManager());
-        synchronizer.synchronizeCatalogStudyFromStorage(study, token);
+        synchronizer.synchronizeCatalogFromStorage(study, token);
 
         try {
             // Modify cohort status to "INVALID"
@@ -270,8 +270,8 @@ public class VariantStatsOperationManager extends OperationManager {
         for (String cohortName : cohortNames) {
             if (!catalogCohorts.contains(cohortName)) {
                 DataResult<Cohort> cohort = catalogManager.getCohortManager().create(studyId, new CohortCreateParams(cohortName,
-                                "", Enums.CohortType.COLLECTION, "", null, null, Collections.emptyList(), null, null, null), null, null,
-                        new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId);
+                                "", Enums.CohortType.COLLECTION, Collections.emptyList(), "", null, null, Collections.emptyList(), null,
+                                null, null), null, null, new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId);
                 logger.info("Creating cohort {}", cohortName);
                 cohorts.add(cohort.first().getId());
             } else {

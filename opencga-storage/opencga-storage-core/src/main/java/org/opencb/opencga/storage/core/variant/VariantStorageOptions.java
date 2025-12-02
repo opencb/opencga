@@ -85,6 +85,8 @@ public enum VariantStorageOptions implements ConfigurationOption {
     ANNOTATOR_EXTENSION_LIST("annotator.extension.list"),
     ANNOTATOR_EXTENSION_COSMIC_FILE("annotator.extension.cosmic.file"),
     ANNOTATOR_EXTENSION_COSMIC_VERSION("annotator.extension.cosmic.version"),
+    ANNOTATOR_EXTENSION_COSMIC_ASSEMBLY("annotator.extension.cosmic.assembly"),
+    ANNOTATOR_EXTENSION_COSMIC_INDEX_CREATION_DATE("annotator.extension.cosmic.indexCreationDate"),
 
     INDEX_SEARCH("indexSearch", false), // Build secondary indexes using search engine.
 
@@ -106,13 +108,20 @@ public enum VariantStorageOptions implements ConfigurationOption {
     WALKER_DOCKER_ENV("walker.docker.env", "", true),
     WALKER_DOCKER_MOUNT("walker.docker.mount", "", true),
     WALKER_DOCKER_OPTS("walker.docker.opts", "", true),
+    WALKER_DOCKER_MAX_BYTES_PER_MAP("walker.docker.maxBytesPerMap", null, true),
 
     // Search intersect options
-    INTERSECT_ACTIVE("search.intersect.active", true),                       // Allow intersect queries with the SearchEngine (Solr)
-    INTERSECT_ALWAYS("search.intersect.always", false),                      // Force intersect queries
-    INTERSECT_PARAMS_THRESHOLD("search.intersect.params.threshold", 3),      // Minimum number of QueryParams in the query to intersect
-    SEARCH_LOAD_BATCH_SIZE("search.load.batchSize", 100),
-    SEARCH_LOAD_THREADS("search.load.numThreads", 2),
+    SEARCH_INTERSECT_ACTIVE("search.intersect.active", true),                  // Allow intersect queries with the SearchEngine (Solr)
+    SEARCH_INTERSECT_ALWAYS("search.intersect.always", false),                 // Force intersect queries
+    SEARCH_INTERSECT_PARAMS_THRESHOLD("search.intersect.params.threshold", 3), // Minimum number of QueryParams in the query to intersect
+    SEARCH_LOAD_BATCH_SIZE("search.load.batchSize", 200),
+    // Use blue-green deployment when overwriting an existing collection in the SearchEngine (Solr).
+    // In this scenario, data is loaded in a new collection, and when finished, the old collection is deleted.
+    // While loading, the old collection is still available for querying.
+    SEARCH_LOAD_BLUE_GREEN_ON_OVERWRITE("search.load.blueGreenOnOverwrite", false),
+    SEARCH_LOAD_SHARDS_PER_NODE("search.load.shardsPerNode", 2),             // Number of shards to create per solr node
+    SEARCH_STATS_FUNCTIONAL_QUERIES_ENABLED("search.stats.functionalQueries.enabled", false),
+    SEARCH_STATS_VARIANT_ID_VERSION("search.stats.variantId.version", "v2"),
 
     APPROXIMATE_COUNT_SAMPLING_SIZE("approximateCountSamplingSize", 1000),
     @Deprecated
@@ -135,8 +144,7 @@ public enum VariantStorageOptions implements ConfigurationOption {
 
     RELEASE("release", 1),
 
-    MERGE_MODE("merge.mode", VariantStorageEngine.MergeMode.ADVANCED),
-    SEARCH_INDEX_LAST_TIMESTAMP("search.index.last.timestamp", 0);
+    MERGE_MODE("merge.mode", VariantStorageEngine.MergeMode.ADVANCED);
 
     private final String key;
     private final Object value;

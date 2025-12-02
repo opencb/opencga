@@ -28,7 +28,7 @@
 
     <artifactId>opencga-storage</artifactId>
     <packaging>pom</packaging>
-
+    <name>OpenCGA Storage</name>
     <properties>
         <storage.configuration.file>storage-configuration.yml</storage.configuration.file>
     </properties>
@@ -46,11 +46,6 @@
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-storage-server</artifactId>
-                <version>${project.parent.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.opencb.opencga</groupId>
-                <artifactId>opencga-storage-benchmark</artifactId>
                 <version>${project.parent.version}</version>
             </dependency>
         </dependencies>
@@ -101,7 +96,7 @@
                             <goal>analyze-only</goal>
                         </goals>
                         <configuration>
-                            <failOnWarning>false</failOnWarning>
+                            <failOnWarning>true</failOnWarning>
                         </configuration>
                     </execution>
                 </executions>

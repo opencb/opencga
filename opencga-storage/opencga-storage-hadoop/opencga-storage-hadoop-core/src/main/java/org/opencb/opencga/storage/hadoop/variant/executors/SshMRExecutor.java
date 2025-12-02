@@ -36,10 +36,12 @@ public class SshMRExecutor extends MRExecutor {
     private static final String HADOOP_SSH_USER_ENV = "HADOOP_SSH_USER";
     private static final String HADOOP_SSH_HOST_ENV = "HADOOP_SSH_HOST";
     private static final String HADOOP_SSH_KEY_ENV  = "HADOOP_SSH_KEY";
+    private static final String HADOOP_SSH_REMOTE_TMP  = "HADOOP_SSH_REMOTE_TMP";
+    private static final String HADOOP_SSH_STDIN_ENABLED  = "HADOOP_SSH_STDIN_ENABLED";
     // env-var expected by "sshpass -e"
     private static final String SSHPASS_ENV = "SSHPASS";
     public static final String PID = "PID";
-    private static Logger logger = LoggerFactory.getLogger(SshMRExecutor.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SshMRExecutor.class);
 
     @Override
     public SshMRExecutor init(String dbName, Configuration conf, ObjectMap options) {
@@ -54,33 +56,33 @@ public class SshMRExecutor extends MRExecutor {
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         Thread hook = new Thread(() -> {
-            logger.info("Shutdown hook. Killing MR jobs");
-            logger.info("Read output key-value:");
+            LOGGER.info("Shutdown hook. Killing MR jobs");
+            LOGGER.info("Read output key-value:");
             ObjectMap result = readResult(new String(outputStream.toByteArray(), Charset.defaultCharset()));
             for (Map.Entry<String, Object> entry : result.entrySet()) {
-                logger.info(" - " + entry.getKey() + ": " + entry.getValue());
+                LOGGER.info(" - " + entry.getKey() + ": " + entry.getValue());
             }
             String remotePid = result.getString(PID);
-            logger.info("Remote PID: " + remotePid);
+            LOGGER.info("Remote PID: " + remotePid);
             List<String> mrJobs = result.getAsStringList(AbstractHBaseDriver.MR_APPLICATION_ID);
-            logger.info("MR jobs to kill: " + mrJobs);
+            LOGGER.info("MR jobs to kill: " + mrJobs);
             for (String mrJob : mrJobs) {
-                logger.info("Killing MR job " + mrJob);
+                LOGGER.info("Killing MR job " + mrJob);
                 String commandLineKill = buildCommand("yarn", "application", "-kill", mrJob);
                 Command command = new Command(commandLineKill, env);
                 command.run();
                 int exitValue = command.getExitValue();
                 if (exitValue != 0) {
-                    logger.error("Error killing MR job " + mrJob);
+                    LOGGER.error("Error killing MR job " + mrJob);
                 } else {
-                    logger.info("MR job " + mrJob + " killed!");
+                    LOGGER.info("MR job " + mrJob + " killed!");
                 }
             }
             if (remotePid != null) {
                 int remoteProcessGraceKillPeriod = getOptions()
                         .getInt(MR_EXECUTOR_SSH_HADOOP_TERMINATION_GRACE_PERIOD_SECONDS.key(),
                                 MR_EXECUTOR_SSH_HADOOP_TERMINATION_GRACE_PERIOD_SECONDS.defaultValue());
-                logger.info("Wait up to " + remoteProcessGraceKillPeriod + "s for the remote process to finish");
+                LOGGER.info("Wait up to " + remoteProcessGraceKillPeriod + "s for the remote process to finish");
                 String commandLineWaitPid = buildCommand("bash", "-c", ""
                         + "pid=" + remotePid + "; "
                         + "i=0; "
@@ -95,16 +97,24 @@ public class SshMRExecutor extends MRExecutor {
                 Command command = new Command(commandLineWaitPid, env);
                 command.run();
                 if (command.getExitValue() != 0) {
-                    logger.error("Error waiting for remote process to finish");
+                    LOGGER.error("Error waiting for remote process to finish");
                 } else {
-                    logger.info("Remote process finished!");
+                    LOGGER.info("Remote process finished!");
                 }
             }
         });
         Runtime.getRuntime().addShutdownHook(hook);
-        int exitValue = runRemote(executable, args, env, outputStream);
+        int exitValue;
+        try {
+            exitValue = runRemote(executable, args, env, outputStream);
+        } finally {
+            try {
+                Runtime.getRuntime().removeShutdownHook(hook);
+            } catch (Exception e) {
+                LOGGER.error("Error removing shutdown hook", e);
+            }
+        }
         boolean succeed = exitValue == 0;
-        Runtime.getRuntime().removeShutdownHook(hook);
         ObjectMap result = readResult(new String(outputStream.toByteArray(), Charset.defaultCharset()));
         try {
             if (succeed) {
@@ -132,9 +142,22 @@ public class SshMRExecutor extends MRExecutor {
 
     protected int runRemote(String executable, String[] args, List<String> env, ByteArrayOutputStream outputStream) {
         String commandLine = buildCommand(executable, args);
-        Command command = new Command(commandLine, env);
-        command.setErrorOutputStream(outputStream);
-        command.run();
+        Command command;
+        if (commandLine.length() > MAX_COMMAND_LINE_ARGS_LENGTH) {
+            LOGGER.info("Command line is too long. Passing args through stdin");
+            commandLine = buildCommand(executable, AbstractHBaseDriver.ARGS_FROM_STDIN);
+            redactSecureString(args, MR_EXECUTOR_SSH_PASSWORD.key());
+            redactSecureString(args, "token");
+            env.add(HADOOP_SSH_STDIN_ENABLED + "=true");
+
+            command = new Command(commandLine, env);
+            command.setErrorOutputStream(outputStream);
+            runWithArgsToStdin(command, args);
+        } else {
+            command = new Command(commandLine, env);
+            command.setErrorOutputStream(outputStream);
+            command.run();
+        }
         return command.getExitValue();
     }
 
@@ -155,9 +178,9 @@ public class SshMRExecutor extends MRExecutor {
         int outputIdx = argsList.indexOf(AbstractHBaseDriver.OUTPUT_PARAM);
         if (outputIdx > 0 && argsList.size() > outputIdx + 1) {
             String output = argsList.get(outputIdx + 1);
-            URI outputUri = UriUtils.createUriSafe(output);
+            URI outputUri = UriUtils.toUri(output);
             if (MapReduceOutputFile.isLocal(outputUri)) {
-                logger.info("This MapReduce will produce some output. Change output location from file:// to a temporary hdfs:// file"
+                LOGGER.info("This MapReduce will produce some output. Change output location from file:// to a temporary hdfs:// file"
                         + " so it can be copied to the local filesystem after the execution");
                 try {
                     int i = executable.lastIndexOf('.');
@@ -202,9 +225,9 @@ public class SshMRExecutor extends MRExecutor {
     }
 
     private Path copyOutputFiles(String output, List<String> env) throws StorageEngineException {
-        URI targetOutputUri = UriUtils.createUriSafe(output);
+        URI targetOutputUri = UriUtils.toUri(output);
         if (!MapReduceOutputFile.isLocal(targetOutputUri)) {
-            logger.info("Output is not a file:// URI. Skipping copy file {}", targetOutputUri);
+            LOGGER.info("Output to non-local destination. Skip \"copy to local\" file {}", targetOutputUri);
             return null;
         }
         String targetOutput = targetOutputUri.getPath();
@@ -272,6 +295,7 @@ public class SshMRExecutor extends MRExecutor {
         String sshPassword = getOptions().getString(MR_EXECUTOR_SSH_PASSWORD.key());
         String sshKey = getOptions().getString(MR_EXECUTOR_SSH_KEY.key());
         String remoteOpencgaHome = getOptions().getString(MR_EXECUTOR_SSH_REMOTE_OPENCGA_HOME.key());
+        String remoteTmp = getOptions().getString(MR_EXECUTOR_SSH_REMOTE_TMP.key(), MR_EXECUTOR_SSH_REMOTE_TMP.defaultValue());
 
         if (StringUtils.isEmpty(sshHost)) {
             throw new IllegalArgumentException("Missing ssh credentials to run MapReduce job. Missing " + MR_EXECUTOR_SSH_HOST.key());
@@ -283,6 +307,7 @@ public class SshMRExecutor extends MRExecutor {
         List<String> env = new ArrayList<>(getEnv());
         env.add(HADOOP_SSH_USER_ENV + '=' + sshUser);
         env.add(HADOOP_SSH_HOST_ENV + '=' + sshHost);
+        env.add(HADOOP_SSH_REMOTE_TMP + '=' + remoteTmp);
 
         // Use sshpass to connect to the edge node. Otherwise, assume that there is a ssh-key in the system
         if (StringUtils.isNotEmpty(sshPassword)) {

@@ -15,9 +15,8 @@ import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveAction;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.Acl;
-import org.opencb.opencga.core.models.admin.GroupSyncParams;
+import org.opencb.opencga.core.models.admin.DeprecatedGroupSyncParams;
 import org.opencb.opencga.core.models.admin.InstallationParams;
-import org.opencb.opencga.core.models.admin.JWTParams;
 import org.opencb.opencga.core.models.admin.UserImportParams;
 import org.opencb.opencga.core.models.admin.UserUpdateGroup;
 import org.opencb.opencga.core.models.common.Enums.Resource;
@@ -70,8 +69,8 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
             case "catalog-install":
                 queryResponse = installCatalog();
                 break;
-            case "catalog-jwt":
-                queryResponse = jwtCatalog();
+            case "organizations-list":
+                queryResponse = listOrganizations();
                 break;
             case "resource-fetch":
                 queryResponse = fetchResource();
@@ -146,33 +145,11 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getAdminClient().installCatalog(installationParams);
     }
 
-    private RestResponse<ObjectMap> jwtCatalog() throws Exception {
-        logger.debug("Executing jwtCatalog in Admin command line");
+    private RestResponse<String> listOrganizations() throws Exception {
+        logger.debug("Executing listOrganizations in Admin command line");
 
-        AdminCommandOptions.JwtCatalogCommandOptions commandOptions = adminCommandOptions.jwtCatalogCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotEmpty("organization", commandOptions.organization);
-
-
-        JWTParams jWTParams = null;
-        if (commandOptions.jsonDataModel) {
-            RestResponse<ObjectMap> res = new RestResponse<>();
-            res.setType(QueryType.VOID);
-            PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/catalog/jwt"));
-            return res;
-        } else if (commandOptions.jsonFile != null) {
-            jWTParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), JWTParams.class);
-        } else {
-            ObjectMap beanParams = new ObjectMap();
-            putNestedIfNotEmpty(beanParams, "secretKey", commandOptions.secretKey, true);
-
-            jWTParams = JacksonUtils.getDefaultObjectMapper().copy()
-                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), JWTParams.class);
-        }
-        return openCGAClient.getAdminClient().jwtCatalog(jWTParams, queryParams);
+        AdminCommandOptions.ListOrganizationsCommandOptions commandOptions = adminCommandOptions.listOrganizationsCommandOptions;
+        return openCGAClient.getAdminClient().listOrganizations();
     }
 
     private RestResponse<Job> fetchResource() throws Exception {
@@ -316,15 +293,15 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("organization", commandOptions.organization);
 
 
-        GroupSyncParams groupSyncParams = null;
+        DeprecatedGroupSyncParams deprecatedGroupSyncParams = null;
         if (commandOptions.jsonDataModel) {
             RestResponse<Group> res = new RestResponse<>();
             res.setType(QueryType.VOID);
             PrintUtils.println(getObjectAsJSON(categoryName,"/{apiVersion}/admin/users/sync"));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            groupSyncParams = JacksonUtils.getDefaultObjectMapper()
-                    .readValue(new java.io.File(commandOptions.jsonFile), GroupSyncParams.class);
+            deprecatedGroupSyncParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), DeprecatedGroupSyncParams.class);
         } else {
             ObjectMap beanParams = new ObjectMap();
             putNestedIfNotEmpty(beanParams, "authenticationOriginId", commandOptions.authenticationOriginId, true);
@@ -334,11 +311,11 @@ public class AdminCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotNull(beanParams, "syncAll", commandOptions.syncAll, true);
             putNestedIfNotNull(beanParams, "force", commandOptions.force, true);
 
-            groupSyncParams = JacksonUtils.getDefaultObjectMapper().copy()
+            deprecatedGroupSyncParams = JacksonUtils.getDefaultObjectMapper().copy()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-                    .readValue(beanParams.toJson(), GroupSyncParams.class);
+                    .readValue(beanParams.toJson(), DeprecatedGroupSyncParams.class);
         }
-        return openCGAClient.getAdminClient().syncUsers(groupSyncParams, queryParams);
+        return openCGAClient.getAdminClient().syncUsers(deprecatedGroupSyncParams, queryParams);
     }
 
     private RestResponse<Group> usersUpdateGroups() throws Exception {

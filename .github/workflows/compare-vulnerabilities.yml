@@ -1,0 +1,20 @@
+name: Compare vulnerabilities (Syft SBOM -> Grype) between two branches
+run-name: 'Compare vulnerabilities between ${{ inputs.branch_a }} (base) and ${{ inputs.branch_b }} (head) by @${{ github.actor }}'
+on:
+  workflow_dispatch:
+    inputs:
+      branch_a:
+        description: 'Base branch (e.g. develop)'
+        required: true
+        default: 'develop'
+      branch_b:
+        description: 'Head branch (e.g. TASK-1234)'
+        required: true
+
+jobs:
+  compare-branches:
+    uses: opencb/java-common-libs/.github/workflows/compare-vulnerabilities.yml@develop
+    with:
+      branch_a: ${{ github.event.inputs.branch_a }}
+      branch_b: ${{ github.event.inputs.branch_b }}
+    secrets: inherit

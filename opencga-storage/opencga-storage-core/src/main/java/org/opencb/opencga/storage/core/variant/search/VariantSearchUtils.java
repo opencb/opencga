@@ -19,21 +19,12 @@ package org.opencb.opencga.storage.core.variant.search;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
-import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
-import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
@@ -166,6 +157,9 @@ public class VariantSearchUtils {
         for (VariantQueryParam modifierParam : MODIFIER_QUERY_PARAMS) {
             engineQuery.putIfNotNull(modifierParam.key(), query.get(modifierParam.key()));
         }
+        for (QueryParam modifierParam : MODIFIER_INTERNAL_QUERY_PARAMS) {
+            engineQuery.putIfNotNull(modifierParam.key(), query.get(modifierParam.key()));
+        }
         // Despite STUDIES is a covered filter, it has to be in the underlying
         // query to be used as defaultStudy
         if (isValidParam(query, STUDY)) {
@@ -181,207 +175,4 @@ public class VariantSearchUtils {
         return engineQuery;
     }
 
-    public static String buildSamplesIndexCollectionName(String dbName, StudyMetadata sm, int id) {
-        return buildSamplesIndexCollectionName(dbName, sm.getId(), id);
-    }
-
-    public static String buildSamplesIndexCollectionName(String dbName, int studyId, int secondaryIndexId) {
-        return dbName + '_' + studyId + '_' + secondaryIndexId;
-    }
-
-    /**
-     * Decide if a query should be resolved using the Specific Samples SearchManager or not.
-     *
-     * Will use it if:
-     *  - UseSearchIndex is YES or AUTO
-     *  - Included elements are covered by the specific search collection
-     *      - INCLUDE_STUDY
-     *      - INCLUDE_FILE
-     *      - INCLUDE_SAMPLE
-     *  - Filter only by one STUDY
-     *  - Filter elements are covered by the specific search collection, and there is at least one of them
-     *      - SAMPLE
-     *      - GENOTYPE
-     *      - FILE
-     *
-     * @param query                     Query
-     * @param options                   QueryOptions
-     * @param metadataManager StudyConfigurationManager
-     * @param dbName                    DBName
-     * @return          Name of the specific collection, or null if not found
-     * @throws StorageEngineException StorageEngineException
-     */
-    public static String inferSpecificSearchIndexSamplesCollection(
-            Query query, QueryOptions options, VariantStorageMetadataManager metadataManager, String dbName)
-            throws StorageEngineException {
-
-        if (!VariantStorageEngine.UseSearchIndex.from(options).equals(VariantStorageEngine.UseSearchIndex.NO)) { // YES or AUTO
-            if (isValidParam(query, VariantQueryParam.STUDY)) {
-                if (VariantQueryUtils.splitValue(query.getString(VariantQueryParam.STUDY.key())).getValue().size() > 1) {
-                    // Multi study query
-                    return null;
-                }
-            }
-
-            if (isValidParam(query, FILE_DATA)) {
-                // INFO not supported
-                return null;
-            }
-
-            boolean validGenotypeFilter = false;
-            if (isValidParam(query, VariantQueryParam.GENOTYPE)) {
-                HashMap<Object, List<String>> map = new HashMap<>();
-                parseGenotypeFilter(query.getString(VariantQueryParam.GENOTYPE.key()), map);
-
-                for (List<String> gts : map.values()) {
-                    validGenotypeFilter |= !gts.stream().allMatch(VariantQueryUtils::isNegated);
-                }
-            }
-
-            boolean validFormatFilter = false;
-            Map<String, String> formatMap = Collections.emptyMap();
-            if (isValidParam(query, VariantQueryParam.SAMPLE_DATA)) {
-                validFormatFilter = true;
-                formatMap = parseSampleDataOLD(query).getValue();
-
-                for (String formatFilters : formatMap.values()) {
-                    for (String formatFilter : splitValue(formatFilters).getValue()) {
-                        String formatKey = splitOperator(formatFilter)[0];
-                        if (!ACCEPTED_FORMAT_FILTERS.contains(formatKey)) {
-                            // Unsupported format filter
-                            return null;
-                        }
-                    }
-                }
-            }
-
-            if (!isValidParam(query, VariantQueryParam.SAMPLE, true)
-                    && !validGenotypeFilter
-                    && !validFormatFilter
-                    && !isValidParam(query, VariantQueryParam.FILE, true)) {
-                // Specific search index will only be valid if at least one of this filters is present.
-                return null;
-            } else if (ALL.equals(query.getString(VariantQueryParam.INCLUDE_SAMPLE.key()))
-                    || ALL.equals(query.getString(VariantQueryParam.INCLUDE_FILE.key()))) {
-                // Discard if including all samples or files.
-                // What if all samples are in the study are in the search index?
-                return null;
-            } else {
-                // Check that all elements from the query are in the same search collection
-
-                VariantQueryProjection selectVariantElements =
-                        VariantQueryProjectionParser.parseVariantQueryFields(query, options, metadataManager);
-
-                if (selectVariantElements.getStudyIds().size() != 1) {
-                    return null;
-                }
-
-                Integer studyId = selectVariantElements.getStudyIds().get(0);
-                Set<String> samples = new HashSet<>();
-                if (isValidParam(query, VariantQueryParam.SAMPLE)) {
-                    String value = query.getString(VariantQueryParam.SAMPLE.key());
-                    for (String sample : splitValue(value).getValue()) {
-                        samples.add(sample.split(IS)[0]);
-                    }
-                }
-                if (isValidParam(query, VariantQueryParam.GENOTYPE)) {
-                    HashMap<Object, List<String>> map = new HashMap<>();
-                    parseGenotypeFilter(query.getString(VariantQueryParam.GENOTYPE.key()), map);
-                    for (Object o : map.keySet()) {
-                        samples.add(o.toString());
-                    }
-                }
-                if (!formatMap.isEmpty()) {
-                    samples.addAll(formatMap.keySet());
-                }
-                if (isValidParam(query, VariantQueryParam.INCLUDE_SAMPLE)) {
-                    String value = query.getString(VariantQueryParam.INCLUDE_SAMPLE.key());
-                    if (!NONE.equals(value)) {
-                        samples.addAll(splitValue(value).getValue());
-                    }
-                }
-
-                List<Integer> sampleIds;
-                if (samples.isEmpty()) {
-                    // None of the previous fields is defined. Returning all samples from study, or from the given samples
-                    sampleIds = selectVariantElements.getStudy(studyId).getSamples();
-                } else {
-                    sampleIds = samples.stream()
-                            .map(sample -> isNegated(sample) ? removeNegation(sample) : sample)
-                            .map(sample -> {
-                                Integer sampleId = metadataManager.getSampleId(studyId, sample);
-                                if (sampleId == null) {
-                                    throw VariantQueryException.sampleNotFound(sample,
-                                            selectVariantElements.getStudy(studyId).getStudyMetadata().getName());
-                                }
-                                return sampleId;
-                            }).collect(Collectors.toList());
-                }
-
-                Integer sampleSet = null;
-                for (Integer sampleId : sampleIds) {
-                    Integer thisSampleSet = metadataManager.getSampleMetadata(studyId, sampleId).getSecondaryIndexCohort();
-                    if (sampleSet == null) {
-                        sampleSet = thisSampleSet;
-                    } else if (!sampleSet.equals(thisSampleSet)) {
-                        // Mix of sample sets
-                        return null;
-                    }
-                }
-                if (sampleSet == null) {
-                    return null;
-                }
-                CohortMetadata secondaryIndexCohort = metadataManager.getCohortMetadata(studyId, sampleSet);
-                if (!TaskMetadata.Status.READY.equals(secondaryIndexCohort.getSecondaryIndexStatus())) {
-                    // Secondary index not ready
-                    return null;
-                }
-
-                // Check that files are within the specific search collection, only if defined.
-                // Otherwise, this is defined by the samples, so it is in the specific search collection
-                Set<String> files = new HashSet<>();
-                if (isValidParam(query, VariantQueryParam.FILE)) {
-                    files.addAll(splitValue(query.getString(VariantQueryParam.FILE.key())).getValue());
-                } else if (isValidParam(query, VariantQueryParam.INCLUDE_FILE)) {
-                    String value = query.getString(VariantQueryParam.INCLUDE_FILE.key());
-                    if (!NONE.equals(value)) {
-                        files.addAll(splitValue(value).getValue());
-                    }
-                }
-
-                for (String file : files) {
-                    file = isNegated(file) ? removeNegation(file) : file;
-                    Integer fileId = metadataManager.getFileId(studyId, file);
-                    if (fileId == null) {
-                        // File not found
-                        return null;
-                    } else {
-                        // Check if any of the samples of this file is in this collection. If so, the file will be too.
-                        LinkedHashSet<Integer> fileSamples = metadataManager.getFileMetadata(studyId, fileId).getSamples();
-
-                        if (fileSamples.stream().noneMatch(secondaryIndexCohort.getSamples()::contains)) {
-                            // This file is not in the secondaryIndex.
-                            return null;
-                        }
-//                        for (Integer sampleId : fileSamples) {
-//                            Integer thisSampleSet = studyConfiguration.getSearchIndexedSampleSets().get(sampleId);
-//                            if (thisSampleSet != null) {
-//                                if (sampleSet == null) {
-//                                    // There may be another sampleSet that contains all required samples.
-//                                    // Take any. Could be improved in the future, if needed.
-//                                    sampleSet = thisSampleSet;
-//                                } else if (!Objects.equals(sampleSet, thisSampleSet)) {
-//                                    return null;
-//                                }
-//                            }
-//                        }
-                    }
-                }
-
-                return buildSamplesIndexCollectionName(dbName, studyId, sampleSet);
-            }
-        }
-
-        return null;
-    }
 }

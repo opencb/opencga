@@ -853,6 +853,13 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         return updateSampleInternalVariant(studyFqn, sample, sampleInternalVariant, token);
     }
 
+    public OpenCGAResult<?> updateSampleInternalVariantAggregateFamily(String studyFqn, Sample sample,
+                                                                       List<SampleInternalVariantAggregateFamily> aggregateFamily,
+                                                                       String token) throws CatalogException {
+        SampleInternalVariant sampleInternalVariant = new SampleInternalVariant().setAggregateFamily(aggregateFamily);
+        return updateSampleInternalVariant(studyFqn, sample, sampleInternalVariant, token);
+    }
+
     private OpenCGAResult<?> updateSampleInternalVariant(String studyFqn, Sample sample, SampleInternalVariant internalVariant,
                                                          String token) throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);

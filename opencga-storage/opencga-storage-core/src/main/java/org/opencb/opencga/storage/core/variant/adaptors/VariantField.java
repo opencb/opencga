@@ -82,7 +82,8 @@ public enum VariantField {
     ANNOTATION_FUNCTIONAL_SCORE(ANNOTATION, "annotation.functionalScore"),
     ANNOTATION_REPEAT(ANNOTATION, "annotation.repeat"),
     ANNOTATION_DRUGS(ANNOTATION, "annotation.drugs"),
-    ANNOTATION_ADDITIONAL_ATTRIBUTES(ANNOTATION, "annotation.additionalAttributes");
+    ANNOTATION_ADDITIONAL_ATTRIBUTES(ANNOTATION, "annotation.additionalAttributes"),
+    ANNOTATION_GENOMIC_SEQUENCE_CONTEXT(ANNOTATION, "annotation.genomicSequenceContext");
 
     private static final Set<VariantField> ALL_FIELDS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(values())));
 
@@ -106,6 +107,7 @@ public enum VariantField {
         RELEASE("release"),
         INDEX_SYNCHRONIZATION("indexSync"),
         INDEX_STUDIES("indexStudies"),
+        INDEX_STATS("indexStats"),
         ANNOTATION_ID("annotationId"),
         VARIANT_ID("id");
 

@@ -43,31 +43,32 @@
     </modules>
 
     <properties>
-        <pyopencga.version>5.0.0_dev</pyopencga.version>
-        <opencgar.version>5.0.0_dev</opencgar.version>
-        <cellbase.version>8.0.0-SNAPSHOT</cellbase.version>
+        <cellbase.version>6.6.0</cellbase.version>
         <biodata.version>5.0.0-SNAPSHOT</biodata.version>
         <java-common-libs.version>7.0.0-SNAPSHOT</java-common-libs.version>
         <iva.version>5.0.0-SNAPSHOT</iva.version>
+
+
         <oskar.version>0.2.0</oskar.version>
 
         <jackson.version>2.14.3</jackson.version>
         <jersey.version>2.30.1</jersey.version>
         <collections.version>4.4</collections.version>
-        <avro.version>1.7.7</avro.version>
+        <avro.version>1.11.4</avro.version>
         <protobuf.version>3.11.4</protobuf.version>
-        <grpc.version>1.28.1</grpc.version>
+        <grpc.version>1.76.0</grpc.version>
         <slf4j.version>1.7.36</slf4j.version>
         <log4j2.version>2.17.2</log4j2.version>
         <solr.version>8.11.3</solr.version>
+        <!-- Keep zookeeper version in sync with solr requirements -->
+        <zookeeper.version>3.6.2</zookeeper.version>
         <jjwt.version>0.11.2</jjwt.version>
-        <!--        <jetty.version>9.4.17.v20190418</jetty.version>-->
         <jetty.version>9.4.53.v20231009</jetty.version>
         <jetty-for-hadoop-test.version>${jetty.version}</jetty-for-hadoop-test.version>
         <guava.version>28.0-jre</guava.version>
         <htsjdk.version>2.23.0</htsjdk.version>
         <snpeff.version>4.3.1</snpeff.version>
-        <mongodb-driver.version>4.11.4</mongodb-driver.version>
+        <mongodb-driver.version>4.11.5</mongodb-driver.version>
         <commons-io.version>2.8.0</commons-io.version>
         <commons-lang3.version>3.14.0</commons-lang3.version>
         <commons-codec.version>1.7</commons-codec.version>
@@ -103,8 +104,7 @@
         <httpcore.version>4.4.13</httpcore.version>
         <log4j.version>1.2.17</log4j.version>
         <javax.ws.rs-api.version>2.0.1</javax.ws.rs-api.version>
-        <jmeter.version>5.0</jmeter.version>
-        <ApacheJMeter_components.version>5.0</ApacheJMeter_components.version>
+        <jmeter.version>5.6.3</jmeter.version>
         <grep4j.version>1.8.7</grep4j.version>
         <redisson.version>2.2.0</redisson.version>
         <jsr305.version>3.0.2</jsr305.version>
@@ -114,14 +114,13 @@
         <reactive-streams.version>1.0.0</reactive-streams.version>
         <snappy-java.version>1.1.10.4</snappy-java.version>
         <parquet-avro.version>${parquet-common.version}</parquet-avro.version>
-        <jorphan.version>5.0</jorphan.version>
 
         <opencga.war.name>opencga</opencga.war.name>
         <opencga.env.file>opencga-env.sh</opencga.env.file>
 
-        <opencga.hadoop.thirdparty.version>1.0.0-SNAPSHOT</opencga.hadoop.thirdparty.version>
+        <opencga.hadoop.thirdparty.version>1.1.0</opencga.hadoop.thirdparty.version>
 
-        <opencga-hadoop-shaded.id.default>hdp3.1</opencga-hadoop-shaded.id.default>
+        <opencga-hadoop-shaded.id.default>hbase2.0</opencga-hadoop-shaded.id.default>
         <opencga-hadoop-shaded.id>${opencga-hadoop-shaded.id.default}</opencga-hadoop-shaded.id>
         <opencga-hadoop-lib.artifactId>opencga-storage-hadoop-lib-${opencga-hadoop-shaded.id}</opencga-hadoop-lib.artifactId>
         <opencga-hadoop-shaded.artifactId>opencga-hadoop-shaded-${opencga-hadoop-shaded.id}</opencga-hadoop-shaded.artifactId>
@@ -143,7 +142,6 @@
         <parquet-common.version>1.7.0</parquet-common.version>
         <commons-logging.version>1.1.3</commons-logging.version>
         <jcl-over-slf4j.version>1.7.24</jcl-over-slf4j.version>
-        <servlet-api.version>2.5-20081211</servlet-api.version>
 
 
         <!--TO REMOVE:
@@ -155,6 +153,7 @@
         <kryo.version>2.23.0</kryo.version>
         <lombok.version>1.18.30</lombok.version>
         <maven-war-plugin.version>3.4.0</maven-war-plugin.version>
+        <rocksdbjni.version>10.2.1</rocksdbjni.version>
     </properties>
 
     <scm>
@@ -208,11 +207,22 @@
 
     <repositories>
         <repository>
+            <id>central</id>
+            <url>https://repo.maven.apache.org/maven2</url>
+            <releases>
+                <enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <repository>
             <id>ossrh</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <url>https://central.sonatype.com/repository/maven-snapshots/</url>
             <snapshots>
                 <enabled>true</enabled>
-                <updatePolicy>daily</updatePolicy>
+                <updatePolicy>always</updatePolicy>
             </snapshots>
         </repository>
         <repository>
@@ -265,6 +275,11 @@
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-storage-benchmark</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-test</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -280,10 +295,27 @@
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-storage-hadoop-compat-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-storage-hadoop-core</artifactId>
                 <version>${project.version}</version>
                 <type>test-jar</type>
                 <scope>test</scope>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.opencb.opencga</groupId>
+                        <artifactId>${opencga-storage-hadoop-deps.artifactId-default}</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-storage-hadoop-deps-emr6.1</artifactId>
+                <version>${project.version}</version>
+                <classifier>shaded</classifier>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
@@ -355,11 +387,6 @@
                         <artifactId>servlet-api</artifactId>
                     </exclusion>
                 </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>org.mortbay.jetty</groupId>
-                <artifactId>servlet-api</artifactId>
-                <version>${servlet-api.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.opencb.biodata</groupId>
@@ -477,9 +504,14 @@
                 <version>${jackson.version}</version>
             </dependency>
             <dependency>
+                <groupId>com.fasterxml.jackson.datatype</groupId>
+                <artifactId>jackson-datatype-jsr310</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.apache.jmeter</groupId>
                 <artifactId>ApacheJMeter_components</artifactId>
-                <version>${ApacheJMeter_components.version}</version>
+                <version>${jmeter.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.solr</groupId>
@@ -518,6 +550,16 @@
                         <artifactId>log4j-web</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.zookeeper</groupId>
+                <artifactId>zookeeper</artifactId>
+                <version>${zookeeper.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.zookeeper</groupId>
+                <artifactId>zookeeper-jute</artifactId>
+                <version>${zookeeper.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.jmeter</groupId>
@@ -591,7 +633,7 @@
             <dependency>
                 <groupId>org.apache.jmeter</groupId>
                 <artifactId>jorphan</artifactId>
-                <version>${jorphan.version}</version>
+                <version>${jmeter.version}</version>
             </dependency>
             <dependency>
                 <groupId>javax.ws.rs</groupId>
@@ -793,7 +835,12 @@
                 <groupId>org.apache.avro</groupId>
                 <artifactId>avro-mapred</artifactId>
                 <version>${avro.version}</version>
-                <classifier>hadoop2</classifier>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.apache.avro</groupId>
+                        <artifactId>avro-ipc</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.mongodb</groupId>
@@ -855,6 +902,12 @@
                 <groupId>org.apache.parquet</groupId>
                 <artifactId>parquet-avro</artifactId>
                 <version>${parquet-avro.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.apache.avro</groupId>
+                        <artifactId>avro-ipc</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>com.google.guava</groupId>
@@ -870,6 +923,20 @@
                 <groupId>org.opencb.ga4gh</groupId>
                 <artifactId>ga4gh</artifactId>
                 <version>${ga4gh.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.mortbay.jetty</groupId>
+                        <artifactId>jetty</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.mortbay.jetty</groupId>
+                        <artifactId>servlet-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.avro</groupId>
+                        <artifactId>avro-ipc</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.fusesource.jansi</groupId>
@@ -1139,7 +1206,11 @@
                 <artifactId>kryo</artifactId>
                 <version>${kryo.version}</version>
             </dependency>
-
+            <dependency>
+                <groupId>org.rocksdb</groupId>
+                <artifactId>rocksdbjni</artifactId>
+                <version>${rocksdbjni.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -1221,6 +1292,8 @@
                         org/opencb/opencga/storage/datamanagers/**,
                         org/opencb/opencga/storage/hadoop/variant/models/protobuf/**,
                         org/opencb/opencga/storage/server/grpc/**,
+                        org/opencb/opencga/storage/server/grpc/**,
+                        org/opencb/opencga/storage/lib/**,
                     </excludes>
                     <resourceExcludes>
                         benchmark/jmeter/**
@@ -1371,7 +1444,7 @@
 
                 <!-- Client -->
                 <OPENCGA.CLIENT.REST.HOST>https://ws.opencb.org/opencga-prod</OPENCGA.CLIENT.REST.HOST>
-                <OPENCGA.CLIENT.GRPC.HOST>localhost:9091</OPENCGA.CLIENT.GRPC.HOST>
+                <OPENCGA.CLIENT.GRPC.HOST></OPENCGA.CLIENT.GRPC.HOST>
 
                 <OPENCGA.SERVER.REST.PORT>9090</OPENCGA.SERVER.REST.PORT>
                 <OPENCGA.SERVER.GRPC.PORT>9091</OPENCGA.SERVER.GRPC.PORT>
@@ -1393,8 +1466,6 @@
                 <OPENCGA.STORAGE.VARIANT.DB.USER></OPENCGA.STORAGE.VARIANT.DB.USER>
                 <OPENCGA.STORAGE.VARIANT.DB.PASSWORD></OPENCGA.STORAGE.VARIANT.DB.PASSWORD>
                 <OPENCGA.STORAGE.SEARCH.HOST>http://localhost:8983/solr/</OPENCGA.STORAGE.SEARCH.HOST>
-                <OPENCGA.STORAGE.SEARCH.CONFIG_SET>opencga-variant-configset-${project.parent.version}
-                </OPENCGA.STORAGE.SEARCH.CONFIG_SET>
                 <OPENCGA.STORAGE.SEARCH.TIMEOUT>30000</OPENCGA.STORAGE.SEARCH.TIMEOUT>
                 <OPENCGA.STORAGE.CLINICAL.HOST>http://localhost:8983/solr/</OPENCGA.STORAGE.CLINICAL.HOST>
                 <OPENCGA.STORAGE.CLINICAL.MANAGER>""</OPENCGA.STORAGE.CLINICAL.MANAGER>
@@ -1451,46 +1522,83 @@
         <profile>
             <id>deploy-maven</id>
             <distributionManagement>
+                <!-- Releases repository using the Sonatype OSSRH Staging API for staging and deployment -->
                 <repository>
                     <id>ossrh</id>
-                    <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+                    <name>OSSRH Staging API Releases</name>
+                    <url>https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/</url>
                 </repository>
+
+                <!-- Snapshots repository pointing to Maven Central’s snapshot feed for ongoing development versions -->
                 <snapshotRepository>
                     <id>ossrh</id>
-                    <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+                    <name>Central Portal Snapshots</name>
+                    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
                 </snapshotRepository>
             </distributionManagement>
             <build>
                 <plugins>
+                    <!-- Central Publishing Plugin: handles both snapshots and releases via the Sonatype Central API -->
+                    <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>0.8.0</version>
+                        <!-- extensions=true allows this plugin to hook into the build lifecycle -->
+                        <extensions>true</extensions>
+                        <configuration>
+                            <!-- ID of the <server> in your settings.xml containing your Sonatype credentials -->
+                            <publishingServerId>ossrh</publishingServerId>
+                            <!-- autoPublish=true will automatically close and release the staging repository after deploy -->
+                            <autoPublish>true</autoPublish>
+                            <!-- waitUntil=published makes the build wait until the artifacts are fully available in Central -->
+                            <waitUntil>published</waitUntil>
+                            <!-- ignorePublishedComponents skips already-published modules in multimodule builds -->
+                            <ignorePublishedComponents>true</ignorePublishedComponents>
+                        </configuration>
+                    </plugin>
+                    <!-- Source Plugin: generates and attaches a -sources.jar containing all your project’s source files -->
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-source-plugin</artifactId>
-                        <version>3.2.0</version>
+                        <version>3.2.1</version>
                         <executions>
                             <execution>
                                 <id>attach-sources</id>
                                 <goals>
+                                    <!-- jar-no-fork: create the sources jar without running the default lifecycle again -->
                                     <goal>jar-no-fork</goal>
                                 </goals>
                             </execution>
                         </executions>
                     </plugin>
+
+                    <!-- Javadoc Plugin (aggregate): collects docs from all modules and packages a single -javadoc.jar -->
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
-                        <version>3.3.2</version>
+                        <version>3.5.0</version>
                         <executions>
                             <execution>
                                 <id>attach-javadocs</id>
+                                <!-- bind this execution to the package phase so it always runs -->
+                                <phase>package</phase>
                                 <goals>
+                                    <!-- package the generated Javadocs into a -javadoc.jar -->
                                     <goal>jar</goal>
                                 </goals>
                             </execution>
                         </executions>
                         <configuration>
+                            <!-- do not skip execution, even in POM-packaging modules -->
+                            <skip>false</skip>
+                            <!-- disable strict HTML/tag checking in Javadoc comments -->
                             <doclint>none</doclint>
+                            <!-- continue the build even if Javadoc generation issues errors -->
+                            <failOnError>false</failOnError>
                         </configuration>
                     </plugin>
+
+                    <!-- GPG Plugin: signs all deployable artifacts (.jar, .pom, sources, javadoc) with your GPG key -->
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
@@ -1498,12 +1606,13 @@
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
-                                <phase>deploy</phase>
+                                <!-- bind signing to the verify phase, so signatures are created before deploy -->
+                                <phase>verify</phase>
                                 <goals>
                                     <goal>sign</goal>
                                 </goals>
                                 <configuration>
-                                    <!-- Prevent `gpg` from using pinentry programs -->
+                                    <!-- Use loopback pinentry to allow unattended signing in CI -->
                                     <gpgArguments>
                                         <arg>--pinentry-mode</arg>
                                         <arg>loopback</arg>
@@ -1511,17 +1620,6 @@
                                 </configuration>
                             </execution>
                         </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.sonatype.plugins</groupId>
-                        <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>1.6.8</version>
-                        <extensions>true</extensions>
-                        <configuration>
-                            <serverId>ossrh</serverId>
-                            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                            <autoReleaseAfterClose>true</autoReleaseAfterClose>
-                        </configuration>
                     </plugin>
                 </plugins>
             </build>
@@ -1539,6 +1637,20 @@
             </build>
         </profile>
 
+        <profile>
+            <id>hbase2.0</id>
+            <activation>
+                <property>
+                    <name>hadoop</name>
+                    <value>hbase2.0</value>
+                </property>
+            </activation>
+            <properties>
+                <opencga-hadoop-shaded.id>hbase2.0</opencga-hadoop-shaded.id>
+                <opencga-storage-hadoop-compat.id>hbase2.0</opencga-storage-hadoop-compat.id>
+                <jetty-for-hadoop-test.version>9.3.25.v20180904</jetty-for-hadoop-test.version>
+            </properties>
+        </profile>
         <profile>
             <id>hdp3.1</id>
             <activation>
@@ -1592,6 +1704,19 @@
             <properties>
                 <opencga-hadoop-shaded.id>emr6.13</opencga-hadoop-shaded.id>
                 <opencga-storage-hadoop-compat.id>hbase2.4</opencga-storage-hadoop-compat.id>
+            </properties>
+        </profile>
+        <profile>
+            <id>emr7.5</id>
+            <activation>
+                <property>
+                    <name>hadoop</name>
+                    <value>emr7.5</value>
+                </property>
+            </activation>
+            <properties>
+                <opencga-hadoop-shaded.id>emr7.5</opencga-hadoop-shaded.id>
+                <opencga-storage-hadoop-compat.id>hbase2.5</opencga-storage-hadoop-compat.id>
             </properties>
         </profile>
         <profile>

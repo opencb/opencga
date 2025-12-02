@@ -3,19 +3,19 @@ package org.opencb.opencga.storage.core.variant.search;
 import com.google.common.collect.Iterators;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.search.solr.SolrNativeIterator;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchIdGenerator;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,12 +49,13 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
     private int intersectParamsThreshold;
 
     public SearchIndexVariantQueryExecutor(VariantDBAdaptor dbAdaptor, VariantSearchManager searchManager,
-                                           String storageEngineId, String dbName, StorageConfiguration configuration,
+                                           String storageEngineId, StorageConfiguration configuration,
                                            ObjectMap options) {
-        super(dbAdaptor, searchManager, storageEngineId, dbName, configuration, options);
-        intersectActive = getOptions().getBoolean(INTERSECT_ACTIVE.key(), INTERSECT_ACTIVE.defaultValue());
-        intersectAlways = getOptions().getBoolean(INTERSECT_ALWAYS.key(), INTERSECT_ALWAYS.defaultValue());
-        intersectParamsThreshold = getOptions().getInt(INTERSECT_PARAMS_THRESHOLD.key(), INTERSECT_PARAMS_THRESHOLD.defaultValue());
+        super(dbAdaptor, searchManager, storageEngineId, configuration, options);
+        intersectActive = getOptions().getBoolean(SEARCH_INTERSECT_ACTIVE.key(), SEARCH_INTERSECT_ACTIVE.defaultValue());
+        intersectAlways = getOptions().getBoolean(SEARCH_INTERSECT_ALWAYS.key(), SEARCH_INTERSECT_ALWAYS.defaultValue());
+        intersectParamsThreshold = getOptions().getInt(SEARCH_INTERSECT_PARAMS_THRESHOLD.key(),
+                SEARCH_INTERSECT_PARAMS_THRESHOLD.defaultValue());
     }
 
     public SearchIndexVariantQueryExecutor setIntersectActive(boolean intersectActive) {
@@ -76,20 +77,36 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
     public boolean canUseThisExecutor(ParsedVariantQuery variantQuery) throws StorageEngineException {
         VariantQuery query = variantQuery.getQuery();
         QueryOptions options = variantQuery.getInputOptions();
-        return doQuerySearchManager(query, options) || doIntersectWithSearch(query, options);
+        SearchIndexMetadata indexMetadata = searchManager.getSearchIndexMetadataForQueries();
+        return doQuerySearchManager(indexMetadata, query, options) || doIntersectWithSearch(indexMetadata, query, options);
     }
 
     @Override
     protected Object getOrIterator(ParsedVariantQuery variantQuery, boolean iterator) {
         Query query = variantQuery.getQuery();
         QueryOptions options = variantQuery.getInputOptions();
-
-        if (doQuerySearchManager(query, options)) {
+        ProjectMetadata projectMetadata = metadataManager.getProjectMetadata();
+        SearchIndexMetadata indexMetadata = projectMetadata.getSecondaryAnnotationIndex()
+                .getSearchIndexMetadataForQueries();
+        if (indexMetadata == null) {
+            throw new VariantQueryException("No search index available");
+        }
+        if (projectMetadata.getSecondaryAnnotationIndex().isSolrUpdateInProgress()) {
+            String message = "Secondary annotation index (solr) is being updated. "
+                    + "Results may not be up to date, and some latency may be expected.";
+            logger.info(message);
+            variantQuery.getEvents().add(new Event(Event.Type.WARNING, message));
+        } else if (indexMetadata.getDataStatus() == SearchIndexMetadata.DataStatus.OUT_OF_DATE) {
+            String message = "Secondary annotation index (solr) is outdated.";
+            logger.warn(message);
+            variantQuery.getEvents().add(new Event(Event.Type.WARNING, message));
+        }
+        if (doQuerySearchManager(indexMetadata, query, options)) {
             try {
                 if (iterator) {
-                    return searchManager.iterator(dbName, query, options);
+                    return searchManager.iterator(indexMetadata, query, options);
                 } else {
-                    return searchManager.query(dbName, variantQuery);
+                    return addResultMetadata(indexMetadata, variantQuery, false, searchManager.query(indexMetadata, variantQuery));
                 }
             } catch (IOException | VariantSearchException e) {
                 throw new VariantQueryException("Error querying Solr", e);
@@ -121,7 +138,7 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
                     approxCount = false;
                 } else if (options.getBoolean(APPROXIMATE_COUNT.key()) || options.getBoolean(QueryOptions.COUNT)) {
                     options.put(QueryOptions.COUNT, false);
-                    VariantQueryResult<Long> result = approximateCount(variantQuery);
+                    VariantQueryResult<Long> result = approximateCount(indexMetadata, variantQuery);
                     numTotalResults = result.first();
                     approxCount = result.getApproximateCount();
                     approxCountSamplingSize = result.getApproximateCountSamplingSize();
@@ -131,7 +148,7 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
             if (pagination) {
                 if (isQueryCovered(query)) {
                     // We can use limit+skip directly in solr
-                    variantsIterator = variantIdIteratorFromSearch(searchEngineQuery, limit, skip, searchCount);
+                    variantsIterator = variantIdIteratorFromSearch(indexMetadata, searchEngineQuery, limit, skip, searchCount);
 
                     // Remove limit and skip from Options for storage. The Search Engine already knows the pagination.
                     options = new QueryOptions(options);
@@ -140,10 +157,10 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
                 } else {
                     logger.debug("Client side pagination. limit : {} , skip : {}", limit, skip);
                     // Can't limit+skip only from solr. Need to limit+skip also in client side
-                    variantsIterator = variantIdIteratorFromSearch(searchEngineQuery);
+                    variantsIterator = variantIdIteratorFromSearch(indexMetadata, searchEngineQuery);
                 }
             } else {
-                variantsIterator = variantIdIteratorFromSearch(searchEngineQuery, Integer.MAX_VALUE, 0, searchCount);
+                variantsIterator = variantIdIteratorFromSearch(indexMetadata, searchEngineQuery, Integer.MAX_VALUE, 0, searchCount);
             }
 
             logger.debug("Intersect query " + engineQuery.toJson() + " options " + options.toJson());
@@ -157,23 +174,39 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
                     queryResult.setApproximateCountSamplingSize(approxCountSamplingSize);
                     queryResult.setNumMatches(numTotalResults.longValue());
                 }
-                queryResult.setSource(SEARCH_ENGINE_ID + '+' + getStorageEngineId());
+                addResultMetadata(indexMetadata, variantQuery, true, queryResult);
                 return queryResult;
             }
         }
     }
 
-    public VariantQueryResult<Long> approximateCount(ParsedVariantQuery variantQuery) {
+    private VariantQueryResult<Variant> addResultMetadata(
+            SearchIndexMetadata indexMetadata, ParsedVariantQuery variantQuery, boolean joinQuery, VariantQueryResult<Variant> result) {
+        result.addEvents(variantQuery);
+        if (joinQuery) {
+            result.setSource(SEARCH_ENGINE_ID + '+' + getStorageEngineId());
+        } else {
+            result.setSource(SEARCH_ENGINE_ID);
+        }
+        result.getAttributes().put("searchIndexMetadataVersion", indexMetadata.getVersion());
+        result.getAttributes().put("searchIndexCollection", searchManager.buildCollectionName(indexMetadata));
+        result.getAttributes().put("searchIndexStatus", indexMetadata.getStatus());
+
+        return result;
+    }
+
+    public VariantQueryResult<Long> approximateCount(SearchIndexMetadata indexMetadata, ParsedVariantQuery variantQuery) {
         Query query = variantQuery.getQuery();
         QueryOptions options = variantQuery.getInputOptions();
+        VariantSearchIdGenerator idGenerator = VariantSearchIdGenerator.getGenerator(indexMetadata);
         long count;
         boolean approxCount = true;
         int sampling = 0;
         StopWatch watch = StopWatch.createStarted();
         try {
-            if (doQuerySearchManager(query, new QueryOptions(QueryOptions.COUNT, true))) {
+            if (doQuerySearchManager(indexMetadata, query, new QueryOptions(QueryOptions.COUNT, true))) {
                 approxCount = false;
-                count = searchManager.count(dbName, query);
+                count = searchManager.count(indexMetadata, query);
             } else {
                 sampling = options.getInt(APPROXIMATE_COUNT_SAMPLING_SIZE.key(),
                         getOptions().getInt(APPROXIMATE_COUNT_SAMPLING_SIZE.key(), APPROXIMATE_COUNT_SAMPLING_SIZE.defaultValue()));
@@ -183,9 +216,9 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
                 Query engineQuery = getEngineQuery(query, options, getMetadataManager());
 
                 DataResult<VariantSearchModel> nativeResult = searchManager
-                        .nativeQuery(dbName, searchEngineQuery, queryOptions);
+                        .nativeQuery(indexMetadata, searchEngineQuery, queryOptions);
                 List<Variant> variantIds = nativeResult.getResults().stream()
-                        .map(VariantSearchModel::toVariantSimple)
+                        .map(idGenerator::getVariant)
                         .collect(Collectors.toList());
                 // Adjust numSamples if the results from SearchManager is smaller than numSamples
                 // If this happens, the count is not approximated
@@ -221,16 +254,17 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
     /**
      * Decide if a query should be resolved using SearchManager or not.
      *
+     * @param indexMetadata SearchIndexMetadata
      * @param query     Query
      * @param options   QueryOptions
      * @return          true if should resolve only with SearchManager
      */
-    public boolean doQuerySearchManager(Query query, QueryOptions options) {
+    public boolean doQuerySearchManager(SearchIndexMetadata indexMetadata, Query query, QueryOptions options) {
         if (VariantStorageEngine.UseSearchIndex.from(options) == VariantStorageEngine.UseSearchIndex.NO) {
             return false;
         } // else, YES or AUTO
         if (isQueryCovered(query) && isIncludeCovered(options)) {
-            if (searchActiveAndAlive()) {
+            if (searchActiveAndAlive(indexMetadata)) {
                 return true;
             }
         }
@@ -240,15 +274,16 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
     /**
      * Decide if a query should be resolved intersecting with SearchManager or not.
      *
+     * @param indexMetadata SearchIndexMetadata
      * @param query       Query
      * @param options     QueryOptions
      * @return            true if should intersect
      */
-    public boolean doIntersectWithSearch(Query query, QueryOptions options) {
+    public boolean doIntersectWithSearch(SearchIndexMetadata indexMetadata, Query query, QueryOptions options) {
         VariantStorageEngine.UseSearchIndex useSearchIndex = VariantStorageEngine.UseSearchIndex.from(options);
 
         final boolean intersect;
-        boolean active = searchActiveAndAlive();
+        boolean active = searchActiveAndAlive(indexMetadata);
         if (useSearchIndex.equals(VariantStorageEngine.UseSearchIndex.NO)) {
             // useSearchIndex = NO
             intersect = false;
@@ -290,11 +325,13 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
         return intersect;
     }
 
-    protected Iterator<Variant> variantIdIteratorFromSearch(Query query) {
-        return variantIdIteratorFromSearch(query, Integer.MAX_VALUE, 0, null);
+    protected Iterator<Variant> variantIdIteratorFromSearch(SearchIndexMetadata indexMetadata, Query query) {
+        return variantIdIteratorFromSearch(indexMetadata, query, Integer.MAX_VALUE, 0, null);
     }
 
-    protected Iterator<Variant> variantIdIteratorFromSearch(Query query, int limit, int skip, AtomicLong numTotalResults) {
+    protected Iterator<Variant> variantIdIteratorFromSearch(SearchIndexMetadata indexMetadata, Query query, int limit, int skip,
+                                                            AtomicLong numTotalResults) {
+        VariantSearchIdGenerator idGenerator = VariantSearchIdGenerator.getGenerator(indexMetadata);
         Iterator<Variant> variantsIterator;
         QueryOptions queryOptions = new QueryOptions()
                 .append(QueryOptions.LIMIT, limit)
@@ -303,20 +340,20 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
         try {
             // Do not iterate for small queries
             if (limit < 10000) {
-                DataResult<VariantSearchModel> nativeResult = searchManager.nativeQuery(dbName, query, queryOptions);
+                DataResult<VariantSearchModel> nativeResult = searchManager.nativeQuery(indexMetadata, query, queryOptions);
                 if (numTotalResults != null) {
                     numTotalResults.set(nativeResult.getNumMatches());
                 }
                 variantsIterator = nativeResult.getResults()
                         .stream()
-                        .map(VariantSearchModel::toVariantSimple)
+                        .map(idGenerator::getVariant)
                         .iterator();
             } else {
-                SolrNativeIterator nativeIterator = searchManager.nativeIterator(dbName, query, queryOptions);
+                SolrNativeIterator nativeIterator = searchManager.nativeIterator(indexMetadata, query, queryOptions);
                 if (numTotalResults != null) {
                     numTotalResults.set(nativeIterator.getNumFound());
                 }
-                variantsIterator = Iterators.transform(nativeIterator, VariantSearchModel::toVariantSimple);
+                variantsIterator = Iterators.transform(nativeIterator, idGenerator::getVariant);
             }
         } catch (VariantSearchException | IOException e) {
             throw new VariantQueryException("Error querying " + VariantSearchManager.SEARCH_ENGINE_ID, e);

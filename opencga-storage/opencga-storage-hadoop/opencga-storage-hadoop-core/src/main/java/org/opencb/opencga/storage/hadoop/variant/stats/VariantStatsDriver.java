@@ -34,7 +34,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.*;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.STATS_DEFAULT_GENOTYPE;
-import static org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter.endsWith;
 import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.getQueryFromConfig;
 import static org.opencb.opencga.storage.hadoop.variant.stats.HBaseVariantStatsCalculator.excludeFiles;
 
@@ -158,7 +157,7 @@ public class VariantStatsDriver extends AbstractVariantsTableDriver {
             logger.info("Query : " + query.toJson());
             // input
             VariantMapReduceUtil.initVariantMapperJob(
-                    job, VariantStatsMapper.class, variantTableName, getMetadataManager(), query, queryOptions, true);
+                    job, VariantStatsMapper.class, variantTableName, getMetadataManager(), query, queryOptions, true, false);
             VariantMapReduceUtil.setNoneTimestamp(job);
 
             // output
@@ -174,7 +173,7 @@ public class VariantStatsDriver extends AbstractVariantsTableDriver {
             if (excludeFiles) {
                 // Ensure we are not returning any file
                 NavigableSet<byte[]> columns = scan.getFamilyMap().get(GenomeHelper.COLUMN_FAMILY_BYTES);
-                columns.removeIf(column -> endsWith(column, VariantPhoenixSchema.FILE_SUFIX_BYTES));
+                columns.removeIf(VariantPhoenixSchema::isFileColumn);
             }
             // See #1600
             // Add TYPE column to force scan ALL rows to avoid unlikely but possible timeouts fetching new variants
@@ -183,7 +182,7 @@ public class VariantStatsDriver extends AbstractVariantsTableDriver {
             // Remove STUDY filter
             scan.setFilter(null);
 
-            VariantMapReduceUtil.configureMapReduceScan(scan, getConf());
+            VariantMapReduceUtil.configureMapReduceScan(scan, job);
             logger.info(scan.toString());
 
             // Allow partial results if files are not required

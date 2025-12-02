@@ -84,6 +84,9 @@ apiConfig:
         - name: upload
           executorExtended: True
           optionExtended: True
+        - name: download
+          executorExtended: True
+          optionExtended: True
         - name: update
           subcommands:
             - name: annotationSetsAction
@@ -174,6 +177,12 @@ apiConfig:
       ignore: False
       key: Variant
       analysis: True
+      executorExtended: True
+      #optionExtended: True
+      commands:
+        - name: query
+          executorExtended: True
+          optionExtended: False
     - name: analysisClinical
       commandName: clinical
       ignore: False

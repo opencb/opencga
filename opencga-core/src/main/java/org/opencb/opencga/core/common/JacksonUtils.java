@@ -18,21 +18,25 @@ package org.opencb.opencga.core.common;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.databind.BeanDescription;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
 import com.fasterxml.jackson.databind.util.TokenBuffer;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.avro.generic.GenericRecord;
 import org.opencb.biodata.models.variant.Genotype;
+import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.avro.ConsequenceType;
+import org.opencb.biodata.models.variant.avro.GwasAssociationStudyTraitScores;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantStats;
 import org.opencb.opencga.core.models.PrivateUidMixin;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.cohort.Cohort;
-import org.opencb.opencga.core.models.common.mixins.GenericRecordAvroJsonMixin;
-import org.opencb.opencga.core.models.common.mixins.GenotypeJsonMixin;
-import org.opencb.opencga.core.models.common.mixins.VariantStatsJsonMixin;
+import org.opencb.opencga.core.models.common.mixins.*;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyMixin;
 import org.opencb.opencga.core.models.federation.FederationClientParams;
@@ -54,6 +58,8 @@ import org.opencb.opencga.core.models.workflow.Workflow;
 import javax.ws.rs.ext.ContextResolver;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class JacksonUtils {
 
@@ -90,10 +96,18 @@ public class JacksonUtils {
         objectMapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
         objectMapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
 
+        addVariantMixIn(objectMapper);
+        return objectMapper;
+    }
+
+    public static void addVariantMixIn(ObjectMapper objectMapper) {
         objectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
         objectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
         objectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);
-        return objectMapper;
+        objectMapper.addMixIn(StudyEntry.class, VariantSourceEntryJsonMixin.class);
+        objectMapper.addMixIn(VariantAnnotation.class, VariantAnnotationMixin.class);
+        objectMapper.addMixIn(GwasAssociationStudyTraitScores.class, GwasAssociationStudyTraitScoresMixin.class);
+        objectMapper.addMixIn(ConsequenceType.class, ConsequenceTypeMixin.class);
     }
 
     private static ObjectMapper generateUpdateObjectMapper() {
@@ -211,6 +225,13 @@ public class JacksonUtils {
         }
     }
 
+    public static <T> T copy(T instance) throws IOException {
+        if (instance == null) {
+            return null;
+        }
+        return copy(instance, (Class<T>) instance.getClass());
+    }
+
     public static <T> T copy(T instance, Class<T> clazz) throws IOException {
         if (instance == null) {
             return null;
@@ -233,6 +254,20 @@ public class JacksonUtils {
             return;
         }
         defaultObjectMapper.updateValue(valueToUpdate, overrides);
+    }
+
+    public static Map<String, Class<?>> getFields(Class<?> aClass) {
+        return getFields(aClass, getDefaultObjectMapper());
+    }
+
+    public static Map<String, Class<?>> getFields(Class<?> aClass, ObjectMapper objectMapper) {
+        BeanDescription beanDescription = objectMapper.getSerializationConfig().introspect(objectMapper.constructType(aClass));
+        Map<String, Class<?>> fields = new HashMap<>(beanDescription.findProperties().size());
+        for (BeanPropertyDefinition property : beanDescription.findProperties()) {
+            Class<?> rawPrimaryType = property.getRawPrimaryType();
+            fields.put(property.getName(), rawPrimaryType);
+        }
+        return fields;
     }
 
 }

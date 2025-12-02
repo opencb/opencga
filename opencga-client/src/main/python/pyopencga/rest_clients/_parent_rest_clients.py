@@ -1,4 +1,7 @@
-from pyopencga.commons import execute
+import os
+import requests
+
+from pyopencga.commons import execute, _create_rest_url, snake_to_camel_case
 from pyopencga.rest_response import RestResponse
 from pyopencga.retry import retry
 
@@ -67,7 +70,11 @@ class _ParentRestClient(object):
 
         if self.auto_refresh:
             self._refresh_token_client()
-        return RestResponse(response)
+
+        if isinstance(response, dict):
+            return RestResponse(response)
+        else:  # Not a JSON (e.g. /{apiVersion}/files/{file}/download)
+            return response
 
     def _get(self, category, resource, query_id=None, subcategory=None,
              second_query_id=None, **options):
@@ -81,18 +88,23 @@ class _ParentRestClient(object):
     def _post(self, category, resource, data=None, query_id=None, subcategory=None,
               second_query_id=None, **options):
         """Queries the REST service and returns the result"""
-        if data is not None:
-            return self._rest_retry(
-                method='post', category=category, resource=resource, query_id=query_id,
-                subcategory=subcategory, second_query_id=second_query_id,
-                data=data, **options
-            )
+        # Special treatment for the "/{apiVersion}/files/upload" endpoint
+        if category == 'files' and resource == 'upload':
+            response = self._upload(category=category, resource=resource, **options)
+            return RestResponse(response)
         else:
-            return self._rest_retry(
-                method='post', category=category, resource=resource, query_id=query_id,
-                subcategory=subcategory, second_query_id=second_query_id,
-                **options
-            )
+            if data is not None:
+                return self._rest_retry(
+                    method='post', category=category, resource=resource, query_id=query_id,
+                    subcategory=subcategory, second_query_id=second_query_id,
+                    data=data, **options
+                )
+            else:
+                return self._rest_retry(
+                    method='post', category=category, resource=resource, query_id=query_id,
+                    subcategory=subcategory, second_query_id=second_query_id,
+                    **options
+                )
 
     def _delete(self, category, resource, query_id=None, subcategory=None,
                 second_query_id=None, **options):
@@ -102,3 +114,31 @@ class _ParentRestClient(object):
             subcategory=subcategory, second_query_id=second_query_id,
             **options
         )
+
+    def _upload(self, category, resource, **options):
+        """Upload files"""
+
+        # Checking that the parameter file contains the file path to upload
+        if 'file' not in options or not isinstance(options['file'], str):
+            raise ValueError('To upload a file, please specify the file path as the "file" parameter.')
+
+        # Creating URL and headers
+        url, header = _create_rest_url(host=self._cfg.host, version=self._cfg.version, sid=self.token,
+                                       category=category, resource=resource, options=options)
+
+        # Creating data
+        data = {}
+        for k, v in options.items():
+            if k == 'file':  # Param "file" is not included in data
+                continue
+            data[snake_to_camel_case(k)] = v
+
+        # Uploading
+        fpath = os.path.realpath(os.path.expanduser(options['file']))
+        with open(fpath, "rb") as f:
+            fhand = {"file": (fpath, f, "application/octet-stream")}
+            response = requests.post(url, headers=header, files=fhand, data=data or None)
+            if response.status_code != 200:
+                raise Exception(response.content)
+
+        return response.json()

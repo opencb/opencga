@@ -691,7 +691,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 QueryParams.INTERNAL_VARIANT_GENOTYPE_INDEX.key(),
                 QueryParams.INTERNAL_VARIANT_ANNOTATION_INDEX.key(),
                 QueryParams.INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX.key(),
-                QueryParams.INTERNAL_QUALITY_CONTROL_STATUS.key()};
+                QueryParams.INTERNAL_QUALITY_CONTROL_STATUS.key(),
+                QueryParams.INTERNAL_VARIANT_AGGREGATE_FAMILY.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         if (document.getSet().containsKey(QueryParams.STATUS.key())) {
             nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
@@ -1457,6 +1458,9 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                     case UUID:
                     case INTERNAL_VARIANT_INDEX_STATUS_ID:
                     case INTERNAL_QUALITY_CONTROL_STATUS_ID:
+                    case INTERNAL_VARIANT_SECONDARY_SAMPLE_INDEX_STATUS_ID:
+                    case INTERNAL_VARIANT_ANNOTATION_INDEX_STATUS_ID:
+                    case INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX_STATUS_ID:
                     case PROCESSING_PRODUCT_ID:
                     case PROCESSING_PREPARATION_METHOD:
                     case PROCESSING_EXTRACTION_METHOD:

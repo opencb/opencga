@@ -122,18 +122,18 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
             } else {
                 AnnotationPendingVariantsManager pendingVariantsManager = new AnnotationPendingVariantsManager(dbAdaptor);
                 ProjectMetadata projectMetadata = dbAdaptor.getMetadataManager().getProjectMetadata();
-                long lastLoadedFileTs = projectMetadata.getAttributes()
-                        .getLong(HadoopVariantStorageEngine.LAST_LOADED_FILE_TS);
+                long lastLoadedFileTs = projectMetadata.getVariantIndexLastTimestamp();
                 long lastVariantsToAnnotateUpdateTs = projectMetadata.getAttributes()
-                        .getLong(HadoopVariantStorageEngine.LAST_VARIANTS_TO_ANNOTATE_UPDATE_TS);
+                        .getLong(HadoopVariantStorageEngine.LAST_PENDING_VARIANTS_TO_ANNOTATE_UPDATE_TS);
 
                 boolean tableExists = pendingVariantsManager.exists();
                 if (!tableExists && lastVariantsToAnnotateUpdateTs > 0) {
                     lastVariantsToAnnotateUpdateTs = 0;
                     logger.info("Table with pending variants to annotate not found. Force MapReduce. "
-                            + "Remove old '" + HadoopVariantStorageEngine.LAST_VARIANTS_TO_ANNOTATE_UPDATE_TS + "' from project manager");
+                            + "Remove old '" + HadoopVariantStorageEngine.LAST_PENDING_VARIANTS_TO_ANNOTATE_UPDATE_TS
+                            + "' from project manager");
                     dbAdaptor.getMetadataManager().updateProjectMetadata(p -> {
-                        p.getAttributes().remove(HadoopVariantStorageEngine.LAST_VARIANTS_TO_ANNOTATE_UPDATE_TS);
+                        p.getAttributes().remove(HadoopVariantStorageEngine.LAST_PENDING_VARIANTS_TO_ANNOTATE_UPDATE_TS);
                         return p;
                     });
                 }
@@ -150,7 +150,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
 
                     if (annotateAll) {
                         dbAdaptor.getMetadataManager().updateProjectMetadata(pm -> {
-                            pm.getAttributes().put(HadoopVariantStorageEngine.LAST_VARIANTS_TO_ANNOTATE_UPDATE_TS, ts);
+                            pm.getAttributes().put(HadoopVariantStorageEngine.LAST_PENDING_VARIANTS_TO_ANNOTATE_UPDATE_TS, ts);
                             return pm;
                         });
                         updateCurrentAnnotation(variantAnnotator, projectMetadata, overwrite);
@@ -216,6 +216,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
             throws VariantAnnotatorException, StorageEngineException, IOException {
         super.postAnnotate(query, doCreate, doLoad, params);
         updateSampleIndexAnnotation(params);
+
     }
 
     protected void updateSampleIndexAnnotation(ObjectMap params) throws IOException, StorageEngineException {

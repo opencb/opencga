@@ -84,7 +84,7 @@ public class VariantMigration200Driver extends AbstractVariantsTableDriver {
 //        scan.setFilter(new FilterList(FilterList.Operator.MUST_PASS_ONE,
 //                new ColumnPrefixFilter(VariantPhoenixHelper.VariantColumn.TYPE.bytes()),
 //                new ColumnPrefixFilter()));
-        scan = VariantMapReduceUtil.configureMapReduceScan(scan, getConf());
+        scan = VariantMapReduceUtil.configureMapReduceScan(scan, job);
         VariantMapReduceUtil.initTableMapperMultiOutputJob(job, variantTable,
                 Collections.singletonList(scan), VariantTypeMigrationMapper.class);
 

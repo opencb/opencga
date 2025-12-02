@@ -50,10 +50,13 @@ import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.sample.*;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.variant.InternalVariantOperationIndex;
+import org.opencb.opencga.core.models.variant.OperationIndexStatus;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.*;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,6 +69,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.api.FileDBAdaptor.QueryParams.ID;
 import static org.opencb.opencga.catalog.db.api.FileDBAdaptor.QueryParams.URI;
+import static org.opencb.opencga.core.common.TimeUtils.toDate;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -97,6 +101,8 @@ public class CatalogStorageMetadataSynchronizer {
             CohortDBAdaptor.QueryParams.INTERNAL_STATUS.key(),
             CohortDBAdaptor.QueryParams.SAMPLES.key() + "." + SampleDBAdaptor.QueryParams.ID.key()
     ));
+    public static final Query INDEXED_SAMPLES_QUERY = new Query()
+            .append(SampleDBAdaptor.QueryParams.INTERNAL_VARIANT_INDEX_STATUS_ID.key(), IndexStatus.READY);
     public static final QueryOptions SAMPLE_QUERY_OPTIONS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             SampleDBAdaptor.QueryParams.ID.key(),
             SampleDBAdaptor.QueryParams.INTERNAL_VARIANT.key()
@@ -113,23 +119,21 @@ public class CatalogStorageMetadataSynchronizer {
         this.metadataManager = metadataManager;
     }
 
-    public static void updateProjectMetadata(CatalogManager catalog, VariantStorageMetadataManager scm, String project, String sessionId)
+    public void synchronizeProjectMetadataFromCatalog(String projectFqn, String token)
             throws CatalogException, StorageEngineException {
-        final Project p = catalog.getProjectManager().get(project,
+        final Project project = catalogManager.getProjectManager().get(projectFqn,
                         new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
                                 ProjectDBAdaptor.QueryParams.ORGANISM.key(), ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key(),
                                 ProjectDBAdaptor.QueryParams.CELLBASE.key())),
-                        sessionId)
+                        token)
                 .first();
 
-        updateProjectMetadata(scm, p.getOrganism(), p.getCurrentRelease(), p.getCellbase());
-    }
-
-    public static void updateProjectMetadata(VariantStorageMetadataManager scm, ProjectOrganism organism, int release, CellBaseConfiguration cellbase)
-            throws StorageEngineException {
+        int release = project.getCurrentRelease();
+        CellBaseConfiguration cellbase = project.getCellbase();
+        ProjectOrganism organism = project.getOrganism();
         String scientificName = CellBaseUtils.toCellBaseSpeciesName(organism.getScientificName());
 
-        scm.updateProjectMetadata(projectMetadata -> {
+        metadataManager.updateProjectMetadata(projectMetadata -> {
             if (projectMetadata == null) {
                 projectMetadata = new ProjectMetadata();
             }
@@ -141,8 +145,183 @@ public class CatalogStorageMetadataSynchronizer {
         });
     }
 
-    public StudyMetadata getStudyMetadata(String study) throws CatalogException {
-        return metadataManager.getStudyMetadata(study);
+    public void synchronizeCatalogProjectFromStorageByStudy(String studyFqn, String token) throws CatalogException {
+        String projectFqn = catalogManager.getStudyManager().getProjectFqn(studyFqn);
+        synchronizeCatalogProjectFromStorage(projectFqn, Collections.singletonList(studyFqn), token);
+    }
+
+    public void synchronizeCatalogProjectFromStorage(String projectFqn, String token) throws CatalogException {
+        if (!metadataManager.exists()) {
+            return;
+        }
+        synchronizeCatalogProjectFromStorage(projectFqn, metadataManager.getStudyNames(), token);
+    }
+
+    private void synchronizeCatalogProjectFromStorage(String projectFqn, List<String> studies, String token) throws CatalogException {
+
+        if (!metadataManager.exists()) {
+            return;
+        }
+        logger.info("Synchronize project '{}' from Storage", projectFqn);
+        ProjectMetadata projectMetadata = metadataManager.getProjectMetadata();
+
+        Project project = catalogManager.getProjectManager().get(projectFqn,
+                        new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                                ProjectDBAdaptor.QueryParams.FQN.key(),
+                                ProjectDBAdaptor.QueryParams.ORGANISM.key(),
+                                ProjectDBAdaptor.QueryParams.INTERNAL.key(),
+                                ProjectDBAdaptor.QueryParams.CELLBASE.key())),
+                        token)
+                .first();
+        projectFqn = project.getFqn();
+
+        synchronizeProjectAnnotationIndexStatus(projectFqn, token, project, projectMetadata);
+        synchronizeProjectSecondaryAnnotationIndexStatus(projectFqn, token, project, projectMetadata);
+
+        for (String studyName : studies) {
+            synchronizeStudyFromStorage(token, studyName);
+        }
+    }
+
+    private void synchronizeProjectSecondaryAnnotationIndexStatus(String projectFqn, String token, Project project, ProjectMetadata projectMetadata)
+            throws CatalogException {
+        String secondaryAnnotationIndexStatus = secureGet(() -> project.getInternal().getVariant()
+                .getSecondaryAnnotationIndex().getStatus().getId(), null);
+        SearchIndexMetadata searchIndexMetadata = projectMetadata.getSecondaryAnnotationIndex().getSearchIndexMetadataForQueries();
+        OperationIndexStatus operationIndexStatus;
+        if (searchIndexMetadata == null) {
+            operationIndexStatus = new OperationIndexStatus(OperationIndexStatus.PENDING,
+                    "Variant secondary annotation index operation pending. "
+                            + " variantIndexTs = " + toDate(projectMetadata.getVariantIndexLastTimestamp())
+                            + ", variantAnnotationIndexTs = " + toDate(projectMetadata.getAnnotationIndexLastUpdateStartTimestamp())
+                            + ", variantIndexStatsTs = " + toDate(projectMetadata.getStatsLastEndTimestamp())
+            );
+        } else {
+            SearchIndexMetadata.DataStatus dataStatus = searchIndexMetadata.getDataStatus();
+
+            switch (dataStatus) {
+                case OUT_OF_DATE:
+                case EMPTY:
+                    operationIndexStatus = new OperationIndexStatus(OperationIndexStatus.PENDING,
+                            "Variant secondary annotation index operation pending. "
+                                    + " variantIndexTs = " + toDate(projectMetadata.getVariantIndexLastTimestamp())
+                                    + ", variantSecondaryAnnotationIndexTs = " + searchIndexMetadata.getLastUpdateDate()
+                                    + ", variantAnnotationIndexTs = " + toDate(projectMetadata.getAnnotationIndexLastUpdateStartTimestamp())
+                                    + ", variantIndexStatsTs = " + toDate(projectMetadata.getStatsLastEndTimestamp())
+                    );
+                    break;
+                case READY:
+                    operationIndexStatus = new OperationIndexStatus(OperationIndexStatus.READY, "");
+                    break;
+                default:
+                    throw new IllegalStateException("Unexpected value: " + dataStatus);
+            }
+        }
+
+        if (!operationIndexStatus.getName().equals(secondaryAnnotationIndexStatus)) {
+            logger.info("Update project '{}' secondary annotation index status to {}",
+                    projectFqn, operationIndexStatus.getId());
+            catalogManager.getProjectManager().setProjectInternalVariantSecondaryAnnotationIndex(projectFqn,
+                    new InternalVariantOperationIndex(operationIndexStatus),
+                    new QueryOptions(), token);
+        }
+    }
+
+    public void synchronizeStudyFromStorage(String token, String studyName) throws CatalogException {
+        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(studyName);
+        if (studyMetadata == null) {
+            logger.info("Study '{}' not found in storage", studyName);
+            return;
+        }
+        Study study = catalogManager.getStudyManager().get(studyMetadata.getName(), new QueryOptions(), token).first();
+        String status = secureGet(study,
+                s -> s.getInternal().getVariant().getSecondarySampleIndex().getStatus().getId(), OperationIndexStatus.PENDING);
+        StudyMetadata.SampleIndexConfigurationVersioned latest = studyMetadata.getSampleIndexConfigurationLatest(true);
+
+        InternalVariantOperationIndex operationIndex = null;
+        switch (latest.getStatus()) {
+            case STAGING:
+                if (!status.equals(OperationIndexStatus.PENDING)) {
+                    operationIndex = new InternalVariantOperationIndex(new OperationIndexStatus(OperationIndexStatus.PENDING, ""));
+                }
+                break;
+            case ACTIVE:
+                if (!status.equals(OperationIndexStatus.READY)) {
+                    operationIndex = new InternalVariantOperationIndex(new OperationIndexStatus(OperationIndexStatus.READY, ""));
+                }
+                // What if there are some samples missing their family index?
+                break;
+            case DEPRECATED:
+            case REMOVED:
+                logger.warn("Study '{}' secondary sample index configuration is deprecated or removed. "
+                        + "Please, update the configuration to the latest version.", studyMetadata.getName());
+                break;
+        }
+        if (operationIndex != null) {
+            logger.info("Update study '{}' secondary sample index status to {}",
+                    studyMetadata.getName(), operationIndex.getStatus().getId());
+            catalogManager.getStudyManager().setStudyInternalVariantSecondarySampleIndex(
+                    studyMetadata.getName(), operationIndex, new QueryOptions(), token);
+        }
+    }
+
+    private void synchronizeProjectAnnotationIndexStatus(String projectFqn, String token, Project project, ProjectMetadata projectMetadata) throws CatalogException {
+        String annotationIndexStatus = secureGet(() -> project.getInternal().getVariant().getAnnotationIndex().getStatus().getId(), null);
+        TaskMetadata.Status storageAnnotationIndexStatus = projectMetadata.getAnnotationIndexStatus();
+        OperationIndexStatus operationIndexStatus;
+        switch (storageAnnotationIndexStatus) {
+            case NONE:
+                if (projectMetadata.getVariantIndexLastTimestamp() <= 0) {
+                    // Variant index has never been run. Annotation index can not be run.
+                    operationIndexStatus = new OperationIndexStatus(OperationIndexStatus.NONE,
+                            "Variant annotation index can not be run. Variant index has never been run.");
+                } else {
+                    operationIndexStatus = new OperationIndexStatus(OperationIndexStatus.PENDING,
+                            "Variant annotation index operation pending. "
+                                    + " variantIndexTs = " + toDate(projectMetadata.getVariantIndexLastTimestamp())
+                                    + ", variantAnnotationIndexTs = "
+                                    + toDate(projectMetadata.getAnnotationIndexLastFullUpdateStartTimestamp())
+                    );
+                }
+                break;
+            case READY:
+                operationIndexStatus = new OperationIndexStatus(storageAnnotationIndexStatus.name(), "");
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + storageAnnotationIndexStatus);
+        }
+        if (!operationIndexStatus.getName().equals(annotationIndexStatus)) {
+            logger.info("Update project '{}' annotation index status to {}",
+                    projectFqn, operationIndexStatus.getId());
+            catalogManager.getProjectManager().setProjectInternalVariantAnnotationIndex(projectFqn,
+                    new InternalVariantOperationIndex(operationIndexStatus),
+                    new QueryOptions(), token);
+        }
+    }
+
+    /**
+     * Updates catalog metadata from storage metadata.
+     *
+     * @param study     StudyMetadata
+     * @param files     Files to update
+     * @param token     User token
+     * @param synchronizeCohorts Synchronize cohorts
+     * @return if there were modifications in catalog
+     * @throws CatalogException if there is an error with catalog
+     */
+    public boolean synchronizeCatalogFilesFromStorage(String study, List<String> files, String token, boolean synchronizeCohorts)
+            throws CatalogException {
+        List<File> filesToUpdate = new ArrayList<>(files.size());
+        for (String fileStr : files) {
+            try {
+                File file = catalogManager.getFileManager().get(study, fileStr,
+                        INDEXED_FILES_QUERY_OPTIONS, token).first();
+                filesToUpdate.add(file);
+            } catch (CatalogException e) {
+                logger.warn("Could not find file '{}' in study '{}'", fileStr, study, e);
+            }
+        }
+        return synchronizeCatalogFilesFromStorage(study, filesToUpdate, synchronizeCohorts, token);
     }
 
     /**
@@ -155,9 +334,9 @@ public class CatalogStorageMetadataSynchronizer {
      * @throws CatalogException if there is an error with catalog
      */
     public boolean synchronizeCatalogFilesFromStorage(String study, List<File> files, String sessionId, QueryOptions fileQueryOptions)
-            throws CatalogException, StorageEngineException {
+            throws CatalogException {
 
-        boolean modified = synchronizeCatalogFilesFromStorage(study, files, sessionId);
+        boolean modified = synchronizeCatalogFilesFromStorage(study, files, false, sessionId);
         if (modified) {
             // Files updated. Reload files from catalog
             for (int i = 0; i < files.size(); i++) {
@@ -171,14 +350,17 @@ public class CatalogStorageMetadataSynchronizer {
     /**
      * Updates catalog metadata from storage metadata.
      *
-     * @param studyFqn  Study FQN
-     * @param files     Files to update
-     * @param sessionId User session id
+     * @param studyFqn           Study FQN
+     * @param files              Files to update
+     * @param synchronizeCohorts Synchronize cohorts
+     * @param sessionId          User session id
      * @return if there were modifications in catalog
      * @throws CatalogException if there is an error with catalog
      */
-    public boolean synchronizeCatalogFilesFromStorage(String studyFqn, List<File> files, String sessionId)
+    public boolean synchronizeCatalogFilesFromStorage(String studyFqn, List<File> files, boolean synchronizeCohorts, String sessionId)
             throws CatalogException {
+        synchronizeCatalogProjectFromStorageByStudy(studyFqn, sessionId);
+
         StudyMetadata study = metadataManager.getStudyMetadata(studyFqn);
         if (study == null) {
             return false;
@@ -189,8 +371,12 @@ public class CatalogStorageMetadataSynchronizer {
         if (files != null && files.isEmpty()) {
             files = null;
         }
+        boolean modified = synchronizeFiles(study, files, sessionId);
 
-        return synchronizeFiles(study, files, sessionId);
+        if (synchronizeCohorts) {
+            modified |= synchronizeCohorts(study, sessionId);
+        }
+        return modified;
     }
 
     /**
@@ -208,6 +394,8 @@ public class CatalogStorageMetadataSynchronizer {
         if (study == null) {
             return false;
         }
+        synchronizeCatalogProjectFromStorageByStudy(studyFqn, sessionId);
+
         logger.info("Synchronizing samples from study " + study.getName());
 
         List<Integer> sampleIds;
@@ -234,18 +422,24 @@ public class CatalogStorageMetadataSynchronizer {
      * @return if anything was modified
      * @throws CatalogException on error
      */
-    public boolean synchronizeCatalogFromStorage(String token) throws CatalogException {
+    public boolean synchronizeCatalogFromStorage(String project, List<String> studies, String token) throws CatalogException {
         boolean modified = false;
-        for (String study : metadataManager.getStudyNames()) {
-            modified |= synchronizeCatalogStudyFromStorage(study, token);
+        synchronizeCatalogProjectFromStorage(project, token);
+        if (CollectionUtils.isEmpty(studies)) {
+            studies = metadataManager.getStudyNames();
+        }
+        for (String study : studies) {
+            StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
+            modified |= synchronizeCatalogStudyFromStorage(studyMetadata, token);
         }
         return modified;
     }
 
-    public boolean synchronizeCatalogStudyFromStorage(String study, String sessionId)
+    public boolean synchronizeCatalogFromStorage(String study, String sessionId)
             throws CatalogException {
         StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
         if (studyMetadata != null) {
+            synchronizeCatalogProjectFromStorageByStudy(studyMetadata.getName(), sessionId);
             // Update Catalog file and cohort status.
             return synchronizeCatalogStudyFromStorage(studyMetadata, sessionId);
         } else {
@@ -265,7 +459,7 @@ public class CatalogStorageMetadataSynchronizer {
      * @return if there were modifications in catalog
      * @throws CatalogException if there is an error with catalog
      */
-    public boolean synchronizeCatalogStudyFromStorage(StudyMetadata study, String sessionId)
+    private boolean synchronizeCatalogStudyFromStorage(StudyMetadata study, String sessionId)
             throws CatalogException {
         logger.info("Synchronizing study " + study.getName());
 
@@ -276,16 +470,7 @@ public class CatalogStorageMetadataSynchronizer {
         return modified;
     }
 
-    public boolean synchronizeCohorts(String study, String sessionId) throws CatalogException {
-        StudyMetadata studyMetadata = getStudyMetadata(study);
-        if (studyMetadata == null) {
-            return false;
-        } else {
-            return synchronizeCohorts(studyMetadata, sessionId);
-        }
-    }
-
-    protected boolean synchronizeCohorts(StudyMetadata study, String sessionId) throws CatalogException {
+    private boolean synchronizeCohorts(StudyMetadata study, String sessionId) throws CatalogException {
         boolean modified = false;
 
         // -------------------------------------------------------------------
@@ -505,7 +690,7 @@ public class CatalogStorageMetadataSynchronizer {
                 fileMetadata.setSamples(new LinkedHashSet<>());
                 try {
                     VariantFileMetadata variantFileMetadata =
-                            metadataManager.getVariantFileMetadata(study.getId(), fileMetadata.getId(), new QueryOptions()).first();
+                            metadataManager.getVariantFileMetadataOrNull(study.getId(), fileMetadata.getId());
                     if (variantFileMetadata == null) {
                         logger.error("Missing VariantFileMetadata from file {}", fileMetadata.getName());
                     } else {
@@ -550,7 +735,7 @@ public class CatalogStorageMetadataSynchronizer {
                         .get(study.getName(), filePathMap.get(virtualFile), INDEXED_FILES_QUERY_OPTIONS, token).first();
                 boolean annotationIndexReady = annotationReadyFilesFromStorage.contains(file.getName());
                 boolean secondaryIndexReady = secondaryIndexReadyFilesFromStorage.contains(file.getName());
-                if (synchronizeIndexedFile(study, file, fileSamplesMap, annotationIndexReady, secondaryIndexReady, token)) {
+                if (synchronizeIndexedFile(study, file, fileSamplesMap, annotationIndexReady, secondaryIndexReady, token, true)) {
                     modified = true;
                 }
             }
@@ -575,7 +760,7 @@ public class CatalogStorageMetadataSynchronizer {
                             File file = iterator.next();
                             boolean annotationIndexReady = annotationReadyFilesFromStorage.contains(file.getName());
                             boolean secondaryIndexReady = secondaryIndexReadyFilesFromStorage.contains(file.getName());
-                            if (synchronizeIndexedFile(study, file, fileSamplesMap, annotationIndexReady, secondaryIndexReady, token)) {
+                            if (synchronizeIndexedFile(study, file, fileSamplesMap, annotationIndexReady, secondaryIndexReady, token, true)) {
                                 modifiedFiles++;
                                 modified = true;
                             }
@@ -633,17 +818,17 @@ public class CatalogStorageMetadataSynchronizer {
                 File file = iterator.next();
                 Integer fileId = fileNameMap.get(file.getName());
                 if (fileId == null || !indexedFilesFromStorage.contains(fileId)) {
-                    String newStatus;
-                    FileInternalVariantIndex index = file.getInternal().getVariant().getIndex();
-                    if (index.hasTransform()) {
-                        newStatus = VariantIndexStatus.TRANSFORMED;
+                    // Check for annotation index and secondary annotation index
+                    boolean annotationIndexReady;
+                    boolean secondaryIndexReady;
+                    if (fileId == null) {
+                        annotationIndexReady = false;
+                        secondaryIndexReady = false;
                     } else {
-                        newStatus = VariantIndexStatus.NONE;
+                        annotationIndexReady = annotationReadyFilesFromStorage.contains(file.getName());
+                        secondaryIndexReady = secondaryIndexReadyFilesFromStorage.contains(file.getName());
                     }
-                    logger.info("File \"{}\" change status from {} to {}", file.getName(),
-                            VariantIndexStatus.READY, newStatus);
-                    index.setStatus(new VariantIndexStatus(newStatus, "Not indexed, regarding Storage Metadata"));
-                    catalogManager.getFileManager().updateFileInternalVariantIndex(study.getName(), file, index, token);
+                    synchronizeIndexedFile(study, file, fileSamplesMap, annotationIndexReady, secondaryIndexReady, token, false);
                     modified = true;
                 }
             }
@@ -755,20 +940,32 @@ public class CatalogStorageMetadataSynchronizer {
     }
 
     private boolean synchronizeIndexedFile(StudyMetadata study, File file, Map<String, Set<String>> fileSamplesMap,
-                                           boolean annotationIndexReady, boolean secondaryIndexReady, String token)
+                                           boolean annotationIndexReady, boolean secondaryIndexReady, String token, boolean mainIndexReady)
             throws CatalogException {
         boolean modified = false;
         String status = FileInternal.getVariantIndexStatusId(file.getInternal());
-        if (!status.equals(VariantIndexStatus.READY)) {
+        boolean catalogMainIndexReady = status.equals(VariantIndexStatus.READY);
+        if (catalogMainIndexReady != mainIndexReady) {
             final FileInternalVariantIndex index;
             index = file.getInternal().getVariant() == null || file.getInternal().getVariant().getIndex() == null
                     ? FileInternalVariantIndex.init() : file.getInternal().getVariant().getIndex();
             if (index.getStatus() == null) {
                 index.setStatus(new VariantIndexStatus());
             }
-            logger.debug("File \"{}\" change status from {} to {}", file.getName(), status, VariantIndexStatus.READY);
-            index.setStatus(new VariantIndexStatus(VariantIndexStatus.READY, "Indexed, regarding Storage Metadata"));
-
+            if (mainIndexReady) {
+                logger.debug("File \"{}\" change status from {} to {}", file.getName(), status, VariantIndexStatus.READY);
+                index.setStatus(new VariantIndexStatus(VariantIndexStatus.READY, "Indexed, regarding Storage Metadata"));
+            } else {
+                String newStatus;
+                if (index.hasTransform()) {
+                    newStatus = VariantIndexStatus.TRANSFORMED;
+                } else {
+                    newStatus = VariantIndexStatus.NONE;
+                }
+                logger.info("File \"{}\" change status from {} to {}", file.getName(),
+                        VariantIndexStatus.READY, newStatus);
+                index.setStatus(new VariantIndexStatus(newStatus, "Not indexed, regarding Storage Metadata"));
+            }
             catalogManager.getFileManager().updateFileInternalVariantIndex(study.getName(), file, index, token);
             modified = true;
         }
@@ -953,6 +1150,65 @@ public class CatalogStorageMetadataSynchronizer {
                     .updateSampleInternalVariantSecondarySampleIndex(study.getName(), sample, catalogVariantSecondarySampleIndex, token);
             modified = true;
         }
+
+        List<SampleInternalVariantAggregateFamily> aggregateFamilies = secureGet(sample,
+                s -> s.getInternal().getVariant().getAggregateFamily(), Collections.emptyList());
+        if (aggregateFamilies == null) {
+            aggregateFamilies = Collections.emptyList();
+        }
+        if (!sampleMetadata.getInternalCohorts().isEmpty() || !aggregateFamilies.isEmpty()) {
+            List<SampleInternalVariantAggregateFamily> aggregateFamiliesUpdated = new ArrayList<>();
+            boolean aggregateFamilyModified = false;
+            for (Integer internalCohort : sampleMetadata.getInternalCohorts()) {
+                if (CohortMetadata.getType(metadataManager.getCohortName(study.getId(), internalCohort)) == CohortMetadata.Type.AGGREGATE_FAMILY) {
+                    CohortMetadata cohortMetadata = metadataManager.getCohortMetadata(study.getId(), internalCohort);
+                    String status;
+                    if (cohortMetadata.getAggregateFamilyStatus() == TaskMetadata.Status.READY) {
+                        status = IndexStatus.READY;
+                    } else {
+                        status = IndexStatus.NONE;
+                    }
+                    Set<String> samples = new LinkedHashSet<>(cohortMetadata.getSamples().size());
+                    for (Integer sampleId : cohortMetadata.getSamples()) {
+                        samples.add(metadataManager.getSampleName(study.getId(), sampleId));
+                    }
+                    SampleInternalVariantAggregateFamily aggregateFamily = null;
+                    for (SampleInternalVariantAggregateFamily thisAggregateFamily : aggregateFamilies) {
+                        if (samples.size() == thisAggregateFamily.getSampleIds().size()
+                                && samples.containsAll(thisAggregateFamily.getSampleIds())) {
+                            aggregateFamily = thisAggregateFamily;
+                            break;
+                        }
+                    }
+                    if (aggregateFamily == null) {
+                        aggregateFamily = new SampleInternalVariantAggregateFamily(new IndexStatus(status), new ArrayList<>(samples));
+                        modified = true;
+                        aggregateFamilyModified = true;
+                        aggregateFamiliesUpdated.add(aggregateFamily);
+                    } else {
+                        if (aggregateFamily.getStatus().getId().equals(status)) {
+                            // Same samples, same status. Nothing to update.
+                            aggregateFamiliesUpdated.add(aggregateFamily);
+                        } else {
+                            modified = true;
+                            aggregateFamilyModified = true;
+                            aggregateFamily.setStatus(new IndexStatus(status));
+                            aggregateFamiliesUpdated.add(aggregateFamily);
+                        }
+                    }
+                }
+            }
+            if (aggregateFamiliesUpdated.size() != aggregateFamilies.size()) {
+                // Deleted aggregate families. Force update
+                modified = true;
+                aggregateFamilyModified = true;
+            }
+            if (aggregateFamilyModified) {
+                catalogManager.getSampleManager()
+                        .updateSampleInternalVariantAggregateFamily(study.getName(), sample, aggregateFamiliesUpdated, token);
+            }
+        }
+
         return modified;
     }
 
@@ -966,12 +1222,31 @@ public class CatalogStorageMetadataSynchronizer {
         catalogManager.getCohortManager().setStatus(study, StudyEntry.DEFAULT_COHORT, CohortStatus.NONE,
                 "Study has been removed from storage", token);
 
+        VariantIndexStatus statusNone = new VariantIndexStatus(VariantIndexStatus.NONE, "Study has been removed from storage");
         try (DBIterator<File> iterator = catalogManager.getFileManager()
                 .iterator(study, INDEXED_FILES_QUERY, INDEXED_FILES_QUERY_OPTIONS, token)) {
             while (iterator.hasNext()) {
                 File file = iterator.next();
-                catalogManager.getFileManager().updateFileInternalVariantIndex(study, file, FileInternalVariantIndex.init()
-                        .setStatus(new VariantIndexStatus(VariantIndexStatus.NONE)), token);
+                catalogManager.getFileManager().updateFileInternalVariantIndex(study, file,
+                        FileInternalVariantIndex.init().setStatus(statusNone), token);
+                catalogManager.getFileManager().updateFileInternalVariantAnnotationIndex(study, file,
+                        FileInternalVariantAnnotationIndex.init().setStatus(statusNone), token);
+                catalogManager.getFileManager().updateFileInternalVariantSecondaryAnnotationIndex(study, file,
+                        FileInternalVariantSecondaryAnnotationIndex.init().setStatus(statusNone), token);
+            }
+        }
+        try (DBIterator<Sample> iterator = catalogManager.getSampleManager()
+                .iterator(study, INDEXED_SAMPLES_QUERY, SAMPLE_QUERY_OPTIONS, token)) {
+            while (iterator.hasNext()) {
+                Sample sample = iterator.next();
+                catalogManager.getSampleManager().updateSampleInternalVariantIndex(study, sample,
+                        new SampleInternalVariantIndex().setStatus(statusNone), token);
+                catalogManager.getSampleManager().updateSampleInternalVariantAnnotationIndex(study, sample,
+                        new SampleInternalVariantAnnotationIndex().setStatus(statusNone), token);
+                catalogManager.getSampleManager().updateSampleInternalVariantSecondaryAnnotationIndex(study, sample,
+                        new SampleInternalVariantSecondaryAnnotationIndex().setStatus(statusNone), token);
+                catalogManager.getSampleManager().updateSampleInternalVariantSecondarySampleIndex(study, sample,
+                        new SampleInternalVariantSecondarySampleIndex().setStatus(statusNone).setVersion(-1), token);
             }
         }
     }

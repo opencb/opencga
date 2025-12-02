@@ -36,7 +36,7 @@ public class HadoopVariantStorageSearchIntersectTest extends VariantStorageSearc
     @ClassRule(order = 1)
     public static HadoopSolrSupport solrSupport = new HadoopSolrSupport();
 
-    @ClassRule(order = 20)
+    @ClassRule(order = 5)
     public static ExternalResource externalResource = new HadoopExternalResource();
 
     @Override

@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -61,6 +62,8 @@ public class HadoopMRVariantStatisticsManager extends VariantStatisticsManager {
 //                    .collect(Collectors.toMap(c -> c, c -> Collections.emptySet())), null, updateStats, overwriteStats);
 //        dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(sc, options);
 
+        // Start time of the operation before pre-calculate step
+        long startTime = System.currentTimeMillis();
         preCalculateStats(metadataManager, sm, cohorts, overwriteStats, options);
 
         options.put(VariantStatsDriver.COHORTS, cohorts);
@@ -77,10 +80,16 @@ public class HadoopMRVariantStatisticsManager extends VariantStatisticsManager {
             error = true;
             throw e;
         } finally {
-            postCalculateStats(metadataManager, sm, cohorts, error);
+            postCalculateStats(metadataManager, sm, cohorts, startTime, error);
         }
 
-        dbAdaptor.updateStatsColumns(sm);
+    }
 
+    @Override
+    public void postCalculateStats(VariantStorageMetadataManager metadataManager, StudyMetadata sm,
+                                   Collection<String> cohorts, long startTime,  boolean error) throws StorageEngineException {
+        super.postCalculateStats(metadataManager, sm, cohorts, startTime, error);
+
+        dbAdaptor.updateStatsColumns(sm);
     }
 }

@@ -63,7 +63,6 @@ import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.testclassification.duration.MediumTests;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -1012,6 +1011,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         }
     }
 
+    @Test
     public void testJobQuotaLimit() throws CatalogException {
         // Submit a dummy job. This shouldn't raise any error
         catalogManager.getJobManager().submit(studyId, JobType.NATIVE, "command-subcommand", null, Collections.emptyMap(), ownerToken);
@@ -1202,10 +1202,6 @@ public class CatalogManagerTest extends AbstractManagerTest {
             thrown.expect(CatalogDBException.class); //Expect the exception from the try
         }
     }
-
-    /**
-     * Sample methods ***************************
-     */
 
     /*
      * Cohort methods
@@ -1837,26 +1833,6 @@ public class CatalogManagerTest extends AbstractManagerTest {
         }
     }
 
-    @Test
-    public void generateCohortFromSampleQuery() throws CatalogException, IOException {
-        catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_1"), INCLUDE_RESULT, ownerToken);
-        catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_2"), INCLUDE_RESULT, ownerToken);
-        catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_3"), INCLUDE_RESULT, ownerToken);
-
-        Query query = new Query();
-        Cohort myCohort = catalogManager.getCohortManager().generate(studyFqn, query, new Cohort().setId("MyCohort"), INCLUDE_RESULT, ownerToken).first();
-        assertEquals(12, myCohort.getSamples().size());
-
-        query = new Query(SampleDBAdaptor.QueryParams.ID.key(), "~^SAM");
-        myCohort = catalogManager.getCohortManager().generate(studyFqn, query, new Cohort()
-                .setId("MyCohort2")
-                .setStatus(new Status("custom", "custom", "description", TimeUtils.getTime())), INCLUDE_RESULT, ownerToken).first();
-        assertEquals(3, myCohort.getSamples().size());
-        assertNotNull(myCohort.getStatus());
-        assertEquals("custom", myCohort.getStatus().getName());
-        assertEquals("description", myCohort.getStatus().getDescription());
-    }
-
     // Effective permissions testing
     @Test
     public void getEffectivePermissionsNoAdmins() throws CatalogException {
@@ -2105,5 +2081,249 @@ public class CatalogManagerTest extends AbstractManagerTest {
         catalogManager.getSampleManager().updateAcl(studyFqn, Arrays.asList(s_7Id, s_8Id), "@write", new SampleAclParams(null, null, null, null, null), ParamUtils.AclAction.SET, ownerToken);
         catalogManager.getSampleManager().updateAcl(studyFqn, Arrays.asList(s_7Id, s_8Id), "user4", new SampleAclParams(null, null, null, null, "VIEW"), ParamUtils.AclAction.SET, ownerToken);
         catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList(s_7Id), normalUserId3, new SampleAclParams(null, null, null, null, "VIEW"), ParamUtils.AclAction.SET, ownerToken);
+    }
+
+    @Test
+    public void testCreateCohortWithTags() throws CatalogException {
+        // Create samples for the cohort
+        Sample sampleId1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_1"), INCLUDE_RESULT, ownerToken).first();
+        Sample sampleId2 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_2"), INCLUDE_RESULT, ownerToken).first();
+        Sample sampleId3 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_3"), INCLUDE_RESULT, ownerToken).first();
+
+        // Test creating cohort with tags
+        List<String> initialTags = Arrays.asList("cancer", "pediatric", "test-cohort");
+        Cohort cohortWithTags = catalogManager.getCohortManager().create(studyFqn,
+                new Cohort()
+                    .setId("CohortWithTags")
+                    .setTags(initialTags)
+                    .setSamples(Arrays.asList(sampleId1, sampleId2, sampleId3)),
+                INCLUDE_RESULT, ownerToken).first();
+
+        // Verify the cohort was created with the specified tags
+        assertEquals("CohortWithTags", cohortWithTags.getId());
+        assertEquals(3, cohortWithTags.getTags().size());
+        assertTrue(cohortWithTags.getTags().containsAll(initialTags));
+        assertEquals(3, cohortWithTags.getSamples().size());
+
+        // Verify tags are persisted when retrieving the cohort
+        Cohort retrievedCohort = catalogManager.getCohortManager().get(studyFqn, "CohortWithTags", null, ownerToken).first();
+        assertEquals(3, retrievedCohort.getTags().size());
+        assertTrue(retrievedCohort.getTags().containsAll(initialTags));
+    }
+
+    @Test
+    public void testUpdateCohortTagsWithAddAction() throws CatalogException {
+        // Create samples and initial cohort with tags
+        Sample sampleId1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_1"), INCLUDE_RESULT, ownerToken).first();
+        Sample sampleId2 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_2"), INCLUDE_RESULT, ownerToken).first();
+
+        List<String> initialTags = Arrays.asList("cancer", "pediatric");
+        catalogManager.getCohortManager().create(studyFqn,
+                new Cohort()
+                    .setId("CohortForTagUpdate")
+                    .setTags(initialTags)
+                    .setSamples(Arrays.asList(sampleId1, sampleId2)),
+                null, ownerToken);
+
+        // Test ADD action for tags
+        Map<String, Object> actionMap = new HashMap<>();
+        actionMap.put(CohortDBAdaptor.QueryParams.TAGS.key(), ParamUtils.BasicUpdateAction.ADD);
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(Constants.ACTIONS, actionMap);
+
+        List<String> tagsToAdd = Arrays.asList("adult", "control-group");
+        catalogManager.getCohortManager().update(studyFqn, "CohortForTagUpdate",
+                new CohortUpdateParams().setTags(tagsToAdd),
+                queryOptions, ownerToken);
+
+        // Verify tags were added
+        Cohort updatedCohort = catalogManager.getCohortManager().get(studyFqn, "CohortForTagUpdate", null, ownerToken).first();
+        assertEquals(4, updatedCohort.getTags().size());
+        assertTrue(updatedCohort.getTags().containsAll(Arrays.asList("cancer", "pediatric", "adult", "control-group")));
+    }
+
+    @Test
+    public void testUpdateCohortTagsWithRemoveAction() throws CatalogException {
+        // Create samples and initial cohort with tags
+        Sample sampleId1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_1"), INCLUDE_RESULT, ownerToken).first();
+        Sample sampleId2 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_2"), INCLUDE_RESULT, ownerToken).first();
+
+        List<String> initialTags = Arrays.asList("cancer", "pediatric", "test-cohort", "experimental");
+        catalogManager.getCohortManager().create(studyFqn,
+                new Cohort()
+                    .setId("CohortForTagRemoval")
+                    .setTags(initialTags)
+                    .setSamples(Arrays.asList(sampleId1, sampleId2)),
+                null, ownerToken);
+
+        // Test REMOVE action for tags
+        Map<String, Object> actionMap = new HashMap<>();
+        actionMap.put(CohortDBAdaptor.QueryParams.TAGS.key(), ParamUtils.BasicUpdateAction.REMOVE);
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(Constants.ACTIONS, actionMap);
+
+        List<String> tagsToRemove = Arrays.asList("test-cohort", "experimental");
+        catalogManager.getCohortManager().update(studyFqn, "CohortForTagRemoval",
+                new CohortUpdateParams().setTags(tagsToRemove),
+                queryOptions, ownerToken);
+
+        // Verify tags were removed
+        Cohort updatedCohort = catalogManager.getCohortManager().get(studyFqn, "CohortForTagRemoval", null, ownerToken).first();
+        assertEquals(2, updatedCohort.getTags().size());
+        assertTrue(updatedCohort.getTags().containsAll(Arrays.asList("cancer", "pediatric")));
+        assertFalse(updatedCohort.getTags().contains("test-cohort"));
+        assertFalse(updatedCohort.getTags().contains("experimental"));
+    }
+
+    @Test
+    public void testUpdateCohortTagsWithSetAction() throws CatalogException {
+        // Create samples and initial cohort with tags
+        Sample sampleId1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_1"), INCLUDE_RESULT, ownerToken).first();
+        Sample sampleId2 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_2"), INCLUDE_RESULT, ownerToken).first();
+
+        List<String> initialTags = Arrays.asList("cancer", "pediatric", "test-cohort");
+        catalogManager.getCohortManager().create(studyFqn,
+                new Cohort()
+                    .setId("CohortForTagSet")
+                    .setTags(initialTags)
+                    .setSamples(Arrays.asList(sampleId1, sampleId2)),
+                null, ownerToken);
+
+        // Test SET action for tags
+        Map<String, Object> actionMap = new HashMap<>();
+        actionMap.put(CohortDBAdaptor.QueryParams.TAGS.key(), ParamUtils.BasicUpdateAction.SET);
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(Constants.ACTIONS, actionMap);
+
+        List<String> newTags = Arrays.asList("cardiovascular", "adult", "longitudinal-study");
+        catalogManager.getCohortManager().update(studyFqn, "CohortForTagSet",
+                new CohortUpdateParams().setTags(newTags),
+                queryOptions, ownerToken);
+
+        // Verify tags were completely replaced
+        Cohort updatedCohort = catalogManager.getCohortManager().get(studyFqn, "CohortForTagSet", null, ownerToken).first();
+        assertEquals(3, updatedCohort.getTags().size());
+        assertTrue(updatedCohort.getTags().containsAll(newTags));
+        assertFalse(updatedCohort.getTags().contains("cancer"));
+        assertFalse(updatedCohort.getTags().contains("pediatric"));
+        assertFalse(updatedCohort.getTags().contains("test-cohort"));
+    }
+
+    @Test
+    public void testFilterCohortsByTags() throws CatalogException {
+        // Create samples for cohorts
+        Sample sampleId1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_1"), INCLUDE_RESULT, ownerToken).first();
+        Sample sampleId2 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_2"), INCLUDE_RESULT, ownerToken).first();
+        Sample sampleId3 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_3"), INCLUDE_RESULT, ownerToken).first();
+        Sample sampleId4 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_4"), INCLUDE_RESULT, ownerToken).first();
+
+        // Create cohorts with different tags
+        catalogManager.getCohortManager().create(studyFqn,
+                new Cohort()
+                    .setId("CancerCohort")
+                    .setTags(Arrays.asList("cancer", "oncology", "adult"))
+                    .setSamples(Arrays.asList(sampleId1, sampleId2)),
+                null, ownerToken);
+
+        catalogManager.getCohortManager().create(studyFqn,
+                new Cohort()
+                    .setId("PediatricCohort")
+                    .setTags(Arrays.asList("pediatric", "children", "developmental"))
+                    .setSamples(Arrays.asList(sampleId2, sampleId3)),
+                null, ownerToken);
+
+        catalogManager.getCohortManager().create(studyFqn,
+                new Cohort()
+                    .setId("CardiovascularCohort")
+                    .setTags(Arrays.asList("cardiovascular", "heart-disease", "adult"))
+                    .setSamples(Arrays.asList(sampleId3, sampleId4)),
+                null, ownerToken);
+
+        catalogManager.getCohortManager().create(studyFqn,
+                new Cohort()
+                    .setId("ControlCohort")
+                    .setTags(Arrays.asList("control", "healthy", "adult"))
+                    .setSamples(Arrays.asList(sampleId4)),
+                null, ownerToken);
+
+        // Test filtering by single tag
+        Query query = new Query(CohortDBAdaptor.QueryParams.TAGS.key(), "adult");
+        OpenCGAResult<Cohort> result = catalogManager.getCohortManager().search(studyFqn, query, new QueryOptions(), ownerToken);
+        assertEquals(3, result.getNumResults());
+        Set<String> cohortIds = result.getResults().stream().map(Cohort::getId).collect(Collectors.toSet());
+        assertTrue(cohortIds.containsAll(Arrays.asList("CancerCohort", "CardiovascularCohort", "ControlCohort")));
+
+        // Test filtering by multiple tags (OR logic)
+        query = new Query(CohortDBAdaptor.QueryParams.TAGS.key(), "cancer,pediatric");
+        result = catalogManager.getCohortManager().search(studyFqn, query, new QueryOptions(), ownerToken);
+        assertEquals(2, result.getNumResults());
+        cohortIds = result.getResults().stream().map(Cohort::getId).collect(Collectors.toSet());
+        assertTrue(cohortIds.containsAll(Arrays.asList("CancerCohort", "PediatricCohort")));
+
+        // Test filtering by specific tag
+        query = new Query(CohortDBAdaptor.QueryParams.TAGS.key(), "cardiovascular");
+        result = catalogManager.getCohortManager().search(studyFqn, query, new QueryOptions(), ownerToken);
+        assertEquals(1, result.getNumResults());
+        assertEquals("CardiovascularCohort", result.getResults().get(0).getId());
+
+        // Test filtering by non-existent tag
+        query = new Query(CohortDBAdaptor.QueryParams.TAGS.key(), "non-existent-tag");
+        result = catalogManager.getCohortManager().search(studyFqn, query, new QueryOptions(), ownerToken);
+        assertEquals(0, result.getNumResults());
+
+        // Test filtering by tag that matches multiple cohorts
+        query = new Query(CohortDBAdaptor.QueryParams.TAGS.key(), "healthy");
+        result = catalogManager.getCohortManager().search(studyFqn, query, new QueryOptions(), ownerToken);
+        assertEquals(1, result.getNumResults());
+        assertEquals("ControlCohort", result.getResults().get(0).getId());
+    }
+
+    @Test
+    public void testCombinedTagAndOtherFilters() throws CatalogException {
+        // Create samples for cohorts
+        Sample sampleId1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_1"), INCLUDE_RESULT, ownerToken).first();
+        Sample sampleId2 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_2"), INCLUDE_RESULT, ownerToken).first();
+        Sample sampleId3 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_3"), INCLUDE_RESULT, ownerToken).first();
+
+        // Create cohorts with different tags and types
+        catalogManager.getCohortManager().create(studyFqn,
+                new Cohort()
+                    .setId("FamilyCancerCohort")
+                    .setType(Enums.CohortType.FAMILY)
+                    .setTags(Arrays.asList("cancer", "family-study"))
+                    .setSamples(Arrays.asList(sampleId1, sampleId2)),
+                null, ownerToken);
+
+        catalogManager.getCohortManager().create(studyFqn,
+                new Cohort()
+                    .setId("CaseControlCancerCohort")
+                    .setType(Enums.CohortType.CASE_CONTROL)
+                    .setTags(Arrays.asList("cancer", "case-control"))
+                    .setSamples(Arrays.asList(sampleId2, sampleId3)),
+                null, ownerToken);
+
+        catalogManager.getCohortManager().create(studyFqn,
+                new Cohort()
+                    .setId("FamilyCardiacCohort")
+                    .setType(Enums.CohortType.FAMILY)
+                    .setTags(Arrays.asList("cardiovascular", "family-study"))
+                    .setSamples(Arrays.asList(sampleId1, sampleId3)),
+                null, ownerToken);
+
+        // Test combining tag and type filters
+        Query query = new Query()
+                .append(CohortDBAdaptor.QueryParams.TAGS.key(), "cancer")
+                .append(CohortDBAdaptor.QueryParams.TYPE.key(), Enums.CohortType.FAMILY);
+        OpenCGAResult<Cohort> result = catalogManager.getCohortManager().search(studyFqn, query, new QueryOptions(), ownerToken);
+        assertEquals(1, result.getNumResults());
+        assertEquals("FamilyCancerCohort", result.getResults().get(0).getId());
+
+        // Test combining tag with sample filter
+        query = new Query()
+                .append(CohortDBAdaptor.QueryParams.TAGS.key(), "family-study")
+                .append(CohortDBAdaptor.QueryParams.SAMPLES.key(), sampleId3.getId());
+        result = catalogManager.getCohortManager().search(studyFqn, query, new QueryOptions(), ownerToken);
+        assertEquals(1, result.getNumResults());
+        assertEquals("FamilyCardiacCohort", result.getResults().get(0).getId());
     }
 }

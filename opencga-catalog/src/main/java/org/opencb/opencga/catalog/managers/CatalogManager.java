@@ -17,7 +17,6 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.auth.authentication.JwtManager;
@@ -37,12 +36,13 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.migration.MigrationManager;
 import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.core.common.JwtUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.common.JwtUtils;
 import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.Optimizations;
+import org.opencb.opencga.core.config.UserOrganizationConfiguration;
 import org.opencb.opencga.core.models.JwtPayload;
 import org.opencb.opencga.core.models.organizations.*;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
@@ -131,7 +131,6 @@ public class CatalogManager implements AutoCloseable {
     }
 
     private void configureManagers(Configuration configuration) throws CatalogException {
-        initializeAdmin(configuration);
         for (String organizationId : catalogDBAdaptorFactory.getOrganizationIds()) {
             QueryOptions options = new QueryOptions(OrganizationManager.INCLUDE_ORGANIZATION_CONFIGURATION);
             options.put(OrganizationDBAdaptor.IS_ORGANIZATION_ADMIN_OPTION, true);
@@ -153,7 +152,7 @@ public class CatalogManager implements AutoCloseable {
         projectManager = new ProjectManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager,
                 configuration);
         studyManager = new StudyManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, ioManagerFactory,
-                catalogIOManager, configuration);
+                catalogIOManager, authenticationFactory, configuration);
         fileManager = new FileManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, ioManagerFactory, configuration);
         jobManager = new JobManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, ioManagerFactory, configuration);
         sampleManager = new SampleManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
@@ -166,37 +165,6 @@ public class CatalogManager implements AutoCloseable {
         interpretationManager = new InterpretationManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
         workflowManager = new WorkflowManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, ioManagerFactory,
                 catalogIOManager, configuration);
-    }
-
-    private void initializeAdmin(Configuration configuration) throws CatalogDBException {
-        // TODO: Each organization will have different configurations
-//        if (configuration.getAdmin() == null) {
-//            configuration.setAdmin(new Admin());
-//        }
-//
-//        String secretKey = ParamUtils.defaultString(configuration.getAdmin().getSecretKey(),
-//                PasswordUtils.getStrongRandomPassword(JwtManager.SECRET_KEY_MIN_LENGTH));
-//        String algorithm = ParamUtils.defaultString(configuration.getAdmin().getAlgorithm(), "HS256");
-//        if (existsCatalogDB()) {
-//            secretKey = catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().readSecretKey();
-//            algorithm = catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().readAlgorithm();
-//        }
-//        configuration.getAdmin().setAlgorithm(algorithm);
-//        configuration.getAdmin().setSecretKey(secretKey);
-    }
-
-    public void updateJWTParameters(String organizationId, ObjectMap params, String token) throws CatalogException {
-        JwtPayload payload = userManager.validateToken(token);
-        String userId = payload.getUserId();
-        if (!authorizationManager.isAtLeastOrganizationOwnerOrAdmin(organizationId, userId)) {
-            throw CatalogAuthorizationException.notOrganizationOwnerOrAdmin();
-        }
-
-        if (params == null || params.isEmpty()) {
-            return;
-        }
-
-        catalogDBAdaptorFactory.getCatalogMetaDBAdaptor(organizationId).updateJWTParameters(params);
     }
 
     public boolean getDatabaseStatus() throws CatalogDBException {
@@ -275,7 +243,8 @@ public class CatalogManager implements AutoCloseable {
 
         OrganizationConfiguration organizationConfiguration = new OrganizationConfiguration(
                 Collections.singletonList(CatalogAuthenticationManager.createOpencgaAuthenticationOrigin()),
-                Constants.DEFAULT_USER_EXPIRATION_DATE, new Optimizations(), new TokenConfiguration(algorithm, secretKey, 3600L));
+                new UserOrganizationConfiguration(Constants.DEFAULT_USER_EXPIRATION_DATE, false), new Optimizations(),
+                new TokenConfiguration(algorithm, secretKey, 3600L));
         organizationManager.create(new OrganizationCreateParams(ADMIN_ORGANIZATION, ADMIN_ORGANIZATION, null, null,
                         organizationConfiguration, null),
                 QueryOptions.empty(), null);
