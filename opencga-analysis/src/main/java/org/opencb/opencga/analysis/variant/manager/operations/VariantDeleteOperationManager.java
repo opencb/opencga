@@ -70,6 +70,7 @@ public class VariantDeleteOperationManager extends OperationManager {
         StudyMetadata studyMetadata = synchronizeCatalogStudyFromStorage(study, token, true);
 
         List<String> fileNames = new ArrayList<>();
+        List<String> fileIds = new ArrayList<>();
         if (inputFiles != null && !inputFiles.isEmpty()) {
             for (String fileStr : inputFiles) {
                 File file = catalogManager.getFileManager().get(study, fileStr, null, token).first();
@@ -99,6 +100,7 @@ public class VariantDeleteOperationManager extends OperationManager {
                     }
                 }
                 fileNames.add(VariantCatalogQueryUtils.toStorageFileName(file));
+                fileIds.add(file.getId());
             }
 
         }
@@ -108,7 +110,7 @@ public class VariantDeleteOperationManager extends OperationManager {
 
         variantStorageEngine.removeFiles(study, fileNames, outdir);
         // Update study configuration to synchronize
-        synchronizeCatalogStudyFromStorage(study, token, true, fileNames);
+        synchronizeCatalogStudyFromStorage(study, token, true, fileIds);
 
     }
 

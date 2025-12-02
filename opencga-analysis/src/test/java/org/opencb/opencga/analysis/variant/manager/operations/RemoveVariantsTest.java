@@ -143,7 +143,8 @@ public class RemoveVariantsTest extends AbstractVariantOperationManagerTest {
                     QueryOptions.empty(), sessionId).first().getId();
             files.add(file);
 
-            indexFiles(Arrays.asList(file), new QueryOptions(VariantStorageOptions.LOAD_MULTI_FILE_DATA.key(), true), outputId);
+            indexFiles(Arrays.asList(file), new QueryOptions(VariantStorageOptions.LOAD_MULTI_FILE_DATA.key(), true)
+                    .append(VariantStorageOptions.ANNOTATE.key(), true), outputId);
         }
 
         removeFile(files.subList(0, files.size() / 2), new QueryOptions());

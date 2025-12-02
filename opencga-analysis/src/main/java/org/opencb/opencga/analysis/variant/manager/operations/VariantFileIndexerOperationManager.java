@@ -377,7 +377,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                         String input = s.getInput().getPath();
                         String inputFileName = Paths.get(input).toString();
                         // Input file may be the transformed one. Convert into original file.
-                        return UriUtils.createUriSafe(VariantReaderUtils.getOriginalFromTransformedFile(inputFileName));
+                        return UriUtils.createUriSafe(inputFileName);
                     }, i -> i));
         } catch (IllegalStateException e) {
             throw e;
@@ -388,6 +388,15 @@ public class VariantFileIndexerOperationManager extends OperationManager {
             indexedFile = catalogManager.getFileManager().get(study, indexedFile.getId(), null, sessionId).first();
             // Suppose that the missing results are due to errors, and those files were not indexed.
             StoragePipelineResult storagePipelineResult = map.get(indexedFile.getUri());
+            if (storagePipelineResult == null) {
+                // Get transformed file from indexedFile if any
+                FileInternalVariantIndex.Transform transformFile = indexedFile.getInternal().getVariant().getIndex().getTransform();
+                System.out.println(transformFile);
+                if (transformFile != null) {
+                    URI uri = catalogManager.getFileManager().get(study, transformFile.getFileId(), null, sessionId).first().getUri();
+                    storagePipelineResult = map.get(uri);
+                }
+            }
 
             boolean jobFailed = storagePipelineResult == null || storagePipelineResult.getLoadError() != null
                     || storagePipelineResult.getTransformError() != null;
