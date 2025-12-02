@@ -2110,6 +2110,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                     if (fileMetadata.isIndexed()) {
                         throw StorageEngineException.alreadyLoaded(fileMetadata.getId(), fileName);
                     }
+                    // File is already registered with same path. Just return the fileId
                 } else {
                     // The file is not loaded. Check if it's being loaded.
 //                    // Only register if the file is being loaded. Otherwise, replace the filePath
@@ -2126,14 +2127,19 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 //                            }
 //                        }
 //                    }
-                    if (fileMetadata.getIndexStatus() == TaskMetadata.Status.NONE) {
-                        // FIXME: What if the file is being transformed?!?
+                    boolean isDeleted = false;
+                    // TODO: Check if file was deleted to avoid replacing while transforming
+                    if (isDeleted) {
+                        // TODO: What if the file is being transformed?!?
                         // Replace filePath
+                        logger.info("File '{}' already registered with a different path. Update file path to '{}'",
+                                fileName, filePath);
                         updateFileMetadata(studyId, fileId, fm -> {
                             fm.setPath(filePath);
                         });
                     } else {
                         if (!fileMetadata.isDuplicatedName()) {
+                            logger.info("File '{}' already registered with a different path.", fileName);
                             markFileAsDuplicated(studyId, fileId);
                         }
                         fileIdCache.clear();
@@ -2161,6 +2167,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             getFileIdOrDuplicated(studyId, filePath);
             fileId = newFileId(studyId);
             try (Lock lock = lockStudy(studyId)) {
+                logger.info("Register new file '{}' with id {}", fileName, fileId);
                 FileMetadata fileMetadata = new FileMetadata()
                         .setId(fileId)
                         .setName(fileName)

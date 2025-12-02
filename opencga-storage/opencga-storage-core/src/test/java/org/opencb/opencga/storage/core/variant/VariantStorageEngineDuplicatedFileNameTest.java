@@ -12,6 +12,9 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 
 import java.net.URI;
 import java.nio.file.Paths;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 @Ignore
 public abstract class VariantStorageEngineDuplicatedFileNameTest extends VariantStorageBaseTest {
@@ -41,6 +44,10 @@ public abstract class VariantStorageEngineDuplicatedFileNameTest extends Variant
         URI file2 = getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12878_S1.vcf.gz", "folder2/" + fileName);
         runETL(engine, file2, Paths.get(file2).getParent().toUri(), params);
 
+        checkDuplicatedFileStatus(engine, file1, file2, fileName);
+    }
+
+    private static void checkDuplicatedFileStatus(VariantStorageEngine engine, URI file1, URI file2, String fileName) {
         // Variants should now be returned with the full fileUri as fileId
         for (Variant variant : engine.iterable(new VariantQuery().includeFileAll(), new QueryOptions())) {
             for (FileEntry file : variant.getStudy(STUDY_NAME).getFiles()) {
@@ -65,4 +72,43 @@ public abstract class VariantStorageEngineDuplicatedFileNameTest extends Variant
             e.printStackTrace();
         }
     }
+
+
+    @Test
+    public void testConcurrentLoading() throws Exception {
+        VariantStorageEngine engine = getVariantStorageEngine();
+
+        ObjectMap params = new ObjectMap()
+                .append(VariantStorageOptions.STUDY.key(), STUDY_NAME);
+
+        String fileName = "file.vcf.gz";
+        URI file1 = getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.vcf.gz", "folder1/" + fileName);
+        URI file2 = getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12878_S1.vcf.gz", "folder2/" + fileName);
+
+        ExecutorService service = Executors.newFixedThreadPool(2);
+        try {
+            Future<?> future1 = service.submit(() -> {
+                try {
+                    runETL(engine, file1, Paths.get(file1).getParent().toUri(), params);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
+            Future<?> future2 = service.submit(() -> {
+                try {
+                    runETL(engine, file2, Paths.get(file2).getParent().toUri(), params);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
+
+            future1.get();
+            future2.get();
+        } finally {
+            service.shutdown();
+        }
+
+        checkDuplicatedFileStatus(engine, file1, file2, fileName);
+    }
+
 }
