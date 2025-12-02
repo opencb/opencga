@@ -30,8 +30,8 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -291,8 +291,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 throw VariantQueryException.internalException(e);
             }
         }).iterator();
-        long ts = getMetadataManager().getProjectMetadata().getSecondaryAnnotationIndexLastTimestamp();
-        HBaseToVariantAnnotationConverter converter = new HBaseToVariantAnnotationConverter(ts)
+        HBaseToVariantAnnotationConverter converter = new HBaseToVariantAnnotationConverter()
                 .setAnnotationIds(getMetadataManager().getProjectMetadata().getAnnotation())
                 .setIncludeFields(selectElements.getFields());
         converter.setAnnotationColumn(annotationColumn, name);
@@ -363,17 +362,21 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             unknownGenotype = query.getString(UNKNOWN_GENOTYPE.key());
         }
 
-        HBaseVariantConverterConfiguration converterConfiguration = HBaseVariantConverterConfiguration.builder()
+        HBaseVariantConverterConfiguration.Builder builder = HBaseVariantConverterConfiguration.builder()
                 .setMutableSamplesPosition(false)
                 .setStudyNameAsStudyId(options.getBoolean(HBaseVariantConverterConfiguration.STUDY_NAME_AS_STUDY_ID, true))
                 .setSimpleGenotypes(options.getBoolean(HBaseVariantConverterConfiguration.SIMPLE_GENOTYPES, true))
                 .setUnknownGenotype(unknownGenotype)
                 .setProjection(variantQuery.getProjection())
                 .setSampleDataKeys(getIncludeSampleData(query))
-                .setIncludeSampleId(query.getBoolean(INCLUDE_SAMPLE_ID.key(), false))
-                .setIncludeIndexStatus(query.getBoolean(VariantQueryUtils.VARIANTS_TO_INDEX.key(), false))
                 .setSparse(query.getBoolean(SPARSE_SAMPLES.key(), false))
-                .build();
+                .setIncludeSampleId(query.getBoolean(INCLUDE_SAMPLE_ID.key(), false));
+        if (query.getBoolean(VariantQueryUtils.VARIANTS_TO_INDEX.key(), false)) {
+            // Include index status
+            builder.setIncludeIndexStatus(getMetadataManager().getProjectMetadata()
+                    .getSecondaryAnnotationIndex().getSearchIndexMetadataForLoading());
+        }
+        HBaseVariantConverterConfiguration converterConfiguration = builder.build();
 
         if (hbaseIterator) {
             return hbaseIterator(variantQuery, options, converterConfiguration);

@@ -1874,9 +1874,6 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                         break;
                     case INTERNAL_STATUS:
                     case INTERNAL_STATUS_ID:
-                    case INTERNAL_VARIANT_ANNOTATION_INDEX_STATUS_ID:
-                    case INTERNAL_VARIANT_SECONDARY_INDEX_STATUS_ID:
-                    case INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX_STATUS_ID:
                     case INTERNAL_ALIGNMENT_INDEX_STATUS_ID:
                         // Convert the status to a positive status
                         myQuery.put(queryParam.key(),
@@ -1884,6 +1881,9 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                         addAutoOrQuery(QueryParams.INTERNAL_STATUS_ID.key(), queryParam.key(), myQuery,
                                 QueryParams.INTERNAL_STATUS_ID.type(), andBsonList);
                         break;
+                    case INTERNAL_VARIANT_ANNOTATION_INDEX_STATUS_ID:
+                    case INTERNAL_VARIANT_SECONDARY_INDEX_STATUS_ID:
+                    case INTERNAL_VARIANT_SECONDARY_ANNOTATION_INDEX_STATUS_ID:
                     case INTERNAL_VARIANT_INDEX_STATUS_ID:
                         // Convert the status to a positive status
                         myQuery.put(queryParam.key(),

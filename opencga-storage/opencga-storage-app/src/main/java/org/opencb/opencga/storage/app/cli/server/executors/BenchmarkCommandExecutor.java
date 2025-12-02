@@ -19,10 +19,12 @@ package org.opencb.opencga.storage.app.cli.server.executors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.config.storage.BenchmarkConfiguration;
 import org.opencb.opencga.storage.app.cli.CommandExecutor;
 import org.opencb.opencga.storage.app.cli.server.options.BenchmarkCommandOptions;
 import org.opencb.opencga.storage.benchmark.variant.VariantBenchmarkRunner;
 import org.opencb.opencga.storage.benchmark.variant.samplers.VariantStorageEngineRestSampler;
+import org.opencb.opencga.storage.benchmark.variant.samplers.VariantStorageManagerRestSampler;
 
 import java.io.IOException;
 import java.net.URI;
@@ -54,9 +56,6 @@ public class BenchmarkCommandExecutor extends CommandExecutor {
             case "variant":
                 variant();
                 break;
-            case "alignment":
-                alignment();
-                break;
             default:
                 logger.error("Subcommand not valid");
                 break;
@@ -66,7 +65,6 @@ public class BenchmarkCommandExecutor extends CommandExecutor {
     private void variant() throws IOException, URISyntaxException {
         BenchmarkCommandOptions.VariantBenchmarkCommandOptions options = commandOptions.variantBenchmarkCommandOptions;
 
-        Path outdirPath = getBenchmarkPath(options);
         Path jmeterHome = Paths.get(appHome, "benchmark", "jmeter");
         Path dataDir = Paths.get(appHome, "benchmark", "data", "hsapiens");
 
@@ -83,28 +81,28 @@ public class BenchmarkCommandExecutor extends CommandExecutor {
             configuration.getBenchmark().setDelay(options.delay);
         }
         setHost(options);
+        Path outdirPath = getBenchmarkPath(options, configuration.getBenchmark());
 
         configuration.getBenchmark().setMode(options.executionMode.name());
         configuration.getBenchmark().setConnectionType(options.connectionType.name());
 
         VariantBenchmarkRunner variantBenchmarkRunner = new VariantBenchmarkRunner(configuration, jmeterHome, outdirPath);
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.append(QueryOptions.LIMIT, options.limit);
+        if (options.limit != null) {
+            queryOptions.append(QueryOptions.LIMIT, options.limit);
+        }
         queryOptions.append(QueryOptions.COUNT, options.count);
         variantBenchmarkRunner.addThreadGroup(options.connectionType, options.executionMode, dataDir, options.baseQuery, options.queryFile, options.query, queryOptions);
         variantBenchmarkRunner.run();
     }
 
-    private Path getBenchmarkPath(BenchmarkCommandOptions.VariantBenchmarkCommandOptions options) {
-        return Paths.get(options.outdir == null ? "" : options.outdir, "opencga_benchmark_" + new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date())).toAbsolutePath();
-    }
-
-    private void alignment() {
-        throw new UnsupportedOperationException("Benchmark not supported yet!");
+    private Path getBenchmarkPath(BenchmarkCommandOptions.VariantBenchmarkCommandOptions options, BenchmarkConfiguration benchmark) {
+        return Paths.get(options.outdir == null ? "" : options.outdir,
+                "opencga_benchmark_" + new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date()) + "_" + benchmark.getConcurrency() + "x" + benchmark.getNumRepetitions() + "_" + options.executionMode).toAbsolutePath();
     }
 
     private void setHost(BenchmarkCommandOptions.VariantBenchmarkCommandOptions options) throws URISyntaxException {
-        URIBuilder uriBuilder = null;
+        URIBuilder uriBuilder;
         String host = options.host;
 
         if (host == null) {
@@ -115,13 +113,15 @@ public class BenchmarkCommandExecutor extends CommandExecutor {
 
         String storageRest = commandOptions.commonCommandOptions.params.get("storage.rest");
 
-        if (StringUtils.isNotEmpty(storageRest) && storageRest.equals("true")) {
-            uriBuilder.setPath(uriBuilder.getPath().concat(VariantStorageEngineRestSampler.STORAGE_REST_PATH));
+        if ("true".equalsIgnoreCase(storageRest)) {
+            uriBuilder.setPath(uriBuilder.getPath().concat(VariantStorageEngineRestSampler.STORAGE_ENGINE_REST_PATH));
         } else {
-            uriBuilder.setPath(uriBuilder.getPath().concat(VariantStorageEngineRestSampler.REST_PATH));
+            uriBuilder.setPath(uriBuilder.getPath().concat(VariantStorageManagerRestSampler.STORAGE_MANAGER_REST_PATH));
         }
 
-        configuration.getBenchmark().setRest(new URI(uriBuilder.toString()));
+        URI uri = new URI(uriBuilder.toString()).normalize();
+        logger.info("Setting REST URI to {}", uri);
+        configuration.getBenchmark().setRest(uri);
     }
 
 }

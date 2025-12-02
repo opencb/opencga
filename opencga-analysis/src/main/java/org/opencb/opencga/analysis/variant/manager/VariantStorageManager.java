@@ -82,9 +82,11 @@ import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.*;
+import org.opencb.opencga.storage.core.metadata.models.project.SearchIndexMetadata;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.BeaconResponse;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -98,6 +100,7 @@ import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 
 import java.io.IOException;
 import java.net.URI;
@@ -239,22 +242,6 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                         .index(study, files, UriUtils.createDirectoryUriSafe(outDir), params, token));
     }
 
-    public void secondaryIndexSamples(String study, List<String> samples, ObjectMap params, String token)
-            throws CatalogException, StorageEngineException {
-        secureOperation(VariantSecondaryIndexSamplesOperationTool.ID, study, params, token, engine -> {
-            engine.secondaryIndexSamples(study, samples);
-            return null;
-        });
-    }
-
-    public void removeSearchIndexSamples(String study, List<String> samples, ObjectMap params, String token)
-            throws CatalogException, StorageEngineException {
-        secureOperation("removeSecondaryIndexSamples", study, params, token, engine -> {
-            engine.removeSecondaryIndexSamples(study, samples);
-            return null;
-        });
-    }
-
     public VariantSearchLoadResult secondaryAnnotationIndex(String project, String region, boolean overwrite, ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
         return secureOperationByProject(VariantSecondaryAnnotationIndexOperationTool.ID, project, params, token, engine -> {
@@ -285,7 +272,8 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     public void removeSample(String study, List<String> samples, ObjectMap params, URI outdir, String token)
             throws CatalogException, StorageEngineException {
         secureOperation(VariantSampleDeleteOperationTool.ID, study, params, token, engine -> {
-            new VariantDeleteOperationManager(this, engine).removeSample(study, samples, outdir, token);
+            String studyFqn = getStudyFqn(study, token);
+            new VariantDeleteOperationManager(this, engine).removeSample(studyFqn, samples, outdir, token);
             return null;
         });
     }
@@ -671,7 +659,6 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
             if (engine.getMetadataManager().exists()) {
                 engine.getMetadataManager().invalidateCurrentVariantAnnotationIndex();
-                logger.info("Invalidating current variant annotation index on project '{}'", projectFqn);
                 getSynchronizer(engine).synchronizeCatalogProjectFromStorage(projectFqn, token);
                 List<String> jobDependsOn = new ArrayList<>(1);
                 if (StringUtils.isNotEmpty(annotationSaveId)) {
@@ -1208,7 +1195,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return secureOperation("synchronizeCatalogStudyFromStorage", studySqn, new ObjectMap(), token, engine -> {
             List<File> filesFromCatalog = catalogManager.getFileManager()
                     .get(studySqn, files, FILE_GET_QUERY_OPTIONS, token).getResults();
-            return getSynchronizer(engine).synchronizeCatalogFromStorage(studySqn, filesFromCatalog, false, token);
+            return getSynchronizer(engine).synchronizeCatalogFilesFromStorage(studySqn, filesFromCatalog, false, token);
         });
     }
 
@@ -1234,6 +1221,35 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             engine.variantsPrune(params.isDryRun(), params.isResume(), outdir);
             return null;
         });
+    }
+
+    public List<ObjectMap> getSearchStatus(String project, String token)
+            throws StorageEngineException, CatalogException, IOException, VariantSearchException {
+        List<ObjectMap> results = new ArrayList<>();
+        try (VariantStorageEngine engine = getVariantStorageEngineByProject(project, new ObjectMap(), token)) {
+            VariantSearchManager variantSearchManager = engine.getVariantSearchManager();
+            ProjectMetadata pm = engine.getMetadataManager().getProjectMetadata();
+            SearchIndexMetadata active = pm.getSecondaryAnnotationIndex().getActiveIndex();
+            if (active != null) {
+                String collection = variantSearchManager.buildCollectionName(active);
+                ObjectMap result = new ObjectMap();
+                result.put("metadata", active);
+                if (variantSearchManager.exists(active)) {
+                    result.put("collection", collection);
+                }
+                results.add(result);
+            }
+            for (SearchIndexMetadata stagingIndex : pm.getSecondaryAnnotationIndex().getStagingIndexes()) {
+                String collection = variantSearchManager.buildCollectionName(stagingIndex);
+                ObjectMap result = new ObjectMap();
+                result.put("metadata", stagingIndex);
+                if (variantSearchManager.exists(stagingIndex)) {
+                    result.put("collection", collection);
+                }
+                results.add(result);
+            }
+            return results;
+        }
     }
 
     // Permission related methods

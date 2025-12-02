@@ -45,6 +45,7 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
         UID("uid", DECIMAL, ""),
         UUID("uuid", TEXT, ""),
         TYPE("type", TEXT, ""),
+        TAGS("tags", TEXT_ARRAY, ""),
         CREATION_DATE("creationDate", DATE, ""),
         MODIFICATION_DATE("modificationDate", DATE, ""),
         STATUS("status", TEXT_ARRAY, ""),

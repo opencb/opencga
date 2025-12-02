@@ -196,7 +196,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
         List<File> inputFiles = getInputFiles(catalogManager, studyFqn, files, token);
 
         // Update Catalog from the storage metadata. This may change the index status of the inputFiles .
-        getSynchronizer().synchronizeCatalogFromStorage(studyFqn, inputFiles, token, FILE_GET_QUERY_OPTIONS);
+        getSynchronizer().synchronizeCatalogFilesFromStorage(studyFqn, inputFiles, token, FILE_GET_QUERY_OPTIONS);
 
         LOGGER.debug("Index - Number of files to be indexed: {}, list of files: {}", inputFiles.size(),
                 inputFiles.stream().map(File::getName).collect(Collectors.toList()));
@@ -346,7 +346,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                     List<File> inputFiles = catalogManager.getFileManager().search(studyFqn,
                             new Query(FileDBAdaptor.QueryParams.URI.key(), fileUris),
                             new QueryOptions(QueryOptions.INCLUDE, "id,name,path,uri"), token).getResults();
-                    getSynchronizer().synchronizeCatalogFromStorage(studyFqn, inputFiles, true, token);
+                    getSynchronizer().synchronizeCatalogFilesFromStorage(studyFqn, inputFiles, true, token);
                 }
             }
             variantStorageEngine.close();
@@ -557,9 +557,8 @@ public class VariantFileIndexerOperationManager extends OperationManager {
 
     private Cohort createDefaultCohort(String studyFqn, String sessionId) throws CatalogException {
         return catalogManager.getCohortManager().create(studyFqn, new CohortCreateParams(StudyEntry.DEFAULT_COHORT,
-                        "", Enums.CohortType.COLLECTION, DEFAULT_COHORT_DESCRIPTION, null, null, Collections.emptyList(), null, null, null),
-                null, null,
-                QueryOptions.empty(), sessionId).first();
+                        "", Enums.CohortType.COLLECTION, Collections.emptyList(), DEFAULT_COHORT_DESCRIPTION, null, null,
+                        Collections.emptyList(), null, null, null), null, null, QueryOptions.empty(), sessionId).first();
     }
 
     private void updateDefaultCohortStatus(Study study, StorageEngineException exception, String sessionId) throws CatalogException {

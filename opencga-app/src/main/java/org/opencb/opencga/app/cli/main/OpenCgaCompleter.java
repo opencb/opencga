@@ -54,7 +54,7 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> adminList = asList( "audit-group-by","catalog-install","catalog-jwt","catalog-workspace-update","resource-fetch","users-create","users-import","users-permissions","users-search","users-sync","update-groups-users")
+    private List<Candidate> adminList = asList( "audit-group-by","catalog-install","catalog-workspace-update","organizations-list","resource-fetch","users-create","users-import","users-permissions","users-search","users-sync","update-groups-users")
             .stream()
             .map(Candidate::new)
             .collect(toList());
@@ -109,7 +109,7 @@ public abstract class OpenCgaCompleter implements Completer {
             .map(Candidate::new)
             .collect(toList());
 
-    private List<Candidate> operationsList = asList( "cellbase-configure","variant-aggregate","variant-annotation-delete","variant-annotation-extension-configure","variant-annotation-index","variant-annotation-save","variant-configure","variant-delete","variant-family-aggregate","variant-family-index","variant-index","variant-index-launcher","variant-julie-run","variant-metadata-repair","variant-metadata-synchronize","variant-prune","variant-sample-delete","variant-sample-index","variant-sample-index-configure","variant-score-delete","variant-score-index","variant-secondary-annotation-index","variant-secondary-sample-index","configure-variant-secondary-sample-index","variant-secondary-index","variant-secondary-index-delete","variant-setup","variant-stats-delete","variant-stats-index","variant-study-delete")
+    private List<Candidate> operationsList = asList( "cellbase-configure","variant-aggregate","variant-annotation-delete","variant-annotation-extension-configure","variant-annotation-index","variant-annotation-save","variant-configure","variant-delete","variant-family-aggregate","variant-family-index","variant-index","variant-index-launcher","variant-julie-run","variant-metadata-repair","variant-metadata-synchronize","variant-prune","variant-sample-delete","variant-sample-index","variant-sample-index-configure","variant-score-delete","variant-score-index","variant-secondary-annotation-index","variant-secondary-sample-index","configure-variant-secondary-sample-index","variant-secondary-index","variant-setup","variant-stats-delete","variant-stats-index","variant-study-delete")
             .stream()
             .map(Candidate::new)
             .collect(toList());

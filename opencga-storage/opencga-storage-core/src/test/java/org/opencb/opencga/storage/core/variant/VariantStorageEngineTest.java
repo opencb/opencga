@@ -500,6 +500,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         //Check generated stats files
         cohort = metadataManager.getCohortMetadata(studyMetadata.getId(), StudyEntry.DEFAULT_COHORT);
         assertEquals(2504, cohort.getSamples().size());
+
 //        File[] statsFile1 = getTmpRootDir().toFile().listFiles((dir, name1) -> name1.startsWith(VariantStoragePipeline.buildFilename(studyMetadata.getName(), fileIdChr1))
 //                && name1.contains("variants"));
 //        File[] statsFile2 = getTmpRootDir().toFile().listFiles((dir, name1) -> name1.startsWith(VariantStoragePipeline.buildFilename(studyMetadata.getName(), fileIdChr22))

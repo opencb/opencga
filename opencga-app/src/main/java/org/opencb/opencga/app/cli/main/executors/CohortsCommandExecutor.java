@@ -159,6 +159,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("status", commandOptions.status);
         queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
         queryParams.putIfNotEmpty("annotation", commandOptions.annotation);
+        queryParams.putIfNotEmpty("tags", commandOptions.tags);
         queryParams.putIfNotEmpty("acl", commandOptions.acl);
         queryParams.putIfNotEmpty("samples", commandOptions.samples);
         queryParams.putIfNotEmpty("numSamples", commandOptions.numSamples);
@@ -236,6 +237,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
             putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
             putNestedIfNotNull(beanParams, "type", commandOptions.type, true);
+            putNestedIfNotNull(beanParams, "tags", commandOptions.tags, true);
             putNestedIfNotEmpty(beanParams, "description", commandOptions.description, true);
             putNestedIfNotEmpty(beanParams, "creationDate", commandOptions.creationDate, true);
             putNestedIfNotEmpty(beanParams, "modificationDate", commandOptions.modificationDate, true);
@@ -262,6 +264,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("name", commandOptions.name);
         queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
         queryParams.putIfNotEmpty("type", commandOptions.type);
+        queryParams.putIfNotEmpty("tags", commandOptions.tags);
         queryParams.putIfNotEmpty("creationDate", commandOptions.creationDate);
         queryParams.putIfNotEmpty("modificationDate", commandOptions.modificationDate);
         queryParams.putIfNotNull("deleted", commandOptions.deleted);
@@ -321,6 +324,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "id", commandOptions.bodyId, true);
             putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
             putNestedIfNotNull(beanParams, "type", commandOptions.type, true);
+            putNestedIfNotNull(beanParams, "tags", commandOptions.tags, true);
             putNestedIfNotEmpty(beanParams, "description", commandOptions.description, true);
             putNestedIfNotEmpty(beanParams, "creationDate", commandOptions.bodyCreationDate, true);
             putNestedIfNotEmpty(beanParams, "modificationDate", commandOptions.bodyModificationDate, true);
@@ -353,6 +357,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("name", commandOptions.name);
         queryParams.putIfNotEmpty("uuid", commandOptions.uuid);
         queryParams.putIfNotEmpty("type", commandOptions.type);
+        queryParams.putIfNotEmpty("tags", commandOptions.tags);
         queryParams.putIfNotEmpty("creationDate", commandOptions.creationDate);
         queryParams.putIfNotEmpty("modificationDate", commandOptions.modificationDate);
         queryParams.putIfNotNull("deleted", commandOptions.deleted);
@@ -427,6 +432,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("include", commandOptions.include);
         queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotNull("tagsAction", commandOptions.tagsAction);
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
@@ -447,6 +453,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
             putNestedIfNotEmpty(beanParams, "id", commandOptions.id, true);
             putNestedIfNotEmpty(beanParams, "name", commandOptions.name, true);
             putNestedIfNotNull(beanParams, "type", commandOptions.type, true);
+            putNestedIfNotNull(beanParams, "tags", commandOptions.tags, true);
             putNestedIfNotEmpty(beanParams, "description", commandOptions.description, true);
             putNestedIfNotEmpty(beanParams, "creationDate", commandOptions.creationDate, true);
             putNestedIfNotEmpty(beanParams, "modificationDate", commandOptions.modificationDate, true);

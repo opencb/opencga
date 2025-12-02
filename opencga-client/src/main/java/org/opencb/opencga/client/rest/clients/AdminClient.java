@@ -24,7 +24,6 @@ import org.opencb.opencga.core.exceptions.ClientException;
 import org.opencb.opencga.core.models.Acl;
 import org.opencb.opencga.core.models.admin.DeprecatedGroupSyncParams;
 import org.opencb.opencga.core.models.admin.InstallationParams;
-import org.opencb.opencga.core.models.admin.JWTParams;
 import org.opencb.opencga.core.models.admin.UserImportParams;
 import org.opencb.opencga.core.models.admin.UserUpdateGroup;
 import org.opencb.opencga.core.models.admin.WorkspaceUpdateParams;
@@ -91,20 +90,6 @@ public class AdminClient extends ParentClient {
     }
 
     /**
-     * Change JWT secret key.
-     * @param data JSON containing the parameters.
-     * @param params Map containing any of the following optional parameters.
-     *       organization: Organization id.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<ObjectMap> jwtCatalog(JWTParams data, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        params.put("body", data);
-        return execute("admin", null, "catalog", null, "jwt", params, POST, ObjectMap.class);
-    }
-
-    /**
      * Update the OpenCGA Catalog workspace.
      * @param data JSON containing the workspace parameters.
      * @return a RestResponse object.
@@ -114,6 +99,16 @@ public class AdminClient extends ParentClient {
         ObjectMap params = new ObjectMap();
         params.put("body", data);
         return execute("admin", null, "catalog/workspace", null, "update", params, POST, ObjectMap.class);
+    }
+
+    /**
+     * List current Organizations.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<String> listOrganizations() throws ClientException {
+        ObjectMap params = new ObjectMap();
+        return execute("admin", null, "organizations", null, "list", params, GET, String.class);
     }
 
     /**

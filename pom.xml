@@ -56,12 +56,13 @@
         <collections.version>4.4</collections.version>
         <avro.version>1.11.4</avro.version>
         <protobuf.version>3.11.4</protobuf.version>
-        <grpc.version>1.28.1</grpc.version>
+        <grpc.version>1.76.0</grpc.version>
         <slf4j.version>1.7.36</slf4j.version>
         <log4j2.version>2.17.2</log4j2.version>
         <solr.version>8.11.3</solr.version>
+        <!-- Keep zookeeper version in sync with solr requirements -->
+        <zookeeper.version>3.6.2</zookeeper.version>
         <jjwt.version>0.11.2</jjwt.version>
-        <!--        <jetty.version>9.4.17.v20190418</jetty.version>-->
         <jetty.version>9.4.53.v20231009</jetty.version>
         <jetty-for-hadoop-test.version>${jetty.version}</jetty-for-hadoop-test.version>
         <guava.version>28.0-jre</guava.version>
@@ -103,8 +104,7 @@
         <httpcore.version>4.4.13</httpcore.version>
         <log4j.version>1.2.17</log4j.version>
         <javax.ws.rs-api.version>2.0.1</javax.ws.rs-api.version>
-        <jmeter.version>5.0</jmeter.version>
-        <ApacheJMeter_components.version>5.0</ApacheJMeter_components.version>
+        <jmeter.version>5.6.3</jmeter.version>
         <grep4j.version>1.8.7</grep4j.version>
         <redisson.version>2.2.0</redisson.version>
         <jsr305.version>3.0.2</jsr305.version>
@@ -114,7 +114,6 @@
         <reactive-streams.version>1.0.0</reactive-streams.version>
         <snappy-java.version>1.1.10.4</snappy-java.version>
         <parquet-avro.version>${parquet-common.version}</parquet-avro.version>
-        <jorphan.version>5.0</jorphan.version>
 
         <opencga.war.name>opencga</opencga.war.name>
         <opencga.env.file>opencga-env.sh</opencga.env.file>
@@ -143,7 +142,6 @@
         <parquet-common.version>1.7.0</parquet-common.version>
         <commons-logging.version>1.1.3</commons-logging.version>
         <jcl-over-slf4j.version>1.7.24</jcl-over-slf4j.version>
-        <servlet-api.version>2.5-20081211</servlet-api.version>
 
 
         <!--TO REMOVE:
@@ -213,7 +211,7 @@
             <url>https://repo.maven.apache.org/maven2</url>
             <releases>
                 <enabled>true</enabled>
-                <updatePolicy>daily</updatePolicy>
+                <updatePolicy>always</updatePolicy>
             </releases>
             <snapshots>
                 <enabled>false</enabled>
@@ -224,7 +222,7 @@
             <url>https://central.sonatype.com/repository/maven-snapshots/</url>
             <snapshots>
                 <enabled>true</enabled>
-                <updatePolicy>daily</updatePolicy>
+                <updatePolicy>always</updatePolicy>
             </snapshots>
         </repository>
         <repository>
@@ -274,6 +272,11 @@
                         <artifactId>opencga-storage-hadoop-${opencga-hadoop-shaded.id.default}</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-storage-benchmark</artifactId>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
@@ -384,11 +387,6 @@
                         <artifactId>servlet-api</artifactId>
                     </exclusion>
                 </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>org.mortbay.jetty</groupId>
-                <artifactId>servlet-api</artifactId>
-                <version>${servlet-api.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.opencb.biodata</groupId>
@@ -506,9 +504,14 @@
                 <version>${jackson.version}</version>
             </dependency>
             <dependency>
+                <groupId>com.fasterxml.jackson.datatype</groupId>
+                <artifactId>jackson-datatype-jsr310</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.apache.jmeter</groupId>
                 <artifactId>ApacheJMeter_components</artifactId>
-                <version>${ApacheJMeter_components.version}</version>
+                <version>${jmeter.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.solr</groupId>
@@ -547,6 +550,16 @@
                         <artifactId>log4j-web</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.zookeeper</groupId>
+                <artifactId>zookeeper</artifactId>
+                <version>${zookeeper.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.zookeeper</groupId>
+                <artifactId>zookeeper-jute</artifactId>
+                <version>${zookeeper.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.jmeter</groupId>
@@ -620,7 +633,7 @@
             <dependency>
                 <groupId>org.apache.jmeter</groupId>
                 <artifactId>jorphan</artifactId>
-                <version>${jorphan.version}</version>
+                <version>${jmeter.version}</version>
             </dependency>
             <dependency>
                 <groupId>javax.ws.rs</groupId>
@@ -822,6 +835,12 @@
                 <groupId>org.apache.avro</groupId>
                 <artifactId>avro-mapred</artifactId>
                 <version>${avro.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.apache.avro</groupId>
+                        <artifactId>avro-ipc</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.mongodb</groupId>
@@ -883,6 +902,12 @@
                 <groupId>org.apache.parquet</groupId>
                 <artifactId>parquet-avro</artifactId>
                 <version>${parquet-avro.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.apache.avro</groupId>
+                        <artifactId>avro-ipc</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>com.google.guava</groupId>
@@ -898,6 +923,20 @@
                 <groupId>org.opencb.ga4gh</groupId>
                 <artifactId>ga4gh</artifactId>
                 <version>${ga4gh.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.mortbay.jetty</groupId>
+                        <artifactId>jetty</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.mortbay.jetty</groupId>
+                        <artifactId>servlet-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.avro</groupId>
+                        <artifactId>avro-ipc</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.fusesource.jansi</groupId>
@@ -1405,7 +1444,7 @@
 
                 <!-- Client -->
                 <OPENCGA.CLIENT.REST.HOST>https://ws.opencb.org/opencga-prod</OPENCGA.CLIENT.REST.HOST>
-                <OPENCGA.CLIENT.GRPC.HOST>localhost:9091</OPENCGA.CLIENT.GRPC.HOST>
+                <OPENCGA.CLIENT.GRPC.HOST></OPENCGA.CLIENT.GRPC.HOST>
 
                 <OPENCGA.SERVER.REST.PORT>9090</OPENCGA.SERVER.REST.PORT>
                 <OPENCGA.SERVER.GRPC.PORT>9091</OPENCGA.SERVER.GRPC.PORT>
@@ -1427,8 +1466,6 @@
                 <OPENCGA.STORAGE.VARIANT.DB.USER></OPENCGA.STORAGE.VARIANT.DB.USER>
                 <OPENCGA.STORAGE.VARIANT.DB.PASSWORD></OPENCGA.STORAGE.VARIANT.DB.PASSWORD>
                 <OPENCGA.STORAGE.SEARCH.HOST>http://localhost:8983/solr/</OPENCGA.STORAGE.SEARCH.HOST>
-                <OPENCGA.STORAGE.SEARCH.CONFIG_SET>opencga-variant-configset-${project.parent.version}
-                </OPENCGA.STORAGE.SEARCH.CONFIG_SET>
                 <OPENCGA.STORAGE.SEARCH.TIMEOUT>30000</OPENCGA.STORAGE.SEARCH.TIMEOUT>
                 <OPENCGA.STORAGE.CLINICAL.HOST>http://localhost:8983/solr/</OPENCGA.STORAGE.CLINICAL.HOST>
                 <OPENCGA.STORAGE.CLINICAL.MANAGER>""</OPENCGA.STORAGE.CLINICAL.MANAGER>

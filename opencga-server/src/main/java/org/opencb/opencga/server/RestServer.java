@@ -22,6 +22,8 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.opencb.opencga.core.config.RestServerConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -32,15 +34,12 @@ import java.util.stream.Stream;
 /**
  * Created by imedina on 02/01/16.
  */
-public class RestServer extends AbstractStorageServer {
+public class RestServer extends AbstractServer {
 
     private static Server server;
 //    private Path opencgaHome;
     private boolean exit;
-
-    public RestServer(Path opencgaHome) {
-        this(opencgaHome, 0);
-    }
+    private final Logger logger = LoggerFactory.getLogger(RestServer.class);
 
     public RestServer(Path opencgaHome, int port) {
         super(opencgaHome, port);

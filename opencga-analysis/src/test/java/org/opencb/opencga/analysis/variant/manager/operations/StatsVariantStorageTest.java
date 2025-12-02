@@ -96,7 +96,8 @@ public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest
                     .map(s -> new SampleReferenceParam().setId(s))
                     .collect(Collectors.toList());
             Cohort cohort = catalogManager.getCohortManager().create(studyId, new CohortCreateParams("coh" + i,
-                    "", Enums.CohortType.CONTROL_SET, "", null, null, sampleIds, null, null, null), null, null, new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first();
+                    "", Enums.CohortType.CONTROL_SET, Collections.emptyList(), "", null, null, sampleIds, null, null, null), null, null,
+                    new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true), sessionId).first();
             coh[i] = cohort.getId();
         }
         QueryOptions queryOptions = new QueryOptions(VariantStorageOptions.ANNOTATE.key(), false);

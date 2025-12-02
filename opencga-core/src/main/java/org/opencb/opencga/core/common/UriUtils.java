@@ -37,43 +37,79 @@ public class UriUtils {
         }
     }
 
-    public static URI createUri(String input) throws URISyntaxException {
-        return createUri(input, true);
-    }
-
+    @Deprecated
+    /**
+     * @deprecated Use {@link #toUri(String)} instead.
+     */
     public static URI createUriSafe(String input) {
         try {
-            return createUri(input, false);
+            return createUri(input);
         } catch (URISyntaxException e) {
-            // Method above should never throw an exception
+            return null;
+        }
+    }
+
+    public static URI createUri(String input) throws URISyntaxException {
+        URI sourceUri;
+        if (hasSchema(input)) {
+            // Already a URI. Assume it is already escaped.
+            // Avoid double code escaping
+            // Replace file:/ with file:/// when necessary
+            if (input.startsWith("file:/") && !input.startsWith("file://")) {
+                input = "file:///" + input.substring("file:/".length());
+            }
+            sourceUri = new URI(input);
+        } else {
+            // Assume direct path name.
+            // Escape if needed.
+            sourceUri = Paths.get(input).toUri();
+        }
+        return sourceUri;
+    }
+
+    /**
+     * Converts a string into an absolute URI.
+     * If the input is already a valid URI, it will return it as is.
+     * If the input is a relative path, it will convert it to a URI based on the current working directory.
+     *
+     * @param input The string to convert into a URI.
+     * @return A URI representing the input string.
+     */
+    public static URI toUri(String input) {
+        try {
+            return createUri(input);
+        } catch (URISyntaxException e) {
             throw new IllegalStateException(e);
         }
     }
 
-    public static URI createUri(String input, boolean failOnInvalidUri) throws URISyntaxException {
+    /**
+     * Converts a path into a URI relative to the current working directory.
+     * This method assumes that the input is an unencoded path.
+     *
+     * @param input The relative path to convert.
+     * @return A URI representing the relative path.
+     */
+    public static URI toUriRelative(String input) {
         try {
-            URI sourceUri;
-            if (HAS_SCHEMA.matcher(input).matches()) {
+            if (hasSchema(input)) {
                 // Already a URI. Assume it is already escaped.
                 // Avoid double code escaping
                 // Replace file:/ with file:/// when necessary
                 if (input.startsWith("file:/") && !input.startsWith("file://")) {
                     input = "file:///" + input.substring("file:/".length());
                 }
-                sourceUri = new URI(input);
+                return new URI(input);
             } else {
-                // Assume direct path name.
-                // Escape if needed.
-                sourceUri = Paths.get(input).toUri();
+                return new URI(null, input, null).normalize();
             }
-            return sourceUri;
         } catch (URISyntaxException e) {
-            if (failOnInvalidUri) {
-                throw e;
-            } else {
-                return null;
-            }
+            throw new IllegalArgumentException("Invalid path: " + input, e);
         }
+    }
+
+    private static boolean hasSchema(String input) {
+        return HAS_SCHEMA.matcher(input).matches();
     }
 
     public static URI createDirectoryUriSafe(String input) {
