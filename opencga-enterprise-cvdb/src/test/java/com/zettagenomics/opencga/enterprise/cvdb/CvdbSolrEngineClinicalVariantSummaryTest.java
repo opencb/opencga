@@ -2,8 +2,13 @@ package com.zettagenomics.opencga.enterprise.cvdb;
 
 import com.zettagenomics.opencga.enterprise.catalog.managers.EnterpriseFactory;
 import com.zettagenomics.opencga.enterprise.core.configuration.EnterpriseConfiguration;
+import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalAnalysisConverter;
+import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalInterpretationConverter;
+import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalVariantConverter;
+import com.zettagenomics.opencga.enterprise.cvdb.converters.ClinicalVariantEvidenceConverter;
 import com.zettagenomics.opencga.enterprise.cvdb.exceptions.CvdbException;
-import com.zettagenomics.opencga.enterprise.cvdb.models.CvdbIndexResult;
+import com.zettagenomics.opencga.enterprise.cvdb.iterators.ClinicalIterator;
+import com.zettagenomics.opencga.enterprise.cvdb.models.*;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Assert;
@@ -21,6 +26,7 @@ import org.opencb.biodata.models.clinical.interpretation.stats.ClinicalVariantSu
 import org.opencb.biodata.models.clinical.interpretation.stats.InterpretationStats;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -234,6 +240,94 @@ public class CvdbSolrEngineClinicalVariantSummaryTest {
         checkStats(result, caResult1.getResults(), variantId1, FqnUtils.buildFqn(organizationId, projectId1));
         checkStats(result, caResult2.getResults(), variantId2, FqnUtils.buildFqn(organizationId, projectId2));
     }
+
+    @Test
+    public void testNoCvdbDataStoreClinicalAnalysis() throws IOException, CvdbException, CatalogException {
+        String variantId1 = "X:124481724:T:TA";
+
+        Assert.assertFalse(cvdbEngine.isAvailableCvdbDataStore(projectId3, userToken));
+
+        Query query = new Query()
+                .append(PROJECT_PARAM_NAME, projectId3)
+                .append(STUDY_PARAM_NAME, study3.getFqn())
+                .append(CV_VARIANT_ID_NAME, variantId1);
+
+        DataResult<ClinicalAnalysis> result = cvdbEngine.searchClinicalAnalyses(query, QueryOptions.empty(), userToken);
+        Assert.assertEquals(0, result.getNumResults());
+
+        ClinicalIterator<ClinicalAnalysis, ClinicalAnalysisSearch, ClinicalAnalysisConverter> caIterator = cvdbEngine.clinicalAnalysisIterator(query, QueryOptions.empty(), userToken);
+        Assert.assertFalse(caIterator.hasNext());
+
+        DataResult<FacetField> facetFieldDataResult = cvdbEngine.facetClinicalAnalyses(query, QueryOptions.empty(), userToken);
+        Assert.assertEquals(0, facetFieldDataResult.getNumResults());
+    }
+
+    @Test
+    public void testNoCvdbDataStoreClinicalInterpretation() throws IOException, CvdbException, CatalogException {
+        String variantId1 = "X:124481724:T:TA";
+
+        Assert.assertFalse(cvdbEngine.isAvailableCvdbDataStore(projectId3, userToken));
+
+        Query query = new Query()
+                .append(PROJECT_PARAM_NAME, projectId3)
+                .append(STUDY_PARAM_NAME, study3.getFqn())
+                .append(CV_VARIANT_ID_NAME, variantId1);
+
+        DataResult<Interpretation> result = cvdbEngine.searchClinicalInterpretations(query, QueryOptions.empty(), userToken);
+        Assert.assertEquals(0, result.getNumResults());
+
+        ClinicalIterator<Interpretation, ClinicalInterpretationSearch, ClinicalInterpretationConverter> ciIterator = cvdbEngine.clinicalInterpretationIterator(query, QueryOptions.empty(), userToken);
+        Assert.assertFalse(ciIterator.hasNext());
+
+        DataResult<FacetField> facetFieldDataResult = cvdbEngine.facetClinicalInterpretations(query, QueryOptions.empty(), userToken);
+        Assert.assertEquals(0, facetFieldDataResult.getNumResults());
+    }
+
+    @Test
+    public void testNoCvdbDataStoreClinicalVariant() throws IOException, CvdbException, CatalogException {
+        String variantId1 = "X:124481724:T:TA";
+
+        Assert.assertFalse(cvdbEngine.isAvailableCvdbDataStore(projectId3, userToken));
+
+        Query query = new Query()
+                .append(PROJECT_PARAM_NAME, projectId3)
+                .append(STUDY_PARAM_NAME, study3.getFqn())
+                .append(CV_VARIANT_ID_NAME, variantId1);
+
+        DataResult<ClinicalVariant> result = cvdbEngine.searchClinicalVariants(query, QueryOptions.empty(), userToken);
+        Assert.assertEquals(0, result.getNumResults());
+
+        ClinicalIterator<ClinicalVariant, ClinicalVariantSearch, ClinicalVariantConverter> cvIterator = cvdbEngine.clinicalVariantIterator(query, QueryOptions.empty(), userToken);
+        Assert.assertFalse(cvIterator.hasNext());
+
+        DataResult<FacetField> facetFieldDataResult = cvdbEngine.facetClinicalVariants(query, QueryOptions.empty(), userToken);
+        Assert.assertEquals(0, facetFieldDataResult.getNumResults());
+    }
+
+    @Test
+    public void testNoCvdbDataStoreClinicalVariantEvidence() throws IOException, CvdbException, CatalogException {
+        String variantId1 = "X:124481724:T:TA";
+
+        Assert.assertFalse(cvdbEngine.isAvailableCvdbDataStore(projectId3, userToken));
+
+        Query query = new Query()
+                .append(PROJECT_PARAM_NAME, projectId3)
+                .append(STUDY_PARAM_NAME, study3.getFqn())
+                .append(CV_VARIANT_ID_NAME, variantId1);
+
+        DataResult<ClinicalVariantEvidence> result = cvdbEngine.searchClinicalVariantEvidences(query, QueryOptions.empty(), userToken);
+        Assert.assertEquals(0, result.getNumResults());
+
+        ClinicalIterator<ClinicalVariantEvidence, ClinicalVariantEvidenceSearch, ClinicalVariantEvidenceConverter> cveIterator = cvdbEngine.clinicalVariantEvidenceIterator(query, QueryOptions.empty(), userToken);
+        Assert.assertFalse(cveIterator.hasNext());
+
+        DataResult<FacetField> facetFieldDataResult = cvdbEngine.facetClinicalVariantEvidences(query, QueryOptions.empty(), userToken);
+        Assert.assertEquals(0, facetFieldDataResult.getNumResults());
+    }
+
+    //-----------------------------------------------------------------------
+    // P R I V A T E    M E T H O D S
+    //-----------------------------------------------------------------------
 
     private void checkCommonStats(DataResult<ClinicalVariantSummaryStats> result, List<String> variantIds, List<String> projectIds) {
         Assert.assertEquals(projectIds.size() * variantIds.size(), result.getNumResults());
