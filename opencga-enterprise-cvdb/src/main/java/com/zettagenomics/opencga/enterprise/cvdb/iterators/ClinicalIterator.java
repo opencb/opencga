@@ -41,13 +41,13 @@ public class ClinicalIterator<M,N,C extends SearchConverter<M, N>> extends Clini
             throws IOException, SolrServerException, NoSuchMethodException, InvocationTargetException, InstantiationException,
             IllegalAccessException {
         super(queryOptions);
-        nativeSolrIterator = new ClinicalSolrIterator<N>(solrClient, collection, solrQuery, nativeType);
+        nativeSolrIterator = solrClient == null ? null : new ClinicalSolrIterator<N>(solrClient, collection, solrQuery, nativeType);
         converter = converterType.getConstructor().newInstance();
     }
 
     @Override
     public boolean hasNext() {
-        return nativeSolrIterator.hasNext();
+        return nativeSolrIterator != null && nativeSolrIterator.hasNext();
     }
 
     @Override
@@ -55,7 +55,6 @@ public class ClinicalIterator<M,N,C extends SearchConverter<M, N>> extends Clini
         try {
             return applyInclude(converter.toModel(nativeSolrIterator.next()));
         } catch (CvdbException e) {
-            e.printStackTrace();
             return null;
         }
     }
