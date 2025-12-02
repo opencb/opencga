@@ -190,8 +190,14 @@ class DiseasePanel(_ParentRestClient):
         Import panels.
         PATH: /{apiVersion}/panels/import
 
+        :param str include: Fields included in the response, whole JSON path
+            must be provided.
+        :param str exclude: Fields excluded in the response, whole JSON path
+            must be provided.
         :param str study: Study [[organization@]project:]study where study and
             project can be either the ID or UUID.
+        :param bool include_result: Flag indicating to include the created or
+            updated document result in the response.
         :param dict data: Panel parameters.
         """
 

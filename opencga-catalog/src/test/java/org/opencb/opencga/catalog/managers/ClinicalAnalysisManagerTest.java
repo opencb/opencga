@@ -3010,7 +3010,7 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         PanelImportParams params1 = new PanelImportParams()
                 .setSource(PanelImportParams.Source.PANEL_APP)
                 .setPanelIds(Collections.singletonList("VACTERL-like phenotypes"));
-        catalogManager.getPanelManager().importFromSource(studyFqn, params1, ownerToken).first();
+        catalogManager.getPanelManager().importFromSource(studyFqn, params1, null, ownerToken).first();
         Panel panel = catalogManager.getPanelManager().search(studyFqn, new Query(), QueryOptions.empty(), ownerToken).first();
         DataResult<Family> dummyFamily = createDummyFamily();
         // Leave only sample2 for child1 in family
@@ -3046,7 +3046,7 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         PanelImportParams params1 = new PanelImportParams()
                 .setSource(PanelImportParams.Source.PANEL_APP)
                 .setPanelIds(Collections.singletonList("VACTERL-like phenotypes"));
-        catalogManager.getPanelManager().importFromSource(studyFqn, params1, ownerToken).first();
+        catalogManager.getPanelManager().importFromSource(studyFqn, params1, null, ownerToken).first();
         Panel panel = catalogManager.getPanelManager().search(studyFqn, new Query(), QueryOptions.empty(), ownerToken).first();
 
         ClinicalAnalysis ca = createDummyEnvironment(true, false).first();
@@ -3068,7 +3068,7 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
         PanelImportParams params1 = new PanelImportParams()
                 .setSource(PanelImportParams.Source.PANEL_APP)
                 .setPanelIds(Collections.singletonList("VACTERL-like phenotypes"));
-        catalogManager.getPanelManager().importFromSource(studyFqn, params1, ownerToken).first();
+        catalogManager.getPanelManager().importFromSource(studyFqn, params1, null, ownerToken).first();
         Panel panel = catalogManager.getPanelManager().search(studyFqn, new Query(), QueryOptions.empty(), ownerToken).first();
 
         DataResult<Family> dummyFamily = createDummyFamily();

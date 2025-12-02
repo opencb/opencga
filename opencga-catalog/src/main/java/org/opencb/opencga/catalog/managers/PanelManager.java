@@ -195,7 +195,8 @@ public class PanelManager extends ResourceManager<Panel> {
         }
     }
 
-    public OpenCGAResult<Panel> importFromSource(String studyId, PanelImportParams params, String token) throws CatalogException {
+    public OpenCGAResult<Panel> importFromSource(String studyId, PanelImportParams params, QueryOptions options, String token)
+            throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyId, tokenPayload);
         String organizationId = studyFqn.getOrganizationId();
@@ -284,6 +285,19 @@ public class PanelManager extends ResourceManager<Panel> {
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
             }
             auditManager.finishAuditBatch(organizationId, operationId);
+
+            if (options != null && options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM, false)) {
+                // Fetch last version of all panels
+                Query query = new Query()
+                        .append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                        .append(PanelDBAdaptor.QueryParams.SOURCE.key(), panelList
+                                .stream()
+                                .map(p -> p.getSource().getId())
+                                .collect(Collectors.toList()));
+                OpenCGAResult<Panel> finalPanels = getPanelDBAdaptor(organizationId).get(query, options);
+                result.setResults(finalPanels.getResults());
+                result.setNumResults(finalPanels.getNumResults());
+            }
 
             return result;
         } catch (CatalogException e) {

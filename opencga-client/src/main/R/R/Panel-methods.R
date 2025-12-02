@@ -23,7 +23,7 @@
 #' | aggregationStats | /{apiVersion}/panels/aggregationStats | study, id, uuid, name, internalStatus, disorders, variants, genes, source, regions, categories, tags, deleted, status, creationDate, modificationDate, acl, release, snapshot, field |
 #' | create | /{apiVersion}/panels/create | include, exclude, study, includeResult, body |
 #' | distinct | /{apiVersion}/panels/distinct | study, id, uuid, name, internalStatus, disorders, variants, genes, source, regions, categories, tags, deleted, status, creationDate, modificationDate, acl, release, snapshot, field[*] |
-#' | importPanels | /{apiVersion}/panels/import | study, body |
+#' | importPanels | /{apiVersion}/panels/import | include, exclude, study, includeResult, body |
 #' | search | /{apiVersion}/panels/search | include, exclude, limit, skip, count, study, id, uuid, name, internalStatus, disorders, variants, genes, source, regions, categories, tags, deleted, status, creationDate, modificationDate, acl, release, snapshot |
 #' | acl | /{apiVersion}/panels/{panels}/acl | panels[*], study, member, silent |
 #' | delete | /{apiVersion}/panels/{panels}/delete | study, panels[*] |
@@ -112,7 +112,10 @@ setMethod("panelClient", "OpencgaR", function(OpencgaR, members, panels, endpoin
 
         #' @section Endpoint /{apiVersion}/panels/import:
         #' Import panels.
+        #' @param include Fields included in the response, whole JSON path must be provided.
+        #' @param exclude Fields excluded in the response, whole JSON path must be provided.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param includeResult Flag indicating to include the created or updated document result in the response.
         #' @param data Panel parameters.
         importPanels=fetchOpenCGA(object=OpencgaR, category="panels", categoryId=NULL, subcategory=NULL,
                 subcategoryId=NULL, action="import", params=params, httpMethod="POST", as.queryParam=NULL, ...),
