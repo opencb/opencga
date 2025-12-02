@@ -999,7 +999,7 @@ public class CvdbSolrEngine {
                 if (isAvailableCvdbDataStore(project)) {
                     localProjects.add(project);
                 } else {
-                    logger.info("CVDB data store is not available for project {}. Skipping it.", project.getFqn());
+                    logger.debug("CVDB data store is not available for project {}. Skipping it.", project.getFqn());
                 }
             }
         }
@@ -1017,7 +1017,7 @@ public class CvdbSolrEngine {
                 List<String> federatedProjectIds = projectList.stream().map(Project::getFqn).collect(Collectors.toList());
                 ObjectMap params = new ObjectMap(PROJECT_PARAM_NAME, federatedProjectIds);
 
-                logger.info("Computing variant summary stats from federation {} for projects: {}", federationId,
+                logger.debug("Computing variant summary stats from federation {} for projects: {}", federationId,
                         StringUtils.join(federatedProjectIds, ", "));
 
                 FederationClientParams federationClient = FederationUtils.findFederationClient(organization, federationId);
@@ -1038,7 +1038,7 @@ public class CvdbSolrEngine {
         // Process summary stats from local projects
         List<ClinicalVariantSummaryStats> localStatsList = new ArrayList<>(variantIds.size());
         if (CollectionUtils.isNotEmpty(localProjects)) {
-            logger.info("Computing variant summary stats for local projects: {}",
+            logger.debug("Computing variant summary stats for local projects: {}",
                     StringUtils.join(localProjects.stream().map(Project::getFqn).collect(Collectors.toList()), ", "));
 
             Query query;
