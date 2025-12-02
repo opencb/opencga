@@ -17,6 +17,7 @@
 package com.zettagenomics.opencga.enterprise.cvdb;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.core.common.JacksonUtils;
@@ -64,7 +65,7 @@ public class OpenCGAEnterpriseCatalogManagerExternalResource extends CatalogMana
                         .setSource(PanelImportParams.Source.PANEL_APP)
                         .setPanelIds(panelIds);
 
-                catalogManager.getPanelManager().importFromSource(studyId, params, sessionIdUser);
+                catalogManager.getPanelManager().importFromSource(studyId, params, QueryOptions.empty(), sessionIdUser);
             } catch (CatalogException e) {
                 System.out.println("---------------------------------------------------------------------------------");
                 System.out.println("Impossible to load clinical analysis file " + caFilename + ": " + e.getMessage());
