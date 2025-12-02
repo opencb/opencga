@@ -570,7 +570,7 @@ public class JobsCommandOptions extends CustomJobsCommandOptions {
         @Parameter(names = {"--container-digest"}, description = "Digest of the Container image. It is a sha256 hash that uniquely identifies a specific Container image. Example: 'sha256:3a5c8...'", required = false, arity = 1)
         public String containerDigest;
     
-        @Parameter(names = {"--container-command-line"}, description = "Container command line which may contain additional parameters.", required = false, arity = 1)
+        @Parameter(names = {"--container-command-line"}, description = "Command line template to run the tool inside the container. You can use ${input} and ${output} as placeholders for input and output files. E.g., 'bwa mem ${input} > ${output}'.", required = false, arity = 1)
         public String containerCommandLine;
     
         @Parameter(names = {"--container-user"}, description = "User that can access the private Container repository.", required = false, arity = 1)

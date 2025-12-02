@@ -1,6 +1,6 @@
 package org.opencb.opencga.analysis.variant;
 
-import org.apache.solr.common.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
@@ -104,18 +104,18 @@ public class VariantWalkerToolExecutor extends OpenCgaTool {
     }
 
     private void checkDockerObject(Container container) throws ToolException, CatalogException {
-        if (org.apache.commons.lang3.StringUtils.isEmpty(container.getName())) {
+        if (StringUtils.isEmpty(container.getName())) {
             throw new ToolException("Missing docker image name");
         }
         this.dockerImage = container.getName();
         String tag = "";
-        if (org.apache.commons.lang3.StringUtils.isNotEmpty(container.getTag())) {
+        if (StringUtils.isNotEmpty(container.getTag())) {
             tag = container.getTag();
-            if (org.apache.commons.lang3.StringUtils.isNotEmpty(container.getDigest())) {
+            if (StringUtils.isNotEmpty(container.getDigest())) {
                 tag += "@" + container.getDigest();
             }
         }
-        if (org.apache.commons.lang3.StringUtils.isNotEmpty(tag)) {
+        if (StringUtils.isNotEmpty(tag)) {
             this.dockerImage += ":" + tag;
         }
     }

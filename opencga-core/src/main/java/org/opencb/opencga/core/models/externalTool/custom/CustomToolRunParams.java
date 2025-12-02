@@ -1,6 +1,7 @@
 package org.opencb.opencga.core.models.externalTool.custom;
 
 import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.models.externalTool.ExternalToolParams;
 import org.opencb.opencga.core.tools.ToolParams;
 
@@ -16,7 +17,7 @@ public class CustomToolRunParams extends ToolParams implements ExternalToolParam
     @DataField(id = "version", description = "User tool version. If not provided, the latest version will be used.")
     private Integer version;
 
-    @DataField(id = "commandLine", description = "Command line to be executed inside the container.")
+    @DataField(id = "commandLine", description = FieldConstants.CONTAINER_COMMANDLINE_DESCRIPTION)
     private String commandLine;
 
     @DataField(id = "params", description = "Key-value pairs of parameters to be used inside the command line.")

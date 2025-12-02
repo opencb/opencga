@@ -1,6 +1,7 @@
-package org.opencb.opencga.core.models.externalTool;
+package org.opencb.opencga.core.models.externalTool.workflow;
 
 import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.models.externalTool.ExternalToolParams;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.Map;

@@ -33,7 +33,7 @@ import java.util.List;
 @Tool(id = VariantWalkerTool.ID, description = VariantWalkerTool.DESCRIPTION,
         scope = Tool.Scope.PROJECT, resource = Enums.Resource.VARIANT)
 public class VariantWalkerTool extends OpenCgaTool {
-    public static final String ID = "deprecated-variant-walk";
+    public static final String ID = "inline-variant-walk";
     public static final String DESCRIPTION = "Filter and walk variants from the variant storage to produce a file";
 
     @ToolParams
