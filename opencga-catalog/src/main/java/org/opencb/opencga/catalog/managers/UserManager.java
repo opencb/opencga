@@ -26,7 +26,7 @@ import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
-import org.opencb.opencga.catalog.auth.authentication.azure.AuthenticationFactory;
+import org.opencb.opencga.catalog.auth.authentication.AuthenticationFactory;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;

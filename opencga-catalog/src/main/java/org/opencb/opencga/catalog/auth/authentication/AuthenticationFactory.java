@@ -1,8 +1,7 @@
-package org.opencb.opencga.catalog.auth.authentication.azure;
+package org.opencb.opencga.catalog.auth.authentication;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.auth.authentication.*;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.OrganizationDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -43,6 +42,16 @@ public final class AuthenticationFactory {
 
     public void configureOrganizationAuthenticationManager(Organization organization) throws CatalogException {
         Map<String, AuthenticationManager> tmpAuthenticationManagerMap = new HashMap<>();
+
+        if (organization == null) {
+            throw new CatalogException("Organization is null");
+        }
+        if (organization.getConfiguration() == null) {
+            throw new CatalogException("Organization '" + organization.getId() + "' has no configuration defined");
+        }
+        if (organization.getConfiguration().getToken() == null) {
+            throw new CatalogException("Organization '" + organization.getId() + "' has no token configuration defined");
+        }
 
         long expiration = organization.getConfiguration().getToken().getExpiration();
         String algorithm = organization.getConfiguration().getToken().getAlgorithm();
