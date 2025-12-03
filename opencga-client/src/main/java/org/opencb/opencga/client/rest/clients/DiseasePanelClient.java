@@ -179,7 +179,10 @@ public class DiseasePanelClient extends ParentClient {
      * Import panels.
      * @param data Panel parameters.
      * @param params Map containing any of the following optional parameters.
+     *       include: Fields included in the response, whole JSON path must be provided.
+     *       exclude: Fields excluded in the response, whole JSON path must be provided.
      *       study: Study [[organization@]project:]study where study and project can be either the ID or UUID.
+     *       includeResult: Flag indicating to include the created or updated document result in the response.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */

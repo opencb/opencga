@@ -78,11 +78,26 @@ public class PanelManagerTest extends AbstractManagerTest {
                 .setPanelIds(Arrays.asList("VACTERL-like phenotypes", "Pneumothorax - familial", "Familial Neural Tube Defects",
                         "Structural eye disease", "1358"));
 
-        OpenCGAResult<Panel> result = panelManager.importFromSource(studyFqn, params, ownerToken);
+        OpenCGAResult<Panel> result = panelManager.importFromSource(studyFqn, params, null, ownerToken);
         assertEquals(5, result.getNumInserted());
         assertEquals(0, result.getNumUpdated());
         assertEquals(5, result.getNumMatches());
         assertEquals(0, result.getNumResults());
+    }
+
+    @Test
+    public void importFromSourceWithParamsAndReturnTest() throws CatalogException {
+        PanelImportParams params = new PanelImportParams()
+                .setSource(PanelImportParams.Source.PANEL_APP)
+                .setPanelIds(Arrays.asList("VACTERL-like phenotypes", "Pneumothorax - familial", "Familial Neural Tube Defects",
+                        "Structural eye disease", "1358"));
+
+        OpenCGAResult<Panel> result = panelManager.importFromSource(studyFqn, params, INCLUDE_RESULT, ownerToken);
+        assertEquals(5, result.getNumInserted());
+        assertEquals(0, result.getNumUpdated());
+        assertEquals(5, result.getNumMatches());
+        assertEquals(5, result.getNumResults());
+        assertEquals(5, result.getResults().size());
     }
 
     @Test
@@ -92,7 +107,7 @@ public class PanelManagerTest extends AbstractManagerTest {
                 .setSource(PanelImportParams.Source.PANEL_APP)
                 .setPanelIds(Arrays.asList("VACTERL-like phenotypes", "Pneumothorax - familial"));
 
-        OpenCGAResult<Panel> result = panelManager.importFromSource(studyFqn, params, ownerToken);
+        OpenCGAResult<Panel> result = panelManager.importFromSource(studyFqn, params, null, ownerToken);
         assertEquals(2, result.getNumInserted());
 
         // Get the imported panels
@@ -111,7 +126,7 @@ public class PanelManagerTest extends AbstractManagerTest {
         }
 
         // Import again - should update the panels
-        result = panelManager.importFromSource(studyFqn, params, ownerToken);
+        result = panelManager.importFromSource(studyFqn, params, null, ownerToken);
         assertEquals(0, result.getNumInserted());
         assertEquals(2, result.getNumUpdated());
         assertEquals(2, result.getNumMatches());
@@ -132,7 +147,7 @@ public class PanelManagerTest extends AbstractManagerTest {
                 .setSource(PanelImportParams.Source.PANEL_APP)
                 .setPanelIds(Arrays.asList("VACTERL-like phenotypes", "Pneumothorax - familial"));
 
-        OpenCGAResult<Panel> result = panelManager.importFromSource(studyFqn, params1, ownerToken);
+        OpenCGAResult<Panel> result = panelManager.importFromSource(studyFqn, params1, null, ownerToken);
         assertEquals(2, result.getNumInserted());
 
         // Update only one panel to simulate outdated version
@@ -153,7 +168,7 @@ public class PanelManagerTest extends AbstractManagerTest {
                 .setSource(PanelImportParams.Source.PANEL_APP)
                 .setPanelIds(Arrays.asList("VACTERL-like phenotypes", "Pneumothorax - familial"));
 
-        OpenCGAResult<Panel> result = panelManager.importFromSource(studyFqn, params1, ownerToken);
+        OpenCGAResult<Panel> result = panelManager.importFromSource(studyFqn, params1, null, ownerToken);
         assertEquals(2, result.getNumInserted());
 
         // Update only one panel to simulate outdated version
@@ -173,7 +188,7 @@ public class PanelManagerTest extends AbstractManagerTest {
                 .setPanelIds(Arrays.asList("VACTERL-like phenotypes", "Pneumothorax - familial",
                         "Familial Neural Tube Defects", "Structural eye disease"));
 
-        result = panelManager.importFromSource(studyFqn, params2, ownerToken);
+        result = panelManager.importFromSource(studyFqn, params2, null, ownerToken);
         assertEquals(2, result.getNumInserted()); // 2 new panels
         assertEquals(1, result.getNumUpdated()); // 1 outdated panel
         assertEquals(4, result.getNumMatches()); // 1 up to date panel
@@ -199,7 +214,7 @@ public class PanelManagerTest extends AbstractManagerTest {
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Error downloading panels from PanelApp");
-        panelManager.importFromSource(studyFqn, params, ownerToken);
+        panelManager.importFromSource(studyFqn, params, null, ownerToken);
     }
 
     @Test
@@ -213,7 +228,7 @@ public class PanelManagerTest extends AbstractManagerTest {
         PanelImportParams params1 = new PanelImportParams()
                 .setSource(PanelImportParams.Source.PANEL_APP)
                 .setPanelIds(Collections.singletonList("VACTERL-like phenotypes"));
-        catalogManager.getPanelManager().importFromSource(studyFqn, params1, ownerToken).first();
+        catalogManager.getPanelManager().importFromSource(studyFqn, params1, null, ownerToken).first();
         Panel panel = panelManager.search(studyFqn, new Query(), QueryOptions.empty(), ownerToken).first();
         assertEquals(1, panel.getVersion());
         assertEquals((int) panel.getStats().get("numberOfRegions"), panel.getVariants().size());
@@ -266,7 +281,7 @@ public class PanelManagerTest extends AbstractManagerTest {
         PanelImportParams params1 = new PanelImportParams()
                 .setSource(PanelImportParams.Source.PANEL_APP)
                 .setPanelIds(Collections.singletonList("VACTERL-like phenotypes"));
-        catalogManager.getPanelManager().importFromSource(studyFqn, params1, ownerToken).first();
+        catalogManager.getPanelManager().importFromSource(studyFqn, params1, null, ownerToken).first();
         Panel panel = panelManager.search(studyFqn, new Query(), QueryOptions.empty(), ownerToken).first();
         assertEquals(1, panel.getVersion());
 
@@ -287,7 +302,7 @@ public class PanelManagerTest extends AbstractManagerTest {
         PanelImportParams params1 = new PanelImportParams()
                 .setSource(PanelImportParams.Source.PANEL_APP)
                 .setPanelIds(Collections.singletonList("VACTERL-like phenotypes"));
-        catalogManager.getPanelManager().importFromSource(studyFqn, params1, ownerToken).first();
+        catalogManager.getPanelManager().importFromSource(studyFqn, params1, null, ownerToken).first();
         Panel panel = panelManager.search(studyFqn, new Query(), QueryOptions.empty(), ownerToken).first();
         assertEquals(1, panel.getVersion());
 

@@ -144,7 +144,11 @@ export default class DiseasePanel extends OpenCGAParentClass {
     /** Import panels
     * @param {Object} [data] - Panel parameters.
     * @param {Object} [params] - The Object containing the following optional parameters:
+    * @param {String} [params.include] - Fields included in the response, whole JSON path must be provided.
+    * @param {String} [params.exclude] - Fields excluded in the response, whole JSON path must be provided.
     * @param {String} [params.study] - Study [[organization@]project:]study where study and project can be either the ID or UUID.
+    * @param {Boolean} [params.includeResult = "false"] - Flag indicating to include the created or updated document result in the response.
+    *     The default value is false.
     * @returns {Promise} Promise object in the form of RestResponse instance.
     */
     importPanels(data, params) {

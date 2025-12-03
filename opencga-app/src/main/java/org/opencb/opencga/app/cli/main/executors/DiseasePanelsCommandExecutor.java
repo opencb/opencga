@@ -246,7 +246,10 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
         DiseasePanelsCommandOptions.ImportCommandOptions commandOptions = diseasePanelsCommandOptions.importCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("include", commandOptions.include);
+        queryParams.putIfNotEmpty("exclude", commandOptions.exclude);
         queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
         if (queryParams.get("study") == null && OpencgaMain.isShellMode()) {
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }

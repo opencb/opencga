@@ -75,10 +75,15 @@ public class PanelWSServer extends OpenCGAWSServer {
     @Path("/import")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Import panels", response = Panel.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, dataType = "string", paramType = "query")
+    })
     public Response importPanel(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) boolean includeResult,
             @ApiParam(name = "body", value = "Panel parameters") PanelImportParams params) {
-        return run(() -> catalogManager.getPanelManager().importFromSource(studyStr, params, token));
+        return run(() -> catalogManager.getPanelManager().importFromSource(studyStr, params, queryOptions, token));
     }
 
 //    @POST
