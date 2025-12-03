@@ -320,6 +320,8 @@ public class VersionedMongoDBAdaptor {
      * @throws CatalogDBException in case of any issue.
      */
     protected Document revertToVersion(ClientSession clientSession, String id, int version) throws CatalogDBException {
+        String transactionUuid = getClientSessionUuid(clientSession);
+
         Bson query = Filters.and(
                 Filters.eq(ID, id),
                 Filters.eq(VERSION, version)
@@ -350,6 +352,8 @@ public class VersionedMongoDBAdaptor {
 
         // Edit private fields from document to be restored
         document.put(VERSION, lastVersion + 1);
+        document.put(LAST_OF_VERSION, true);
+        document.put(PRIVATE_TRANSACTION_ID, transactionUuid);
 
         // Add restored element to main and archive collection
         collection.insert(clientSession, document, QueryOptions.empty());

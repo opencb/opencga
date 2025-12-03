@@ -676,11 +676,49 @@ public class InterpretationMongoDBAdaptor extends CatalogMongoDBAdaptor implemen
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         try {
             return runTransaction(clientSession -> {
-                Document interpretation = versionedMongoDBAdaptor.revertToVersion(clientSession, id, previousVersion);
+                Document lastIntepretationDoc = versionedMongoDBAdaptor.revertToVersion(clientSession, id, previousVersion);
+                // We fetch the interpretation version we want to revert to to obtain its findings properly
+                Query query = new Query()
+                        .append(QueryParams.UID.key(), id)
+                        .append(QueryParams.VERSION.key(), previousVersion);
+                Document previousInterpretationDoc = nativeGet(clientSession, query, QueryOptions.empty()).first();
+                Interpretation previousInterpretation = interpretationConverter.convertToDataModelType(previousInterpretationDoc);
+
+                UpdateDocument updateDocument = new UpdateDocument();
+                // Set all findings again to update their versions and references
+                if (CollectionUtils.isNotEmpty(previousInterpretation.getPrimaryFindings())) {
+                    List<ClinicalVariant> clinicalVariants = dbAdaptorFactory.getFindingsDBAdaptor().updateFindings(clientSession,
+                            previousInterpretation, Interpretation::getPrimaryFindings,
+                            previousInterpretationDoc.getList(QueryParams.PRIMARY_FINDINGS.key(), Document.class),
+                            ParamUtils.UpdateAction.SET);
+                    ObjectMap updateParameters = new ObjectMap(QueryParams.PRIMARY_FINDINGS.key(), clinicalVariants);
+                    String[] objectAcceptedParams = new String[]{QueryParams.PRIMARY_FINDINGS.key()};
+                    filterObjectParams(updateParameters, updateDocument.getSet(), objectAcceptedParams);
+                    interpretationConverter.validateFindingsToUpdate(updateDocument.getSet(), QueryParams.PRIMARY_FINDINGS.key());
+                }
+                if (CollectionUtils.isNotEmpty(previousInterpretation.getSecondaryFindings())) {
+                    List<ClinicalVariant> clinicalVariants = dbAdaptorFactory.getFindingsDBAdaptor().updateFindings(clientSession,
+                            previousInterpretation, Interpretation::getSecondaryFindings,
+                            previousInterpretationDoc.getList(QueryParams.SECONDARY_FINDINGS.key(), Document.class),
+                            ParamUtils.UpdateAction.SET);
+                    ObjectMap updateParameters = new ObjectMap(QueryParams.SECONDARY_FINDINGS.key(), clinicalVariants);
+                    String[] objectAcceptedParams = new String[]{QueryParams.SECONDARY_FINDINGS.key()};
+                    filterObjectParams(updateParameters, updateDocument.getSet(), objectAcceptedParams);
+                    interpretationConverter.validateFindingsToUpdate(updateDocument.getSet(), QueryParams.SECONDARY_FINDINGS.key());
+                }
+
+                Document finalUpdateDocument = updateDocument.toFinalUpdateDocument();
+                if (!finalUpdateDocument.isEmpty()) {
+                    Bson bsonQuery = Filters.eq(PRIVATE_UID, id);
+                    versionedMongoDBAdaptor.update(clientSession, bsonQuery, entryList -> {
+                        interpretationCollection.update(clientSession, bsonQuery, finalUpdateDocument, null);
+                        return null;
+                    }, null, null);
+                }
 
                 // Update audit list from ClinicalAnalysis
                 updateClinicalAnalysisInterpretationReference(clientSession,
-                        interpretationConverter.convertToDataModelType(interpretation), clinicalAuditList);
+                        interpretationConverter.convertToDataModelType(lastIntepretationDoc), clinicalAuditList);
 
                 return OpenCGAResult.empty(Interpretation.class).setNumUpdated(1);
             });

@@ -2294,6 +2294,99 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void revertInterpretationWithFindigsTest() throws CatalogException {
+        ClinicalAnalysis ca = createDummyEnvironment(true, false).first();
+
+        catalogManager.getInterpretationManager().create(studyFqn, ca.getId(), new Interpretation(), ParamUtils.SaveInterpretationAs.PRIMARY,
+                QueryOptions.empty(), ownerToken);
+
+        // version 2
+        InterpretationUpdateParams params = new InterpretationUpdateParams().setAnalyst(new ClinicalAnalystParam(normalUserId2));
+        catalogManager.getInterpretationManager().update(studyFqn, ca.getId(), ca.getId() + ".1", params, null, QueryOptions.empty(),
+                ownerToken);
+
+        // version 3
+        params = new InterpretationUpdateParams()
+                .setPrimaryFindings(Collections.singletonList(
+                                new ClinicalVariant(VariantAvro.newBuilder()
+                                        .setChromosome("1")
+                                        .setStart(100)
+                                        .setEnd(100)
+                                        .setLength(1)
+                                        .setReference("C")
+                                        .setAlternate("T")
+                                        .setId("1:100:C:T")
+                                        .setType(VariantType.SNV)
+                                        .setStudies(Collections.emptyList())
+                                        .build())
+                        ))
+                .setComments(Collections.singletonList(new ClinicalCommentParam("my first comment",
+                Collections.singletonList("tag1"))));
+        catalogManager.getInterpretationManager().update(studyFqn, ca.getId(), ca.getId() + ".1", params, null, QueryOptions.empty(),
+                ownerToken);
+
+        // version 4 (replace variant)
+        ObjectMap actionMap = new ObjectMap(InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key(), ParamUtils.AddRemoveReplaceAction.REPLACE);
+        QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
+        params = new InterpretationUpdateParams()
+                .setPrimaryFindings(Collections.singletonList(
+                        new ClinicalVariant(VariantAvro.newBuilder()
+                                .setChromosome("1")
+                                .setStart(100)
+                                .setEnd(200)
+                                .setLength(1)
+                                .setReference("C")
+                                .setAlternate("T")
+                                .setId("1:100:C:T")
+                                .setType(VariantType.SNV)
+                                .setStudies(Collections.emptyList())
+                                .build())
+                ))
+                .setComments(Collections.singletonList(new ClinicalCommentParam("my second comment",
+                Collections.singletonList("tag2"))));
+        catalogManager.getInterpretationManager().update(studyFqn, ca.getId(), ca.getId() + ".1", params, null, options, ownerToken);
+
+        // Current status
+        Interpretation interpretation =
+                catalogManager.getInterpretationManager().get(studyFqn, ca.getId() + ".1", QueryOptions.empty(), ownerToken).first();
+        assertEquals(4, interpretation.getVersion());
+        assertEquals(normalUserId2, interpretation.getAnalyst().getId());
+        assertEquals(2, interpretation.getComments().size());
+        assertEquals(1, interpretation.getComments().get(0).getTags().size());
+        assertEquals("tag1", interpretation.getComments().get(0).getTags().get(0));
+        assertEquals(1, interpretation.getComments().get(1).getTags().size());
+        assertEquals("tag2", interpretation.getComments().get(1).getTags().get(0));
+        assertEquals(1, interpretation.getPrimaryFindings().size());
+        assertEquals(2, interpretation.getPrimaryFindings().get(0).getVersion());
+        assertEquals(200, (int) interpretation.getPrimaryFindings().get(0).getEnd());
+
+        OpenCGAResult<Interpretation> result = catalogManager.getInterpretationManager().revert(studyFqn, ca.getId(), ca.getId() + ".1", 2,
+                ownerToken);
+        assertEquals(1, result.getNumUpdated());
+
+        interpretation =
+                catalogManager.getInterpretationManager().get(studyFqn, ca.getId() + ".1", QueryOptions.empty(), ownerToken).first();
+        assertEquals(5, interpretation.getVersion());
+        assertEquals(normalUserId2, interpretation.getAnalyst().getId());
+        assertEquals(0, interpretation.getComments().size());
+        assertEquals(0, interpretation.getPrimaryFindings().size());
+
+        result = catalogManager.getInterpretationManager().revert(studyFqn, ca.getId(), ca.getId() + ".1", 3, ownerToken);
+        assertEquals(1, result.getNumUpdated());
+
+        interpretation =
+                catalogManager.getInterpretationManager().get(studyFqn, ca.getId() + ".1", QueryOptions.empty(), ownerToken).first();
+        assertEquals(6, interpretation.getVersion());
+        assertEquals(normalUserId2, interpretation.getAnalyst().getId());
+        assertEquals(1, interpretation.getComments().size());
+        assertEquals(1, interpretation.getComments().get(0).getTags().size());
+        assertEquals("tag1", interpretation.getComments().get(0).getTags().get(0));
+        assertEquals(1, interpretation.getPrimaryFindings().size());
+        assertEquals(100, (int) interpretation.getPrimaryFindings().get(0).getEnd());
+        assertEquals(3, interpretation.getPrimaryFindings().get(0).getVersion());
+    }
+
+    @Test
     public void updateInterpretationTest() throws CatalogException {
         ClinicalAnalysis ca = createDummyEnvironment(true, false).first();
 
