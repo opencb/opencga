@@ -326,8 +326,10 @@ class Affymetrix(BaseProcessor):
                + ["--export-allele-signals", "true"]
                + ["--annotation-file", index_dir + "/Axiom_KU8.na36.r1.a2.annot.db"]
                + ["--snp-list-file", str(self.output / "step2" / "SNPolisher" / "Recommended.ps")]
-               + ["--export-chr-shortname", "false"]
+               + ["--export-chr-shortname", "true"]
                + ["--cn-region-calls-file", str(self.output / "step2" / "cn" / "AxiomCNVMix.cnregioncalls.txt")]
+               + ["--cn-region-calls-use-cn-raw", "true"]
+               + ["--cnv-cndata-file", str(self.output / "step2" / "cn" / "AxiomCNVMix.cnv.a5")]
                + ["--exclude-unknown-chr", "true"]
                + ["--export-vcf-file", str(self.output / "Axiom_KU8.vcf")]
                + ["--export-chr-shortname", "true"])

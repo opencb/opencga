@@ -6,7 +6,7 @@ from pathlib import Path
 from pyopencga.opencga_client import OpencgaClient  # import client module
 from pyopencga.opencga_config import ClientConfiguration  # import configuration module
 
-from lib import Grammar, ExecTransformer
+from lib import Grammar, ExecTransformer, VariantFilter
 
 
 class Interpreter:
@@ -61,21 +61,25 @@ class Interpreter:
         return oc
 
 
-    def execute(self, args):
+    def execute(self, case_id: str, study_id: str, args) -> int:
         ## 1. Create OpenCGA client and authenticate
         oc = self._create_opencga_client(args)
 
         ## 2. Get study
-        if not args.study or args.study == "":
+        if not study_id or study_id == "":
             self.logger.debug("Study parameter not provided, retrieving OPENCGA_STUDY from environment variable")
-            args.study = os.getenv("OPENCGA_STUDY")
-            if not args.study or args.study == "":
+            study_id = os.getenv("OPENCGA_STUDY")
+            if not study_id or study_id == "":
                 self.logger.error("Study parameter not provided and OPENCGA_STUDY environment variable not set")
                 return 1
             else:
-                self.logger.info("Using study from OPENCGA_STUDY environment variable: %s", args.study)
+                self.logger.info("Using study from OPENCGA_STUDY environment variable: %s", study_id)
         else:
-            self.logger.debug("Using study parameter from CLI: %s", args.study)
+            self.logger.debug("Using study parameter from CLI: %s", study_id)
+
+        ## 3. Retrieve clinical case information
+        response = oc.get_clinical_client().info(case_id, study=study_id)
+        clinical_analysis = response.get_result(0)
 
         grammar = Grammar(self.logger)
         execution_logic = "(((query1 OR query2) AND (query3 OR query4)) AND (query5 OR query6)) NOT IN query7"
@@ -91,24 +95,26 @@ class Interpreter:
             "query4": {"v5"},
             "query5": {"v2", "v6"},
             "query6": {"v7"},
-            "query7": {"v2"},
+            "query7": {"v3"},
         }
         print(f"3. Example query results: {query_sets}\n")
 
-
-
-        # queries = self.pipeline.get("queries", [])
-        # self.logger.debug(f"Queries to execute: {queries}")
-        # for query in queries:
-        #     self.logger.info(f"Executing query: {query.get('name', 'Unnamed Query')}")
+        query_sets = set()
+        variant_filter = VariantFilter(opencga_client=oc, output=self.output, logger=self.logger)
+        queries = self.pipeline.get("queries", [])
+        self.logger.debug(f"Queries to execute: {queries}")
+        for query in queries:
+            self.logger.info(f"Executing query: {query.get('name', 'Unnamed Query')}")
             # Here you would implement the logic to execute each query using the OpenCGA client
             # and process the results as needed.
             # This is a placeholder for demonstration purposes.
-            # query['study'] = args.study
-            # query['include'] = "id"
+            query['study'] = args.study
+            query['include'] = "id"
             # r = self.opencga_client.get_clinical_client().query_variant(query)
-            # print(f"Query result: {r}")
-            # self.logger.debug(f"Query details: {query}")
+            result = variant_filter.query(query)
+            query_sets[query.get('id', 'Unnamed Query')] = result
+            print(f"Query result: {result}")
+            self.logger.debug(f"Query details: {query}")
 
         exec_transformer = ExecTransformer(query_sets, self.logger)
         result_set = exec_transformer.execute(tree)
