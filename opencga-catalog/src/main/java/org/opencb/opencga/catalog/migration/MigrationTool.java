@@ -304,14 +304,28 @@ public abstract class MigrationTool {
             database = dbAdaptorFactory.getCatalogDatabase(configuration.getDatabasePrefix(), organizationId);
         }
 
-        // Rename collection
-        MongoDataStore adminDatastore = dbAdaptorFactory.getMongoManager().get("admin", dbAdaptorFactory.getMongoDbConfiguration());
-        logger.info("Renaming collection {} to {}", database + "." + oldCollection, database + "." + newCollection);
-        adminDatastore.getDb().runCommand(new Document()
-                .append("renameCollection", database + "." + oldCollection)
-                .append("to", database + "." + newCollection)
-                .append("dropTarget", true)
-        );
+        // Check if the old collection exists before renaming
+        MongoDataStore dataStore;
+        try {
+            dataStore = dbAdaptorFactory.getMongoDataStore(organizationId);
+        } catch (CatalogDBException e) {
+            throw new RuntimeException(e);
+        }
+        boolean collectionExists = dataStore.getDb().listCollectionNames()
+                .into(new ArrayList<>())
+                .contains(oldCollection);
+        if (collectionExists) {
+            // Rename collection
+            MongoDataStore adminDatastore = dbAdaptorFactory.getMongoManager().get("admin", dbAdaptorFactory.getMongoDbConfiguration());
+            logger.info("Renaming collection {} to {}", database + "." + oldCollection, database + "." + newCollection);
+            adminDatastore.getDb().runCommand(new Document()
+                    .append("renameCollection", database + "." + oldCollection)
+                    .append("to", database + "." + newCollection)
+                    .append("dropTarget", true)
+            );
+        } else {
+            logger.info("Collection {} does not exist, skipping rename", database + "." + oldCollection);
+        }
     }
 
     public MigrationTool setBatchSize(int batchSize) {

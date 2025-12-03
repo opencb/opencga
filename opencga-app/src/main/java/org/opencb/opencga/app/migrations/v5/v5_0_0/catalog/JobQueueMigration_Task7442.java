@@ -31,6 +31,7 @@ public class JobQueueMigration_Task7442 extends MigrationTool {
 
         Bson executionQueueCheck = Filters.and(
                 Filters.exists("execution", true),
+                Filters.ne("execution", null),
                 Filters.exists("execution.queue", false)
         );
         updateDocument = new MongoDBAdaptor.UpdateDocument();

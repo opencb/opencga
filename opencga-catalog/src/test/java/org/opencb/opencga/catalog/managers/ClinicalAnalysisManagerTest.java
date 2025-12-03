@@ -1971,7 +1971,7 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
                 .setMethod(new InterpretationMethod("name", "", "", Collections.emptyList()))
                 .setPrimaryFindings(Collections.singletonList(new ClinicalVariant(new VariantAvro("id", Collections.emptyList(), "chr1",
                         1, 2, "ref", "alt", "+", null, 1, null, null, null))))
-                .setSecondaryFindings(Collections.singletonList(new ClinicalVariant(new VariantAvro("id", Collections.emptyList(), "chr1"
+                .setSecondaryFindings(Collections.singletonList(new ClinicalVariant(new VariantAvro("id2", Collections.emptyList(), "chr1"
                         , 1, 2, "ref", "alt", "+", null, 1, null, null, null))))
                 .setComments(Collections.singletonList(new ClinicalComment("me", "message", null, TimeUtils.getTime())));
         catalogManager.getInterpretationManager().create(studyFqn, ca.getId(), interpretation, ParamUtils.SaveInterpretationAs.PRIMARY,
@@ -2010,7 +2010,7 @@ public class ClinicalAnalysisManagerTest extends AbstractManagerTest {
                 .setMethod(new InterpretationMethod("name", "", "", Collections.emptyList()))
                 .setPrimaryFindings(Collections.singletonList(new ClinicalVariant(new VariantAvro("id", Collections.emptyList(), "chr1",
                         1, 2, "ref", "alt", "+", null, 1, null, null, null))))
-                .setSecondaryFindings(Collections.singletonList(new ClinicalVariant(new VariantAvro("id", Collections.emptyList(), "chr1"
+                .setSecondaryFindings(Collections.singletonList(new ClinicalVariant(new VariantAvro("id2", Collections.emptyList(), "chr1"
                         , 1, 2, "ref", "alt", "+", null, 1, null, null, null))))
                 .setComments(Collections.singletonList(new ClinicalComment("me", "message", null, TimeUtils.getTime())));
         catalogManager.getInterpretationManager().create(studyFqn, ca.getId(), interpretation, ParamUtils.SaveInterpretationAs.SECONDARY,

@@ -3,6 +3,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.DataResult;
@@ -47,10 +48,11 @@ public class VersionedMongoDBAdaptor {
      *
      * @param query         Query object.
      * @param bsonQueryList Final bson query object.
+     * @param idTargetKey  Target key to use for the id field in the query. If null or empty, the same key as in the query will be used.
      * @return a boolean indicating whether the complex query was generated or not.
      * @throws CatalogDBException If the size of the array of ids does not match the size of the array of version.
      */
-    boolean generateIdVersionQuery(Query query, List<Bson> bsonQueryList) throws CatalogDBException {
+    boolean generateIdVersionQuery(Query query, List<Bson> bsonQueryList, String idTargetKey) throws CatalogDBException {
         if (!query.containsKey(VERSION) || query.getAsIntegerList(VERSION).size() == 1) {
             return false;
         }
@@ -69,9 +71,9 @@ public class VersionedMongoDBAdaptor {
         for (int i = 0; i < versionList.size(); i++) {
             Document docQuery = new Document(VERSION, versionList.get(i));
             if (idList.size() == 1) {
-                docQuery.put(ID, idList.get(0));
+                docQuery.put(StringUtils.isNotEmpty(idTargetKey) ? idTargetKey : ID, idList.get(0));
             } else {
-                docQuery.put(ID, idList.get(i));
+                docQuery.put(StringUtils.isNotEmpty(idTargetKey) ? idTargetKey : ID, idList.get(i));
             }
             bsonQuery.add(docQuery);
         }
@@ -114,13 +116,32 @@ public class VersionedMongoDBAdaptor {
                 throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
     }
 
-    protected void insert(ClientSession session, Document document) {
+    protected void insert(ClientSession session, Document document) throws CatalogDBException {
         String uuid = getClientSessionUuid(session);
         document.put(PRIVATE_TRANSACTION_ID, uuid);
         document.put(VERSION, 1);
         document.put(LAST_OF_VERSION, true);
-        collection.insert(session, document, QueryOptions.empty());
-        archiveCollection.insert(session, document, QueryOptions.empty());
+        try {
+            collection.insert(session, document, QueryOptions.empty());
+            archiveCollection.insert(session, document, QueryOptions.empty());
+        } catch (RuntimeException e) {
+            throw new CatalogDBException("Could not insert documents: " + e.getMessage(), e);
+        }
+    }
+
+    protected void insertMany(ClientSession session, List<Document> documents) throws CatalogDBException {
+        String uuid = getClientSessionUuid(session);
+        for (Document document : documents) {
+            document.put(PRIVATE_TRANSACTION_ID, uuid);
+            document.put(VERSION, 1);
+            document.put(LAST_OF_VERSION, true);
+        }
+        try {
+            collection.insert(session, documents, QueryOptions.empty());
+            archiveCollection.insert(session, documents, QueryOptions.empty());
+        } catch (RuntimeException e) {
+            throw new CatalogDBException("Could not insert documents: " + e.getMessage(), e);
+        }
     }
 
     protected <E> OpenCGAResult<E> update(ClientSession session, Bson sourceQuery, VersionedModelExecution<OpenCGAResult<E>> update)
@@ -232,7 +253,7 @@ public class VersionedMongoDBAdaptor {
 
                 // Insert/replace in archive collection
                 Bson tmpBsonQuery = Filters.and(
-                        Filters.eq(ID, fixedResult.get(ID)),
+                        Filters.eq(PRIVATE_UID, fixedResult.get(PRIVATE_UID)),
                         Filters.eq(VERSION, fixedResult.get(VERSION))
                 );
                 logger.debug("Copying current document to archive: query : {}", tmpBsonQuery.toBsonDocument());
@@ -242,9 +263,9 @@ public class VersionedMongoDBAdaptor {
 
         // 4. Perform any additional reference checks/updates over those that have increased its version in this call
         if (!uidsChanged.isEmpty()) {
-            Query query = new Query(PRIVATE_UID, uidsChanged);
             if (postVersionIncrementExecution != null) {
-                List<String> includeList = new ArrayList<>(Arrays.asList(ID, VERSION));
+                Query query = new Query(PRIVATE_UID, uidsChanged);
+                List<String> includeList = new ArrayList<>(Arrays.asList(PRIVATE_UID, ID, VERSION));
                 if (postVersionIncrementExecution != null) {
                     includeList.addAll(postVersionIncrementAdditionalIncludeFields);
                 }
@@ -279,7 +300,7 @@ public class VersionedMongoDBAdaptor {
 
                 // Insert/replace in archive collection
                 Bson tmpBsonQuery = Filters.and(
-                        Filters.eq(ID, result.get(ID)),
+                        Filters.eq(PRIVATE_UID, result.get(PRIVATE_UID)),
                         Filters.eq(VERSION, result.get(VERSION))
                 );
                 archiveCollection.update(tmpBsonQuery, result, upsertOptions);
