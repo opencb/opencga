@@ -54,6 +54,16 @@ class Admin(_ParentRestClient):
 
         return self._post(category='admin', resource='install', subcategory='catalog', data=data, **options)
 
+    def update_catalog_workspace(self, data=None, **options):
+        """
+        Update the OpenCGA Catalog workspace.
+        PATH: /{apiVersion}/admin/catalog/workspace/update
+
+        :param dict data: JSON containing the workspace parameters. (REQUIRED)
+        """
+
+        return self._post(category='admin', resource='update', subcategory='catalog/workspace', data=data, **options)
+
     def list_organizations(self, **options):
         """
         List current Organizations.

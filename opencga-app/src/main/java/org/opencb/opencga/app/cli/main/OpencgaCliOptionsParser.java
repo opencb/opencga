@@ -179,6 +179,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         JCommander adminSubCommands = jCommander.getCommands().get("admin");
         adminSubCommands.addCommand("audit-group-by", adminCommandOptions.groupByAuditCommandOptions);
         adminSubCommands.addCommand("catalog-install", adminCommandOptions.installCatalogCommandOptions);
+        adminSubCommands.addCommand("catalog-workspace-update", adminCommandOptions.updateCatalogWorkspaceCommandOptions);
         adminSubCommands.addCommand("organizations-list", adminCommandOptions.listOrganizationsCommandOptions);
         adminSubCommands.addCommand("resource-fetch", adminCommandOptions.fetchResourceCommandOptions);
         adminSubCommands.addCommand("users-create", adminCommandOptions.createUsersCommandOptions);
@@ -351,6 +352,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         filesSubCommands.addCommand("postlink-run", filesCommandOptions.runPostlinkCommandOptions);
         filesSubCommands.addCommand("search", filesCommandOptions.searchCommandOptions);
         filesSubCommands.addCommand("upload", filesCommandOptions.uploadCommandOptions);
+        filesSubCommands.addCommand("uri-update", filesCommandOptions.updateUriCommandOptions);
         filesSubCommands.addCommand("acl", filesCommandOptions.aclCommandOptions);
         filesSubCommands.addCommand("delete", filesCommandOptions.deleteCommandOptions);
         filesSubCommands.addCommand("info", filesCommandOptions.infoCommandOptions);

@@ -45,6 +45,7 @@ import java.util.stream.Collectors;
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
+import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
 
 /**
  * Created on 10/07/17.
@@ -131,6 +132,22 @@ public class RemoveVariantsTest extends AbstractVariantOperationManagerTest {
 
         removeFile(files.subList(0, files.size() / 2), new QueryOptions());
 
+    }
+
+    @Test
+    public void testLoadAndRemoveDuplicated() throws Exception {
+        List<File> files = new ArrayList<>();
+        for (int i = 1; i <= 4; i++) {
+            File file = create(studyId, getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz", "vcfs" + i + "/file.vcf.gz"), "data/vcfs" + i + "/");
+            String outputId = catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data", "index_" + i).toString(), true, null,
+                    QueryOptions.empty(), sessionId).first().getId();
+            files.add(file);
+
+            indexFiles(Arrays.asList(file), new QueryOptions(VariantStorageOptions.LOAD_MULTI_FILE_DATA.key(), true)
+                    .append(VariantStorageOptions.ANNOTATE.key(), true), outputId);
+        }
+
+        removeFile(files.subList(0, files.size() / 2), new QueryOptions());
     }
 
     @Test
