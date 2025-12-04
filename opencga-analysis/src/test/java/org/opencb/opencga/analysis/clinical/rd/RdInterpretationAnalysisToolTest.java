@@ -121,6 +121,10 @@ public class RdInterpretationAnalysisToolTest {
 
         checkResults(caId, false);
 
+        Path path = outDir.resolve("interpretation.json");
+        System.out.println("path = " + path);
+        Assert.assertTrue(Files.exists(path));
+
         // Clean up interpretations
         deleteInterpretations();
     }
@@ -163,6 +167,10 @@ public class RdInterpretationAnalysisToolTest {
 
 
         checkResults(caId, false);
+
+        Path path = outDir.resolve("interpretation.json");
+        System.out.println("path = " + path);
+        Assert.assertTrue(Files.exists(path));
 
         // Clean up interpretations
         deleteInterpretations();
@@ -207,6 +215,10 @@ public class RdInterpretationAnalysisToolTest {
                 outDir, null, false, clinicalTest.token);
 
         checkResults(caId, true);
+
+        Path path = outDir.resolve("interpretation.json");
+        System.out.println("path = " + path);
+        Assert.assertTrue(Files.exists(path));
 
         // Clean up interpretations
         deleteInterpretations();

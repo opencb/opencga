@@ -22,6 +22,7 @@ import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.InterpretationAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.interpretation.RdInterpretationAnalysisToolParams;
 import org.opencb.opencga.core.models.common.Enums;
@@ -29,6 +30,7 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -40,7 +42,7 @@ import static org.opencb.opencga.core.tools.ResourceManager.ANALYSIS_DIRNAME;
 @Tool(id = RdInterpretationAnalysisTool.ID, resource = Enums.Resource.CLINICAL)
 public class RdInterpretationAnalysisTool extends InterpretationAnalysis {
 
-    public static final String ID = "interpretation-rd";
+    public static final String ID = RdInterpretationAnalysis.ID;
     public static final String DESCRIPTION = "Run interpretation analysis for rare diseases";
 
     public static final String RD_DIR = "rd";
@@ -97,6 +99,14 @@ public class RdInterpretationAnalysisTool extends InterpretationAnalysis {
         // Set name and description
         interpretation.setName(analysisParams.getName())
                 .setDescription(analysisParams.getDescription());
+
+        // Save interpretation in disk
+        try {
+            Path path = getOutDir().resolve("interpretation.json");
+            JacksonUtils.getDefaultObjectMapper().writerFor(Interpretation.class).writeValue(path.toFile(), interpretation);
+        } catch (IOException e) {
+            throw new ToolException("Error saving interpretation in output folder: {}", e);
+        }
 
         // Add interpretation in the clinical analysis and then save in catalog
         try {

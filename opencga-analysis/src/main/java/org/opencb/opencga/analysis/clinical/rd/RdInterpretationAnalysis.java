@@ -67,6 +67,8 @@ import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUti
 
 public class RdInterpretationAnalysis {
 
+    public static final String ID = "interpretation-rd";
+
     public static final String PANEL_REGION_QUERY_KEY = "PANEL_REGION";
     public static final String REGION = "REGION";
     public static final String GENE = "GENE";
@@ -203,9 +205,10 @@ public class RdInterpretationAnalysis {
         }
 
         // Set method
-        InterpretationMethod method = new InterpretationMethod(RdInterpretationAnalysisTool.ID, null, null,
-                Collections.singletonList(new Software().setName("OpenCGA").setVersion(GitRepositoryState.getInstance().getBuildVersion())
-                        .setCommit(GitRepositoryState.getInstance().getCommitId())));
+        String version = GitRepositoryState.getInstance().getBuildVersion();
+        String commit = GitRepositoryState.getInstance().getCommitId();
+        InterpretationMethod method = new InterpretationMethod(RdInterpretationAnalysisTool.ID, version, commit,
+                Collections.singletonList(new Software().setName("OpenCGA").setVersion(version).setCommit(commit)));
         interpretation.setMethod(method);
 
         // Set attributes
@@ -889,6 +892,7 @@ public class RdInterpretationAnalysis {
                                                                     Penetrance penetrance, ConsequenceType consequenceType,
                                                                     VariantAnnotation variantAnnotation) {
         ClinicalVariantEvidence clinicalVariantEvidence = new ClinicalVariantEvidence();
+        clinicalVariantEvidence.setInterpretationMethodName(RdInterpretationAnalysis.ID);
 
         // Genomic feature
         if (genomicFeature != null) {
