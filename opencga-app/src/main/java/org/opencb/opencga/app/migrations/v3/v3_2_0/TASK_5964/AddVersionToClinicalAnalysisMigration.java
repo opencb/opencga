@@ -5,7 +5,7 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
 
 @Migration(id = "add_version_to_clinicalAnalysis", description = "Add version to Clinical Analysis #TASK-5964", version = "3.2.0",
         language = Migration.MigrationLanguage.JAVA, domain = Migration.MigrationDomain.CATALOG, date = 20240527,
-        deprecatedSince = "4.0.0")
+        deprecatedSince = "5.0.0")
 public class AddVersionToClinicalAnalysisMigration extends MigrationTool {
 
     @Override

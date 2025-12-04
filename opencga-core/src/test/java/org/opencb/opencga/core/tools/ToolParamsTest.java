@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.tools;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -297,11 +298,12 @@ public class ToolParamsTest {
         assertEquals(p, ToolParams.fromParams(MyToolWithMultipleDynamicParams.class, params));
     }
 
-//    @Test
-//    public void testInvalidNestedParams() throws IOException {
-//        thrown.expectMessage("Invalid param 'dynamicParams' from ToolParams class org.opencb.opencga.core.tools.ToolParamsTest$MyToolWithMultipleDynamicInvalidNestingParams. Invalid multiple level nesting params");
-//        new MyToolWithMultipleDynamicInvalidNestingParams().toParams();
-//    }
+    @Ignore
+    @Test
+    public void testInvalidNestedParams() throws IOException {
+        thrown.expectMessage("Invalid param 'dynamicParams' from ToolParams class org.opencb.opencga.core.tools.ToolParamsTest$MyToolWithMultipleDynamicInvalidNestingParams. Invalid multiple level nesting params");
+        new MyToolWithMultipleDynamicInvalidNestingParams().toParams();
+    }
 
     @Test
     public void testToObjectMap() throws IOException {

@@ -436,6 +436,18 @@ class File(_ParentRestClient):
 
         return self._post(category='files', resource='upload', **options)
 
+    def update_uri(self, data=None, **options):
+        """
+        Update URIs of files that have been manually moved in disk.
+        PATH: /{apiVersion}/files/uri/update
+
+        :param dict data: Parameters to modify. (REQUIRED)
+        :param str study: Study [[organization@]project:]study where study and
+            project can be either the ID or UUID.
+        """
+
+        return self._post(category='files', resource='update', subcategory='uri', data=data, **options)
+
     def acl(self, files, **options):
         """
         Return the acl defined for the file or folder. If member is provided,

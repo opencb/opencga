@@ -250,6 +250,7 @@ public final class Enums {
         DOWNLOAD_AND_REGISTER,
         MOVE,
         MOVE_AND_REGISTER,
+        CHANGE_FILE_URI,
 
         VISIT,
         KILL_JOB,
@@ -269,7 +270,10 @@ public final class Enums {
         // Variants
         VARIANT_STORAGE_OPERATION,
         SAMPLE_DATA,
-        FACET
+        FACET,
+
+        // Admin
+        UPDATE_WORKSPACE_URI
     }
 
     public enum Priority {

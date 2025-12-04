@@ -1,8 +1,13 @@
 package org.opencb.opencga.server.generator.config;
 
+import org.opencb.commons.annotations.DataField;
+
 public class RestMethodParse {
 
+    @DataField(id = "rest", description = "Exact REST endpoint. Example: 'tools/custom/run'")
     private String rest;
+
+    @DataField(id = "methodName", description = "Method name associated to the REST endpoint in kebab case. Example: 'run-custom-docker'")
     private String methodName;
 
     public RestMethodParse() {

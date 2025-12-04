@@ -449,7 +449,12 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
                 List<String> fileNames = new ArrayList<>(files.size());
                 for (URI uri : files) {
-                    Integer fileId = metadataManager.getFileId(studyId, VariantReaderUtils.getOriginalFromTransformedFile(uri));
+                    Integer fileId;
+                    if (VariantReaderUtils.isTransformedVariants(uri.getPath())) {
+                        fileId = metadataManager.getFileId(studyId, VariantReaderUtils.getOriginalFromTransformedFile(uri));
+                    } else {
+                        fileId = metadataManager.getFileId(studyId, uri);
+                    }
                     fileNames.add(metadataManager.getFileName(studyId, fileId));
                 }
 
@@ -596,8 +601,13 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
                 List<Integer> fileIds = new ArrayList<>(files.size());
                 for (URI uri : files) {
-                    String fileName = VariantReaderUtils.getOriginalFromTransformedFile(uri);
-                    fileIds.add(metadataManager.getFileId(studyMetadata.getId(), fileName));
+                    Integer fileId;
+                    if (VariantReaderUtils.isTransformedVariants(uri.getPath())) {
+                        fileId = metadataManager.getFileId(studyMetadata.getId(), VariantReaderUtils.getOriginalFromTransformedFile(uri));
+                    } else {
+                        fileId = metadataManager.getFileId(studyMetadata.getId(), uri);
+                    }
+                    fileIds.add(fileId);
                 }
                 URI statsOutputUri = output.resolve(VariantStoragePipeline
                         .buildFilename(studyMetadata.getName(), fileIds.get(0)) + "." + TimeUtils.getTime());
@@ -1145,17 +1155,18 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 // Remove files and belonging samples
                 metadataManager.removeIndexedFiles(studyMetadata.getId(), fileIds);
 
-                // Remove samples partial
-                metadataManager.removeSamples(studyMetadata.getId(), samplesPartial, fileIds, true);
+                for (Integer fileId : fileIds) {
+                    metadataManager.removeVariantFileMetadata(studyMetadata.getId(), fileId);
+                }
+
+                // Remove samples
+                metadataManager.removeSamples(studyMetadata.getId(), samplesPartial, fileIds);
 
                 // Restore default cohort with indexed samples
                 metadataManager.setSamplesToCohort(studyMetadata.getId(), StudyEntry.DEFAULT_COHORT,
                         metadataManager.getIndexedSamples(studyMetadata.getId()));
 
 
-                for (Integer fileId : fileIds) {
-                    metadataManager.removeVariantFileMetadata(studyMetadata.getId(), fileId);
-                }
             }
             return studyMetadata;
         });

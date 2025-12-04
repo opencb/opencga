@@ -32,6 +32,7 @@
 #' | runPostlink | /{apiVersion}/files/postlink/run | study, jobId, jobDependsOn, jobDescription, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | search | /{apiVersion}/files/search | include, exclude, limit, skip, count, flattenAnnotations, study, id, uuid, name, path, uri, type, bioformat, format, external, resource, status, internalStatus, internalVariantIndexStatus, softwareName, directory, creationDate, modificationDate, description, tags, size, sampleIds, jobId, annotation, acl, deleted, release |
 #' | upload | /{apiVersion}/files/upload | file, name, fileName, format, fileFormat, bioformat, checksum, resource, study, relativeFilePath, description, parents |
+#' | updateUri | /{apiVersion}/files/uri/update | study, body[*] |
 #' | acl | /{apiVersion}/files/{files}/acl | files[*], study, member, silent |
 #' | delete | /{apiVersion}/files/{files}/delete | study, files[*], skipTrash |
 #' | info | /{apiVersion}/files/{files}/info | include, exclude, flattenAnnotations, files[*], study, deleted |
@@ -270,6 +271,13 @@ setMethod("fileClient", "OpencgaR", function(OpencgaR, annotationSet, file, file
         #' @param parents Create the parent directories if they do not exist.
         upload=fetchOpenCGA(object=OpencgaR, category="files", categoryId=NULL, subcategory=NULL, subcategoryId=NULL,
                 action="upload", params=params, httpMethod="POST", as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/files/uri/update:
+        #' Update URIs of files that have been manually moved in disk.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param data Parameters to modify.
+        updateUri=fetchOpenCGA(object=OpencgaR, category="files", categoryId=NULL, subcategory="uri",
+                subcategoryId=NULL, action="update", params=params, httpMethod="POST", as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/files/{files}/acl:
         #' Return the acl defined for the file or folder. If member is provided, it will only return the acl for the member.

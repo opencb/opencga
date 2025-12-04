@@ -54,7 +54,7 @@ public abstract class ExternalToolDockerScopeStudy extends OpenCgaDockerToolScop
                         paramValue = externalToolVariable.getDefaultValue();
                     } else if (externalToolVariable.isOutput()) {
                         paramValue = processOutputValue("", inputFileUtils);
-                    } else if (externalToolVariable.isRequired() && externalToolVariable.getType() != ExternalToolVariable.WorkflowVariableType.FLAG) {
+                    } else if (externalToolVariable.isRequired() && externalToolVariable.getType() != ExternalToolVariable.ExternalToolVariableType.FLAG) {
                         throw new ToolException("Missing value for mandatory parameter: '" + variableId + "'.");
                     }
                 }
@@ -75,7 +75,7 @@ public abstract class ExternalToolDockerScopeStudy extends OpenCgaDockerToolScop
                 }
             } else if (externalToolVariable.isOutput()) {
                 paramValue = processOutputValue("", inputFileUtils);
-            } else if (externalToolVariable.getType() != ExternalToolVariable.WorkflowVariableType.FLAG) {
+            } else if (externalToolVariable.getType() != ExternalToolVariable.ExternalToolVariableType.FLAG) {
                 throw new ToolException("Missing mandatory parameter: '" + mandatoryParam + "'.");
             }
             sanitisedParams.put(externalToolVariable.getId(), paramValue);

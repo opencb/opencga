@@ -33,6 +33,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 
 /**
  * Created by pfurio on 23/08/16.
@@ -50,6 +51,11 @@ public abstract class OperationManager {
     }
 
     public final StudyMetadata synchronizeCatalogStudyFromStorage(String study, String token, boolean failIfNotExist)
+            throws StorageEngineException, CatalogException {
+        return synchronizeCatalogStudyFromStorage(study, token, failIfNotExist, null);
+    }
+
+    public final StudyMetadata synchronizeCatalogStudyFromStorage(String study, String token, boolean failIfNotExist, List<String> files)
             throws CatalogException, StorageEngineException {
         VariantStorageMetadataManager metadataManager = variantStorageEngine.getMetadataManager();
         CatalogStorageMetadataSynchronizer metadataSynchronizer
@@ -61,7 +67,11 @@ public abstract class OperationManager {
             }
         } else {
             // Update Catalog file and cohort status.
-            metadataSynchronizer.synchronizeCatalogFromStorage(study, token);
+            if (files == null) {
+                metadataSynchronizer.synchronizeCatalogFromStorage(study, token);
+            } else {
+                metadataSynchronizer.synchronizeCatalogFilesFromStorage(study, files, token, true);
+            }
         }
         return metadataManager.getStudyMetadata(study);
     }

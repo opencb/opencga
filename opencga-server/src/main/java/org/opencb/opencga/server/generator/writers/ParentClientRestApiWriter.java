@@ -27,6 +27,8 @@ import org.opencb.opencga.server.generator.models.RestCategory;
 import org.opencb.opencga.server.generator.models.RestEndpoint;
 import org.opencb.opencga.server.generator.models.RestParameter;
 import org.opencb.opencga.server.generator.utils.CommandLineUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -42,6 +44,8 @@ public abstract class ParentClientRestApiWriter {
     protected Map<String, RestCategory> availableCategories = new HashMap<>();
     protected Map<String, CategoryConfig> availableCategoryConfigs = new HashMap<>();
     protected Map<String, String> invalidNames = new HashMap<>();
+
+    private static Logger logger = LoggerFactory.getLogger(ParentClientRestApiWriter.class);
 
     public ParentClientRestApiWriter(RestApi restApi, CommandLineConfiguration config) {
         this.restApi = restApi;
@@ -196,7 +200,7 @@ public abstract class ParentClientRestApiWriter {
         String endpoint = restEndpoint.getPath().replace("/{apiVersion}/", "");
         String methodName = getSpecialMethodName(endpoint);
         if (methodName != null) {
-            System.out.println("Special method name '" + methodName + "' found for endpoint '" + endpoint + "'");
+            logger.debug("Special method name '{}' found for endpoint '{}}'", methodName, endpoint);
             return methodName;
         } else {
             String subpath = restEndpoint.getPath().replace(restCategory.getPath() + "/", "");
