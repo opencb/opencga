@@ -20,17 +20,19 @@
 #' | endpointName | Endpoint WS | parameters accepted |
 #' | -- | :-- | --: |
 #' | updateAcl | /{apiVersion}/tools/acl/{members}/update | study, members[*], action[*], body[*] |
-#' | aggregationStats | /{apiVersion}/tools/aggregationStats | study, id, name, uuid, tags, draft, internal.registrationUserId, type, scope, workflowRepositoryName, dockerName, creationDate, modificationDate, acl, release, snapshot, deleted, field |
-#' | buildCustom | /{apiVersion}/tools/custom/build | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | aggregationStats | /{apiVersion}/tools/aggregationStats | study, id, name, uuid, tags, draft, internal.registrationUserId, type, scope, workflowRepositoryName, containerName, creationDate, modificationDate, acl, release, snapshot, deleted, field |
+#' | runCustomBuilder | /{apiVersion}/tools/custom/builder/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | createCustom | /{apiVersion}/tools/custom/create | include, exclude, study, includeResult, body[*] |
 #' | runCustomDocker | /{apiVersion}/tools/custom/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
-#' | runCustom | /{apiVersion}/tools/custom/{toolId}/run | toolId[*], version, study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | updateCustom | /{apiVersion}/tools/custom/{toolId}/update | include, exclude, toolId[*], study, includeResult, body |
-#' | distinct | /{apiVersion}/tools/distinct | study, id, name, uuid, tags, draft, internal.registrationUserId, type, scope, workflowRepositoryName, dockerName, creationDate, modificationDate, acl, release, snapshot, deleted, field[*] |
-#' | search | /{apiVersion}/tools/search | include, exclude, limit, skip, count, study, id, name, uuid, tags, draft, internal.registrationUserId, type, scope, workflowRepositoryName, dockerName, creationDate, modificationDate, acl, release, snapshot, deleted |
+#' | distinct | /{apiVersion}/tools/distinct | study, id, name, uuid, tags, draft, internal.registrationUserId, type, scope, workflowRepositoryName, containerName, creationDate, modificationDate, acl, release, snapshot, deleted, field[*] |
+#' | search | /{apiVersion}/tools/search | include, exclude, limit, skip, count, study, id, name, uuid, tags, draft, internal.registrationUserId, type, scope, workflowRepositoryName, containerName, creationDate, modificationDate, acl, release, snapshot, deleted |
+#' | createWalker | /{apiVersion}/tools/walker/create | include, exclude, study, includeResult, body[*] |
+#' | runWalker | /{apiVersion}/tools/walker/run | project, study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | updateWalker | /{apiVersion}/tools/walker/{toolId}/update | include, exclude, toolId[*], study, includeResult, body |
 #' | createWorkflow | /{apiVersion}/tools/workflow/create | include, exclude, study, includeResult, body[*] |
 #' | importWorkflow | /{apiVersion}/tools/workflow/import | study, body[*] |
-#' | runWorkflow | /{apiVersion}/tools/workflow/{toolId}/run | toolId[*], version, study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
+#' | runWorkflow | /{apiVersion}/tools/workflow/run | study, jobId, jobDescription, jobDependsOn, jobTags, jobScheduledStartTime, jobPriority, jobDryRun, body[*] |
 #' | updateWorkflow | /{apiVersion}/tools/workflow/{toolId}/update | include, exclude, toolId[*], study, includeResult, body |
 #' | acl | /{apiVersion}/tools/{tools}/acl | tools[*], study, member, silent |
 #' | delete | /{apiVersion}/tools/{tools}/delete | study, tools[*] |
@@ -67,7 +69,7 @@ setMethod("usertoolClient", "OpencgaR", function(OpencgaR, members, toolId, tool
         #' @param type External tool type. Allowed types: [CUSTOM_TOOL, VARIANT_WALKER or WORKFLOW].
         #' @param scope External tool scope. Allowed types: [CLINICAL_INTERPRETATION, SECONDARY_ANALYSIS, RESEARCH or OTHER].
         #' @param workflowRepositoryName Workflow repository name.
-        #' @param dockerName Docker name.
+        #' @param containerName Container name.
         #' @param creationDate Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         #' @param modificationDate Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         #' @param acl Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators can query by this field. .
@@ -79,7 +81,7 @@ setMethod("usertoolClient", "OpencgaR", function(OpencgaR, members, toolId, tool
                 subcategoryId=NULL, action="aggregationStats", params=params, httpMethod="GET", as.queryParam=NULL,
                 ...),
 
-        #' @section Endpoint /{apiVersion}/tools/custom/build:
+        #' @section Endpoint /{apiVersion}/tools/custom/builder/run:
         #' Execute an analysis from a custom binary.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
         #' @param jobId Job ID. It must be a unique string within the study. An ID will be autogenerated automatically if not provided.
@@ -90,8 +92,8 @@ setMethod("usertoolClient", "OpencgaR", function(OpencgaR, members, toolId, tool
         #' @param jobPriority Priority of the job.
         #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
         #' @param data body.
-        buildCustom=fetchOpenCGA(object=OpencgaR, category="tools", categoryId=NULL, subcategory="custom",
-                subcategoryId=NULL, action="build", params=params, httpMethod="POST", as.queryParam=NULL, ...),
+        runCustomBuilder=fetchOpenCGA(object=OpencgaR, category="tools", categoryId=NULL, subcategory="custom/builder",
+                subcategoryId=NULL, action="run", params=params, httpMethod="POST", as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/tools/custom/create:
         #' Register a new user tool of type CUSTOM_TOOL.
@@ -113,25 +115,9 @@ setMethod("usertoolClient", "OpencgaR", function(OpencgaR, members, toolId, tool
         #' @param jobScheduledStartTime Time when the job is scheduled to start.
         #' @param jobPriority Priority of the job.
         #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
-        #' @param data External tool run parameters.
+        #' @param data Custom tool run parameters.
         runCustomDocker=fetchOpenCGA(object=OpencgaR, category="tools", categoryId=NULL, subcategory="custom",
                 subcategoryId=NULL, action="run", params=params, httpMethod="POST", as.queryParam=NULL, ...),
-
-        #' @section Endpoint /{apiVersion}/tools/custom/{toolId}/run:
-        #' Execute an analysis from a custom binary.
-        #' @param toolId Comma separated list of external tool IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
-        #' @param version Tool version. If not provided, the latest version will be used.
-        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
-        #' @param jobId Job ID. It must be a unique string within the study. An ID will be autogenerated automatically if not provided.
-        #' @param jobDescription Job description.
-        #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
-        #' @param jobTags Job tags.
-        #' @param jobScheduledStartTime Time when the job is scheduled to start.
-        #' @param jobPriority Priority of the job.
-        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
-        #' @param data External tool run parameters.
-        runCustom=fetchOpenCGA(object=OpencgaR, category="tools", categoryId=NULL, subcategory="custom",
-                subcategoryId=toolId, action="run", params=params, httpMethod="POST", as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/tools/custom/{toolId}/update:
         #' Update some custom user tool attributes.
@@ -156,7 +142,7 @@ setMethod("usertoolClient", "OpencgaR", function(OpencgaR, members, toolId, tool
         #' @param type External tool type. Allowed types: [CUSTOM_TOOL, VARIANT_WALKER or WORKFLOW].
         #' @param scope External tool scope. Allowed types: [CLINICAL_INTERPRETATION, SECONDARY_ANALYSIS, RESEARCH or OTHER].
         #' @param workflowRepositoryName Workflow repository name.
-        #' @param dockerName Docker name.
+        #' @param containerName Container name.
         #' @param creationDate Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         #' @param modificationDate Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         #' @param acl Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators can query by this field. .
@@ -184,7 +170,7 @@ setMethod("usertoolClient", "OpencgaR", function(OpencgaR, members, toolId, tool
         #' @param type External tool type. Allowed types: [CUSTOM_TOOL, VARIANT_WALKER or WORKFLOW].
         #' @param scope External tool scope. Allowed types: [CLINICAL_INTERPRETATION, SECONDARY_ANALYSIS, RESEARCH or OTHER].
         #' @param workflowRepositoryName Workflow repository name.
-        #' @param dockerName Docker name.
+        #' @param containerName Container name.
         #' @param creationDate Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         #' @param modificationDate Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.
         #' @param acl Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators can query by this field. .
@@ -193,6 +179,42 @@ setMethod("usertoolClient", "OpencgaR", function(OpencgaR, members, toolId, tool
         #' @param deleted Boolean to retrieve deleted entries.
         search=fetchOpenCGA(object=OpencgaR, category="tools", categoryId=NULL, subcategory=NULL, subcategoryId=NULL,
                 action="search", params=params, httpMethod="GET", as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/tools/walker/create:
+        #' Register a new user tool of type VARIANT_WALKER.
+        #' @param include Fields included in the response, whole JSON path must be provided.
+        #' @param exclude Fields excluded in the response, whole JSON path must be provided.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param includeResult Flag indicating to include the created or updated document result in the response.
+        #' @param data JSON containing workflow information.
+        createWalker=fetchOpenCGA(object=OpencgaR, category="tools", categoryId=NULL, subcategory="walker",
+                subcategoryId=NULL, action="create", params=params, httpMethod="POST", as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/tools/walker/run:
+        #' Execute an analysis from a custom binary.
+        #' @param project Project [organization@]project where project can be either the ID or the alias.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param jobId Job ID. It must be a unique string within the study. An ID will be autogenerated automatically if not provided.
+        #' @param jobDescription Job description.
+        #' @param jobDependsOn Comma separated list of existing job IDs the job will depend on.
+        #' @param jobTags Job tags.
+        #' @param jobScheduledStartTime Time when the job is scheduled to start.
+        #' @param jobPriority Priority of the job.
+        #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
+        #' @param data Variant walker params.
+        runWalker=fetchOpenCGA(object=OpencgaR, category="tools", categoryId=NULL, subcategory="walker",
+                subcategoryId=NULL, action="run", params=params, httpMethod="POST", as.queryParam=NULL, ...),
+
+        #' @section Endpoint /{apiVersion}/tools/walker/{toolId}/update:
+        #' Update some variant walker tool attributes.
+        #' @param include Fields included in the response, whole JSON path must be provided.
+        #' @param exclude Fields excluded in the response, whole JSON path must be provided.
+        #' @param toolId Comma separated list of external tool IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
+        #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
+        #' @param includeResult Flag indicating to include the created or updated document result in the response.
+        #' @param data body.
+        updateWalker=fetchOpenCGA(object=OpencgaR, category="tools", categoryId=NULL, subcategory="walker",
+                subcategoryId=toolId, action="update", params=params, httpMethod="POST", as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/tools/workflow/create:
         #' Register a new user tool of type WORKFLOW.
@@ -211,10 +233,8 @@ setMethod("usertoolClient", "OpencgaR", function(OpencgaR, members, toolId, tool
         importWorkflow=fetchOpenCGA(object=OpencgaR, category="tools", categoryId=NULL, subcategory="workflow",
                 subcategoryId=NULL, action="import", params=params, httpMethod="POST", as.queryParam=NULL, ...),
 
-        #' @section Endpoint /{apiVersion}/tools/workflow/{toolId}/run:
-        #' Execute a user tool of type WORKFLOW.
-        #' @param toolId Comma separated list of external tool IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.
-        #' @param version Tool version. If not provided, the latest version will be used.
+        #' @section Endpoint /{apiVersion}/tools/workflow/run:
+        #' Run a user tool of type WORKFLOW.
         #' @param study Study [[organization@]project:]study where study and project can be either the ID or UUID.
         #' @param jobId Job ID. It must be a unique string within the study. An ID will be autogenerated automatically if not provided.
         #' @param jobDescription Job description.
@@ -223,9 +243,9 @@ setMethod("usertoolClient", "OpencgaR", function(OpencgaR, members, toolId, tool
         #' @param jobScheduledStartTime Time when the job is scheduled to start.
         #' @param jobPriority Priority of the job.
         #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
-        #' @param data External tool run parameters.
+        #' @param data Workflow tool run parameters.
         runWorkflow=fetchOpenCGA(object=OpencgaR, category="tools", categoryId=NULL, subcategory="workflow",
-                subcategoryId=toolId, action="run", params=params, httpMethod="POST", as.queryParam=NULL, ...),
+                subcategoryId=NULL, action="run", params=params, httpMethod="POST", as.queryParam=NULL, ...),
 
         #' @section Endpoint /{apiVersion}/tools/workflow/{toolId}/update:
         #' Update some user tool attributes.

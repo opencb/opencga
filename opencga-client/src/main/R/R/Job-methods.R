@@ -196,7 +196,7 @@ setMethod("jobClient", "OpencgaR", function(OpencgaR, job, jobs, members, endpoi
         #' @param jobScheduledStartTime Time when the job is scheduled to start.
         #' @param jobPriority Priority of the job.
         #' @param jobDryRun Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.
-        #' @param data Workflow tool run parameters.
+        #' @param data Container image to be executed and its requirements.
         runTool=fetchOpenCGA(object=OpencgaR, category="jobs", categoryId=NULL, subcategory="tool", subcategoryId=NULL,
                 action="run", params=params, httpMethod="POST", as.queryParam=NULL, ...),
 

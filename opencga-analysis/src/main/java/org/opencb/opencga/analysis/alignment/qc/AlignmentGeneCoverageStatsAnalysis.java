@@ -21,7 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.alignment.GeneCoverageStats;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.AnalysisUtils;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.alignment.AlignmentGeneCoverageStatsParams;
@@ -40,7 +40,7 @@ import java.util.List;
 import static org.opencb.opencga.core.api.ParamConstants.ALIGNMENT_GENE_COVERAGE_STATS_DESCRIPTION;
 
 @Tool(id = AlignmentGeneCoverageStatsAnalysis.ID, resource = Enums.Resource.ALIGNMENT)
-public class AlignmentGeneCoverageStatsAnalysis extends OpenCgaToolScopeStudy {
+public class AlignmentGeneCoverageStatsAnalysis extends OpenCgaTool {
 
     public static final String ID = "gene-coverage-stats";
     public static final String DESCRIPTION = ALIGNMENT_GENE_COVERAGE_STATS_DESCRIPTION;

@@ -71,14 +71,15 @@ public interface AuthorizationManager {
                 WRITE_COHORTS, VIEW_COHORTS, WRITE_COHORT_ANNOTATIONS, VIEW_COHORT_ANNOTATIONS,
                 WRITE_PANELS, VIEW_PANELS,
                 WRITE_FAMILIES, VIEW_FAMILIES, WRITE_FAMILY_ANNOTATIONS, VIEW_FAMILY_ANNOTATIONS,
-                WRITE_CLINICAL_ANALYSIS, VIEW_CLINICAL_ANALYSIS);
+                WRITE_CLINICAL_ANALYSIS, VIEW_CLINICAL_ANALYSIS, WRITE_USER_TOOLS, VIEW_USER_TOOLS);
     }
 
     static EnumSet<StudyPermissions.Permissions> getViewOnlyAcls() {
         return EnumSet.of(
                 VIEW_FILE_HEADER, VIEW_FILE_CONTENT, VIEW_FILES, DOWNLOAD_FILES, VIEW_JOBS, VIEW_SAMPLES, VIEW_SAMPLE_ANNOTATIONS,
                 VIEW_INDIVIDUALS, VIEW_AGGREGATED_VARIANTS, VIEW_SAMPLE_VARIANTS, VIEW_INDIVIDUAL_ANNOTATIONS, VIEW_COHORTS,
-                VIEW_COHORT_ANNOTATIONS, VIEW_PANELS, VIEW_FAMILIES, VIEW_FAMILY_ANNOTATIONS, VIEW_CLINICAL_ANALYSIS, EXECUTE_JOBS);
+                VIEW_COHORT_ANNOTATIONS, VIEW_PANELS, VIEW_FAMILIES, VIEW_FAMILY_ANNOTATIONS, VIEW_CLINICAL_ANALYSIS, EXECUTE_JOBS,
+                VIEW_USER_TOOLS);
     }
 
     static EnumSet<StudyPermissions.Permissions> getLockedAcls() {
@@ -226,8 +227,8 @@ public interface AuthorizationManager {
     void checkClinicalAnalysisPermission(String organizationId, long studyId, long analysisId, String userId,
                                          ClinicalAnalysisPermissions permission) throws CatalogException;
 
-    void checkWorkflowPermission(String organizationId, long studyUid, long workflowUid, String userId, ExternalToolPermissions permission)
-            throws CatalogException;
+    void checkExternalToolPermission(String organizationId, long studyUid, long workflowUid, String userId,
+                                     ExternalToolPermissions permission) throws CatalogException;
 
     default List<Acl> getEffectivePermissions(String organizationId, long studyUid, String resourceId, Enums.Resource resource)
             throws CatalogException {

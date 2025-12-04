@@ -35,13 +35,15 @@ public class UserToolsCommandOptions {
 
         public UpdateAclCommandOptions updateAclCommandOptions;
         public AggregationStatsCommandOptions aggregationStatsCommandOptions;
-        public BuildCustomCommandOptions buildCustomCommandOptions;
+        public RunCustomBuilderCommandOptions runCustomBuilderCommandOptions;
         public CreateCustomCommandOptions createCustomCommandOptions;
         public RunCustomDockerCommandOptions runCustomDockerCommandOptions;
-        public RunCustomCommandOptions runCustomCommandOptions;
         public UpdateCustomCommandOptions updateCustomCommandOptions;
         public DistinctCommandOptions distinctCommandOptions;
         public SearchCommandOptions searchCommandOptions;
+        public CreateWalkerCommandOptions createWalkerCommandOptions;
+        public RunWalkerCommandOptions runWalkerCommandOptions;
+        public UpdateWalkerCommandOptions updateWalkerCommandOptions;
         public CreateWorkflowCommandOptions createWorkflowCommandOptions;
         public ImportWorkflowCommandOptions importWorkflowCommandOptions;
         public RunWorkflowCommandOptions runWorkflowCommandOptions;
@@ -57,13 +59,15 @@ public class UserToolsCommandOptions {
         this.commonCommandOptions = commonCommandOptions;
         this.updateAclCommandOptions = new UpdateAclCommandOptions();
         this.aggregationStatsCommandOptions = new AggregationStatsCommandOptions();
-        this.buildCustomCommandOptions = new BuildCustomCommandOptions();
+        this.runCustomBuilderCommandOptions = new RunCustomBuilderCommandOptions();
         this.createCustomCommandOptions = new CreateCustomCommandOptions();
         this.runCustomDockerCommandOptions = new RunCustomDockerCommandOptions();
-        this.runCustomCommandOptions = new RunCustomCommandOptions();
         this.updateCustomCommandOptions = new UpdateCustomCommandOptions();
         this.distinctCommandOptions = new DistinctCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
+        this.createWalkerCommandOptions = new CreateWalkerCommandOptions();
+        this.runWalkerCommandOptions = new RunWalkerCommandOptions();
+        this.updateWalkerCommandOptions = new UpdateWalkerCommandOptions();
         this.createWorkflowCommandOptions = new CreateWorkflowCommandOptions();
         this.importWorkflowCommandOptions = new ImportWorkflowCommandOptions();
         this.runWorkflowCommandOptions = new RunWorkflowCommandOptions();
@@ -139,8 +143,8 @@ public class UserToolsCommandOptions {
         @Parameter(names = {"--workflow-repository-name"}, description = "Workflow repository name", required = false, arity = 1)
         public String workflowRepositoryName; 
     
-        @Parameter(names = {"--docker-name"}, description = "Docker name", required = false, arity = 1)
-        public String dockerName; 
+        @Parameter(names = {"--container-name"}, description = "Container name", required = false, arity = 1)
+        public String containerName; 
     
         @Parameter(names = {"--creation-date", "--cd"}, description = "Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
         public String creationDate; 
@@ -165,8 +169,8 @@ public class UserToolsCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"custom-build"}, commandDescription ="Execute an analysis from a custom binary.")
-    public class BuildCustomCommandOptions {
+    @Parameters(commandNames = {"custom-builder-run"}, commandDescription ="Execute an analysis from a custom binary.")
+    public class RunCustomBuilderCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
@@ -263,20 +267,23 @@ public class UserToolsCommandOptions {
         @Parameter(names = {"--scope"}, description = "External tool scope. Valid values: SECONDARY_ANALYSIS, RESEARCH_ANALYSIS, CLINICAL_INTERPRETATION_ANALYSIS or OTHER.", required = false, arity = 1)
         public String scope;
     
-        @Parameter(names = {"--docker-name"}, description = "Docker name.", required = false, arity = 1)
-        public String dockerName;
+        @Parameter(names = {"--container-name"}, description = "Container name. It should contain the repository and the image name. Optionally, it can also contain the registry. If not provided, Docker Hub will be used as default registry. Examples: 'repository/image', 'registry/repository/image' ", required = false, arity = 1)
+        public String containerName;
     
-        @Parameter(names = {"--docker-tag"}, description = "Docker tag.", required = false, arity = 1)
-        public String dockerTag;
+        @Parameter(names = {"--container-tag"}, description = "Container tag. It refers to a specific version of an image.", required = false, arity = 1)
+        public String containerTag;
     
-        @Parameter(names = {"--docker-command-line"}, description = "Docker CLI.", required = false, arity = 1)
-        public String dockerCommandLine;
+        @Parameter(names = {"--container-digest"}, description = "Digest of the Container image. It is a sha256 hash that uniquely identifies a specific Container image. Example: 'sha256:3a5c8...'", required = false, arity = 1)
+        public String containerDigest;
     
-        @Parameter(names = {"--docker-user"}, description = "User that can access the private Docker repository.", required = false, arity = 1)
-        public String dockerUser;
+        @Parameter(names = {"--container-command-line"}, description = "Command line template to run the tool inside the container. You can use ${input} and ${output} as placeholders for input and output files. E.g., 'bwa mem ${input} > ${output}'.", required = false, arity = 1)
+        public String containerCommandLine;
     
-        @Parameter(names = {"--docker-password"}, description = "Password corresponding to the user that can access the Docker repository.", required = false, arity = 1)
-        public String dockerPassword;
+        @Parameter(names = {"--container-user"}, description = "User that can access the private Container repository.", required = false, arity = 1)
+        public String containerUser;
+    
+        @Parameter(names = {"--container-password"}, description = "Password corresponding to the user that can access the Container repository.", required = false, arity = 1)
+        public String containerPassword;
     
         @Parameter(names = {"--tags"}, description = "List of tags.", required = false, arity = 1)
         public String tags;
@@ -355,69 +362,16 @@ public class UserToolsCommandOptions {
         @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean jobDryRun; 
     
-        @Parameter(names = {"--name", "-n"}, description = "Docker name.", required = false, arity = 1)
-        public String name;
+        @Parameter(names = {"--id"}, description = "User tool identifier.", required = false, arity = 1)
+        public String id;
     
-        @Parameter(names = {"--tag"}, description = "Docker tag.", required = false, arity = 1)
-        public String tag;
+        @Parameter(names = {"--version"}, description = "User tool version. If not provided, the latest version will be used.", required = false, arity = 1)
+        public Integer version;
     
-        @Parameter(names = {"--command-line"}, description = "Docker CLI.", required = false, arity = 1)
+        @Parameter(names = {"--command-line"}, description = "Command line template to run the tool inside the container. You can use ${input} and ${output} as placeholders for input and output files. E.g., 'bwa mem ${input} > ${output}'.", required = false, arity = 1)
         public String commandLine;
     
-        @Parameter(names = {"--user", "-u"}, description = "User that can access the private Docker repository.", required = false, arity = 1)
-        public String user;
-    
-        @Parameter(names = {"--password"}, description = "Password corresponding to the user that can access the Docker repository.", required = false, arity = 1)
-        public String password;
-    
-    }
-
-    @Parameters(commandNames = {"custom-run"}, commandDescription ="Execute an analysis from a custom binary.")
-    public class RunCustomCommandOptions {
-    
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
-    
-        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
-        public String jsonFile;
-    
-        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
-        public Boolean jsonDataModel = false;
-    
-        @Parameter(names = {"--tool-id"}, description = "Comma separated list of external tool IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = true, arity = 1)
-        public String toolId; 
-    
-        @Parameter(names = {"--version"}, description = "Tool version. If not provided, the latest version will be used.", required = false, arity = 1)
-        public Integer version; 
-    
-        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
-        public String study; 
-    
-        @Parameter(names = {"--job-id"}, description = "Job ID. It must be a unique string within the study. An ID will be autogenerated automatically if not provided.", required = false, arity = 1)
-        public String jobId; 
-    
-        @Parameter(names = {"--job-description"}, description = "Job description", required = false, arity = 1)
-        public String jobDescription; 
-    
-        @Parameter(names = {"--job-depends-on"}, description = "Comma separated list of existing job IDs the job will depend on.", required = false, arity = 1)
-        public String jobDependsOn; 
-    
-        @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
-        public String jobTags; 
-    
-        @Parameter(names = {"--job-scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
-        public String jobScheduledStartTime; 
-    
-        @Parameter(names = {"--job-priority"}, description = "Priority of the job", required = false, arity = 1)
-        public String jobPriority; 
-    
-        @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
-        public Boolean jobDryRun; 
-    
-        @Parameter(names = {"--command-line"}, description = "The body web service commandLine parameter", required = false, arity = 1)
-        public String commandLine;
-    
-        @DynamicParameter(names = {"--params"}, description = "The body web service params parameter. Use: --params key=value", required = false)
+        @DynamicParameter(names = {"--params"}, description = "Key-value pairs of parameters to be used inside the command line.. Use: --params key=value", required = false)
         public java.util.Map<java.lang.String,java.lang.String> params = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
@@ -488,20 +442,23 @@ public class UserToolsCommandOptions {
         @DynamicParameter(names = {"--attributes"}, description = "You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.. Use: --attributes key=value", required = false)
         public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
-        @Parameter(names = {"--docker-name"}, description = "Docker name.", required = false, arity = 1)
-        public String dockerName;
+        @Parameter(names = {"--container-name"}, description = "Container name. It should contain the repository and the image name. Optionally, it can also contain the registry. If not provided, Docker Hub will be used as default registry. Examples: 'repository/image', 'registry/repository/image' ", required = false, arity = 1)
+        public String containerName;
     
-        @Parameter(names = {"--docker-tag"}, description = "Docker tag.", required = false, arity = 1)
-        public String dockerTag;
+        @Parameter(names = {"--container-tag"}, description = "Container tag. It refers to a specific version of an image.", required = false, arity = 1)
+        public String containerTag;
     
-        @Parameter(names = {"--docker-command-line"}, description = "Docker CLI.", required = false, arity = 1)
-        public String dockerCommandLine;
+        @Parameter(names = {"--container-digest"}, description = "Digest of the Container image. It is a sha256 hash that uniquely identifies a specific Container image. Example: 'sha256:3a5c8...'", required = false, arity = 1)
+        public String containerDigest;
     
-        @Parameter(names = {"--docker-user"}, description = "User that can access the private Docker repository.", required = false, arity = 1)
-        public String dockerUser;
+        @Parameter(names = {"--container-command-line"}, description = "Command line template to run the tool inside the container. You can use ${input} and ${output} as placeholders for input and output files. E.g., 'bwa mem ${input} > ${output}'.", required = false, arity = 1)
+        public String containerCommandLine;
     
-        @Parameter(names = {"--docker-password"}, description = "Password corresponding to the user that can access the Docker repository.", required = false, arity = 1)
-        public String dockerPassword;
+        @Parameter(names = {"--container-user"}, description = "User that can access the private Container repository.", required = false, arity = 1)
+        public String containerUser;
+    
+        @Parameter(names = {"--container-password"}, description = "Password corresponding to the user that can access the Container repository.", required = false, arity = 1)
+        public String containerPassword;
     
     }
 
@@ -541,8 +498,8 @@ public class UserToolsCommandOptions {
         @Parameter(names = {"--workflow-repository-name"}, description = "Workflow repository name", required = false, arity = 1)
         public String workflowRepositoryName; 
     
-        @Parameter(names = {"--docker-name"}, description = "Docker name", required = false, arity = 1)
-        public String dockerName; 
+        @Parameter(names = {"--container-name"}, description = "Container name", required = false, arity = 1)
+        public String containerName; 
     
         @Parameter(names = {"--creation-date", "--cd"}, description = "Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
         public String creationDate; 
@@ -618,8 +575,8 @@ public class UserToolsCommandOptions {
         @Parameter(names = {"--workflow-repository-name"}, description = "Workflow repository name", required = false, arity = 1)
         public String workflowRepositoryName; 
     
-        @Parameter(names = {"--docker-name"}, description = "Docker name", required = false, arity = 1)
-        public String dockerName; 
+        @Parameter(names = {"--container-name"}, description = "Container name", required = false, arity = 1)
+        public String containerName; 
     
         @Parameter(names = {"--creation-date", "--cd"}, description = "Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
         public String creationDate; 
@@ -638,6 +595,474 @@ public class UserToolsCommandOptions {
     
         @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, help = true, arity = 0)
         public boolean deleted = false; 
+    
+    }
+
+    @Parameters(commandNames = {"walker-create"}, commandDescription ="Register a new user tool of type VARIANT_WALKER")
+    public class CreateWalkerCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String include; 
+    
+        @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String exclude; 
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
+        public boolean includeResult = false; 
+    
+        @Parameter(names = {"--id"}, description = "External tool ID.", required = false, arity = 1)
+        public String id;
+    
+        @Parameter(names = {"--name", "-n"}, description = "Unique 32-character identifier assigned automatically by OpenCGA.", required = false, arity = 1)
+        public String name;
+    
+        @Parameter(names = {"--description"}, description = "Users may provide a description for the entry.", required = false, arity = 1)
+        public String description;
+    
+        @Parameter(names = {"--scope"}, description = "External tool scope. Valid values: SECONDARY_ANALYSIS, RESEARCH_ANALYSIS, CLINICAL_INTERPRETATION_ANALYSIS or OTHER.", required = false, arity = 1)
+        public String scope;
+    
+        @Parameter(names = {"--container-name"}, description = "Container name. It should contain the repository and the image name. Optionally, it can also contain the registry. If not provided, Docker Hub will be used as default registry. Examples: 'repository/image', 'registry/repository/image' ", required = false, arity = 1)
+        public String containerName;
+    
+        @Parameter(names = {"--container-tag"}, description = "Container tag. It refers to a specific version of an image.", required = false, arity = 1)
+        public String containerTag;
+    
+        @Parameter(names = {"--container-digest"}, description = "Digest of the Container image. It is a sha256 hash that uniquely identifies a specific Container image. Example: 'sha256:3a5c8...'", required = false, arity = 1)
+        public String containerDigest;
+    
+        @Parameter(names = {"--container-command-line"}, description = "Command line template to run the tool inside the container. You can use ${input} and ${output} as placeholders for input and output files. E.g., 'bwa mem ${input} > ${output}'.", required = false, arity = 1)
+        public String containerCommandLine;
+    
+        @Parameter(names = {"--container-user"}, description = "User that can access the private Container repository.", required = false, arity = 1)
+        public String containerUser;
+    
+        @Parameter(names = {"--container-password"}, description = "Password corresponding to the user that can access the Container repository.", required = false, arity = 1)
+        public String containerPassword;
+    
+        @Parameter(names = {"--tags"}, description = "List of tags.", required = false, arity = 1)
+        public String tags;
+    
+        @Parameter(names = {"--minimum-requirements-cpu"}, description = "Minimum number of cpu cores required to execute the process.", required = false, arity = 1)
+        public String minimumRequirementsCpu;
+    
+        @Parameter(names = {"--minimum-requirements-memory"}, description = "Minimum memory required to execute the process.", required = false, arity = 1)
+        public String minimumRequirementsMemory;
+    
+        @Parameter(names = {"--minimum-requirements-disk"}, description = "Minimum disk required to execute the process.", required = false, arity = 1)
+        public String minimumRequirementsDisk;
+    
+        @Parameter(names = {"--draft"}, description = "Flag indicating whether the external tool is a draft or not.", required = false, help = true, arity = 0)
+        public boolean draft = false;
+    
+        @Parameter(names = {"--internal-registration-date"}, description = "Registration date of the internal object.", required = false, arity = 1)
+        public String internalRegistrationDate;
+    
+        @Parameter(names = {"--internal-last-modified"}, description = "Date of the last modification of the internal object.", required = false, arity = 1)
+        public String internalLastModified;
+    
+        @Parameter(names = {"--internal-registration-user-id"}, description = "The body web service registrationUserId parameter", required = false, arity = 1)
+        public String internalRegistrationUserId;
+    
+        @Parameter(names = {"--creation-date", "--cd"}, description = "Autogenerated date following the format YYYYMMDDhhmmss containing the date when the entry was first registered.", required = false, arity = 1)
+        public String creationDate;
+    
+        @Parameter(names = {"--modification-date", "--md"}, description = "Autogenerated date following the format YYYYMMDDhhmmss containing the date when the entry was last modified.", required = false, arity = 1)
+        public String modificationDate;
+    
+        @DynamicParameter(names = {"--attributes"}, description = "You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.. Use: --attributes key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
+    
+    }
+
+    @Parameters(commandNames = {"walker-run"}, commandDescription ="Execute an analysis from a custom binary.")
+    public class RunWalkerCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--project", "-p"}, description = "Project [organization@]project where project can be either the ID or the alias", required = false, arity = 1)
+        public String project; 
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--job-id"}, description = "Job ID. It must be a unique string within the study. An ID will be autogenerated automatically if not provided.", required = false, arity = 1)
+        public String jobId; 
+    
+        @Parameter(names = {"--job-description"}, description = "Job description", required = false, arity = 1)
+        public String jobDescription; 
+    
+        @Parameter(names = {"--job-depends-on"}, description = "Comma separated list of existing job IDs the job will depend on.", required = false, arity = 1)
+        public String jobDependsOn; 
+    
+        @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
+        public String jobTags; 
+    
+        @Parameter(names = {"--job-scheduled-start-time"}, description = "Time when the job is scheduled to start.", required = false, arity = 1)
+        public String jobScheduledStartTime; 
+    
+        @Parameter(names = {"--job-priority"}, description = "Priority of the job", required = false, arity = 1)
+        public String jobPriority; 
+    
+        @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
+        public Boolean jobDryRun; 
+    
+        @Parameter(names = {"--id"}, description = "User tool identifier.", required = false, arity = 1)
+        public String id;
+    
+        @Parameter(names = {"--version"}, description = "User tool version. If not provided, the latest version will be used.", required = false, arity = 1)
+        public Integer version;
+    
+        @Parameter(names = {"--params-id"}, description = "List of variant IDs in the format chrom:start:ref:alt, e.g. 19:7177679:C:T", required = false, arity = 1)
+        public String paramsId;
+    
+        @Parameter(names = {"--params-region"}, description = "List of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000", required = false, arity = 1)
+        public String paramsRegion;
+    
+        @Parameter(names = {"--params-gene"}, description = "List of genes, most gene IDs are accepted (HGNC, Ensembl gene, ...). This is an alias to 'xref' parameter", required = false, arity = 1)
+        public String paramsGene;
+    
+        @Parameter(names = {"--params-type"}, description = "List of types, accepted values are SNV, MNV, INDEL, SV, COPY_NUMBER, COPY_NUMBER_LOSS, COPY_NUMBER_GAIN, INSERTION, DELETION, DUPLICATION, TANDEM_DUPLICATION, BREAKEND, e.g. SNV,INDEL", required = false, arity = 1)
+        public String paramsType;
+    
+        @Parameter(names = {"--params-panel"}, description = "Filter by genes from the given disease panel", required = false, arity = 1)
+        public String paramsPanel;
+    
+        @Parameter(names = {"--params-panel-mode-of-inheritance"}, description = "Filter genes from specific panels that match certain mode of inheritance. Accepted values : [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, mendelianError, compoundHeterozygous ]", required = false, arity = 1)
+        public String paramsPanelModeOfInheritance;
+    
+        @Parameter(names = {"--params-panel-confidence"}, description = "Filter genes from specific panels that match certain confidence. Accepted values : [ high, medium, low, rejected ]", required = false, arity = 1)
+        public String paramsPanelConfidence;
+    
+        @Parameter(names = {"--params-panel-role-in-cancer"}, description = "Filter genes from specific panels that match certain role in cancer. Accepted values : [ both, oncogene, tumorSuppressorGene, fusion ]", required = false, arity = 1)
+        public String paramsPanelRoleInCancer;
+    
+        @Parameter(names = {"--params-panel-intersection"}, description = "Intersect panel genes and regions with given genes and regions from que input query. This will prevent returning variants from regions out of the panel.", required = false, help = true, arity = 0)
+        public boolean paramsPanelIntersection = false;
+    
+        @Parameter(names = {"--params-panel-feature-type"}, description = "Filter elements from specific panels by type. Accepted values : [ gene, region, str, variant ]", required = false, arity = 1)
+        public String paramsPanelFeatureType;
+    
+        @Parameter(names = {"--params-cohort-stats-ref"}, description = "Reference Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4", required = false, arity = 1)
+        public String paramsCohortStatsRef;
+    
+        @Parameter(names = {"--params-cohort-stats-alt"}, description = "Alternate Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4", required = false, arity = 1)
+        public String paramsCohortStatsAlt;
+    
+        @Parameter(names = {"--params-cohort-stats-maf"}, description = "Minor Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4", required = false, arity = 1)
+        public String paramsCohortStatsMaf;
+    
+        @Parameter(names = {"--params-ct"}, description = "List of SO consequence types, e.g. missense_variant,stop_lost or SO:0001583,SO:0001578. Accepts aliases 'loss_of_function' and 'protein_altering'", required = false, arity = 1)
+        public String paramsCt;
+    
+        @Parameter(names = {"--params-xref"}, description = "List of any external reference, these can be genes, proteins or variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, HGVS ...", required = false, arity = 1)
+        public String paramsXref;
+    
+        @Parameter(names = {"--params-biotype"}, description = "List of biotypes, e.g. protein_coding", required = false, arity = 1)
+        public String paramsBiotype;
+    
+        @Parameter(names = {"--params-protein-substitution"}, description = "Protein substitution scores include SIFT and PolyPhen. You can query using the score {protein_score}[<|>|<=|>=]{number} or the description {protein_score}[~=|=]{description} e.g. polyphen>0.1,sift=tolerant", required = false, arity = 1)
+        public String paramsProteinSubstitution;
+    
+        @Parameter(names = {"--params-conservation"}, description = "Filter by conservation score: {conservation_score}[<|>|<=|>=]{number} e.g. phastCons>0.5,phylop<0.1,gerp>0.1", required = false, arity = 1)
+        public String paramsConservation;
+    
+        @Parameter(names = {"--params-population-frequency-maf"}, description = "Population minor allele frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01", required = false, arity = 1)
+        public String paramsPopulationFrequencyMaf;
+    
+        @Parameter(names = {"--params-population-frequency-alt"}, description = "Alternate Population Frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01", required = false, arity = 1)
+        public String paramsPopulationFrequencyAlt;
+    
+        @Parameter(names = {"--params-population-frequency-ref"}, description = "Reference Population Frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1000G:ALL<0.01", required = false, arity = 1)
+        public String paramsPopulationFrequencyRef;
+    
+        @Parameter(names = {"--params-transcript-flag"}, description = "List of transcript flags. e.g. canonical, CCDS, basic, LRG, MANE Select, MANE Plus Clinical, EGLH_HaemOnc, TSO500", required = false, arity = 1)
+        public String paramsTranscriptFlag;
+    
+        @Parameter(names = {"--params-functional-score"}, description = "Functional score: {functional_score}[<|>|<=|>=]{number} e.g. cadd_scaled>5.2 , cadd_raw<=0.3", required = false, arity = 1)
+        public String paramsFunctionalScore;
+    
+        @Parameter(names = {"--params-clinical"}, description = "Clinical source: clinvar, cosmic", required = false, arity = 1)
+        public String paramsClinical;
+    
+        @Parameter(names = {"--params-clinical-significance"}, description = "Clinical significance: benign, likely_benign, likely_pathogenic, pathogenic", required = false, arity = 1)
+        public String paramsClinicalSignificance;
+    
+        @Parameter(names = {"--params-clinical-confirmed-status"}, description = "Clinical confirmed status", required = false, help = true, arity = 0)
+        public boolean paramsClinicalConfirmedStatus = false;
+    
+        @Parameter(names = {"--params-project"}, description = "Project [organization@]project where project can be either the ID or the alias", required = false, arity = 1)
+        public String paramsProject;
+    
+        @Parameter(names = {"--params-study"}, description = "Filter variants from the given studies, these can be either the numeric ID or the alias with the format organization@project:study", required = false, arity = 1)
+        public String paramsStudy;
+    
+        @Parameter(names = {"--params-saved-filter"}, description = "Use a saved filter at User level", required = false, arity = 1)
+        public String paramsSavedFilter;
+    
+        @Parameter(names = {"--params-chromosome"}, description = "List of chromosomes, this is an alias of 'region' parameter with just the chromosome names", required = false, arity = 1)
+        public String paramsChromosome;
+    
+        @Parameter(names = {"--params-reference"}, description = "Reference allele", required = false, arity = 1)
+        public String paramsReference;
+    
+        @Parameter(names = {"--params-alternate"}, description = "Main alternate allele", required = false, arity = 1)
+        public String paramsAlternate;
+    
+        @Parameter(names = {"--params-release"}, description = "The body web service release parameter", required = false, arity = 1)
+        public String paramsRelease;
+    
+        @Parameter(names = {"--params-include-study"}, description = "List of studies to include in the result. Accepts 'all' and 'none'.", required = false, arity = 1)
+        public String paramsIncludeStudy;
+    
+        @Parameter(names = {"--params-include-sample"}, description = "List of samples to be included in the result. Accepts 'all' and 'none'. If undefined, automatically includes samples used for filtering. If none, no sample is included.", required = false, arity = 1)
+        public String paramsIncludeSample;
+    
+        @Parameter(names = {"--params-include-file"}, description = "List of files to be returned. Accepts 'all' and 'none'. If undefined, automatically includes files used for filtering. If none, no file is included.", required = false, arity = 1)
+        public String paramsIncludeFile;
+    
+        @Parameter(names = {"--params-include-sample-data"}, description = "List of Sample Data keys (i.e. FORMAT column from VCF file) from Sample Data to include in the output. e.g: DP,AD. Accepts 'all' and 'none'.", required = false, arity = 1)
+        public String paramsIncludeSampleData;
+    
+        @Parameter(names = {"--params-include-sample-id"}, description = "Include sampleId on each result", required = false, help = true, arity = 0)
+        public boolean paramsIncludeSampleId = false;
+    
+        @Parameter(names = {"--params-include-genotype"}, description = "Include genotypes, apart of other formats defined with includeFormat", required = false, help = true, arity = 0)
+        public boolean paramsIncludeGenotype = false;
+    
+        @Parameter(names = {"--params-file"}, description = "Filter variants from the files specified. This will set includeFile parameter when not provided", required = false, arity = 1)
+        public String paramsFile;
+    
+        @Parameter(names = {"--params-qual"}, description = "Specify the QUAL for any of the files. If 'file' filter is provided, will match the file and the qual. e.g.: >123.4", required = false, arity = 1)
+        public String paramsQual;
+    
+        @Parameter(names = {"--params-filter"}, description = "Specify the FILTER for any of the files. If 'file' filter is provided, will match the file and the filter. e.g.: PASS,LowGQX", required = false, arity = 1)
+        public String paramsFilter;
+    
+        @Parameter(names = {"--params-file-data"}, description = "Filter by file data (i.e. FILTER, QUAL and INFO columns from VCF file). [{file}:]{key}{op}{value}[,;]* . If no file is specified, will use all files from 'file' filter. e.g. AN>200 or file_1.vcf:AN>200;file_2.vcf:AN<10 . Many fields can be combined. e.g. file_1.vcf:AN>200;DB=true;file_2.vcf:AN<10,FILTER=PASS,LowDP", required = false, arity = 1)
+        public String paramsFileData;
+    
+        @Parameter(names = {"--params-genotype"}, description = "Samples with a specific genotype: {samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}(,{gt_n})*)* e.g. HG0097:0/0;HG0098:0/1,1/1. Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT. This will automatically set 'includeSample' parameter when not provided", required = false, arity = 1)
+        public String paramsGenotype;
+    
+        @Parameter(names = {"--params-sample"}, description = "Filter variants by sample genotype. This will automatically set 'includeSample' parameter when not provided. This filter accepts multiple 3 forms: 1) List of samples: Samples that contain the main variant. Accepts AND ';' and OR ',' operators.  e.g. HG0097,HG0098 . 2) List of samples with genotypes: {sample}:{gt1},{gt2}. Accepts AND ';' and OR ',' operators.  e.g. HG0097:0/0;HG0098:0/1,1/1 . Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS  e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . 3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted.Accepted segregation modes: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]. Value is case insensitive. e.g. HG0097:DeNovo Sample must have parents defined and indexed. ", required = false, arity = 1)
+        public String paramsSample;
+    
+        @Parameter(names = {"--params-sample-limit"}, description = "Limit the number of samples to be included in the result", required = false, arity = 1)
+        public Integer paramsSampleLimit;
+    
+        @Parameter(names = {"--params-sample-skip"}, description = "Skip some samples from the result. Useful for sample pagination.", required = false, arity = 1)
+        public Integer paramsSampleSkip;
+    
+        @Parameter(names = {"--params-sample-data"}, description = "Filter by any SampleData field from samples. [{sample}:]{key}{op}{value}[,;]* . If no sample is specified, will use all samples from 'sample' or 'genotype' filter. e.g. DP>200 or HG0097:DP>200,HG0098:DP<10 . Many FORMAT fields can be combined. e.g. HG0097:DP>200;GT=1/1,0/1,HG0098:DP<10", required = false, arity = 1)
+        public String paramsSampleData;
+    
+        @Parameter(names = {"--params-sample-annotation"}, description = "Selects some samples using metadata information from Catalog. e.g. age>20;phenotype=hpo:123,hpo:456;name=smith", required = false, arity = 1)
+        public String paramsSampleAnnotation;
+    
+        @Parameter(names = {"--params-family"}, description = "Filter variants where any of the samples from the given family contains the variant (HET or HOM_ALT)", required = false, arity = 1)
+        public String paramsFamily;
+    
+        @Parameter(names = {"--params-family-members"}, description = "Sub set of the members of a given family", required = false, arity = 1)
+        public String paramsFamilyMembers;
+    
+        @Parameter(names = {"--params-family-disorder"}, description = "Specify the disorder to use for the family segregation", required = false, arity = 1)
+        public String paramsFamilyDisorder;
+    
+        @Parameter(names = {"--params-family-proband"}, description = "Specify the proband child to use for the family segregation", required = false, arity = 1)
+        public String paramsFamilyProband;
+    
+        @Parameter(names = {"--params-family-segregation"}, description = "Filter by segregation mode from a given family. Accepted values: [ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, deNovoStrict, mendelianError, compoundHeterozygous ]", required = false, arity = 1)
+        public String paramsFamilySegregation;
+    
+        @Parameter(names = {"--params-cohort"}, description = "Select variants with calculated stats for the selected cohorts", required = false, arity = 1)
+        public String paramsCohort;
+    
+        @Parameter(names = {"--params-cohort-stats-pass"}, description = "Filter PASS frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL>0.8", required = false, arity = 1)
+        public String paramsCohortStatsPass;
+    
+        @Parameter(names = {"--params-cohort-stats-mgf"}, description = "Minor Genotype Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4", required = false, arity = 1)
+        public String paramsCohortStatsMgf;
+    
+        @Parameter(names = {"--params-missing-alleles"}, description = "Number of missing alleles: [{study:}]{cohort}[<|>|<=|>=]{number}", required = false, arity = 1)
+        public String paramsMissingAlleles;
+    
+        @Parameter(names = {"--params-missing-genotypes"}, description = "Number of missing genotypes: [{study:}]{cohort}[<|>|<=|>=]{number}", required = false, arity = 1)
+        public String paramsMissingGenotypes;
+    
+        @Parameter(names = {"--params-annotation-exists"}, description = "Return only annotated variants", required = false, arity = 1)
+        public Boolean paramsAnnotationExists;
+    
+        @Parameter(names = {"--params-score"}, description = "Filter by variant score: [{study:}]{score}[<|>|<=|>=]{number}", required = false, arity = 1)
+        public String paramsScore;
+    
+        @Parameter(names = {"--params-polyphen"}, description = "Polyphen, protein substitution score. [<|>|<=|>=]{number} or [~=|=|]{description} e.g. <=0.9 , =benign", required = false, arity = 1)
+        public String paramsPolyphen;
+    
+        @Parameter(names = {"--params-sift"}, description = "Sift, protein substitution score. [<|>|<=|>=]{number} or [~=|=|]{description} e.g. >0.1 , ~=tolerant", required = false, arity = 1)
+        public String paramsSift;
+    
+        @Parameter(names = {"--params-gene-role-in-cancer"}, description = "The body web service geneRoleInCancer parameter", required = false, arity = 1)
+        public String paramsGeneRoleInCancer;
+    
+        @Parameter(names = {"--params-gene-trait-id"}, description = "List of gene trait association id. e.g. 'umls:C0007222' , 'OMIM:269600'", required = false, arity = 1)
+        public String paramsGeneTraitId;
+    
+        @Parameter(names = {"--params-gene-trait-name"}, description = "List of gene trait association names. e.g. Cardiovascular Diseases", required = false, arity = 1)
+        public String paramsGeneTraitName;
+    
+        @Parameter(names = {"--params-trait"}, description = "List of traits, based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...", required = false, arity = 1)
+        public String paramsTrait;
+    
+        @Parameter(names = {"--params-cosmic"}, description = "List of COSMIC mutation IDs.", required = false, arity = 1)
+        public String paramsCosmic;
+    
+        @Parameter(names = {"--params-clinvar"}, description = "Clinical source: clinvar, cosmic", required = false, arity = 1)
+        public String paramsClinvar;
+    
+        @Parameter(names = {"--params-hpo"}, description = "List of HPO terms. e.g. 'HP:0000545,HP:0002812'", required = false, arity = 1)
+        public String paramsHpo;
+    
+        @Parameter(names = {"--params-go"}, description = "List of GO (Gene Ontology) terms. e.g. 'GO:0002020'", required = false, arity = 1)
+        public String paramsGo;
+    
+        @Parameter(names = {"--params-expression"}, description = "List of tissues of interest. e.g. 'lung'", required = false, arity = 1)
+        public String paramsExpression;
+    
+        @Parameter(names = {"--params-protein-keyword"}, description = "List of Uniprot protein variant annotation keywords", required = false, arity = 1)
+        public String paramsProteinKeyword;
+    
+        @Parameter(names = {"--params-drug"}, description = "List of drug names", required = false, arity = 1)
+        public String paramsDrug;
+    
+        @Parameter(names = {"--params-custom-annotation"}, description = "Custom annotation: {key}[<|>|<=|>=]{number} or {key}[~=|=]{text}", required = false, arity = 1)
+        public String paramsCustomAnnotation;
+    
+        @Parameter(names = {"--params-source"}, description = "Select the variant data source from where to fetch the data. Accepted values are 'variant_index' (default) and 'secondary_sample_index'. When selecting a secondary_index, the data will be retrieved exclusively from that secondary index, and the 'include/exclude' parameters will be ignored. If the given query can not be fully resolved using the secondary index, an exception will be raised. As the returned variants will only contain data from the secondary_index, some data might be missing or be partial.", required = false, arity = 1)
+        public String paramsSource;
+    
+        @Parameter(names = {"--params-unknown-genotype"}, description = "Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./.]", required = false, arity = 1)
+        public String paramsUnknownGenotype;
+    
+        @Parameter(names = {"--params-sample-metadata"}, description = "Return the samples metadata group by study. Sample names will appear in the same order as their corresponding genotypes.", required = false, help = true, arity = 0)
+        public boolean paramsSampleMetadata = false;
+    
+        @Parameter(names = {"--params-sort"}, description = "Sort the results by chromosome, start, end and alternate allele", required = false, help = true, arity = 0)
+        public boolean paramsSort = false;
+    
+        @Parameter(names = {"--params-output-file-name"}, description = "Output file name", required = false, arity = 1)
+        public String paramsOutputFileName;
+    
+        @Parameter(names = {"--params-input-format"}, description = "Format that will be used as input for the variant walker", required = false, arity = 1)
+        public String paramsInputFormat;
+    
+        @Parameter(names = {"--params-include"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String paramsInclude;
+    
+        @Parameter(names = {"--params-exclude"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String paramsExclude;
+    
+        @Parameter(names = {"--params-command-line"}, description = "Command line to execute from the walker", required = false, arity = 1)
+        public String paramsCommandLine;
+    
+    }
+
+    @Parameters(commandNames = {"walker-update"}, commandDescription ="Update some variant walker tool attributes")
+    public class UpdateWalkerCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
+        public String jsonFile;
+    
+        @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonDataModel = false;
+    
+        @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String include; 
+    
+        @Parameter(names = {"--exclude", "-E"}, description = "Fields excluded in the response, whole JSON path must be provided", required = false, arity = 1)
+        public String exclude; 
+    
+        @Parameter(names = {"--tool-id"}, description = "Comma separated list of external tool IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = true, arity = 1)
+        public String toolId; 
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, help = true, arity = 0)
+        public boolean includeResult = false; 
+    
+        @Parameter(names = {"--name", "-n"}, description = "Unique 32-character identifier assigned automatically by OpenCGA.", required = false, arity = 1)
+        public String name;
+    
+        @Parameter(names = {"--description"}, description = "Users may provide a description for the entry.", required = false, arity = 1)
+        public String description;
+    
+        @Parameter(names = {"--scope"}, description = "External tool scope. Valid values: SECONDARY_ANALYSIS, RESEARCH_ANALYSIS, CLINICAL_INTERPRETATION_ANALYSIS or OTHER.", required = false, arity = 1)
+        public String scope;
+    
+        @Parameter(names = {"--tags"}, description = "List of tags.", required = false, arity = 1)
+        public String tags;
+    
+        @Parameter(names = {"--minimum-requirements-cpu"}, description = "Minimum number of cpu cores required to execute the process.", required = false, arity = 1)
+        public String minimumRequirementsCpu;
+    
+        @Parameter(names = {"--minimum-requirements-memory"}, description = "Minimum memory required to execute the process.", required = false, arity = 1)
+        public String minimumRequirementsMemory;
+    
+        @Parameter(names = {"--minimum-requirements-disk"}, description = "Minimum disk required to execute the process.", required = false, arity = 1)
+        public String minimumRequirementsDisk;
+    
+        @Parameter(names = {"--draft"}, description = "Flag indicating whether the external tool is a draft or not.", required = false, help = true, arity = 0)
+        public boolean draft = false;
+    
+        @Parameter(names = {"--creation-date", "--cd"}, description = "Autogenerated date following the format YYYYMMDDhhmmss containing the date when the entry was first registered.", required = false, arity = 1)
+        public String creationDate;
+    
+        @Parameter(names = {"--modification-date", "--md"}, description = "Autogenerated date following the format YYYYMMDDhhmmss containing the date when the entry was last modified.", required = false, arity = 1)
+        public String modificationDate;
+    
+        @DynamicParameter(names = {"--attributes"}, description = "You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.. Use: --attributes key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
+    
+        @Parameter(names = {"--container-name"}, description = "Container name. It should contain the repository and the image name. Optionally, it can also contain the registry. If not provided, Docker Hub will be used as default registry. Examples: 'repository/image', 'registry/repository/image' ", required = false, arity = 1)
+        public String containerName;
+    
+        @Parameter(names = {"--container-tag"}, description = "Container tag. It refers to a specific version of an image.", required = false, arity = 1)
+        public String containerTag;
+    
+        @Parameter(names = {"--container-digest"}, description = "Digest of the Container image. It is a sha256 hash that uniquely identifies a specific Container image. Example: 'sha256:3a5c8...'", required = false, arity = 1)
+        public String containerDigest;
+    
+        @Parameter(names = {"--container-command-line"}, description = "Command line template to run the tool inside the container. You can use ${input} and ${output} as placeholders for input and output files. E.g., 'bwa mem ${input} > ${output}'.", required = false, arity = 1)
+        public String containerCommandLine;
+    
+        @Parameter(names = {"--container-user"}, description = "User that can access the private Container repository.", required = false, arity = 1)
+        public String containerUser;
+    
+        @Parameter(names = {"--container-password"}, description = "Password corresponding to the user that can access the Container repository.", required = false, arity = 1)
+        public String containerPassword;
     
     }
 
@@ -747,7 +1172,7 @@ public class UserToolsCommandOptions {
     
     }
 
-    @Parameters(commandNames = {"workflow-run"}, commandDescription ="Execute a user tool of type WORKFLOW")
+    @Parameters(commandNames = {"workflow-run"}, commandDescription ="Run a user tool of type WORKFLOW")
     public class RunWorkflowCommandOptions {
     
         @ParametersDelegate
@@ -758,12 +1183,6 @@ public class UserToolsCommandOptions {
     
         @Parameter(names = {"--json-data-model"}, description = "Show example of file structure for body data.", help = true, arity = 0)
         public Boolean jsonDataModel = false;
-    
-        @Parameter(names = {"--tool-id"}, description = "Comma separated list of external tool IDs up to a maximum of 100. Also admits basic regular expressions using the operator '~', i.e. '~{perl-regex}' e.g. '~value' for case sensitive, '~/value/i' for case insensitive search.", required = true, arity = 1)
-        public String toolId; 
-    
-        @Parameter(names = {"--version"}, description = "Tool version. If not provided, the latest version will be used.", required = false, arity = 1)
-        public Integer version; 
     
         @Parameter(names = {"--study", "-s"}, description = "Study [[organization@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
@@ -788,6 +1207,15 @@ public class UserToolsCommandOptions {
     
         @Parameter(names = {"--job-dry-run"}, description = "Flag indicating that the job will be executed in dry-run mode. In this mode, OpenCGA will validate that all parameters and prerequisites are correctly set for successful execution, but the job will not actually run.", required = false, arity = 1)
         public Boolean jobDryRun; 
+    
+        @Parameter(names = {"--id"}, description = "User tool identifier.", required = false, arity = 1)
+        public String id;
+    
+        @Parameter(names = {"--version"}, description = "User tool version. If not provided, the latest version will be used.", required = false, arity = 1)
+        public Integer version;
+    
+        @DynamicParameter(names = {"--params"}, description = "Key-value pairs of parameters to be used inside the workflow.. Use: --params key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.String> params = new HashMap<>(); //Dynamic parameters must be initialized;
     
     }
 

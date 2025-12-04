@@ -1,8 +1,11 @@
 package org.opencb.opencga.catalog.utils;
 
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
+import org.opencb.opencga.core.models.externalTool.ExternalToolVariable;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
@@ -56,7 +59,25 @@ public class InputFileUtils {
 
     public boolean fileMayContainReferencesToOtherFiles(File file) {
         // Check file size is smaller than 10MB
-        return file.getSize() < 10 * 1024 * 1024;
+        if (file.getSize() >= 10 * 1024 * 1024) {
+            return false;
+        }
+
+        // Check if file extension is whitelisted
+        return isExtensionWhitelistedForEdition(file);
+    }
+
+    private boolean isExtensionWhitelistedForEdition(File file) {
+        String fileName = file.getName().toLowerCase();
+        // Compressed files
+        String[] whitelistedExtension = {".csv", ".tsv", ".conf", ".xml", ".json", ".yaml", ".txt"};
+        for (String ext : whitelistedExtension) {
+            if (fileName.endsWith(ext)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public List<File> findAndReplaceFilePathToUrisFromFile(String study, File file, Path outFile, String token) throws CatalogException {
@@ -142,6 +163,7 @@ public class InputFileUtils {
      * @param study               Study where the files are located.
      * @param commandLineTemplate Command line template.
      * @param params              Map with the parameters to be replaced in the command line template.
+     * @param variables           List of external tool variables.
      * @param temporalInputDir    Empty directory where files that require any changes will be copied.
      * @param inputBindings       Map where it will store the input bindings that need to be mounted in the Docker.
      * @param outDir              Output directory.
@@ -149,24 +171,51 @@ public class InputFileUtils {
      * @return                    Final command line with the parameters replaced.
      * @throws CatalogException   If any error occurs while processing the command line.
      */
-    public String processCommandLine(String study, String commandLineTemplate, Map<String, String> params, Path temporalInputDir,
+    public String processCommandLine(String study, String commandLineTemplate, Map<String, String> params,
+                                     List<ExternalToolVariable> variables, Path temporalInputDir,
                                      List<AbstractMap.SimpleEntry<String, String>> inputBindings, String outDir, String token)
             throws CatalogException {
+        Map<String, ExternalToolVariable> variableMap = new HashMap<>();
+        if (CollectionUtils.isNotEmpty(variables)) {
+            for (ExternalToolVariable variable : variables) {
+                String variableId = removePrefix(variable.getId());
+                variableMap.put(variableId, variable);
+            }
+        }
+
+        Set<String> replacedParams = new HashSet<>();
+
         // Replace variables
         Matcher matcher = VARIABLE_PATTERN.matcher(commandLineTemplate);
         StringBuffer sb = new StringBuffer();
         while (matcher.find()) {
             String variableName = matcher.group(1);
+            String replacement;
             if (params.containsKey(variableName)) {
-                throw new CatalogException("Variable '" + variableName + "' not found in the params object");
+                replacement = params.get(variableName);
+            } else if (variableMap.containsKey(removePrefix(variableName))) {
+                ExternalToolVariable variable = variableMap.get(removePrefix(variableName));
+                if (StringUtils.isNotEmpty(variable.getDefaultValue())) {
+                    replacement = variable.getDefaultValue();
+                } else if (variable.isOutput()) {
+                    replacement = outDir;
+                } else if (variable.getType() == ExternalToolVariable.ExternalToolVariableType.FLAG) {
+                    replacement = "";
+                } else {
+                    throw new CatalogException("Variable '" + variableName + "' is expected but could not be found in the params object "
+                            + "and does not have a default value set in the tool.");
+                }
+            } else {
+                throw new CatalogException("Variable '" + variableName + "' is expected but could not be found in the params object"
+                        + " nor in the tool variables.");
             }
-            String replacement = params.get(variableName);
             matcher.appendReplacement(sb, Matcher.quoteReplacement(replacement));
+            replacedParams.add(variableName);
         }
         matcher.appendTail(sb);
         String variablesReplaced = sb.toString();
 
-        // Replace input variables
+        // Replace input variables (file://, opencga://, ocga://)
         matcher = OPENCGA_PATH_IN_LINE_PATTERN.matcher(variablesReplaced);
         sb = new StringBuffer();
         while (matcher.find()) {
@@ -197,12 +246,49 @@ public class InputFileUtils {
         matcher.appendTail(sb);
         String finalCli = sb.toString();
 
-        // Replace output variables
+        // Replace output variables ($OUTPUT, $JOB_OUTPUT)
         for (String outputVariable : OUTPUT_LIST) {
             finalCli = finalCli.replaceAll(outputVariable, outDir);
         }
 
+        // Add parameters not included in the command line template
+        StringBuilder additionalParamsBuilder = new StringBuilder();
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            if (!replacedParams.contains(entry.getKey())) {
+                buildCliParams(entry.getKey(), entry.getValue(), additionalParamsBuilder);
+            }
+        }
+        finalCli = finalCli + " " + additionalParamsBuilder;
         return finalCli;
+    }
+
+    private void buildCliParams(String key, String value, StringBuilder builder) {
+        if (!key.startsWith("-")) {
+            if (key.length() == 1) {
+                builder.append("-"); // Single dash for single character parameters
+            } else {
+                builder.append("--");
+            }
+        }
+        builder.append(key).append(" ");
+        if (StringUtils.isNotEmpty(value)) {
+            builder.append(value).append(" ");
+        }
+    }
+
+    /**
+     * Given a variable name, it removes the prefix '-' if present.
+     * Example: --input -> input; -input -> input; input -> input
+     *
+     * @param variable A parameter of a command line.
+     * @return the variable removing any '-' prefix.
+     */
+    protected String removePrefix(String variable) {
+        String value = variable;
+        while (value.startsWith("-")) {
+            value = value.substring(1);
+        }
+        return value;
     }
 
 }

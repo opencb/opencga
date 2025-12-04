@@ -11,6 +11,7 @@ import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.ExternalToolDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
@@ -28,13 +29,14 @@ import org.opencb.opencga.core.models.externalTool.*;
 import org.opencb.opencga.core.models.externalTool.custom.CustomToolCreateParams;
 import org.opencb.opencga.core.models.externalTool.custom.CustomToolRunParams;
 import org.opencb.opencga.core.models.externalTool.custom.CustomToolUpdateParams;
-import org.opencb.opencga.core.models.externalTool.workflow.WorkflowCreateParams;
-import org.opencb.opencga.core.models.externalTool.workflow.WorkflowUpdateParams;
+import org.opencb.opencga.core.models.externalTool.workflow.*;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobType;
+import org.opencb.opencga.core.models.job.MinimumRequirements;
 import org.opencb.opencga.core.models.job.ToolInfo;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyPermissions;
+import org.opencb.opencga.core.models.variant.VariantWalkerToolParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +53,7 @@ import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 public class ExternalToolManager extends ResourceManager<ExternalTool> {
 
     public static final QueryOptions INCLUDE_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(ID.key(), UID.key(),
-            UUID.key(), VERSION.key(), DESCRIPTION.key(), STUDY_UID.key(), WORKFLOW.key(), DOCKER.key()));
+            UUID.key(), VERSION.key(), DESCRIPTION.key(), STUDY_UID.key(), WORKFLOW.key(), CONTAINER.key()));
 
     private final Logger logger;
 
@@ -144,7 +146,7 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
 
             // 1. Check permissions
             authorizationManager.checkStudyPermission(organizationId, study.getUid(), tokenPayload,
-                    StudyPermissions.Permissions.WRITE_WORKFLOWS);
+                    StudyPermissions.Permissions.WRITE_USER_TOOLS);
 
             // Convert WorkflowCreateParams to ExternalTool
             ExternalTool externalTool = new ExternalTool(workflow.getId(), workflow.getName(), workflow.getDescription(),
@@ -177,6 +179,17 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
 
     public OpenCGAResult<ExternalTool> createCustomTool(String studyStr, CustomToolCreateParams toolCreateParams, QueryOptions options,
                                                         String token) throws CatalogException {
+        return createGenericTool(studyStr, toolCreateParams, ExternalToolType.CUSTOM_TOOL, options, token);
+    }
+
+    public OpenCGAResult<ExternalTool> createVariantWalkerTool(String studyStr, CustomToolCreateParams toolCreateParams,
+                                                               QueryOptions options, String token) throws CatalogException {
+        return createGenericTool(studyStr, toolCreateParams, ExternalToolType.VARIANT_WALKER, options, token);
+    }
+
+    private OpenCGAResult<ExternalTool> createGenericTool(String studyStr, CustomToolCreateParams toolCreateParams,
+                                                          ExternalToolType toolType, QueryOptions options, String token)
+            throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
@@ -185,6 +198,7 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("customTool", toolCreateParams)
+                .append("toolType", toolType)
                 .append("options", options)
                 .append("token", token);
 
@@ -199,16 +213,16 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
 
             // 1. Check permissions
             authorizationManager.checkStudyPermission(organizationId, study.getUid(), tokenPayload,
-                    StudyPermissions.Permissions.WRITE_WORKFLOWS);
+                    StudyPermissions.Permissions.WRITE_USER_TOOLS);
 
-            // Convert WorkflowCreateParams to ExternalTool
+            // Convert CustomToolCreateParams to ExternalTool
             ExternalTool externalTool = new ExternalTool(toolCreateParams.getId(), toolCreateParams.getName(),
-                    toolCreateParams.getDescription(), ExternalToolType.WORKFLOW, toolCreateParams.getScope(), null,
-                    toolCreateParams.getDocker(), toolCreateParams.getTags(), toolCreateParams.getVariables(),
+                    toolCreateParams.getDescription(), toolType, toolCreateParams.getScope(), null,
+                    toolCreateParams.getContainer(), toolCreateParams.getTags(), toolCreateParams.getVariables(),
                     toolCreateParams.getMinimumRequirements(), toolCreateParams.isDraft(), toolCreateParams.getInternal(),
                     toolCreateParams.getCreationDate(), toolCreateParams.getModificationDate(), toolCreateParams.getAttributes());
 
-            // 2. Validate the workflow parameters
+            // 2. Validate the custom tool parameters
             validateNewCustomTool(externalTool, userId);
 
             // 3. We insert the workflow
@@ -231,48 +245,72 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
         }
     }
 
-    public OpenCGAResult<Job> submitWorkflow(String studyStr, String externalToolId, Integer version, Map<String, String> params,
-                                             String jobId, String jobDescription, String jobDependsOnStr, String jobTagsStr,
-                                             String jobScheduledStartTime, String jobPriority, Boolean dryRun, String token)
-            throws CatalogException {
-        ExternalToolRunParams runParams = new ExternalToolRunParams(externalToolId, version, params);
-        return submit(studyStr, runParams, ExternalToolType.WORKFLOW, jobId, jobDescription, jobDependsOnStr, jobTagsStr,
-                jobScheduledStartTime, jobPriority, dryRun, token);
+    public OpenCGAResult<Job> submitWorkflow(String studyStr, WorkflowParams params, String jobId, String jobDescription,
+                                             String jobDependsOnStr, String jobTagsStr, String jobScheduledStartTime, String jobPriority,
+                                             Boolean dryRun, String token) throws CatalogException {
+        return submit(studyStr, params, jobId, jobDescription, jobDependsOnStr, jobTagsStr, jobScheduledStartTime, jobPriority, dryRun,
+                token);
     }
 
-    public OpenCGAResult<Job> submitCustomTool(String studyStr, String externalToolId, Integer version, CustomToolRunParams params,
-                                               String jobId, String jobDescription, String jobDependsOnStr, String jobTagsStr,
-                                               String jobScheduledStartTime, String jobPriority, Boolean dryRun, String token)
-            throws CatalogException {
-        ExternalToolRunParams runParams = new ExternalToolRunParams(externalToolId, version, params.getParams(), params.getCommandLine());
-        return submit(studyStr, runParams, ExternalToolType.CUSTOM_TOOL, jobId, jobDescription, jobDependsOnStr, jobTagsStr,
-                jobScheduledStartTime, jobPriority, dryRun, token);
+    public OpenCGAResult<Job> submitCustomTool(String studyStr, CustomToolRunParams params, String jobId, String jobDescription,
+                                               String jobDependsOnStr, String jobTagsStr, String jobScheduledStartTime, String jobPriority,
+                                               Boolean dryRun, String token) throws CatalogException {
+        return submit(studyStr, params, jobId, jobDescription, jobDependsOnStr, jobTagsStr, jobScheduledStartTime, jobPriority, dryRun,
+                token);
     }
 
-//    public OpenCGAResult<Job> submitVariantWalker(String studyStr, String externalToolId, Integer version, Map<String, String> params,
-//                                                  String jobId, String jobDescription, String jobDependsOnStr, String jobTagsStr,
-//                                                  String jobScheduledStartTime, String jobPriority, Boolean dryRun, String token)
-//            throws CatalogException {
-//        return submit(studyStr, externalToolId, version, params, ExternalToolType.VARIANT_WALKER, jobId, jobDescription, jobDependsOnStr,
-//                jobTagsStr, jobScheduledStartTime, jobPriority, dryRun, token);
-//    }
+    public OpenCGAResult<Job> submitVariantWalker(String projectStr, String studyStr, VariantWalkerToolParams params, String jobId,
+                                                  String jobDescription, String jobDependsOnStr, String jobTagsStr,
+                                                  String jobScheduledStartTime, String jobPriority, Boolean dryRun, String token)
+            throws CatalogException {
+        studyStr = getStudyFromProject(projectStr, studyStr, token);
+        return submit(studyStr, params, jobId, jobDescription, jobDependsOnStr, jobTagsStr, jobScheduledStartTime, jobPriority, dryRun,
+                token);
+    }
 
-    private OpenCGAResult<Job> submit(String studyStr, ExternalToolRunParams runParams, ExternalToolType type, String jobId,
-                                      String jobDescription, String jobDependsOnStr, String jobTagsStr, String jobScheduledStartTime,
-                                      String jobPriority, Boolean dryRun, String token) throws CatalogException {
+    private String getStudyFromProject(String projectStr, String studyStr, String token) throws CatalogException {
+        if (StringUtils.isNotEmpty(projectStr) && StringUtils.isEmpty(studyStr)) {
+            // Project job
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key());
+            // Peek any study. The ExecutionDaemon will take care of filling up the rest of studies.
+            List<String> studies = catalogManager.getStudyManager()
+                    .search(projectStr, new Query(), options, token)
+                    .getResults()
+                    .stream()
+                    .map(Study::getFqn)
+                    .collect(Collectors.toList());
+            if (studies.isEmpty()) {
+                throw new CatalogException("Project '" + projectStr + "' not found!");
+            }
+            studyStr = studies.get(0);
+        }
+        return studyStr;
+    }
+
+    public OpenCGAResult<Job> submit(String studyStr, ExternalToolParams params, String jobId, String jobDescription,
+                                     String jobDependsOnStr, String jobTagsStr, String jobScheduledStartTime, String jobPriority,
+                                     Boolean dryRun, String token)
+            throws CatalogException {
         JwtPayload tokenPayload = catalogManager.getUserManager().validateToken(token);
         CatalogFqn studyFqn = CatalogFqn.extractFqnFromStudy(studyStr, tokenPayload);
 
         String organizationId = studyFqn.getOrganizationId();
         String userId = tokenPayload.getUserId(organizationId);
 
+        ParamUtils.checkParameter(params.getId(), "External tool id");
+
+        String externalToolId = params.getId();
+        Integer version = params.getVersion();
+
         Study study = catalogManager.getStudyManager().resolveId(studyFqn, tokenPayload);
+
         Query query = new Query();
-        if (runParams.getVersion() != null) {
-            query.append(VERSION.key(), runParams.getVersion());
+        if (version != null) {
+            query.append(VERSION.key(), version);
         }
-        ExternalTool externalTool = internalGet(organizationId, study.getUid(), runParams.getId(), query, QueryOptions.empty(), userId)
+        ExternalTool externalTool = internalGet(organizationId, study.getUid(), externalToolId, query, QueryOptions.empty(), userId)
                 .first();
+        ExternalToolType type = externalTool.getType();
 
         ToolInfo toolInfo = new ToolInfo()
                 .setId(externalTool.getId())
@@ -283,7 +321,7 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
                 .setDescription(externalTool.getDescription());
 
         // Build ExternalToolRunParams
-        Map<String, Object> paramsMap = runParams.toParams();
+        Map<String, Object> paramsMap = params != null ? params.toParams() : new HashMap<>();
         paramsMap.putIfAbsent(ParamConstants.STUDY_PARAM, study.getFqn());
 
         Enums.Priority priority = Enums.Priority.MEDIUM;
@@ -305,13 +343,19 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
             jobTags = Collections.emptyList();
         }
 
+        JobType jobType = toJobType(type);
+        return catalogManager.getJobManager().submit(study.getFqn(), jobType, toolInfo, priority, paramsMap, jobId, jobDescription,
+                jobDependsOn, jobTags, null, jobScheduledStartTime, dryRun, Collections.emptyMap(), token);
+    }
+
+    private static JobType toJobType(ExternalToolType type) throws CatalogException {
         JobType jobType;
         switch (type) {
             case CUSTOM_TOOL:
-                jobType = JobType.CUSTOM;
+                jobType = JobType.CUSTOM_TOOL;
                 break;
             case VARIANT_WALKER:
-                jobType = JobType.WALKER;
+                jobType = JobType.VARIANT_WALKER;
                 break;
             case WORKFLOW:
                 jobType = JobType.WORKFLOW;
@@ -319,8 +363,7 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
             default:
                 throw new CatalogException("Unknown external tool type: " + type);
         }
-        return catalogManager.getJobManager().submit(study.getFqn(), jobType, toolInfo, priority, paramsMap, jobId, jobDescription,
-                jobDependsOn, jobTags, null, jobScheduledStartTime, dryRun, Collections.emptyMap(), token);
+        return jobType;
     }
 
     public OpenCGAResult<ExternalTool> importWorkflow(String studyStr, WorkflowRepositoryParams repository, QueryOptions options,
@@ -347,7 +390,7 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
 
             // 1. Check permissions
             authorizationManager.checkStudyPermission(organizationId, study.getUid(), tokenPayload,
-                    StudyPermissions.Permissions.WRITE_WORKFLOWS);
+                    StudyPermissions.Permissions.WRITE_USER_TOOLS);
 
             // 2. Download workflow
             ExternalTool externalTool = NextflowUtils.importRepository(repository);
@@ -405,6 +448,9 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
     public OpenCGAResult<ExternalTool> updateWorkflow(String studyStr, String externalToolId, WorkflowUpdateParams updateParams,
                                               QueryOptions options, String token) throws CatalogException {
         return privateUpdate(studyStr, externalToolId, updateParams, externalTool -> {
+            if (externalTool.getType() != ExternalToolType.WORKFLOW) {
+                throw new CatalogException("Only a tool of type " + ExternalToolType.WORKFLOW + " can be updated");
+            }
             Workflow workflow = updateParams.getWorkflow();
             if (workflow == null) {
                 return;
@@ -452,8 +498,23 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
     public OpenCGAResult<ExternalTool> updateCustomTool(String studyStr, String externalToolId, CustomToolUpdateParams updateParams,
                                                       QueryOptions options, String token) throws CatalogException {
         return privateUpdate(studyStr, externalToolId, updateParams, externalTool -> {
-            if (updateParams.getDocker() != null) {
-                validateDocker(updateParams.getDocker());
+            if (externalTool.getType() != ExternalToolType.CUSTOM_TOOL) {
+                throw new CatalogException("Only a tool of type " + ExternalToolType.CUSTOM_TOOL + " can be updated");
+            }
+            if (updateParams.getContainer() != null) {
+                validateDocker(updateParams.getContainer());
+            }
+        }, options, token);
+    }
+
+    public OpenCGAResult<ExternalTool> updateVariantWalker(String studyStr, String externalToolId, CustomToolUpdateParams updateParams,
+                                                        QueryOptions options, String token) throws CatalogException {
+        return privateUpdate(studyStr, externalToolId, updateParams, externalTool -> {
+            if (externalTool.getType() != ExternalToolType.VARIANT_WALKER) {
+                throw new CatalogException("Only a tool of type " + ExternalToolType.VARIANT_WALKER + " can be updated");
+            }
+            if (updateParams.getContainer() != null) {
+                validateDocker(updateParams.getContainer());
             }
         }, options, token);
     }
@@ -495,19 +556,23 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
             uuid = externalTool.getUuid();
 
             // Check permission
-            authorizationManager.checkWorkflowPermission(organizationId, study.getUid(), externalTool.getUid(), userId,
+            authorizationManager.checkExternalToolPermission(organizationId, study.getUid(), externalTool.getUid(), userId,
                     ExternalToolPermissions.WRITE);
 
             if (updateParams == null) {
-                throw new CatalogException("Missing parameters to update the workflow.");
+                throw new CatalogException("Missing parameters to update the tool.");
             }
             validateFunction.execute(externalTool);
+
+            if (updateParams.getMinimumRequirements() != null) {
+                 validateMinimumRequirements(updateParams.getMinimumRequirements());
+            }
 
             ObjectMap updateMap;
             try {
                 updateMap = new ObjectMap(getUpdateObjectMapper().writeValueAsString(updateParams));
             } catch (JsonProcessingException e) {
-                throw new CatalogException("Could not parse WorkflowUpdateParams object: " + e.getMessage(), e);
+                throw new CatalogException("Could not parse the UpdateParams object: " + e.getMessage(), e);
             }
 
             // 2. Update workflow object
@@ -546,18 +611,19 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
         }
     }
 
-    private void validateDocker(Docker docker) throws CatalogParameterException {
-        if (docker == null) {
-            return;
+    private void validateDocker(Container container) throws CatalogParameterException {
+        if (container == null) {
+            throw new CatalogParameterException("Docker information is missing.");
         }
-        ParamUtils.checkParameter(docker.getName(), DOCKER.key() + ".name");
-        ParamUtils.checkParameter(docker.getTag(), DOCKER.key() + ".tag");
-        docker.setCommandLine(ParamUtils.defaultString(docker.getCommandLine(), ""));
-        docker.setUser(ParamUtils.defaultString(docker.getUser(), ""));
-        docker.setPassword(ParamUtils.defaultString(docker.getPassword(), ""));
-        if ((StringUtils.isEmpty(docker.getPassword()) && StringUtils.isNotEmpty(docker.getUser()))
-                || (StringUtils.isNotEmpty(docker.getPassword())
-                && StringUtils.isEmpty(docker.getUser()))) {
+        ParamUtils.checkParameter(container.getName(), CONTAINER.key() + ".name");
+        ParamUtils.checkParameter(container.getTag(), CONTAINER.key() + ".tag");
+        container.setDigest(ParamUtils.defaultString(container.getDigest(), ""));
+        container.setCommandLine(ParamUtils.defaultString(container.getCommandLine(), ""));
+        container.setUser(ParamUtils.defaultString(container.getUser(), ""));
+        container.setPassword(ParamUtils.defaultString(container.getPassword(), ""));
+        if ((StringUtils.isEmpty(container.getPassword()) && StringUtils.isNotEmpty(container.getUser()))
+                || (StringUtils.isNotEmpty(container.getPassword())
+                && StringUtils.isEmpty(container.getUser()))) {
             throw new CatalogParameterException("Docker user and password must be set together.");
         }
     }
@@ -757,7 +823,7 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
                 workflowUuid = externalTool.getUuid();
 
                 if (checkPermissions) {
-                    authorizationManager.checkWorkflowPermission(organizationId, study.getUid(), externalTool.getUid(), userId,
+                    authorizationManager.checkExternalToolPermission(organizationId, study.getUid(), externalTool.getUid(), userId,
                             ExternalToolPermissions.DELETE);
                 }
 
@@ -843,7 +909,7 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
 
             try {
                 if (checkPermissions) {
-                    authorizationManager.checkWorkflowPermission(organizationId, study.getUid(), externalTool.getUid(), userId,
+                    authorizationManager.checkExternalToolPermission(organizationId, study.getUid(), externalTool.getUid(), userId,
                             ExternalToolPermissions.DELETE);
                 }
 
@@ -883,6 +949,18 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
     public OpenCGAResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String token)
             throws CatalogException {
         return null;
+    }
+
+    protected void fixQueryObject(Query query) {
+        super.fixQueryObject(query);
+        if (query.containsKey(ParamConstants.EXTERNAL_TOOL_CONTAINER_NAME_PARAM)) {
+            query.put(ExternalToolDBAdaptor.QueryParams.CONTAINER_NAME.key(), query.get(ParamConstants.EXTERNAL_TOOL_CONTAINER_NAME_PARAM));
+            query.remove(ParamConstants.EXTERNAL_TOOL_CONTAINER_NAME_PARAM);
+        }
+        if (query.containsKey(ParamConstants.EXTERNAL_TOOL_WORKFLOW_REPOSITORY_NAME_PARAM)) {
+            query.put(WORKFLOW_REPOSITORY_NAME.key(), query.get(ParamConstants.EXTERNAL_TOOL_WORKFLOW_REPOSITORY_NAME_PARAM));
+            query.remove(ParamConstants.EXTERNAL_TOOL_WORKFLOW_REPOSITORY_NAME_PARAM);
+        }
     }
 
     private ExternalToolDBAdaptor.QueryParams getFieldFilter(List<String> idList) throws CatalogException {
@@ -944,25 +1022,28 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
                     + " image.");
         }
 
-        externalTool.setDocker(null);
+        externalTool.setContainer(null);
         validateNewExternalTool(externalTool, userId);
     }
 
     private void validateNewCustomTool(ExternalTool externalTool, String userId) throws CatalogParameterException {
-        ParamUtils.checkObj(externalTool.getDocker(), DOCKER.key());
-        validateDocker(externalTool.getDocker());
+        ParamUtils.checkObj(externalTool.getContainer(), CONTAINER.key());
+        validateDocker(externalTool.getContainer());
         externalTool.setWorkflow(null);
         validateNewExternalTool(externalTool, userId);
     }
 
     private void validateNewExternalTool(ExternalTool externalTool, String userId) throws CatalogParameterException {
         ParamUtils.checkIdentifier(externalTool.getId(), ID.key());
+        if (externalTool.getWorkflow() == null && externalTool.getContainer() == null) {
+            throw new CatalogParameterException("Missing expected workflow or docker object");
+        }
+        if (externalTool.getWorkflow() != null && externalTool.getContainer() != null) {
+            throw new CatalogParameterException("Both workflow and docker objects found. Please, choose one.");
+        }
         externalTool.setScope(ParamUtils.defaultObject(externalTool.getScope(), ExternalToolScope.OTHER));
         externalTool.setTags(externalTool.getTags() != null
                 ? externalTool.getTags()
-                : Collections.emptyList());
-        externalTool.getWorkflow().setScripts(externalTool.getWorkflow().getScripts() != null
-                ? externalTool.getWorkflow().getScripts()
                 : Collections.emptyList());
 
         externalTool.setName(ParamUtils.defaultString(externalTool.getName(), externalTool.getId()));
@@ -975,8 +1056,89 @@ public class ExternalToolManager extends ResourceManager<ExternalTool> {
         externalTool.setInternal(new ExternalToolInternal(new InternalStatus(InternalStatus.READY), TimeUtils.getTime(),
                 TimeUtils.getTime(), userId));
 
-        if (externalTool.getWorkflow() == null && externalTool.getDocker() == null) {
-            throw new CatalogParameterException("Missing expected workflow or docker object");
+        if (externalTool.getMinimumRequirements() != null) {
+            validateMinimumRequirements(externalTool.getMinimumRequirements());
+        }
+    }
+
+    private static void validateMinimumRequirements(MinimumRequirements minimumRequirements) throws CatalogParameterException {
+        ParamUtils.checkParameter(minimumRequirements.getCpu(), "minimumRequirements.cpu");
+        ParamUtils.checkParameter(minimumRequirements.getMemory(), "minimumRequirements.memory");
+        // CPU should be a positive number and should be able to cast to Number
+        try {
+            double cpu = Double.parseDouble(minimumRequirements.getCpu());
+            if (cpu <= 0) {
+                throw new CatalogParameterException("Minimum requirements CPU should be a positive number.");
+            }
+        } catch (NumberFormatException e) {
+            throw new CatalogParameterException("Minimum requirements CPU should be a positive number.", e);
+        }
+        // Memory should be a positive number optionally followed by a unit (MB or GB)
+        // Supported formats: "16", "16GB", "16 GB", "16.GB", "16.5", "16.5GB", "16.5 GB"
+        // If memory is only a positive number, we will add GB as the unit
+        String memory = minimumRequirements.getMemory().trim();
+        List<String> validUnits = Arrays.asList("MB", "GB", "MIB", "GIB");
+
+        String numericPart = null;
+        String unit = null;
+
+        // First, try to find unit at the end (without separator)
+        String upperMemory = memory.toUpperCase();
+        for (String validUnit : validUnits) {
+            if (upperMemory.endsWith(validUnit)) {
+                numericPart = memory.substring(0, memory.length() - validUnit.length());
+                unit = validUnit;
+                // Check if there's a space or dot separator before the unit
+                if (numericPart.endsWith(" ") || numericPart.endsWith(".")) {
+                    numericPart = numericPart.substring(0, numericPart.length() - 1).trim();
+                }
+                break;
+            }
+        }
+
+        if (numericPart == null) {
+            // No valid unit found. Check if there's an invalid unit suffix.
+            // Look for a pattern where the string ends with letters
+            String potentialNumeric = memory;
+            String potentialUnit = null;
+
+            // Find where the numeric part ends and letters start
+            int i = memory.length() - 1;
+            while (i >= 0 && Character.isLetter(memory.charAt(i))) {
+                i--;
+            }
+
+            if (i < memory.length() - 1) {
+                // Found letters at the end
+                potentialNumeric = memory.substring(0, i + 1).trim();
+                potentialUnit = memory.substring(i + 1).trim();
+
+                // Remove trailing space or dot from numeric part
+                if (potentialNumeric.endsWith(" ") || potentialNumeric.endsWith(".")) {
+                    potentialNumeric = potentialNumeric.substring(0, potentialNumeric.length() - 1).trim();
+                }
+
+                // Check if the unit part is invalid
+                if (!potentialUnit.isEmpty() && !validUnits.contains(potentialUnit.toUpperCase())) {
+                    throw new CatalogParameterException("Minimum requirements memory unit '" + potentialUnit + "' is not valid. "
+                            + "Supported units are: " + String.join(", ", validUnits) + ".");
+                }
+            }
+
+            numericPart = potentialNumeric;
+        }
+
+        try {
+            double memoryValue = Double.parseDouble(numericPart);
+            if (memoryValue <= 0) {
+                throw new CatalogParameterException("Minimum requirements memory should be a positive number.");
+            }
+            if (unit == null) {
+                // No unit provided, we will add GB
+                minimumRequirements.setMemory(memoryValue + "GB");
+            }
+        } catch (NumberFormatException e) {
+            throw new CatalogParameterException("Minimum requirements memory should be a positive number.", e);
         }
     }
 

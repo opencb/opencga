@@ -38,6 +38,8 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
     private String dataRelease;
 
     private int release;
+    // Timestamp of the last time the cache was valid. Anything older than this timestamp should be considered invalid.
+    private int validCacheTimestamp;
 
     private VariantAnnotationSets annotation;
     private VariantSecondaryAnnotationIndexSets secondaryAnnotationIndex;
@@ -329,6 +331,7 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
 
     public ProjectMetadata() {
         release = 1;
+        validCacheTimestamp = 0;
         dataRelease = "";
         annotation = new VariantAnnotationSets();
         secondaryAnnotationIndex = new VariantSecondaryAnnotationIndexSets();
@@ -337,16 +340,17 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
     }
 
     public ProjectMetadata(String species, String assembly, int release) {
-        this(species, assembly, null, release, null, null, null, null);
+        this(species, assembly, null, release, 0, null, null, null, null);
     }
 
-    public ProjectMetadata(String species, String assembly, String dataRelease, int release, ObjectMap attributes,
+    public ProjectMetadata(String species, String assembly, String dataRelease, int release, int validCacheTimestamp, ObjectMap attributes,
                            Map<String, Integer> counters, VariantAnnotationSets annotation,
                            VariantSecondaryAnnotationIndexSets secondaryAnnotationIndex) {
         this.species = species;
         this.assembly = assembly;
         this.dataRelease = dataRelease;
         this.release = release;
+        this.validCacheTimestamp = validCacheTimestamp;
         setAttributes(attributes != null ? attributes : new ObjectMap());
         this.annotation = annotation != null ? annotation : new VariantAnnotationSets();
         this.secondaryAnnotationIndex = secondaryAnnotationIndex != null ? secondaryAnnotationIndex
@@ -360,6 +364,7 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
         this.assembly = other.assembly;
         this.dataRelease = other.dataRelease;
         this.release = other.release;
+        this.validCacheTimestamp = other.validCacheTimestamp;
         setAttributes(other.getAttributes() != null ? new ObjectMap(other.getAttributes()) : new ObjectMap());
         this.annotation = other.annotation != null ? new VariantAnnotationSets(other.annotation) : new VariantAnnotationSets();
         this.counters = other.counters != null ? new HashMap<>(other.counters) : new HashMap<>();
@@ -403,6 +408,15 @@ public class ProjectMetadata extends ResourceMetadata<ProjectMetadata> {
 
     public ProjectMetadata setRelease(int release) {
         this.release = release;
+        return this;
+    }
+
+    public int getValidCacheTimestamp() {
+        return validCacheTimestamp;
+    }
+
+    public ProjectMetadata setValidCacheTimestamp(int validCacheTimestamp) {
+        this.validCacheTimestamp = validCacheTimestamp;
         return this;
     }
 

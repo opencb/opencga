@@ -37,6 +37,9 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.mixins.*;
+import org.opencb.opencga.core.models.externalTool.*;
+import org.opencb.opencga.core.models.externalTool.workflow.WorkflowRepository;
+import org.opencb.opencga.core.models.externalTool.workflow.WorkflowRepositoryMixin;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyMixin;
 import org.opencb.opencga.core.models.federation.FederationClientParams;
@@ -53,7 +56,6 @@ import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.VariableSet;
-import org.opencb.opencga.core.models.externalTool.ExternalTool;
 
 import javax.ws.rs.ext.ContextResolver;
 import java.io.IOException;
@@ -166,6 +168,8 @@ public class JacksonUtils {
         objectMapper.addMixIn(ExternalTool.class, PrivateUidMixin.class);
         objectMapper.addMixIn(FederationServerParams.class, FederationServerParamsMixin.class);
         objectMapper.addMixIn(FederationClientParams.class, FederationClientParamsMixin.class);
+        objectMapper.addMixIn(WorkflowRepository.class, WorkflowRepositoryMixin.class);
+        objectMapper.addMixIn(Container.class, ContainerRedactedMixin.class);
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
         return objectMapper;

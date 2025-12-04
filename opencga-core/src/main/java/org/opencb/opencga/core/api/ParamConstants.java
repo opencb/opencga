@@ -627,7 +627,7 @@ public class ParamConstants {
     public static final String EXTERNAL_TOOL_DRAFT_PARAM = "draft";
     public static final String EXTERNAL_TOOL_INTERNAL_REGISTRATION_USER_ID_PARAM = "internal.registrationUserId";
     public static final String EXTERNAL_TOOL_WORKFLOW_REPOSITORY_NAME_PARAM = "workflowRepositoryName";
-    public static final String EXTERNAL_TOOL_DOCKER_NAME_PARAM = "dockerName";
+    public static final String EXTERNAL_TOOL_CONTAINER_NAME_PARAM = "containerName";
     public static final String EXTERNAL_TOOL_ID_DESCRIPTION = "Comma separated list of external tool IDs" + UP_TO_100 + REGEX_SUPPORT;
     public static final String EXTERNAL_TOOL_NAME_DESCRIPTION = "Comma separated list of external tool names" + UP_TO_100 + REGEX_SUPPORT;
     public static final String EXTERNAL_TOOL_UUID_DESCRIPTION = "Comma separated list of external tool UUIDs" + UP_TO_100;
@@ -636,7 +636,7 @@ public class ParamConstants {
             + " SECONDARY_ANALYSIS, RESEARCH or OTHER]";
     public static final String EXTERNAL_TOOL_TAGS_DESCRIPTION = "Comma separated list of tags";
     public static final String EXTERNAL_TOOL_WORKFLOW_REPOSITORY_NAME_DESCRIPTION = "Workflow repository name";
-    public static final String EXTERNAL_TOOL_DOCKER_NAME_DESCRIPTION = "Docker name";
+    public static final String EXTERNAL_TOOL_CONTAINER_NAME_DESCRIPTION = "Container name";
     public static final String EXTERNAL_TOOL_DRAFT_DESCRIPTION = "Boolean field indicating whether the workflow is a draft or not.";
     public static final String EXTERNAL_TOOL_INTERNAL_REGISTRATION_USER_ID_DESCRIPTION = "UserId that created the workflow.";
 

@@ -68,7 +68,7 @@ public class ExternalToolMongoDBAdaptor extends CatalogMongoDBAdaptor implements
     ExternalTool insert(ClientSession clientSession, long studyUid, ExternalTool externalTool) throws CatalogDBException {
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyUid);
         if (StringUtils.isEmpty(externalTool.getId())) {
-            throw new CatalogDBException("Missing workflow id");
+            throw new CatalogDBException("Missing user tool id");
         }
 
         // Check the workflow does not exist
@@ -78,7 +78,7 @@ public class ExternalToolMongoDBAdaptor extends CatalogMongoDBAdaptor implements
         );
         DataResult<Long> count = workflowCollection.count(clientSession, bson);
         if (count.getNumMatches() > 0) {
-            throw new CatalogDBException("Workflow { id: '" + externalTool.getId() + "'} already exists.");
+            throw new CatalogDBException("User tool { id: '" + externalTool.getId() + "'} already exists.");
         }
 
         long uid = getNewUid(clientSession);
@@ -93,9 +93,9 @@ public class ExternalToolMongoDBAdaptor extends CatalogMongoDBAdaptor implements
         workflowObject.put(PRIVATE_MODIFICATION_DATE, StringUtils.isNotEmpty(externalTool.getModificationDate())
                 ? TimeUtils.toDate(externalTool.getModificationDate()) : TimeUtils.getDate());
 
-        logger.debug("Inserting workflow '{}' ({})...", externalTool.getId(), externalTool.getUid());
+        logger.debug("Inserting user tool '{}' ({})...", externalTool.getId(), externalTool.getUid());
         versionedMongoDBAdaptor.insert(clientSession, workflowObject);
-        logger.debug("Workflow '{}' successfully inserted", externalTool.getId());
+        logger.debug("User tool '{}' successfully inserted", externalTool.getId());
 
         return externalTool;
     }
@@ -104,11 +104,11 @@ public class ExternalToolMongoDBAdaptor extends CatalogMongoDBAdaptor implements
     public OpenCGAResult<ExternalTool> insert(long studyUid, ExternalTool externalTool, QueryOptions options) throws CatalogException {
         return runTransaction(clientSession -> {
             long tmpStartTime = startQuery();
-            logger.debug("Starting workflow insert transaction for workflow id '{}'", externalTool.getId());
+            logger.debug("Starting user tool insert transaction for user tool id '{}'", externalTool.getId());
 
             insert(clientSession, studyUid, externalTool);
             return endWrite(tmpStartTime, 1, 1, 0, 0, null);
-        }, e -> logger.error("Could not create workflow {}: {}", externalTool.getId(), e.getMessage()));
+        }, e -> logger.error("Could not create user tool {}: {}", externalTool.getId(), e.getMessage()));
     }
 
     @Override
@@ -267,8 +267,8 @@ public class ExternalToolMongoDBAdaptor extends CatalogMongoDBAdaptor implements
         try {
             return runTransaction(clientSession -> privateUpdate(clientSession, query, parameters, queryOptions));
         } catch (CatalogException e) {
-            logger.error("Could not update workflows for query {}", query.toJson(), e);
-            throw new CatalogDBException("Could not update workflows based on query " + query.toJson(), e);
+            logger.error("Could not update user tools for query {}", query.toJson(), e);
+            throw new CatalogDBException("Could not update user tools based on query " + query.toJson(), e);
         }
     }
 
@@ -296,12 +296,12 @@ public class ExternalToolMongoDBAdaptor extends CatalogMongoDBAdaptor implements
                     new QueryOptions(MongoDBCollection.MULTI, true));
 
             if (result.getNumMatches() == 0) {
-                throw new CatalogDBException("Workflow(s) '" + workflowIds + "' not found");
+                throw new CatalogDBException("User tool(s) '" + workflowIds + "' not found");
             }
             if (result.getNumUpdated() == 0) {
-                events.add(new Event(Event.Type.WARNING, workflowIds, "Workflow(s) already updated"));
+                events.add(new Event(Event.Type.WARNING, workflowIds, "User tool(s) already updated"));
             }
-            logger.debug("Workflow(s) '{}' successfully updated", workflowIds);
+            logger.debug("User tool(s) '{}' successfully updated", workflowIds);
 
 
             return endWrite(tmpStartTime, result.getNumMatches(), result.getNumUpdated(), events);
@@ -310,7 +310,7 @@ public class ExternalToolMongoDBAdaptor extends CatalogMongoDBAdaptor implements
 
     private UpdateDocument parseAndValidateUpdateParams(ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         if (parameters.containsKey(QueryParams.ID.key())) {
-            throw new CatalogDBException("It is not allowed to update the 'id' of a workflow");
+            throw new CatalogDBException("It is not allowed to update the 'id' of a user tool");
         }
 
         UpdateDocument document = new UpdateDocument();
@@ -337,9 +337,12 @@ public class ExternalToolMongoDBAdaptor extends CatalogMongoDBAdaptor implements
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        final String[] acceptedListParams = {QueryParams.DOCKER.key(), QueryParams.WORKFLOW_MANAGER.key(),
-                QueryParams.WORKFLOW_SCRIPTS.key(), QueryParams.WORKFLOW_REPOSITORY.key(), QueryParams.TAGS.key(),
-                QueryParams.VARIABLES.key(), QueryParams.MINIMUM_REQUIREMENTS.key()};
+        final String[] acceptedStringListParams = {QueryParams.TAGS.key()};
+        filterStringListParams(parameters, document.getSet(), acceptedStringListParams);
+
+        final String[] acceptedListParams = {QueryParams.CONTAINER.key(), QueryParams.WORKFLOW_MANAGER.key(),
+                QueryParams.WORKFLOW_SCRIPTS.key(), QueryParams.WORKFLOW_REPOSITORY.key(), QueryParams.VARIABLES.key(),
+                QueryParams.MINIMUM_REQUIREMENTS.key()};
         filterObjectParams(parameters, document.getSet(), acceptedListParams);
 
         if (!document.toFinalUpdateDocument().isEmpty()) {
@@ -365,12 +368,12 @@ public class ExternalToolMongoDBAdaptor extends CatalogMongoDBAdaptor implements
                     .append(QueryParams.STUDY_UID.key(), externalTool.getStudyUid());
             OpenCGAResult<Document> result = nativeGet(query, new QueryOptions());
             if (result.getNumResults() == 0) {
-                throw new CatalogDBException("Could not find workflow " + externalTool.getId() + " with uid " + externalTool.getUid());
+                throw new CatalogDBException("Could not find user tool " + externalTool.getId() + " with uid " + externalTool.getUid());
             }
             return runTransaction(clientSession -> privateDelete(clientSession, result.first()));
         } catch (CatalogException e) {
-            logger.error("Could not delete workflow {}: {}", externalTool.getId(), e.getMessage(), e);
-            throw new CatalogDBException("Could not delete workflow " + externalTool.getId() + ": " + e.getMessage(), e);
+            logger.error("Could not delete user tool {}: {}", externalTool.getId(), e.getMessage(), e);
+            throw new CatalogDBException("Could not delete user tool " + externalTool.getId() + ": " + e.getMessage(), e);
         }
     }
 
@@ -386,7 +389,7 @@ public class ExternalToolMongoDBAdaptor extends CatalogMongoDBAdaptor implements
                 try {
                     result.append(runTransaction(clientSession -> privateDelete(clientSession, workflow)));
                 } catch (CatalogException e) {
-                    logger.error("Could not delete workflow {}: {}", workflowId, e.getMessage(), e);
+                    logger.error("Could not delete user tool {}: {}", workflowId, e.getMessage(), e);
                     result.getEvents().add(new Event(Event.Type.ERROR, workflowId, e.getMessage()));
                     result.setNumMatches(result.getNumMatches() + 1);
                 }
@@ -403,14 +406,14 @@ public class ExternalToolMongoDBAdaptor extends CatalogMongoDBAdaptor implements
         long workflowUid = workflowDocument.getLong(PRIVATE_UID);
         long studyUid = workflowDocument.getLong(PRIVATE_STUDY_UID);
 
-        logger.debug("Deleting workflow {} ({})", workflowId, workflowUid);
+        logger.debug("Deleting user tool {} ({})", workflowId, workflowUid);
         // Delete workflow
         Query workflowQuery = new Query()
                 .append(QueryParams.UID.key(), workflowUid)
                 .append(QueryParams.STUDY_UID.key(), studyUid);
         Bson bsonQuery = parseQuery(workflowQuery);
         versionedMongoDBAdaptor.delete(clientSession, bsonQuery);
-        logger.debug("Workflow {}({}) deleted", workflowId, workflowUid);
+        logger.debug("User tool {}({}) deleted", workflowId, workflowUid);
         return endWrite(tmpStartTime, 1, 0, 0, 1, Collections.emptyList());
     }
 
@@ -533,7 +536,7 @@ public class ExternalToolMongoDBAdaptor extends CatalogMongoDBAdaptor implements
                     case UUID:
                     case NAME:
                     case WORKFLOW_REPOSITORY_NAME:
-                    case DOCKER_NAME:
+                    case CONTAINER_NAME:
                     case TAGS:
                     case RELEASE:
                     case VERSION:

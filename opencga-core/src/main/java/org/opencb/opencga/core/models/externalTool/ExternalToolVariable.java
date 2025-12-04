@@ -1,16 +1,31 @@
 package org.opencb.opencga.core.models.externalTool;
 
+import org.opencb.commons.annotations.DataField;
+
 public class ExternalToolVariable {
 
+    @DataField(id = "id", description = "Variable identifier (e.g., 'inputFile', '--threads', '-q').")
     private String id;
+
+    @DataField(id = "name", description = "Pretty name of the variable.")
     private String name;
+
+    @DataField(id = "description", description = "Variable description.")
     private String description;
-    private WorkflowVariableType type;
+
+    @DataField(id = "type", description = "Variable type. May be: FLAG, BOOLEAN, INTEGER, DOUBLE, STRING, FILE.")
+    private ExternalToolVariableType type;
+
+    @DataField(id = "required", description = "Whether the variable is required or not.")
     private boolean required;
+
+    @DataField(id = "defaultValue", description = "Default value for the variable (if any).")
     private String defaultValue;
+
+    @DataField(id = "output", description = "Whether the variable is an output file or directory.")
     private boolean output;
 
-    public enum WorkflowVariableType {
+    public enum ExternalToolVariableType {
         FLAG,
         BOOLEAN,
         INTEGER,
@@ -22,7 +37,7 @@ public class ExternalToolVariable {
     public ExternalToolVariable() {
     }
 
-    public ExternalToolVariable(String id, String name, String description, WorkflowVariableType type, boolean required,
+    public ExternalToolVariable(String id, String name, String description, ExternalToolVariableType type, boolean required,
                                 String defaultValue, boolean output) {
         this.id = id;
         this.name = name;
@@ -74,11 +89,11 @@ public class ExternalToolVariable {
         return this;
     }
 
-    public WorkflowVariableType getType() {
+    public ExternalToolVariableType getType() {
         return type;
     }
 
-    public ExternalToolVariable setType(WorkflowVariableType type) {
+    public ExternalToolVariable setType(ExternalToolVariableType type) {
         this.type = type;
         return this;
     }

@@ -6,7 +6,7 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
 @Migration(id = "move_user_account_to_internal",
         description = "Move account to internal.account #6494", version = "3.2.1",
         language = Migration.MigrationLanguage.JAVA, domain = Migration.MigrationDomain.CATALOG, date = 20240723,
-        deprecatedSince = "4.0.0")
+        deprecatedSince = "5.0.0")
 public class MoveUserAccountToInternalMigration extends MigrationTool {
 
     @Override

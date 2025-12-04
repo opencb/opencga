@@ -191,12 +191,12 @@ public abstract class ToolParams {
         for (BeanPropertyDefinition property : beanDescription.findProperties()) {
             Class<?> rawPrimaryType = property.getRawPrimaryType();
             internalPropertiesMap.put(property.getName(), rawPrimaryType);
-            if (ToolParams.class.isAssignableFrom(rawPrimaryType)) {
-                if (hasNestedFields(((Class<? extends ToolParams>) rawPrimaryType))) {
-                    throw new IllegalStateException("Invalid param '" + property.getName() + "' from ToolParams " + aClass + ". "
-                            + "Invalid multiple level nesting params");
-                }
-            }
+//            if (ToolParams.class.isAssignableFrom(rawPrimaryType)) {
+//                if (hasNestedFields(((Class<? extends ToolParams>) rawPrimaryType))) {
+//                    throw new IllegalStateException("Invalid param '" + property.getName() + "' from ToolParams " + aClass + ". "
+//                            + "Invalid multiple level nesting params");
+//                }
+//            }
         }
         return internalPropertiesMap;
     }

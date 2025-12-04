@@ -1,5 +1,7 @@
 package org.opencb.opencga.server.generator.config;
 
+import org.opencb.commons.annotations.DataField;
+
 import java.util.List;
 
 public class ApiConfig {
@@ -9,6 +11,9 @@ public class ApiConfig {
     private String executorsParentClass;
     private String optionsParserParentClass;
     private String executorsOpencgaClientPrefix;
+
+    @DataField(id = "restMethodParseList", description = "List of REST endpoints that cannot be handled automatically or that require "
+            + "a special method name.")
     private List<RestMethodParse> restMethodParseList;
 
     public ApiConfig() {

@@ -396,7 +396,7 @@ public class JobManager extends ResourceManager<Job> {
         } else {
             // We only check input files if the job does not depend on other job that might be creating the necessary files.
             List<File> inputFiles;
-            if (job.getType() == JobType.NATIVE) {
+            if (job.getType() == JobType.NATIVE_TOOL) {
                 inputFiles = getJobInputFilesFromParams(study.getFqn(), job, tokenPayload.getToken());
             } else {
                 inputFiles = getWorkflowJobInputFilesFromParams(study.getFqn(), job, tokenPayload.getToken());

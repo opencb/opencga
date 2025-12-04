@@ -5,7 +5,6 @@ import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.models.externalTool.ExternalToolScope;
 import org.opencb.opencga.core.models.externalTool.ExternalToolUpdateParams;
 import org.opencb.opencga.core.models.externalTool.ExternalToolVariable;
-import org.opencb.opencga.core.models.externalTool.Workflow;
 import org.opencb.opencga.core.models.job.MinimumRequirements;
 
 import java.util.List;

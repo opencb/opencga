@@ -15,7 +15,8 @@ import java.util.*;
 
 @Migration(id = "minimize_file_data_in_job_7358",
         description = "Minimize file data in Job  #7358", version = "3.5.0",
-        language = Migration.MigrationLanguage.JAVA, domain = Migration.MigrationDomain.CATALOG, date = 20250224)
+        language = Migration.MigrationLanguage.JAVA, domain = Migration.MigrationDomain.CATALOG, date = 20250224,
+        deprecatedSince = "5.0.0")
 public class MinimiseFileDataInJob_TASK_7358 extends MigrationTool {
 
     @Override

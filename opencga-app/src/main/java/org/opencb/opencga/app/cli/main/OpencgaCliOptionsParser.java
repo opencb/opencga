@@ -180,6 +180,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         JCommander adminSubCommands = jCommander.getCommands().get("admin");
         adminSubCommands.addCommand("audit-group-by", adminCommandOptions.groupByAuditCommandOptions);
         adminSubCommands.addCommand("catalog-install", adminCommandOptions.installCatalogCommandOptions);
+        adminSubCommands.addCommand("catalog-workspace-update", adminCommandOptions.updateCatalogWorkspaceCommandOptions);
         adminSubCommands.addCommand("organizations-list", adminCommandOptions.listOrganizationsCommandOptions);
         adminSubCommands.addCommand("resource-fetch", adminCommandOptions.fetchResourceCommandOptions);
         adminSubCommands.addCommand("users-create", adminCommandOptions.createUsersCommandOptions);
@@ -239,13 +240,15 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         JCommander userToolsSubCommands = jCommander.getCommands().get("tools");
         userToolsSubCommands.addCommand("acl-update", userToolsCommandOptions.updateAclCommandOptions);
         userToolsSubCommands.addCommand("aggregationstats", userToolsCommandOptions.aggregationStatsCommandOptions);
-        userToolsSubCommands.addCommand("custom-build", userToolsCommandOptions.buildCustomCommandOptions);
+        userToolsSubCommands.addCommand("custom-builder-run", userToolsCommandOptions.runCustomBuilderCommandOptions);
         userToolsSubCommands.addCommand("custom-create", userToolsCommandOptions.createCustomCommandOptions);
         userToolsSubCommands.addCommand("custom-docker-run", userToolsCommandOptions.runCustomDockerCommandOptions);
-        userToolsSubCommands.addCommand("custom-run", userToolsCommandOptions.runCustomCommandOptions);
         userToolsSubCommands.addCommand("custom-update", userToolsCommandOptions.updateCustomCommandOptions);
         userToolsSubCommands.addCommand("distinct", userToolsCommandOptions.distinctCommandOptions);
         userToolsSubCommands.addCommand("search", userToolsCommandOptions.searchCommandOptions);
+        userToolsSubCommands.addCommand("walker-create", userToolsCommandOptions.createWalkerCommandOptions);
+        userToolsSubCommands.addCommand("walker-run", userToolsCommandOptions.runWalkerCommandOptions);
+        userToolsSubCommands.addCommand("walker-update", userToolsCommandOptions.updateWalkerCommandOptions);
         userToolsSubCommands.addCommand("workflow-create", userToolsCommandOptions.createWorkflowCommandOptions);
         userToolsSubCommands.addCommand("workflow-import", userToolsCommandOptions.importWorkflowCommandOptions);
         userToolsSubCommands.addCommand("workflow-run", userToolsCommandOptions.runWorkflowCommandOptions);
@@ -372,6 +375,7 @@ public class OpencgaCliOptionsParser extends CustomCliOptionsParser {
         filesSubCommands.addCommand("postlink-run", filesCommandOptions.runPostlinkCommandOptions);
         filesSubCommands.addCommand("search", filesCommandOptions.searchCommandOptions);
         filesSubCommands.addCommand("upload", filesCommandOptions.uploadCommandOptions);
+        filesSubCommands.addCommand("uri-update", filesCommandOptions.updateUriCommandOptions);
         filesSubCommands.addCommand("acl", filesCommandOptions.aclCommandOptions);
         filesSubCommands.addCommand("delete", filesCommandOptions.deleteCommandOptions);
         filesSubCommands.addCommand("info", filesCommandOptions.infoCommandOptions);

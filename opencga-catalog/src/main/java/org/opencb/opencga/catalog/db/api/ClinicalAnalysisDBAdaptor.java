@@ -95,6 +95,7 @@ public interface ClinicalAnalysisDBAdaptor extends AnnotationSetDBAdaptor<Clinic
         FAMILY_MEMBERS_SAMPLES_UID("family.members.samples.uid", LONG_ARRAY, ""),
         FILES("files", TEXT_ARRAY, ""),
         FILES_UID("files.uid", LONG_ARRAY, ""),
+        FILES_PATH("files.path", TEXT_ARRAY, ""),
         PANELS("panels", TEXT_ARRAY, ""),
         PANELS_UID("panels.uid", LONG_ARRAY, ""),
         COMMENTS("comments", TEXT_ARRAY, ""),

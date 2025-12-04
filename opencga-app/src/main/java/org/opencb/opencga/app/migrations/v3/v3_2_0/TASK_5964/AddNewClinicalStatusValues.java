@@ -7,7 +7,7 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
         description = "Add new ClinicalStatus to ClinicalAnalysis and Interpretation, #TASK-5964",
         version = "3.2.0",
         language = Migration.MigrationLanguage.JAVA, domain = Migration.MigrationDomain.CATALOG, date = 20240611,
-        deprecatedSince = "4.0.0")
+        deprecatedSince = "5.0.0")
 public class AddNewClinicalStatusValues extends MigrationTool {
 
     @Override

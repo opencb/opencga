@@ -3,13 +3,11 @@ package org.opencb.opencga.analysis.workflow;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.tools.OpenCgaDockerToolScopeStudy;
 import org.opencb.opencga.catalog.db.api.ExternalToolDBAdaptor;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.GitRepositoryState;
@@ -18,9 +16,8 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.externalTool.ExternalTool;
-import org.opencb.opencga.core.models.externalTool.ExternalToolRunParams;
-import org.opencb.opencga.core.models.externalTool.ExternalToolVariable;
-import org.opencb.opencga.core.models.externalTool.WorkflowScript;
+import org.opencb.opencga.core.models.externalTool.workflow.WorkflowParams;
+import org.opencb.opencga.core.models.externalTool.workflow.WorkflowScript;
 import org.opencb.opencga.core.models.job.ToolInfoExecutor;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.ToolDependency;
@@ -43,14 +40,14 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Stream;
 
-@Tool(id = NextFlowExecutor.ID, resource = Enums.Resource.EXTERNAL_TOOL, description = NextFlowExecutor.DESCRIPTION)
-public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
+@Tool(id = NextFlowToolExecutor.ID, resource = Enums.Resource.EXTERNAL_TOOL, description = NextFlowToolExecutor.DESCRIPTION)
+public class NextFlowToolExecutor extends ExternalToolDockerScopeStudy {
 
     public final static String ID = "nextflow";
     public static final String DESCRIPTION = "Execute a Nextflow analysis.";
 
     @ToolParams
-    protected ExternalToolRunParams runParams = new ExternalToolRunParams();
+    protected WorkflowParams runParams = new WorkflowParams();
 
     private ExternalTool externalTool;
     private String cliParams;
@@ -61,7 +58,7 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
     private Thread thread;
     private final int monitorThreadPeriod = 5000;
 
-    private final static Logger logger = LoggerFactory.getLogger(NextFlowExecutor.class);
+    private final static Logger logger = LoggerFactory.getLogger(NextFlowToolExecutor.class);
 
     @Override
     protected void check() throws Exception {
@@ -91,18 +88,6 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
         outDirPath = getOutDir().toAbsolutePath().toString();
         ephimeralDirPath = getScratchDir().toAbsolutePath().toString();
 
-        Set<String> mandatoryParams = new HashSet<>();
-        Map<String, ExternalToolVariable> variableMap = new HashMap<>();
-        if (CollectionUtils.isNotEmpty(externalTool.getVariables())) {
-            for (ExternalToolVariable variable : externalTool.getVariables()) {
-                String variableId = removePrefix(variable.getId());
-                variableMap.put(variableId, variable);
-                if (variable.isRequired()) {
-                    mandatoryParams.add(variableId);
-                }
-            }
-        }
-
         if (StringUtils.isEmpty(externalTool.getWorkflow().getManager().getVersion())) {
             externalTool.getWorkflow().getManager().setVersion(ParamConstants.DEFAULT_MIN_NEXTFLOW_VERSION);
         }
@@ -129,62 +114,8 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
         addDependencies(dependencyList);
         updateJobInformation(new ArrayList<>(tags), toolInfoExecutor);
 
-        StringBuilder cliParamsBuilder = new StringBuilder();
-        if (MapUtils.isNotEmpty(runParams.getParams())) {
-            for (Map.Entry<String, String> entry : runParams.getParams().entrySet()) {
-                String variableId = removePrefix(entry.getKey());
-                // Remove from the mandatoryParams set
-                mandatoryParams.remove(variableId);
-
-                ExternalToolVariable externalToolVariable = variableMap.get(variableId);
-
-                if (entry.getKey().startsWith("-")) {
-                    cliParamsBuilder.append(entry.getKey()).append(" ");
-                } else {
-                    cliParamsBuilder.append("--").append(entry.getKey()).append(" ");
-                }
-                if (StringUtils.isNotEmpty(entry.getValue())) {
-                    if ((externalToolVariable != null && externalToolVariable.isOutput()) || inputFileUtils.isDynamicOutputFolder(entry.getValue())) {
-                        processOutputCli(entry.getValue(), inputFileUtils, cliParamsBuilder);
-                    } else if (!inputFileUtils.isFlag(entry.getValue())) {
-                        processInputCli(entry.getValue(), inputFileUtils, cliParamsBuilder);
-                    }
-                } else if (externalToolVariable != null) {
-                    if (StringUtils.isNotEmpty(externalToolVariable.getDefaultValue())) {
-                        cliParamsBuilder.append(externalToolVariable.getDefaultValue()).append(" ");
-                    } else if (externalToolVariable.isOutput()) {
-                        processOutputCli("", inputFileUtils, cliParamsBuilder);
-                    } else if (externalToolVariable.isRequired() && externalToolVariable.getType() != ExternalToolVariable.WorkflowVariableType.FLAG) {
-                        throw new ToolException("Missing value for mandatory parameter: '" + variableId + "'.");
-                    }
-                }
-            }
-        }
-
-        for (String mandatoryParam : mandatoryParams) {
-            logger.info("Processing missing mandatory param: '{}'", mandatoryParam);
-            ExternalToolVariable externalToolVariable = variableMap.get(mandatoryParam);
-
-            if (externalToolVariable.getId().startsWith("-")) {
-                cliParamsBuilder.append(externalToolVariable.getId()).append(" ");
-            } else {
-                cliParamsBuilder.append("--").append(externalToolVariable.getId()).append(" ");
-            }
-
-            if (StringUtils.isNotEmpty(externalToolVariable.getDefaultValue())) {
-                if (externalToolVariable.isOutput()) {
-                    processOutputCli(externalToolVariable.getDefaultValue(), inputFileUtils, cliParamsBuilder);
-                } else {
-                    processInputCli(externalToolVariable.getDefaultValue(), inputFileUtils, cliParamsBuilder);
-                }
-            } else if (externalToolVariable.isOutput()) {
-                processOutputCli("", inputFileUtils, cliParamsBuilder);
-            } else if (externalToolVariable.getType() != ExternalToolVariable.WorkflowVariableType.FLAG) {
-                throw new ToolException("Missing mandatory parameter: '" + mandatoryParam + "'.");
-            }
-        }
-
-        this.cliParams = cliParamsBuilder.toString();
+        Map<String, String> sanitisedParams = sanitiseParams(runParams.getParams(), externalTool.getVariables());
+        this.cliParams = buildCommandLine(sanitisedParams);
     }
 
     @Override
@@ -243,15 +174,14 @@ public class NextFlowExecutor extends OpenCgaDockerToolScopeStudy {
 
         startTraceFileMonitor();
 
-        Map<String, String> dockerParams = new HashMap<>();
+        Map<String, List<String>> dockerParams = new HashMap<>();
         // Set HOME environment variable to the temporal input directory. This is because nextflow creates a hidden folder there and,
         // when nextflow runs on other dockers, we need to store those files in a path shared between the parent docker and the host
-        // TODO: Temporal solution. We should be able to add multiple "-e" parameters
-        dockerParams.put("-e", "HOME=" + ephimeralDirPath + " -e OPENCGA_TOKEN=" + getExpiringToken());
-        dockerParams.put("-w", ephimeralDirPath);
+        addDockerParam(dockerParams, "--env", "HOME=" + ephimeralDirPath);
+        addDockerParam(dockerParams, "-w", ephimeralDirPath);
 
         // Set user uid and guid to 1001
-        dockerParams.put("user", "1001:1001");
+        addDockerParam(dockerParams, "--user", "1001:1001");
 
         // Grant all permissions to the scratch dir to avoid permission issues from Nextflow binary
         Files.setPosixFilePermissions(getScratchDir(), PosixFilePermissions.fromString("rwxrwxrwx"));

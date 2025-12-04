@@ -287,6 +287,14 @@ public class AdminWSServer extends AnalysisWebService { //OpenCGAWSServer {
         }
     }
 
+    @POST
+    @Path("/catalog/workspace/update")
+    @ApiOperation(value = "Update the OpenCGA Catalog workspace")
+    public Response workspaceUpdate(
+            @ApiParam(value = "JSON containing the workspace parameters", required = true) WorkspaceUpdateParams params) {
+        return run(() -> catalogManager.getAdminManager().updateWorkspace(params.getOldWorkspace(), params.getNewWorkspace(), token));
+    }
+
     //    @GET
 //    @Path("/audit/stats")
 //    @ApiOperation(value = "Get some stats from the audit database")
@@ -370,7 +378,7 @@ public class AdminWSServer extends AnalysisWebService { //OpenCGAWSServer {
                     String jobPriority,
             @ApiParam(value = ParamConstants.JOB_DRY_RUN_DESCRIPTION) @QueryParam(ParamConstants.JOB_DRY_RUN) Boolean dryRun,
             @ApiParam(value = ResourceFetcherToolParams.DESCRIPTION, required = true) ResourceFetcherToolParams params) {
-        return submitJob(ParamConstants.ADMIN_STUDY_FQN, JobType.NATIVE, ResourceFetcherTool.ID, params, jobName, jobDescription, dependsOn,
+        return submitJob(ParamConstants.ADMIN_STUDY_FQN, JobType.NATIVE_TOOL, ResourceFetcherTool.ID, params, jobName, jobDescription, dependsOn,
                 jobTags, scheduledStartTime, jobPriority, dryRun);
     }
 }

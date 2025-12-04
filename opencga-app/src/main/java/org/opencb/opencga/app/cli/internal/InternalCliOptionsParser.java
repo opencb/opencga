@@ -21,7 +21,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.commons.utils.CommandLineUtils;
-import org.opencb.opencga.analysis.workflow.NextFlowExecutor;
+import org.opencb.opencga.analysis.workflow.NextFlowToolExecutor;
 import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.options.*;
@@ -282,7 +282,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         workflowCommandOptions = new WorkflowCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("workflows", workflowCommandOptions);
         JCommander workflowSubcommands = jCommander.getCommands().get("workflows");
-        workflowSubcommands.addCommand(NextFlowExecutor.ID, workflowCommandOptions.nextflowCommandOptions);
+        workflowSubcommands.addCommand(NextFlowToolExecutor.ID, workflowCommandOptions.nextflowCommandOptions);
     }
 
     @Override

@@ -50,5 +50,6 @@ Collate:
     'User-methods.R'
     'Variant-methods.R'
     'Workflow-methods.R'
+    'UserTool-methods.R'
 RoxygenNote: 7.3.2
 VignetteBuilder: knitr

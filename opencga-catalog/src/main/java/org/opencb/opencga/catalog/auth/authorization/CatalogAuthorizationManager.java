@@ -445,8 +445,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void checkWorkflowPermission(String organizationId, long studyUid, long workflowUid, String userId,
-                                        ExternalToolPermissions permission) throws CatalogException {
+    public void checkExternalToolPermission(String organizationId, long studyUid, long workflowUid, String userId,
+                                            ExternalToolPermissions permission) throws CatalogException {
         Query query = new Query()
                 .append(ExternalToolDBAdaptor.QueryParams.UID.key(), workflowUid)
                 .append(ExternalToolDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
