@@ -94,7 +94,6 @@ public abstract class StorageEngine<DBADAPTOR> implements AutoCloseable {
             results.add(result);
 
             URI nextFileUri = inputFile;
-            result.setInput(inputFile);
 
             if (doExtract) {
                 logger.info("Extract '{}'", inputFile);

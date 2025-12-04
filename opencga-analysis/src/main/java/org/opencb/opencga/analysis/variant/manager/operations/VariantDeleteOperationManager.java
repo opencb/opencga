@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.analysis.variant.manager.operations;
 
+import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
@@ -69,6 +70,7 @@ public class VariantDeleteOperationManager extends OperationManager {
         StudyMetadata studyMetadata = synchronizeCatalogStudyFromStorage(study, token, true);
 
         List<String> fileNames = new ArrayList<>();
+        List<String> fileIds = new ArrayList<>();
         if (inputFiles != null && !inputFiles.isEmpty()) {
             for (String fileStr : inputFiles) {
                 File file = catalogManager.getFileManager().get(study, fileStr, null, token).first();
@@ -97,8 +99,8 @@ public class VariantDeleteOperationManager extends OperationManager {
                                 + (fileMetadata == null ? " File not found in storage." : ""));
                     }
                 }
-                fileNames.add(file.getName());
-//                        filePaths.add(file.getPath());
+                fileNames.add(VariantCatalogQueryUtils.toStorageFileName(file));
+                fileIds.add(file.getId());
             }
 
         }
@@ -108,7 +110,7 @@ public class VariantDeleteOperationManager extends OperationManager {
 
         variantStorageEngine.removeFiles(study, fileNames, outdir);
         // Update study configuration to synchronize
-        synchronizeCatalogStudyFromStorage(study, token, true, fileNames);
+        synchronizeCatalogStudyFromStorage(study, token, true, fileIds);
 
     }
 

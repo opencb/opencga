@@ -613,6 +613,16 @@ public class FileWSServer extends OpenCGAWSServer {
         }
     }
 
+    @POST
+    @Path("/uri/update")
+    @ApiOperation(value = "Update URIs of files that have been manually moved in disk", notes = "Only for study administrators",
+            response = File.class)
+    public Response uriUpdate(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(name = "body", value = "Parameters to modify", required = true) FileUriChangeRestParam param) {
+        return run(() -> fileManager.updateFileUri(studyStr, param.getUri(), token));
+    }
+
     //    @JsonIgnoreProperties({"status"})
 //    public static class FileUpdateParams extends org.opencb.opencga.core.models.file.FileUpdateParams {
 //    }

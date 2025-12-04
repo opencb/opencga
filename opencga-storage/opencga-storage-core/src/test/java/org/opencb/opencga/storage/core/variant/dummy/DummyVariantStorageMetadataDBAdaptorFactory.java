@@ -78,7 +78,7 @@ public class DummyVariantStorageMetadataDBAdaptorFactory implements VariantStora
 
     public static void writeAndClear(Path path) {
         DummyProjectMetadataAdaptor.writeAndClear(path);
-        DummyStudyMetadataDBAdaptor.writeAndClear(path);
         DummyFileMetadataDBAdaptor.writeAndClear(path);
+        DummyStudyMetadataDBAdaptor.writeAndClear(path);
     }
 }
