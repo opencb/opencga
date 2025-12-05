@@ -26,6 +26,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**
  * Created by jtarraga on 01/03/17.
@@ -52,10 +53,13 @@ public class ClinicalIterator<M,N,C extends SearchConverter<M, N>> extends Clini
 
     @Override
     public M next() {
+        if (!hasNext()) {
+            throw new NoSuchElementException();
+        }
         try {
             return applyInclude(converter.toModel(nativeSolrIterator.next()));
         } catch (CvdbException e) {
-            return null;
+            throw new RuntimeException("Failed to convert element", e);
         }
     }
 
@@ -65,7 +69,7 @@ public class ClinicalIterator<M,N,C extends SearchConverter<M, N>> extends Clini
     }
 
     public long getNumFound() {
-        return nativeSolrIterator.getNumFound();
+        return nativeSolrIterator == null ? 0 : nativeSolrIterator.getNumFound();
     }
 
     public C getConverter() {

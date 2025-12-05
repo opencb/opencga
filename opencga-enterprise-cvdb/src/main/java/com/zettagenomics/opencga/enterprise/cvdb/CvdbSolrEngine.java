@@ -354,6 +354,8 @@ public class CvdbSolrEngine {
                             continue;
                         }
                     } catch (SolrServerException | IOException e) {
+                        String key = caId + " (" + study.getFqn() + ")";
+                        failures.put(key, e.getMessage());
                         logger.warn("Something wrong happened, clinical analysis {} could not be checked to be indexed: {}", caId,
                                 e.getMessage());
                         continue;
@@ -474,12 +476,6 @@ public class CvdbSolrEngine {
 
     public DataResult<ClinicalAnalysis> searchClinicalAnalyses(Query query, QueryOptions queryOptions, String token)
             throws IOException, CvdbException, CatalogException {
-        // Check CVDB data store availability
-        checkQuery(query, queryOptions, token);
-        if (!isAvailableCvdbDataStore(query.getString(PROJECT_PARAM_NAME), token)) {
-            return new DataResult<>();
-        }
-
         //        int limit = queryOptions.getInt(LIMIT);
         List<ClinicalAnalysis> results = new ArrayList<>();
 
@@ -610,12 +606,6 @@ public class CvdbSolrEngine {
 
     public DataResult<Interpretation> searchClinicalInterpretations(Query query, QueryOptions queryOptions, String token)
             throws IOException, CvdbException, CatalogException {
-        // Check CVDB data store availability
-        checkQuery(query, queryOptions, token);
-        if (!isAvailableCvdbDataStore(query.getString(PROJECT_PARAM_NAME), token)) {
-            return new DataResult<>();
-        }
-
         //        int limit = queryOptions.getInt(LIMIT);
         List<Interpretation> results = new ArrayList<>();
 
@@ -728,12 +718,6 @@ public class CvdbSolrEngine {
 
     public DataResult<ClinicalVariant> searchClinicalVariants(Query query, QueryOptions queryOptions, String token)
             throws IOException, CvdbException, CatalogException {
-        // Check CVDB data store availability
-        checkQuery(query, queryOptions, token);
-        if (!isAvailableCvdbDataStore(query.getString(PROJECT_PARAM_NAME), token)) {
-            return new DataResult<>();
-        }
-
 //        int limit = queryOptions.getInt(LIMIT);
         List<ClinicalVariant> results = new ArrayList<>();
 
@@ -862,12 +846,6 @@ public class CvdbSolrEngine {
 
     public DataResult<ClinicalVariantEvidence> searchClinicalVariantEvidences(Query query, QueryOptions queryOptions, String token)
             throws IOException, CvdbException, CatalogException {
-        // Check CVDB data store availability
-        checkQuery(query, queryOptions, token);
-        if (!isAvailableCvdbDataStore(query.getString(PROJECT_PARAM_NAME), token)) {
-            return new DataResult<>();
-        }
-
 //        int limit = queryOptions.getInt(LIMIT);
         List<ClinicalVariantEvidence> results = new ArrayList<>();
 
