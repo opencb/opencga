@@ -278,7 +278,7 @@ public class FileManagerTest extends AbstractManagerTest {
     public void filterByFormatTest() throws CatalogException {
         Query query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), "PLAIN");
         OpenCGAResult<File> search = catalogManager.getFileManager().search(studyFqn, query, QueryOptions.empty(), ownerToken);
-        assertEquals(3, search.getNumResults());
+        assertEquals(4, search.getNumResults());
 
         query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), "plain");
         search = catalogManager.getFileManager().search(studyFqn, query, QueryOptions.empty(), ownerToken);
@@ -292,12 +292,12 @@ public class FileManagerTest extends AbstractManagerTest {
         // Case sensitive in upper case
         query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), "~/^PLA/");
         search = catalogManager.getFileManager().search(studyFqn, query, QueryOptions.empty(), ownerToken);
-        assertEquals(3, search.getNumResults());
+        assertEquals(4, search.getNumResults());
 
         // Case insensitive search
         query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), "~/^pla/i");
         search = catalogManager.getFileManager().search(studyFqn, query, QueryOptions.empty(), ownerToken);
-        assertEquals(3, search.getNumResults());
+        assertEquals(4, search.getNumResults());
     }
 
     @Test
@@ -1265,9 +1265,10 @@ public class FileManagerTest extends AbstractManagerTest {
     public void testCreateFolder() throws Exception {
         Set<String> paths = fileManager.search(studyFqn, new Query("type", File.Type.DIRECTORY), new QueryOptions(), orgAdminToken1)
                 .getResults().stream().map(File::getPath).collect(Collectors.toSet());
-        assertEquals(10, paths.size());
+        assertEquals(13, paths.size());
         assertTrue(paths.containsAll(Arrays.asList("", "JOBS/", "data/", "data/test/", "data/test/folder/", "data/d1/", "data/d1/d2/",
-                "data/d1/d2/d3/", "data/d1/d2/d3/d4/")));
+                "data/d1/d2/d3/", "data/d1/d2/d3/d4/", "RESOURCES/", "RESOURCES/clinical/", "RESOURCES/clinical/report/",
+                "RESOURCES/clinical/report/templates/")));
 
         Path folderPath = Paths.get("data", "new", "folder");
         File folder = fileManager.createFolder(studyFqn, folderPath.toString(), true, null, QueryOptions.empty(), orgAdminToken1).first();
@@ -1277,9 +1278,10 @@ public class FileManagerTest extends AbstractManagerTest {
 
         paths = fileManager.search(studyFqn, new Query(FileDBAdaptor.QueryParams.TYPE.key(), File.Type.DIRECTORY), new QueryOptions(),
                 orgAdminToken1).getResults().stream().map(File::getPath).collect(Collectors.toSet());
-        assertEquals(12, paths.size());
+        assertEquals(15, paths.size());
         assertTrue(paths.containsAll(Arrays.asList("", "JOBS/", "data/", "data/test/", "data/test/folder/", "data/d1/", "data/d1/d2/",
-                "data/d1/d2/d3/", "data/d1/d2/d3/d4/", "data/new/", "data/new/folder/")));
+                "data/d1/d2/d3/", "data/d1/d2/d3/d4/", "RESOURCES/", "RESOURCES/clinical/", "RESOURCES/clinical/report/",
+                "RESOURCES/clinical/report/templates/", "data/new/", "data/new/folder/")));
 
         URI uri = fileManager.getUri(organizationId, folder);
         assertTrue(!catalogManager.getIoManagerFactory().get(uri).exists(uri));
@@ -1297,7 +1299,7 @@ public class FileManagerTest extends AbstractManagerTest {
     @Test
     public void testCreateFolderAlreadyExists() throws Exception {
         Set<String> paths = fileManager.search(studyFqn3, new Query("type", File.Type.DIRECTORY), new QueryOptions(), orgAdminToken1).getResults().stream().map(File::getPath).collect(Collectors.toSet());
-        assertEquals(3, paths.size());
+        assertEquals(6, paths.size());
         assertTrue(paths.contains(""));             //root
 //        assertTrue(paths.contains("data/"));        //data
 //        assertTrue(paths.contains("analysis/"));    //analysis
@@ -1650,11 +1652,11 @@ public class FileManagerTest extends AbstractManagerTest {
                 .setContent("content"), true, ownerToken);
 
         DataResult<FileTree> fileTree = fileManager.getTree(studyFqn, "/", 5, new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.ID.key()), ownerToken);
-        assertEquals(28, fileTree.getNumResults());
-        assertEquals(28, countElementsInTree(fileTree.first()));
+        assertEquals(32, fileTree.getNumResults());
+        assertEquals(32, countElementsInTree(fileTree.first()));
 
         fileTree = fileManager.getTree(studyFqn, "/", 2, new QueryOptions(), ownerToken);
-        assertEquals(18, fileTree.getNumResults());
+        assertEquals(19, fileTree.getNumResults());
 
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.ID.key());
         fileTree = fileManager.getTree(studyFqn, "/", 2, options, ownerToken);
@@ -1675,10 +1677,10 @@ public class FileManagerTest extends AbstractManagerTest {
         catalogManager.getStudyManager().create(project1, "phase2", null, "Phase 2", "Done", null, null, null, null, null, ownerToken);
 
         DataResult<FileTree> fileTree = fileManager.getTree(studyFqn, "/", 5, new QueryOptions(), ownerToken);
-        assertEquals(13, fileTree.getNumResults());
+        assertEquals(17, fileTree.getNumResults());
 
         fileTree = fileManager.getTree("phase2", ".", 5, new QueryOptions(), ownerToken);
-        assertEquals(3, fileTree.getNumResults());
+        assertEquals(7, fileTree.getNumResults());
     }
 
     @Test
@@ -1755,13 +1757,13 @@ public class FileManagerTest extends AbstractManagerTest {
         result = fileManager.search(studyFqn, query, null, ownerToken);
         result.getResults().forEach(f -> assertEquals(File.Type.FILE, f.getType()));
         int numFiles = result.getNumResults();
-        assertEquals(4, numFiles);
+        assertEquals(5, numFiles);
 
         query = new Query(FileDBAdaptor.QueryParams.TYPE.key(), "DIRECTORY");
         result = fileManager.search(studyFqn, query, null, ownerToken);
         result.getResults().forEach(f -> assertEquals(File.Type.DIRECTORY, f.getType()));
         int numFolders = result.getNumResults();
-        assertEquals(10, numFolders);
+        assertEquals(13, numFolders);
 
         query = new Query(FileDBAdaptor.QueryParams.PATH.key(), "");
         result = fileManager.search(studyFqn, query, null, ownerToken);
@@ -1771,7 +1773,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         query = new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE,DIRECTORY");
         result = fileManager.search(studyFqn, query, null, ownerToken);
-        assertEquals(14, result.getNumResults());
+        assertEquals(18, result.getNumResults());
         assertEquals(numFiles + numFolders, result.getNumResults());
 
         query = new Query("type", "FILE");
@@ -1782,7 +1784,7 @@ public class FileManagerTest extends AbstractManagerTest {
         query = new Query("type", "FILE");
         query.put("size", "<=500");
         result = fileManager.search(studyFqn, query, null, ownerToken);
-        assertEquals(2, result.getNumResults());
+        assertEquals(3, result.getNumResults());
 
         List<String> sampleIds = catalogManager.getSampleManager().search(studyFqn, new Query(SampleDBAdaptor.QueryParams.ID.key(), "s_1,s_3,s_4"), null, ownerToken).getResults()
                 .stream()
@@ -1794,12 +1796,12 @@ public class FileManagerTest extends AbstractManagerTest {
         query = new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE");
         query.put(FileDBAdaptor.QueryParams.FORMAT.key(), "PLAIN");
         result = fileManager.search(studyFqn, query, null, ownerToken);
-        assertEquals(3, result.getNumResults());
+        assertEquals(4, result.getNumResults());
 
         QueryOptions options = new QueryOptions(QueryOptions.LIMIT, 2).append(QueryOptions.COUNT, true);
         result = fileManager.search(studyFqn, new Query(), options, ownerToken);
         assertEquals(2, result.getNumResults());
-        assertEquals(14, result.getNumMatches());
+        assertEquals(18, result.getNumMatches());
     }
 //
 //    @Test
@@ -2332,7 +2334,7 @@ public class FileManagerTest extends AbstractManagerTest {
         for (ClinicalAnalysis clinicalAnalysis : search.getResults()) {
             assertEquals(0, clinicalAnalysis.getFiles().size());
             assertEquals("OPENCGA", clinicalAnalysis.getAudit().get(clinicalAnalysis.getAudit().size() - 1).getAuthor());
-            assertTrue(clinicalAnalysis.getAudit().get(clinicalAnalysis.getAudit().size() - 1).getMessage().contains("was deleted. Remove file references from case"));
+            assertTrue(clinicalAnalysis.getAudit().get(clinicalAnalysis.getAudit().size() - 1).getMessage().contains("was deleted. Remove 'files' references from case"));
         }
     }
 
