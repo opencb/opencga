@@ -17,7 +17,7 @@ import java.util.Arrays;
 import static com.mongodb.client.model.Aggregates.*;
 import static com.mongodb.client.model.Filters.exists;
 import static com.mongodb.client.model.Projections.include;
-import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantAnnotationConverter.ANNOT_ID_FIELD;
+import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantAnnotationConverter.ANNOT_ID;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.*;
 
 /**
@@ -50,7 +50,7 @@ public class MongoDBVariantAnnotationManager extends DefaultVariantAnnotationMan
         String annotationCollectionName = mongoDbAdaptor.getAnnotationCollectionName(name);
         mongoDbAdaptor.getVariantsCollection()
                 .aggregate(Arrays.asList(
-                        match(exists(ANNOTATION_FIELD + '.' + ANNOT_ID_FIELD)),
+                        match(exists(ANNOT_ID)),
                         project(include(
                                 CHROMOSOME_FIELD,
                                 START_FIELD,

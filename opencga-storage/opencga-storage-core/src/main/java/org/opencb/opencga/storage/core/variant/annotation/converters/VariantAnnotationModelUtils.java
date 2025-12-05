@@ -41,7 +41,10 @@ public class VariantAnnotationModelUtils {
      */
     private static final Pattern HGVS_PATTERN = Pattern.compile("\\([^()]*\\)");
 
-    public Set<String> extractXRefs(VariantAnnotation variantAnnotation) {
+    public VariantAnnotationModelUtils() {
+    }
+
+    public static Set<String> extractXRefs(VariantAnnotation variantAnnotation) {
         Set<String> xrefs = new HashSet<>(100);
 
         if (variantAnnotation == null) {

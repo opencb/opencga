@@ -39,7 +39,7 @@ import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.core.testclassification.duration.ShortTests;
+import org.opencb.opencga.core.testclassification.duration.MediumTests;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
@@ -68,7 +68,7 @@ import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSa
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
 @RunWith(Parameterized.class)
-@Category(ShortTests.class)
+@Category(MediumTests.class)
 public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
 
     private Query query;

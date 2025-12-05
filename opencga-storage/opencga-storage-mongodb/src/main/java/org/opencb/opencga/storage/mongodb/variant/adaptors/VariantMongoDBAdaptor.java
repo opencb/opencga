@@ -599,25 +599,17 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         switch (field) {
             case "gene":
             case "ensemblGene":
-                documentPath = DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CT_ENSEMBL_GENE_ID_FIELD;
+                documentPath = DocumentToVariantAnnotationConverter.CT_ENSEMBL_GENE_ID;
                 break;
             case "ensemblTranscript":
-                documentPath = DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CT_ENSEMBL_TRANSCRIPT_ID_FIELD;
+                documentPath = DocumentToVariantAnnotationConverter.CT_ENSEMBL_TRANSCRIPT_ID;
                 break;
             case "ct":
             case "consequence_type":
-                documentPath = DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CT_SO_ACCESSION_FIELD;
+                documentPath = DocumentToVariantAnnotationConverter.CT_SO_ACCESSION;
                 break;
             default:
-                documentPath = DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CT_GENE_NAME_FIELD;
+                documentPath = DocumentToVariantAnnotationConverter.CT_GENE_NAME;
                 break;
         }
         Bson mongoQuery = queryParser.parseQuery(query);
@@ -814,28 +806,20 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         switch (field) {
             case "gene":
             case "ensemblGene":
-                documentPath = DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CT_ENSEMBL_GENE_ID_FIELD;
-                unwindPath = DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD;
+                documentPath = DocumentToVariantAnnotationConverter.CT_ENSEMBL_GENE_ID;
+                unwindPath = DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE;
 
                 break;
             case "ct":
             case "consequence_type":
-                documentPath = DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CT_SO_ACCESSION_FIELD;
-                unwindPath = DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD;
+                documentPath = DocumentToVariantAnnotationConverter.CT_SO_ACCESSION;
+                unwindPath = DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE;
                 numUnwinds = 3;
                 break;
             default:
-                documentPath = DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CT_GENE_NAME_FIELD;
+                documentPath = DocumentToVariantAnnotationConverter.CT_GENE_NAME;
                 unwindPath = DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD;
+                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE;
                 break;
         }
 
@@ -1053,7 +1037,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             DocumentToVariantAnnotationConverter converter = new DocumentToVariantAnnotationConverter(currentAnnotationId);
             Document convertedVariantAnnotation = converter.convertToStorageType(variantAnnotation);
             Bson update = combine(
-                    set(DocumentToVariantConverter.ANNOTATION_FIELD + ".0", convertedVariantAnnotation),
+                    set(DocumentToVariantConverter.ANNOTATION_FIELD, convertedVariantAnnotation),
                     getSetIndexNotSynchronized(timestamp));
             queries.add(find);
             updates.add(update);
@@ -1076,7 +1060,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         Bson mongoQuery = queryParser.parseQuery(query);
         logger.debug("deleteAnnotation: query = {}", mongoQuery);
 
-        Document update = new Document("$set", new Document(DocumentToVariantConverter.ANNOTATION_FIELD + ".0", null));
+        Document update = new Document("$set", new Document(DocumentToVariantConverter.ANNOTATION_FIELD, null));
         logger.debug("deleteAnnotation: update = {}", update);
         return variantsCollection.update(mongoQuery, update, new QueryOptions(MULTI, true));
     }
@@ -1207,104 +1191,64 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         // XRefs.id
         variantsCollection.createIndex(new Document()
-                        .append(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.XREFS_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.XREF_ID_FIELD, 1),
+                        .append(DocumentToVariantAnnotationConverter.XREFS_ID, 1),
                 onBackground);
         // ConsequenceType.so
         variantsCollection.createIndex(new Document()
-                        .append(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.CT_SO_ACCESSION_FIELD, 1),
+                        .append(DocumentToVariantAnnotationConverter.CT_SO_ACCESSION, 1),
                 onBackground);
         // _gn_so : SPARSE
         variantsCollection.createIndex(new Document()
-                        .append(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.GENE_SO_FIELD, 1),
+                        .append(DocumentToVariantAnnotationConverter.GENE_SO, 1),
                 onBackgroundSparse);
         // Population frequency : SPARSE
         variantsCollection.createIndex(new Document()
-                        .append(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_STUDY_FIELD, 1)
-                        .append(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_POP_FIELD, 1)
-                        .append(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD, 1),
+                        .append(DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_STUDY, 1)
+                        .append(DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_POP, 1)
+                        .append(DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_ALTERNATE_FREQUENCY, 1),
                 new ObjectMap(onBackgroundSparse).append(NAME, "pop_freq"));
         // Clinical clinvar : SPARSE
         variantsCollection.createIndex(new Document()
-                        .append(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.CLINICAL_COMBINATIONS_FIELD, 1),
+                        .append(DocumentToVariantAnnotationConverter.CLINICAL_COMBINATIONS, 1),
                 new ObjectMap(onBackgroundSparse).append(NAME, "clinical"));
 
         // Conserved region score (phastCons, phylop, gerp)
-        variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CONSERVED_REGION_GERP_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
+        variantsCollection.createIndex(new Document(DocumentToVariantAnnotationConverter.CONSERVED_REGION_GERP_SCORE, 1),
                 onBackground);
-        variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CONSERVED_REGION_PHYLOP_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
+        variantsCollection.createIndex(new Document(DocumentToVariantAnnotationConverter.CONSERVED_REGION_PHYLOP_SCORE, 1),
                 onBackground);
-        variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CONSERVED_REGION_PHASTCONS_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
+        variantsCollection.createIndex(new Document(DocumentToVariantAnnotationConverter.CONSERVED_REGION_PHASTCONS_SCORE, 1),
                 onBackground);
 
         // Functional score (cadd_scaled, cadd_raw)
-        variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.FUNCTIONAL_CADD_SCALED_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
+        variantsCollection.createIndex(new Document(DocumentToVariantAnnotationConverter.FUNCTIONAL_CADD_SCALED_SCORE, 1),
                 onBackground);
-        variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.FUNCTIONAL_CADD_RAW_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
+        variantsCollection.createIndex(new Document(DocumentToVariantAnnotationConverter.FUNCTIONAL_CADD_RAW_SCORE, 1),
                 onBackground);
 
         // Drugs : SPARSE
         variantsCollection.createIndex(new Document()
-                        .append(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.DRUG_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.DRUG_NAME_FIELD, 1),
+                        .append(DocumentToVariantAnnotationConverter.DRUG_NAME, 1),
                 onBackgroundSparse);
         // Protein substitution score (polyphen , sift) : SPARSE
-        variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CT_PROTEIN_POLYPHEN_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
+        variantsCollection.createIndex(new Document(DocumentToVariantAnnotationConverter.CT_PROTEIN_POLYPHEN_SCORE, 1),
                 onBackgroundSparse);
-        variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CT_PROTEIN_SIFT_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
+        variantsCollection.createIndex(new Document(DocumentToVariantAnnotationConverter.CT_PROTEIN_SIFT_SCORE, 1),
                 onBackgroundSparse);
 
         // Protein substitution score description (polyphen , sift) : SPARSE
-        variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CT_PROTEIN_POLYPHEN_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.SCORE_DESCRIPTION_FIELD, 1),
+        variantsCollection.createIndex(new Document(DocumentToVariantAnnotationConverter.CT_PROTEIN_POLYPHEN_DESCRIPTION, 1),
                 onBackgroundSparse);
-        variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CT_PROTEIN_SIFT_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.SCORE_DESCRIPTION_FIELD, 1),
+        variantsCollection.createIndex(new Document(DocumentToVariantAnnotationConverter.CT_PROTEIN_SIFT_DESCRIPTION, 1),
                 onBackgroundSparse);
 
         // Protein Keywords : SPARSE
         variantsCollection.createIndex(new Document()
-                        .append(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.CT_PROTEIN_KEYWORDS, 1),
+                        .append(DocumentToVariantAnnotationConverter.CT_PROTEIN_KEYWORDS, 1),
                 onBackgroundSparse);
         // TranscriptAnnotationFlags : SPARSE
         variantsCollection.createIndex(new Document()
-                        .append(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.CT_TRANSCRIPT_ANNOT_FLAGS, 1),
+                        .append(DocumentToVariantAnnotationConverter.CT_TRANSCRIPT_ANNOT_FLAGS, 1),
                 onBackgroundSparse);
 
         // _index.ts
