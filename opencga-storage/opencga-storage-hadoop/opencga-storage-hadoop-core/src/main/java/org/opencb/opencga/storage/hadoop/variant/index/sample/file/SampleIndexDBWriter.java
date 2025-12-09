@@ -1,0 +1,283 @@
+package org.opencb.opencga.storage.hadoop.variant.index.sample.file;
+
+import org.apache.hadoop.hbase.client.Delete;
+import org.apache.hadoop.hbase.client.Mutation;
+import org.apache.hadoop.hbase.client.Put;
+import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.SampleEntry;
+import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.common.YesNoAuto;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine.SplitData;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
+import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexVariant;
+import org.opencb.opencga.storage.core.variant.index.sample.file.SampleIndexVariantConverter;
+import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
+import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDataWriter;
+import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.HBaseSampleIndexDBAdaptor;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.*;
+
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.INCLUDE_GENOTYPE;
+import static org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema.getChunkStart;
+import static org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema.validGenotype;
+
+/**
+ * Created on 14/05/18.
+ *
+ * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
+ */
+public class SampleIndexDBWriter extends AbstractHBaseDataWriter<Variant, Mutation> {
+
+    private final int studyId;
+    private final List<Integer> sampleIds;
+    // Map from IndexChunk -> List (following sampleIds order) of Map<Genotype, SortedSet<VariantFileIndex>>
+    private final Map<IndexChunk, Chunk> buffer = new LinkedHashMap<>();
+    private final HashSet<String> genotypes = new HashSet<>();
+    private final boolean rebuildIndex;
+    private final boolean multiFileIndex;
+    private final int[] fileIdxMap;
+    private final byte[] family;
+    private final ObjectMap options;
+    private final HBaseSampleIndexDBAdaptor dbAdaptor;
+    private final SampleIndexVariantConverter sampleIndexVariantConverter;
+    private final boolean includeGenotype;
+    private final SampleIndexSchema schema;
+
+    public SampleIndexDBWriter(HBaseSampleIndexDBAdaptor dbAdaptor, HBaseManager hBaseManager,
+                               VariantStorageMetadataManager metadataManager,
+                               int studyId, int fileId, List<Integer> sampleIds,
+                               SplitData splitData, ObjectMap options, SampleIndexSchema schema) {
+        super(hBaseManager, dbAdaptor.getSampleIndexTableName(studyId, schema.getVersion()));
+        this.studyId = studyId;
+        this.sampleIds = sampleIds;
+        family = GenomeHelper.COLUMN_FAMILY_BYTES;
+        this.options = options;
+        if (splitData != null) {
+            switch (splitData) {
+                case CHROMOSOME:
+                    rebuildIndex = false;
+                    multiFileIndex = false;
+                    break;
+                case REGION:
+                    rebuildIndex = true;
+                    multiFileIndex = false;
+                    break;
+                case MULTI:
+                    rebuildIndex = true;
+                    multiFileIndex = true;
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown LoadSplitData " + splitData);
+            }
+        } else {
+            rebuildIndex = false;
+            multiFileIndex = false;
+        }
+        fileIdxMap = new int[sampleIds.size()];
+        if (multiFileIndex) {
+            int i = 0;
+            for (Integer sampleId : sampleIds) {
+                fileIdxMap[i] = metadataManager.getSampleMetadata(studyId, sampleId).getFiles().indexOf(fileId);
+                i++;
+            }
+        }
+        includeGenotype = YesNoAuto.parse(options, INCLUDE_GENOTYPE.key()).yesOrAuto();
+        this.dbAdaptor = dbAdaptor;
+        this.schema = schema;
+        sampleIndexVariantConverter = new SampleIndexVariantConverter(this.schema);
+    }
+
+    private class Chunk implements Iterable<SampleIndexEntryPutBuilder> {
+        private List<SampleIndexEntryPutBuilder> samples;
+        private boolean merging;
+
+        @Override
+        public Iterator<SampleIndexEntryPutBuilder> iterator() {
+            return samples.iterator();
+        }
+
+        Chunk(IndexChunk indexChunk) {
+            samples = new ArrayList<>(sampleIds.size());
+            merging = false;
+            for (Integer sampleId : sampleIds) {
+                SampleIndexEntryPutBuilder builder;
+                if (rebuildIndex) {
+                    builder = fetchIndex(indexChunk, sampleId);
+                    if (!builder.getGtSet().isEmpty()) {
+                        merging = true;
+                    }
+                } else {
+                    // This loader can't ensure an ordered input data to the SampleIndexEntryPutBuilder.
+                    builder = new SampleIndexEntryPutBuilder(sampleId, indexChunk.chromosome, indexChunk.position, schema,
+                            false, multiFileIndex);
+                }
+                samples.add(builder);
+            }
+        }
+
+        public boolean isMerging() {
+            return merging;
+        }
+
+        public SampleIndexEntryPutBuilder get(int sampleIdx) {
+            return samples.get(sampleIdx);
+        }
+
+        private SampleIndexEntryPutBuilder fetchIndex(IndexChunk indexChunk, Integer sampleId) {
+            try {
+                return dbAdaptor.queryByGtBuilder(studyId, sampleId, indexChunk.chromosome, indexChunk.position, schema);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+
+        public void addVariant(int sampleIdx, String gt, SampleIndexVariant variantIndexEntry) {
+            SampleIndexEntryPutBuilder sampleEntry = get(sampleIdx);
+            if (isMerging() && !multiFileIndex) {
+                // Look for the variant in any genotype to avoid duplications
+                if (sampleEntry.containsVariant(variantIndexEntry)) {
+                    throw new IllegalArgumentException("Already loaded variant " + variantIndexEntry.getVariant());
+                }
+            }
+            if (variantIndexEntry.getFilesIndex().size() > 1
+                    || schema.getFileIndex().isMultiFile(variantIndexEntry.getFilesIndex().get(0))) {
+                throw new IllegalArgumentException("Unexpected multi-file at variant " + variantIndexEntry.getVariant());
+            }
+            sampleEntry.add(gt, variantIndexEntry);
+        }
+    }
+
+    private static class IndexChunk {
+        private final String chromosome;
+        private final Integer position;
+
+        IndexChunk(String chromosome, Integer position) {
+            this.chromosome = chromosome;
+            this.position = position;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof IndexChunk)) {
+                return false;
+            }
+            IndexChunk that = (IndexChunk) o;
+            return Objects.equals(chromosome, that.chromosome)
+                    && Objects.equals(position, that.position);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(chromosome, position);
+        }
+
+        @Override
+        public String toString() {
+            return chromosome + ":" + position;
+        }
+    }
+
+    @Override
+    public boolean open() {
+        super.open();
+        dbAdaptor.createTableIfNeeded(studyId, schema.getVersion(), options);
+        dbAdaptor.expandTableIfNeeded(studyId, schema.getVersion(), sampleIds, options);
+        return true;
+    }
+
+    @Override
+    protected List<Mutation> convert(List<Variant> variants) {
+        for (Variant variant : variants) {
+            IndexChunk indexChunk = new IndexChunk(variant.getChromosome(), getChunkStart(variant.getStart()));
+            int sampleIdx = 0;
+            StudyEntry studyEntry = variant.getStudies().get(0);
+            // The variant hasGT if has the SampleDataKey GT AND the genotypes are not being excluded
+            boolean hasGT = studyEntry.getSampleDataKeys().get(0).equals("GT") && includeGenotype;
+            for (SampleEntry sample : studyEntry.getSamples()) {
+                String gt = hasGT ? sample.getData().get(0) : GenotypeClass.NA_GT_VALUE;
+                if (validVariant(variant) && validGenotype(gt)) {
+                    genotypes.add(gt);
+                    Chunk chunk = buffer.computeIfAbsent(indexChunk, Chunk::new);
+                    SampleIndexVariant indexEntry = sampleIndexVariantConverter
+                            .createSampleIndexVariant(sampleIdx, fileIdxMap[sampleIdx], variant);
+                    chunk.addVariant(sampleIdx, gt, indexEntry);
+                }
+                sampleIdx++;
+            }
+        }
+
+        return getMutations();
+    }
+
+
+    public static boolean validVariant(Variant variant) {
+        return !variant.getType().equals(VariantType.NO_VARIATION);
+    }
+
+    @Override
+    public boolean post() {
+        try {
+            // Drain buffer
+            mutate(getMutations(0));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        return super.post();
+    }
+
+    protected List<Mutation> getMutations() {
+        // Leave 3 chunks in the buffer
+        return getMutations(3);
+    }
+
+    protected List<Mutation> getMutations(int remain) {
+        List<Mutation> mutations = new LinkedList<>();
+
+        while (buffer.size() > remain) {
+            IndexChunk indexChunk = buffer.keySet().iterator().next();
+            Chunk chunk = buffer.remove(indexChunk);
+            for (SampleIndexEntryPutBuilder builder : chunk) {
+                Put put = builder.build();
+                if (!put.isEmpty()) {
+                    mutations.add(put);
+
+                    if (chunk.isMerging() && !builder.isEmpty()) {
+                        Delete delete = new Delete(put.getRow());
+                        for (String gt : builder.getGtSet()) {
+                            delete.addColumns(family, SampleIndexSchema.toAnnotationClinicalIndexColumn(gt));
+                            delete.addColumns(family, SampleIndexSchema.toAnnotationBiotypeIndexColumn(gt));
+                            delete.addColumns(family, SampleIndexSchema.toAnnotationConsequenceTypeIndexColumn(gt));
+                            delete.addColumns(family, SampleIndexSchema.toAnnotationCtBtTfIndexColumn(gt));
+                            delete.addColumns(family, SampleIndexSchema.toAnnotationIndexColumn(gt));
+                            delete.addColumns(family, SampleIndexSchema.toAnnotationPopFreqIndexColumn(gt));
+                            delete.addColumns(family, SampleIndexSchema.toAnnotationIndexCountColumn(gt));
+                            delete.addColumns(family, SampleIndexSchema.toParentsGTColumn(gt));
+                        }
+                        delete.addColumns(family, SampleIndexSchema.toMendelianErrorColumn());
+                        mutations.add(delete);
+                    }
+                }
+            }
+        }
+
+        return mutations;
+    }
+
+    public HashSet<String> getLoadedGenotypes() {
+        return genotypes;
+    }
+
+    public int getSampleIndexVersion() {
+        return schema.getVersion();
+    }
+}

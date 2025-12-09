@@ -6,8 +6,8 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.thirdparty.hbase.util.Bytes;
-import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexEntry;
-import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexVariant;
+import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry;
+import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexVariant;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 
 import java.util.Collections;

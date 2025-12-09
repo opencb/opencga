@@ -19,7 +19,7 @@ import org.opencb.opencga.storage.core.variant.query.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.executors.AbstractTwoPhasedVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.index.sample.query.SampleIndexQuery;
-import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexQueryParser;
+import org.opencb.opencga.storage.core.variant.index.sample.query.SampleIndexQueryParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

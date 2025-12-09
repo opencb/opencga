@@ -632,7 +632,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     public void sampleIndex(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
         options = getMergedOptions(options);
-        getSampleIndexDBAdaptor().newSampleIndexBuilder(this)
+        getSampleIndexDBAdaptor().newSampleIndexConstructor(this)
                 .buildSampleIndex(study, samples, options);
     }
 
@@ -648,7 +648,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     public void sampleIndexAnnotate(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
         options = getMergedOptions(options);
-        getSampleIndexDBAdaptor().newSampleIndexAnnotationLoader(this)
+        getSampleIndexDBAdaptor().newSampleIndexAnnotationConstructor(this)
                 .updateSampleAnnotation(study, samples, options);
     }
 
@@ -664,7 +664,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     public DataResult<Trio> familyIndex(String study, List<Trio> trios, ObjectMap options) throws StorageEngineException {
         options = getMergedOptions(options);
-        return getSampleIndexDBAdaptor().newSampleIndexFamilyLoader(this)
+        return getSampleIndexDBAdaptor().newSampleIndexFamilyConstructor(this)
                 .load(study, trios, options);
     }
 

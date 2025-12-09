@@ -1,7 +1,7 @@
 package org.opencb.opencga.storage.core.variant.index.sample.family;
 
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexEntry;
+import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry;
 import org.opencb.opencga.storage.core.variant.index.sample.codecs.GenotypeCodec;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 

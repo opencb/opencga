@@ -314,7 +314,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     @Override
     protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator) throws StorageEngineException {
         return new HadoopDefaultVariantAnnotationManager(annotator, getDBAdaptor(), getMRExecutor(), getOptions(), ioConnectorProvider,
-                getSampleIndexDBAdaptor().newSampleIndexAnnotationLoader(this));
+                getSampleIndexDBAdaptor().newSampleIndexAnnotationConstructor(this));
     }
 
     @Override

@@ -38,7 +38,7 @@ import org.opencb.opencga.storage.core.variant.index.sample.executors.SampleInde
 import org.opencb.opencga.storage.core.variant.index.sample.executors.SampleIndexMendelianErrorQueryExecutor;
 import org.opencb.opencga.storage.core.variant.index.sample.executors.SampleIndexOnlyVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.index.sample.executors.SampleIndexVariantQueryExecutor;
-import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexQueryParser;
+import org.opencb.opencga.storage.core.variant.index.sample.query.SampleIndexQueryParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

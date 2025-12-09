@@ -8,6 +8,9 @@ import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
+import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry;
+import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntryIterator;
+import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexVariant;
 import org.opencb.opencga.storage.thirdparty.hbase.util.Bytes;
 import org.opencb.opencga.storage.core.variant.index.core.IndexUtils;
 
@@ -17,13 +20,13 @@ import java.util.*;
 /**
  * Define RowKey, column names, and individual schemas. Used to build the sample index.
  *
- * {@link org.opencb.opencga.storage.core.variant.index.sample.SampleIndexEntry}:
+ * {@link SampleIndexEntry}:
  *                  HBase row. Contains all the information from a sample in a specific region.
- * {@link org.opencb.opencga.storage.core.variant.index.sample.SampleIndexEntry.SampleIndexGtEntry}:
+ * {@link SampleIndexEntry.SampleIndexGtEntry}:
  *                  HBase columns grouped by genotype.
- * {@link org.opencb.opencga.storage.core.variant.index.sample.SampleIndexEntryIterator}:
- *                  Iterator over the variants of a {@link org.opencb.opencga.storage.core.variant.index.sample.SampleIndexEntry}
- * {@link org.opencb.opencga.storage.core.variant.index.sample.SampleIndexVariant}:
+ * {@link SampleIndexEntryIterator}:
+ *                  Iterator over the variants of a {@link SampleIndexEntry}
+ * {@link SampleIndexVariant}:
  *                  Logical view over an entry for a specific variant and corresponding keys
  * <p>
  * - Row : {SAMPLE_ID}_{CHROMOSOME}_{BATCH_START}

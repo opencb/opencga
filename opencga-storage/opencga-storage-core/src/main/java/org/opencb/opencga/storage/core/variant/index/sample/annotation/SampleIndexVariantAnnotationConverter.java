@@ -6,12 +6,14 @@ import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.PopulationFrequency;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.biodata.tools.commons.Converter;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.index.core.CombinationTripleIndexSchema;
 import org.opencb.opencga.storage.core.variant.index.core.IndexField;
+import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexVariantAnnotation;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.util.*;
 
@@ -21,7 +23,7 @@ import static org.opencb.opencga.core.models.variant.VariantAnnotationConstants.
 /**
  * Created by jacobo on 04/01/19.
  */
-public class SampleIndexVariantAnnotationConverter {
+public class SampleIndexVariantAnnotationConverter implements Converter<VariantAnnotation, SampleIndexVariantAnnotation> {
 
     public static final double POP_FREQ_THRESHOLD_001 = 0.001;
     public static final Set<String> BIOTYPE_SET;

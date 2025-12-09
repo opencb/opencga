@@ -3,7 +3,7 @@ package org.opencb.opencga.storage.core.variant.index.sample.local;
 import org.opencb.opencga.storage.core.variant.index.sample.file.SampleIndexEntryBuilder;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 
-import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexVariant;
+import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexVariant;
 
 import java.nio.ByteBuffer;
 import java.util.Map;

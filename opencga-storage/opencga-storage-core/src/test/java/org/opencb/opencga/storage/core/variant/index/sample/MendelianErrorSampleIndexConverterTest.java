@@ -7,6 +7,7 @@ import org.opencb.opencga.core.testclassification.duration.ShortTests;
 import org.opencb.opencga.storage.core.variant.index.sample.annotation.SampleIndexVariantAnnotationConverter;
 import org.opencb.opencga.storage.core.variant.index.sample.family.FamilyIndexBuilder;
 import org.opencb.opencga.storage.core.variant.index.sample.family.MendelianErrorSampleIndexEntryIterator;
+import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 
 import java.io.IOException;

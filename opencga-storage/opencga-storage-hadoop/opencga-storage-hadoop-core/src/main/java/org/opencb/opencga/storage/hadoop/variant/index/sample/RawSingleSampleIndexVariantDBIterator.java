@@ -8,12 +8,13 @@ import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.client.Table;
 import org.opencb.opencga.storage.core.utils.iterators.CloseableIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.core.variant.index.sample.RawSampleIndexEntryFilter;
-import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexEntry;
-import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexVariant;
+import org.opencb.opencga.storage.core.variant.index.sample.query.RawSampleIndexEntryFilter;
+import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry;
+import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexVariant;
 import org.opencb.opencga.storage.core.variant.index.sample.query.LocusQuery;
 import org.opencb.opencga.storage.core.variant.index.sample.query.SingleSampleIndexQuery;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.file.HBaseToSampleIndexConverter;
 
 import java.io.IOException;
 import java.util.Collection;

@@ -24,9 +24,15 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.UnionMultiVari
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.index.core.IndexUtils;
 import org.opencb.opencga.storage.core.variant.index.core.filters.IndexFieldFilter;
-import org.opencb.opencga.storage.core.variant.index.sample.family.FamilyIndexLoader;
+import org.opencb.opencga.storage.core.variant.index.sample.annotation.SampleIndexAnnotationConstructor;
+import org.opencb.opencga.storage.core.variant.index.sample.family.FamilyIndexConstructor;
+import org.opencb.opencga.storage.core.variant.index.sample.file.SampleIndexConstructor;
+import org.opencb.opencga.storage.core.variant.index.sample.query.SampleIndexEntryFilter;
+import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry;
+import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexVariant;
 import org.opencb.opencga.storage.core.variant.index.sample.query.*;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
+import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchemaFactory;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,11 +62,12 @@ public abstract class SampleIndexDBAdaptor implements VariantIterable {
         return new SampleIndexQueryParser(metadataManager, schemaFactory);
     }
 
-    public abstract SampleIndexBuilder newSampleIndexBuilder(VariantStorageEngine engine) throws StorageEngineException;
+    public abstract SampleIndexConstructor newSampleIndexConstructor(VariantStorageEngine engine) throws StorageEngineException;
 
-    public abstract SampleIndexAnnotationLoader newSampleIndexAnnotationLoader(VariantStorageEngine engine) throws StorageEngineException;
+    public abstract SampleIndexAnnotationConstructor newSampleIndexAnnotationConstructor(VariantStorageEngine engine)
+            throws StorageEngineException;
 
-    public abstract FamilyIndexLoader newSampleIndexFamilyLoader(VariantStorageEngine engine) throws StorageEngineException;
+    public abstract FamilyIndexConstructor newSampleIndexFamilyConstructor(VariantStorageEngine engine) throws StorageEngineException;
 
     @Override
     public VariantDBIterator iterator(Query query, QueryOptions options) {

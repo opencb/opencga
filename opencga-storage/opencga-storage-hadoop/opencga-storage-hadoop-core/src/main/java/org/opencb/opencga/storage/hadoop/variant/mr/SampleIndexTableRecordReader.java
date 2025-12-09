@@ -21,7 +21,7 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenix
 import org.opencb.opencga.storage.core.variant.index.sample.query.LocusQuery;
 import org.opencb.opencga.storage.core.variant.index.sample.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.HBaseSampleIndexDBAdaptor;
-import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexQueryParser;
+import org.opencb.opencga.storage.core.variant.index.sample.query.SampleIndexQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;

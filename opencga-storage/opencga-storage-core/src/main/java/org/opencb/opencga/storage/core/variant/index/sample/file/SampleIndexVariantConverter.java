@@ -11,7 +11,7 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.opencga.core.config.storage.FieldConfiguration;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.variant.index.core.IndexField;
-import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexVariant;
+import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexVariant;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.FileDataSchema;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.FileIndexSchema;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;

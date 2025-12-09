@@ -24,8 +24,8 @@ import org.opencb.opencga.storage.core.variant.index.core.CategoricalMultiValued
 import org.opencb.opencga.storage.core.variant.index.core.CombinationTripleIndexSchema.CombinationTriple;
 import org.opencb.opencga.storage.core.variant.index.core.IndexField;
 import org.opencb.opencga.storage.core.variant.index.sample.query.SampleIndexQuery;
-import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexVariant;
-import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexQueryParser;
+import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexVariant;
+import org.opencb.opencga.storage.core.variant.index.sample.query.SampleIndexQueryParser;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

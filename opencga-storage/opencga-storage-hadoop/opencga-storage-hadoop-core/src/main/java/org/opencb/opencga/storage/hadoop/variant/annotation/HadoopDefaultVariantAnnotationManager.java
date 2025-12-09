@@ -48,7 +48,7 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenix
 import org.opencb.opencga.storage.hadoop.variant.annotation.pending.AnnotationPendingVariantsManager;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.HBaseSampleIndexAnnotationLoader;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.annotation.HBaseSampleIndexAnnotationConstructor;
 import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsReader;
 
 import java.io.IOException;
@@ -72,18 +72,18 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
 
     private final VariantHadoopDBAdaptor dbAdaptor;
     private final ObjectMap baseOptions;
-    private final HBaseSampleIndexAnnotationLoader sampleIndexAnnotationLoader;
+    private final HBaseSampleIndexAnnotationConstructor sampleIndexAnnotation;
     private final MRExecutor mrExecutor;
     private Query query;
 
     public HadoopDefaultVariantAnnotationManager(VariantAnnotator variantAnnotator, VariantHadoopDBAdaptor dbAdaptor,
                                                  MRExecutor mrExecutor, ObjectMap options, IOConnectorProvider ioConnectorProvider,
-                                                 HBaseSampleIndexAnnotationLoader sampleIndexAnnotationLoader) {
+                                                 HBaseSampleIndexAnnotationConstructor sampleIndexAnnotation) {
         super(variantAnnotator, dbAdaptor, ioConnectorProvider);
         this.mrExecutor = mrExecutor;
         this.dbAdaptor = dbAdaptor;
         this.baseOptions = options;
-        this.sampleIndexAnnotationLoader = sampleIndexAnnotationLoader;
+        this.sampleIndexAnnotation = sampleIndexAnnotation;
     }
 
     @Override
@@ -244,7 +244,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
                     samplesToUpdate.addAll(metadataManager.getFileMetadata(studyId, file).getSamples());
                 }
                 if (!samplesToUpdate.isEmpty()) {
-                    sampleIndexAnnotationLoader.updateSampleAnnotation(studyId, new ArrayList<>(samplesToUpdate), params);
+                    sampleIndexAnnotation.updateSampleAnnotation(studyId, new ArrayList<>(samplesToUpdate), params);
                 }
             }
         }

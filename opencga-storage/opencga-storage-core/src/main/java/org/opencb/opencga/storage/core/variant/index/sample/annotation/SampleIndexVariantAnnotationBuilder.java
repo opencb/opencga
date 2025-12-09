@@ -2,7 +2,8 @@ package org.opencb.opencga.storage.core.variant.index.sample.annotation;
 
 import org.opencb.opencga.storage.core.io.bit.BitOutputStream;
 import org.opencb.opencga.storage.core.variant.index.core.IndexUtils;
-import org.opencb.opencga.storage.core.variant.index.sample.SampleIndexEntry;
+import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexEntry;
+import org.opencb.opencga.storage.core.variant.index.sample.models.SampleIndexVariantAnnotation;
 import org.opencb.opencga.storage.core.variant.index.sample.schema.SampleIndexSchema;
 
 import java.io.ByteArrayOutputStream;
